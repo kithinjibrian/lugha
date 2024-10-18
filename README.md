@@ -13,7 +13,7 @@
 - [x] unary expressions
 - [x] ternary expressions
 - [x] ternary expressions
-- [ ] function expressions
+- [x] function expressions
 - [ ] classes/ enums, unions
 - [ ] switch case
 - [ ] import statement
