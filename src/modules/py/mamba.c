@@ -10,6 +10,8 @@ typedef struct mamba_ctx
     bool comment;
 } mamba_ctx_t;
 
+int entry = 0;
+
 static void write_code(char *code)
 {
     sarray_push(mamba_visitor.code, code, strlen(code));
@@ -205,6 +207,16 @@ define_visitor(mamba_identifier, node_identifier_t)
 
 define_visitor(mamba_source_elements, node_statements_t)
 {
+    if (!entry)
+    {
+        write_code(
+            "# Black Mamba Generated Code\n"
+            "# Author - Kithinji Brian\n"
+            "# Version - 0.0.1\n\n");
+
+        entry = true;
+    }
+
     for (int i = 0; i < ast->nch; i++)
     {
         ast->children[i]->accept(ast->children[i], visitor);
@@ -510,7 +522,7 @@ mamba_ctx_t mamba_ctx = {
 node_visitor_t mamba_visitor = {
     .fullname = "Black Mamba (Python code generator)",
     .shortname = "py_gen",
-    .auther = "Kithinji Brian",
+    .author = "Kithinji Brian",
     .doc = "Generate python code from AST",
     .code = NULL,
     .ctx = &mamba_ctx,

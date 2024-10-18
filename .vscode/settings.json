@@ -1,0 +1,23 @@
+{
+    "files.associations": {
+        "*.orca": "plaintext",
+        "main.h": "c",
+        "ast.h": "c",
+        "initializer_list": "c",
+        "compare": "c",
+        "type_traits": "c",
+        "utility": "c",
+        "gen.h": "c",
+        "mamba.h": "c",
+        "ptree.h": "c",
+        "assert.h": "c",
+        "string.h": "c",
+        "error.h": "c",
+        "bison.tab.h": "c",
+        "types.h": "c",
+        "sema.h": "c",
+        "arena.h": "c",
+        "symtab.h": "c",
+        "visitor.h": "c"
+    }
+}

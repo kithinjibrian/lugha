@@ -159,7 +159,7 @@ void sema_exit(node_visitor_t *visitor)
 node_visitor_t sema_visitor = {
     .fullname = "Semantic Analyzer",
     .shortname = "sema",
-    .auther = "Kithinji Brian",
+    .author = "Kithinji Brian",
     .doc = "Semantic Analyzer module",
     .init = sema_init,
     .exit = sema_exit,

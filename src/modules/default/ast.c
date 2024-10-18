@@ -603,7 +603,7 @@ void *ast_init(ptree_t *ptree)
 const proc_ast_t node_ast = {
     .fullname = "Default AST",
     .shortname = "d_ast",
-    .auther = "Kithinji Brian",
+    .author = "Kithinji Brian",
     .doc = "Default AST module",
     .init = ast_init,
     .exit = ast_exit,
