@@ -12,12 +12,12 @@
 - [x] binary expressions
 - [x] unary expressions
 - [x] ternary expressions
-- [x] ternary expressions
 - [x] function expressions
-- [ ] classes/ enums, unions
+- [ ] classes, structs, enums, unions
 - [ ] switch case
 - [ ] import statement
 - [ ] arrays
 - [ ] maps
-- [ ] type checking
 - [ ] Try catch
+- [ ] type checking
+- [ ] Semantic analysis
