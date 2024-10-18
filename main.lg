@@ -1,0 +1,6 @@
+fun main(a)
+{
+    return a + 10;
+}
+
+main(10);
