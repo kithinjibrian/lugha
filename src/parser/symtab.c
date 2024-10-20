@@ -65,7 +65,7 @@ void insert_ref(symbol_t *symbol)
     tmp->next = ref;
 }
 
-symbol_t *create_symbol(char *name, int data_type)
+symbol_t *create_symbol(char *name, void *data_type)
 {
     symbol_t *symbol = (symbol_t *)symtab_alloc(sizeof(symbol_t));
     symbol->ref_list = create_ref();
@@ -83,7 +83,7 @@ symbol_t *create_symbol(char *name, int data_type)
 
 symbol_t *insert_symbol(char *name)
 {
-    symbol_t *symbol = create_symbol(name, -1);
+    symbol_t *symbol = create_symbol(name, NULL);
 
     size_t h = hash(name) % HASH_SIZE;
 

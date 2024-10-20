@@ -61,6 +61,12 @@ define_visitor(sema_parameter, node_parameter_t)
     (void)visitor;
     (void)ast;
 
+    if (ast->expression)
+        error(ast->identifer->loc,
+              ERROR_SEMANTIC,
+              "A parameter '%s' can't have an initializer.",
+              ((node_identifier_t *)(ast->identifer))->name);
+
     return NULL;
 }
 
@@ -135,7 +141,7 @@ define_visitor(sema_entry, node_ast_t)
     (void)visitor;
     (void)ast;
 
-    // printf("Entering node: %s\n", ast_type_str_g[ast->type]);
+    //   printf("Entering node: %s\n", ast_type_str_g[ast->type]);
 
     return NULL;
 }
@@ -166,11 +172,14 @@ node_visitor_t sema_visitor = {
     .entry = sema_entry,
     .leave = sema_leave,
     .eof_fun = def_eof,
+    .bool_fun = def_bool,
     .block_fun = def_block,
+    .array_fun = def_array,
     .number_fun = def_number,
     .string_fun = def_string,
     .return_fun = def_return,
     .symbol_fun = sema_symbol,
+    .ternary_fun = def_ternary,
     .variable_fun = sema_variable,
     .parameter_fun = sema_parameter,
     .arguments_fun = sema_arguments,
@@ -182,5 +191,6 @@ node_visitor_t sema_visitor = {
     .function_call_fun = sema_function_call,
     .parameter_list_fun = def_parameter_list,
     .variable_statement_fun = def_variable_statement,
+    .function_expression_fun = def_function_expression,
     .expression_statement_fun = def_expression_statement,
 };

@@ -30,7 +30,7 @@ typedef struct symbol
         SYM_FUNCTION,
         SYM_PARAMETER
     } type;
-    int data_type; /* its data type */
+    void *data_type; /* its data type */
     union
     {
         struct // functions

@@ -94,7 +94,7 @@ function_declaration:
         ptree_t *w = ptree_create_symbol($2);
         ptree_t *lp = ptree_create(PTREE_LPRN, 0);
         ptree_t *rp = ptree_create(PTREE_RPRN, 0);
-        $$ = ptree_create(PTREE_FUNCTION_DECLARTION, 7, w, $3, lp, $5, rp, $7, $8);
+        $$ = ptree_create(PTREE_FUNCTION_DECLARATION, 7, w, $3, lp, $5, rp, $7, $8);
     }
     ;
 
@@ -243,10 +243,11 @@ assignment_operator:
     ;
 
 function_expression:
-    FUN typed_parameters '(' parameters_list ')' type_annotation FUN_ARROW function_expression_body {
+    FUN typed_parameters '(' parameters_list ')' type_annotation FORWARD_ARROW function_expression_body {
         ptree_t *lp = ptree_create(PTREE_LPRN, 0);
         ptree_t *rp = ptree_create(PTREE_RPRN, 0);
-        $$ = ptree_create(PTREE_FUNCTION_EXPRESSION, 6, $2, lp, $4, rp, $6, $8);
+        ptree_t *fa = ptree_create(PTREE_FORWARD_ARROW, 0);
+        $$ = ptree_create(PTREE_FUNCTION_EXPRESSION, 7, $2, lp, $4, rp, $6, fa, $8);
     }
     ;
 
@@ -272,7 +273,7 @@ conditional_expression:
     | logical_or_expression '?' assignment_expression ':' assignment_expression {
         ptree_t *q = ptree_create(PTREE_QUESTION, 0);
         ptree_t *sc = ptree_create(PTREE_SEMICOLON, 0);
-        $$ = ptree_create(PTREE_TERTIARY_EXPRESSION, 5, $1, q, $3, sc, $5);
+        $$ = ptree_create(PTREE_TERNARY_EXPRESSION, 5, $1, q, $3, sc, $5);
     }
     ;
 

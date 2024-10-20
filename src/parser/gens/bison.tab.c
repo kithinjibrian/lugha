@@ -670,22 +670,22 @@ static const yytype_int16 yyrline[] =
      105,   108,   114,   117,   123,   126,   133,   136,   139,   142,
      145,   148,   151,   154,   157,   160,   163,   166,   173,   180,
      183,   189,   192,   198,   201,   204,   210,   213,   216,   219,
-     222,   225,   228,   231,   234,   237,   240,   246,   254,   257,
-     263,   269,   272,   280,   283,   290,   293,   300,   303,   310,
-     313,   320,   323,   330,   333,   339,   342,   348,   351,   357,
-     360,   363,   366,   372,   375,   381,   384,   390,   393,   399,
-     402,   408,   411,   417,   420,   423,   429,   432,   438,   441,
-     444,   447,   450,   453,   456,   462,   465,   468,   473,   478,
-     486,   489,   492,   498,   501,   507,   510,   513,   516,   519,
-     527,   530,   533,   536,   542,   550,   553,   556,   559,   565,
-     574,   577,   580,   583,   589,   596,   599,   602,   608,   614,
-     623,   626,   629,   634,   638,   644,   650,   656,   661,   665,
-     672,   679,   686,   695,   700,   708,   718,   721,   727,   731,
-     738,   741,   747,   750,   757,   764,   768,   774,   777,   780,
-     783,   786,   792,   795,   798,   801,   807,   815,   824,   833,
-     836,   839,   845,   849,   856,   864,   869,   875,   879,   886,
-     895,   899,   908,   917,   920,   923,   926,   932,   941,   944,
-     947,   953,   956,   962,   968,   977,   986,   989
+     222,   225,   228,   231,   234,   237,   240,   246,   255,   258,
+     264,   270,   273,   281,   284,   291,   294,   301,   304,   311,
+     314,   321,   324,   331,   334,   340,   343,   349,   352,   358,
+     361,   364,   367,   373,   376,   382,   385,   391,   394,   400,
+     403,   409,   412,   418,   421,   424,   430,   433,   439,   442,
+     445,   448,   451,   454,   457,   463,   466,   469,   474,   479,
+     487,   490,   493,   499,   502,   508,   511,   514,   517,   520,
+     528,   531,   534,   537,   543,   551,   554,   557,   560,   566,
+     575,   578,   581,   584,   590,   597,   600,   603,   609,   615,
+     624,   627,   630,   635,   639,   645,   651,   657,   662,   666,
+     673,   680,   687,   696,   701,   709,   719,   722,   728,   732,
+     739,   742,   748,   751,   758,   765,   769,   775,   778,   781,
+     784,   787,   793,   796,   799,   802,   808,   816,   825,   834,
+     837,   840,   846,   850,   857,   865,   870,   876,   880,   887,
+     896,   900,   909,   918,   921,   924,   927,   933,   942,   945,
+     948,   954,   957,   963,   969,   978,   987,   990
 };
 #endif
 
@@ -788,7 +788,7 @@ static const yytype_int16 yypact[] =
     -246,   500,  -246,  -246,  -246,    93,  -246,   195,     3,   105,
     -246,  -246,   133,    15,   500,   219,   109,   193,  -246,  -246,
      -19,  -246,   -34,   -28,   -32,   -27,  -246,  -246,  -246,  -246,
-    -246,    14,     0,    93,   180,  -246,   133,   229,  -246,  -246,
+    -246,    14,     0,    93,   180,  -246,   133,   241,  -246,  -246,
      450,   198,   500,  -246,    24,  -246,  -246,    93,   262,    24,
      245,  -246,    93,  -246,   112,  -246,   187,    20,  -246,  -246,
      208,  -246,   117,  -246,   -20,  -246,    14,  -246,  -246,  -246,
@@ -958,7 +958,7 @@ static const yytype_int16 yycheck[] =
       66,    59,   236,    59,   264,    64,    50,   242,   243,    63,
       54,    34,    82,    82,    66,    59,     6,    82,    63,    70,
       64,     6,    63,     6,    59,    69,    37,    64,    72,    73,
-      31,    81,    64,    77,    78,     3,    80,    33,    60,    82,
+      19,    81,    64,    77,    78,     3,    80,    33,    60,    82,
      227,   263,   230,    16,   117,   119,   118,   307,   290,   128,
      131,   115,     3,   211,     5,     6,   134,    93,   120,   294,
       19,   168,   123,   300,   299,    -1,    17,    18,    -1,    -1,
@@ -1030,7 +1030,7 @@ static const yytype_uint8 yystos[] =
      144,   142,   157,   157,     6,   159,   160,    83,    88,    96,
       96,   144,   149,    59,     3,    81,    60,   143,    90,    96,
       37,    60,    64,    64,    62,    83,    83,    59,    63,    82,
-      62,    83,    62,    71,   149,    81,   143,    31,    92,    64,
+      62,    83,    62,    71,   149,    81,   143,    19,    92,    64,
       95,   142,   149,     3,   157,   160,   144,    60,   130,    96,
       99,   130,    60,    60,    83,    92
 };
@@ -1984,7 +1984,7 @@ yyreduce:
         ptree_t *w = ptree_create_symbol((yyvsp[-6].str));
         ptree_t *lp = ptree_create(PTREE_LPRN, 0);
         ptree_t *rp = ptree_create(PTREE_RPRN, 0);
-        (yyval.ptree) = ptree_create(PTREE_FUNCTION_DECLARTION, 7, w, (yyvsp[-5].ptree), lp, (yyvsp[-3].ptree), rp, (yyvsp[-1].ptree), (yyvsp[0].ptree));
+        (yyval.ptree) = ptree_create(PTREE_FUNCTION_DECLARATION, 7, w, (yyvsp[-5].ptree), lp, (yyvsp[-3].ptree), rp, (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
 #line 1990 "bison.tab.c"
     break;
@@ -2295,797 +2295,798 @@ yyreduce:
 #line 2296 "bison.tab.c"
     break;
 
-  case 47: /* function_expression: FUN typed_parameters '(' parameters_list ')' type_annotation FUN_ARROW function_expression_body  */
+  case 47: /* function_expression: FUN typed_parameters '(' parameters_list ')' type_annotation FORWARD_ARROW function_expression_body  */
 #line 246 "./src/parser/gens/bison.y"
-                                                                                                    {
+                                                                                                        {
         ptree_t *lp = ptree_create(PTREE_LPRN, 0);
         ptree_t *rp = ptree_create(PTREE_RPRN, 0);
-        (yyval.ptree) = ptree_create(PTREE_FUNCTION_EXPRESSION, 6, (yyvsp[-6].ptree), lp, (yyvsp[-4].ptree), rp, (yyvsp[-2].ptree), (yyvsp[0].ptree));
+        ptree_t *fa = ptree_create(PTREE_FORWARD_ARROW, 0);
+        (yyval.ptree) = ptree_create(PTREE_FUNCTION_EXPRESSION, 7, (yyvsp[-6].ptree), lp, (yyvsp[-4].ptree), rp, (yyvsp[-2].ptree), fa, (yyvsp[0].ptree));
     }
-#line 2306 "bison.tab.c"
+#line 2307 "bison.tab.c"
     break;
 
   case 48: /* function_expression_body: assignment_expression  */
-#line 254 "./src/parser/gens/bison.y"
+#line 255 "./src/parser/gens/bison.y"
                           {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2314 "bison.tab.c"
+#line 2315 "bison.tab.c"
     break;
 
   case 49: /* function_expression_body: block_statement  */
-#line 257 "./src/parser/gens/bison.y"
+#line 258 "./src/parser/gens/bison.y"
                       {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2322 "bison.tab.c"
+#line 2323 "bison.tab.c"
     break;
 
   case 50: /* constant_expression: conditional_expression  */
-#line 263 "./src/parser/gens/bison.y"
+#line 264 "./src/parser/gens/bison.y"
                            {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2330 "bison.tab.c"
+#line 2331 "bison.tab.c"
     break;
 
   case 51: /* conditional_expression: logical_or_expression  */
-#line 269 "./src/parser/gens/bison.y"
+#line 270 "./src/parser/gens/bison.y"
                           {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2338 "bison.tab.c"
+#line 2339 "bison.tab.c"
     break;
 
   case 52: /* conditional_expression: logical_or_expression '?' assignment_expression ':' assignment_expression  */
-#line 272 "./src/parser/gens/bison.y"
+#line 273 "./src/parser/gens/bison.y"
                                                                                 {
         ptree_t *q = ptree_create(PTREE_QUESTION, 0);
         ptree_t *sc = ptree_create(PTREE_SEMICOLON, 0);
-        (yyval.ptree) = ptree_create(PTREE_TERTIARY_EXPRESSION, 5, (yyvsp[-4].ptree), q, (yyvsp[-2].ptree), sc, (yyvsp[0].ptree));
+        (yyval.ptree) = ptree_create(PTREE_TERNARY_EXPRESSION, 5, (yyvsp[-4].ptree), q, (yyvsp[-2].ptree), sc, (yyvsp[0].ptree));
     }
-#line 2348 "bison.tab.c"
+#line 2349 "bison.tab.c"
     break;
 
   case 53: /* logical_or_expression: logical_and_expression  */
-#line 280 "./src/parser/gens/bison.y"
+#line 281 "./src/parser/gens/bison.y"
                            {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2356 "bison.tab.c"
+#line 2357 "bison.tab.c"
     break;
 
   case 54: /* logical_or_expression: logical_or_expression OR logical_and_expression  */
-#line 283 "./src/parser/gens/bison.y"
+#line 284 "./src/parser/gens/bison.y"
                                                       {
         ptree_t *op = ptree_create(PTREE_OR, 0);
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), op, (yyvsp[0].ptree));
     }
-#line 2365 "bison.tab.c"
+#line 2366 "bison.tab.c"
     break;
 
   case 55: /* logical_and_expression: bitwise_or_expression  */
-#line 290 "./src/parser/gens/bison.y"
+#line 291 "./src/parser/gens/bison.y"
                           {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2373 "bison.tab.c"
+#line 2374 "bison.tab.c"
     break;
 
   case 56: /* logical_and_expression: logical_and_expression AND bitwise_or_expression  */
-#line 293 "./src/parser/gens/bison.y"
+#line 294 "./src/parser/gens/bison.y"
                                                        {
         ptree_t *op = ptree_create(PTREE_AND, 0);
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), op, (yyvsp[0].ptree));
     }
-#line 2382 "bison.tab.c"
+#line 2383 "bison.tab.c"
     break;
 
   case 57: /* bitwise_or_expression: bitwise_xor_expression  */
-#line 300 "./src/parser/gens/bison.y"
+#line 301 "./src/parser/gens/bison.y"
                            {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2390 "bison.tab.c"
+#line 2391 "bison.tab.c"
     break;
 
   case 58: /* bitwise_or_expression: bitwise_or_expression '|' bitwise_xor_expression  */
-#line 303 "./src/parser/gens/bison.y"
+#line 304 "./src/parser/gens/bison.y"
                                                        {
         ptree_t *op = ptree_create(PTREE_BIT_OR, 0);
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), op, (yyvsp[0].ptree));
     }
-#line 2399 "bison.tab.c"
+#line 2400 "bison.tab.c"
     break;
 
   case 59: /* bitwise_xor_expression: bitwise_and_expression  */
-#line 310 "./src/parser/gens/bison.y"
+#line 311 "./src/parser/gens/bison.y"
                            {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2407 "bison.tab.c"
+#line 2408 "bison.tab.c"
     break;
 
   case 60: /* bitwise_xor_expression: bitwise_xor_expression '^' bitwise_and_expression  */
-#line 313 "./src/parser/gens/bison.y"
+#line 314 "./src/parser/gens/bison.y"
                                                         {
         ptree_t *op = ptree_create(PTREE_BIT_XOR, 0);
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), op, (yyvsp[0].ptree));
     }
-#line 2416 "bison.tab.c"
+#line 2417 "bison.tab.c"
     break;
 
   case 61: /* bitwise_and_expression: equality_expression  */
-#line 320 "./src/parser/gens/bison.y"
+#line 321 "./src/parser/gens/bison.y"
                         {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2424 "bison.tab.c"
+#line 2425 "bison.tab.c"
     break;
 
   case 62: /* bitwise_and_expression: bitwise_and_expression '&' equality_expression  */
-#line 323 "./src/parser/gens/bison.y"
+#line 324 "./src/parser/gens/bison.y"
                                                      {
         ptree_t *op = ptree_create(PTREE_BIT_AND, 0);
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), op, (yyvsp[0].ptree));
     }
-#line 2433 "bison.tab.c"
+#line 2434 "bison.tab.c"
     break;
 
   case 63: /* equality_expression: relational_expression  */
-#line 330 "./src/parser/gens/bison.y"
+#line 331 "./src/parser/gens/bison.y"
                           {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2441 "bison.tab.c"
+#line 2442 "bison.tab.c"
     break;
 
   case 64: /* equality_expression: equality_expression equality_operator relational_expression  */
-#line 333 "./src/parser/gens/bison.y"
+#line 334 "./src/parser/gens/bison.y"
                                                                   {
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 2449 "bison.tab.c"
+#line 2450 "bison.tab.c"
     break;
 
   case 65: /* equality_operator: IS_EQUAL  */
-#line 339 "./src/parser/gens/bison.y"
+#line 340 "./src/parser/gens/bison.y"
              {
         (yyval.ptree) = ptree_create(PTREE_IS_EQUAL, 0);
     }
-#line 2457 "bison.tab.c"
+#line 2458 "bison.tab.c"
     break;
 
   case 66: /* equality_operator: NOT_EQUAL  */
-#line 342 "./src/parser/gens/bison.y"
+#line 343 "./src/parser/gens/bison.y"
                 {
         (yyval.ptree) = ptree_create(PTREE_NOT_EQUAL, 0);
     }
-#line 2465 "bison.tab.c"
+#line 2466 "bison.tab.c"
     break;
 
   case 67: /* relational_expression: shift_expression  */
-#line 348 "./src/parser/gens/bison.y"
+#line 349 "./src/parser/gens/bison.y"
                      {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2473 "bison.tab.c"
+#line 2474 "bison.tab.c"
     break;
 
   case 68: /* relational_expression: relational_expression relational_operator shift_expression  */
-#line 351 "./src/parser/gens/bison.y"
+#line 352 "./src/parser/gens/bison.y"
                                                                  {
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 2481 "bison.tab.c"
+#line 2482 "bison.tab.c"
     break;
 
   case 69: /* relational_operator: '<'  */
-#line 357 "./src/parser/gens/bison.y"
+#line 358 "./src/parser/gens/bison.y"
         {
         (yyval.ptree) = ptree_create(PTREE_LESS, 0);
     }
-#line 2489 "bison.tab.c"
+#line 2490 "bison.tab.c"
     break;
 
   case 70: /* relational_operator: '>'  */
-#line 360 "./src/parser/gens/bison.y"
+#line 361 "./src/parser/gens/bison.y"
           {
         (yyval.ptree) = ptree_create(PTREE_GREATER, 0);
     }
-#line 2497 "bison.tab.c"
+#line 2498 "bison.tab.c"
     break;
 
   case 71: /* relational_operator: LESS_EQ  */
-#line 363 "./src/parser/gens/bison.y"
+#line 364 "./src/parser/gens/bison.y"
               {
         (yyval.ptree) = ptree_create(PTREE_LESS_EQ, 0);
     }
-#line 2505 "bison.tab.c"
+#line 2506 "bison.tab.c"
     break;
 
   case 72: /* relational_operator: GREATER_EQ  */
-#line 366 "./src/parser/gens/bison.y"
+#line 367 "./src/parser/gens/bison.y"
                  {
         (yyval.ptree) = ptree_create(PTREE_GREATER_EQ, 0);
     }
-#line 2513 "bison.tab.c"
+#line 2514 "bison.tab.c"
     break;
 
   case 73: /* shift_expression: additive_expression  */
-#line 372 "./src/parser/gens/bison.y"
+#line 373 "./src/parser/gens/bison.y"
                         {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2521 "bison.tab.c"
+#line 2522 "bison.tab.c"
     break;
 
   case 74: /* shift_expression: shift_expression shift_operator additive_expression  */
-#line 375 "./src/parser/gens/bison.y"
+#line 376 "./src/parser/gens/bison.y"
                                                           {
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 2529 "bison.tab.c"
+#line 2530 "bison.tab.c"
     break;
 
   case 75: /* shift_operator: LSHIFT  */
-#line 381 "./src/parser/gens/bison.y"
+#line 382 "./src/parser/gens/bison.y"
            {
         (yyval.ptree) = ptree_create(PTREE_LSHIFT, 0);
     }
-#line 2537 "bison.tab.c"
+#line 2538 "bison.tab.c"
     break;
 
   case 76: /* shift_operator: RSHIFT  */
-#line 384 "./src/parser/gens/bison.y"
+#line 385 "./src/parser/gens/bison.y"
              {
         (yyval.ptree) = ptree_create(PTREE_RSHIFT, 0);
     }
-#line 2545 "bison.tab.c"
+#line 2546 "bison.tab.c"
     break;
 
   case 77: /* additive_expression: multiplicative_expression  */
-#line 390 "./src/parser/gens/bison.y"
+#line 391 "./src/parser/gens/bison.y"
                               {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2553 "bison.tab.c"
+#line 2554 "bison.tab.c"
     break;
 
   case 78: /* additive_expression: additive_expression additive_operator multiplicative_expression  */
-#line 393 "./src/parser/gens/bison.y"
+#line 394 "./src/parser/gens/bison.y"
                                                                       {
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 2561 "bison.tab.c"
+#line 2562 "bison.tab.c"
     break;
 
   case 79: /* additive_operator: '+'  */
-#line 399 "./src/parser/gens/bison.y"
+#line 400 "./src/parser/gens/bison.y"
         {
         (yyval.ptree) = ptree_create(PTREE_PLUS, 0);
     }
-#line 2569 "bison.tab.c"
+#line 2570 "bison.tab.c"
     break;
 
   case 80: /* additive_operator: '-'  */
-#line 402 "./src/parser/gens/bison.y"
+#line 403 "./src/parser/gens/bison.y"
           {
         (yyval.ptree) = ptree_create(PTREE_MINUS, 0);
     }
-#line 2577 "bison.tab.c"
+#line 2578 "bison.tab.c"
     break;
 
   case 81: /* multiplicative_expression: unary_expression  */
-#line 408 "./src/parser/gens/bison.y"
+#line 409 "./src/parser/gens/bison.y"
                      {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2585 "bison.tab.c"
+#line 2586 "bison.tab.c"
     break;
 
   case 82: /* multiplicative_expression: multiplicative_expression multiplicative_operator unary_expression  */
-#line 411 "./src/parser/gens/bison.y"
+#line 412 "./src/parser/gens/bison.y"
                                                                          {
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 2593 "bison.tab.c"
+#line 2594 "bison.tab.c"
     break;
 
   case 83: /* multiplicative_operator: '*'  */
-#line 417 "./src/parser/gens/bison.y"
+#line 418 "./src/parser/gens/bison.y"
         {
         (yyval.ptree) = ptree_create(PTREE_MULTIPLY, 0);
     }
-#line 2601 "bison.tab.c"
+#line 2602 "bison.tab.c"
     break;
 
   case 84: /* multiplicative_operator: '/'  */
-#line 420 "./src/parser/gens/bison.y"
+#line 421 "./src/parser/gens/bison.y"
           {
         (yyval.ptree) = ptree_create(PTREE_DIVIDE, 0);
     }
-#line 2609 "bison.tab.c"
+#line 2610 "bison.tab.c"
     break;
 
   case 85: /* multiplicative_operator: '%'  */
-#line 423 "./src/parser/gens/bison.y"
+#line 424 "./src/parser/gens/bison.y"
           {
         (yyval.ptree) = ptree_create(PTREE_MODULO, 0);
     }
-#line 2617 "bison.tab.c"
+#line 2618 "bison.tab.c"
     break;
 
   case 86: /* unary_expression: postfix_expression  */
-#line 429 "./src/parser/gens/bison.y"
+#line 430 "./src/parser/gens/bison.y"
                        {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2625 "bison.tab.c"
+#line 2626 "bison.tab.c"
     break;
 
   case 87: /* unary_expression: unary_operator unary_expression  */
-#line 432 "./src/parser/gens/bison.y"
+#line 433 "./src/parser/gens/bison.y"
                                       {
         (yyval.ptree) = ptree_create(PTREE_UNARY, 2, (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 2633 "bison.tab.c"
+#line 2634 "bison.tab.c"
     break;
 
   case 88: /* unary_operator: INCREMENT  */
-#line 438 "./src/parser/gens/bison.y"
+#line 439 "./src/parser/gens/bison.y"
               {
         (yyval.ptree) = ptree_create(PTREE_INCREMENT, 0);
     }
-#line 2641 "bison.tab.c"
+#line 2642 "bison.tab.c"
     break;
 
   case 89: /* unary_operator: DECREMENT  */
-#line 441 "./src/parser/gens/bison.y"
+#line 442 "./src/parser/gens/bison.y"
                 {
         (yyval.ptree) = ptree_create(PTREE_DECREMENT, 0);
     }
-#line 2649 "bison.tab.c"
+#line 2650 "bison.tab.c"
     break;
 
   case 90: /* unary_operator: '!'  */
-#line 444 "./src/parser/gens/bison.y"
+#line 445 "./src/parser/gens/bison.y"
           {
         (yyval.ptree) = ptree_create(PTREE_NOT, 0);
     }
-#line 2657 "bison.tab.c"
+#line 2658 "bison.tab.c"
     break;
 
   case 91: /* unary_operator: '~'  */
-#line 447 "./src/parser/gens/bison.y"
+#line 448 "./src/parser/gens/bison.y"
           {
         (yyval.ptree) = ptree_create(PTREE_TILDE, 0);
     }
-#line 2665 "bison.tab.c"
+#line 2666 "bison.tab.c"
     break;
 
   case 92: /* unary_operator: '+'  */
-#line 450 "./src/parser/gens/bison.y"
+#line 451 "./src/parser/gens/bison.y"
           {
         (yyval.ptree) = ptree_create(PTREE_PLUS, 0);
     }
-#line 2673 "bison.tab.c"
+#line 2674 "bison.tab.c"
     break;
 
   case 93: /* unary_operator: '-'  */
-#line 453 "./src/parser/gens/bison.y"
+#line 454 "./src/parser/gens/bison.y"
           {
         (yyval.ptree) = ptree_create(PTREE_MINUS, 0);
     }
-#line 2681 "bison.tab.c"
+#line 2682 "bison.tab.c"
     break;
 
   case 94: /* unary_operator: '&'  */
-#line 456 "./src/parser/gens/bison.y"
+#line 457 "./src/parser/gens/bison.y"
           {
         (yyval.ptree) = ptree_create(PTREE_BIT_AND, 0);
     }
-#line 2689 "bison.tab.c"
+#line 2690 "bison.tab.c"
     break;
 
   case 95: /* postfix_expression: primary_expression  */
-#line 462 "./src/parser/gens/bison.y"
+#line 463 "./src/parser/gens/bison.y"
                        {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2697 "bison.tab.c"
+#line 2698 "bison.tab.c"
     break;
 
   case 96: /* postfix_expression: postfix_expression postfix_operator  */
-#line 465 "./src/parser/gens/bison.y"
+#line 466 "./src/parser/gens/bison.y"
                                           {
         (yyval.ptree) = ptree_create(PTREE_POSTFIX, 2, (yyvsp[0].ptree), (yyvsp[-1].ptree));
     }
-#line 2705 "bison.tab.c"
+#line 2706 "bison.tab.c"
     break;
 
   case 97: /* postfix_expression: postfix_expression '.' WORD  */
-#line 468 "./src/parser/gens/bison.y"
+#line 469 "./src/parser/gens/bison.y"
                                   {
         ptree_t *w = ptree_create_symbol((yyvsp[0].str));
         ptree_t *dot =ptree_create(PTREE_DOT, 0);
         (yyval.ptree) = ptree_create(PTREE_OBJECT_ACCESS, 3, (yyvsp[-2].ptree), dot, w);
     }
-#line 2715 "bison.tab.c"
+#line 2716 "bison.tab.c"
     break;
 
   case 98: /* postfix_expression: postfix_expression '[' expression ']'  */
-#line 473 "./src/parser/gens/bison.y"
+#line 474 "./src/parser/gens/bison.y"
                                             {
         ptree_t *lb =ptree_create(PTREE_LBRACKET, 0);
         ptree_t *rb =ptree_create(PTREE_RBRACKET, 0);
         (yyval.ptree) = ptree_create(PTREE_ARRAY_ACCESS, 3, (yyvsp[-3].ptree), lb, (yyvsp[-1].ptree), rb);
     }
-#line 2725 "bison.tab.c"
+#line 2726 "bison.tab.c"
     break;
 
   case 99: /* postfix_expression: postfix_expression '(' arguments ')'  */
-#line 478 "./src/parser/gens/bison.y"
+#line 479 "./src/parser/gens/bison.y"
                                            {
         ptree_t *lb = ptree_create(PTREE_LPRN, 0);
         ptree_t *rb = ptree_create(PTREE_RPRN, 0);
         (yyval.ptree) = ptree_create(PTREE_FUNCTION_CALL, 4, (yyvsp[-3].ptree), lb, (yyvsp[-1].ptree), rb);
     }
-#line 2735 "bison.tab.c"
+#line 2736 "bison.tab.c"
     break;
 
   case 100: /* arguments: assignment_expression  */
-#line 486 "./src/parser/gens/bison.y"
+#line 487 "./src/parser/gens/bison.y"
                           {
         (yyval.ptree) = ptree_create(PTREE_ARGUMENT_LIST, 1, (yyvsp[0].ptree));
     }
-#line 2743 "bison.tab.c"
+#line 2744 "bison.tab.c"
     break;
 
   case 101: /* arguments: arguments ',' assignment_expression  */
-#line 489 "./src/parser/gens/bison.y"
+#line 490 "./src/parser/gens/bison.y"
                                           {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 2751 "bison.tab.c"
+#line 2752 "bison.tab.c"
     break;
 
   case 102: /* arguments: %empty  */
-#line 492 "./src/parser/gens/bison.y"
+#line 493 "./src/parser/gens/bison.y"
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);
     }
-#line 2759 "bison.tab.c"
+#line 2760 "bison.tab.c"
     break;
 
   case 103: /* postfix_operator: INCREMENT  */
-#line 498 "./src/parser/gens/bison.y"
+#line 499 "./src/parser/gens/bison.y"
               {
         (yyval.ptree) = ptree_create(PTREE_INCREMENT, 0);
     }
-#line 2767 "bison.tab.c"
+#line 2768 "bison.tab.c"
     break;
 
   case 104: /* postfix_operator: DECREMENT  */
-#line 501 "./src/parser/gens/bison.y"
+#line 502 "./src/parser/gens/bison.y"
                 {
         (yyval.ptree) = ptree_create(PTREE_DECREMENT, 0);
     }
-#line 2775 "bison.tab.c"
+#line 2776 "bison.tab.c"
     break;
 
   case 105: /* primary_expression: WORD  */
-#line 507 "./src/parser/gens/bison.y"
+#line 508 "./src/parser/gens/bison.y"
          {
         (yyval.ptree) = ptree_create_symbol((yyvsp[0].str));
     }
-#line 2783 "bison.tab.c"
+#line 2784 "bison.tab.c"
     break;
 
   case 106: /* primary_expression: literal  */
-#line 510 "./src/parser/gens/bison.y"
+#line 511 "./src/parser/gens/bison.y"
               {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2791 "bison.tab.c"
+#line 2792 "bison.tab.c"
     break;
 
   case 107: /* primary_expression: array_literal  */
-#line 513 "./src/parser/gens/bison.y"
+#line 514 "./src/parser/gens/bison.y"
                     {
        (yyval.ptree) = (yyvsp[0].ptree); 
     }
-#line 2799 "bison.tab.c"
+#line 2800 "bison.tab.c"
     break;
 
   case 108: /* primary_expression: object_literal  */
-#line 516 "./src/parser/gens/bison.y"
+#line 517 "./src/parser/gens/bison.y"
                      {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2807 "bison.tab.c"
+#line 2808 "bison.tab.c"
     break;
 
   case 109: /* primary_expression: '(' expression ')'  */
-#line 519 "./src/parser/gens/bison.y"
+#line 520 "./src/parser/gens/bison.y"
                          {
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_LBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_EXPRESSION, 3, left, (yyvsp[-1].ptree), right);
     }
-#line 2817 "bison.tab.c"
+#line 2818 "bison.tab.c"
     break;
 
   case 110: /* literal: NUMBER  */
-#line 527 "./src/parser/gens/bison.y"
+#line 528 "./src/parser/gens/bison.y"
            {
         (yyval.ptree) = ptree_create_num((yyvsp[0].num));
     }
-#line 2825 "bison.tab.c"
+#line 2826 "bison.tab.c"
     break;
 
   case 111: /* literal: TRUE_VAL  */
-#line 530 "./src/parser/gens/bison.y"
+#line 531 "./src/parser/gens/bison.y"
                {
         (yyval.ptree) = ptree_create_bool(1);
     }
-#line 2833 "bison.tab.c"
+#line 2834 "bison.tab.c"
     break;
 
   case 112: /* literal: FALSE_VAL  */
-#line 533 "./src/parser/gens/bison.y"
+#line 534 "./src/parser/gens/bison.y"
                 {
         (yyval.ptree) = ptree_create_bool(0);
     }
-#line 2841 "bison.tab.c"
+#line 2842 "bison.tab.c"
     break;
 
   case 113: /* literal: STRING  */
-#line 536 "./src/parser/gens/bison.y"
+#line 537 "./src/parser/gens/bison.y"
              {
         (yyval.ptree) = ptree_create_str((yyvsp[0].str));
     }
-#line 2849 "bison.tab.c"
+#line 2850 "bison.tab.c"
     break;
 
   case 114: /* array_literal: '[' element_list ']'  */
-#line 542 "./src/parser/gens/bison.y"
+#line 543 "./src/parser/gens/bison.y"
                          {
         ptree_t *left = ptree_create(PTREE_LBRACKET, 0);
         ptree_t *right = ptree_create(PTREE_RBRACKET, 0);
         (yyval.ptree) = ptree_create(PTREE_ARRAY_LITERAL, 3, left, (yyvsp[-1].ptree), right);
     }
-#line 2859 "bison.tab.c"
+#line 2860 "bison.tab.c"
     break;
 
   case 115: /* element_list: assignment_expression  */
-#line 550 "./src/parser/gens/bison.y"
+#line 551 "./src/parser/gens/bison.y"
                           {
         (yyval.ptree) = ptree_create(PTREE_ELEMENT_LIST, 1, (yyvsp[0].ptree));
     }
-#line 2867 "bison.tab.c"
+#line 2868 "bison.tab.c"
     break;
 
   case 116: /* element_list: element_list ',' assignment_expression  */
-#line 553 "./src/parser/gens/bison.y"
+#line 554 "./src/parser/gens/bison.y"
                                              {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 2875 "bison.tab.c"
+#line 2876 "bison.tab.c"
     break;
 
   case 117: /* element_list: element_list ','  */
-#line 556 "./src/parser/gens/bison.y"
+#line 557 "./src/parser/gens/bison.y"
                        {
         (yyval.ptree) = (yyvsp[-1].ptree);
     }
-#line 2883 "bison.tab.c"
+#line 2884 "bison.tab.c"
     break;
 
   case 118: /* element_list: %empty  */
-#line 559 "./src/parser/gens/bison.y"
+#line 560 "./src/parser/gens/bison.y"
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);
     }
-#line 2891 "bison.tab.c"
+#line 2892 "bison.tab.c"
     break;
 
   case 119: /* object_literal: WORD '{' keyvalue_list '}'  */
-#line 565 "./src/parser/gens/bison.y"
+#line 566 "./src/parser/gens/bison.y"
                                {
         ptree_t *w = ptree_create_symbol((yyvsp[-3].str));
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_OBJECT_LITERAL, 4, w, left, (yyvsp[-1].ptree), right);
     }
-#line 2902 "bison.tab.c"
+#line 2903 "bison.tab.c"
     break;
 
   case 120: /* keyvalue_list: keyvalue  */
-#line 574 "./src/parser/gens/bison.y"
+#line 575 "./src/parser/gens/bison.y"
              {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2910 "bison.tab.c"
+#line 2911 "bison.tab.c"
     break;
 
   case 121: /* keyvalue_list: keyvalue_list ',' keyvalue  */
-#line 577 "./src/parser/gens/bison.y"
+#line 578 "./src/parser/gens/bison.y"
                                  {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 2918 "bison.tab.c"
+#line 2919 "bison.tab.c"
     break;
 
   case 122: /* keyvalue_list: keyvalue_list ','  */
-#line 580 "./src/parser/gens/bison.y"
+#line 581 "./src/parser/gens/bison.y"
                         {
         (yyval.ptree) = (yyvsp[-1].ptree);
     }
-#line 2926 "bison.tab.c"
+#line 2927 "bison.tab.c"
     break;
 
   case 123: /* keyvalue_list: %empty  */
-#line 583 "./src/parser/gens/bison.y"
+#line 584 "./src/parser/gens/bison.y"
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);
     }
-#line 2934 "bison.tab.c"
+#line 2935 "bison.tab.c"
     break;
 
   case 124: /* keyvalue: property_name ':' assignment_expression  */
-#line 589 "./src/parser/gens/bison.y"
+#line 590 "./src/parser/gens/bison.y"
                                             {
         ptree_t *c = ptree_create(PTREE_COLON, 0);
         (yyval.ptree) = ptree_create(PTREE_KEYVALUE, 3, (yyvsp[-2].ptree), c, (yyvsp[0].ptree));
     }
-#line 2943 "bison.tab.c"
+#line 2944 "bison.tab.c"
     break;
 
   case 125: /* property_name: WORD  */
-#line 596 "./src/parser/gens/bison.y"
+#line 597 "./src/parser/gens/bison.y"
          {
         (yyval.ptree) = ptree_create_symbol((yyvsp[0].str));
     }
-#line 2951 "bison.tab.c"
+#line 2952 "bison.tab.c"
     break;
 
   case 126: /* property_name: STRING  */
-#line 599 "./src/parser/gens/bison.y"
+#line 600 "./src/parser/gens/bison.y"
              {
         (yyval.ptree) = ptree_create_str((yyvsp[0].str));
     }
-#line 2959 "bison.tab.c"
+#line 2960 "bison.tab.c"
     break;
 
   case 127: /* property_name: NUMBER  */
-#line 602 "./src/parser/gens/bison.y"
+#line 603 "./src/parser/gens/bison.y"
              {
         (yyval.ptree) = ptree_create_num((yyvsp[0].num));
     }
-#line 2967 "bison.tab.c"
+#line 2968 "bison.tab.c"
     break;
 
   case 128: /* block_statement: '{' source_elements '}'  */
-#line 608 "./src/parser/gens/bison.y"
+#line 609 "./src/parser/gens/bison.y"
                             {
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_LBRACE, 0);
 
         (yyval.ptree) = ptree_create(PTREE_BLOCK, 3, left, (yyvsp[-1].ptree), right);
     }
-#line 2978 "bison.tab.c"
+#line 2979 "bison.tab.c"
     break;
 
   case 129: /* block_statement: '{' '}'  */
-#line 614 "./src/parser/gens/bison.y"
+#line 615 "./src/parser/gens/bison.y"
               {
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_LBRACE, 0);
         ptree_t *empty = ptree_create(PTREE_EMPTY, 0);
         (yyval.ptree) = ptree_create(PTREE_BLOCK, 3, left, empty, right);
     }
-#line 2989 "bison.tab.c"
+#line 2990 "bison.tab.c"
     break;
 
   case 130: /* jump_statement: return_statement  */
-#line 623 "./src/parser/gens/bison.y"
+#line 624 "./src/parser/gens/bison.y"
                      {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2997 "bison.tab.c"
+#line 2998 "bison.tab.c"
     break;
 
   case 131: /* jump_statement: break_statement  */
-#line 626 "./src/parser/gens/bison.y"
+#line 627 "./src/parser/gens/bison.y"
                       {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3005 "bison.tab.c"
+#line 3006 "bison.tab.c"
     break;
 
   case 132: /* jump_statement: continue_statement  */
-#line 629 "./src/parser/gens/bison.y"
+#line 630 "./src/parser/gens/bison.y"
                          {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3013 "bison.tab.c"
+#line 3014 "bison.tab.c"
     break;
 
   case 133: /* return_statement: RETURN ';'  */
-#line 634 "./src/parser/gens/bison.y"
+#line 635 "./src/parser/gens/bison.y"
                {
         ptree_t *empty = ptree_create(PTREE_EMPTY, 0);
         (yyval.ptree) = ptree_create(PTREE_RETURN, 1, empty);
     }
-#line 3022 "bison.tab.c"
+#line 3023 "bison.tab.c"
     break;
 
   case 134: /* return_statement: RETURN expression ';'  */
-#line 638 "./src/parser/gens/bison.y"
+#line 639 "./src/parser/gens/bison.y"
                             {
         (yyval.ptree) = ptree_create(PTREE_RETURN, 1, (yyvsp[-1].ptree));
     }
-#line 3030 "bison.tab.c"
+#line 3031 "bison.tab.c"
     break;
 
   case 135: /* break_statement: BREAK ';'  */
-#line 644 "./src/parser/gens/bison.y"
+#line 645 "./src/parser/gens/bison.y"
               {
         (yyval.ptree) = ptree_create(PTREE_BREAK, 0);
     }
-#line 3038 "bison.tab.c"
+#line 3039 "bison.tab.c"
     break;
 
   case 136: /* continue_statement: CONTINUE ';'  */
-#line 650 "./src/parser/gens/bison.y"
+#line 651 "./src/parser/gens/bison.y"
                  {
         (yyval.ptree) = ptree_create(PTREE_CONTINUE, 0);
     }
-#line 3046 "bison.tab.c"
+#line 3047 "bison.tab.c"
     break;
 
   case 137: /* labeled_statement: WORD ':' statement  */
-#line 656 "./src/parser/gens/bison.y"
+#line 657 "./src/parser/gens/bison.y"
                        {
         ptree_t *w = ptree_create_symbol((yyvsp[-2].str));
         ptree_t *c = ptree_create(PTREE_COLON, 0);
         (yyval.ptree) = ptree_create(PTREE_LABEL, 3, w, c, (yyvsp[0].ptree));
     }
-#line 3056 "bison.tab.c"
+#line 3057 "bison.tab.c"
     break;
 
   case 138: /* labeled_statement: CASE constant_expression ':' statement  */
-#line 661 "./src/parser/gens/bison.y"
+#line 662 "./src/parser/gens/bison.y"
                                              {
         ptree_t *c = ptree_create(PTREE_COLON, 0);
         (yyval.ptree) = ptree_create(PTREE_CASE_LABEL, 3, (yyvsp[-2].ptree), c, (yyvsp[0].ptree));
     }
-#line 3065 "bison.tab.c"
+#line 3066 "bison.tab.c"
     break;
 
   case 139: /* labeled_statement: DEFAULT ':' statement  */
-#line 665 "./src/parser/gens/bison.y"
+#line 666 "./src/parser/gens/bison.y"
                             {
         ptree_t *c = ptree_create(PTREE_COLON, 0);
         (yyval.ptree) = ptree_create(PTREE_DEFAULT_LABEL, 2, c, (yyvsp[0].ptree));
     }
-#line 3074 "bison.tab.c"
+#line 3075 "bison.tab.c"
     break;
 
   case 140: /* selection_statement: IF '(' expression ')' statement  */
-#line 673 "./src/parser/gens/bison.y"
+#line 674 "./src/parser/gens/bison.y"
     {
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_LBRACE, 0);
 
         (yyval.ptree) = ptree_create(PTREE_IF, 4, left, (yyvsp[-2].ptree), right, (yyvsp[0].ptree));
     }
-#line 3085 "bison.tab.c"
+#line 3086 "bison.tab.c"
     break;
 
   case 141: /* selection_statement: IF '(' expression ')' statement ELSE statement  */
-#line 679 "./src/parser/gens/bison.y"
+#line 680 "./src/parser/gens/bison.y"
                                                      {
         ptree_t *e = ptree_create(PTREE_ELSE, 0);
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
@@ -3093,32 +3094,32 @@ yyreduce:
 
         (yyval.ptree) = ptree_create(PTREE_IF_ELSE, 6, left, (yyvsp[-4].ptree), right, (yyvsp[-2].ptree), e, (yyvsp[0].ptree));
     }
-#line 3097 "bison.tab.c"
+#line 3098 "bison.tab.c"
     break;
 
   case 142: /* selection_statement: SWITCH '(' expression ')' statement  */
-#line 686 "./src/parser/gens/bison.y"
+#line 687 "./src/parser/gens/bison.y"
                                           {
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_LBRACE, 0);
 
         (yyval.ptree) = ptree_create(PTREE_SWITCH, 4, left, (yyvsp[-2].ptree), right, (yyvsp[0].ptree));
     }
-#line 3108 "bison.tab.c"
+#line 3109 "bison.tab.c"
     break;
 
   case 143: /* iteration_statement: WHILE '(' expression ')' statement  */
-#line 695 "./src/parser/gens/bison.y"
+#line 696 "./src/parser/gens/bison.y"
                                        {
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_WHILE, 4, left, (yyvsp[-2].ptree), right, (yyvsp[0].ptree));
     }
-#line 3118 "bison.tab.c"
+#line 3119 "bison.tab.c"
     break;
 
   case 144: /* iteration_statement: DO statement WHILE '(' expression ')' ';'  */
-#line 700 "./src/parser/gens/bison.y"
+#line 701 "./src/parser/gens/bison.y"
                                                 {
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
@@ -3127,11 +3128,11 @@ yyreduce:
 
         (yyval.ptree) = ptree_create(PTREE_DO, 6, (yyvsp[-5].ptree), wh, left, (yyvsp[-2].ptree), right, sc);
     }
-#line 3131 "bison.tab.c"
+#line 3132 "bison.tab.c"
     break;
 
   case 145: /* iteration_statement: FOR '(' for_initialization ';' optional_expression ';' optional_expression ')' statement  */
-#line 708 "./src/parser/gens/bison.y"
+#line 709 "./src/parser/gens/bison.y"
                                                                                                {
         ptree_t *sc = ptree_create(PTREE_SEMICOLON, 0);
         ptree_t *sc2 = ptree_create(PTREE_SEMICOLON, 0);
@@ -3139,473 +3140,473 @@ yyreduce:
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_FOR, 8, left, (yyvsp[-6].ptree), sc, (yyvsp[-4].ptree), sc2, (yyvsp[-2].ptree), right, (yyvsp[0].ptree));
     }
-#line 3143 "bison.tab.c"
+#line 3144 "bison.tab.c"
     break;
 
   case 146: /* for_initialization: optional_expression  */
-#line 718 "./src/parser/gens/bison.y"
+#line 719 "./src/parser/gens/bison.y"
                         {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3151 "bison.tab.c"
+#line 3152 "bison.tab.c"
     break;
 
   case 147: /* for_initialization: variable_statement  */
-#line 721 "./src/parser/gens/bison.y"
+#line 722 "./src/parser/gens/bison.y"
                          {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3159 "bison.tab.c"
+#line 3160 "bison.tab.c"
     break;
 
   case 148: /* variable_statement: LET variable_list  */
-#line 727 "./src/parser/gens/bison.y"
+#line 728 "./src/parser/gens/bison.y"
                       {
         ptree_t *sc = ptree_create(PTREE_SEMICOLON, 0);
         (yyval.ptree) = ptree_create(PTREE_LET_STATEMENT, 2, (yyvsp[0].ptree), sc);
     }
-#line 3168 "bison.tab.c"
+#line 3169 "bison.tab.c"
     break;
 
   case 149: /* variable_statement: CONST variable_list  */
-#line 731 "./src/parser/gens/bison.y"
+#line 732 "./src/parser/gens/bison.y"
                           {
         ptree_t *sc = ptree_create(PTREE_SEMICOLON, 0);
         (yyval.ptree) = ptree_create(PTREE_CONST_STATEMENT, 2, (yyvsp[0].ptree), sc);
     }
-#line 3177 "bison.tab.c"
+#line 3178 "bison.tab.c"
     break;
 
   case 150: /* variable_list: variable  */
-#line 738 "./src/parser/gens/bison.y"
+#line 739 "./src/parser/gens/bison.y"
              {
         (yyval.ptree) = ptree_create(PTREE_VARIABLE_LIST, 1, (yyvsp[0].ptree));
     }
-#line 3185 "bison.tab.c"
+#line 3186 "bison.tab.c"
     break;
 
   case 151: /* variable_list: variable_list ',' variable  */
-#line 741 "./src/parser/gens/bison.y"
+#line 742 "./src/parser/gens/bison.y"
                                  {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 3193 "bison.tab.c"
+#line 3194 "bison.tab.c"
     break;
 
   case 152: /* variable: identifier  */
-#line 747 "./src/parser/gens/bison.y"
+#line 748 "./src/parser/gens/bison.y"
                {
         (yyval.ptree) = ptree_create(PTREE_VARIABLE_UNASSIGNED, 1, (yyvsp[0].ptree));
     }
-#line 3201 "bison.tab.c"
+#line 3202 "bison.tab.c"
     break;
 
   case 153: /* variable: identifier '=' assignment_expression  */
-#line 750 "./src/parser/gens/bison.y"
+#line 751 "./src/parser/gens/bison.y"
                                            {
         ptree_t *eq = ptree_create(PTREE_ASSIGN, 0);
         (yyval.ptree) = ptree_create(PTREE_VARIABLE_ASSIGNED, 3, (yyvsp[-2].ptree), eq, (yyvsp[0].ptree));
     }
-#line 3210 "bison.tab.c"
+#line 3211 "bison.tab.c"
     break;
 
   case 154: /* identifier: WORD type_annotation  */
-#line 757 "./src/parser/gens/bison.y"
+#line 758 "./src/parser/gens/bison.y"
                          {
         ptree_t *w = ptree_create_symbol((yyvsp[-1].str));
         (yyval.ptree) = ptree_create(PTREE_IDENTIFIER, 2, w, (yyvsp[0].ptree));
     }
-#line 3219 "bison.tab.c"
+#line 3220 "bison.tab.c"
     break;
 
   case 155: /* type_annotation: ':' type  */
-#line 764 "./src/parser/gens/bison.y"
+#line 765 "./src/parser/gens/bison.y"
              {
         ptree_t *sc = ptree_create(PTREE_COLON, 0);
         (yyval.ptree) = ptree_create(PTREE_TYPE_ANNOTATION, 2, sc, (yyvsp[0].ptree)); 
     }
-#line 3228 "bison.tab.c"
+#line 3229 "bison.tab.c"
     break;
 
   case 156: /* type_annotation: %empty  */
-#line 768 "./src/parser/gens/bison.y"
+#line 769 "./src/parser/gens/bison.y"
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);     
     }
-#line 3236 "bison.tab.c"
+#line 3237 "bison.tab.c"
     break;
 
   case 157: /* type: primitive_type  */
-#line 774 "./src/parser/gens/bison.y"
+#line 775 "./src/parser/gens/bison.y"
                    {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3244 "bison.tab.c"
+#line 3245 "bison.tab.c"
     break;
 
   case 158: /* type: array_type  */
-#line 777 "./src/parser/gens/bison.y"
+#line 778 "./src/parser/gens/bison.y"
                  {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3252 "bison.tab.c"
+#line 3253 "bison.tab.c"
     break;
 
   case 159: /* type: tuple_type  */
-#line 780 "./src/parser/gens/bison.y"
+#line 781 "./src/parser/gens/bison.y"
                  {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3260 "bison.tab.c"
+#line 3261 "bison.tab.c"
     break;
 
   case 160: /* type: function_type  */
-#line 783 "./src/parser/gens/bison.y"
+#line 784 "./src/parser/gens/bison.y"
                     {
         (yyval.ptree) = (yyvsp[0].ptree);        
     }
-#line 3268 "bison.tab.c"
+#line 3269 "bison.tab.c"
     break;
 
   case 161: /* type: type_reference  */
-#line 786 "./src/parser/gens/bison.y"
+#line 787 "./src/parser/gens/bison.y"
                      {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3276 "bison.tab.c"
+#line 3277 "bison.tab.c"
     break;
 
   case 162: /* primitive_type: T_VOID  */
-#line 792 "./src/parser/gens/bison.y"
+#line 793 "./src/parser/gens/bison.y"
            { 
         (yyval.ptree) = ptree_create(PTREE_VOID_TYPE, 0);
     }
-#line 3284 "bison.tab.c"
+#line 3285 "bison.tab.c"
     break;
 
   case 163: /* primitive_type: T_INTEGER  */
-#line 795 "./src/parser/gens/bison.y"
+#line 796 "./src/parser/gens/bison.y"
                 {
         (yyval.ptree) = ptree_create(PTREE_INTEGER_TYPE, 0);
     }
-#line 3292 "bison.tab.c"
+#line 3293 "bison.tab.c"
     break;
 
   case 164: /* primitive_type: T_STRING  */
-#line 798 "./src/parser/gens/bison.y"
+#line 799 "./src/parser/gens/bison.y"
                {
         (yyval.ptree) = ptree_create(PTREE_STRING_TYPE, 0);
     }
-#line 3300 "bison.tab.c"
+#line 3301 "bison.tab.c"
     break;
 
   case 165: /* primitive_type: T_BOOLEAN  */
-#line 801 "./src/parser/gens/bison.y"
+#line 802 "./src/parser/gens/bison.y"
                 {
         (yyval.ptree) = ptree_create(PTREE_BOOLEAN_TYPE, 0);
     }
-#line 3308 "bison.tab.c"
+#line 3309 "bison.tab.c"
     break;
 
   case 166: /* array_type: type '[' ']'  */
-#line 807 "./src/parser/gens/bison.y"
+#line 808 "./src/parser/gens/bison.y"
                  {
         ptree_t *lb = ptree_create(PTREE_LBRACKET, 0);
         ptree_t *rb = ptree_create(PTREE_RBRACKET, 0);
         (yyval.ptree) = ptree_create(PTREE_ARRAY_TYPE, 3, (yyvsp[-2].ptree), lb, rb);
     }
-#line 3318 "bison.tab.c"
+#line 3319 "bison.tab.c"
     break;
 
   case 167: /* tuple_type: type '[' NUMBER ']'  */
-#line 815 "./src/parser/gens/bison.y"
+#line 816 "./src/parser/gens/bison.y"
                         {
         ptree_t *num = ptree_create_num((yyvsp[-1].num));
         ptree_t *lb =ptree_create(PTREE_LBRACKET, 0);
         ptree_t *rb =ptree_create(PTREE_RBRACKET, 0);
         (yyval.ptree) = ptree_create(PTREE_TUPLE_TYPE, 4, (yyvsp[-3].ptree), lb, num, rb);
     }
-#line 3329 "bison.tab.c"
+#line 3330 "bison.tab.c"
     break;
 
   case 168: /* function_type: type BACKWARD_ARROW '(' types_list ')'  */
-#line 824 "./src/parser/gens/bison.y"
+#line 825 "./src/parser/gens/bison.y"
                                            {
         ptree_t *a = ptree_create(PTREE_BACKWARD_ARROW, 0);
         ptree_t *lb = ptree_create(PTREE_LPRN, 0);
         ptree_t *rb = ptree_create(PTREE_RPRN, 0);
         (yyval.ptree) = ptree_create(PTREE_FUNCTION_TYPE, 5, (yyvsp[-4].ptree), a, lb, (yyvsp[-1].ptree), rb);
     }
-#line 3340 "bison.tab.c"
+#line 3341 "bison.tab.c"
     break;
 
   case 169: /* types_list: type  */
-#line 833 "./src/parser/gens/bison.y"
+#line 834 "./src/parser/gens/bison.y"
          {
         (yyval.ptree) = ptree_create(PTREE_TYPE_LIST, 1, (yyvsp[0].ptree));
     }
-#line 3348 "bison.tab.c"
+#line 3349 "bison.tab.c"
     break;
 
   case 170: /* types_list: types_list ',' type  */
-#line 836 "./src/parser/gens/bison.y"
+#line 837 "./src/parser/gens/bison.y"
                           {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 3356 "bison.tab.c"
+#line 3357 "bison.tab.c"
     break;
 
   case 171: /* types_list: %empty  */
-#line 839 "./src/parser/gens/bison.y"
+#line 840 "./src/parser/gens/bison.y"
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0); 
     }
-#line 3364 "bison.tab.c"
+#line 3365 "bison.tab.c"
     break;
 
   case 172: /* type_reference: WORD  */
-#line 845 "./src/parser/gens/bison.y"
+#line 846 "./src/parser/gens/bison.y"
          {
         ptree_t *w = ptree_create_symbol((yyvsp[0].str));
         (yyval.ptree) = ptree_create(PTREE_TYPE_REFERENCE, 1, w);
     }
-#line 3373 "bison.tab.c"
+#line 3374 "bison.tab.c"
     break;
 
   case 173: /* type_reference: WORD typed_arguments  */
-#line 849 "./src/parser/gens/bison.y"
+#line 850 "./src/parser/gens/bison.y"
                            {
         ptree_t *w = ptree_create_symbol((yyvsp[-1].str));
         (yyval.ptree) = ptree_create(PTREE_TYPE_REFERENCE, 2, w, (yyvsp[0].ptree));
     }
-#line 3382 "bison.tab.c"
+#line 3383 "bison.tab.c"
     break;
 
   case 174: /* typed_arguments: '<' types_list '>'  */
-#line 856 "./src/parser/gens/bison.y"
+#line 857 "./src/parser/gens/bison.y"
                        {
         ptree_t *l = ptree_create(PTREE_LESS, 0);
         ptree_t *g = ptree_create(PTREE_GREATER, 0);
         (yyval.ptree) = ptree_create(PTREE_TYPED_ARGUMENTS, 3, l, (yyvsp[-1].ptree), g);
     }
-#line 3392 "bison.tab.c"
+#line 3393 "bison.tab.c"
     break;
 
   case 175: /* typed_parameters: '<' type_params '>'  */
-#line 864 "./src/parser/gens/bison.y"
+#line 865 "./src/parser/gens/bison.y"
                         {
         ptree_t *l = ptree_create(PTREE_LESS, 0);
         ptree_t *g = ptree_create(PTREE_GREATER, 0);
         (yyval.ptree) = ptree_create(PTREE_TYPED_PARAMETERS, 3, l, (yyvsp[-1].ptree), g); 
     }
-#line 3402 "bison.tab.c"
+#line 3403 "bison.tab.c"
     break;
 
   case 176: /* typed_parameters: %empty  */
-#line 869 "./src/parser/gens/bison.y"
+#line 870 "./src/parser/gens/bison.y"
                   {
          (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);     
     }
-#line 3410 "bison.tab.c"
+#line 3411 "bison.tab.c"
     break;
 
   case 177: /* type_params: WORD  */
-#line 875 "./src/parser/gens/bison.y"
+#line 876 "./src/parser/gens/bison.y"
          {
         ptree_t *w = ptree_create_symbol((yyvsp[0].str));
         (yyval.ptree) = ptree_create(PTREE_TYPE_PARAMS, 1, w); 
     }
-#line 3419 "bison.tab.c"
+#line 3420 "bison.tab.c"
     break;
 
   case 178: /* type_params: type_params ',' WORD  */
-#line 879 "./src/parser/gens/bison.y"
+#line 880 "./src/parser/gens/bison.y"
                            {
         ptree_t *w = ptree_create_symbol((yyvsp[0].str));
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, w);
     }
-#line 3428 "bison.tab.c"
+#line 3429 "bison.tab.c"
     break;
 
   case 179: /* type_statement: TYPE WORD typed_parameters '=' type ';'  */
-#line 886 "./src/parser/gens/bison.y"
+#line 887 "./src/parser/gens/bison.y"
                                             {
         ptree_t *w = ptree_create_symbol((yyvsp[-4].str));
         ptree_t *eq = ptree_create(PTREE_ASSIGN, 0);
         ptree_t *sc = ptree_create(PTREE_SEMICOLON, 0);
         (yyval.ptree) = ptree_create(PTREE_TYPE_ALIAS, 5, w, (yyvsp[-3].ptree), eq, (yyvsp[-1].ptree), sc); 
     }
-#line 3439 "bison.tab.c"
+#line 3440 "bison.tab.c"
     break;
 
   case 180: /* struct_statement: STRUCT WORD ';'  */
-#line 895 "./src/parser/gens/bison.y"
+#line 896 "./src/parser/gens/bison.y"
                     {
         ptree_t *w = ptree_create_symbol((yyvsp[-1].str));
         (yyval.ptree) = ptree_create(PTREE_UNIT_STRUCT, 1, w);
     }
-#line 3448 "bison.tab.c"
+#line 3449 "bison.tab.c"
     break;
 
   case 181: /* struct_statement: STRUCT WORD typed_parameters '{' field_list '}'  */
-#line 899 "./src/parser/gens/bison.y"
+#line 900 "./src/parser/gens/bison.y"
                                                       {
         ptree_t *w = ptree_create_symbol((yyvsp[-4].str));
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_LBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_STRUCT, 5, w, (yyvsp[-3].ptree), left, (yyvsp[-1].ptree), right);
     }
-#line 3459 "bison.tab.c"
+#line 3460 "bison.tab.c"
     break;
 
   case 182: /* union_statement: UNION WORD typed_parameters '{' field_list '}'  */
-#line 908 "./src/parser/gens/bison.y"
+#line 909 "./src/parser/gens/bison.y"
                                                    {
         ptree_t *w = ptree_create_symbol((yyvsp[-4].str));
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_LBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_UNION, 5, w, (yyvsp[-3].ptree), left, (yyvsp[-1].ptree), right);
     }
-#line 3470 "bison.tab.c"
+#line 3471 "bison.tab.c"
     break;
 
   case 183: /* field_list: identifier  */
-#line 917 "./src/parser/gens/bison.y"
+#line 918 "./src/parser/gens/bison.y"
                {
         (yyval.ptree) = ptree_create(PTREE_FIELDS, 1, (yyvsp[0].ptree));
     }
-#line 3478 "bison.tab.c"
+#line 3479 "bison.tab.c"
     break;
 
   case 184: /* field_list: field_list ',' identifier  */
-#line 920 "./src/parser/gens/bison.y"
+#line 921 "./src/parser/gens/bison.y"
                                 {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 3486 "bison.tab.c"
+#line 3487 "bison.tab.c"
     break;
 
   case 185: /* field_list: field_list ','  */
-#line 923 "./src/parser/gens/bison.y"
+#line 924 "./src/parser/gens/bison.y"
                      {
         (yyval.ptree) = (yyvsp[-1].ptree);
     }
-#line 3494 "bison.tab.c"
+#line 3495 "bison.tab.c"
     break;
 
   case 186: /* field_list: %empty  */
-#line 926 "./src/parser/gens/bison.y"
+#line 927 "./src/parser/gens/bison.y"
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);     
     }
-#line 3502 "bison.tab.c"
+#line 3503 "bison.tab.c"
     break;
 
   case 187: /* enum_statement: ENUM WORD typed_parameters '{' enum_members '}'  */
-#line 932 "./src/parser/gens/bison.y"
+#line 933 "./src/parser/gens/bison.y"
                                                     {
         ptree_t *w = ptree_create_symbol((yyvsp[-4].str));
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_LBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_ENUM, 5, w, (yyvsp[-3].ptree), left, (yyvsp[-1].ptree), right);
     }
-#line 3513 "bison.tab.c"
+#line 3514 "bison.tab.c"
     break;
 
   case 188: /* enum_members: enum_member  */
-#line 941 "./src/parser/gens/bison.y"
+#line 942 "./src/parser/gens/bison.y"
                 {
         (yyval.ptree) = ptree_create(PTREE_ENUM_MEMBERS, 1, (yyvsp[0].ptree));
     }
-#line 3521 "bison.tab.c"
+#line 3522 "bison.tab.c"
     break;
 
   case 189: /* enum_members: enum_members ',' enum_member  */
-#line 944 "./src/parser/gens/bison.y"
+#line 945 "./src/parser/gens/bison.y"
                                    {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 3529 "bison.tab.c"
+#line 3530 "bison.tab.c"
     break;
 
   case 190: /* enum_members: enum_members ','  */
-#line 947 "./src/parser/gens/bison.y"
+#line 948 "./src/parser/gens/bison.y"
                        {
         (yyval.ptree) = (yyvsp[-1].ptree);
     }
-#line 3537 "bison.tab.c"
+#line 3538 "bison.tab.c"
     break;
 
   case 191: /* enum_member: WORD  */
-#line 953 "./src/parser/gens/bison.y"
+#line 954 "./src/parser/gens/bison.y"
          {
         (yyval.ptree) = ptree_create_symbol((yyvsp[0].str));
     }
-#line 3545 "bison.tab.c"
+#line 3546 "bison.tab.c"
     break;
 
   case 192: /* enum_member: WORD '(' types_list ')'  */
-#line 956 "./src/parser/gens/bison.y"
+#line 957 "./src/parser/gens/bison.y"
                               {
         ptree_t *w = ptree_create_symbol((yyvsp[-3].str));
         ptree_t *left = ptree_create(PTREE_LPRN, 0);
         ptree_t *right = ptree_create(PTREE_RPRN, 0);
         (yyval.ptree) = ptree_create(PTREE_ENUM_STRUCT, 4, w, left, (yyvsp[-1].ptree), right);
     }
-#line 3556 "bison.tab.c"
+#line 3557 "bison.tab.c"
     break;
 
   case 193: /* enum_member: WORD '{' field_list '}'  */
-#line 962 "./src/parser/gens/bison.y"
+#line 963 "./src/parser/gens/bison.y"
                               {
         ptree_t *w = ptree_create_symbol((yyvsp[-3].str));
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_ENUM_NAMED_STRUCT, 4, w, left, (yyvsp[-1].ptree), right);
     }
-#line 3567 "bison.tab.c"
+#line 3568 "bison.tab.c"
     break;
 
   case 194: /* enum_member: WORD '=' NUMBER  */
-#line 968 "./src/parser/gens/bison.y"
+#line 969 "./src/parser/gens/bison.y"
                       {
         ptree_t *w = ptree_create_symbol((yyvsp[-2].str));
         ptree_t *num = ptree_create_num((yyvsp[0].num));
         ptree_t *eq = ptree_create(PTREE_ASSIGN, 0);
         (yyval.ptree) = ptree_create(PTREE_ENUM_DEFAULT, 3, w, eq, num);
     }
-#line 3578 "bison.tab.c"
+#line 3579 "bison.tab.c"
     break;
 
   case 195: /* methods_statement: METHODS WORD '{' method_list '}'  */
-#line 977 "./src/parser/gens/bison.y"
+#line 978 "./src/parser/gens/bison.y"
                                      {
         ptree_t *w = ptree_create_symbol((yyvsp[-3].str));
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_METHODS, 4, w, left, (yyvsp[-1].ptree), right);
     }
-#line 3589 "bison.tab.c"
+#line 3590 "bison.tab.c"
     break;
 
   case 196: /* method_list: function_declaration  */
-#line 986 "./src/parser/gens/bison.y"
+#line 987 "./src/parser/gens/bison.y"
                          {
         (yyval.ptree) = ptree_create(PTREE_METHODS_LIST, 1, (yyvsp[0].ptree));
     }
-#line 3597 "bison.tab.c"
+#line 3598 "bison.tab.c"
     break;
 
   case 197: /* method_list: method_list function_declaration  */
-#line 989 "./src/parser/gens/bison.y"
+#line 990 "./src/parser/gens/bison.y"
                                        {
         (yyval.ptree) = ptree_add((yyvsp[-1].ptree), 1, (yyvsp[0].ptree));
     }
-#line 3605 "bison.tab.c"
+#line 3606 "bison.tab.c"
     break;
 
 
-#line 3609 "bison.tab.c"
+#line 3610 "bison.tab.c"
 
       default: break;
     }
@@ -3834,4 +3835,4 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 994 "./src/parser/gens/bison.y"
+#line 995 "./src/parser/gens/bison.y"

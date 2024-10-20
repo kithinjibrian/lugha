@@ -18,6 +18,9 @@
         "sema.h": "c",
         "arena.h": "c",
         "symtab.h": "c",
-        "visitor.h": "c"
+        "visitor.h": "c",
+        "array": "cpp",
+        "functional": "cpp",
+        "tuple": "cpp"
     }
 }

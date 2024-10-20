@@ -25,6 +25,16 @@ define_visitor(def_binary_expression, node_binary_t)
     return NULL;
 }
 
+define_visitor(def_ternary, node_ternary_t)
+{
+    (void)visitor;
+    (void)ast;
+    ast->condition->accept(ast->condition, visitor);
+    ast->then_block->accept(ast->then_block, visitor);
+    ast->else_block->accept(ast->else_block, visitor);
+    return NULL;
+}
+
 define_visitor(def_source_elements, node_statements_t)
 {
     for (int i = 0; i < ast->nch; i++)
@@ -72,10 +82,19 @@ define_visitor(def_parameter, node_parameter_t)
 
     if (ast->expression)
         ast->expression->accept(ast->expression, visitor);
+
     return NULL;
 }
 
 define_visitor(def_function_dec, node_function_dec_t)
+{
+    if (ast->parameters)
+        ast->parameters->accept(ast->parameters, visitor);
+    ast->block->accept(ast->block, visitor);
+    return NULL;
+}
+
+define_visitor(def_function_expression, node_function_expression_t)
 {
     if (ast->parameters)
         ast->parameters->accept(ast->parameters, visitor);
@@ -99,7 +118,23 @@ define_visitor(def_arguments, node_arguments_t)
     return NULL;
 }
 
+define_visitor(def_array, node_array_t)
+{
+    for (int i = 0; i < ast->nch; i++)
+    {
+        ast->elements[i]->accept(ast->elements[i], visitor);
+    }
+    return NULL;
+}
+
 define_visitor(def_number, node_number_t)
+{
+    (void)visitor;
+    (void)ast;
+    return NULL;
+}
+
+define_visitor(def_bool, node_bool_t)
 {
     (void)visitor;
     (void)ast;
@@ -139,7 +174,7 @@ define_visitor(def_entry, node_ast_t)
 {
     (void)visitor;
     (void)ast;
-    printf("%s\n", ast->type_str);
+    // /printf("%s\n", ast->type_str);
     return NULL;
 }
 

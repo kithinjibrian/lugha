@@ -49,6 +49,7 @@ struct node_visitor;
     TYPE(NODE_BLOCK)               \
     TYPE(NODE_BREAK)               \
     TYPE(NODE_WHILE)               \
+    TYPE(NODE_ARRAY)               \
     TYPE(NODE_NUMBER)              \
     TYPE(NODE_SYMBOL)              \
     TYPE(NODE_STRING)              \
@@ -170,6 +171,17 @@ typedef struct node_type
     union
     {
         size_t tuple_length;
+        struct // function
+        {
+            int nparams;
+            struct node_type **params;
+            struct node_type *return_type;
+        };
+        struct // array
+        {
+            int length;
+            struct node_type **elements;
+        };
     };
 } node_type_t;
 
@@ -221,6 +233,18 @@ typedef struct node_statements
     int nch;
     node_ast_t **children;
 } node_statements_t;
+
+typedef struct node_array
+{
+    node_ast_t base;
+    int nch;
+    node_ast_t **elements;
+} node_array_t;
+
+typedef struct node_array_access
+{
+    
+} node_array_access_t;
 
 typedef enum
 {
@@ -351,6 +375,7 @@ typedef struct node_visitor
     void *(*while_fun)(struct node_visitor *, struct node_while *);
     void *(*unary_fun)(struct node_visitor *, struct node_unary *);
     void *(*block_fun)(struct node_visitor *, struct node_block *);
+    void *(*array_fun)(struct node_visitor *, struct node_array *);
     void *(*continue_fun)(struct node_visitor *, struct node_ast *);
     void *(*number_fun)(struct node_visitor *, struct node_number *);
     void *(*return_fun)(struct node_visitor *, struct node_return *);

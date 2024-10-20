@@ -12,11 +12,14 @@
 define_visitor(def_eof, node_ast_t);
 define_visitor(def_entry, node_ast_t);
 define_visitor(def_leave, node_ast_t);
+define_visitor(def_bool, node_bool_t);
 define_visitor(def_block, node_block_t);
+define_visitor(def_array, node_array_t);
 define_visitor(def_string, node_string_t);
 define_visitor(def_symbol, node_symbol_t);
 define_visitor(def_number, node_number_t);
 define_visitor(def_return, node_return_t);
+define_visitor(def_ternary, node_ternary_t);
 define_visitor(def_variable, node_variable_t);
 define_visitor(def_arguments, node_arguments_t);
 define_visitor(def_parameter, node_parameter_t);
@@ -29,5 +32,6 @@ define_visitor(def_variable_list, node_variable_list_t);
 define_visitor(def_parameter_list, node_parameter_list_t);
 define_visitor(def_expression_statement, node_expression_t);
 define_visitor(def_variable_statement, node_variable_statement_t);
+define_visitor(def_function_expression, node_function_expression_t);
 
 #endif /* VISITOR_H */

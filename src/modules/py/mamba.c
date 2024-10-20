@@ -135,6 +135,23 @@ define_visitor(mamba_number, node_number_t)
     return NULL;
 }
 
+define_visitor(mamba_array, node_array_t)
+{
+    (void)visitor;
+    write_code("[");
+
+    for (int i = 0; i < ast->nch; i++)
+    {
+        ast->elements[i]->accept(ast->elements[i], visitor);
+        if (i != ast->nch - 1)
+            write_code(", ");
+    }
+
+    write_code("]");
+
+    return NULL;
+}
+
 define_visitor(mamba_boolean, node_bool_t)
 {
     (void)visitor;
@@ -536,6 +553,7 @@ node_visitor_t mamba_visitor = {
     .break_fun = mamba_break,
     .while_fun = mamba_while,
     .unary_fun = mamba_unary,
+    .array_fun = mamba_array,
     .bool_fun = mamba_boolean,
     .number_fun = mamba_number,
     .symbol_fun = mamba_symbol,

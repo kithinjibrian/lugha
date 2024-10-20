@@ -2,8 +2,5 @@
 # Author - Kithinji Brian
 # Version - 0.0.1
 
-def main(a):
-    return a + 10
-
-main(10)
+a = [1, 2, 3]
 

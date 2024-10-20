@@ -2,12 +2,17 @@
 #define DLIST_H
 
 #include <stdlib.h>
+#include <stddef.h>
 
 typedef struct dlist
 {
     struct dlist *next;
     struct dlist *prev;
 } dlist_t;
+
+#define container_of(ptr, type, member) ({ \
+    const __typeof__( ((type *)0)->member ) *__mptr = (ptr);    \
+    (type *)( (char *)__mptr - offsetof(type,member) ); })
 
 #define DLIST_HEAD_INIT(name) {&(name), &(name)}
 
@@ -37,10 +42,10 @@ typedef struct dlist
  * @param head:   head for your list.
  * @param member: name of the list within the struct type.
  */
-#define dlist_for_each_entry(pos, head, member)                   \
-    for (pos = dlist_entry((head)->next, typeof(*(pos)), member); \
-         &pos->member != (head);                                  \
-         pos = dlist_entry((pos)->member.next, typeof(*(pos)), member))
+#define dlist_for_each_entry(pos, head, member)                       \
+    for (pos = dlist_entry((head)->next, __typeof__(*(pos)), member); \
+         &pos->member != (head);                                      \
+         pos = dlist_entry((pos)->member.next, __typeof__(*(pos)), member))
 
 /**
  * dlist_next_entry - get the next element in list
@@ -48,7 +53,7 @@ typedef struct dlist
  * @param member: name of the list_head within the struct.
  */
 #define dlist_next_entry(pos, member) \
-    dlist_entry((pos)->member.next, typeof(*(pos)), member)
+    dlist_entry((pos)->member.next, __typeof__(*(pos)), member)
 
 /**
  * list_first_entry - get the first element from a list
@@ -82,7 +87,7 @@ typedef struct dlist
  * Note, that list is expected to be not empty.
  */
 #define dlist_next_entry_circular(pos, head, member) \
-    (dlist_is_last(&(pos)->member, head) ? dlist_first_entry(head, typeof(*(pos)), member) : dlist_next_entry(pos, member))
+    (dlist_is_last(&(pos)->member, head) ? dlist_first_entry(head, __typeof__(*(pos)), member) : dlist_next_entry(pos, member))
 
 /**
  * dlist_prev_entry - get the prev element in list
@@ -90,7 +95,7 @@ typedef struct dlist
  * @param member: name of the list_head within the struct.
  */
 #define dlist_prev_entry(pos, member) \
-    dlist_entry((pos)->member.prev, typeof(*(pos)), member)
+    dlist_entry((pos)->member.prev, __typeof__(*(pos)), member)
 
 static inline void init_dlist_head(dlist_t *list)
 {

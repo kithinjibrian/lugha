@@ -88,8 +88,7 @@ HEX         0[xX]{HEXDIGIT}+
 "let"                   { return LET; }
 "fun"                   { return FUN; }
 "for"                   { return FOR; }
-"str"                   { return T_STRING; }
-"num"                   { return T_INTEGER; }
+"int"                   { return T_INTEGER; }
 "type"                  { return TYPE; }
 "const"                 { return CONST; }
 "else"                  { return ELSE; }
@@ -98,6 +97,7 @@ HEX         0[xX]{HEXDIGIT}+
 "case"                  { return CASE; }
 "enum"                  { return ENUM; }
 "true"                  { return TRUE_VAL; }
+"string"                   { return T_STRING; }
 "false"                 { return FALSE_VAL; }
 "break"                 { return BREAK; }
 "while"                 { return WHILE; }
