@@ -75,7 +75,7 @@ static hset_t *tvs_type(type_t *type)
         hset_t *result = type_set();
         for (int i = 0; i < type->con.count; i++)
         {
-            hset_t *subset = tvs(type->con.types[i]);
+            hset_t *subset = tvs_type(type->con.types[i]);
             hset_t *new_result = hset_union(result, subset);
 
             result = new_result;
@@ -90,14 +90,14 @@ static hset_t *tvs_type(type_t *type)
 static hset_t *tvs_scheme(scheme_t *scheme)
 {
     hset_t *set = tvs_type(scheme->type);
-    return set_difference(set, scheme->set);
+    return hset_difference(set, scheme->set);
 }
 
 static hset_t *tvs_constraint(constraint_t *constraint)
 {
     hset_t *tvs1 = tvs_type(constraint->left);
     hset_t *tvs2 = tvs_type(constraint->right);
-    hset_t *result = set_union(tvs1, tvs2);
+    hset_t *result = hset_union(tvs1, tvs2);
 
     return result;
 }
@@ -121,6 +121,7 @@ static hset_t *tvs(d_value_t *val)
 
 static scheme_t generalize(type_t *type)
 {
+    (void)type;
     return (scheme_t){0};
 }
 
