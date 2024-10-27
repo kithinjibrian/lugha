@@ -36,6 +36,7 @@ extern char *filename_g;
 
 int count_digits(int num);
 void yyerror(const char *msg);
+
 void error(YYLTYPE loc, error_type_e type, const char *msg, ...);
 
 #endif /* ERROR_H */
