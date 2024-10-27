@@ -33,6 +33,7 @@ typedef struct dlist
  * @param type:   type of the struct this is embedded in.
  * @param member: name of the list within the struct type.
  */
+ 
 #define dlist_entry(ptr, type, member) \
     container_of(ptr, type, member)
 
