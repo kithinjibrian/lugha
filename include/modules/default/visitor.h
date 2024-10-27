@@ -26,6 +26,7 @@ define_visitor(def_parameter, node_parameter_t);
 define_visitor(def_expression, node_expression_t);
 define_visitor(def_binary_expression, node_binary_t);
 define_visitor(def_function_dec, node_function_dec_t);
+define_visitor(def_array_access, node_array_access_t);
 define_visitor(def_source_elements, node_statements_t);
 define_visitor(def_function_call, node_function_call_t);
 define_visitor(def_variable_list, node_variable_list_t);

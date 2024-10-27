@@ -5,10 +5,7 @@
 
 typedef struct proc_ast
 {
-    const char *fullname;
-    const char *shortname;
-    const char *doc;
-    const char *author;
+    PROLOGUE;
     void *(*init)(ptree_t *ptree);
     void (*exit)(void);
 } proc_ast_t;

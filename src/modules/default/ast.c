@@ -40,6 +40,7 @@ DEFINE_ACCEPT(accept_identifier, node_identifier_t, identifier_fun);
 DEFINE_ACCEPT(accept_expression, node_expression_t, expression_fun);
 DEFINE_ACCEPT(accept_statements, node_statements_t, statements_fun);
 DEFINE_ACCEPT(accept_source_elements, node_statements_t, statements_fun);
+DEFINE_ACCEPT(accept_array_access, node_array_access_t, array_access_fun);
 DEFINE_ACCEPT(accept_function_dec, node_function_dec_t, function_dec_fun);
 DEFINE_ACCEPT(accept_function_call, node_function_call_t, function_call_fun);
 DEFINE_ACCEPT(accept_variable_list, node_variable_list_t, variable_list_fun);
@@ -211,44 +212,52 @@ static inline node_ast_t *_identifier(ptree_t *ptree)
 
 static inline node_ast_t *_type_annotation(ptree_t *ptree)
 {
+    return gen_ast(ptree->children[1]);
+}
+
+static inline node_ast_t *_type_integer(ptree_t *ptree)
+{
     DEFINE_NODE_AST(ptree, node_type_t, NODE_TYPE, accept_type);
-    ptree_t *type = ptree->children[1];
+    ast->tag = TYPE_CON;
+    ast->con.name = ast_strdup(ptree->str);
+    return node_ast_cast(ast);
+}
 
-    switch (type->type)
-    {
-    case PTREE_INTEGER_TYPE:
-        ast->data_type = TYPE_INTEGER;
-        break;
-    case PTREE_VOID_TYPE:
-        ast->data_type = TYPE_VOID;
-        break;
-    case PTREE_STRING_TYPE:
-        ast->data_type = TYPE_STRING;
-        break;
-    case PTREE_BOOLEAN_TYPE:
-        ast->data_type = TYPE_BOOLEAN;
-        break;
-    case PTREE_FUNCTION_TYPE:
-        ast->data_type = TYPE_FUNCTION;
-        break;
-    case PTREE_TYPE_REFERENCE:
-        ast->data_type = TYPE_REFERENCE;
-        break;
-    case PTREE_TUPLE_TYPE:
-    {
-        ast->data_type = TYPE_TUPLE;
-        ptree_t *len = type->children[2];
-        ast->tuple_length = len->num;
-        break;
-    }
+static inline node_ast_t *_type_bool(ptree_t *ptree)
+{
+    DEFINE_NODE_AST(ptree, node_type_t, NODE_TYPE, accept_type);
+    ast->tag = TYPE_CON;
+    ast->con.name = ast_strdup(ptree->str);
+    return node_ast_cast(ast);
+}
 
-    case PTREE_ARRAY_TYPE:
-        ast->data_type = TYPE_ARRAY;
-        break;
-    default:
-        break;
-    }
+static inline node_ast_t *_type_string(ptree_t *ptree)
+{
+    DEFINE_NODE_AST(ptree, node_type_t, NODE_TYPE, accept_type);
+    ast->tag = TYPE_CON;
+    ast->con.name = ast_strdup(ptree->str);
+    return node_ast_cast(ast);
+}
 
+static inline node_ast_t *_type_function(ptree_t *ptree)
+{
+    DEFINE_NODE_AST(ptree, node_type_t, NODE_TYPE, accept_type);
+    ast->tag = TYPE_CON;
+    ast->con.name = ast_strdup("->");
+    return node_ast_cast(ast);
+}
+
+static inline node_ast_t *_type_array(ptree_t *ptree)
+{
+    DEFINE_NODE_AST(ptree, node_type_t, NODE_TYPE, accept_type);
+    ast->tag = TYPE_CON;
+    return node_ast_cast(ast);
+}
+
+static inline node_ast_t *_type_reference(ptree_t *ptree)
+{
+    DEFINE_NODE_AST(ptree, node_type_t, NODE_TYPE, accept_type);
+    ast->tag = TYPE_CON;
     return node_ast_cast(ast);
 }
 
@@ -256,6 +265,13 @@ static inline node_ast_t *_expression_statement(ptree_t *ptree)
 {
     DEFINE_NODE_AST(ptree, node_expression_t, NODE_EXPRESSION, accept_expression_statement);
     ast->expression = gen_ast(ptree->children[0]);
+    return node_ast_cast(ast);
+}
+
+static inline node_ast_t *_expression(ptree_t *ptree)
+{
+    DEFINE_NODE_AST(ptree, node_expression_t, NODE_EXPRESSION, accept_expression);
+    ast->expression = gen_ast(ptree->children[1]);
     return node_ast_cast(ast);
 }
 
@@ -573,6 +589,14 @@ static inline node_ast_t *_array_literal(ptree_t *ptree)
     return node_ast_cast(ast);
 }
 
+static inline node_ast_t *_array_access(ptree_t *ptree)
+{
+    DEFINE_NODE_AST(ptree, node_array_access_t, NODE_ARRAY_ACCESS, accept_array_access);
+    ast->array = gen_ast(ptree->children[0]);
+    ast->index = gen_ast(ptree->children[2]);
+    return node_ast_cast(ast);
+}
+
 static node_ast_t *gen_ast(ptree_t *ptree)
 {
     // printf("AST: %s\n", ptree_type_str_g[ptree->type]);
@@ -621,6 +645,8 @@ static node_ast_t *gen_ast(ptree_t *ptree)
         return _type_annotation(ptree);
     case PTREE_EXPRESSION_STATEMENT:
         return _expression_statement(ptree);
+    case PTREE_EXPRESSION:
+        return _expression(ptree);
     case PTREE_BINARY_EXPRESSION:
         return _binary_expression(ptree);
     case PTREE_FUNCTION_EXPRESSION:
@@ -649,6 +675,20 @@ static node_ast_t *gen_ast(ptree_t *ptree)
         return _ternary_expression(ptree);
     case PTREE_ARRAY_LITERAL:
         return _array_literal(ptree);
+    case PTREE_ARRAY_ACCESS:
+        return _array_access(ptree);
+    case PTREE_INTEGER_TYPE:
+        return _type_integer(ptree);
+    case PTREE_STRING_TYPE:
+        return _type_string(ptree);
+    case PTREE_ARRAY_TYPE:
+        return _type_array(ptree);
+    case PTREE_BOOLEAN_TYPE:
+        return _type_bool(ptree);
+    case PTREE_FUNCTION_TYPE:
+        return _type_function(ptree);
+    case PTREE_TYPE_REFERENCE:
+        return _type_reference(ptree);
     default:
         printf("Unknown type: %d\n", ptree->type);
         break;

@@ -21,6 +21,12 @@
         "visitor.h": "c",
         "array": "cpp",
         "functional": "cpp",
-        "tuple": "cpp"
+        "tuple": "cpp",
+        "typeinfo": "c",
+        "stdlib.h": "c",
+        "array.h": "c",
+        "stdint.h": "c",
+        "list.h": "c",
+        "vector": "c"
     }
 }

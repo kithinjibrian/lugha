@@ -185,6 +185,7 @@ node_visitor_t sema_visitor = {
     .arguments_fun = sema_arguments,
     .identifier_fun = sema_identifier,
     .binary_expression_fun = sema_binary,
+    .array_access_fun = def_array_access,
     .function_dec_fun = def_function_dec,
     .statements_fun = def_source_elements,
     .variable_list_fun = def_variable_list,

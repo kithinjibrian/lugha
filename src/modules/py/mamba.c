@@ -152,6 +152,15 @@ define_visitor(mamba_array, node_array_t)
     return NULL;
 }
 
+define_visitor(mamba_array_access, node_array_access_t)
+{
+    ast->array->accept(ast->array, visitor);
+    write_code("[");
+    ast->index->accept(ast->index, visitor);
+    write_code("]");
+    return NULL;
+}
+
 define_visitor(mamba_boolean, node_bool_t)
 {
     (void)visitor;
@@ -226,10 +235,15 @@ define_visitor(mamba_source_elements, node_statements_t)
 {
     if (!entry)
     {
-        write_code(
-            "# Black Mamba Generated Code\n"
-            "# Author - Kithinji Brian\n"
-            "# Version - 0.0.1\n\n");
+        write_code("# ");
+        write_code((char *)(mamba_visitor.fullname));
+        write_code("\n");
+        write_code("# Author - ");
+        write_code((char *)(mamba_visitor.author));
+        write_code("\n");
+        write_code("# Version - ");
+        write_code((char *)(mamba_visitor.version));
+        write_code("\n\n");
 
         entry = true;
     }
@@ -541,6 +555,7 @@ node_visitor_t mamba_visitor = {
     .shortname = "py_gen",
     .author = "Kithinji Brian",
     .doc = "Generate python code from AST",
+    .version = "0.0.1",
     .code = NULL,
     .ctx = &mamba_ctx,
     .init = mamba_init,
@@ -569,6 +584,7 @@ node_visitor_t mamba_visitor = {
     .parameter_fun = mamba_parameter,
     .expression_fun = mamba_expression,
     .identifier_fun = mamba_identifier,
+    .array_access_fun = mamba_array_access,
     .function_dec_fun = mamba_function_dec,
     .statements_fun = mamba_source_elements,
     .variable_list_fun = mamba_variable_list,

@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#include "dsa/array.h"
 #include "parser/ast.h"
 #include "dsa/sarray.h"
 #include "string/str.h"
@@ -66,6 +67,7 @@ struct node_visitor;
     TYPE(NODE_STATEMENTS)          \
     TYPE(NODE_PARAMETERS)          \
     TYPE(NODE_IDENTIFIER)          \
+    TYPE(NODE_ARRAY_ACCESS)        \
     TYPE(NODE_FUNCTION_DEC)        \
     TYPE(NODE_VARIABLE_LIST)       \
     TYPE(NODE_FUNCTION_CALL)       \
@@ -151,37 +153,28 @@ typedef struct node_identifier
     node_ast_t *type;
 } node_identifier_t;
 
-typedef enum
+typedef struct tvar
 {
-    TYPE_VOID,
-    TYPE_TUPLE,
-    TYPE_ARRAY,
-    TYPE_STRING,
-    TYPE_BOOLEAN,
-    TYPE_INTEGER,
-    TYPE_FUNCTION,
-    TYPE_UNKNOWN,
-    TYPE_REFERENCE,
-} data_type_e;
+    char *name;
+} tvar_t;
 
 typedef struct node_type
 {
     node_ast_t base;
-    data_type_e data_type;
+    enum
+    {
+        TYPE_CON,
+        TYPE_VAR
+    } tag;
     union
     {
-        size_t tuple_length;
-        struct // function
+        tvar_t var;
+        struct
         {
-            int nparams;
-            struct node_type **params;
-            struct node_type *return_type;
-        };
-        struct // array
-        {
-            int length;
-            struct node_type **elements;
-        };
+            int count;
+            char *name;
+            struct node_type **types;
+        } con;
     };
 } node_type_t;
 
@@ -243,7 +236,9 @@ typedef struct node_array
 
 typedef struct node_array_access
 {
-    
+    node_ast_t base;
+    struct node_ast *array;
+    struct node_ast *index;
 } node_array_access_t;
 
 typedef enum
@@ -357,10 +352,7 @@ typedef struct node_do
 
 typedef struct node_visitor
 {
-    char *fullname;
-    char *shortname;
-    char *doc;
-    char *author;
+    PROLOGUE;
     sarray_t *code;
     void *ctx;
     void (*init)(void);                                       /* The initialization function: called when the visitor is created */
@@ -391,6 +383,7 @@ typedef struct node_visitor
     void *(*expression_fun)(struct node_visitor *, struct node_expression *);
     void *(*statements_fun)(struct node_visitor *, struct node_statements *);
     void *(*binary_expression_fun)(struct node_visitor *, struct node_binary *);
+    void *(*array_access_fun)(struct node_visitor *, struct node_array_access *);
     void *(*function_dec_fun)(struct node_visitor *, struct node_function_dec *);
     void *(*variable_list_fun)(struct node_visitor *, struct node_variable_list *);
     void *(*function_call_fun)(struct node_visitor *, struct node_function_call *);

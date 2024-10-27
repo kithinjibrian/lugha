@@ -27,4 +27,14 @@
 #define LIST(ITEM) ITEM,
 #define LIST_STRINGIFY(STRING) #STRING,
 
+#define PROLOGUE               \
+    struct                     \
+    {                          \
+        const char *fullname;  \
+        const char *shortname; \
+        const char *doc;       \
+        const char *author;    \
+        const char *version;   \
+    }
+
 #endif /* MACROS_H */

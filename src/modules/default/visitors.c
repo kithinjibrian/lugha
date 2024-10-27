@@ -118,6 +118,13 @@ define_visitor(def_arguments, node_arguments_t)
     return NULL;
 }
 
+define_visitor(def_array_access, node_array_access_t)
+{
+    ast->array->accept(ast->array, visitor);
+    ast->index->accept(ast->index, visitor);
+    return NULL;
+}
+
 define_visitor(def_array, node_array_t)
 {
     for (int i = 0; i < ast->nch; i++)

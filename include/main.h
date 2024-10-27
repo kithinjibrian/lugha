@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+#include "dsa/hset.h"
 #include "parser/ast.h"
 #include "parser/ptree.h"
 #include "memory/arena.h"

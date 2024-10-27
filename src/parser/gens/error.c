@@ -55,7 +55,7 @@ void yyerror(const char *msg)
     }
 }
 
-static int count_digits(int num)
+int count_digits(int num)
 {
     int count = 0;
 
