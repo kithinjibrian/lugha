@@ -395,6 +395,9 @@ define_visitor(mamba_break, node_ast_t)
 
 define_visitor(mamba_if_else, node_if_else_t)
 {
+    if (ast->newline)
+        write_ident(mamba_ctx_ident(visitor));
+
     write_code("if ");
     ast->condition->accept(ast->condition, visitor);
     write_code(":\n");
@@ -407,7 +410,7 @@ define_visitor(mamba_if_else, node_if_else_t)
         if (ast->else_block->type == NODE_IF_ELSE)
         {
             write_code("el");
-            ((node_ternary_t *)(ast->else_block))->newline = false;
+            ((node_if_else_t *)(ast->else_block))->newline = false;
         }
         else
         {
@@ -516,7 +519,7 @@ void *mamba_entry(node_visitor_t *visitor, node_ast_t *ast)
     (void)visitor;
     (void)ast;
 
-    // printf("[ERROR] node type: %s\n", ast_type_str_g[ast->type]);
+    printf("[ERROR] node type: %s\n", ast_type_str_g[ast->type]);
 
     switch (ast->type)
     {
@@ -524,7 +527,6 @@ void *mamba_entry(node_visitor_t *visitor, node_ast_t *ast)
     case NODE_BREAK:
     case NODE_WHILE:
     case NODE_RETURN:
-    case NODE_IF_ELSE:
     case NODE_CONTINUE:
     case NODE_EXPRESSION:
     case NODE_VARIABLE_STATEMENT:

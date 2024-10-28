@@ -2,8 +2,8 @@
 
 memory_arena_t ast_arena_g = {NULL};
 node_visitor_t *phases_g[] = {
-    &sema_visitor,
-    &type_visitor,
+    // &sema_visitor,
+    //&type_visitor,
     &mamba_visitor,
 };
 
@@ -561,8 +561,6 @@ static inline node_ast_t *_if_else(ptree_t *ptree)
 static inline node_ast_t *_ternary_expression(ptree_t *ptree)
 {
     DEFINE_NODE_AST(ptree, node_ternary_t, NODE_TERNARY, accept_ternary);
-    ast->is_expression = true;
-    ast->newline = true;
     ast->condition = gen_ast(ptree->children[0]);
     ast->then_block = gen_ast(ptree->children[2]);
     ast->else_block = gen_ast(ptree->children[4]);

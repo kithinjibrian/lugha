@@ -311,8 +311,6 @@ typedef struct node_if_else
 typedef struct node_ternary
 {
     node_ast_t base;
-    int is_expression;
-    int newline;
     struct node_ast *condition;
     struct node_ast *then_block;
     struct node_ast *else_block;
