@@ -2,6 +2,8 @@
 #define MAIN_H
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <getopt.h>
 
 #include "dsa/hset.h"
 #include "parser/ast.h"

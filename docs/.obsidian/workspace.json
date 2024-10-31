@@ -11,10 +11,14 @@
             "id": "8b829cdeae66233f",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "2. source docs/generalizing hindley milner.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "generalizing hindley milner"
             }
           }
         ]
@@ -73,7 +77,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "9f12052ac727da9d",
@@ -156,10 +161,14 @@
   },
   "active": "8b829cdeae66233f",
   "lastOpenFiles": [
+    "2. source docs/hindley milner.md",
+    "2. source docs/generalizing hindley milner.md",
+    "4. tags",
+    "2. source docs/flex.md",
     "Untitled.md",
-    "4. templates/source_tmp.md",
-    "4. templates/main_tmp.md",
-    "4. templates",
+    "5. templates/source_tmp.md",
+    "5. templates/main_tmp.md",
+    "5. templates",
     "1. rough docs",
     "2. source docs",
     "3. main docs",

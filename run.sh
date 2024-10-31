@@ -32,7 +32,7 @@ elif [ "$1" == "run" ]; then
 elif [ "$1" == "force-run" ]; then
 	clean
 	build
-	./lugha main.lg
+	./lugha main.lg -o main.js -l js
 
 elif [ "$1" == "debug" ]; then
 	clean

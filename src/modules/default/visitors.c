@@ -181,7 +181,7 @@ define_visitor(def_entry, node_ast_t)
 {
     (void)visitor;
     (void)ast;
-    // /printf("%s\n", ast->type_str);
+    // printf("%s\n", ast->type_str);
     return NULL;
 }
 

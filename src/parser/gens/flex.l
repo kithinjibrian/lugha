@@ -97,7 +97,7 @@ HEX         0[xX]{HEXDIGIT}+
 "case"                  { return CASE; }
 "enum"                  { return ENUM; }
 "true"                  { return TRUE_VAL; }
-"string"                   { return T_STRING; }
+"string"                { return T_STRING; }
 "false"                 { return FALSE_VAL; }
 "break"                 { return BREAK; }
 "while"                 { return WHILE; }

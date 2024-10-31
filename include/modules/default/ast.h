@@ -158,6 +158,14 @@ typedef struct tvar
     char *name;
 } tvar_t;
 
+typedef struct tcon
+{
+    int count;
+    int index;
+    char *name;
+    struct node_type **types;
+} tcon_t;
+
 typedef struct node_type
 {
     node_ast_t base;
@@ -169,12 +177,7 @@ typedef struct node_type
     union
     {
         tvar_t var;
-        struct
-        {
-            int count;
-            char *name;
-            struct node_type **types;
-        } con;
+        tcon_t con;
     };
 } node_type_t;
 
@@ -182,6 +185,7 @@ typedef struct node_variable_statement
 {
     node_ast_t base;
     int nvars;
+    bool is_const;
     node_ast_t *statement;
     node_ast_t **variables;
 } node_variable_statement_t;
@@ -391,9 +395,19 @@ typedef struct node_visitor
     void *(*function_expression_fun)(struct node_visitor *, struct node_function_expression *);
 } node_visitor_t;
 
+extern char *output_g;
+extern char *language_g;
+
 extern node_visitor_t type_visitor;
 extern node_visitor_t sema_visitor;
+
+#define MAMBA mamba_visitor
+#define LUGHA lugha_visitor
+#define NaNsense nan_visitor
+
+extern node_visitor_t nan_visitor;
 extern node_visitor_t mamba_visitor;
+extern node_visitor_t lugha_visitor;
 
 extern const char *ptree_type_str_g[];
 

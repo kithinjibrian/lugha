@@ -27,6 +27,8 @@
         "array.h": "c",
         "stdint.h": "c",
         "list.h": "c",
-        "vector": "c"
+        "vector": "c",
+        "cstdlib": "c",
+        "nansense.h": "c"
     }
 }

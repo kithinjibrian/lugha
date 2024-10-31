@@ -71,12 +71,14 @@ symbol_t *create_symbol(char *name, void *data_type)
     symbol->ref_list = create_ref();
     symbol->name = symtab_strdup(name);
     symbol->data_type = data_type;
+    symbol->scheme = NULL;
     symbol->type = SYM_VARIABLE;
     symbol->no_params = 0;
     symbol->used = false;
     symbol->init = false;
     symbol->is_const = false;
     symbol->index = symtab->no_vars++;
+    symbol->symtab = symtab;
 
     return symbol;
 }

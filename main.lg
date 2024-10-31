@@ -1,1 +1,8 @@
-let a = fun (x, y) -> x + y;
+fun main() {
+    return fun (x) -> {
+        return fun (y) -> x + y;
+    };
+}
+
+main()()();
+

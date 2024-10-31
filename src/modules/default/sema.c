@@ -47,10 +47,13 @@ define_visitor(sema_variable, node_variable_t)
         ast->expression->accept(ast->expression, visitor);
     else
     {
-        error(ast->base.loc,
-              ERROR_SEMANTIC,
-              "Variable '%s' is not initialized.",
-              ((node_identifier_t *)(ast->identifer))->name);
+        node_identifier_t *iden = (node_identifier_t *)ast->identifer;
+
+        if (iden->type == NULL)
+            error(ast->base.loc,
+                  ERROR_SEMANTIC,
+                  "Uninitialized variable '%s' requires type annotation.",
+                  ((node_identifier_t *)(ast->identifer))->name);
     }
 
     return NULL;

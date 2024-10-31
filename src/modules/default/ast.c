@@ -1,10 +1,12 @@
 #include "modules/default/ast.h"
 
+node_visitor_t code_gen;
+
 memory_arena_t ast_arena_g = {NULL};
 node_visitor_t *phases_g[] = {
-    // &sema_visitor,
-    //&type_visitor,
-    &mamba_visitor,
+    NULL, // &sema_visitor,
+    NULL, // &type_visitor,
+    NULL,
 };
 
 const char *ast_type_str_g[] = {
@@ -59,6 +61,7 @@ static inline node_ast_t *create_vars(ptree_t *ptree, bool is_const)
         accept_variable_statement);
 
     ast->statement = gen_ast(ptree->children[0]);
+    ast->is_const = is_const;
 
     if (is_const)
     {
@@ -219,7 +222,7 @@ static inline node_ast_t *_type_integer(ptree_t *ptree)
 {
     DEFINE_NODE_AST(ptree, node_type_t, NODE_TYPE, accept_type);
     ast->tag = TYPE_CON;
-    ast->con.name = ast_strdup(ptree->str);
+    ast->con.name = ast_strdup("int");
     return node_ast_cast(ast);
 }
 
@@ -227,7 +230,7 @@ static inline node_ast_t *_type_bool(ptree_t *ptree)
 {
     DEFINE_NODE_AST(ptree, node_type_t, NODE_TYPE, accept_type);
     ast->tag = TYPE_CON;
-    ast->con.name = ast_strdup(ptree->str);
+    ast->con.name = ast_strdup("bool");
     return node_ast_cast(ast);
 }
 
@@ -235,7 +238,7 @@ static inline node_ast_t *_type_string(ptree_t *ptree)
 {
     DEFINE_NODE_AST(ptree, node_type_t, NODE_TYPE, accept_type);
     ast->tag = TYPE_CON;
-    ast->con.name = ast_strdup(ptree->str);
+    ast->con.name = ast_strdup("string");
     return node_ast_cast(ast);
 }
 
@@ -251,6 +254,7 @@ static inline node_ast_t *_type_array(ptree_t *ptree)
 {
     DEFINE_NODE_AST(ptree, node_type_t, NODE_TYPE, accept_type);
     ast->tag = TYPE_CON;
+    ast->con.name = ast_strdup("[]");
     return node_ast_cast(ast);
 }
 
@@ -356,10 +360,14 @@ static inline node_ast_t *_function_expression(ptree_t *ptree)
         NODE_FUNCTION_EXPRESSION,
         accept_function_expression);
 
+    //  enter_scope("lambda");
+
     ast->typed_params = gen_ast(ptree->children[0]);
     ast->parameters = gen_ast(ptree->children[2]);
     ast->return_type = gen_ast(ptree->children[4]);
     ast->block = gen_ast(ptree->children[6]);
+
+    //  exit_scope();
 
     return node_ast_cast(ast);
 }
@@ -597,7 +605,7 @@ static inline node_ast_t *_array_access(ptree_t *ptree)
 
 static node_ast_t *gen_ast(ptree_t *ptree)
 {
-    // printf("AST: %s\n", ptree_type_str_g[ptree->type]);
+    //  printf("AST: %s\n", ptree_type_str_g[ptree->type]);
 
     switch (ptree->type)
     {
@@ -695,6 +703,16 @@ static node_ast_t *gen_ast(ptree_t *ptree)
     return NULL;
 }
 
+void init()
+{
+    if (strcmp(language_g, "python") == 0)
+        phases_g[2] = &MAMBA;
+    else if (strcmp(language_g, "js") == 0)
+        phases_g[2] = &NaNsense;
+    else if (strcmp(language_g, "lugha") == 0)
+        phases_g[2] = &LUGHA;
+}
+
 void *ast_init(ptree_t *ptree)
 {
     if (!ptree)
@@ -702,10 +720,15 @@ void *ast_init(ptree_t *ptree)
 
     printf("Running phase: Creating Abstract Syntax Tree\n");
 
+    init();
+
     node_ast_t *ast = gen_ast(ptree);
 
     for (size_t i = 0; i < array_size(phases_g); i++)
     {
+        if (!phases_g[i])
+            continue;
+
         printf("Running phase: %s\n", phases_g[i]->fullname);
 
         phases_g[i]->init();

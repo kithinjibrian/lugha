@@ -12,23 +12,23 @@ typedef struct mamba_ctx
 
 int entry = 0;
 
-static void write_code(char *code)
+static void mwrite_code(char *code)
 {
     sarray_push(mamba_visitor.code, code, strlen(code));
 }
 
-static void write_ident(int ident)
+static void mwrite_ident(int ident)
 {
     for (int i = 0; i < ident; i++)
     {
-        write_code("    ");
+        mwrite_code("    ");
     }
 }
 
-static void write_comment(bool comment)
+static void mwrite_comment(bool comment)
 {
     if (comment)
-        write_code("# ");
+        mwrite_code("# ");
 }
 
 static void mamba_ctx_reset(mamba_ctx_t *ctx)
@@ -41,46 +41,46 @@ static inline void write_ops(op_type_e op)
     switch (op)
     {
     case OP_OR:
-        write_code(" || ");
+        mwrite_code(" || ");
         break;
     case OP_AND:
-        write_code(" && ");
+        mwrite_code(" && ");
         break;
     case OP_ASSIGN:
-        write_code(" = ");
+        mwrite_code(" = ");
         break;
     case OP_IS_EQUAL:
-        write_code(" == ");
+        mwrite_code(" == ");
         break;
     case OP_DIV:
-        write_code(" / ");
+        mwrite_code(" / ");
         break;
     case OP_MOD:
-        write_code(" % ");
+        mwrite_code(" % ");
         break;
     case OP_PLUS:
-        write_code(" + ");
+        mwrite_code(" + ");
         break;
     case OP_MINUS:
-        write_code(" - ");
+        mwrite_code(" - ");
         break;
     case OP_MULT:
-        write_code(" * ");
+        mwrite_code(" * ");
         break;
     case OP_INCREMENT:
-        write_code(" += 1");
+        mwrite_code(" += 1");
         break;
     case OP_DECREMENT:
-        write_code(" -= 1");
+        mwrite_code(" -= 1");
         break;
     case OP_NOT:
-        write_code("not ");
+        mwrite_code("not ");
         break;
     case OP_LESS:
-        write_code(" < ");
+        mwrite_code(" < ");
         break;
     case OP_GREATER:
-        write_code(" > ");
+        mwrite_code(" > ");
         break;
     default:
         break;
@@ -89,9 +89,9 @@ static inline void write_ops(op_type_e op)
 
 void mamba_error(node_ast_t *ast, char *message)
 {
-    write_code(" # CODE GEN ERROR: ");
-    write_code(message);
-    write_code("\n");
+    mwrite_code(" # CODE GEN ERROR: ");
+    mwrite_code(message);
+    mwrite_code("\n");
     error(ast->loc, ERROR_CODE_GEN, message);
 
     mamba_ctx_comment(&mamba_visitor) = true;
@@ -112,7 +112,7 @@ define_visitor(mamba_expression, node_expression_t)
 define_visitor(mamba_expression_statement, node_expression_t)
 {
     ast->expression->accept(ast->expression, visitor);
-    write_code("\n");
+    mwrite_code("\n");
     return NULL;
 }
 
@@ -131,23 +131,23 @@ define_visitor(mamba_number, node_number_t)
     char str[20];
     sprintf(str, "%d", ast->num);
 
-    write_code(str);
+    mwrite_code(str);
     return NULL;
 }
 
 define_visitor(mamba_array, node_array_t)
 {
     (void)visitor;
-    write_code("[");
+    mwrite_code("[");
 
     for (int i = 0; i < ast->nch; i++)
     {
         ast->elements[i]->accept(ast->elements[i], visitor);
         if (i != ast->nch - 1)
-            write_code(", ");
+            mwrite_code(", ");
     }
 
-    write_code("]");
+    mwrite_code("]");
 
     return NULL;
 }
@@ -155,23 +155,23 @@ define_visitor(mamba_array, node_array_t)
 define_visitor(mamba_array_access, node_array_access_t)
 {
     ast->array->accept(ast->array, visitor);
-    write_code("[");
+    mwrite_code("[");
     ast->index->accept(ast->index, visitor);
-    write_code("]");
+    mwrite_code("]");
     return NULL;
 }
 
 define_visitor(mamba_boolean, node_bool_t)
 {
     (void)visitor;
-    write_code(ast->bol ? "True" : "False");
+    mwrite_code(ast->bol ? "True" : "False");
     return NULL;
 }
 
 define_visitor(mamba_variable_statement, node_variable_statement_t)
 {
     ast->statement->accept(ast->statement, visitor);
-    write_code("\n");
+    mwrite_code("\n");
     return NULL;
 }
 
@@ -181,7 +181,7 @@ define_visitor(mamba_variable_list, node_variable_list_t)
     {
         ast->variables[i]->accept(ast->variables[i], visitor);
         if (i != ast->nvars - 1)
-            write_code(", ");
+            mwrite_code(", ");
     }
     return NULL;
 }
@@ -192,7 +192,7 @@ define_visitor(mamba_parameter_list, node_parameter_list_t)
     {
         ast->parameters[i]->accept(ast->parameters[i], visitor);
         if (i != ast->params_no - 1)
-            write_code(", ");
+            mwrite_code(", ");
     }
     return NULL;
 }
@@ -200,11 +200,11 @@ define_visitor(mamba_parameter_list, node_parameter_list_t)
 define_visitor(mamba_variable, node_variable_t)
 {
     node_identifier_t *iden = (node_identifier_t *)ast->identifer;
-    write_code(iden->name);
+    mwrite_code(iden->name);
 
     if (ast->expression)
     {
-        write_code(" = ");
+        mwrite_code(" = ");
         ast->expression->accept(ast->expression, visitor);
     }
     return NULL;
@@ -213,11 +213,11 @@ define_visitor(mamba_variable, node_variable_t)
 define_visitor(mamba_parameter, node_parameter_t)
 {
     node_identifier_t *iden = (node_identifier_t *)ast->identifer;
-    write_code(iden->name);
+    mwrite_code(iden->name);
 
     if (ast->expression)
     {
-        write_code(" = ");
+        mwrite_code(" = ");
         ast->expression->accept(ast->expression, visitor);
     }
 
@@ -227,7 +227,7 @@ define_visitor(mamba_parameter, node_parameter_t)
 define_visitor(mamba_identifier, node_identifier_t)
 {
     (void)visitor;
-    write_code(ast->name);
+    mwrite_code(ast->name);
     return NULL;
 }
 
@@ -235,15 +235,15 @@ define_visitor(mamba_source_elements, node_statements_t)
 {
     if (!entry)
     {
-        write_code("# ");
-        write_code((char *)(mamba_visitor.fullname));
-        write_code("\n");
-        write_code("# Author - ");
-        write_code((char *)(mamba_visitor.author));
-        write_code("\n");
-        write_code("# Version - ");
-        write_code((char *)(mamba_visitor.version));
-        write_code("\n\n");
+        mwrite_code("# ");
+        mwrite_code((char *)(mamba_visitor.fullname));
+        mwrite_code("\n");
+        mwrite_code("# Author - ");
+        mwrite_code((char *)(mamba_visitor.author));
+        mwrite_code("\n");
+        mwrite_code("# Version - ");
+        mwrite_code((char *)(mamba_visitor.version));
+        mwrite_code("\n\n");
 
         entry = true;
     }
@@ -265,8 +265,8 @@ define_visitor(mamba_block, node_block_t)
     }
     else
     {
-        write_ident(mamba_ctx_ident(visitor));
-        write_code("pass\n");
+        mwrite_ident(mamba_ctx_ident(visitor));
+        mwrite_code("pass\n");
     }
 
     mamba_ctx_ident(visitor)--;
@@ -277,18 +277,18 @@ define_visitor(mamba_block, node_block_t)
 define_visitor(mamba_function_dec, node_function_dec_t)
 {
 
-    write_code("def ");
-    write_code(ast->name);
-    write_code("(");
+    mwrite_code("def ");
+    mwrite_code(ast->name);
+    mwrite_code("(");
 
     if (ast->parameters)
         ast->parameters->accept(ast->parameters, visitor);
 
-    write_code("):\n");
+    mwrite_code("):\n");
 
     ast->block->accept(ast->block, visitor);
 
-    write_code("\n");
+    mwrite_code("\n");
 
     return NULL;
 }
@@ -301,18 +301,18 @@ define_visitor(mamba_function_expression, node_function_expression_t)
         mamba_error(node_ast_cast(ast->block), "Python doesn't accept multiple lines in a lambda function");
     }
 
-    write_comment(mamba_ctx_comment(visitor));
+    mwrite_comment(mamba_ctx_comment(visitor));
 
-    write_code("lambda ");
+    mwrite_code("lambda ");
 
     if (ast->parameters)
         ast->parameters->accept(ast->parameters, visitor);
 
-    write_code(": ");
+    mwrite_code(": ");
 
     ast->block->accept(ast->block, visitor);
 
-    write_code("\n");
+    mwrite_code("\n");
 
     mamba_ctx_comment(visitor) = false;
 
@@ -322,10 +322,10 @@ define_visitor(mamba_function_expression, node_function_expression_t)
 define_visitor(mamba_call, node_function_call_t)
 {
     ast->expression->accept(ast->expression, visitor);
-    write_code("(");
+    mwrite_code("(");
     if (ast->arguments)
         ast->arguments->accept(ast->arguments, visitor);
-    write_code(")");
+    mwrite_code(")");
 
     return NULL;
 }
@@ -336,7 +336,7 @@ define_visitor(mamba_arguments, node_arguments_t)
     {
         ast->args[i]->accept(ast->args[i], visitor);
         if (i != ast->nargs - 1)
-            write_code(", ");
+            mwrite_code(", ");
     }
 
     return NULL;
@@ -346,7 +346,7 @@ define_visitor(mamba_symbol, node_symbol_t)
 {
     (void)visitor;
 
-    write_code(ast->name);
+    mwrite_code(ast->name);
 
     return NULL;
 }
@@ -355,22 +355,22 @@ define_visitor(mamba_string, node_string_t)
 {
     (void)visitor;
 
-    write_code(ast->str);
+    mwrite_code(ast->str);
 
     return NULL;
 }
 
 define_visitor(mamba_return, node_return_t)
 {
-    write_code("return");
+    mwrite_code("return");
 
     if (ast->expression)
     {
-        write_code(" ");
+        mwrite_code(" ");
         ast->expression->accept(ast->expression, visitor);
     }
 
-    write_code("\n");
+    mwrite_code("\n");
 
     return NULL;
 }
@@ -379,7 +379,7 @@ define_visitor(mamba_eof, node_ast_t)
 {
     (void)visitor;
     (void)ast;
-    write_code("\n");
+    mwrite_code("\n");
 
     return NULL;
 }
@@ -388,7 +388,7 @@ define_visitor(mamba_break, node_ast_t)
 {
     (void)visitor;
     (void)ast;
-    write_code("break\n");
+    mwrite_code("break\n");
 
     return NULL;
 }
@@ -396,25 +396,25 @@ define_visitor(mamba_break, node_ast_t)
 define_visitor(mamba_if_else, node_if_else_t)
 {
     if (ast->newline)
-        write_ident(mamba_ctx_ident(visitor));
+        mwrite_ident(mamba_ctx_ident(visitor));
 
-    write_code("if ");
+    mwrite_code("if ");
     ast->condition->accept(ast->condition, visitor);
-    write_code(":\n");
+    mwrite_code(":\n");
     ast->then_block->accept(ast->then_block, visitor);
 
     if (ast->else_block)
     {
-        write_ident(mamba_ctx_ident(visitor));
+        mwrite_ident(mamba_ctx_ident(visitor));
 
         if (ast->else_block->type == NODE_IF_ELSE)
         {
-            write_code("el");
+            mwrite_code("el");
             ((node_if_else_t *)(ast->else_block))->newline = false;
         }
         else
         {
-            write_code("else:\n");
+            mwrite_code("else:\n");
         }
 
         ast->else_block->accept(ast->else_block, visitor);
@@ -426,9 +426,9 @@ define_visitor(mamba_if_else, node_if_else_t)
 define_visitor(mamba_ternary, node_ternary_t)
 {
     ast->then_block->accept(ast->then_block, visitor);
-    write_code(" if ");
+    mwrite_code(" if ");
     ast->condition->accept(ast->condition, visitor);
-    write_code(" else ");
+    mwrite_code(" else ");
     ast->else_block->accept(ast->else_block, visitor);
 
     return NULL;
@@ -438,30 +438,30 @@ define_visitor(mamba_continue, node_ast_t)
 {
     (void)visitor;
     (void)ast;
-    write_code("continue\n");
+    mwrite_code("continue\n");
 
     return NULL;
 }
 
 define_visitor(mamba_do, node_do_t)
 {
-    write_code("while True:\n");
+    mwrite_code("while True:\n");
     ast->statement->accept(ast->statement, visitor);
-    write_ident(mamba_ctx_ident(visitor) + 1);
-    write_code("if ");
+    mwrite_ident(mamba_ctx_ident(visitor) + 1);
+    mwrite_code("if ");
     ast->expression->accept(ast->expression, visitor);
-    write_code(":\n");
-    write_ident(mamba_ctx_ident(visitor) + 2);
-    write_code("break\n");
+    mwrite_code(":\n");
+    mwrite_ident(mamba_ctx_ident(visitor) + 2);
+    mwrite_code("break\n");
 
     return NULL;
 }
 
 define_visitor(mamba_while, node_while_t)
 {
-    write_code("while ");
+    mwrite_code("while ");
     ast->expression->accept(ast->expression, visitor);
-    write_code(":\n");
+    mwrite_code(":\n");
     ast->statement->accept(ast->statement, visitor);
 
     return NULL;
@@ -519,7 +519,7 @@ void *mamba_entry(node_visitor_t *visitor, node_ast_t *ast)
     (void)visitor;
     (void)ast;
 
-    printf("[ERROR] node type: %s\n", ast_type_str_g[ast->type]);
+    // printf("[ERROR] node type: %s\n", ast_type_str_g[ast->type]);
 
     switch (ast->type)
     {
@@ -530,8 +530,8 @@ void *mamba_entry(node_visitor_t *visitor, node_ast_t *ast)
     case NODE_CONTINUE:
     case NODE_EXPRESSION:
     case NODE_VARIABLE_STATEMENT:
-        write_comment(mamba_ctx_comment(visitor));
-        write_ident(mamba_ctx_ident(visitor));
+        mwrite_comment(mamba_ctx_comment(visitor));
+        mwrite_ident(mamba_ctx_ident(visitor));
         break;
 
     default:
