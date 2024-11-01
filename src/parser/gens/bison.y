@@ -38,7 +38,7 @@ extern ptree_t *ptree_g;
 %token<num>     LET MUT FUN RETURN IF ELSE BREAK CONTINUE DO FOR WHILE SWITCH CASE DEFAULT TYPE CONST STRUCT UNION TRUE_VAL
                 ENUM METHODS MATCH FALSE_VAL
 
-%token<num>     T_INTEGER T_STRING T_BOOLEAN T_VOID    
+%token<num>     S8 S16 S32 S64 U8 U16 U32 U64 F32 F64 T_STRING T_BOOLEAN T_VOID T_CHAR   
 
 %type<ptree>    expression expression_statement assignment_expression statement source_element source_elements
                 block_statement return_statement selection_statement jump_statement break_statement continue_statement
@@ -793,7 +793,7 @@ primitive_type:
     T_VOID { 
         $$ = ptree_create(PTREE_VOID_TYPE, 0);
     }
-    | T_INTEGER {
+    | S32 {
         $$ = ptree_create(PTREE_INTEGER_TYPE, 0);
     }
     | T_STRING {

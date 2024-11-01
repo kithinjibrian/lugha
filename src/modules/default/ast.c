@@ -4,8 +4,8 @@ node_visitor_t code_gen;
 
 memory_arena_t ast_arena_g = {NULL};
 node_visitor_t *phases_g[] = {
-    NULL, // &sema_visitor,
-    NULL, // &type_visitor,
+    &sema_visitor,
+    &type_visitor,
     NULL,
 };
 
@@ -711,6 +711,8 @@ void init()
         phases_g[2] = &NaNsense;
     else if (strcmp(language_g, "lugha") == 0)
         phases_g[2] = &LUGHA;
+    else if (strcmp(language_g, "c") == 0)
+        phases_g[2] = &POSEIDON;
 }
 
 void *ast_init(ptree_t *ptree)

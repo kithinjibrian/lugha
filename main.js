@@ -4,11 +4,5 @@
  * Version - 0.0.1
  */ 
 
-function main() {
-    return (x) => {
-        return (y) => x + y;
-    };
-}
-
-main()()();
+(x) => x;
 

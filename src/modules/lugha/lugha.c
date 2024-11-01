@@ -32,7 +32,7 @@ static void lwrite_comment(bool comment)
         lwrite_code("// ");
 }
 
-static inline void nwrite_ops(op_type_e op)
+static inline void lwrite_ops(op_type_e op)
 {
     switch (op)
     {
@@ -107,7 +107,7 @@ define_visitor(lugha_expression_statement, node_expression_t)
 define_visitor(lugha_binary_expression, node_binary_t)
 {
     ast->left->accept(ast->left, visitor);
-    nwrite_ops(ast->op);
+    lwrite_ops(ast->op);
     ast->right->accept(ast->right, visitor);
     return NULL;
 }
@@ -449,6 +449,13 @@ define_visitor(lugha_while, node_while_t)
     lwrite_code("while (");
     ast->expression->accept(ast->expression, visitor);
     lwrite_code(") ");
+
+    if (ast->statement->type != NODE_BLOCK)
+    {
+        lwrite_code("\n");
+        lwrite_ident(1);
+    }
+
     ast->statement->accept(ast->statement, visitor);
     lwrite_code("\n");
 
@@ -466,7 +473,7 @@ define_visitor(lugha_continue, node_ast_t)
 
 define_visitor(lugha_unary, node_unary_t)
 {
-    nwrite_ops(ast->op);
+    lwrite_ops(ast->op);
     ast->expression->accept(ast->expression, visitor);
 
     return NULL;
@@ -475,7 +482,7 @@ define_visitor(lugha_unary, node_unary_t)
 define_visitor(lugha_postfix, node_postfix_t)
 {
     ast->expression->accept(ast->expression, visitor);
-    nwrite_ops(ast->op);
+    lwrite_ops(ast->op);
 
     return NULL;
 }

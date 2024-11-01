@@ -106,11 +106,21 @@ extern int yydebug;
     METHODS = 307,                 /* METHODS  */
     MATCH = 308,                   /* MATCH  */
     FALSE_VAL = 309,               /* FALSE_VAL  */
-    T_INTEGER = 310,               /* T_INTEGER  */
-    T_STRING = 311,                /* T_STRING  */
-    T_BOOLEAN = 312,               /* T_BOOLEAN  */
-    T_VOID = 313,                  /* T_VOID  */
-    LOWER_THAN_ELSE = 314          /* LOWER_THAN_ELSE  */
+    S8 = 310,                      /* S8  */
+    S16 = 311,                     /* S16  */
+    S32 = 312,                     /* S32  */
+    S64 = 313,                     /* S64  */
+    U8 = 314,                      /* U8  */
+    U16 = 315,                     /* U16  */
+    U32 = 316,                     /* U32  */
+    U64 = 317,                     /* U64  */
+    F32 = 318,                     /* F32  */
+    F64 = 319,                     /* F64  */
+    T_STRING = 320,                /* T_STRING  */
+    T_BOOLEAN = 321,               /* T_BOOLEAN  */
+    T_VOID = 322,                  /* T_VOID  */
+    T_CHAR = 323,                  /* T_CHAR  */
+    LOWER_THAN_ELSE = 324          /* LOWER_THAN_ELSE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -128,7 +138,7 @@ union YYSTYPE
     double db;
     struct ptree *ptree;
 
-#line 132 "bison.tab.h"
+#line 142 "bison.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

@@ -164,114 +164,124 @@ enum yysymbol_kind_t
   YYSYMBOL_METHODS = 52,                   /* METHODS  */
   YYSYMBOL_MATCH = 53,                     /* MATCH  */
   YYSYMBOL_FALSE_VAL = 54,                 /* FALSE_VAL  */
-  YYSYMBOL_T_INTEGER = 55,                 /* T_INTEGER  */
-  YYSYMBOL_T_STRING = 56,                  /* T_STRING  */
-  YYSYMBOL_T_BOOLEAN = 57,                 /* T_BOOLEAN  */
-  YYSYMBOL_T_VOID = 58,                    /* T_VOID  */
-  YYSYMBOL_59_ = 59,                       /* '('  */
-  YYSYMBOL_60_ = 60,                       /* ')'  */
-  YYSYMBOL_LOWER_THAN_ELSE = 61,           /* LOWER_THAN_ELSE  */
-  YYSYMBOL_62_ = 62,                       /* ','  */
-  YYSYMBOL_63_ = 63,                       /* '='  */
-  YYSYMBOL_64_ = 64,                       /* ';'  */
-  YYSYMBOL_65_ = 65,                       /* '?'  */
-  YYSYMBOL_66_ = 66,                       /* ':'  */
-  YYSYMBOL_67_ = 67,                       /* '|'  */
-  YYSYMBOL_68_ = 68,                       /* '^'  */
-  YYSYMBOL_69_ = 69,                       /* '&'  */
-  YYSYMBOL_70_ = 70,                       /* '<'  */
-  YYSYMBOL_71_ = 71,                       /* '>'  */
-  YYSYMBOL_72_ = 72,                       /* '+'  */
-  YYSYMBOL_73_ = 73,                       /* '-'  */
-  YYSYMBOL_74_ = 74,                       /* '*'  */
-  YYSYMBOL_75_ = 75,                       /* '/'  */
-  YYSYMBOL_76_ = 76,                       /* '%'  */
-  YYSYMBOL_77_ = 77,                       /* '!'  */
-  YYSYMBOL_78_ = 78,                       /* '~'  */
-  YYSYMBOL_79_ = 79,                       /* '.'  */
-  YYSYMBOL_80_ = 80,                       /* '['  */
-  YYSYMBOL_81_ = 81,                       /* ']'  */
-  YYSYMBOL_82_ = 82,                       /* '{'  */
-  YYSYMBOL_83_ = 83,                       /* '}'  */
-  YYSYMBOL_YYACCEPT = 84,                  /* $accept  */
-  YYSYMBOL_program = 85,                   /* program  */
-  YYSYMBOL_source_elements = 86,           /* source_elements  */
-  YYSYMBOL_source_element = 87,            /* source_element  */
-  YYSYMBOL_function_declaration = 88,      /* function_declaration  */
-  YYSYMBOL_parameters_list = 89,           /* parameters_list  */
-  YYSYMBOL_parameter_is_mut = 90,          /* parameter_is_mut  */
-  YYSYMBOL_parameter = 91,                 /* parameter  */
-  YYSYMBOL_statement = 92,                 /* statement  */
-  YYSYMBOL_expression_statement = 93,      /* expression_statement  */
-  YYSYMBOL_expression = 94,                /* expression  */
-  YYSYMBOL_optional_expression = 95,       /* optional_expression  */
-  YYSYMBOL_assignment_expression = 96,     /* assignment_expression  */
-  YYSYMBOL_assignment_operator = 97,       /* assignment_operator  */
-  YYSYMBOL_function_expression = 98,       /* function_expression  */
-  YYSYMBOL_function_expression_body = 99,  /* function_expression_body  */
-  YYSYMBOL_constant_expression = 100,      /* constant_expression  */
-  YYSYMBOL_conditional_expression = 101,   /* conditional_expression  */
-  YYSYMBOL_logical_or_expression = 102,    /* logical_or_expression  */
-  YYSYMBOL_logical_and_expression = 103,   /* logical_and_expression  */
-  YYSYMBOL_bitwise_or_expression = 104,    /* bitwise_or_expression  */
-  YYSYMBOL_bitwise_xor_expression = 105,   /* bitwise_xor_expression  */
-  YYSYMBOL_bitwise_and_expression = 106,   /* bitwise_and_expression  */
-  YYSYMBOL_equality_expression = 107,      /* equality_expression  */
-  YYSYMBOL_equality_operator = 108,        /* equality_operator  */
-  YYSYMBOL_relational_expression = 109,    /* relational_expression  */
-  YYSYMBOL_relational_operator = 110,      /* relational_operator  */
-  YYSYMBOL_shift_expression = 111,         /* shift_expression  */
-  YYSYMBOL_shift_operator = 112,           /* shift_operator  */
-  YYSYMBOL_additive_expression = 113,      /* additive_expression  */
-  YYSYMBOL_additive_operator = 114,        /* additive_operator  */
-  YYSYMBOL_multiplicative_expression = 115, /* multiplicative_expression  */
-  YYSYMBOL_multiplicative_operator = 116,  /* multiplicative_operator  */
-  YYSYMBOL_unary_expression = 117,         /* unary_expression  */
-  YYSYMBOL_unary_operator = 118,           /* unary_operator  */
-  YYSYMBOL_postfix_expression = 119,       /* postfix_expression  */
-  YYSYMBOL_arguments = 120,                /* arguments  */
-  YYSYMBOL_postfix_operator = 121,         /* postfix_operator  */
-  YYSYMBOL_primary_expression = 122,       /* primary_expression  */
-  YYSYMBOL_literal = 123,                  /* literal  */
-  YYSYMBOL_array_literal = 124,            /* array_literal  */
-  YYSYMBOL_element_list = 125,             /* element_list  */
-  YYSYMBOL_object_literal = 126,           /* object_literal  */
-  YYSYMBOL_keyvalue_list = 127,            /* keyvalue_list  */
-  YYSYMBOL_keyvalue = 128,                 /* keyvalue  */
-  YYSYMBOL_property_name = 129,            /* property_name  */
-  YYSYMBOL_block_statement = 130,          /* block_statement  */
-  YYSYMBOL_jump_statement = 131,           /* jump_statement  */
-  YYSYMBOL_return_statement = 132,         /* return_statement  */
-  YYSYMBOL_break_statement = 133,          /* break_statement  */
-  YYSYMBOL_continue_statement = 134,       /* continue_statement  */
-  YYSYMBOL_labeled_statement = 135,        /* labeled_statement  */
-  YYSYMBOL_selection_statement = 136,      /* selection_statement  */
-  YYSYMBOL_iteration_statement = 137,      /* iteration_statement  */
-  YYSYMBOL_for_initialization = 138,       /* for_initialization  */
-  YYSYMBOL_variable_statement = 139,       /* variable_statement  */
-  YYSYMBOL_variable_list = 140,            /* variable_list  */
-  YYSYMBOL_variable = 141,                 /* variable  */
-  YYSYMBOL_identifier = 142,               /* identifier  */
-  YYSYMBOL_type_annotation = 143,          /* type_annotation  */
-  YYSYMBOL_type = 144,                     /* type  */
-  YYSYMBOL_primitive_type = 145,           /* primitive_type  */
-  YYSYMBOL_array_type = 146,               /* array_type  */
-  YYSYMBOL_tuple_type = 147,               /* tuple_type  */
-  YYSYMBOL_function_type = 148,            /* function_type  */
-  YYSYMBOL_types_list = 149,               /* types_list  */
-  YYSYMBOL_type_reference = 150,           /* type_reference  */
-  YYSYMBOL_typed_arguments = 151,          /* typed_arguments  */
-  YYSYMBOL_typed_parameters = 152,         /* typed_parameters  */
-  YYSYMBOL_type_params = 153,              /* type_params  */
-  YYSYMBOL_type_statement = 154,           /* type_statement  */
-  YYSYMBOL_struct_statement = 155,         /* struct_statement  */
-  YYSYMBOL_union_statement = 156,          /* union_statement  */
-  YYSYMBOL_field_list = 157,               /* field_list  */
-  YYSYMBOL_enum_statement = 158,           /* enum_statement  */
-  YYSYMBOL_enum_members = 159,             /* enum_members  */
-  YYSYMBOL_enum_member = 160,              /* enum_member  */
-  YYSYMBOL_methods_statement = 161,        /* methods_statement  */
-  YYSYMBOL_method_list = 162               /* method_list  */
+  YYSYMBOL_S8 = 55,                        /* S8  */
+  YYSYMBOL_S16 = 56,                       /* S16  */
+  YYSYMBOL_S32 = 57,                       /* S32  */
+  YYSYMBOL_S64 = 58,                       /* S64  */
+  YYSYMBOL_U8 = 59,                        /* U8  */
+  YYSYMBOL_U16 = 60,                       /* U16  */
+  YYSYMBOL_U32 = 61,                       /* U32  */
+  YYSYMBOL_U64 = 62,                       /* U64  */
+  YYSYMBOL_F32 = 63,                       /* F32  */
+  YYSYMBOL_F64 = 64,                       /* F64  */
+  YYSYMBOL_T_STRING = 65,                  /* T_STRING  */
+  YYSYMBOL_T_BOOLEAN = 66,                 /* T_BOOLEAN  */
+  YYSYMBOL_T_VOID = 67,                    /* T_VOID  */
+  YYSYMBOL_T_CHAR = 68,                    /* T_CHAR  */
+  YYSYMBOL_69_ = 69,                       /* '('  */
+  YYSYMBOL_70_ = 70,                       /* ')'  */
+  YYSYMBOL_LOWER_THAN_ELSE = 71,           /* LOWER_THAN_ELSE  */
+  YYSYMBOL_72_ = 72,                       /* ','  */
+  YYSYMBOL_73_ = 73,                       /* '='  */
+  YYSYMBOL_74_ = 74,                       /* ';'  */
+  YYSYMBOL_75_ = 75,                       /* '?'  */
+  YYSYMBOL_76_ = 76,                       /* ':'  */
+  YYSYMBOL_77_ = 77,                       /* '|'  */
+  YYSYMBOL_78_ = 78,                       /* '^'  */
+  YYSYMBOL_79_ = 79,                       /* '&'  */
+  YYSYMBOL_80_ = 80,                       /* '<'  */
+  YYSYMBOL_81_ = 81,                       /* '>'  */
+  YYSYMBOL_82_ = 82,                       /* '+'  */
+  YYSYMBOL_83_ = 83,                       /* '-'  */
+  YYSYMBOL_84_ = 84,                       /* '*'  */
+  YYSYMBOL_85_ = 85,                       /* '/'  */
+  YYSYMBOL_86_ = 86,                       /* '%'  */
+  YYSYMBOL_87_ = 87,                       /* '!'  */
+  YYSYMBOL_88_ = 88,                       /* '~'  */
+  YYSYMBOL_89_ = 89,                       /* '.'  */
+  YYSYMBOL_90_ = 90,                       /* '['  */
+  YYSYMBOL_91_ = 91,                       /* ']'  */
+  YYSYMBOL_92_ = 92,                       /* '{'  */
+  YYSYMBOL_93_ = 93,                       /* '}'  */
+  YYSYMBOL_YYACCEPT = 94,                  /* $accept  */
+  YYSYMBOL_program = 95,                   /* program  */
+  YYSYMBOL_source_elements = 96,           /* source_elements  */
+  YYSYMBOL_source_element = 97,            /* source_element  */
+  YYSYMBOL_function_declaration = 98,      /* function_declaration  */
+  YYSYMBOL_parameters_list = 99,           /* parameters_list  */
+  YYSYMBOL_parameter_is_mut = 100,         /* parameter_is_mut  */
+  YYSYMBOL_parameter = 101,                /* parameter  */
+  YYSYMBOL_statement = 102,                /* statement  */
+  YYSYMBOL_expression_statement = 103,     /* expression_statement  */
+  YYSYMBOL_expression = 104,               /* expression  */
+  YYSYMBOL_optional_expression = 105,      /* optional_expression  */
+  YYSYMBOL_assignment_expression = 106,    /* assignment_expression  */
+  YYSYMBOL_assignment_operator = 107,      /* assignment_operator  */
+  YYSYMBOL_function_expression = 108,      /* function_expression  */
+  YYSYMBOL_function_expression_body = 109, /* function_expression_body  */
+  YYSYMBOL_constant_expression = 110,      /* constant_expression  */
+  YYSYMBOL_conditional_expression = 111,   /* conditional_expression  */
+  YYSYMBOL_logical_or_expression = 112,    /* logical_or_expression  */
+  YYSYMBOL_logical_and_expression = 113,   /* logical_and_expression  */
+  YYSYMBOL_bitwise_or_expression = 114,    /* bitwise_or_expression  */
+  YYSYMBOL_bitwise_xor_expression = 115,   /* bitwise_xor_expression  */
+  YYSYMBOL_bitwise_and_expression = 116,   /* bitwise_and_expression  */
+  YYSYMBOL_equality_expression = 117,      /* equality_expression  */
+  YYSYMBOL_equality_operator = 118,        /* equality_operator  */
+  YYSYMBOL_relational_expression = 119,    /* relational_expression  */
+  YYSYMBOL_relational_operator = 120,      /* relational_operator  */
+  YYSYMBOL_shift_expression = 121,         /* shift_expression  */
+  YYSYMBOL_shift_operator = 122,           /* shift_operator  */
+  YYSYMBOL_additive_expression = 123,      /* additive_expression  */
+  YYSYMBOL_additive_operator = 124,        /* additive_operator  */
+  YYSYMBOL_multiplicative_expression = 125, /* multiplicative_expression  */
+  YYSYMBOL_multiplicative_operator = 126,  /* multiplicative_operator  */
+  YYSYMBOL_unary_expression = 127,         /* unary_expression  */
+  YYSYMBOL_unary_operator = 128,           /* unary_operator  */
+  YYSYMBOL_postfix_expression = 129,       /* postfix_expression  */
+  YYSYMBOL_arguments = 130,                /* arguments  */
+  YYSYMBOL_postfix_operator = 131,         /* postfix_operator  */
+  YYSYMBOL_primary_expression = 132,       /* primary_expression  */
+  YYSYMBOL_literal = 133,                  /* literal  */
+  YYSYMBOL_array_literal = 134,            /* array_literal  */
+  YYSYMBOL_element_list = 135,             /* element_list  */
+  YYSYMBOL_object_literal = 136,           /* object_literal  */
+  YYSYMBOL_keyvalue_list = 137,            /* keyvalue_list  */
+  YYSYMBOL_keyvalue = 138,                 /* keyvalue  */
+  YYSYMBOL_property_name = 139,            /* property_name  */
+  YYSYMBOL_block_statement = 140,          /* block_statement  */
+  YYSYMBOL_jump_statement = 141,           /* jump_statement  */
+  YYSYMBOL_return_statement = 142,         /* return_statement  */
+  YYSYMBOL_break_statement = 143,          /* break_statement  */
+  YYSYMBOL_continue_statement = 144,       /* continue_statement  */
+  YYSYMBOL_labeled_statement = 145,        /* labeled_statement  */
+  YYSYMBOL_selection_statement = 146,      /* selection_statement  */
+  YYSYMBOL_iteration_statement = 147,      /* iteration_statement  */
+  YYSYMBOL_for_initialization = 148,       /* for_initialization  */
+  YYSYMBOL_variable_statement = 149,       /* variable_statement  */
+  YYSYMBOL_variable_list = 150,            /* variable_list  */
+  YYSYMBOL_variable = 151,                 /* variable  */
+  YYSYMBOL_identifier = 152,               /* identifier  */
+  YYSYMBOL_type_annotation = 153,          /* type_annotation  */
+  YYSYMBOL_type = 154,                     /* type  */
+  YYSYMBOL_primitive_type = 155,           /* primitive_type  */
+  YYSYMBOL_array_type = 156,               /* array_type  */
+  YYSYMBOL_tuple_type = 157,               /* tuple_type  */
+  YYSYMBOL_function_type = 158,            /* function_type  */
+  YYSYMBOL_types_list = 159,               /* types_list  */
+  YYSYMBOL_type_reference = 160,           /* type_reference  */
+  YYSYMBOL_typed_arguments = 161,          /* typed_arguments  */
+  YYSYMBOL_typed_parameters = 162,         /* typed_parameters  */
+  YYSYMBOL_type_params = 163,              /* type_params  */
+  YYSYMBOL_type_statement = 164,           /* type_statement  */
+  YYSYMBOL_struct_statement = 165,         /* struct_statement  */
+  YYSYMBOL_union_statement = 166,          /* union_statement  */
+  YYSYMBOL_field_list = 167,               /* field_list  */
+  YYSYMBOL_enum_statement = 168,           /* enum_statement  */
+  YYSYMBOL_enum_members = 169,             /* enum_members  */
+  YYSYMBOL_enum_member = 170,              /* enum_member  */
+  YYSYMBOL_methods_statement = 171,        /* methods_statement  */
+  YYSYMBOL_method_list = 172               /* method_list  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -602,10 +612,10 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  111
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   614
+#define YYLAST   653
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  84
+#define YYNTOKENS  94
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  79
 /* YYNRULES -- Number of rules.  */
@@ -614,7 +624,7 @@ union yyalloc
 #define YYNSTATES  326
 
 /* YYMAXUTOK -- Last valid token kind.  */
-#define YYMAXUTOK   314
+#define YYMAXUTOK   324
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -631,16 +641,16 @@ static const yytype_int8 yytranslate[] =
        0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,    77,     2,     2,     2,    76,    69,     2,
-      59,    60,    74,    72,    62,    73,    79,    75,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,    66,    64,
-      70,    63,    71,    65,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,    87,     2,     2,     2,    86,    79,     2,
+      69,    70,    84,    82,    72,    83,    89,    85,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,    76,    74,
+      80,    73,    81,    75,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,    80,     2,    81,    68,     2,     2,     2,     2,     2,
+       2,    90,     2,    91,    78,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,    82,    67,    83,    78,     2,     2,     2,
+       2,     2,     2,    92,    77,    93,    88,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -659,7 +669,8 @@ static const yytype_int8 yytranslate[] =
       25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
       35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
       45,    46,    47,    48,    49,    50,    51,    52,    53,    54,
-      55,    56,    57,    58,    61
+      55,    56,    57,    58,    59,    60,    61,    62,    63,    64,
+      65,    66,    67,    68,    71
 };
 
 #if YYDEBUG
@@ -709,15 +720,16 @@ static const char *const yytname[] =
   "AND_ASSIGN", "XOR_ASSIGN", "BACKWARD_ARROW", "FUN_ARROW", "LET", "MUT",
   "FUN", "RETURN", "IF", "ELSE", "BREAK", "CONTINUE", "DO", "FOR", "WHILE",
   "SWITCH", "CASE", "DEFAULT", "TYPE", "CONST", "STRUCT", "UNION",
-  "TRUE_VAL", "ENUM", "METHODS", "MATCH", "FALSE_VAL", "T_INTEGER",
-  "T_STRING", "T_BOOLEAN", "T_VOID", "'('", "')'", "LOWER_THAN_ELSE",
-  "','", "'='", "';'", "'?'", "':'", "'|'", "'^'", "'&'", "'<'", "'>'",
-  "'+'", "'-'", "'*'", "'/'", "'%'", "'!'", "'~'", "'.'", "'['", "']'",
-  "'{'", "'}'", "$accept", "program", "source_elements", "source_element",
-  "function_declaration", "parameters_list", "parameter_is_mut",
-  "parameter", "statement", "expression_statement", "expression",
-  "optional_expression", "assignment_expression", "assignment_operator",
-  "function_expression", "function_expression_body", "constant_expression",
+  "TRUE_VAL", "ENUM", "METHODS", "MATCH", "FALSE_VAL", "S8", "S16", "S32",
+  "S64", "U8", "U16", "U32", "U64", "F32", "F64", "T_STRING", "T_BOOLEAN",
+  "T_VOID", "T_CHAR", "'('", "')'", "LOWER_THAN_ELSE", "','", "'='", "';'",
+  "'?'", "':'", "'|'", "'^'", "'&'", "'<'", "'>'", "'+'", "'-'", "'*'",
+  "'/'", "'%'", "'!'", "'~'", "'.'", "'['", "']'", "'{'", "'}'", "$accept",
+  "program", "source_elements", "source_element", "function_declaration",
+  "parameters_list", "parameter_is_mut", "parameter", "statement",
+  "expression_statement", "expression", "optional_expression",
+  "assignment_expression", "assignment_operator", "function_expression",
+  "function_expression_body", "constant_expression",
   "conditional_expression", "logical_or_expression",
   "logical_and_expression", "bitwise_or_expression",
   "bitwise_xor_expression", "bitwise_and_expression",
@@ -746,7 +758,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-246)
+#define YYPACT_NINF (-244)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -760,39 +772,39 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
-     393,  -246,  -246,   -23,  -246,  -246,    24,     2,   186,    -6,
-     -24,    17,   450,    -1,    10,    53,   534,    52,    30,    24,
-     121,   130,  -246,   162,   167,  -246,   500,  -246,  -246,  -246,
-    -246,  -246,   500,   279,   153,   393,  -246,  -246,  -246,  -246,
-     114,   120,  -246,  -246,  -246,     1,   175,   119,   122,   124,
-      16,     5,   147,    71,    29,   189,   534,    -2,  -246,  -246,
-    -246,  -246,  -246,  -246,  -246,  -246,  -246,  -246,  -246,  -246,
-     131,  -246,  -246,  -246,  -246,  -246,   450,   132,   133,   126,
-    -246,   135,   137,   188,   163,   142,   137,  -246,    59,   500,
-    -246,  -246,   154,   128,   500,   500,   159,  -246,  -246,   450,
-     137,   126,    37,   137,   137,   146,    66,  -246,   -29,  -246,
-     336,  -246,  -246,   500,  -246,   534,   500,   534,   534,   534,
-     534,  -246,  -246,   534,  -246,  -246,  -246,  -246,   534,  -246,
-    -246,   534,  -246,  -246,   534,  -246,  -246,  -246,   534,  -246,
-    -246,  -246,  -246,  -246,  -246,  -246,  -246,  -246,  -246,  -246,
-     500,  -246,  -246,  -246,   500,   223,   500,  -246,  -246,  -246,
-    -246,  -246,  -246,   -44,  -246,   164,    93,  -246,    24,   500,
-     172,  -246,   -11,    15,  -246,    70,   174,  -246,   171,  -246,
-      80,    94,   450,  -246,   176,  -246,   160,   161,   165,   207,
-    -246,   500,  -246,  -246,  -246,   175,   178,   119,   122,   124,
-      16,     5,   147,    71,    29,  -246,  -246,  -246,    95,  -246,
-     -16,   132,  -246,   500,   179,  -246,  -246,  -246,  -246,    14,
-    -246,  -246,  -246,  -246,  -246,  -246,  -246,    15,   240,  -246,
-      24,   104,  -246,  -246,   185,   450,   500,   500,   450,   450,
-    -246,    93,    24,    24,   245,   247,  -246,   -10,  -246,   500,
-    -246,   500,  -246,  -246,  -246,    93,  -246,   195,     3,   105,
-    -246,  -246,   133,    15,   500,   219,   109,   193,  -246,  -246,
-     -19,  -246,   -34,   -28,   -32,   -27,  -246,  -246,  -246,  -246,
-    -246,    14,     0,    93,   180,  -246,   133,   241,  -246,  -246,
-     450,   198,   500,  -246,    24,  -246,  -246,    93,   262,    24,
-     245,  -246,    93,  -246,   112,  -246,   187,    20,  -246,  -246,
-     208,  -246,   117,  -246,   -20,  -246,    14,  -246,  -246,  -246,
-    -246,  -246,   450,  -246,  -246,  -246
+     413,  -244,  -244,   -50,  -244,  -244,    33,     9,   170,   -23,
+     -24,   -13,   472,    19,    24,    32,   563,    41,   120,    33,
+     129,   140,  -244,   149,   156,  -244,   522,  -244,  -244,  -244,
+    -244,  -244,   522,   279,   130,   413,  -244,  -244,  -244,  -244,
+     105,   107,  -244,  -244,  -244,     0,   180,   114,   117,   122,
+      50,    -3,    56,    76,    64,   186,   563,    10,  -244,  -244,
+    -244,  -244,  -244,  -244,  -244,  -244,  -244,  -244,  -244,  -244,
+     125,  -244,  -244,  -244,  -244,  -244,   472,   131,   127,   133,
+    -244,   143,   137,   212,   153,   136,   137,  -244,    71,   522,
+    -244,  -244,   183,   110,   522,   522,   154,  -244,  -244,   472,
+     137,   133,   -40,   137,   137,   139,    68,  -244,   -31,  -244,
+     346,  -244,  -244,   522,  -244,   563,   522,   563,   563,   563,
+     563,  -244,  -244,   563,  -244,  -244,  -244,  -244,   563,  -244,
+    -244,   563,  -244,  -244,   563,  -244,  -244,  -244,   563,  -244,
+    -244,  -244,  -244,  -244,  -244,  -244,  -244,  -244,  -244,  -244,
+     522,  -244,  -244,  -244,   522,   223,   522,  -244,  -244,  -244,
+    -244,  -244,  -244,   -48,  -244,   157,    66,  -244,    33,   522,
+     166,  -244,   -10,    11,  -244,    81,   167,  -244,   168,  -244,
+      84,    95,   472,  -244,   172,  -244,   148,   151,   155,   207,
+    -244,   522,  -244,  -244,  -244,   180,   174,   114,   117,   122,
+      50,    -3,    56,    76,    64,  -244,  -244,  -244,    96,  -244,
+       4,   131,  -244,   522,   171,  -244,  -244,  -244,  -244,   -17,
+    -244,  -244,  -244,  -244,  -244,  -244,  -244,    11,   240,  -244,
+      33,    99,  -244,  -244,   175,   472,   522,   522,   472,   472,
+    -244,    66,    33,    33,   248,   249,  -244,   -11,  -244,   522,
+    -244,   522,  -244,  -244,  -244,    66,  -244,   187,     5,   102,
+    -244,  -244,   127,    11,   522,   224,   108,   188,  -244,  -244,
+     -20,  -244,   -42,   -41,   -44,   -35,  -244,  -244,  -244,  -244,
+    -244,   -17,    40,    66,   173,  -244,   127,   244,  -244,  -244,
+     472,   191,   522,  -244,    33,  -244,  -244,    66,   263,    33,
+     248,  -244,    66,  -244,   112,  -244,   176,    15,  -244,  -244,
+     197,  -244,   124,  -244,   -34,  -244,   -17,  -244,  -244,  -244,
+    -244,  -244,   472,  -244,  -244,  -244
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -838,14 +850,14 @@ static const yytype_uint8 yydefact[] =
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int16 yypgoto[] =
 {
-    -246,  -246,   234,   -22,  -180,    43,     8,    42,   -12,  -246,
-      -4,   -90,   -30,  -246,  -246,  -246,  -246,   257,  -246,   166,
-     157,   158,   156,   168,  -246,   169,  -246,   151,  -246,   149,
-    -246,   152,  -246,    -9,  -246,  -246,  -246,  -246,  -246,  -246,
-    -246,  -246,  -246,  -246,    72,  -246,  -126,  -246,  -246,  -246,
-    -246,  -246,  -246,  -246,  -246,   194,   271,   123,    -5,  -245,
-    -161,  -246,  -246,  -246,  -246,  -201,  -246,  -246,    13,  -246,
-    -246,  -246,  -246,  -231,  -246,  -246,    -7,  -246,  -246
+    -244,  -244,   236,   -29,  -173,    43,     8,    42,   -12,  -244,
+      -4,   -90,   -30,  -244,  -244,  -244,  -244,   257,  -244,   159,
+     158,   161,   162,   160,  -244,   163,  -244,   164,  -244,   145,
+    -244,   165,  -244,    -9,  -244,  -244,  -244,  -244,  -244,  -244,
+    -244,  -244,  -244,  -244,    72,  -244,  -121,  -244,  -244,  -244,
+    -244,  -244,  -244,  -244,  -244,   194,   269,   123,    -5,  -243,
+    -161,  -244,  -244,  -244,  -244,  -179,  -244,  -244,   -47,  -244,
+    -244,  -244,  -244,  -207,  -244,  -244,    -7,  -244,  -244
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
@@ -866,134 +878,142 @@ static const yytype_int16 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int16 yytable[] =
 {
-      92,    81,   107,   177,    88,   219,   284,    98,    82,   246,
-     115,   257,   273,   112,    81,   152,   153,   287,   211,   124,
-     125,    78,   106,     1,   245,     2,    85,   297,   294,   121,
-      78,   298,   122,   191,   294,   300,   100,     4,     5,   212,
-      90,   306,   294,    76,   257,   293,   113,   151,   230,   295,
-     299,   228,   192,    89,    86,   296,   301,   154,    93,    77,
-     229,   258,   302,   324,   159,   252,   116,   278,   314,    94,
-      22,   303,    83,   277,    25,   126,   127,   155,   156,    26,
-     270,    91,   304,   194,   285,   175,   196,   183,   112,    27,
-     180,   181,    28,    29,   258,   170,   312,    30,    31,   214,
-      32,   185,    33,   135,   136,   137,    98,    83,    98,    98,
-      98,    98,    95,   184,    98,   186,   187,   188,    99,    98,
-     206,   113,    98,   174,   207,    98,   190,   102,   113,   205,
-     235,     1,   113,     2,    85,   160,   103,   161,   162,   226,
-     238,   316,   113,   132,   133,     4,     5,   267,   215,   216,
-     217,   218,   210,   111,   239,   250,   113,   251,   129,   130,
-       6,   248,    86,    81,   262,   286,   263,   263,   104,   291,
-     240,   113,   317,   105,   302,    19,   113,   323,    22,   302,
-     318,   321,    25,   254,   114,   117,   118,    26,   168,     1,
-     119,     2,    85,   120,   171,   158,   176,    27,   169,   166,
-      28,    29,   310,     4,     5,    30,    31,    83,    32,   139,
-     140,   141,   142,   143,   144,   145,   146,   147,   148,   279,
-      86,   280,   173,   265,    77,   182,   268,   269,   189,   209,
-     213,   227,   266,   236,   289,   237,    22,   271,   271,   241,
-      25,   245,   242,   243,   249,    26,   260,   244,   264,   255,
-      87,   274,   149,    82,   283,    27,   290,   292,    28,    29,
-     307,   305,   309,    30,    31,   313,    32,   110,   322,    33,
-     259,   288,   261,    97,   197,   199,   198,   319,   308,   202,
-     203,   195,     1,   253,     2,     3,   204,   179,   200,   311,
-     101,   225,   201,   315,   271,     0,     4,     5,     0,     0,
+      92,    81,   107,   177,    88,   219,   112,    98,   284,   115,
+     257,   124,   125,   257,    81,    82,   246,    78,     1,   287,
+       2,    85,   106,   245,   211,   297,    76,   152,   153,   298,
+     294,   294,     4,     5,   185,   170,   273,   300,   294,    78,
+      83,   191,    77,   306,   230,   212,    89,   151,   299,    86,
+      90,   295,   296,   184,   293,   186,   187,   188,   301,   324,
+     192,    91,   228,   121,   159,    22,   122,   129,   130,    25,
+     258,   229,   214,   258,   278,   116,   113,   126,   127,   154,
+     270,   112,   277,   194,    26,   175,   196,   183,    93,    83,
+     180,   181,   314,    94,    27,   252,   285,    28,    29,   155,
+     156,    95,    30,    31,   304,    32,    98,    33,    98,    98,
+      98,    98,   302,     1,    98,     2,    85,    99,   312,    98,
+     206,   303,    98,   215,   207,    98,   100,     4,     5,   205,
+     111,   216,   217,   218,   160,   102,   161,   162,   190,   226,
+     113,   316,     6,   113,    86,   174,   103,   267,   135,   136,
+     137,   235,   210,   113,   238,   104,   113,    19,   132,   133,
+      22,   248,   105,    81,    25,   239,   250,   113,   251,   262,
+     240,   263,   286,     1,   263,     2,    85,   113,   291,    26,
+     113,   114,   317,   254,   302,   318,   321,     4,     5,    27,
+     117,   118,    28,    29,   323,   119,   302,    30,    31,   158,
+      32,   120,   310,   166,    86,   168,   139,   140,   141,   142,
+     143,   144,   145,   146,   147,   148,   169,    83,   171,   279,
+      22,   280,   173,   265,    25,   176,   268,   269,    77,   209,
+     182,   189,   266,   213,   289,   227,   236,   271,   271,    26,
+     242,   245,   237,   243,    87,   241,   260,   244,   264,    27,
+     249,   255,    28,    29,   274,    82,   283,    30,    31,   149,
+      32,   290,   292,   307,   305,   309,   313,   322,    33,   110,
+     259,   288,   261,    97,   195,   197,   203,   319,   308,   198,
+     200,   199,     1,   253,     2,     3,   201,   179,   101,   311,
+       0,   225,   202,   315,   271,     0,     4,     5,     0,   204,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
      325,     6,     0,     7,     8,     9,     0,    10,    11,    12,
       13,    14,    15,    16,    17,    18,    19,    20,    21,    22,
-      23,    24,     0,    25,     0,     0,     0,     0,    26,     1,
+      23,    24,     0,    25,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,    26,     1,
        0,     2,     3,     0,     0,     0,     0,     0,    27,     0,
        0,    28,    29,     4,     5,     0,    30,    31,     0,    32,
        0,    33,   109,     0,     0,     0,     0,     0,     6,     0,
        7,     8,     9,     0,    10,    11,    12,    13,    14,    15,
       16,    17,    18,    19,    20,    21,    22,    23,    24,     0,
-      25,     0,     0,     0,     0,    26,     1,     0,     2,     3,
+      25,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,    26,     1,     0,     2,     3,
        0,     0,     0,     0,     0,    27,     0,     0,    28,    29,
        4,     5,     0,    30,    31,     0,    32,     0,    33,   193,
        0,     0,     0,     0,     0,     6,     0,     7,     8,     9,
        0,    10,    11,    12,    13,    14,    15,    16,    17,    18,
       19,    20,    21,    22,    23,    24,     0,    25,     0,     0,
-       0,     0,    26,     1,     0,     2,     3,   -32,     0,     0,
-       0,     0,    27,     0,     0,    28,    29,     4,     5,     0,
-      30,    31,     0,    32,     0,    33,     0,     0,     0,     0,
-       0,     0,     6,     0,    86,     8,     9,     0,    10,    11,
-      12,    13,    14,    15,    16,    17,    18,    19,    20,    21,
-      22,    23,    24,     1,    25,     2,    85,     0,     0,    26,
-       0,     0,     0,     0,     0,     0,     0,     4,     5,    27,
-       0,     0,    28,    29,     0,     0,     0,    30,    31,     0,
-      32,     0,    33,     0,    86,     0,     0,     1,     0,     2,
-      85,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-      22,     4,     5,     0,    25,     0,     0,     0,     0,    26,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,    27,
-       0,     0,    28,    29,     0,     0,     0,    30,    31,     0,
-      32,     0,     0,     0,    22,     0,     0,     0,    25,     0,
-       0,     0,     0,    26,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,    27,     0,     0,    28,    29,     0,     0,
-       0,    30,    31,     0,    32
+       0,     0,     0,     0,     0,     1,     0,     2,     3,     0,
+       0,     0,    26,     0,     0,     0,     0,   -32,     0,     4,
+       5,     0,    27,     0,     0,    28,    29,     0,     0,     0,
+      30,    31,     0,    32,     6,    33,    86,     8,     9,     0,
+      10,    11,    12,    13,    14,    15,    16,    17,    18,    19,
+      20,    21,    22,    23,    24,     1,    25,     2,    85,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     4,
+       5,    26,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,    27,     0,     0,    28,    29,    86,     0,     0,    30,
+      31,     0,    32,     0,    33,     0,     1,     0,     2,    85,
+       0,     0,    22,     0,     0,     0,    25,     0,     0,     0,
+       4,     5,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,    26,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,    27,     0,     0,    28,    29,     0,     0,     0,    30,
+      31,     0,    32,    22,     0,     0,     0,    25,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,    26,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,    27,     0,     0,    28,    29,     0,     0,     0,
+      30,    31,     0,    32
 };
 
 static const yytype_int16 yycheck[] =
 {
-      12,     6,    32,    93,     8,   166,     3,    16,     6,   189,
-       9,    30,   243,    35,    19,    17,    18,   262,    62,    14,
-      15,     6,    26,     3,    34,     5,     6,    59,    62,    13,
-       6,    63,    16,    62,    62,    62,     6,    17,    18,    83,
-      64,   286,    62,    66,    30,    64,    62,    56,    33,    83,
-      82,    62,    81,    59,    34,    83,    83,    59,    59,    82,
-      71,    80,    62,    83,    76,    81,    65,   247,   299,    59,
-      50,    71,    70,    83,    54,    70,    71,    79,    80,    59,
-     241,    64,   283,   113,    81,    89,   116,    99,   110,    69,
-      94,    95,    72,    73,    80,    82,   297,    77,    78,     6,
-      80,    64,    82,    74,    75,    76,   115,    70,   117,   118,
-     119,   120,    59,   100,   123,   102,   103,   104,    66,   128,
-     150,    62,   131,    64,   154,   134,    60,     6,    62,   138,
-      60,     3,    62,     5,     6,     3,     6,     5,     6,   169,
-      60,   302,    62,    72,    73,    17,    18,   237,    55,    56,
-      57,    58,   156,     0,    60,    60,    62,    62,    11,    12,
-      32,   191,    34,   168,    60,    60,    62,    62,     6,    60,
-     182,    62,    60,     6,    62,    47,    62,    60,    50,    62,
-     306,   307,    54,   213,    64,    10,    67,    59,    62,     3,
-      68,     5,     6,    69,     6,    64,    42,    69,    63,    66,
-      72,    73,   292,    17,    18,    77,    78,    70,    80,    20,
-      21,    22,    23,    24,    25,    26,    27,    28,    29,   249,
-      34,   251,    59,   235,    82,    66,   238,   239,    82,     6,
-      66,    59,   236,    59,   264,    64,    50,   242,   243,    63,
-      54,    34,    82,    82,    66,    59,     6,    82,    63,    70,
-      64,     6,    63,     6,    59,    69,    37,    64,    72,    73,
-      19,    81,    64,    77,    78,     3,    80,    33,    60,    82,
-     227,   263,   230,    16,   117,   119,   118,   307,   290,   128,
-     131,   115,     3,   211,     5,     6,   134,    93,   120,   294,
-      19,   168,   123,   300,   299,    -1,    17,    18,    -1,    -1,
+      12,     6,    32,    93,     8,   166,    35,    16,     3,     9,
+      30,    14,    15,    30,    19,     6,   189,     6,     3,   262,
+       5,     6,    26,    34,    72,    69,    76,    17,    18,    73,
+      72,    72,    17,    18,    74,    82,   243,    72,    72,     6,
+      80,    72,    92,   286,    33,    93,    69,    56,    92,    34,
+      74,    93,    93,   100,    74,   102,   103,   104,    93,    93,
+      91,    74,    72,    13,    76,    50,    16,    11,    12,    54,
+      90,    81,     6,    90,   247,    75,    72,    80,    81,    69,
+     241,   110,    93,   113,    69,    89,   116,    99,    69,    80,
+      94,    95,   299,    69,    79,    91,    91,    82,    83,    89,
+      90,    69,    87,    88,   283,    90,   115,    92,   117,   118,
+     119,   120,    72,     3,   123,     5,     6,    76,   297,   128,
+     150,    81,   131,    57,   154,   134,     6,    17,    18,   138,
+       0,    65,    66,    67,     3,     6,     5,     6,    70,   169,
+      72,   302,    32,    72,    34,    74,     6,   237,    84,    85,
+      86,    70,   156,    72,    70,     6,    72,    47,    82,    83,
+      50,   191,     6,   168,    54,    70,    70,    72,    72,    70,
+     182,    72,    70,     3,    72,     5,     6,    72,    70,    69,
+      72,    74,    70,   213,    72,   306,   307,    17,    18,    79,
+      10,    77,    82,    83,    70,    78,    72,    87,    88,    74,
+      90,    79,   292,    76,    34,    72,    20,    21,    22,    23,
+      24,    25,    26,    27,    28,    29,    73,    80,     6,   249,
+      50,   251,    69,   235,    54,    42,   238,   239,    92,     6,
+      76,    92,   236,    76,   264,    69,    69,   242,   243,    69,
+      92,    34,    74,    92,    74,    73,     6,    92,    73,    79,
+      76,    80,    82,    83,     6,     6,    69,    87,    88,    73,
+      90,    37,    74,    19,    91,    74,     3,    70,    92,    33,
+     227,   263,   230,    16,   115,   117,   131,   307,   290,   118,
+     120,   119,     3,   211,     5,     6,   123,    93,    19,   294,
+      -1,   168,   128,   300,   299,    -1,    17,    18,    -1,   134,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
      322,    32,    -1,    34,    35,    36,    -1,    38,    39,    40,
       41,    42,    43,    44,    45,    46,    47,    48,    49,    50,
-      51,    52,    -1,    54,    -1,    -1,    -1,    -1,    59,     3,
-      -1,     5,     6,    -1,    -1,    -1,    -1,    -1,    69,    -1,
-      -1,    72,    73,    17,    18,    -1,    77,    78,    -1,    80,
-      -1,    82,    83,    -1,    -1,    -1,    -1,    -1,    32,    -1,
+      51,    52,    -1,    54,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    69,     3,
+      -1,     5,     6,    -1,    -1,    -1,    -1,    -1,    79,    -1,
+      -1,    82,    83,    17,    18,    -1,    87,    88,    -1,    90,
+      -1,    92,    93,    -1,    -1,    -1,    -1,    -1,    32,    -1,
       34,    35,    36,    -1,    38,    39,    40,    41,    42,    43,
       44,    45,    46,    47,    48,    49,    50,    51,    52,    -1,
-      54,    -1,    -1,    -1,    -1,    59,     3,    -1,     5,     6,
-      -1,    -1,    -1,    -1,    -1,    69,    -1,    -1,    72,    73,
-      17,    18,    -1,    77,    78,    -1,    80,    -1,    82,    83,
+      54,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    69,     3,    -1,     5,     6,
+      -1,    -1,    -1,    -1,    -1,    79,    -1,    -1,    82,    83,
+      17,    18,    -1,    87,    88,    -1,    90,    -1,    92,    93,
       -1,    -1,    -1,    -1,    -1,    32,    -1,    34,    35,    36,
       -1,    38,    39,    40,    41,    42,    43,    44,    45,    46,
       47,    48,    49,    50,    51,    52,    -1,    54,    -1,    -1,
-      -1,    -1,    59,     3,    -1,     5,     6,    64,    -1,    -1,
-      -1,    -1,    69,    -1,    -1,    72,    73,    17,    18,    -1,
-      77,    78,    -1,    80,    -1,    82,    -1,    -1,    -1,    -1,
-      -1,    -1,    32,    -1,    34,    35,    36,    -1,    38,    39,
-      40,    41,    42,    43,    44,    45,    46,    47,    48,    49,
-      50,    51,    52,     3,    54,     5,     6,    -1,    -1,    59,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    17,    18,    69,
-      -1,    -1,    72,    73,    -1,    -1,    -1,    77,    78,    -1,
-      80,    -1,    82,    -1,    34,    -1,    -1,     3,    -1,     5,
-       6,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      50,    17,    18,    -1,    54,    -1,    -1,    -1,    -1,    59,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    69,
-      -1,    -1,    72,    73,    -1,    -1,    -1,    77,    78,    -1,
-      80,    -1,    -1,    -1,    50,    -1,    -1,    -1,    54,    -1,
-      -1,    -1,    -1,    59,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    69,    -1,    -1,    72,    73,    -1,    -1,
-      -1,    77,    78,    -1,    80
+      -1,    -1,    -1,    -1,    -1,     3,    -1,     5,     6,    -1,
+      -1,    -1,    69,    -1,    -1,    -1,    -1,    74,    -1,    17,
+      18,    -1,    79,    -1,    -1,    82,    83,    -1,    -1,    -1,
+      87,    88,    -1,    90,    32,    92,    34,    35,    36,    -1,
+      38,    39,    40,    41,    42,    43,    44,    45,    46,    47,
+      48,    49,    50,    51,    52,     3,    54,     5,     6,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    17,
+      18,    69,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    79,    -1,    -1,    82,    83,    34,    -1,    -1,    87,
+      88,    -1,    90,    -1,    92,    -1,     3,    -1,     5,     6,
+      -1,    -1,    50,    -1,    -1,    -1,    54,    -1,    -1,    -1,
+      17,    18,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    69,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    79,    -1,    -1,    82,    83,    -1,    -1,    -1,    87,
+      88,    -1,    90,    50,    -1,    -1,    -1,    54,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    69,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    79,    -1,    -1,    82,    83,    -1,    -1,    -1,
+      87,    88,    -1,    90
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
@@ -1002,62 +1022,62 @@ static const yytype_uint8 yystos[] =
 {
        0,     3,     5,     6,    17,    18,    32,    34,    35,    36,
       38,    39,    40,    41,    42,    43,    44,    45,    46,    47,
-      48,    49,    50,    51,    52,    54,    59,    69,    72,    73,
-      77,    78,    80,    82,    85,    86,    87,    88,    92,    93,
-      94,    95,    96,    98,   101,   102,   103,   104,   105,   106,
-     107,   109,   111,   113,   115,   117,   118,   119,   122,   123,
-     124,   126,   130,   131,   132,   133,   134,   135,   136,   137,
-     139,   154,   155,   156,   158,   161,    66,    82,     6,   140,
-     141,   142,     6,    70,   152,     6,    34,    64,    94,    59,
-      64,    64,    92,    59,    59,    59,   100,   101,   117,    66,
-       6,   140,     6,     6,     6,     6,    94,    96,   125,    83,
-      86,     0,    87,    62,    64,     9,    65,    10,    67,    68,
-      69,    13,    16,   108,    14,    15,    70,    71,   110,    11,
-      12,   112,    72,    73,   114,    74,    75,    76,   116,    20,
-      21,    22,    23,    24,    25,    26,    27,    28,    29,    63,
-      97,   117,    17,    18,    59,    79,    80,   121,    64,    92,
-       3,     5,     6,   127,   128,   129,    66,   143,    62,    63,
-     152,     6,   153,    59,    64,    94,    42,    95,   138,   139,
-      94,    94,    66,    92,   152,    64,   152,   152,   152,    82,
-      60,    62,    81,    83,    96,   103,    96,   104,   105,   106,
-     107,   109,   111,   113,   115,   117,    96,    96,   120,     6,
-      94,    62,    83,    66,     6,    55,    56,    57,    58,   144,
-     145,   146,   147,   148,   150,   141,    96,    59,    62,    71,
-      33,    89,    90,    91,   142,    60,    59,    64,    60,    60,
-      92,    63,    82,    82,    82,    34,    88,   162,    96,    66,
-      60,    62,    81,   128,    96,    70,   151,    30,    80,    89,
-       6,    91,    60,    62,    63,    92,    94,    95,    92,    92,
-     144,   142,   157,   157,     6,   159,   160,    83,    88,    96,
-      96,   144,   149,    59,     3,    81,    60,   143,    90,    96,
-      37,    60,    64,    64,    62,    83,    83,    59,    63,    82,
-      62,    83,    62,    71,   149,    81,   143,    19,    92,    64,
-      95,   142,   149,     3,   157,   160,   144,    60,   130,    96,
-      99,   130,    60,    60,    83,    92
+      48,    49,    50,    51,    52,    54,    69,    79,    82,    83,
+      87,    88,    90,    92,    95,    96,    97,    98,   102,   103,
+     104,   105,   106,   108,   111,   112,   113,   114,   115,   116,
+     117,   119,   121,   123,   125,   127,   128,   129,   132,   133,
+     134,   136,   140,   141,   142,   143,   144,   145,   146,   147,
+     149,   164,   165,   166,   168,   171,    76,    92,     6,   150,
+     151,   152,     6,    80,   162,     6,    34,    74,   104,    69,
+      74,    74,   102,    69,    69,    69,   110,   111,   127,    76,
+       6,   150,     6,     6,     6,     6,   104,   106,   135,    93,
+      96,     0,    97,    72,    74,     9,    75,    10,    77,    78,
+      79,    13,    16,   118,    14,    15,    80,    81,   120,    11,
+      12,   122,    82,    83,   124,    84,    85,    86,   126,    20,
+      21,    22,    23,    24,    25,    26,    27,    28,    29,    73,
+     107,   127,    17,    18,    69,    89,    90,   131,    74,   102,
+       3,     5,     6,   137,   138,   139,    76,   153,    72,    73,
+     162,     6,   163,    69,    74,   104,    42,   105,   148,   149,
+     104,   104,    76,   102,   162,    74,   162,   162,   162,    92,
+      70,    72,    91,    93,   106,   113,   106,   114,   115,   116,
+     117,   119,   121,   123,   125,   127,   106,   106,   130,     6,
+     104,    72,    93,    76,     6,    57,    65,    66,    67,   154,
+     155,   156,   157,   158,   160,   151,   106,    69,    72,    81,
+      33,    99,   100,   101,   152,    70,    69,    74,    70,    70,
+     102,    73,    92,    92,    92,    34,    98,   172,   106,    76,
+      70,    72,    91,   138,   106,    80,   161,    30,    90,    99,
+       6,   101,    70,    72,    73,   102,   104,   105,   102,   102,
+     154,   152,   167,   167,     6,   169,   170,    93,    98,   106,
+     106,   154,   159,    69,     3,    91,    70,   153,   100,   106,
+      37,    70,    74,    74,    72,    93,    93,    69,    73,    92,
+      72,    93,    72,    81,   159,    91,   153,    19,   102,    74,
+     105,   152,   159,     3,   167,   170,   154,    70,   140,   106,
+     109,   140,    70,    70,    93,   102
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    84,    85,    85,    86,    86,    87,    87,    88,    89,
-      89,    89,    90,    90,    91,    91,    92,    92,    92,    92,
-      92,    92,    92,    92,    92,    92,    92,    92,    93,    94,
-      94,    95,    95,    96,    96,    96,    97,    97,    97,    97,
-      97,    97,    97,    97,    97,    97,    97,    98,    99,    99,
-     100,   101,   101,   102,   102,   103,   103,   104,   104,   105,
-     105,   106,   106,   107,   107,   108,   108,   109,   109,   110,
-     110,   110,   110,   111,   111,   112,   112,   113,   113,   114,
-     114,   115,   115,   116,   116,   116,   117,   117,   118,   118,
-     118,   118,   118,   118,   118,   119,   119,   119,   119,   119,
-     120,   120,   120,   121,   121,   122,   122,   122,   122,   122,
-     123,   123,   123,   123,   124,   125,   125,   125,   125,   126,
-     127,   127,   127,   127,   128,   129,   129,   129,   130,   130,
-     131,   131,   131,   132,   132,   133,   134,   135,   135,   135,
-     136,   136,   136,   137,   137,   137,   138,   138,   139,   139,
-     140,   140,   141,   141,   142,   143,   143,   144,   144,   144,
-     144,   144,   145,   145,   145,   145,   146,   147,   148,   149,
-     149,   149,   150,   150,   151,   152,   152,   153,   153,   154,
-     155,   155,   156,   157,   157,   157,   157,   158,   159,   159,
-     159,   160,   160,   160,   160,   161,   162,   162
+       0,    94,    95,    95,    96,    96,    97,    97,    98,    99,
+      99,    99,   100,   100,   101,   101,   102,   102,   102,   102,
+     102,   102,   102,   102,   102,   102,   102,   102,   103,   104,
+     104,   105,   105,   106,   106,   106,   107,   107,   107,   107,
+     107,   107,   107,   107,   107,   107,   107,   108,   109,   109,
+     110,   111,   111,   112,   112,   113,   113,   114,   114,   115,
+     115,   116,   116,   117,   117,   118,   118,   119,   119,   120,
+     120,   120,   120,   121,   121,   122,   122,   123,   123,   124,
+     124,   125,   125,   126,   126,   126,   127,   127,   128,   128,
+     128,   128,   128,   128,   128,   129,   129,   129,   129,   129,
+     130,   130,   130,   131,   131,   132,   132,   132,   132,   132,
+     133,   133,   133,   133,   134,   135,   135,   135,   135,   136,
+     137,   137,   137,   137,   138,   139,   139,   139,   140,   140,
+     141,   141,   141,   142,   142,   143,   144,   145,   145,   145,
+     146,   146,   146,   147,   147,   147,   148,   148,   149,   149,
+     150,   150,   151,   151,   152,   153,   153,   154,   154,   154,
+     154,   154,   155,   155,   155,   155,   156,   157,   158,   159,
+     159,   159,   160,   160,   161,   162,   162,   163,   163,   164,
+     165,   165,   166,   167,   167,   167,   167,   168,   169,   169,
+     169,   170,   170,   170,   170,   171,   172,   172
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
@@ -1935,7 +1955,7 @@ yyreduce:
         ptree_t *f = ptree_create(PTREE_EOF, 0);
         ptree_g = ptree_add((yyvsp[0].ptree), 1, f);
     }
-#line 1939 "bison.tab.c"
+#line 1959 "bison.tab.c"
     break;
 
   case 3: /* program: %empty  */
@@ -1943,7 +1963,7 @@ yyreduce:
                   {
         ptree_g = ptree_create(PTREE_EOF, 0);
     }
-#line 1947 "bison.tab.c"
+#line 1967 "bison.tab.c"
     break;
 
   case 4: /* source_elements: source_elements source_element  */
@@ -1951,7 +1971,7 @@ yyreduce:
                                    {
         (yyval.ptree) = ptree_add((yyvsp[-1].ptree), 1, (yyvsp[0].ptree));
     }
-#line 1955 "bison.tab.c"
+#line 1975 "bison.tab.c"
     break;
 
   case 5: /* source_elements: source_element  */
@@ -1959,7 +1979,7 @@ yyreduce:
                      {
         (yyval.ptree) = ptree_create(PTREE_SOURCE_ELEMENTS, 1, (yyvsp[0].ptree));
     }
-#line 1963 "bison.tab.c"
+#line 1983 "bison.tab.c"
     break;
 
   case 6: /* source_element: function_declaration  */
@@ -1967,7 +1987,7 @@ yyreduce:
                          {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 1971 "bison.tab.c"
+#line 1991 "bison.tab.c"
     break;
 
   case 7: /* source_element: statement  */
@@ -1975,7 +1995,7 @@ yyreduce:
                 {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 1979 "bison.tab.c"
+#line 1999 "bison.tab.c"
     break;
 
   case 8: /* function_declaration: FUN WORD typed_parameters '(' parameters_list ')' type_annotation block_statement  */
@@ -1986,7 +2006,7 @@ yyreduce:
         ptree_t *rp = ptree_create(PTREE_RPRN, 0);
         (yyval.ptree) = ptree_create(PTREE_FUNCTION_DECLARATION, 7, w, (yyvsp[-5].ptree), lp, (yyvsp[-3].ptree), rp, (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 1990 "bison.tab.c"
+#line 2010 "bison.tab.c"
     break;
 
   case 9: /* parameters_list: parameter_is_mut  */
@@ -1994,7 +2014,7 @@ yyreduce:
                      {
         (yyval.ptree) = ptree_create(PTREE_PARAMETER_LIST, 1, (yyvsp[0].ptree));
     }
-#line 1998 "bison.tab.c"
+#line 2018 "bison.tab.c"
     break;
 
   case 10: /* parameters_list: parameters_list ',' parameter_is_mut  */
@@ -2002,7 +2022,7 @@ yyreduce:
                                            {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 2006 "bison.tab.c"
+#line 2026 "bison.tab.c"
     break;
 
   case 11: /* parameters_list: %empty  */
@@ -2010,7 +2030,7 @@ yyreduce:
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);     
     }
-#line 2014 "bison.tab.c"
+#line 2034 "bison.tab.c"
     break;
 
   case 12: /* parameter_is_mut: parameter  */
@@ -2018,7 +2038,7 @@ yyreduce:
               {
         (yyval.ptree) = ptree_create(PTREE_PARAMETER_CONST, 1, (yyvsp[0].ptree));
     }
-#line 2022 "bison.tab.c"
+#line 2042 "bison.tab.c"
     break;
 
   case 13: /* parameter_is_mut: MUT parameter  */
@@ -2026,7 +2046,7 @@ yyreduce:
                     {
         (yyval.ptree) = ptree_create(PTREE_PARAMETER_MUT, 1, (yyvsp[0].ptree));
     }
-#line 2030 "bison.tab.c"
+#line 2050 "bison.tab.c"
     break;
 
   case 14: /* parameter: identifier  */
@@ -2034,7 +2054,7 @@ yyreduce:
                {
         (yyval.ptree) = ptree_create(PTREE_PARAMETER_UNASSIGNED, 1, (yyvsp[0].ptree));
     }
-#line 2038 "bison.tab.c"
+#line 2058 "bison.tab.c"
     break;
 
   case 15: /* parameter: identifier '=' assignment_expression  */
@@ -2043,7 +2063,7 @@ yyreduce:
         ptree_t *eq = ptree_create(PTREE_ASSIGN, 0);
         (yyval.ptree) = ptree_create(PTREE_PARAMETER_ASSIGNED, 3, (yyvsp[-2].ptree), eq, (yyvsp[0].ptree));
     }
-#line 2047 "bison.tab.c"
+#line 2067 "bison.tab.c"
     break;
 
   case 16: /* statement: expression_statement  */
@@ -2051,7 +2071,7 @@ yyreduce:
                          {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2055 "bison.tab.c"
+#line 2075 "bison.tab.c"
     break;
 
   case 17: /* statement: block_statement  */
@@ -2059,7 +2079,7 @@ yyreduce:
                       {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2063 "bison.tab.c"
+#line 2083 "bison.tab.c"
     break;
 
   case 18: /* statement: jump_statement  */
@@ -2067,7 +2087,7 @@ yyreduce:
                      {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2071 "bison.tab.c"
+#line 2091 "bison.tab.c"
     break;
 
   case 19: /* statement: labeled_statement  */
@@ -2075,7 +2095,7 @@ yyreduce:
                         {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2079 "bison.tab.c"
+#line 2099 "bison.tab.c"
     break;
 
   case 20: /* statement: selection_statement  */
@@ -2083,7 +2103,7 @@ yyreduce:
                           {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2087 "bison.tab.c"
+#line 2107 "bison.tab.c"
     break;
 
   case 21: /* statement: iteration_statement  */
@@ -2091,7 +2111,7 @@ yyreduce:
                           {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2095 "bison.tab.c"
+#line 2115 "bison.tab.c"
     break;
 
   case 22: /* statement: variable_statement ';'  */
@@ -2099,7 +2119,7 @@ yyreduce:
                              {
         (yyval.ptree) = (yyvsp[-1].ptree);
     }
-#line 2103 "bison.tab.c"
+#line 2123 "bison.tab.c"
     break;
 
   case 23: /* statement: type_statement  */
@@ -2107,7 +2127,7 @@ yyreduce:
                      {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2111 "bison.tab.c"
+#line 2131 "bison.tab.c"
     break;
 
   case 24: /* statement: struct_statement  */
@@ -2115,7 +2135,7 @@ yyreduce:
                        {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2119 "bison.tab.c"
+#line 2139 "bison.tab.c"
     break;
 
   case 25: /* statement: union_statement  */
@@ -2123,7 +2143,7 @@ yyreduce:
                       {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2127 "bison.tab.c"
+#line 2147 "bison.tab.c"
     break;
 
   case 26: /* statement: enum_statement  */
@@ -2131,7 +2151,7 @@ yyreduce:
                      {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2135 "bison.tab.c"
+#line 2155 "bison.tab.c"
     break;
 
   case 27: /* statement: methods_statement  */
@@ -2139,7 +2159,7 @@ yyreduce:
                         {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2143 "bison.tab.c"
+#line 2163 "bison.tab.c"
     break;
 
   case 28: /* expression_statement: optional_expression ';'  */
@@ -2148,7 +2168,7 @@ yyreduce:
         ptree_t *sc = ptree_create(PTREE_SEMICOLON, 0);
         (yyval.ptree) = ptree_create(PTREE_EXPRESSION_STATEMENT, 2, (yyvsp[-1].ptree), sc);
     }
-#line 2152 "bison.tab.c"
+#line 2172 "bison.tab.c"
     break;
 
   case 29: /* expression: assignment_expression  */
@@ -2156,7 +2176,7 @@ yyreduce:
                           {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2160 "bison.tab.c"
+#line 2180 "bison.tab.c"
     break;
 
   case 30: /* expression: expression ',' assignment_expression  */
@@ -2164,7 +2184,7 @@ yyreduce:
                                            {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 2, (yyvsp[0].ptree));
     }
-#line 2168 "bison.tab.c"
+#line 2188 "bison.tab.c"
     break;
 
   case 31: /* optional_expression: expression  */
@@ -2172,7 +2192,7 @@ yyreduce:
                {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2176 "bison.tab.c"
+#line 2196 "bison.tab.c"
     break;
 
   case 32: /* optional_expression: %empty  */
@@ -2180,7 +2200,7 @@ yyreduce:
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);
     }
-#line 2184 "bison.tab.c"
+#line 2204 "bison.tab.c"
     break;
 
   case 33: /* assignment_expression: unary_expression assignment_operator assignment_expression  */
@@ -2188,7 +2208,7 @@ yyreduce:
                                                                {
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 2192 "bison.tab.c"
+#line 2212 "bison.tab.c"
     break;
 
   case 34: /* assignment_expression: function_expression  */
@@ -2196,7 +2216,7 @@ yyreduce:
                           {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2200 "bison.tab.c"
+#line 2220 "bison.tab.c"
     break;
 
   case 35: /* assignment_expression: conditional_expression  */
@@ -2204,7 +2224,7 @@ yyreduce:
                              {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2208 "bison.tab.c"
+#line 2228 "bison.tab.c"
     break;
 
   case 36: /* assignment_operator: '='  */
@@ -2212,7 +2232,7 @@ yyreduce:
         {
         (yyval.ptree) = ptree_create(PTREE_ASSIGN, 0);
     }
-#line 2216 "bison.tab.c"
+#line 2236 "bison.tab.c"
     break;
 
   case 37: /* assignment_operator: OR_ASSIGN  */
@@ -2220,7 +2240,7 @@ yyreduce:
                 {
         (yyval.ptree) = ptree_create(PTREE_OR_ASSIGN, 0);
     }
-#line 2224 "bison.tab.c"
+#line 2244 "bison.tab.c"
     break;
 
   case 38: /* assignment_operator: MUL_ASSIGN  */
@@ -2228,7 +2248,7 @@ yyreduce:
                  {
         (yyval.ptree) = ptree_create(PTREE_MUL_ASSIGN, 0);
     }
-#line 2232 "bison.tab.c"
+#line 2252 "bison.tab.c"
     break;
 
   case 39: /* assignment_operator: DIV_ASSIGN  */
@@ -2236,7 +2256,7 @@ yyreduce:
                  {
         (yyval.ptree) = ptree_create(PTREE_DIV_ASSIGN, 0);
     }
-#line 2240 "bison.tab.c"
+#line 2260 "bison.tab.c"
     break;
 
   case 40: /* assignment_operator: MOD_ASSIGN  */
@@ -2244,7 +2264,7 @@ yyreduce:
                  {
         (yyval.ptree) = ptree_create(PTREE_MOD_ASSIGN, 0);
     }
-#line 2248 "bison.tab.c"
+#line 2268 "bison.tab.c"
     break;
 
   case 41: /* assignment_operator: ADD_ASSIGN  */
@@ -2252,7 +2272,7 @@ yyreduce:
                  {
         (yyval.ptree) = ptree_create(PTREE_ADD_ASSIGN, 0);
     }
-#line 2256 "bison.tab.c"
+#line 2276 "bison.tab.c"
     break;
 
   case 42: /* assignment_operator: SUB_ASSIGN  */
@@ -2260,7 +2280,7 @@ yyreduce:
                  {
         (yyval.ptree) = ptree_create(PTREE_SUB_ASSIGN, 0);
     }
-#line 2264 "bison.tab.c"
+#line 2284 "bison.tab.c"
     break;
 
   case 43: /* assignment_operator: SHL_ASSIGN  */
@@ -2268,7 +2288,7 @@ yyreduce:
                  {
         (yyval.ptree) = ptree_create(PTREE_SHL_ASSIGN, 0);
     }
-#line 2272 "bison.tab.c"
+#line 2292 "bison.tab.c"
     break;
 
   case 44: /* assignment_operator: SHR_ASSIGN  */
@@ -2276,7 +2296,7 @@ yyreduce:
                  {
         (yyval.ptree) = ptree_create(PTREE_SHR_ASSIGN, 0);
     }
-#line 2280 "bison.tab.c"
+#line 2300 "bison.tab.c"
     break;
 
   case 45: /* assignment_operator: AND_ASSIGN  */
@@ -2284,7 +2304,7 @@ yyreduce:
                  {
         (yyval.ptree) = ptree_create(PTREE_AND_ASSIGN, 0);
     }
-#line 2288 "bison.tab.c"
+#line 2308 "bison.tab.c"
     break;
 
   case 46: /* assignment_operator: XOR_ASSIGN  */
@@ -2292,7 +2312,7 @@ yyreduce:
                  {
         (yyval.ptree) = ptree_create(PTREE_XOR_ASSIGN, 0);
     }
-#line 2296 "bison.tab.c"
+#line 2316 "bison.tab.c"
     break;
 
   case 47: /* function_expression: FUN typed_parameters '(' parameters_list ')' type_annotation FORWARD_ARROW function_expression_body  */
@@ -2303,7 +2323,7 @@ yyreduce:
         ptree_t *fa = ptree_create(PTREE_FORWARD_ARROW, 0);
         (yyval.ptree) = ptree_create(PTREE_FUNCTION_EXPRESSION, 7, (yyvsp[-6].ptree), lp, (yyvsp[-4].ptree), rp, (yyvsp[-2].ptree), fa, (yyvsp[0].ptree));
     }
-#line 2307 "bison.tab.c"
+#line 2327 "bison.tab.c"
     break;
 
   case 48: /* function_expression_body: assignment_expression  */
@@ -2311,7 +2331,7 @@ yyreduce:
                           {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2315 "bison.tab.c"
+#line 2335 "bison.tab.c"
     break;
 
   case 49: /* function_expression_body: block_statement  */
@@ -2319,7 +2339,7 @@ yyreduce:
                       {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2323 "bison.tab.c"
+#line 2343 "bison.tab.c"
     break;
 
   case 50: /* constant_expression: conditional_expression  */
@@ -2327,7 +2347,7 @@ yyreduce:
                            {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2331 "bison.tab.c"
+#line 2351 "bison.tab.c"
     break;
 
   case 51: /* conditional_expression: logical_or_expression  */
@@ -2335,7 +2355,7 @@ yyreduce:
                           {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2339 "bison.tab.c"
+#line 2359 "bison.tab.c"
     break;
 
   case 52: /* conditional_expression: logical_or_expression '?' assignment_expression ':' assignment_expression  */
@@ -2345,7 +2365,7 @@ yyreduce:
         ptree_t *sc = ptree_create(PTREE_SEMICOLON, 0);
         (yyval.ptree) = ptree_create(PTREE_TERNARY_EXPRESSION, 5, (yyvsp[-4].ptree), q, (yyvsp[-2].ptree), sc, (yyvsp[0].ptree));
     }
-#line 2349 "bison.tab.c"
+#line 2369 "bison.tab.c"
     break;
 
   case 53: /* logical_or_expression: logical_and_expression  */
@@ -2353,7 +2373,7 @@ yyreduce:
                            {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2357 "bison.tab.c"
+#line 2377 "bison.tab.c"
     break;
 
   case 54: /* logical_or_expression: logical_or_expression OR logical_and_expression  */
@@ -2362,7 +2382,7 @@ yyreduce:
         ptree_t *op = ptree_create(PTREE_OR, 0);
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), op, (yyvsp[0].ptree));
     }
-#line 2366 "bison.tab.c"
+#line 2386 "bison.tab.c"
     break;
 
   case 55: /* logical_and_expression: bitwise_or_expression  */
@@ -2370,7 +2390,7 @@ yyreduce:
                           {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2374 "bison.tab.c"
+#line 2394 "bison.tab.c"
     break;
 
   case 56: /* logical_and_expression: logical_and_expression AND bitwise_or_expression  */
@@ -2379,7 +2399,7 @@ yyreduce:
         ptree_t *op = ptree_create(PTREE_AND, 0);
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), op, (yyvsp[0].ptree));
     }
-#line 2383 "bison.tab.c"
+#line 2403 "bison.tab.c"
     break;
 
   case 57: /* bitwise_or_expression: bitwise_xor_expression  */
@@ -2387,7 +2407,7 @@ yyreduce:
                            {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2391 "bison.tab.c"
+#line 2411 "bison.tab.c"
     break;
 
   case 58: /* bitwise_or_expression: bitwise_or_expression '|' bitwise_xor_expression  */
@@ -2396,7 +2416,7 @@ yyreduce:
         ptree_t *op = ptree_create(PTREE_BIT_OR, 0);
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), op, (yyvsp[0].ptree));
     }
-#line 2400 "bison.tab.c"
+#line 2420 "bison.tab.c"
     break;
 
   case 59: /* bitwise_xor_expression: bitwise_and_expression  */
@@ -2404,7 +2424,7 @@ yyreduce:
                            {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2408 "bison.tab.c"
+#line 2428 "bison.tab.c"
     break;
 
   case 60: /* bitwise_xor_expression: bitwise_xor_expression '^' bitwise_and_expression  */
@@ -2413,7 +2433,7 @@ yyreduce:
         ptree_t *op = ptree_create(PTREE_BIT_XOR, 0);
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), op, (yyvsp[0].ptree));
     }
-#line 2417 "bison.tab.c"
+#line 2437 "bison.tab.c"
     break;
 
   case 61: /* bitwise_and_expression: equality_expression  */
@@ -2421,7 +2441,7 @@ yyreduce:
                         {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2425 "bison.tab.c"
+#line 2445 "bison.tab.c"
     break;
 
   case 62: /* bitwise_and_expression: bitwise_and_expression '&' equality_expression  */
@@ -2430,7 +2450,7 @@ yyreduce:
         ptree_t *op = ptree_create(PTREE_BIT_AND, 0);
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), op, (yyvsp[0].ptree));
     }
-#line 2434 "bison.tab.c"
+#line 2454 "bison.tab.c"
     break;
 
   case 63: /* equality_expression: relational_expression  */
@@ -2438,7 +2458,7 @@ yyreduce:
                           {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2442 "bison.tab.c"
+#line 2462 "bison.tab.c"
     break;
 
   case 64: /* equality_expression: equality_expression equality_operator relational_expression  */
@@ -2446,7 +2466,7 @@ yyreduce:
                                                                   {
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 2450 "bison.tab.c"
+#line 2470 "bison.tab.c"
     break;
 
   case 65: /* equality_operator: IS_EQUAL  */
@@ -2454,7 +2474,7 @@ yyreduce:
              {
         (yyval.ptree) = ptree_create(PTREE_IS_EQUAL, 0);
     }
-#line 2458 "bison.tab.c"
+#line 2478 "bison.tab.c"
     break;
 
   case 66: /* equality_operator: NOT_EQUAL  */
@@ -2462,7 +2482,7 @@ yyreduce:
                 {
         (yyval.ptree) = ptree_create(PTREE_NOT_EQUAL, 0);
     }
-#line 2466 "bison.tab.c"
+#line 2486 "bison.tab.c"
     break;
 
   case 67: /* relational_expression: shift_expression  */
@@ -2470,7 +2490,7 @@ yyreduce:
                      {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2474 "bison.tab.c"
+#line 2494 "bison.tab.c"
     break;
 
   case 68: /* relational_expression: relational_expression relational_operator shift_expression  */
@@ -2478,7 +2498,7 @@ yyreduce:
                                                                  {
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 2482 "bison.tab.c"
+#line 2502 "bison.tab.c"
     break;
 
   case 69: /* relational_operator: '<'  */
@@ -2486,7 +2506,7 @@ yyreduce:
         {
         (yyval.ptree) = ptree_create(PTREE_LESS, 0);
     }
-#line 2490 "bison.tab.c"
+#line 2510 "bison.tab.c"
     break;
 
   case 70: /* relational_operator: '>'  */
@@ -2494,7 +2514,7 @@ yyreduce:
           {
         (yyval.ptree) = ptree_create(PTREE_GREATER, 0);
     }
-#line 2498 "bison.tab.c"
+#line 2518 "bison.tab.c"
     break;
 
   case 71: /* relational_operator: LESS_EQ  */
@@ -2502,7 +2522,7 @@ yyreduce:
               {
         (yyval.ptree) = ptree_create(PTREE_LESS_EQ, 0);
     }
-#line 2506 "bison.tab.c"
+#line 2526 "bison.tab.c"
     break;
 
   case 72: /* relational_operator: GREATER_EQ  */
@@ -2510,7 +2530,7 @@ yyreduce:
                  {
         (yyval.ptree) = ptree_create(PTREE_GREATER_EQ, 0);
     }
-#line 2514 "bison.tab.c"
+#line 2534 "bison.tab.c"
     break;
 
   case 73: /* shift_expression: additive_expression  */
@@ -2518,7 +2538,7 @@ yyreduce:
                         {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2522 "bison.tab.c"
+#line 2542 "bison.tab.c"
     break;
 
   case 74: /* shift_expression: shift_expression shift_operator additive_expression  */
@@ -2526,7 +2546,7 @@ yyreduce:
                                                           {
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 2530 "bison.tab.c"
+#line 2550 "bison.tab.c"
     break;
 
   case 75: /* shift_operator: LSHIFT  */
@@ -2534,7 +2554,7 @@ yyreduce:
            {
         (yyval.ptree) = ptree_create(PTREE_LSHIFT, 0);
     }
-#line 2538 "bison.tab.c"
+#line 2558 "bison.tab.c"
     break;
 
   case 76: /* shift_operator: RSHIFT  */
@@ -2542,7 +2562,7 @@ yyreduce:
              {
         (yyval.ptree) = ptree_create(PTREE_RSHIFT, 0);
     }
-#line 2546 "bison.tab.c"
+#line 2566 "bison.tab.c"
     break;
 
   case 77: /* additive_expression: multiplicative_expression  */
@@ -2550,7 +2570,7 @@ yyreduce:
                               {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2554 "bison.tab.c"
+#line 2574 "bison.tab.c"
     break;
 
   case 78: /* additive_expression: additive_expression additive_operator multiplicative_expression  */
@@ -2558,7 +2578,7 @@ yyreduce:
                                                                       {
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 2562 "bison.tab.c"
+#line 2582 "bison.tab.c"
     break;
 
   case 79: /* additive_operator: '+'  */
@@ -2566,7 +2586,7 @@ yyreduce:
         {
         (yyval.ptree) = ptree_create(PTREE_PLUS, 0);
     }
-#line 2570 "bison.tab.c"
+#line 2590 "bison.tab.c"
     break;
 
   case 80: /* additive_operator: '-'  */
@@ -2574,7 +2594,7 @@ yyreduce:
           {
         (yyval.ptree) = ptree_create(PTREE_MINUS, 0);
     }
-#line 2578 "bison.tab.c"
+#line 2598 "bison.tab.c"
     break;
 
   case 81: /* multiplicative_expression: unary_expression  */
@@ -2582,7 +2602,7 @@ yyreduce:
                      {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2586 "bison.tab.c"
+#line 2606 "bison.tab.c"
     break;
 
   case 82: /* multiplicative_expression: multiplicative_expression multiplicative_operator unary_expression  */
@@ -2590,7 +2610,7 @@ yyreduce:
                                                                          {
         (yyval.ptree) = ptree_create(PTREE_BINARY_EXPRESSION, 3, (yyvsp[-2].ptree), (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 2594 "bison.tab.c"
+#line 2614 "bison.tab.c"
     break;
 
   case 83: /* multiplicative_operator: '*'  */
@@ -2598,7 +2618,7 @@ yyreduce:
         {
         (yyval.ptree) = ptree_create(PTREE_MULTIPLY, 0);
     }
-#line 2602 "bison.tab.c"
+#line 2622 "bison.tab.c"
     break;
 
   case 84: /* multiplicative_operator: '/'  */
@@ -2606,7 +2626,7 @@ yyreduce:
           {
         (yyval.ptree) = ptree_create(PTREE_DIVIDE, 0);
     }
-#line 2610 "bison.tab.c"
+#line 2630 "bison.tab.c"
     break;
 
   case 85: /* multiplicative_operator: '%'  */
@@ -2614,7 +2634,7 @@ yyreduce:
           {
         (yyval.ptree) = ptree_create(PTREE_MODULO, 0);
     }
-#line 2618 "bison.tab.c"
+#line 2638 "bison.tab.c"
     break;
 
   case 86: /* unary_expression: postfix_expression  */
@@ -2622,7 +2642,7 @@ yyreduce:
                        {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2626 "bison.tab.c"
+#line 2646 "bison.tab.c"
     break;
 
   case 87: /* unary_expression: unary_operator unary_expression  */
@@ -2630,7 +2650,7 @@ yyreduce:
                                       {
         (yyval.ptree) = ptree_create(PTREE_UNARY, 2, (yyvsp[-1].ptree), (yyvsp[0].ptree));
     }
-#line 2634 "bison.tab.c"
+#line 2654 "bison.tab.c"
     break;
 
   case 88: /* unary_operator: INCREMENT  */
@@ -2638,7 +2658,7 @@ yyreduce:
               {
         (yyval.ptree) = ptree_create(PTREE_INCREMENT, 0);
     }
-#line 2642 "bison.tab.c"
+#line 2662 "bison.tab.c"
     break;
 
   case 89: /* unary_operator: DECREMENT  */
@@ -2646,7 +2666,7 @@ yyreduce:
                 {
         (yyval.ptree) = ptree_create(PTREE_DECREMENT, 0);
     }
-#line 2650 "bison.tab.c"
+#line 2670 "bison.tab.c"
     break;
 
   case 90: /* unary_operator: '!'  */
@@ -2654,7 +2674,7 @@ yyreduce:
           {
         (yyval.ptree) = ptree_create(PTREE_NOT, 0);
     }
-#line 2658 "bison.tab.c"
+#line 2678 "bison.tab.c"
     break;
 
   case 91: /* unary_operator: '~'  */
@@ -2662,7 +2682,7 @@ yyreduce:
           {
         (yyval.ptree) = ptree_create(PTREE_TILDE, 0);
     }
-#line 2666 "bison.tab.c"
+#line 2686 "bison.tab.c"
     break;
 
   case 92: /* unary_operator: '+'  */
@@ -2670,7 +2690,7 @@ yyreduce:
           {
         (yyval.ptree) = ptree_create(PTREE_PLUS, 0);
     }
-#line 2674 "bison.tab.c"
+#line 2694 "bison.tab.c"
     break;
 
   case 93: /* unary_operator: '-'  */
@@ -2678,7 +2698,7 @@ yyreduce:
           {
         (yyval.ptree) = ptree_create(PTREE_MINUS, 0);
     }
-#line 2682 "bison.tab.c"
+#line 2702 "bison.tab.c"
     break;
 
   case 94: /* unary_operator: '&'  */
@@ -2686,7 +2706,7 @@ yyreduce:
           {
         (yyval.ptree) = ptree_create(PTREE_BIT_AND, 0);
     }
-#line 2690 "bison.tab.c"
+#line 2710 "bison.tab.c"
     break;
 
   case 95: /* postfix_expression: primary_expression  */
@@ -2694,7 +2714,7 @@ yyreduce:
                        {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2698 "bison.tab.c"
+#line 2718 "bison.tab.c"
     break;
 
   case 96: /* postfix_expression: postfix_expression postfix_operator  */
@@ -2702,7 +2722,7 @@ yyreduce:
                                           {
         (yyval.ptree) = ptree_create(PTREE_POSTFIX, 2, (yyvsp[0].ptree), (yyvsp[-1].ptree));
     }
-#line 2706 "bison.tab.c"
+#line 2726 "bison.tab.c"
     break;
 
   case 97: /* postfix_expression: postfix_expression '.' WORD  */
@@ -2712,7 +2732,7 @@ yyreduce:
         ptree_t *dot =ptree_create(PTREE_DOT, 0);
         (yyval.ptree) = ptree_create(PTREE_OBJECT_ACCESS, 3, (yyvsp[-2].ptree), dot, w);
     }
-#line 2716 "bison.tab.c"
+#line 2736 "bison.tab.c"
     break;
 
   case 98: /* postfix_expression: postfix_expression '[' expression ']'  */
@@ -2722,7 +2742,7 @@ yyreduce:
         ptree_t *rb =ptree_create(PTREE_RBRACKET, 0);
         (yyval.ptree) = ptree_create(PTREE_ARRAY_ACCESS, 3, (yyvsp[-3].ptree), lb, (yyvsp[-1].ptree), rb);
     }
-#line 2726 "bison.tab.c"
+#line 2746 "bison.tab.c"
     break;
 
   case 99: /* postfix_expression: postfix_expression '(' arguments ')'  */
@@ -2732,7 +2752,7 @@ yyreduce:
         ptree_t *rb = ptree_create(PTREE_RPRN, 0);
         (yyval.ptree) = ptree_create(PTREE_FUNCTION_CALL, 4, (yyvsp[-3].ptree), lb, (yyvsp[-1].ptree), rb);
     }
-#line 2736 "bison.tab.c"
+#line 2756 "bison.tab.c"
     break;
 
   case 100: /* arguments: assignment_expression  */
@@ -2740,7 +2760,7 @@ yyreduce:
                           {
         (yyval.ptree) = ptree_create(PTREE_ARGUMENT_LIST, 1, (yyvsp[0].ptree));
     }
-#line 2744 "bison.tab.c"
+#line 2764 "bison.tab.c"
     break;
 
   case 101: /* arguments: arguments ',' assignment_expression  */
@@ -2748,7 +2768,7 @@ yyreduce:
                                           {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 2752 "bison.tab.c"
+#line 2772 "bison.tab.c"
     break;
 
   case 102: /* arguments: %empty  */
@@ -2756,7 +2776,7 @@ yyreduce:
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);
     }
-#line 2760 "bison.tab.c"
+#line 2780 "bison.tab.c"
     break;
 
   case 103: /* postfix_operator: INCREMENT  */
@@ -2764,7 +2784,7 @@ yyreduce:
               {
         (yyval.ptree) = ptree_create(PTREE_INCREMENT, 0);
     }
-#line 2768 "bison.tab.c"
+#line 2788 "bison.tab.c"
     break;
 
   case 104: /* postfix_operator: DECREMENT  */
@@ -2772,7 +2792,7 @@ yyreduce:
                 {
         (yyval.ptree) = ptree_create(PTREE_DECREMENT, 0);
     }
-#line 2776 "bison.tab.c"
+#line 2796 "bison.tab.c"
     break;
 
   case 105: /* primary_expression: WORD  */
@@ -2780,7 +2800,7 @@ yyreduce:
          {
         (yyval.ptree) = ptree_create_symbol((yyvsp[0].str));
     }
-#line 2784 "bison.tab.c"
+#line 2804 "bison.tab.c"
     break;
 
   case 106: /* primary_expression: literal  */
@@ -2788,7 +2808,7 @@ yyreduce:
               {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2792 "bison.tab.c"
+#line 2812 "bison.tab.c"
     break;
 
   case 107: /* primary_expression: array_literal  */
@@ -2796,7 +2816,7 @@ yyreduce:
                     {
        (yyval.ptree) = (yyvsp[0].ptree); 
     }
-#line 2800 "bison.tab.c"
+#line 2820 "bison.tab.c"
     break;
 
   case 108: /* primary_expression: object_literal  */
@@ -2804,7 +2824,7 @@ yyreduce:
                      {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2808 "bison.tab.c"
+#line 2828 "bison.tab.c"
     break;
 
   case 109: /* primary_expression: '(' expression ')'  */
@@ -2814,7 +2834,7 @@ yyreduce:
         ptree_t *right = ptree_create(PTREE_LBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_EXPRESSION, 3, left, (yyvsp[-1].ptree), right);
     }
-#line 2818 "bison.tab.c"
+#line 2838 "bison.tab.c"
     break;
 
   case 110: /* literal: NUMBER  */
@@ -2822,7 +2842,7 @@ yyreduce:
            {
         (yyval.ptree) = ptree_create_num((yyvsp[0].num));
     }
-#line 2826 "bison.tab.c"
+#line 2846 "bison.tab.c"
     break;
 
   case 111: /* literal: TRUE_VAL  */
@@ -2830,7 +2850,7 @@ yyreduce:
                {
         (yyval.ptree) = ptree_create_bool(1);
     }
-#line 2834 "bison.tab.c"
+#line 2854 "bison.tab.c"
     break;
 
   case 112: /* literal: FALSE_VAL  */
@@ -2838,7 +2858,7 @@ yyreduce:
                 {
         (yyval.ptree) = ptree_create_bool(0);
     }
-#line 2842 "bison.tab.c"
+#line 2862 "bison.tab.c"
     break;
 
   case 113: /* literal: STRING  */
@@ -2846,7 +2866,7 @@ yyreduce:
              {
         (yyval.ptree) = ptree_create_str((yyvsp[0].str));
     }
-#line 2850 "bison.tab.c"
+#line 2870 "bison.tab.c"
     break;
 
   case 114: /* array_literal: '[' element_list ']'  */
@@ -2856,7 +2876,7 @@ yyreduce:
         ptree_t *right = ptree_create(PTREE_RBRACKET, 0);
         (yyval.ptree) = ptree_create(PTREE_ARRAY_LITERAL, 3, left, (yyvsp[-1].ptree), right);
     }
-#line 2860 "bison.tab.c"
+#line 2880 "bison.tab.c"
     break;
 
   case 115: /* element_list: assignment_expression  */
@@ -2864,7 +2884,7 @@ yyreduce:
                           {
         (yyval.ptree) = ptree_create(PTREE_ELEMENT_LIST, 1, (yyvsp[0].ptree));
     }
-#line 2868 "bison.tab.c"
+#line 2888 "bison.tab.c"
     break;
 
   case 116: /* element_list: element_list ',' assignment_expression  */
@@ -2872,7 +2892,7 @@ yyreduce:
                                              {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 2876 "bison.tab.c"
+#line 2896 "bison.tab.c"
     break;
 
   case 117: /* element_list: element_list ','  */
@@ -2880,7 +2900,7 @@ yyreduce:
                        {
         (yyval.ptree) = (yyvsp[-1].ptree);
     }
-#line 2884 "bison.tab.c"
+#line 2904 "bison.tab.c"
     break;
 
   case 118: /* element_list: %empty  */
@@ -2888,7 +2908,7 @@ yyreduce:
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);
     }
-#line 2892 "bison.tab.c"
+#line 2912 "bison.tab.c"
     break;
 
   case 119: /* object_literal: WORD '{' keyvalue_list '}'  */
@@ -2899,7 +2919,7 @@ yyreduce:
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_OBJECT_LITERAL, 4, w, left, (yyvsp[-1].ptree), right);
     }
-#line 2903 "bison.tab.c"
+#line 2923 "bison.tab.c"
     break;
 
   case 120: /* keyvalue_list: keyvalue  */
@@ -2907,7 +2927,7 @@ yyreduce:
              {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2911 "bison.tab.c"
+#line 2931 "bison.tab.c"
     break;
 
   case 121: /* keyvalue_list: keyvalue_list ',' keyvalue  */
@@ -2915,7 +2935,7 @@ yyreduce:
                                  {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 2919 "bison.tab.c"
+#line 2939 "bison.tab.c"
     break;
 
   case 122: /* keyvalue_list: keyvalue_list ','  */
@@ -2923,7 +2943,7 @@ yyreduce:
                         {
         (yyval.ptree) = (yyvsp[-1].ptree);
     }
-#line 2927 "bison.tab.c"
+#line 2947 "bison.tab.c"
     break;
 
   case 123: /* keyvalue_list: %empty  */
@@ -2931,7 +2951,7 @@ yyreduce:
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);
     }
-#line 2935 "bison.tab.c"
+#line 2955 "bison.tab.c"
     break;
 
   case 124: /* keyvalue: property_name ':' assignment_expression  */
@@ -2940,7 +2960,7 @@ yyreduce:
         ptree_t *c = ptree_create(PTREE_COLON, 0);
         (yyval.ptree) = ptree_create(PTREE_KEYVALUE, 3, (yyvsp[-2].ptree), c, (yyvsp[0].ptree));
     }
-#line 2944 "bison.tab.c"
+#line 2964 "bison.tab.c"
     break;
 
   case 125: /* property_name: WORD  */
@@ -2948,7 +2968,7 @@ yyreduce:
          {
         (yyval.ptree) = ptree_create_symbol((yyvsp[0].str));
     }
-#line 2952 "bison.tab.c"
+#line 2972 "bison.tab.c"
     break;
 
   case 126: /* property_name: STRING  */
@@ -2956,7 +2976,7 @@ yyreduce:
              {
         (yyval.ptree) = ptree_create_str((yyvsp[0].str));
     }
-#line 2960 "bison.tab.c"
+#line 2980 "bison.tab.c"
     break;
 
   case 127: /* property_name: NUMBER  */
@@ -2964,7 +2984,7 @@ yyreduce:
              {
         (yyval.ptree) = ptree_create_num((yyvsp[0].num));
     }
-#line 2968 "bison.tab.c"
+#line 2988 "bison.tab.c"
     break;
 
   case 128: /* block_statement: '{' source_elements '}'  */
@@ -2975,7 +2995,7 @@ yyreduce:
 
         (yyval.ptree) = ptree_create(PTREE_BLOCK, 3, left, (yyvsp[-1].ptree), right);
     }
-#line 2979 "bison.tab.c"
+#line 2999 "bison.tab.c"
     break;
 
   case 129: /* block_statement: '{' '}'  */
@@ -2986,7 +3006,7 @@ yyreduce:
         ptree_t *empty = ptree_create(PTREE_EMPTY, 0);
         (yyval.ptree) = ptree_create(PTREE_BLOCK, 3, left, empty, right);
     }
-#line 2990 "bison.tab.c"
+#line 3010 "bison.tab.c"
     break;
 
   case 130: /* jump_statement: return_statement  */
@@ -2994,7 +3014,7 @@ yyreduce:
                      {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 2998 "bison.tab.c"
+#line 3018 "bison.tab.c"
     break;
 
   case 131: /* jump_statement: break_statement  */
@@ -3002,7 +3022,7 @@ yyreduce:
                       {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3006 "bison.tab.c"
+#line 3026 "bison.tab.c"
     break;
 
   case 132: /* jump_statement: continue_statement  */
@@ -3010,7 +3030,7 @@ yyreduce:
                          {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3014 "bison.tab.c"
+#line 3034 "bison.tab.c"
     break;
 
   case 133: /* return_statement: RETURN ';'  */
@@ -3019,7 +3039,7 @@ yyreduce:
         ptree_t *empty = ptree_create(PTREE_EMPTY, 0);
         (yyval.ptree) = ptree_create(PTREE_RETURN, 1, empty);
     }
-#line 3023 "bison.tab.c"
+#line 3043 "bison.tab.c"
     break;
 
   case 134: /* return_statement: RETURN expression ';'  */
@@ -3027,7 +3047,7 @@ yyreduce:
                             {
         (yyval.ptree) = ptree_create(PTREE_RETURN, 1, (yyvsp[-1].ptree));
     }
-#line 3031 "bison.tab.c"
+#line 3051 "bison.tab.c"
     break;
 
   case 135: /* break_statement: BREAK ';'  */
@@ -3035,7 +3055,7 @@ yyreduce:
               {
         (yyval.ptree) = ptree_create(PTREE_BREAK, 0);
     }
-#line 3039 "bison.tab.c"
+#line 3059 "bison.tab.c"
     break;
 
   case 136: /* continue_statement: CONTINUE ';'  */
@@ -3043,7 +3063,7 @@ yyreduce:
                  {
         (yyval.ptree) = ptree_create(PTREE_CONTINUE, 0);
     }
-#line 3047 "bison.tab.c"
+#line 3067 "bison.tab.c"
     break;
 
   case 137: /* labeled_statement: WORD ':' statement  */
@@ -3053,7 +3073,7 @@ yyreduce:
         ptree_t *c = ptree_create(PTREE_COLON, 0);
         (yyval.ptree) = ptree_create(PTREE_LABEL, 3, w, c, (yyvsp[0].ptree));
     }
-#line 3057 "bison.tab.c"
+#line 3077 "bison.tab.c"
     break;
 
   case 138: /* labeled_statement: CASE constant_expression ':' statement  */
@@ -3062,7 +3082,7 @@ yyreduce:
         ptree_t *c = ptree_create(PTREE_COLON, 0);
         (yyval.ptree) = ptree_create(PTREE_CASE_LABEL, 3, (yyvsp[-2].ptree), c, (yyvsp[0].ptree));
     }
-#line 3066 "bison.tab.c"
+#line 3086 "bison.tab.c"
     break;
 
   case 139: /* labeled_statement: DEFAULT ':' statement  */
@@ -3071,7 +3091,7 @@ yyreduce:
         ptree_t *c = ptree_create(PTREE_COLON, 0);
         (yyval.ptree) = ptree_create(PTREE_DEFAULT_LABEL, 2, c, (yyvsp[0].ptree));
     }
-#line 3075 "bison.tab.c"
+#line 3095 "bison.tab.c"
     break;
 
   case 140: /* selection_statement: IF '(' expression ')' statement  */
@@ -3082,7 +3102,7 @@ yyreduce:
 
         (yyval.ptree) = ptree_create(PTREE_IF, 4, left, (yyvsp[-2].ptree), right, (yyvsp[0].ptree));
     }
-#line 3086 "bison.tab.c"
+#line 3106 "bison.tab.c"
     break;
 
   case 141: /* selection_statement: IF '(' expression ')' statement ELSE statement  */
@@ -3094,7 +3114,7 @@ yyreduce:
 
         (yyval.ptree) = ptree_create(PTREE_IF_ELSE, 6, left, (yyvsp[-4].ptree), right, (yyvsp[-2].ptree), e, (yyvsp[0].ptree));
     }
-#line 3098 "bison.tab.c"
+#line 3118 "bison.tab.c"
     break;
 
   case 142: /* selection_statement: SWITCH '(' expression ')' statement  */
@@ -3105,7 +3125,7 @@ yyreduce:
 
         (yyval.ptree) = ptree_create(PTREE_SWITCH, 4, left, (yyvsp[-2].ptree), right, (yyvsp[0].ptree));
     }
-#line 3109 "bison.tab.c"
+#line 3129 "bison.tab.c"
     break;
 
   case 143: /* iteration_statement: WHILE '(' expression ')' statement  */
@@ -3115,7 +3135,7 @@ yyreduce:
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_WHILE, 4, left, (yyvsp[-2].ptree), right, (yyvsp[0].ptree));
     }
-#line 3119 "bison.tab.c"
+#line 3139 "bison.tab.c"
     break;
 
   case 144: /* iteration_statement: DO statement WHILE '(' expression ')' ';'  */
@@ -3128,7 +3148,7 @@ yyreduce:
 
         (yyval.ptree) = ptree_create(PTREE_DO, 6, (yyvsp[-5].ptree), wh, left, (yyvsp[-2].ptree), right, sc);
     }
-#line 3132 "bison.tab.c"
+#line 3152 "bison.tab.c"
     break;
 
   case 145: /* iteration_statement: FOR '(' for_initialization ';' optional_expression ';' optional_expression ')' statement  */
@@ -3140,7 +3160,7 @@ yyreduce:
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_FOR, 8, left, (yyvsp[-6].ptree), sc, (yyvsp[-4].ptree), sc2, (yyvsp[-2].ptree), right, (yyvsp[0].ptree));
     }
-#line 3144 "bison.tab.c"
+#line 3164 "bison.tab.c"
     break;
 
   case 146: /* for_initialization: optional_expression  */
@@ -3148,7 +3168,7 @@ yyreduce:
                         {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3152 "bison.tab.c"
+#line 3172 "bison.tab.c"
     break;
 
   case 147: /* for_initialization: variable_statement  */
@@ -3156,7 +3176,7 @@ yyreduce:
                          {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3160 "bison.tab.c"
+#line 3180 "bison.tab.c"
     break;
 
   case 148: /* variable_statement: LET variable_list  */
@@ -3165,7 +3185,7 @@ yyreduce:
         ptree_t *sc = ptree_create(PTREE_SEMICOLON, 0);
         (yyval.ptree) = ptree_create(PTREE_LET_STATEMENT, 2, (yyvsp[0].ptree), sc);
     }
-#line 3169 "bison.tab.c"
+#line 3189 "bison.tab.c"
     break;
 
   case 149: /* variable_statement: CONST variable_list  */
@@ -3174,7 +3194,7 @@ yyreduce:
         ptree_t *sc = ptree_create(PTREE_SEMICOLON, 0);
         (yyval.ptree) = ptree_create(PTREE_CONST_STATEMENT, 2, (yyvsp[0].ptree), sc);
     }
-#line 3178 "bison.tab.c"
+#line 3198 "bison.tab.c"
     break;
 
   case 150: /* variable_list: variable  */
@@ -3182,7 +3202,7 @@ yyreduce:
              {
         (yyval.ptree) = ptree_create(PTREE_VARIABLE_LIST, 1, (yyvsp[0].ptree));
     }
-#line 3186 "bison.tab.c"
+#line 3206 "bison.tab.c"
     break;
 
   case 151: /* variable_list: variable_list ',' variable  */
@@ -3190,7 +3210,7 @@ yyreduce:
                                  {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 3194 "bison.tab.c"
+#line 3214 "bison.tab.c"
     break;
 
   case 152: /* variable: identifier  */
@@ -3198,7 +3218,7 @@ yyreduce:
                {
         (yyval.ptree) = ptree_create(PTREE_VARIABLE_UNASSIGNED, 1, (yyvsp[0].ptree));
     }
-#line 3202 "bison.tab.c"
+#line 3222 "bison.tab.c"
     break;
 
   case 153: /* variable: identifier '=' assignment_expression  */
@@ -3207,7 +3227,7 @@ yyreduce:
         ptree_t *eq = ptree_create(PTREE_ASSIGN, 0);
         (yyval.ptree) = ptree_create(PTREE_VARIABLE_ASSIGNED, 3, (yyvsp[-2].ptree), eq, (yyvsp[0].ptree));
     }
-#line 3211 "bison.tab.c"
+#line 3231 "bison.tab.c"
     break;
 
   case 154: /* identifier: WORD type_annotation  */
@@ -3216,7 +3236,7 @@ yyreduce:
         ptree_t *w = ptree_create_symbol((yyvsp[-1].str));
         (yyval.ptree) = ptree_create(PTREE_IDENTIFIER, 2, w, (yyvsp[0].ptree));
     }
-#line 3220 "bison.tab.c"
+#line 3240 "bison.tab.c"
     break;
 
   case 155: /* type_annotation: ':' type  */
@@ -3225,7 +3245,7 @@ yyreduce:
         ptree_t *sc = ptree_create(PTREE_COLON, 0);
         (yyval.ptree) = ptree_create(PTREE_TYPE_ANNOTATION, 2, sc, (yyvsp[0].ptree)); 
     }
-#line 3229 "bison.tab.c"
+#line 3249 "bison.tab.c"
     break;
 
   case 156: /* type_annotation: %empty  */
@@ -3233,7 +3253,7 @@ yyreduce:
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);     
     }
-#line 3237 "bison.tab.c"
+#line 3257 "bison.tab.c"
     break;
 
   case 157: /* type: primitive_type  */
@@ -3241,7 +3261,7 @@ yyreduce:
                    {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3245 "bison.tab.c"
+#line 3265 "bison.tab.c"
     break;
 
   case 158: /* type: array_type  */
@@ -3249,7 +3269,7 @@ yyreduce:
                  {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3253 "bison.tab.c"
+#line 3273 "bison.tab.c"
     break;
 
   case 159: /* type: tuple_type  */
@@ -3257,7 +3277,7 @@ yyreduce:
                  {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3261 "bison.tab.c"
+#line 3281 "bison.tab.c"
     break;
 
   case 160: /* type: function_type  */
@@ -3265,7 +3285,7 @@ yyreduce:
                     {
         (yyval.ptree) = (yyvsp[0].ptree);        
     }
-#line 3269 "bison.tab.c"
+#line 3289 "bison.tab.c"
     break;
 
   case 161: /* type: type_reference  */
@@ -3273,7 +3293,7 @@ yyreduce:
                      {
         (yyval.ptree) = (yyvsp[0].ptree);
     }
-#line 3277 "bison.tab.c"
+#line 3297 "bison.tab.c"
     break;
 
   case 162: /* primitive_type: T_VOID  */
@@ -3281,15 +3301,15 @@ yyreduce:
            { 
         (yyval.ptree) = ptree_create(PTREE_VOID_TYPE, 0);
     }
-#line 3285 "bison.tab.c"
+#line 3305 "bison.tab.c"
     break;
 
-  case 163: /* primitive_type: T_INTEGER  */
+  case 163: /* primitive_type: S32  */
 #line 796 "./src/parser/gens/bison.y"
-                {
+          {
         (yyval.ptree) = ptree_create(PTREE_INTEGER_TYPE, 0);
     }
-#line 3293 "bison.tab.c"
+#line 3313 "bison.tab.c"
     break;
 
   case 164: /* primitive_type: T_STRING  */
@@ -3297,7 +3317,7 @@ yyreduce:
                {
         (yyval.ptree) = ptree_create(PTREE_STRING_TYPE, 0);
     }
-#line 3301 "bison.tab.c"
+#line 3321 "bison.tab.c"
     break;
 
   case 165: /* primitive_type: T_BOOLEAN  */
@@ -3305,7 +3325,7 @@ yyreduce:
                 {
         (yyval.ptree) = ptree_create(PTREE_BOOLEAN_TYPE, 0);
     }
-#line 3309 "bison.tab.c"
+#line 3329 "bison.tab.c"
     break;
 
   case 166: /* array_type: type '[' ']'  */
@@ -3315,7 +3335,7 @@ yyreduce:
         ptree_t *rb = ptree_create(PTREE_RBRACKET, 0);
         (yyval.ptree) = ptree_create(PTREE_ARRAY_TYPE, 3, (yyvsp[-2].ptree), lb, rb);
     }
-#line 3319 "bison.tab.c"
+#line 3339 "bison.tab.c"
     break;
 
   case 167: /* tuple_type: type '[' NUMBER ']'  */
@@ -3326,7 +3346,7 @@ yyreduce:
         ptree_t *rb =ptree_create(PTREE_RBRACKET, 0);
         (yyval.ptree) = ptree_create(PTREE_TUPLE_TYPE, 4, (yyvsp[-3].ptree), lb, num, rb);
     }
-#line 3330 "bison.tab.c"
+#line 3350 "bison.tab.c"
     break;
 
   case 168: /* function_type: type BACKWARD_ARROW '(' types_list ')'  */
@@ -3337,7 +3357,7 @@ yyreduce:
         ptree_t *rb = ptree_create(PTREE_RPRN, 0);
         (yyval.ptree) = ptree_create(PTREE_FUNCTION_TYPE, 5, (yyvsp[-4].ptree), a, lb, (yyvsp[-1].ptree), rb);
     }
-#line 3341 "bison.tab.c"
+#line 3361 "bison.tab.c"
     break;
 
   case 169: /* types_list: type  */
@@ -3345,7 +3365,7 @@ yyreduce:
          {
         (yyval.ptree) = ptree_create(PTREE_TYPE_LIST, 1, (yyvsp[0].ptree));
     }
-#line 3349 "bison.tab.c"
+#line 3369 "bison.tab.c"
     break;
 
   case 170: /* types_list: types_list ',' type  */
@@ -3353,7 +3373,7 @@ yyreduce:
                           {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 3357 "bison.tab.c"
+#line 3377 "bison.tab.c"
     break;
 
   case 171: /* types_list: %empty  */
@@ -3361,7 +3381,7 @@ yyreduce:
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0); 
     }
-#line 3365 "bison.tab.c"
+#line 3385 "bison.tab.c"
     break;
 
   case 172: /* type_reference: WORD  */
@@ -3370,7 +3390,7 @@ yyreduce:
         ptree_t *w = ptree_create_symbol((yyvsp[0].str));
         (yyval.ptree) = ptree_create(PTREE_TYPE_REFERENCE, 1, w);
     }
-#line 3374 "bison.tab.c"
+#line 3394 "bison.tab.c"
     break;
 
   case 173: /* type_reference: WORD typed_arguments  */
@@ -3379,7 +3399,7 @@ yyreduce:
         ptree_t *w = ptree_create_symbol((yyvsp[-1].str));
         (yyval.ptree) = ptree_create(PTREE_TYPE_REFERENCE, 2, w, (yyvsp[0].ptree));
     }
-#line 3383 "bison.tab.c"
+#line 3403 "bison.tab.c"
     break;
 
   case 174: /* typed_arguments: '<' types_list '>'  */
@@ -3389,7 +3409,7 @@ yyreduce:
         ptree_t *g = ptree_create(PTREE_GREATER, 0);
         (yyval.ptree) = ptree_create(PTREE_TYPED_ARGUMENTS, 3, l, (yyvsp[-1].ptree), g);
     }
-#line 3393 "bison.tab.c"
+#line 3413 "bison.tab.c"
     break;
 
   case 175: /* typed_parameters: '<' type_params '>'  */
@@ -3399,7 +3419,7 @@ yyreduce:
         ptree_t *g = ptree_create(PTREE_GREATER, 0);
         (yyval.ptree) = ptree_create(PTREE_TYPED_PARAMETERS, 3, l, (yyvsp[-1].ptree), g); 
     }
-#line 3403 "bison.tab.c"
+#line 3423 "bison.tab.c"
     break;
 
   case 176: /* typed_parameters: %empty  */
@@ -3407,7 +3427,7 @@ yyreduce:
                   {
          (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);     
     }
-#line 3411 "bison.tab.c"
+#line 3431 "bison.tab.c"
     break;
 
   case 177: /* type_params: WORD  */
@@ -3416,7 +3436,7 @@ yyreduce:
         ptree_t *w = ptree_create_symbol((yyvsp[0].str));
         (yyval.ptree) = ptree_create(PTREE_TYPE_PARAMS, 1, w); 
     }
-#line 3420 "bison.tab.c"
+#line 3440 "bison.tab.c"
     break;
 
   case 178: /* type_params: type_params ',' WORD  */
@@ -3425,7 +3445,7 @@ yyreduce:
         ptree_t *w = ptree_create_symbol((yyvsp[0].str));
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, w);
     }
-#line 3429 "bison.tab.c"
+#line 3449 "bison.tab.c"
     break;
 
   case 179: /* type_statement: TYPE WORD typed_parameters '=' type ';'  */
@@ -3436,7 +3456,7 @@ yyreduce:
         ptree_t *sc = ptree_create(PTREE_SEMICOLON, 0);
         (yyval.ptree) = ptree_create(PTREE_TYPE_ALIAS, 5, w, (yyvsp[-3].ptree), eq, (yyvsp[-1].ptree), sc); 
     }
-#line 3440 "bison.tab.c"
+#line 3460 "bison.tab.c"
     break;
 
   case 180: /* struct_statement: STRUCT WORD ';'  */
@@ -3445,7 +3465,7 @@ yyreduce:
         ptree_t *w = ptree_create_symbol((yyvsp[-1].str));
         (yyval.ptree) = ptree_create(PTREE_UNIT_STRUCT, 1, w);
     }
-#line 3449 "bison.tab.c"
+#line 3469 "bison.tab.c"
     break;
 
   case 181: /* struct_statement: STRUCT WORD typed_parameters '{' field_list '}'  */
@@ -3456,7 +3476,7 @@ yyreduce:
         ptree_t *right = ptree_create(PTREE_LBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_STRUCT, 5, w, (yyvsp[-3].ptree), left, (yyvsp[-1].ptree), right);
     }
-#line 3460 "bison.tab.c"
+#line 3480 "bison.tab.c"
     break;
 
   case 182: /* union_statement: UNION WORD typed_parameters '{' field_list '}'  */
@@ -3467,7 +3487,7 @@ yyreduce:
         ptree_t *right = ptree_create(PTREE_LBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_UNION, 5, w, (yyvsp[-3].ptree), left, (yyvsp[-1].ptree), right);
     }
-#line 3471 "bison.tab.c"
+#line 3491 "bison.tab.c"
     break;
 
   case 183: /* field_list: identifier  */
@@ -3475,7 +3495,7 @@ yyreduce:
                {
         (yyval.ptree) = ptree_create(PTREE_FIELDS, 1, (yyvsp[0].ptree));
     }
-#line 3479 "bison.tab.c"
+#line 3499 "bison.tab.c"
     break;
 
   case 184: /* field_list: field_list ',' identifier  */
@@ -3483,7 +3503,7 @@ yyreduce:
                                 {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 3487 "bison.tab.c"
+#line 3507 "bison.tab.c"
     break;
 
   case 185: /* field_list: field_list ','  */
@@ -3491,7 +3511,7 @@ yyreduce:
                      {
         (yyval.ptree) = (yyvsp[-1].ptree);
     }
-#line 3495 "bison.tab.c"
+#line 3515 "bison.tab.c"
     break;
 
   case 186: /* field_list: %empty  */
@@ -3499,7 +3519,7 @@ yyreduce:
                   {
         (yyval.ptree) = ptree_create(PTREE_EMPTY, 0);     
     }
-#line 3503 "bison.tab.c"
+#line 3523 "bison.tab.c"
     break;
 
   case 187: /* enum_statement: ENUM WORD typed_parameters '{' enum_members '}'  */
@@ -3510,7 +3530,7 @@ yyreduce:
         ptree_t *right = ptree_create(PTREE_LBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_ENUM, 5, w, (yyvsp[-3].ptree), left, (yyvsp[-1].ptree), right);
     }
-#line 3514 "bison.tab.c"
+#line 3534 "bison.tab.c"
     break;
 
   case 188: /* enum_members: enum_member  */
@@ -3518,7 +3538,7 @@ yyreduce:
                 {
         (yyval.ptree) = ptree_create(PTREE_ENUM_MEMBERS, 1, (yyvsp[0].ptree));
     }
-#line 3522 "bison.tab.c"
+#line 3542 "bison.tab.c"
     break;
 
   case 189: /* enum_members: enum_members ',' enum_member  */
@@ -3526,7 +3546,7 @@ yyreduce:
                                    {
         (yyval.ptree) = ptree_add((yyvsp[-2].ptree), 1, (yyvsp[0].ptree));
     }
-#line 3530 "bison.tab.c"
+#line 3550 "bison.tab.c"
     break;
 
   case 190: /* enum_members: enum_members ','  */
@@ -3534,7 +3554,7 @@ yyreduce:
                        {
         (yyval.ptree) = (yyvsp[-1].ptree);
     }
-#line 3538 "bison.tab.c"
+#line 3558 "bison.tab.c"
     break;
 
   case 191: /* enum_member: WORD  */
@@ -3542,7 +3562,7 @@ yyreduce:
          {
         (yyval.ptree) = ptree_create_symbol((yyvsp[0].str));
     }
-#line 3546 "bison.tab.c"
+#line 3566 "bison.tab.c"
     break;
 
   case 192: /* enum_member: WORD '(' types_list ')'  */
@@ -3553,7 +3573,7 @@ yyreduce:
         ptree_t *right = ptree_create(PTREE_RPRN, 0);
         (yyval.ptree) = ptree_create(PTREE_ENUM_STRUCT, 4, w, left, (yyvsp[-1].ptree), right);
     }
-#line 3557 "bison.tab.c"
+#line 3577 "bison.tab.c"
     break;
 
   case 193: /* enum_member: WORD '{' field_list '}'  */
@@ -3564,7 +3584,7 @@ yyreduce:
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_ENUM_NAMED_STRUCT, 4, w, left, (yyvsp[-1].ptree), right);
     }
-#line 3568 "bison.tab.c"
+#line 3588 "bison.tab.c"
     break;
 
   case 194: /* enum_member: WORD '=' NUMBER  */
@@ -3575,7 +3595,7 @@ yyreduce:
         ptree_t *eq = ptree_create(PTREE_ASSIGN, 0);
         (yyval.ptree) = ptree_create(PTREE_ENUM_DEFAULT, 3, w, eq, num);
     }
-#line 3579 "bison.tab.c"
+#line 3599 "bison.tab.c"
     break;
 
   case 195: /* methods_statement: METHODS WORD '{' method_list '}'  */
@@ -3586,7 +3606,7 @@ yyreduce:
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
         (yyval.ptree) = ptree_create(PTREE_METHODS, 4, w, left, (yyvsp[-1].ptree), right);
     }
-#line 3590 "bison.tab.c"
+#line 3610 "bison.tab.c"
     break;
 
   case 196: /* method_list: function_declaration  */
@@ -3594,7 +3614,7 @@ yyreduce:
                          {
         (yyval.ptree) = ptree_create(PTREE_METHODS_LIST, 1, (yyvsp[0].ptree));
     }
-#line 3598 "bison.tab.c"
+#line 3618 "bison.tab.c"
     break;
 
   case 197: /* method_list: method_list function_declaration  */
@@ -3602,11 +3622,11 @@ yyreduce:
                                        {
         (yyval.ptree) = ptree_add((yyvsp[-1].ptree), 1, (yyvsp[0].ptree));
     }
-#line 3606 "bison.tab.c"
+#line 3626 "bison.tab.c"
     break;
 
 
-#line 3610 "bison.tab.c"
+#line 3630 "bison.tab.c"
 
       default: break;
     }

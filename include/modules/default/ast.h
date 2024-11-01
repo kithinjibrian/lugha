@@ -401,10 +401,12 @@ extern char *language_g;
 extern node_visitor_t type_visitor;
 extern node_visitor_t sema_visitor;
 
+#define POSEIDON c_visitor
 #define MAMBA mamba_visitor
 #define LUGHA lugha_visitor
 #define NaNsense nan_visitor
 
+extern node_visitor_t c_visitor;
 extern node_visitor_t nan_visitor;
 extern node_visitor_t mamba_visitor;
 extern node_visitor_t lugha_visitor;

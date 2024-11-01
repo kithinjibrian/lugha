@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "ast.h"
+#include "macro.h"
 #include "visitor.h"
 #include "dsa/list.h"
 #include "dsa/hmap.h"
@@ -62,12 +63,22 @@ typedef struct constraint
 
 typedef struct type_ctx
 {
+    array_t *M; // monomorphic set
     array_t *constraints;
 } type_ctx_t;
 
 #define type_ctx_cast(visitor) ((struct type_ctx *)((visitor)->ctx))
 
+#define M(visitor) type_ctx_cast(visitor)->M
 #define constraints(visitor) type_ctx_cast(visitor)->constraints
+
+static inline void m_add(array_t *M, type_t *tvar)
+{
+    if (M == NULL)
+        M = new_array(type_t);
+
+    array_push(M, tvar);
+}
 
 static inline uint32_t tvar_hash(void *in)
 {
@@ -120,6 +131,7 @@ subst_t *compose(subst_t *a, subst_t *b);
 type_t *apply(subst_t *subst, type_t *type);
 
 subst_t *solve(array_t *constraints);
+subst_t *unify(type_t *a, type_t *b);
 
 void constraint_str(constraint_t *constraint);
 void add_eq_constraint(type_t *left, type_t *right);

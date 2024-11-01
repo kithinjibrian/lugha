@@ -449,6 +449,13 @@ define_visitor(nan_while, node_while_t)
     nwrite_code("while (");
     ast->expression->accept(ast->expression, visitor);
     nwrite_code(") ");
+
+    if (ast->statement->type != NODE_BLOCK)
+    {
+        nwrite_code("\n");
+        nwrite_ident(1);
+    }
+
     ast->statement->accept(ast->statement, visitor);
     nwrite_code("\n");
 

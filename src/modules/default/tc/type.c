@@ -35,7 +35,7 @@ type_t *_new_type_var(node_ast_t *ast)
 
     type->tag = TYPE_VAR;
 
-    type->var.name = fresh(type_count++);
+    type->var.name = fresh(++type_count);
 
     return type;
 }

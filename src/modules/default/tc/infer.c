@@ -20,18 +20,11 @@ define_visitor(type_function_expression, node_function_expression_t)
     if (p != NULL)
         params = (type_t **)(ast->parameters->accept(ast->parameters, visitor));
 
-    type_t *return_type = NULL;
-    if (ast->return_type)
-        return_type = ast->return_type->accept(ast->return_type, visitor);
-
     type_t *body = ast->block->accept(ast->block, visitor);
 
     type_t *type = new_tfun(ast, p->params_no, params, body);
 
-    if (return_type)
-        add_eq_constraint(return_type, body);
-
-    return type;
+    return NULL;
 }
 
 define_visitor(type_parameter_list, node_parameter_list_t)
@@ -42,14 +35,7 @@ define_visitor(type_parameter_list, node_parameter_list_t)
     {
         type[i] = ast->parameters[i]->accept(ast->parameters[i], visitor);
 
-        node_parameter_t *param = (node_parameter_t *)(ast->parameters[i]);
-        node_identifier_t *iden = (node_identifier_t *)(param->identifer);
-
-        scheme_t *scheme = type_alloc(sizeof(scheme_t));
-        scheme->set = type_set();
-        scheme->type = type[i];
-
-        iden->symbol->scheme = scheme;
+        m_add(M(visitor), type[i]);
     }
 
     return type;
@@ -130,6 +116,7 @@ define_visitor(type_binary, node_binary_t)
     {
         add_eq_constraint(left, new_tint(ast));
         add_eq_constraint(right, new_tint(ast));
+
         return new_tint(ast);
     }
     else if (ast->op == OP_IS_EQUAL || ast->op == OP_NOT_EQUAL ||
@@ -175,13 +162,6 @@ define_visitor(type_ternary, node_ternary_t)
 define_visitor(type_symbol, node_symbol_t)
 {
     (void)visitor;
-
-    if (ast->symbol->scheme)
-    {
-        type_t *t = instantiate(ast->symbol->scheme);
-
-        return t;
-    }
 
     if (ast->symbol->data_type == NULL)
     {
@@ -257,12 +237,13 @@ void type_exit(node_visitor_t *visitor)
 {
     (void)visitor;
 
-    //  solve(constraints(&type_visitor));
+    //    solve(constraints(&type_visitor));
 
     arena_free(&type_arena_g);
 }
 
 type_ctx_t type_ctx = {
+    .M = NULL,
     .constraints = NULL,
 };
 

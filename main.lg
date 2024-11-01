@@ -1,8 +1,2 @@
-fun main() {
-    return fun (x) -> {
-        return fun (y) -> x + y;
-    };
-}
-
-main()()();
+fun (x) -> x;
 
