@@ -36,7 +36,7 @@ extern ptree_t *ptree_g;
                 AND_ASSIGN XOR_ASSIGN BACKWARD_ARROW FUN_ARROW
 
 %token<num>     LET MUT FUN RETURN IF ELSE BREAK CONTINUE DO FOR WHILE SWITCH CASE DEFAULT TYPE CONST STRUCT UNION TRUE_VAL
-                ENUM METHODS MATCH FALSE_VAL
+                ENUM METHODS MATCH FALSE_VAL CLASS
 
 %token<num>     S8 S16 S32 S64 U8 U16 U32 U64 F32 F64 T_STRING T_BOOLEAN T_VOID T_CHAR   
 
@@ -52,7 +52,7 @@ extern ptree_t *ptree_g;
                 typed_arguments typed_parameters type_params function_declaration parameters_list type_annotation struct_statement
                 field_list methods_statement method_list union_statement enum_statement enum_members enum_member array_literal
                 element_list object_literal keyvalue_list keyvalue function_expression function_expression_body parameter
-                parameter_is_mut
+                parameter_is_mut class_statement
 
 %nonassoc '(' ')'
 
@@ -164,6 +164,9 @@ statement:
         $$ = $1;
     }
     | methods_statement {
+        $$ = $1;
+    }
+    | class_statement {
         $$ = $1;
     }
     ;
@@ -573,7 +576,7 @@ object_literal:
 
 keyvalue_list:
     keyvalue {
-        $$ = $1;
+        $$ = ptree_create(PTREE_KEYVALUE_LIST, 1, $1);
     }
     | keyvalue_list ',' keyvalue {
         $$ = ptree_add($1, 1, $3);
@@ -595,7 +598,7 @@ keyvalue:
 
 property_name:
     WORD {
-        $$ = ptree_create_symbol($1);
+        $$ = ptree_create_word($1);
     }
     | STRING {
         $$ = ptree_create_str($1);
@@ -991,5 +994,15 @@ method_list:
         $$ = ptree_add($1, 1, $2);
     }
     ;
+
+class_statement:
+    CLASS WORD typed_parameters '{' field_list '}' {
+        ptree_t *w = ptree_create_symbol($2);
+        ptree_t *left = ptree_create(PTREE_LBRACE, 0);
+        ptree_t *right = ptree_create(PTREE_LBRACE, 0);
+        $$ = ptree_create(PTREE_CLASS, 5, w, $3, left, $5, right);
+    }
+    ;
+
 
 %%

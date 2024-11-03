@@ -17,10 +17,10 @@ class Lit {
     }
 }
 
-let varCounter = 1;
+let varCounter = -1;
 
 function varFresh() {
-    return `t${varCounter++}`;
+    return `t${++varCounter}`;
 }
 
 /**
@@ -242,6 +242,7 @@ function collect(m, expr) {
                 const beta = varFresh();
                 const [t1, a1, c1] = collect(m, expr.args[0]);
                 const [t2, a2, c2] = collect(m, expr.args[1]);
+
                 return [
                     new Ty('TVar', beta),
                     a1.concat(a2),
@@ -261,7 +262,8 @@ function collect(m, expr) {
 
                 const betaAbs = varFresh();
 
-                const [t, a, c] = collect(new Set(m).add(betaAbs), expr.args[1]);
+                const [t, a, c] = collect(m.add(betaAbs), expr.args[1]);
+
 
                 const [aPrime, cPrime] = a.reduce(([accA, accC], aPrime) => {
                     const { var: _var, ty: tPrime } = aPrime;
@@ -274,8 +276,6 @@ function collect(m, expr) {
                     }
                 }, [[], c]);
 
-                console.log(aPrime, cPrime);
-
                 return [
                     new Ty('TFun', new Ty('TVar', betaAbs), t),
                     aPrime,
@@ -287,14 +287,18 @@ function collect(m, expr) {
                 const [t1, a1, c1] = collect(m, expr.args[1]);
                 const [t2, a2, c2] = collect(m, expr.args[2]);
                 const mPrime = Array.from(m);
+
                 const [aPrime, cPrime] = a2.reduce(([accA, accC], aPrime) => {
                     const { var: _var, ty: tPrime } = aPrime;
+
+
                     if (_var === expr.args[0]) {
                         return [accA, [new Constr('ImplInstance', tPrime, t1, mPrime)].concat(accC)];
                     } else {
                         return [[new Assumption(_var, tPrime)].concat(accA), accC];
                     }
                 }, [[], []]);
+
                 return [t2, a1.concat(aPrime), c1.concat(c2).concat(cPrime)];
             }
         case 'Rec':
@@ -317,11 +321,14 @@ function collect(m, expr) {
             const [t1, a1, c1] = collect(m, expr.args[0]);
             const [t2, a2, c2] = collect(m, expr.args[1]);
             const [t3, a3, c3] = collect(m, expr.args[2]);
-            return [t2, a1.concat(a2).concat(a3), [new Constr('Equality', t1, new Ty('TCon', 'Bool', []))].concat([new Constr('Equality', t2, t3)]).concat(c1).concat(c2).concat(c3)];
+            return [t2, a1.concat(a2).concat(a3), [
+                new Constr('Equality', t1, new Ty('TCon', 'Bool', []))
+            ].concat([new Constr('Equality', t2, t3)]).concat(c1).concat(c2).concat(c3)];
         case 'Tup':
             const [ts, a, c] = expr.args.reduce(([accT, accA, accC], e) => {
                 const [tPrime, aPrime, cPrime] = collect(m, e);
-                return [tPrime.concat(accT), accA.concat(aPrime), accC.concat(cPrime)];
+                accT.push(tPrime);
+                return [accT, accA.concat(aPrime), accC.concat(cPrime)];
             }, [[], [], []]);
             return [new Ty('TCon', ',', ts), a, c];
         case 'Lit':
@@ -329,6 +336,21 @@ function collect(m, expr) {
                 return [new Ty('TCon', 'Int', []), [], []];
             } else if (expr.args[0].type === 'Bool') {
                 return [new Ty('TCon', 'Bool', []), [], []];
+            }
+        case 'Bin':
+            {
+                const [t1, a1, c1] = collect(m, expr.args[0]);
+                const [t2, a2, c2] = collect(m, expr.args[2]);
+
+                const resultType = new Ty('TVar', varFresh());
+
+                const constraints = [
+                    new Constr('Equality', t1, new Ty('TCon', 'Int', [])), // Assuming Int is the expected type for left operand
+                    new Constr('Equality', t2, new Ty('TCon', 'Int', [])), // Assuming Int is the expected type for right operand
+                    new Constr('Equality', resultType, new Ty('TCon', 'Int', [])) // Assuming result is also Int
+                ];
+
+                return [resultType, a1.concat(a2), c1.concat(c2).concat(constraints)];
             }
         default:
             throw new Erra(`Unknown expression type: ${expr.type}`);
@@ -460,9 +482,12 @@ function envAux(gamma, a) {
 }
 
 function infer(gamma, e) {
-    const [ty, a, c] = collect(new Set(), e);
+    let ab = new Set();
+    const [ty, a, c] = collect(ab, e);
+
     const cPrime = envAux(gamma, a);
     const s = solve(c.concat(cPrime));
+
     return [s, apply(s, ty)];
 }
 
@@ -476,9 +501,16 @@ function main() {
         console.log('---');
     }
 
-    const letExpr = new Expr('Abs', 'x', new Expr('Var', 'x'));
+    const letExample = new Expr('Let', 'id',
+        // λx.x
+        new Expr('Abs', 'x', new Expr('Var', 'x')),
+        new Expr('App',
+            new Expr('Var', 'id'),
+            new Expr('Lit', new Lit('Int', 1))
+        ),
+    );
 
-    runTest('Let binding', letExpr, 'Int');
+    runTest('Let binding', letExample, 'Int');
 }
 
 main()

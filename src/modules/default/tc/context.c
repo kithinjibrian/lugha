@@ -3,15 +3,29 @@
 void add_eq_constraint(type_t *left, type_t *right)
 {
     if (constraints(&type_visitor) == NULL)
-    {
         constraints(&type_visitor) = new_array(constraint_t);
-    }
 
     constraint_t constraint = {
         .type = EQUALITY_CON,
         .eq = {
             .left = left,
             .right = right,
+        }};
+
+    array_push(constraints(&type_visitor), &constraint);
+}
+
+void add_imp_constraint(type_t *antecedent, type_t *consequent, array_t *M)
+{
+    if (constraints(&type_visitor) == NULL)
+        constraints(&type_visitor) = new_array(constraint_t);
+
+    constraint_t constraint = {
+        .type = IMPLICIT_CON,
+        .imp = {
+            .antecedent = antecedent,
+            .consequent = consequent,
+            .M = M,
         }};
 
     array_push(constraints(&type_visitor), &constraint);
@@ -25,6 +39,23 @@ void constraint_str(constraint_t *constraint)
         printf(" : ");
         _type_str(constraint->eq.right, false);
         printf("\n");
+    }
+    else if (constraint->type == IMPLICIT_CON)
+    {
+        _type_str(constraint->imp.antecedent, false);
+        printf(" < ");
+        _type_str(constraint->imp.consequent, false);
+        printf(" [");
+        for (size_t i = 0; i < constraint->imp.M->count; i++)
+        {
+            type_t *t = array_at(constraint->imp.M, i);
+
+            printf("%s", t->var.name);
+
+            if (i != constraint->imp.M->count - 1)
+                printf(", ");
+        }
+        printf("]\n");
     }
 }
 

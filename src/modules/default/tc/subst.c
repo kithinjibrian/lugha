@@ -7,7 +7,11 @@ type_t *apply(subst_t *subst, type_t *type)
         type_t *val = (type_t *)hmap_get_direct(subst, type);
 
         if (val)
+        {
+
             return val;
+        }
+
         return type;
     }
     else if (type->tag == TYPE_CON)
@@ -22,8 +26,58 @@ type_t *apply(subst_t *subst, type_t *type)
 
         return new_type;
     }
+    else if (type->tag == TYPE_REC)
+    {
+        type_t *new_type = new_trec(type, type->rec.size, type->rec.name);
+
+        for (int i = 0; i < type->rec.size; i++)
+        {
+            trec_kv_t *kv = type->rec.table[i];
+
+            while (kv)
+            {
+                trec_add(new_type, kv->label, apply(subst, kv->type));
+                kv = kv->next;
+            }
+        }
+
+        return new_type;
+    }
 
     return NULL;
+}
+
+constraint_t *apply_constraint(subst_t *subst, constraint_t *constraint)
+{
+    switch (constraint->type)
+    {
+    case EQUALITY_CON:
+    {
+        constraint_t *new_constraint = type_alloc(sizeof(constraint_t));
+        new_constraint->type = EQUALITY_CON;
+        new_constraint->eq.left = apply(subst, constraint->eq.left);
+        new_constraint->eq.right = apply(subst, constraint->eq.right);
+        return new_constraint;
+    }
+    default:
+        break;
+    }
+
+    return NULL;
+}
+
+array_t *apply_constraints_list(subst_t *subst, array_t *constraints)
+{
+    array_t *new_constraints = array_create(sizeof(constraint_t));
+
+    size_t i;
+    array_for_each(i, constraints)
+    {
+        constraint_t *c = array_at(constraints, i);
+        array_push(new_constraints, apply_constraint(subst, c));
+    }
+
+    return new_constraints;
 }
 
 subst_t *compose(subst_t *a, subst_t *b)

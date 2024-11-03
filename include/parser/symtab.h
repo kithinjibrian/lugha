@@ -27,13 +27,12 @@ typedef struct symbol
     char *name;
     enum
     {
+        SYM_STRUCT,
         SYM_VARIABLE,
         SYM_FUNCTION,
-        SYM_PARAMETER
+        SYM_PARAMETER,
     } type;
     void *data_type; /* its data type */
-    void *scheme;
-    hset_t *set;
     union
     {
         struct // functions
@@ -50,7 +49,6 @@ typedef struct symbol
     int index; /* its index in the current scope */
     struct ref *ref_list;
     struct symbol *next;
-    struct symtab *symtab;
 } symbol_t;
 
 typedef struct symtab

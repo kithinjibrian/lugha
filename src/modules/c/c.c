@@ -554,7 +554,7 @@ c_ctx_t c_ctx = {
 };
 
 node_visitor_t c_visitor = {
-    .fullname = "Poseidon, god of the C (C lang code generator)",
+    .fullname = "Poseidon (C lang code generator)",
     .shortname = "c_gen",
     .author = "Kithinji Brian",
     .doc = "Generate C lang code from AST",
@@ -575,8 +575,11 @@ node_visitor_t c_visitor = {
     .bool_fun = c_boolean,
     .number_fun = c_number,
     .symbol_fun = c_symbol,
+    .class_fun = def_class,
     .return_fun = c_return,
     .string_fun = c_string,
+    .struct_fun = def_struct,
+    .object_fun = def_object,
     .postfix_fun = c_postfix,
     .ternary_fun = c_ternary,
     .if_else_fun = c_if_else,

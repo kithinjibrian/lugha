@@ -118,6 +118,27 @@ define_visitor(def_arguments, node_arguments_t)
     return NULL;
 }
 
+define_visitor(def_class, node_class_t)
+{
+    (void)visitor;
+    (void)ast;
+    return NULL;
+}
+
+define_visitor(def_struct, node_struct_t)
+{
+    (void)visitor;
+    (void)ast;
+    return NULL;
+}
+
+define_visitor(def_object, node_object_t)
+{
+    (void)visitor;
+    (void)ast;
+    return NULL;
+}
+
 define_visitor(def_array_access, node_array_access_t)
 {
     ast->array->accept(ast->array, visitor);

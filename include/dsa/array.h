@@ -53,6 +53,25 @@ static inline bool array_set(array_t *array, size_t index, void *data)
     return true;
 }
 
+static inline void *array_copy(array_t *array)
+{
+    if (array == NULL)
+        return NULL;
+
+    array_t *copy = array_create(array->size);
+
+    if (copy == NULL)
+        return NULL;
+
+    copy->count = array->count;
+    copy->length = array->length;
+    copy->index = 0;
+
+    memcpy(copy->array, array->array, array->count * array->size);
+
+    return copy;
+}
+
 static inline void *array_current(array_t *array)
 {
     return (void *)(array->array + array->index * array->size);

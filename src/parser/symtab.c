@@ -1,6 +1,6 @@
 #include "parser/symtab.h"
 
-symtab_t *symtab = NULL;
+symtab_t *symtab_g = NULL;
 memory_arena_t symtab_arena = {NULL};
 
 DEFINE_FREE(symtab_free, &symtab_arena);
@@ -23,10 +23,10 @@ static inline symtab_t *create_symtab()
     symtab_t *new_symtab = (symtab_t *)symtab_alloc(sizeof(symtab_t));
     memset(new_symtab->table, 0, sizeof(new_symtab->table));
 
-    new_symtab->prev = symtab;
+    new_symtab->prev = symtab_g;
     new_symtab->no_vars = 0;
 
-    symtab = new_symtab;
+    symtab_g = new_symtab;
 
     return new_symtab;
 }
@@ -39,7 +39,7 @@ void enter_scope(char *name)
 
 void exit_scope()
 {
-    symtab = symtab->prev;
+    symtab_g = symtab_g->prev;
 }
 
 ref_t *create_ref()
@@ -71,14 +71,12 @@ symbol_t *create_symbol(char *name, void *data_type)
     symbol->ref_list = create_ref();
     symbol->name = symtab_strdup(name);
     symbol->data_type = data_type;
-    symbol->scheme = NULL;
     symbol->type = SYM_VARIABLE;
     symbol->no_params = 0;
     symbol->used = false;
     symbol->init = false;
     symbol->is_const = false;
-    symbol->index = symtab->no_vars++;
-    symbol->symtab = symtab;
+    symbol->index = symtab_g->no_vars++;
 
     return symbol;
 }
@@ -89,13 +87,13 @@ symbol_t *insert_symbol(char *name)
 
     size_t h = hash(name) % HASH_SIZE;
 
-    if (symtab->table[h] == NULL)
+    if (symtab_g->table[h] == NULL)
     {
-        symtab->table[h] = symbol;
+        symtab_g->table[h] = symbol;
     }
     else
     {
-        symbol_t *tmp = symtab->table[h];
+        symbol_t *tmp = symtab_g->table[h];
         while (tmp->next)
         {
             if (strcmp(tmp->name, name) == 0)
@@ -113,10 +111,10 @@ symbol_t *insert_symbol(char *name)
     return symbol;
 }
 
-static symbol_t *_lookup_symbol(symtab_t *symtab, char *name)
+static symbol_t *_lookup_symbol(symtab_t *symtab_g, char *name)
 {
     size_t h = hash(name) % HASH_SIZE;
-    symbol_t *symbol = symtab->table[h];
+    symbol_t *symbol = symtab_g->table[h];
 
     while (symbol)
     {
@@ -132,7 +130,7 @@ static symbol_t *_lookup_symbol(symtab_t *symtab, char *name)
 
 symbol_t *lookup_symbol(char *name)
 {
-    symtab_t *current = symtab;
+    symtab_t *current = symtab_g;
 
     while (current)
     {

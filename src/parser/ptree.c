@@ -83,6 +83,11 @@ ptree_t *ptree_create_symbol(char *symbol)
     return _ptree_create_str(PTREE_SYMBOL, symbol);
 }
 
+ptree_t *ptree_create_word(char *word)
+{
+    return _ptree_create_str(PTREE_WORD, word);
+}
+
 ptree_t *ptree_create_str(char *symbol)
 {
     return _ptree_create_str(PTREE_STRING, symbol);

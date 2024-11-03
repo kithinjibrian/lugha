@@ -21,6 +21,7 @@
     P_TYPE(PTREE_STR)                  \
     P_TYPE(PTREE_EOF)                  \
     P_TYPE(PTREE_BOOL)                 \
+    P_TYPE(PTREE_WORD)                 \
     P_TYPE(PTREE_ELSE)                 \
     P_TYPE(PTREE_CHAR)                 \
     P_TYPE(PTREE_PLUS)                 \
@@ -40,6 +41,7 @@
     P_TYPE(PTREE_BLOCK)                \
     P_TYPE(PTREE_UNION)                \
     P_TYPE(PTREE_UNARY)                \
+    P_TYPE(PTREE_CLASS)                \
     P_TYPE(PTREE_FIELDS)               \
     P_TYPE(PTREE_SWITCH)               \
     P_TYPE(PTREE_LBRACE)               \
@@ -109,6 +111,7 @@
     P_TYPE(PTREE_METHODS_LIST)         \
     P_TYPE(PTREE_ARRAY_ACCESS)         \
     P_TYPE(PTREE_ELEMENT_LIST)         \
+    P_TYPE(PTREE_KEYVALUE_LIST)        \
     P_TYPE(PTREE_ARGUMENT_LIST)        \
     P_TYPE(PTREE_LET_STATEMENT)        \
     P_TYPE(PTREE_DEFAULT_LABEL)        \
@@ -175,6 +178,7 @@ extern YYLTYPE yylloc;
 void ptree_free(ptree_t *ptree);
 ptree_t *ptree_create_num(int num);
 ptree_t *ptree_create_bool(int num);
+ptree_t *ptree_create_word(char *word);
 ptree_t *ptree_create_str(char *symbol);
 ptree_t *ptree_create_symbol(char *symbol);
 void ptree_print(ptree_t *ptree, int depth);

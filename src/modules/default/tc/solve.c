@@ -1,5 +1,15 @@
 #include "modules/default/types.h"
 
+hmap_t *schemes = NULL;
+
+void add_scheme(type_t *tvar, scheme_t *scheme)
+{
+    if (schemes == NULL)
+        schemes = type_map();
+
+    hmap_insert(schemes, tvar, scheme);
+}
+
 bool occurs_check(type_t *a, type_t *b)
 {
     if (a->tag == TYPE_VAR)
@@ -63,8 +73,15 @@ subst_t *unify(type_t *a, type_t *b)
                 b->base.loc,
                 ERROR_TYPE,
                 "Expected type '%s' but got type '%s'",
-                a->con.name,
-                b->con.name);
+                b->con.name,
+                a->con.name);
+
+            _type_str(a, false);
+            printf(" : ");
+            _type_str(b, false);
+            printf("\n");
+
+            return NULL;
         }
 
         if (a->con.count != b->con.count)
@@ -73,8 +90,10 @@ subst_t *unify(type_t *a, type_t *b)
                 b->base.loc,
                 ERROR_TYPE,
                 "Expected %d arguments but got %d",
-                a->con.count - 1,
-                b->con.count - 1);
+                b->con.count - 1,
+                a->con.count - 1);
+
+            return NULL;
         }
 
         subst_t *subst = type_map();
@@ -90,6 +109,51 @@ subst_t *unify(type_t *a, type_t *b)
         return subst;
     }
 
+    if (a->tag == TYPE_REC && b->tag == TYPE_REC)
+    {
+        if (strcmp(a->rec.name, b->rec.name) != 0)
+        {
+            error(
+                b->base.loc,
+                ERROR_TYPE,
+                "Expected type '%s' but got type '%s'",
+                b->rec.name,
+                a->rec.name);
+
+            return NULL;
+        }
+
+        if (a->rec.count != b->rec.count)
+        {
+            error(
+                a->base.loc,
+                ERROR_TYPE,
+                "All fields in '%s' must be initialized",
+                b->rec.name);
+
+            return NULL;
+        }
+    }
+
+    if (a->tag != b->tag)
+    {
+        char *a_name, *b_name;
+
+        if (a->tag == TYPE_VAR || b->tag == TYPE_VAR)
+            a_name = a->var.name, b_name = b->var.name;
+        else if (a->tag == TYPE_CON || b->tag == TYPE_CON)
+            a_name = a->con.name, b_name = b->con.name;
+        else
+            a_name = a->rec.name, b_name = b->rec.name;
+
+        error(
+            a->base.loc,
+            ERROR_TYPE,
+            "Expected type '%s' but got type '%s'",
+            b_name,
+            a_name);
+    }
+
     return NULL;
 }
 
@@ -97,16 +161,45 @@ subst_t *solve(array_t *cnst)
 {
     subst_t *subst = type_map();
 
-    //  printf("Solving\n");
+    if (cnst == NULL)
+        return subst;
 
     size_t i;
     array_for_each(i, cnst)
     {
         constraint_t *c = array_at(cnst, i);
+        subst_t *new_subst = NULL;
 
-        subst_t *new_subst = unify(
-            apply(subst, c->eq.left),
-            apply(subst, c->eq.right));
+        if (c->type == EQUALITY_CON)
+        {
+            new_subst = unify(
+                apply(subst, c->eq.left),
+                apply(subst, c->eq.right));
+        }
+        else if (c->type == IMPLICIT_CON)
+        {
+            hset_t *ftv = type_set();
+            hset_t *free_vars = tvs_type(c->imp.consequent);
+            hset_enum_t *he = hset_enum_create(free_vars);
+
+            void *value;
+            while (hset_enum_next(he, &value))
+            {
+                type_t *t = (type_t *)value;
+                for (size_t i = 0; i < c->imp.M->count; i++)
+                {
+                    type_t *m = array_at(c->imp.M, i);
+                    if (strcmp(t->var.name, m->var.name) == 0)
+                        hset_insert(ftv, t);
+                }
+            }
+
+            scheme_t *scheme = type_alloc(sizeof(scheme_t));
+            scheme->set = ftv;
+            scheme->type = c->imp.consequent;
+
+            add_scheme(c->imp.antecedent, scheme);
+        }
 
         if (new_subst)
             subst = compose(subst, new_subst);

@@ -29,6 +29,10 @@
         "list.h": "c",
         "vector": "c",
         "cstdlib": "c",
-        "nansense.h": "c"
+        "nansense.h": "c",
+        "hset.h": "c",
+        "hmap.h": "c",
+        "cmath": "c",
+        "string_view": "c"
     }
 }

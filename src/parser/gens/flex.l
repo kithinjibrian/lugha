@@ -114,6 +114,7 @@ HEX         0[xX]{HEXDIGIT}+
 "while"                 { return WHILE; }
 "union"                 { return UNION; }
 "match"                 { return MATCH; }
+"class"                 { return CLASS; }
 "struct"                { return STRUCT; }
 "return"                { return RETURN; }
 "switch"                { return SWITCH; }

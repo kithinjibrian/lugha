@@ -51,7 +51,7 @@ typedef struct constraint
         {
             type_t *antecedent;
             type_t *consequent;
-            hset_t *vars;
+            array_t *M;
         } imp;
         struct
         {
@@ -72,12 +72,12 @@ typedef struct type_ctx
 #define M(visitor) type_ctx_cast(visitor)->M
 #define constraints(visitor) type_ctx_cast(visitor)->constraints
 
-static inline void m_add(array_t *M, type_t *tvar)
+static inline void m_add(type_t *tvar)
 {
-    if (M == NULL)
-        M = new_array(type_t);
+    if (M(&type_visitor) == NULL)
+        M(&type_visitor) = new_array(type_t);
 
-    array_push(M, tvar);
+    array_push(M(&type_visitor), tvar);
 }
 
 static inline uint32_t tvar_hash(void *in)
@@ -118,6 +118,8 @@ type_t *_new_str(node_ast_t *ast);
 type_t *_new_bool(node_ast_t *ast);
 type_t *_new_array(node_ast_t *ast);
 type_t *_new_type_var(node_ast_t *ast);
+type_t *_new_trec(node_ast_t *ast, int size, char *name);
+type_t *_new_adt(node_ast_t *ast, char *name, int n, type_t **types);
 type_t *_new_fun(node_ast_t *ast, int n, type_t **types, type_t *return_type);
 
 #define new_tint(ast) _new_int(node_ast_cast(ast))
@@ -125,7 +127,11 @@ type_t *_new_fun(node_ast_t *ast, int n, type_t **types, type_t *return_type);
 #define new_tstring(ast) _new_str(node_ast_cast(ast))
 #define new_tarray(ast) _new_array(node_ast_cast(ast))
 #define new_ttype_var(ast) _new_type_var(node_ast_cast(ast))
+#define new_trec(ast, size, name) _new_trec(node_ast_cast(ast), size, name)
+#define new_tadt(ast, name, n, types) _new_adt(node_ast_cast(ast), name, n, types)
 #define new_tfun(ast, n, types, return_type) _new_fun(node_ast_cast(ast), n, types, return_type)
+
+void trec_add(type_t *type, char *name, type_t *value);
 
 subst_t *compose(subst_t *a, subst_t *b);
 type_t *apply(subst_t *subst, type_t *type);
@@ -135,9 +141,12 @@ subst_t *unify(type_t *a, type_t *b);
 
 void constraint_str(constraint_t *constraint);
 void add_eq_constraint(type_t *left, type_t *right);
+void add_imp_constraint(type_t *antecedent, type_t *consequent, array_t *M);
 
 void scheme_str(scheme_t *scheme);
 type_t *instantiate(scheme_t *scheme);
 scheme_t *generalize(array_t *constraints, type_t *type);
+
+hset_t *tvs_type(type_t *type);
 
 #endif /* TYPES_H */

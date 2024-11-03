@@ -21,6 +21,7 @@
     _type *ast = (_type *)ast_alloc(sizeof(_type));           \
     memcpy(&(ast->base.loc), &(ptree->loc), sizeof(YYLTYPE)); \
     ast->base.type = _ast_type;                               \
+    ast->base.symtab = symtab_g;                              \
     ast->base.accept = _accept_fun;                           \
     ast->base.type_str = ast_type_str_g[_ast_type];
 
@@ -29,6 +30,7 @@
     memcpy(&(ast->loc), &(ptree->loc), sizeof(YYLTYPE));           \
     ast->type = _ast_type;                                         \
     ast->accept = _accept_fun;                                     \
+    ast->symtab = symtab_g;                                        \
     ast->type_str = ast_type_str_g[_ast_type];
 
 #define DEFINE_ACCEPT(_name, _type, _accept_fun)                 \
@@ -45,13 +47,17 @@ struct node_visitor;
 #define DATA_TYPE(TYPE)            \
     TYPE(NODE_DO)                  \
     TYPE(NODE_EOF)                 \
+    TYPE(NODE_WORD)                \
     TYPE(NODE_TYPE)                \
     TYPE(NODE_UNARY)               \
     TYPE(NODE_BLOCK)               \
     TYPE(NODE_BREAK)               \
     TYPE(NODE_WHILE)               \
     TYPE(NODE_ARRAY)               \
+    TYPE(NODE_CLASS)               \
+    TYPE(NODE_OBJECT)              \
     TYPE(NODE_NUMBER)              \
+    TYPE(NODE_STRUCT)              \
     TYPE(NODE_SYMBOL)              \
     TYPE(NODE_STRING)              \
     TYPE(NODE_BINARY)              \
@@ -61,6 +67,7 @@ struct node_visitor;
     TYPE(NODE_POSTFIX)             \
     TYPE(NODE_CONTINUE)            \
     TYPE(NODE_VARIABLE)            \
+    TYPE(NODE_KEYVALUE)            \
     TYPE(NODE_ARGUMENTS)           \
     TYPE(NODE_PARAMETER)           \
     TYPE(NODE_EXPRESSION)          \
@@ -85,6 +92,7 @@ typedef struct node_ast
 {
     node_type_e type;
     YYLTYPE loc;
+    symtab_t *symtab;
     const char *type_str;
     void *(*accept)(struct node_ast *, struct node_visitor *);
 } node_ast_t;
@@ -108,6 +116,12 @@ typedef struct node_symbol
     char *name;
     symbol_t *symbol;
 } node_symbol_t;
+
+typedef struct node_word
+{
+    node_ast_t base;
+    char *name;
+} node_word_t;
 
 typedef struct node_string
 {
@@ -166,18 +180,36 @@ typedef struct tcon
     struct node_type **types;
 } tcon_t;
 
+typedef struct trec_kv
+{
+    char *label;
+    struct node_type *type;
+    struct trec_kv *next;
+} trec_kv_t;
+
+typedef struct trec
+{
+    int size;
+    int count;
+    char *name;
+    struct trec_kv **table;
+} trec_t;
+
 typedef struct node_type
 {
     node_ast_t base;
+    char *label;
     enum
     {
         TYPE_CON,
-        TYPE_VAR
+        TYPE_VAR,
+        TYPE_REC,
     } tag;
     union
     {
         tvar_t var;
         tcon_t con;
+        trec_t rec;
     };
 } node_type_t;
 
@@ -244,6 +276,36 @@ typedef struct node_array_access
     struct node_ast *array;
     struct node_ast *index;
 } node_array_access_t;
+
+typedef struct node_struct
+{
+    node_ast_t base;
+    symbol_t *symbol;
+    int nch;
+    struct node_ast **fields;
+} node_struct_t;
+
+typedef struct node_class
+{
+    node_ast_t base;
+    symbol_t *symbol;
+    int nch;
+} node_class_t;
+
+typedef struct node_keyvalue
+{
+    node_ast_t base;
+    struct node_ast *key;
+    struct node_ast *value;
+} node_keyvalue_t;
+
+typedef struct node_object
+{
+    node_ast_t base;
+    symbol_t *symbol;
+    int nch;
+    node_ast_t **fields;
+} node_object_t;
 
 typedef enum
 {
@@ -366,11 +428,15 @@ typedef struct node_visitor
     void *(*bool_fun)(struct node_visitor *, struct node_bool *);
     void *(*break_fun)(struct node_visitor *, struct node_ast *);
     void *(*type_fun)(struct node_visitor *, struct node_type *);
+    void *(*word_fun)(struct node_visitor *, struct node_word *);
     void *(*while_fun)(struct node_visitor *, struct node_while *);
     void *(*unary_fun)(struct node_visitor *, struct node_unary *);
     void *(*block_fun)(struct node_visitor *, struct node_block *);
     void *(*array_fun)(struct node_visitor *, struct node_array *);
+    void *(*class_fun)(struct node_visitor *, struct node_class *);
+    void *(*object_fun)(struct node_visitor *, struct node_object *);
     void *(*continue_fun)(struct node_visitor *, struct node_ast *);
+    void *(*struct_fun)(struct node_visitor *, struct node_struct *);
     void *(*number_fun)(struct node_visitor *, struct node_number *);
     void *(*return_fun)(struct node_visitor *, struct node_return *);
     void *(*symbol_fun)(struct node_visitor *, struct node_symbol *);
@@ -378,6 +444,7 @@ typedef struct node_visitor
     void *(*postfix_fun)(struct node_visitor *, struct node_postfix *);
     void *(*ternary_fun)(struct node_visitor *, struct node_ternary *);
     void *(*if_else_fun)(struct node_visitor *, struct node_if_else *);
+    void *(*keyvalue_fun)(struct node_visitor *, struct node_keyvalue *);
     void *(*variable_fun)(struct node_visitor *, struct node_variable *);
     void *(*arguments_fun)(struct node_visitor *, struct node_arguments *);
     void *(*parameter_fun)(struct node_visitor *, struct node_parameter *);
@@ -397,6 +464,8 @@ typedef struct node_visitor
 
 extern char *output_g;
 extern char *language_g;
+
+extern symtab_t *symtab_g;
 
 extern node_visitor_t type_visitor;
 extern node_visitor_t sema_visitor;

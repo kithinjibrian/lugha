@@ -144,7 +144,7 @@ define_visitor(sema_entry, node_ast_t)
     (void)visitor;
     (void)ast;
 
-    //   printf("Entering node: %s\n", ast_type_str_g[ast->type]);
+    // printf("Entering node: %s\n", ast_type_str_g[ast->type]);
 
     return NULL;
 }
@@ -178,9 +178,12 @@ node_visitor_t sema_visitor = {
     .bool_fun = def_bool,
     .block_fun = def_block,
     .array_fun = def_array,
+    .class_fun = def_class,
     .number_fun = def_number,
     .string_fun = def_string,
     .return_fun = def_return,
+    .struct_fun = def_struct,
+    .object_fun = def_object,
     .symbol_fun = sema_symbol,
     .ternary_fun = def_ternary,
     .variable_fun = sema_variable,

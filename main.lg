@@ -1,2 +1,11 @@
-fun (x) -> x;
+struct Vec3D {
+    x: int,
+    y: int,
+    z: int
+}
 
+methods Vec3D {
+    fun __add__() {
+
+    }
+}

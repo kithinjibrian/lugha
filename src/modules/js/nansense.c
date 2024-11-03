@@ -48,6 +48,9 @@ static inline void nwrite_ops(op_type_e op)
     case OP_IS_EQUAL:
         nwrite_code(" == ");
         break;
+    case OP_NOT_EQUAL:
+        nwrite_code(" != ");
+        break;
     case OP_DIV:
         nwrite_code(" / ");
         break;
@@ -83,6 +86,60 @@ static inline void nwrite_ops(op_type_e op)
     }
 }
 
+static inline void nwrite_dunder(op_type_e op)
+{
+    switch (op)
+    {
+    case OP_OR:
+        nwrite_code(" || ");
+        break;
+    case OP_AND:
+        nwrite_code(" && ");
+        break;
+    case OP_ASSIGN:
+        nwrite_code(" = ");
+        break;
+    case OP_NOT_EQUAL:
+        nwrite_code(".__neq__(");
+        break;
+    case OP_IS_EQUAL:
+        nwrite_code(".__eq__(");
+        break;
+    case OP_DIV:
+        nwrite_code(".__div__(");
+        break;
+    case OP_MOD:
+        nwrite_code(".__mod__(");
+        break;
+    case OP_PLUS:
+        nwrite_code(".__add__(");
+        break;
+    case OP_MINUS:
+        nwrite_code(".__sub__(");
+        break;
+    case OP_MULT:
+        nwrite_code(".__mult__(");
+        break;
+    case OP_LESS:
+        nwrite_code(".__less__(");
+        break;
+    case OP_GREATER:
+        nwrite_code(".__greater__(");
+        break;
+    case OP_INCREMENT:
+        nwrite_code("++");
+        break;
+    case OP_DECREMENT:
+        nwrite_code("--");
+        break;
+    case OP_NOT:
+        nwrite_code("!");
+        break;
+    default:
+        break;
+    }
+}
+
 static void nan_ctx_reset(nan_ctx_t *ctx)
 {
     ctx->comment = false;
@@ -107,8 +164,80 @@ define_visitor(nan_expression_statement, node_expression_t)
 define_visitor(nan_binary_expression, node_binary_t)
 {
     ast->left->accept(ast->left, visitor);
+
+    if (ast->left->type == NODE_OBJECT)
+    {
+        nwrite_dunder(ast->op);
+        ast->right->accept(ast->right, visitor);
+        nwrite_code(")");
+
+        return NULL;
+    }
+
     nwrite_ops(ast->op);
     ast->right->accept(ast->right, visitor);
+
+    return NULL;
+}
+
+define_visitor(nan_struct, node_struct_t)
+{
+    (void)visitor;
+    (void)ast;
+    nwrite_code("class ");
+    nwrite_code(ast->symbol->name);
+    nwrite_code(" {\n");
+    nwrite_ident(1);
+    nwrite_code("constructor({ ");
+
+    for (int i = 0; i < ast->nch; i++)
+    {
+        node_identifier_t *iden = (node_identifier_t *)(ast->fields[i]);
+        nwrite_code(iden->name);
+        if (i != ast->nch - 1)
+            nwrite_code(", ");
+    }
+
+    nwrite_code(" }) {\n");
+
+    for (int i = 0; i < ast->nch; i++)
+    {
+        nwrite_ident(2);
+        nwrite_code("this.");
+        node_identifier_t *iden = (node_identifier_t *)(ast->fields[i]);
+        nwrite_code(iden->name);
+        nwrite_code(" = ");
+        nwrite_code(iden->name);
+        nwrite_code(";\n");
+    }
+
+    nwrite_ident(1);
+    nwrite_code("}\n");
+    nwrite_code("}\n\n");
+    return NULL;
+}
+
+define_visitor(nan_object, node_object_t)
+{
+    (void)visitor;
+    (void)ast;
+
+    nwrite_code("new ");
+    nwrite_code(ast->symbol->name);
+    nwrite_code("({ ");
+
+    for (int i = 0; i < ast->nch; i++)
+    {
+        node_keyvalue_t *kv = (node_keyvalue_t *)(ast->fields[i]);
+        nwrite_code(((node_word_t *)(kv->key))->name);
+        nwrite_code(": ");
+        kv->value->accept(kv->value, visitor);
+        if (i != ast->nch - 1)
+            nwrite_code(", ");
+    }
+
+    nwrite_code(" })");
+
     return NULL;
 }
 
@@ -580,6 +709,9 @@ node_visitor_t nan_visitor = {
     .unary_fun = nan_unary,
     .array_fun = nan_array,
     .bool_fun = nan_boolean,
+    .class_fun = def_class,
+    .object_fun = nan_object,
+    .struct_fun = nan_struct,
     .number_fun = nan_number,
     .symbol_fun = nan_symbol,
     .return_fun = nan_return,

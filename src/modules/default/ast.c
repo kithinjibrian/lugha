@@ -22,11 +22,15 @@ DEFINE_ACCEPT(accept_do, node_do_t, do_fun);
 DEFINE_ACCEPT(accept_eof, node_ast_t, eof_fun);
 DEFINE_ACCEPT(accept_type, node_type_t, type_fun);
 DEFINE_ACCEPT(accept_bool, node_bool_t, bool_fun);
+DEFINE_ACCEPT(accept_word, node_word_t, word_fun);
 DEFINE_ACCEPT(accept_break, node_ast_t, break_fun);
+DEFINE_ACCEPT(accept_class, node_class_t, class_fun);
 DEFINE_ACCEPT(accept_unary, node_unary_t, unary_fun);
 DEFINE_ACCEPT(accept_block, node_block_t, block_fun);
 DEFINE_ACCEPT(accept_while, node_while_t, while_fun);
 DEFINE_ACCEPT(accept_array, node_array_t, array_fun);
+DEFINE_ACCEPT(accept_object, node_object_t, object_fun);
+DEFINE_ACCEPT(accept_struct, node_struct_t, struct_fun);
 DEFINE_ACCEPT(accept_number, node_number_t, number_fun);
 DEFINE_ACCEPT(accept_string, node_string_t, string_fun);
 DEFINE_ACCEPT(accept_symbol, node_symbol_t, symbol_fun);
@@ -35,6 +39,7 @@ DEFINE_ACCEPT(accept_continue, node_ast_t, continue_fun);
 DEFINE_ACCEPT(accept_ternary, node_ternary_t, ternary_fun);
 DEFINE_ACCEPT(accept_postfix, node_postfix_t, postfix_fun);
 DEFINE_ACCEPT(accept_if_else, node_if_else_t, if_else_fun);
+DEFINE_ACCEPT(accept_keyvalue, node_keyvalue_t, keyvalue_fun);
 DEFINE_ACCEPT(accept_variable, node_variable_t, variable_fun);
 DEFINE_ACCEPT(accept_parameter, node_parameter_t, parameter_fun);
 DEFINE_ACCEPT(accept_arguments, node_arguments_t, arguments_fun);
@@ -127,6 +132,13 @@ static inline node_ast_t *_symbol(ptree_t *ptree)
     return node_ast_cast(ast);
 }
 
+static inline node_ast_t *_word(ptree_t *ptree)
+{
+    DEFINE_NODE_AST(ptree, node_word_t, NODE_WORD, accept_word);
+    ast->name = ast_strdup(ptree->str);
+    return node_ast_cast(ast);
+}
+
 static inline node_ast_t *_string(ptree_t *ptree)
 {
     DEFINE_NODE_AST(ptree, node_string_t, NODE_STRING, accept_string);
@@ -208,7 +220,7 @@ static inline node_ast_t *_identifier(ptree_t *ptree)
     DEFINE_NODE_AST(ptree, node_identifier_t, NODE_IDENTIFIER, accept_identifier);
     ast->name = ptree->children[0]->str;
     ast->symbol = insert_symbol(ast->name);
-    ast->symbol->data_type = SYM_VARIABLE;
+    ast->symbol->type = SYM_VARIABLE;
     ast->type = gen_ast(ptree->children[1]);
     return node_ast_cast(ast);
 }
@@ -262,6 +274,10 @@ static inline node_ast_t *_type_reference(ptree_t *ptree)
 {
     DEFINE_NODE_AST(ptree, node_type_t, NODE_TYPE, accept_type);
     ast->tag = TYPE_CON;
+    ast->con.name = ast_strdup(ptree->children[0]->str);
+
+    printf("TODO: type reference: %s\n", ast->con.name);
+
     return node_ast_cast(ast);
 }
 
@@ -603,6 +619,61 @@ static inline node_ast_t *_array_access(ptree_t *ptree)
     return node_ast_cast(ast);
 }
 
+static inline node_ast_t *_class(ptree_t *ptree)
+{
+    DEFINE_NODE_AST(ptree, node_class_t, NODE_CLASS, accept_class);
+    return node_ast_cast(ast);
+}
+
+static inline node_ast_t *_struct(ptree_t *ptree)
+{
+    DEFINE_NODE_AST(ptree, node_struct_t, NODE_STRUCT, accept_struct);
+
+    ast->symbol = insert_symbol(ast_strdup(ptree->children[0]->str));
+    ast->symbol->type = SYM_STRUCT;
+
+    ptree_t *fields = ptree->children[3];
+
+    ast->nch = fields->nch;
+
+    ast->fields = (node_ast_t **)ast_alloc(sizeof(node_ast_t *) * fields->nch);
+
+    for (int i = 0; i < fields->nch; i++)
+    {
+        ast->fields[i] = gen_ast(fields->children[i]);
+    }
+
+    return node_ast_cast(ast);
+}
+
+static inline node_ast_t *_object_literal(ptree_t *ptree)
+{
+    DEFINE_NODE_AST(ptree, node_object_t, NODE_OBJECT, accept_object);
+    ast->symbol = lookup_symbol(ptree->children[0]->str);
+
+    ptree_t *fields = ptree->children[2];
+
+    ast->nch = fields->nch;
+    ast->fields = (node_ast_t **)ast_alloc(sizeof(node_ast_t *) * fields->nch);
+
+    for (int i = 0; i < fields->nch; i++)
+    {
+        ast->fields[i] = gen_ast(fields->children[i]);
+    }
+
+    return node_ast_cast(ast);
+}
+
+static inline node_ast_t *_keyvalue(ptree_t *ptree)
+{
+    DEFINE_NODE_AST(ptree, node_keyvalue_t, NODE_KEYVALUE, accept_keyvalue);
+
+    ast->key = gen_ast(ptree->children[0]);
+    ast->value = gen_ast(ptree->children[2]);
+
+    return node_ast_cast(ast);
+}
+
 static node_ast_t *gen_ast(ptree_t *ptree)
 {
     //  printf("AST: %s\n", ptree_type_str_g[ptree->type]);
@@ -629,6 +700,8 @@ static node_ast_t *gen_ast(ptree_t *ptree)
         return _continue(ptree);
     case PTREE_SYMBOL:
         return _symbol(ptree);
+    case PTREE_WORD:
+        return _word(ptree);
     case PTREE_STRING:
         return _string(ptree);
     case PTREE_BOOL:
@@ -695,6 +768,14 @@ static node_ast_t *gen_ast(ptree_t *ptree)
         return _type_function(ptree);
     case PTREE_TYPE_REFERENCE:
         return _type_reference(ptree);
+    case PTREE_CLASS:
+        return _class(ptree);
+    case PTREE_STRUCT:
+        return _struct(ptree);
+    case PTREE_OBJECT_LITERAL:
+        return _object_literal(ptree);
+    case PTREE_KEYVALUE:
+        return _keyvalue(ptree);
     default:
         printf("Unknown type: %d\n", ptree->type);
         break;
