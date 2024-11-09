@@ -33,6 +33,11 @@
         "hset.h": "c",
         "hmap.h": "c",
         "cmath": "c",
-        "string_view": "c"
+        "string_view": "c",
+        "path.h": "c",
+        "module.h": "c",
+        "nun.h": "c",
+        "string": "c",
+        "tuple.h": "c"
     }
 }

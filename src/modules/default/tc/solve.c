@@ -46,7 +46,7 @@ subst_t *bind(type_t *a, type_t *b)
     return subst;
 }
 
-subst_t *unify(type_t *a, type_t *b)
+subst_t *unify(module_t *module, type_t *a, type_t *b)
 {
     // printf("Unify\n");
     // _type_str(a, false);
@@ -70,7 +70,7 @@ subst_t *unify(type_t *a, type_t *b)
         if (strcmp(a->con.name, b->con.name) != 0)
         {
             error(
-                b->base.loc,
+                a->base.loc,
                 ERROR_TYPE,
                 "Expected type '%s' but got type '%s'",
                 b->con.name,
@@ -99,11 +99,11 @@ subst_t *unify(type_t *a, type_t *b)
         subst_t *subst = type_map();
         for (int i = 0; i < a->con.count; i++)
         {
-            subst_t *new_subst = unify(
-                apply(subst, a->con.types[i]),
-                apply(subst, b->con.types[i]));
+            subst_t *new_subst = unify(module,
+                                       apply(module, subst, a->con.types[i]),
+                                       apply(module, subst, b->con.types[i]));
 
-            subst = compose(subst, new_subst);
+            subst = compose(module, subst, new_subst);
         }
 
         return subst;
@@ -157,7 +157,22 @@ subst_t *unify(type_t *a, type_t *b)
     return NULL;
 }
 
-subst_t *solve(array_t *cnst)
+subst_t *solve(module_t *module, array_t *cnst)
+{
+    (void)cnst;
+    (void)module;
+
+    subst_t *subst = type_map();
+
+    if (cnst == NULL)
+        return subst;
+
+    
+
+    return subst;
+}
+
+subst_t *_solve(module_t *module, array_t *cnst)
 {
     subst_t *subst = type_map();
 
@@ -172,9 +187,9 @@ subst_t *solve(array_t *cnst)
 
         if (c->type == EQUALITY_CON)
         {
-            new_subst = unify(
-                apply(subst, c->eq.left),
-                apply(subst, c->eq.right));
+            new_subst = unify(module,
+                              apply(module, subst, c->eq.left),
+                              apply(module, subst, c->eq.right));
         }
         else if (c->type == IMPLICIT_CON)
         {
@@ -194,7 +209,9 @@ subst_t *solve(array_t *cnst)
                 }
             }
 
-            scheme_t *scheme = type_alloc(sizeof(scheme_t));
+            hset_enum_destroy(he);
+
+            scheme_t *scheme = mod_alloc(module, sizeof(scheme_t));
             scheme->set = ftv;
             scheme->type = c->imp.consequent;
 
@@ -202,7 +219,9 @@ subst_t *solve(array_t *cnst)
         }
 
         if (new_subst)
-            subst = compose(subst, new_subst);
+        {
+            subst = compose(module, subst, new_subst);
+        }
     }
 
     return subst;

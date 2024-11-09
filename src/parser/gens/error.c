@@ -2,7 +2,7 @@
 
 char *get_line_from_source(int line_number)
 {
-    FILE *file = fopen(filename_g, "r");
+    FILE *file = fopen(path_g->full_path, "r");
     if (!file)
     {
         fprintf(stderr, "Could not open source file.\n");
@@ -33,7 +33,7 @@ char *get_line_from_source(int line_number)
 void yyerror(const char *msg)
 {
     fprintf(stderr, "%s:%d:%d: %s\n",
-            filename_g,
+            path_g->full_path,
             yylloc.first_line, yylloc.first_column, msg);
 
     char *line = get_line_from_source(yylloc.first_line);
@@ -80,7 +80,7 @@ int count_digits(int num)
 
 void error(YYLTYPE loc, error_type_e type, const char *msg, ...)
 {
-    fprintf(stderr, "\n%s:%d:%d: ", filename_g, loc.first_line, loc.first_column);
+    fprintf(stderr, "\n%s:%d:%d: ", path_g->full_path, loc.first_line, loc.first_column);
 
     switch (type)
     {

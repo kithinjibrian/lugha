@@ -1,12 +1,10 @@
 #include "main.h"
 
-char *filename_g;
-ptree_t *ptree_g;
-const proc_ast_t *proc_ast_g = &node_ast;
+path_t *path_g = NULL;
 
 char *output_g = NULL;
 char *language_g = "python";
-char *build_dir_g = "build";
+char *build_dir_g = "dist";
 
 void print_usage()
 {
@@ -17,12 +15,6 @@ void print_usage()
     printf("  -b <build>        Specify build directory\n");
     printf("  -h                Display this help message\n");
     printf("  -v                Enable verbose mode\n");
-}
-
-void clean_globals()
-{
-    symtab_free();
-    ptree_free(ptree_g);
 }
 
 void parse_args(int argc, char **argv)
@@ -63,34 +55,28 @@ void parse_args(int argc, char **argv)
 
     for (int i = optind; i < argc; i++)
     {
-        filename_g = argv[i];
+        path_g = split_path(argv[i], MUST_EXIST);
+        module_parse(path_g);
+        free_path(path_g);
     }
 }
 
 define_main(int)
 {
-
     parse_args(argc, argv);
 
-    yyin = fopen(filename_g, "r");
-    if (!yyin)
-    {
-        perror("file not found");
+    char *cache = malloc(strlen(build_dir_g) + 16);
+    snprintf(cache, strlen(build_dir_g) + 16, "%s/__cache__.lg", build_dir_g);
+
+    FILE *fp = fopen(cache, "w");
+    if (!fp)
         return 1;
-    }
 
-    enter_scope("root");
+    fwrite("cache", 1, 5, fp);
 
-    int flag = yyparse();
+    fclose(fp);
 
-    fclose(yyin);
+    free(cache);
 
-    //    ptree_print(ptree_g, 0);
-
-    proc_ast_g->init(ptree_g);
-    proc_ast_g->exit();
-
-    clean_globals();
-
-    return flag;
+    return 0;
 }

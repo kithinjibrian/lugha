@@ -5,18 +5,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define DEFINE_ALLOC(_name, _arena)       \
-    void *_name(size_t size)              \
-    {                                     \
-        if (!(_arena)->head)              \
-            arena_init(_arena, 1024);     \
-        return arena_alloc(_arena, size); \
+#define DEFINE_ALLOC(_name, _arena)         \
+    void *_name(size_t size)                \
+    {                                       \
+        if (!(_arena)->head)                \
+            arena_init((_arena), 1024);     \
+        return arena_alloc((_arena), size); \
     }
 
 #define DEFINE_FREE(_name, _arena) \
     void _name()                   \
     {                              \
         arena_free(_arena);        \
+        (_arena)->head = NULL;     \
     }
 
 #define BLOCK_SIZE 1024

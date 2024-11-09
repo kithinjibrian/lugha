@@ -6,7 +6,6 @@
 #include "modules/lugha/lugha.h"
 #include "modules/default/visitor.h"
 
-extern char *filename_g;
 extern const char *ast_type_str_g[];
 
 #endif /* C_H */

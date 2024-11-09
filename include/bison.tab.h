@@ -83,45 +83,49 @@ extern int yydebug;
     XOR_ASSIGN = 284,              /* XOR_ASSIGN  */
     BACKWARD_ARROW = 285,          /* BACKWARD_ARROW  */
     FUN_ARROW = 286,               /* FUN_ARROW  */
-    LET = 287,                     /* LET  */
-    MUT = 288,                     /* MUT  */
-    FUN = 289,                     /* FUN  */
-    RETURN = 290,                  /* RETURN  */
-    IF = 291,                      /* IF  */
-    ELSE = 292,                    /* ELSE  */
-    BREAK = 293,                   /* BREAK  */
-    CONTINUE = 294,                /* CONTINUE  */
-    DO = 295,                      /* DO  */
-    FOR = 296,                     /* FOR  */
-    WHILE = 297,                   /* WHILE  */
-    SWITCH = 298,                  /* SWITCH  */
-    CASE = 299,                    /* CASE  */
-    DEFAULT = 300,                 /* DEFAULT  */
-    TYPE = 301,                    /* TYPE  */
-    CONST = 302,                   /* CONST  */
-    STRUCT = 303,                  /* STRUCT  */
-    UNION = 304,                   /* UNION  */
-    TRUE_VAL = 305,                /* TRUE_VAL  */
-    ENUM = 306,                    /* ENUM  */
-    METHODS = 307,                 /* METHODS  */
-    MATCH = 308,                   /* MATCH  */
-    FALSE_VAL = 309,               /* FALSE_VAL  */
-    CLASS = 310,                   /* CLASS  */
-    S8 = 311,                      /* S8  */
-    S16 = 312,                     /* S16  */
-    S32 = 313,                     /* S32  */
-    S64 = 314,                     /* S64  */
-    U8 = 315,                      /* U8  */
-    U16 = 316,                     /* U16  */
-    U32 = 317,                     /* U32  */
-    U64 = 318,                     /* U64  */
-    F32 = 319,                     /* F32  */
-    F64 = 320,                     /* F64  */
-    T_STRING = 321,                /* T_STRING  */
-    T_BOOLEAN = 322,               /* T_BOOLEAN  */
-    T_VOID = 323,                  /* T_VOID  */
-    T_CHAR = 324,                  /* T_CHAR  */
-    LOWER_THAN_ELSE = 325          /* LOWER_THAN_ELSE  */
+    SCOPE = 287,                   /* SCOPE  */
+    LET = 288,                     /* LET  */
+    MUT = 289,                     /* MUT  */
+    FUN = 290,                     /* FUN  */
+    RETURN = 291,                  /* RETURN  */
+    IF = 292,                      /* IF  */
+    ELSE = 293,                    /* ELSE  */
+    BREAK = 294,                   /* BREAK  */
+    CONTINUE = 295,                /* CONTINUE  */
+    DO = 296,                      /* DO  */
+    FOR = 297,                     /* FOR  */
+    WHILE = 298,                   /* WHILE  */
+    SWITCH = 299,                  /* SWITCH  */
+    CASE = 300,                    /* CASE  */
+    DEFAULT = 301,                 /* DEFAULT  */
+    TYPE = 302,                    /* TYPE  */
+    CONST = 303,                   /* CONST  */
+    STRUCT = 304,                  /* STRUCT  */
+    UNION = 305,                   /* UNION  */
+    TRUE_VAL = 306,                /* TRUE_VAL  */
+    ENUM = 307,                    /* ENUM  */
+    METHODS = 308,                 /* METHODS  */
+    MATCH = 309,                   /* MATCH  */
+    FALSE_VAL = 310,               /* FALSE_VAL  */
+    CLASS = 311,                   /* CLASS  */
+    EXPORT = 312,                  /* EXPORT  */
+    MODULE = 313,                  /* MODULE  */
+    IMPORT = 314,                  /* IMPORT  */
+    S8 = 315,                      /* S8  */
+    S16 = 316,                     /* S16  */
+    S32 = 317,                     /* S32  */
+    S64 = 318,                     /* S64  */
+    U8 = 319,                      /* U8  */
+    U16 = 320,                     /* U16  */
+    U32 = 321,                     /* U32  */
+    U64 = 322,                     /* U64  */
+    F32 = 323,                     /* F32  */
+    F64 = 324,                     /* F64  */
+    T_STRING = 325,                /* T_STRING  */
+    T_BOOLEAN = 326,               /* T_BOOLEAN  */
+    T_VOID = 327,                  /* T_VOID  */
+    T_CHAR = 328,                  /* T_CHAR  */
+    LOWER_THAN_ELSE = 329          /* LOWER_THAN_ELSE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -130,7 +134,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 18 "./src/parser/gens/bison.y"
+#line 19 "./src/parser/gens/bison.y"
 
     int num;
     char ch;
@@ -139,7 +143,7 @@ union YYSTYPE
     double db;
     struct ptree *ptree;
 
-#line 143 "bison.tab.h"
+#line 147 "bison.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

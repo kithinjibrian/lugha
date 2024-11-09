@@ -15,6 +15,22 @@ void add_eq_constraint(type_t *left, type_t *right)
     array_push(constraints(&type_visitor), &constraint);
 }
 
+void add_tc_constraint(type_class_t *tc, type_t *type)
+{
+    if (constraints(&type_visitor) == NULL)
+        constraints(&type_visitor) = new_array(constraint_t);
+
+    constraint_t constraint = {
+        .type = TYPECLASS_CON,
+        .tc = {
+            .type = type,
+            .type_class = tc,
+        },
+    };
+
+    array_push(constraints(&type_visitor), &constraint);
+}
+
 void add_imp_constraint(type_t *antecedent, type_t *consequent, array_t *M)
 {
     if (constraints(&type_visitor) == NULL)
@@ -88,26 +104,6 @@ hset_t *tvs_scheme(scheme_t *scheme)
     return hset_difference(set, scheme->set);
 }
 
-scheme_t *generalize(array_t *constraints, type_t *type)
-{
-    hset_t *tvs = tvs_type(type);
-
-    scheme_t *scheme = type_alloc(sizeof(scheme_t));
-    scheme->set = tvs;
-    scheme->type = type;
-
-    scheme_str(scheme);
-
-    size_t i;
-    array_for_each(i, constraints)
-    {
-        constraint_t *c = array_at(constraints, i);
-        constraint_str(c);
-    }
-
-    return scheme;
-}
-
 void scheme_str(scheme_t *scheme)
 {
     hset_enum_t *he = hset_enum_create(scheme->set);
@@ -131,17 +127,19 @@ void scheme_str(scheme_t *scheme)
 type_t *instantiate(scheme_t *scheme)
 {
     (void)scheme;
-    subst_t *subst = type_map();
+    //  subst_t *subst = type_map();
 
     hset_enum_t *he = hset_enum_create(scheme->set);
 
     void *value;
     while (hset_enum_next(he, &value))
     {
-        hmap_insert(subst, value, new_ttype_var(value));
+        //  hmap_insert(subst, value, new_ttype_var(value));
     }
 
     hset_enum_destroy(he);
 
-    return apply(subst, scheme->type);
+    // return apply(subst, scheme->type);
+
+    return NULL;
 }

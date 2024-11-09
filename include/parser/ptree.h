@@ -31,6 +31,7 @@
     P_TYPE(PTREE_TYPE)                 \
     P_TYPE(PTREE_ENUM)                 \
     P_TYPE(PTREE_LABEL)                \
+    P_TYPE(PTREE_SCOPE)                \
     P_TYPE(PTREE_EMPTY)                \
     P_TYPE(PTREE_TILDE)                \
     P_TYPE(PTREE_WHILE)                \
@@ -42,6 +43,9 @@
     P_TYPE(PTREE_UNION)                \
     P_TYPE(PTREE_UNARY)                \
     P_TYPE(PTREE_CLASS)                \
+    P_TYPE(PTREE_MODULE)               \
+    P_TYPE(PTREE_IMPORT)               \
+    P_TYPE(PTREE_EXPORT)               \
     P_TYPE(PTREE_FIELDS)               \
     P_TYPE(PTREE_SWITCH)               \
     P_TYPE(PTREE_LBRACE)               \
@@ -97,6 +101,7 @@
     P_TYPE(PTREE_GREATER_EQ)           \
     P_TYPE(PTREE_EXPRESSION)           \
     P_TYPE(PTREE_IDENTIFIER)           \
+    P_TYPE(PTREE_SYMBOL_LIST)          \
     P_TYPE(PTREE_STRING_TYPE)          \
     P_TYPE(PTREE_UNIT_STRUCT)          \
     P_TYPE(PTREE_VARIABLE_ID)          \
@@ -133,6 +138,7 @@
     P_TYPE(PTREE_TYPE_ANNOTATION)      \
     P_TYPE(PTREE_TYPED_ARGUMENTS)      \
     P_TYPE(PTREE_SOURCE_ELEMENTS)      \
+    P_TYPE(PTREE_SCOPE_RESOLUTION)     \
     P_TYPE(PTREE_TYPED_PARAMETERS)     \
     P_TYPE(PTREE_ENUM_NAMED_STRUCT)    \
     P_TYPE(PTREE_BINARY_EXPRESSION)    \

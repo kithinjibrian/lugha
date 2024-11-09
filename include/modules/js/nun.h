@@ -1,12 +1,16 @@
-#ifndef NaNSENSE_H
-#define NaNSENSE_H
+#ifndef NUN_H
+#define NUN_H
 
+#include <string.h>
+
+#include "file/path.h"
+#include "file/file.h"
 #include "parser/error.h"
 #include "modules/default/ast.h"
 #include "modules/lugha/lugha.h"
 #include "modules/default/visitor.h"
 
-extern char *filename_g;
+extern char *build_dir_g;
 extern const char *ast_type_str_g[];
 
-#endif /* NaNSENSE_H */
+#endif /* NUN_H */

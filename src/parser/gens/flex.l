@@ -59,6 +59,7 @@ HEX         0[xX]{HEXDIGIT}+
 
 "||"                    { return OR; }
 "&&"                    { return AND; }
+"::"                    { return SCOPE; }
 "<<"                    { return LSHIFT; }
 ">>"                    { return RSHIFT; }
 "<="                    { return LESS_EQ; }
@@ -118,6 +119,9 @@ HEX         0[xX]{HEXDIGIT}+
 "struct"                { return STRUCT; }
 "return"                { return RETURN; }
 "switch"                { return SWITCH; }
+"export"                { return EXPORT; }
+"import"                { return IMPORT; }
+"module"                { return MODULE; }
 "methods"               { return METHODS; }
 "default"               { return DEFAULT; }
 "continue"              { return CONTINUE; }

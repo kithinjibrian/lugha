@@ -99,16 +99,16 @@ define_visitor(lugha_expression, node_expression_t)
 
 define_visitor(lugha_expression_statement, node_expression_t)
 {
-    ast->expression->accept(ast->expression, visitor);
+    ast->expression->accept(module, ast->expression, visitor);
     lwrite_code(";\n");
     return NULL;
 }
 
 define_visitor(lugha_binary_expression, node_binary_t)
 {
-    ast->left->accept(ast->left, visitor);
+    ast->left->accept(module, ast->left, visitor);
     lwrite_ops(ast->op);
-    ast->right->accept(ast->right, visitor);
+    ast->right->accept(module, ast->right, visitor);
     return NULL;
 }
 
@@ -130,7 +130,7 @@ define_visitor(lugha_array, node_array_t)
 
     for (int i = 0; i < ast->nch; i++)
     {
-        ast->elements[i]->accept(ast->elements[i], visitor);
+        ast->elements[i]->accept(module, ast->elements[i], visitor);
         if (i != ast->nch - 1)
             lwrite_code(", ");
     }
@@ -142,9 +142,9 @@ define_visitor(lugha_array, node_array_t)
 
 define_visitor(lugha_array_access, node_array_access_t)
 {
-    ast->array->accept(ast->array, visitor);
+    ast->array->accept(module, ast->array, visitor);
     lwrite_code("[");
-    ast->index->accept(ast->index, visitor);
+    ast->index->accept(module, ast->index, visitor);
     lwrite_code("]");
     return NULL;
 }
@@ -163,7 +163,7 @@ define_visitor(lugha_variable_statement, node_variable_statement_t)
     else
         lwrite_code("let ");
 
-    ast->statement->accept(ast->statement, visitor);
+    ast->statement->accept(module, ast->statement, visitor);
     lwrite_code(";\n");
     return NULL;
 }
@@ -172,7 +172,7 @@ define_visitor(lugha_variable_list, node_variable_list_t)
 {
     for (int i = 0; i < ast->nvars; i++)
     {
-        ast->variables[i]->accept(ast->variables[i], visitor);
+        ast->variables[i]->accept(module, ast->variables[i], visitor);
         if (i != ast->nvars - 1)
             lwrite_code(", ");
     }
@@ -183,7 +183,7 @@ define_visitor(lugha_parameter_list, node_parameter_list_t)
 {
     for (int i = 0; i < ast->params_no; i++)
     {
-        ast->parameters[i]->accept(ast->parameters[i], visitor);
+        ast->parameters[i]->accept(module, ast->parameters[i], visitor);
         if (i != ast->params_no - 1)
             lwrite_code(", ");
     }
@@ -198,7 +198,7 @@ define_visitor(lugha_variable, node_variable_t)
     if (ast->expression)
     {
         lwrite_code(" = ");
-        ast->expression->accept(ast->expression, visitor);
+        ast->expression->accept(module, ast->expression, visitor);
     }
     return NULL;
 }
@@ -211,7 +211,7 @@ define_visitor(lugha_parameter, node_parameter_t)
     if (ast->expression)
     {
         lwrite_code(" = ");
-        ast->expression->accept(ast->expression, visitor);
+        ast->expression->accept(module, ast->expression, visitor);
     }
 
     return NULL;
@@ -243,7 +243,7 @@ define_visitor(lugha_source_elements, node_statements_t)
 
     for (int i = 0; i < ast->nch; i++)
     {
-        ast->children[i]->accept(ast->children[i], visitor);
+        ast->children[i]->accept(module, ast->children[i], visitor);
     }
     return NULL;
 }
@@ -256,7 +256,7 @@ define_visitor(lugha_block, node_block_t)
 
     if (ast->statements)
     {
-        ast->statements->accept(ast->statements, visitor);
+        ast->statements->accept(module, ast->statements, visitor);
     }
 
     lwrite_ident(lugha_ctx_ident(visitor) - 1);
@@ -272,15 +272,15 @@ define_visitor(lugha_function_dec, node_function_dec_t)
 {
 
     lwrite_code("fun ");
-    lwrite_code(ast->name);
+    lwrite_code(ast->symbol->name);
     lwrite_code("(");
 
     if (ast->parameters)
-        ast->parameters->accept(ast->parameters, visitor);
+        ast->parameters->accept(module, ast->parameters, visitor);
 
     lwrite_code(") ");
 
-    ast->block->accept(ast->block, visitor);
+    ast->block->accept(module, ast->block, visitor);
 
     lwrite_code("\n\n");
 
@@ -293,21 +293,21 @@ define_visitor(lugha_function_expression, node_function_expression_t)
     lwrite_code("fun (");
 
     if (ast->parameters)
-        ast->parameters->accept(ast->parameters, visitor);
+        ast->parameters->accept(module, ast->parameters, visitor);
 
     lwrite_code(") -> ");
 
-    ast->block->accept(ast->block, visitor);
+    ast->block->accept(module, ast->block, visitor);
 
     return NULL;
 }
 
 define_visitor(lugha_call, node_function_call_t)
 {
-    ast->expression->accept(ast->expression, visitor);
+    ast->expression->accept(module, ast->expression, visitor);
     lwrite_code("(");
     if (ast->arguments)
-        ast->arguments->accept(ast->arguments, visitor);
+        ast->arguments->accept(module, ast->arguments, visitor);
     lwrite_code(")");
 
     return NULL;
@@ -317,7 +317,7 @@ define_visitor(lugha_arguments, node_arguments_t)
 {
     for (int i = 0; i < ast->nargs; i++)
     {
-        ast->args[i]->accept(ast->args[i], visitor);
+        ast->args[i]->accept(module, ast->args[i], visitor);
         if (i != ast->nargs - 1)
             lwrite_code(", ");
     }
@@ -329,7 +329,7 @@ define_visitor(lugha_symbol, node_symbol_t)
 {
     (void)visitor;
 
-    lwrite_code(ast->name);
+    lwrite_code(ast->symbol->name);
 
     return NULL;
 }
@@ -350,7 +350,7 @@ define_visitor(lugha_return, node_return_t)
     if (ast->expression)
     {
         lwrite_code(" ");
-        ast->expression->accept(ast->expression, visitor);
+        ast->expression->accept(module, ast->expression, visitor);
     }
 
     lwrite_code(";\n");
@@ -383,7 +383,7 @@ define_visitor(lugha_if_else, node_if_else_t)
         lwrite_ident(lugha_ctx_ident(visitor));
 
     lwrite_code("if (");
-    ast->condition->accept(ast->condition, visitor);
+    ast->condition->accept(module, ast->condition, visitor);
     lwrite_code(") ");
 
     if (ast->then_block->type != NODE_BLOCK)
@@ -392,7 +392,7 @@ define_visitor(lugha_if_else, node_if_else_t)
         lwrite_ident(1);
     }
 
-    ast->then_block->accept(ast->then_block, visitor);
+    ast->then_block->accept(module, ast->then_block, visitor);
 
     if (ast->else_block)
     {
@@ -414,7 +414,7 @@ define_visitor(lugha_if_else, node_if_else_t)
             lwrite_ident(1);
         }
 
-        ast->else_block->accept(ast->else_block, visitor);
+        ast->else_block->accept(module, ast->else_block, visitor);
     }
 
     lwrite_code("\n");
@@ -424,11 +424,11 @@ define_visitor(lugha_if_else, node_if_else_t)
 
 define_visitor(lugha_ternary, node_ternary_t)
 {
-    ast->condition->accept(ast->condition, visitor);
+    ast->condition->accept(module, ast->condition, visitor);
     lwrite_code(" ? ");
-    ast->then_block->accept(ast->then_block, visitor);
+    ast->then_block->accept(module, ast->then_block, visitor);
     lwrite_code(" : ");
-    ast->else_block->accept(ast->else_block, visitor);
+    ast->else_block->accept(module, ast->else_block, visitor);
 
     return NULL;
 }
@@ -436,9 +436,9 @@ define_visitor(lugha_ternary, node_ternary_t)
 define_visitor(lugha_do, node_do_t)
 {
     lwrite_code("do ");
-    ast->statement->accept(ast->statement, visitor);
+    ast->statement->accept(module, ast->statement, visitor);
     lwrite_code(" while (");
-    ast->expression->accept(ast->expression, visitor);
+    ast->expression->accept(module, ast->expression, visitor);
     lwrite_code(");\n");
 
     return NULL;
@@ -447,7 +447,7 @@ define_visitor(lugha_do, node_do_t)
 define_visitor(lugha_while, node_while_t)
 {
     lwrite_code("while (");
-    ast->expression->accept(ast->expression, visitor);
+    ast->expression->accept(module, ast->expression, visitor);
     lwrite_code(") ");
 
     if (ast->statement->type != NODE_BLOCK)
@@ -456,7 +456,7 @@ define_visitor(lugha_while, node_while_t)
         lwrite_ident(1);
     }
 
-    ast->statement->accept(ast->statement, visitor);
+    ast->statement->accept(module, ast->statement, visitor);
     lwrite_code("\n");
 
     return NULL;
@@ -474,58 +474,41 @@ define_visitor(lugha_continue, node_ast_t)
 define_visitor(lugha_unary, node_unary_t)
 {
     lwrite_ops(ast->op);
-    ast->expression->accept(ast->expression, visitor);
+    ast->expression->accept(module, ast->expression, visitor);
 
     return NULL;
 }
 
 define_visitor(lugha_postfix, node_postfix_t)
 {
-    ast->expression->accept(ast->expression, visitor);
+    ast->expression->accept(module, ast->expression, visitor);
     lwrite_ops(ast->op);
 
     return NULL;
 }
 
-void lugha_init(void)
+void lugha_init(module_t *module)
 {
+    (void)module;
     lugha_visitor.code = sarray_init(500);
 }
 
 void save_lugha(node_visitor_t *visitor)
 {
-    uint8_t *code = visitor->code->data;
-    char *token;
-    token = strtok(filename_g, ".");
-
-    if (token)
-    {
-        char *fn = malloc(strlen(token) + 5);
-        strcpy(fn, token);
-        strcat(fn, ".lg");
-
-        FILE *file = fopen(fn, "w");
-
-        if (!file)
-            return;
-
-        fwrite(code, 1, visitor->code->used_size, file);
-        fclose(file);
-
-        free(fn);
-    }
 
     sarray_free(visitor->code);
 }
 
-void lugha_exit(node_visitor_t *visitor)
+void lugha_exit(module_t *module, node_visitor_t *visitor)
 {
+    (void)module;
     save_lugha(visitor);
 }
 
-void *lugha_entry(node_visitor_t *visitor, node_ast_t *ast)
+void *lugha_entry(module_t *module, node_visitor_t *visitor, node_ast_t *ast)
 {
     (void)visitor;
+    (void)module;
     (void)ast;
 
     //  printf("[ERROR] node type: %s\n", ast_type_str_g[ast->type]);
@@ -549,10 +532,11 @@ void *lugha_entry(node_visitor_t *visitor, node_ast_t *ast)
     return NULL;
 }
 
-void *lugha_leave(node_visitor_t *visitor, node_ast_t *ast)
+void *lugha_leave(module_t *module, node_visitor_t *visitor, node_ast_t *ast)
 {
     (void)visitor;
     (void)ast;
+    (void)module;
     return NULL;
 }
 
@@ -581,11 +565,13 @@ node_visitor_t lugha_visitor = {
     .unary_fun = lugha_unary,
     .array_fun = lugha_array,
     .struct_fun = def_struct,
+    .methods_fun = def_methods,
     .bool_fun = lugha_boolean,
     .number_fun = lugha_number,
     .symbol_fun = lugha_symbol,
     .return_fun = lugha_return,
     .object_fun = def_object,
+    .export_fun = def_export,
     .string_fun = lugha_string,
     .postfix_fun = lugha_postfix,
     .ternary_fun = lugha_ternary,
@@ -599,6 +585,7 @@ node_visitor_t lugha_visitor = {
     .identifier_fun = lugha_identifier,
     .array_access_fun = lugha_array_access,
     .function_dec_fun = lugha_function_dec,
+    .object_access_fun = def_object_access,
     .statements_fun = lugha_source_elements,
     .variable_list_fun = lugha_variable_list,
     .parameter_list_fun = lugha_parameter_list,

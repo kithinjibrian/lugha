@@ -22,26 +22,27 @@ typedef struct scheme
     type_t *type;
 } scheme_t;
 
-/**
- *  A type is denoted by τ(lowercase tau)
- *
- * τ ::=
- *   | α
- *   | C τ1... τn
- *   | τ1 -> τ2
- *
- * NOTE : The function constructor can be represented
- * by a type constructor.*/
+typedef struct type_class
+{
+    char *name;
+} type_class_t;
+
 typedef struct constraint
 {
     enum
     {
         EQUALITY_CON, // τ1 ≡ τ2
         EXPLICIT_CON, // τ1 ≤M τ2
-        IMPLICIT_CON  // τ ≤ σ
+        IMPLICIT_CON, // τ ≤ σ
+        TYPECLASS_CON
     } type;
     union
     {
+        struct
+        {
+            type_t *type;
+            type_class_t *type_class;
+        } tc;
         struct
         {
             type_t *left;
@@ -104,43 +105,41 @@ static inline hmap_t *type_map()
     return hmap_create(tvar_hash, tvar_eq, NULL);
 }
 
-char *type_strdup(char *s);
-void *type_alloc(size_t size);
-
-type_t *type_dup(type_t *type);
 bool type_eq(type_t *a, type_t *b);
 void _type_str(type_t *type, bool nl);
+type_t *type_dup(module_t *module, type_t *type);
 
 #define type_str(type) _type_str(type, true)
 
-type_t *_new_int(node_ast_t *ast);
-type_t *_new_str(node_ast_t *ast);
-type_t *_new_bool(node_ast_t *ast);
-type_t *_new_array(node_ast_t *ast);
-type_t *_new_type_var(node_ast_t *ast);
-type_t *_new_trec(node_ast_t *ast, int size, char *name);
-type_t *_new_adt(node_ast_t *ast, char *name, int n, type_t **types);
-type_t *_new_fun(node_ast_t *ast, int n, type_t **types, type_t *return_type);
+type_t *_new_int(module_t *module, node_ast_t *ast);
+type_t *_new_str(module_t *module, node_ast_t *ast);
+type_t *_new_bool(module_t *module, node_ast_t *ast);
+type_t *_new_array(module_t *module, node_ast_t *ast);
+type_t *_new_type_var(module_t *module, node_ast_t *ast);
+type_t *_new_trec(module_t *module, node_ast_t *ast, int size, char *name);
+type_t *_new_adt(module_t *module, node_ast_t *ast, char *name, int n, type_t **types);
+type_t *_new_fun(module_t *module, node_ast_t *ast, int n, type_t **types, type_t *return_type);
 
-#define new_tint(ast) _new_int(node_ast_cast(ast))
-#define new_tbool(ast) _new_bool(node_ast_cast(ast))
-#define new_tstring(ast) _new_str(node_ast_cast(ast))
-#define new_tarray(ast) _new_array(node_ast_cast(ast))
-#define new_ttype_var(ast) _new_type_var(node_ast_cast(ast))
-#define new_trec(ast, size, name) _new_trec(node_ast_cast(ast), size, name)
-#define new_tadt(ast, name, n, types) _new_adt(node_ast_cast(ast), name, n, types)
-#define new_tfun(ast, n, types, return_type) _new_fun(node_ast_cast(ast), n, types, return_type)
+#define new_tint(module, ast) _new_int(module, node_ast_cast(ast))
+#define new_tbool(module, ast) _new_bool(module, node_ast_cast(ast))
+#define new_tstring(module, ast) _new_str(module, node_ast_cast(ast))
+#define new_tarray(module, ast) _new_array(module, node_ast_cast(ast))
+#define new_ttype_var(module, ast) _new_type_var(module, node_ast_cast(ast))
+#define new_trec(module, ast, size, name) _new_trec(module, node_ast_cast(ast), size, name)
+#define new_tfun(module, ast, n, types, return_type) _new_fun(module, node_ast_cast(ast), n, types, return_type)
 
-void trec_add(type_t *type, char *name, type_t *value);
+void trec_add(module_t *module, type_t *type, char *label, type_t *value);
+type_t *trec_get(type_t *type, char *label);
 
-subst_t *compose(subst_t *a, subst_t *b);
-type_t *apply(subst_t *subst, type_t *type);
+subst_t *compose(module_t *module, subst_t *a, subst_t *b);
+type_t *apply(module_t *module, subst_t *subst, type_t *type);
 
-subst_t *solve(array_t *constraints);
-subst_t *unify(type_t *a, type_t *b);
+subst_t *solve(module_t *module, array_t *cnst);
+subst_t *unify(module_t *module, type_t *a, type_t *b);
 
 void constraint_str(constraint_t *constraint);
 void add_eq_constraint(type_t *left, type_t *right);
+void add_tc_constraint(type_class_t *tc, type_t *type);
 void add_imp_constraint(type_t *antecedent, type_t *consequent, array_t *M);
 
 void scheme_str(scheme_t *scheme);

@@ -7,6 +7,7 @@
 
 #include "bison.tab.h"
 #include "parser/ptree.h"
+#include "parser/module.h"
 
 #define COLOR_RESET "\033[0m"
 #define COLOR_RED "\033[31m"
@@ -31,8 +32,7 @@ typedef enum
     ERROR_CODE_GEN,
 } error_type_e;
 
-extern YYLTYPE yylloc;
-extern char *filename_g;
+extern path_t *path_g;
 
 int count_digits(int num);
 void yyerror(const char *msg);

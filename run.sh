@@ -32,7 +32,7 @@ elif [ "$1" == "run" ]; then
 elif [ "$1" == "force-run" ]; then
 	clean
 	build
-	./lugha main.lg -o main.js -l js
+	./lugha l/main.lg -o main.js -l js
 
 elif [ "$1" == "debug" ]; then
 	clean
@@ -42,7 +42,7 @@ elif [ "$1" == "debug" ]; then
 elif [ "$1" == "valgrind" ]; then
 	clean
 	build
-	valgrind --leak-check=full --show-reachable=yes --track-origins=yes ./lugha main.lg
+	valgrind --leak-check=full --show-reachable=yes --track-origins=yes ./lugha l/main.lg
 	
 else
 	build

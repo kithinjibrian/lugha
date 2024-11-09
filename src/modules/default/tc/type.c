@@ -2,16 +2,16 @@
 
 int type_count = -1;
 
-static char *fresh(int count)
+static char *fresh(module_t *module, int count)
 {
-    char *name = type_alloc(count_digits(count) + 2);
+    char *name = mod_alloc(module, count_digits(count) + 2);
     sprintf(name, "t%d", count);
     return name;
 }
 
-static type_t *new_type_con(node_ast_t *ast, int tag, char *name)
+static type_t *new_type_con(module_t *module, node_ast_t *ast, int tag, char *name)
 {
-    type_t *type = type_alloc(sizeof(type_t));
+    type_t *type = mod_alloc(module, sizeof(type_t));
 
     type->base.type = NODE_TYPE;
 
@@ -21,30 +21,31 @@ static type_t *new_type_con(node_ast_t *ast, int tag, char *name)
     type->label = NULL;
     type->con.count = 0;
     type->con.index = 0;
-    type->con.name = type_strdup(name);
+    type->con.name = mod_strdup(module, name);
 
     return type;
 }
 
-type_t *_new_type_var(node_ast_t *ast)
+type_t *_new_type_var(module_t *module, node_ast_t *ast)
 {
-    type_t *type = type_alloc(sizeof(type_t));
+    type_t *type = mod_alloc(module, sizeof(type_t));
 
     type->base.type = NODE_TYPE;
 
-    memcpy(&(type->base.loc), &(ast->loc), sizeof(node_ast_t));
+    if (ast)
+        memcpy(&(type->base.loc), &(ast->loc), sizeof(node_ast_t));
 
     type->tag = TYPE_VAR;
     type->label = NULL;
 
-    type->var.name = fresh(++type_count);
+    type->var.name = fresh(module, ++type_count);
 
     return type;
 }
 
-type_t *_new_trec(node_ast_t *ast, int size, char *name)
+type_t *_new_trec(module_t *module, node_ast_t *ast, int size, char *name)
 {
-    type_t *type = type_alloc(sizeof(type_t));
+    type_t *type = mod_alloc(module, sizeof(type_t));
     type->base.type = NODE_TYPE;
 
     memcpy(&(type->base.loc), &(ast->loc), sizeof(node_ast_t));
@@ -52,9 +53,9 @@ type_t *_new_trec(node_ast_t *ast, int size, char *name)
     type->tag = TYPE_REC;
     type->rec.size = size;
     type->rec.count = 0;
-    type->rec.name = type_strdup(name);
+    type->rec.name = mod_strdup(module, name);
 
-    type->rec.table = (trec_kv_t **)type_alloc(sizeof(trec_kv_t *) * size);
+    type->rec.table = (trec_kv_t **)mod_alloc(module, sizeof(trec_kv_t *) * size);
 
     for (int i = 0; i < size; i++)
         type->rec.table[i] = NULL;
@@ -62,7 +63,7 @@ type_t *_new_trec(node_ast_t *ast, int size, char *name)
     return type;
 }
 
-void trec_add(type_t *type, char *label, type_t *value)
+void trec_add(module_t *module, type_t *type, char *label, type_t *value)
 {
     uint32_t index = str_hash(label) % type->rec.size;
 
@@ -80,39 +81,55 @@ void trec_add(type_t *type, char *label, type_t *value)
 
     type->rec.count++;
 
-    trec_kv_t *k = type_alloc(sizeof(trec_kv_t));
-    k->label = type_strdup(label);
+    trec_kv_t *k = mod_alloc(module, sizeof(trec_kv_t));
+    k->label = mod_strdup(module, label);
     k->type = value;
     k->next = type->rec.table[index];
     type->rec.table[index] = k;
 }
 
-type_t *_new_int(node_ast_t *ast)
+type_t *trec_get(type_t *type, char *label)
 {
-    return new_type_con(ast, TYPE_CON, "int");
+    uint32_t index = str_hash(label) % type->rec.size;
+
+    trec_kv_t *kv = type->rec.table[index];
+
+    while (kv != NULL)
+    {
+        if (strcmp(kv->label, label) == 0)
+            return kv->type;
+        kv = kv->next;
+    }
+
+    return NULL;
 }
 
-type_t *_new_bool(node_ast_t *ast)
+type_t *_new_int(module_t *module, node_ast_t *ast)
 {
-    return new_type_con(ast, TYPE_CON, "bool");
+    return new_type_con(module, ast, TYPE_CON, "int");
 }
 
-type_t *_new_str(node_ast_t *ast)
+type_t *_new_bool(module_t *module, node_ast_t *ast)
 {
-    return new_type_con(ast, TYPE_CON, "string");
+    return new_type_con(module, ast, TYPE_CON, "bool");
 }
 
-type_t *_new_array(node_ast_t *ast)
+type_t *_new_str(module_t *module, node_ast_t *ast)
 {
-    return new_type_con(ast, TYPE_CON, "[]");
+    return new_type_con(module, ast, TYPE_CON, "string");
 }
 
-type_t *_new_fun(node_ast_t *ast, int n, type_t **types, type_t *return_type)
+type_t *_new_array(module_t *module, node_ast_t *ast)
 {
-    type_t *type = new_type_con(ast, TYPE_CON, "->");
+    return new_type_con(module, ast, TYPE_CON, "[]");
+}
+
+type_t *_new_fun(module_t *module, node_ast_t *ast, int n, type_t **types, type_t *return_type)
+{
+    type_t *type = new_type_con(module, ast, TYPE_CON, "->");
 
     type->con.count = types ? n + 1 : 1;
-    type->con.types = (type_t **)type_alloc(sizeof(type_t *) * type->con.count);
+    type->con.types = (type_t **)mod_alloc(module, sizeof(type_t *) * type->con.count);
 
     for (int i = 0; i < type->con.count; i++)
     {
@@ -130,21 +147,11 @@ type_t *_new_fun(node_ast_t *ast, int n, type_t **types, type_t *return_type)
     return type;
 }
 
-type_t *_new_adt(node_ast_t *ast, char *name, int n, type_t **types)
+type_t *type_dup(module_t *module, type_t *type)
 {
-    type_t *type = new_type_con(ast, TYPE_CON, name);
-
-    type->con.count = n;
-    type->con.types = types;
-
-    return type;
-}
-
-type_t *type_dup(type_t *type)
-{
-    type_t *new_type = new_type_con(node_ast_cast(type), TYPE_CON, type->con.name);
+    type_t *new_type = new_type_con(module, node_ast_cast(type), TYPE_CON, type->con.name);
     new_type->con.count = type->con.count;
-    new_type->con.types = type->con.count ? (type_t **)type_alloc(sizeof(type_t *) * type->con.count) : NULL;
+    new_type->con.types = type->con.count ? (type_t **)mod_alloc(module, sizeof(type_t *) * type->con.count) : NULL;
     return new_type;
 }
 

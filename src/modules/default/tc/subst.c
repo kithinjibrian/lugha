@@ -1,6 +1,6 @@
 #include "modules/default/types.h"
 
-type_t *apply(subst_t *subst, type_t *type)
+type_t *apply(module_t *module, subst_t *subst, type_t *type)
 {
     if (type->tag == TYPE_VAR)
     {
@@ -17,18 +17,18 @@ type_t *apply(subst_t *subst, type_t *type)
     else if (type->tag == TYPE_CON)
     {
 
-        type_t *new_type = type_dup(type);
+        type_t *new_type = type_dup(module, type);
 
         for (int i = 0; i < type->con.count; i++)
         {
-            new_type->con.types[i] = apply(subst, type->con.types[i]);
+            new_type->con.types[i] = apply(module, subst, type->con.types[i]);
         }
 
         return new_type;
     }
     else if (type->tag == TYPE_REC)
     {
-        type_t *new_type = new_trec(type, type->rec.size, type->rec.name);
+        type_t *new_type = new_trec(module, type, type->rec.size, type->rec.name);
 
         for (int i = 0; i < type->rec.size; i++)
         {
@@ -36,7 +36,7 @@ type_t *apply(subst_t *subst, type_t *type)
 
             while (kv)
             {
-                trec_add(new_type, kv->label, apply(subst, kv->type));
+                trec_add(module, new_type, kv->label, apply(module, subst, kv->type));
                 kv = kv->next;
             }
         }
@@ -49,19 +49,21 @@ type_t *apply(subst_t *subst, type_t *type)
 
 constraint_t *apply_constraint(subst_t *subst, constraint_t *constraint)
 {
-    switch (constraint->type)
-    {
-    case EQUALITY_CON:
-    {
-        constraint_t *new_constraint = type_alloc(sizeof(constraint_t));
-        new_constraint->type = EQUALITY_CON;
-        new_constraint->eq.left = apply(subst, constraint->eq.left);
-        new_constraint->eq.right = apply(subst, constraint->eq.right);
-        return new_constraint;
-    }
-    default:
-        break;
-    }
+    (void)subst;
+    (void)constraint;
+    // switch (constraint->type)
+    // {
+    // case EQUALITY_CON:
+    // {
+    //     constraint_t *new_constraint = mod_alloc(module_g, sizeof(constraint_t));
+    //     new_constraint->type = EQUALITY_CON;
+    //     new_constraint->eq.left = apply(subst, constraint->eq.left);
+    //     new_constraint->eq.right = apply(subst, constraint->eq.right);
+    //     return new_constraint;
+    // }
+    // default:
+    //     break;
+    // }
 
     return NULL;
 }
@@ -80,7 +82,7 @@ array_t *apply_constraints_list(subst_t *subst, array_t *constraints)
     return new_constraints;
 }
 
-subst_t *compose(subst_t *a, subst_t *b)
+subst_t *compose(module_t *module, subst_t *a, subst_t *b)
 {
     subst_t *u = hmap_union(b, a);
 
@@ -88,9 +90,12 @@ subst_t *compose(subst_t *a, subst_t *b)
 
     void *key, *val;
     while (hmap_enum_next(he, &key, &val))
-        hmap_insert(u, key, apply(u, val));
+        hmap_insert(u, key, apply(module, u, val));
 
     hmap_enum_destroy(he);
+
+    hmap_destroy(b);
+    hmap_destroy(a);
 
     return u;
 }

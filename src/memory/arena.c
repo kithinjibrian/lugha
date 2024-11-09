@@ -12,7 +12,7 @@ memory_block_t *new_block(uint32_t size)
 {
     memory_block_t *block = (memory_block_t *)malloc(sizeof(memory_block_t));
     block->next = NULL;
-    block->memory = (uint8_t *)malloc(size);
+    block->memory = (uint8_t *)calloc(1, size);
     block->used = 0;
     block->size = size;
     return block;

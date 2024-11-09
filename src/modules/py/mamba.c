@@ -97,8 +97,9 @@ void mamba_error(node_ast_t *ast, char *message)
     mamba_ctx_comment(&mamba_visitor) = true;
 }
 
-void mamba_init(void)
+void mamba_init(module_t *module)
 {
+    (void)module;
     mamba_visitor.code = sarray_init(500);
 }
 
@@ -111,16 +112,16 @@ define_visitor(mamba_expression, node_expression_t)
 
 define_visitor(mamba_expression_statement, node_expression_t)
 {
-    ast->expression->accept(ast->expression, visitor);
+    ast->expression->accept(module, ast->expression, visitor);
     mwrite_code("\n");
     return NULL;
 }
 
 define_visitor(mamba_binary_expression, node_binary_t)
 {
-    ast->left->accept(ast->left, visitor);
+    ast->left->accept(module, ast->left, visitor);
     write_ops(ast->op);
-    ast->right->accept(ast->right, visitor);
+    ast->right->accept(module, ast->right, visitor);
     return NULL;
 }
 
@@ -142,7 +143,7 @@ define_visitor(mamba_array, node_array_t)
 
     for (int i = 0; i < ast->nch; i++)
     {
-        ast->elements[i]->accept(ast->elements[i], visitor);
+        ast->elements[i]->accept(module, ast->elements[i], visitor);
         if (i != ast->nch - 1)
             mwrite_code(", ");
     }
@@ -154,9 +155,9 @@ define_visitor(mamba_array, node_array_t)
 
 define_visitor(mamba_array_access, node_array_access_t)
 {
-    ast->array->accept(ast->array, visitor);
+    ast->array->accept(module, ast->array, visitor);
     mwrite_code("[");
-    ast->index->accept(ast->index, visitor);
+    ast->index->accept(module, ast->index, visitor);
     mwrite_code("]");
     return NULL;
 }
@@ -170,7 +171,7 @@ define_visitor(mamba_boolean, node_bool_t)
 
 define_visitor(mamba_variable_statement, node_variable_statement_t)
 {
-    ast->statement->accept(ast->statement, visitor);
+    ast->statement->accept(module, ast->statement, visitor);
     mwrite_code("\n");
     return NULL;
 }
@@ -179,7 +180,7 @@ define_visitor(mamba_variable_list, node_variable_list_t)
 {
     for (int i = 0; i < ast->nvars; i++)
     {
-        ast->variables[i]->accept(ast->variables[i], visitor);
+        ast->variables[i]->accept(module, ast->variables[i], visitor);
         if (i != ast->nvars - 1)
             mwrite_code(", ");
     }
@@ -190,7 +191,7 @@ define_visitor(mamba_parameter_list, node_parameter_list_t)
 {
     for (int i = 0; i < ast->params_no; i++)
     {
-        ast->parameters[i]->accept(ast->parameters[i], visitor);
+        ast->parameters[i]->accept(module, ast->parameters[i], visitor);
         if (i != ast->params_no - 1)
             mwrite_code(", ");
     }
@@ -205,7 +206,7 @@ define_visitor(mamba_variable, node_variable_t)
     if (ast->expression)
     {
         mwrite_code(" = ");
-        ast->expression->accept(ast->expression, visitor);
+        ast->expression->accept(module, ast->expression, visitor);
     }
     return NULL;
 }
@@ -218,7 +219,7 @@ define_visitor(mamba_parameter, node_parameter_t)
     if (ast->expression)
     {
         mwrite_code(" = ");
-        ast->expression->accept(ast->expression, visitor);
+        ast->expression->accept(module, ast->expression, visitor);
     }
 
     return NULL;
@@ -250,7 +251,7 @@ define_visitor(mamba_source_elements, node_statements_t)
 
     for (int i = 0; i < ast->nch; i++)
     {
-        ast->children[i]->accept(ast->children[i], visitor);
+        ast->children[i]->accept(module, ast->children[i], visitor);
     }
     return NULL;
 }
@@ -261,7 +262,7 @@ define_visitor(mamba_block, node_block_t)
 
     if (ast->statements)
     {
-        ast->statements->accept(ast->statements, visitor);
+        ast->statements->accept(module, ast->statements, visitor);
     }
     else
     {
@@ -278,15 +279,15 @@ define_visitor(mamba_function_dec, node_function_dec_t)
 {
 
     mwrite_code("def ");
-    mwrite_code(ast->name);
+    mwrite_code(ast->symbol->name);
     mwrite_code("(");
 
     if (ast->parameters)
-        ast->parameters->accept(ast->parameters, visitor);
+        ast->parameters->accept(module, ast->parameters, visitor);
 
     mwrite_code("):\n");
 
-    ast->block->accept(ast->block, visitor);
+    ast->block->accept(module, ast->block, visitor);
 
     mwrite_code("\n");
 
@@ -306,11 +307,11 @@ define_visitor(mamba_function_expression, node_function_expression_t)
     mwrite_code("lambda ");
 
     if (ast->parameters)
-        ast->parameters->accept(ast->parameters, visitor);
+        ast->parameters->accept(module, ast->parameters, visitor);
 
     mwrite_code(": ");
 
-    ast->block->accept(ast->block, visitor);
+    ast->block->accept(module, ast->block, visitor);
 
     mwrite_code("\n");
 
@@ -321,10 +322,10 @@ define_visitor(mamba_function_expression, node_function_expression_t)
 
 define_visitor(mamba_call, node_function_call_t)
 {
-    ast->expression->accept(ast->expression, visitor);
+    ast->expression->accept(module, ast->expression, visitor);
     mwrite_code("(");
     if (ast->arguments)
-        ast->arguments->accept(ast->arguments, visitor);
+        ast->arguments->accept(module, ast->arguments, visitor);
     mwrite_code(")");
 
     return NULL;
@@ -334,7 +335,7 @@ define_visitor(mamba_arguments, node_arguments_t)
 {
     for (int i = 0; i < ast->nargs; i++)
     {
-        ast->args[i]->accept(ast->args[i], visitor);
+        ast->args[i]->accept(module, ast->args[i], visitor);
         if (i != ast->nargs - 1)
             mwrite_code(", ");
     }
@@ -346,7 +347,7 @@ define_visitor(mamba_symbol, node_symbol_t)
 {
     (void)visitor;
 
-    mwrite_code(ast->name);
+    mwrite_code(ast->symbol->name);
 
     return NULL;
 }
@@ -367,7 +368,7 @@ define_visitor(mamba_return, node_return_t)
     if (ast->expression)
     {
         mwrite_code(" ");
-        ast->expression->accept(ast->expression, visitor);
+        ast->expression->accept(module, ast->expression, visitor);
     }
 
     mwrite_code("\n");
@@ -399,9 +400,9 @@ define_visitor(mamba_if_else, node_if_else_t)
         mwrite_ident(mamba_ctx_ident(visitor));
 
     mwrite_code("if ");
-    ast->condition->accept(ast->condition, visitor);
+    ast->condition->accept(module, ast->condition, visitor);
     mwrite_code(":\n");
-    ast->then_block->accept(ast->then_block, visitor);
+    ast->then_block->accept(module, ast->then_block, visitor);
 
     if (ast->else_block)
     {
@@ -417,7 +418,7 @@ define_visitor(mamba_if_else, node_if_else_t)
             mwrite_code("else:\n");
         }
 
-        ast->else_block->accept(ast->else_block, visitor);
+        ast->else_block->accept(module, ast->else_block, visitor);
     }
 
     return NULL;
@@ -425,11 +426,11 @@ define_visitor(mamba_if_else, node_if_else_t)
 
 define_visitor(mamba_ternary, node_ternary_t)
 {
-    ast->then_block->accept(ast->then_block, visitor);
+    ast->then_block->accept(module, ast->then_block, visitor);
     mwrite_code(" if ");
-    ast->condition->accept(ast->condition, visitor);
+    ast->condition->accept(module, ast->condition, visitor);
     mwrite_code(" else ");
-    ast->else_block->accept(ast->else_block, visitor);
+    ast->else_block->accept(module, ast->else_block, visitor);
 
     return NULL;
 }
@@ -446,10 +447,10 @@ define_visitor(mamba_continue, node_ast_t)
 define_visitor(mamba_do, node_do_t)
 {
     mwrite_code("while True:\n");
-    ast->statement->accept(ast->statement, visitor);
+    ast->statement->accept(module, ast->statement, visitor);
     mwrite_ident(mamba_ctx_ident(visitor) + 1);
     mwrite_code("if ");
-    ast->expression->accept(ast->expression, visitor);
+    ast->expression->accept(module, ast->expression, visitor);
     mwrite_code(":\n");
     mwrite_ident(mamba_ctx_ident(visitor) + 2);
     mwrite_code("break\n");
@@ -460,9 +461,9 @@ define_visitor(mamba_do, node_do_t)
 define_visitor(mamba_while, node_while_t)
 {
     mwrite_code("while ");
-    ast->expression->accept(ast->expression, visitor);
+    ast->expression->accept(module, ast->expression, visitor);
     mwrite_code(":\n");
-    ast->statement->accept(ast->statement, visitor);
+    ast->statement->accept(module, ast->statement, visitor);
 
     return NULL;
 }
@@ -470,14 +471,14 @@ define_visitor(mamba_while, node_while_t)
 define_visitor(mamba_unary, node_unary_t)
 {
     write_ops(ast->op);
-    ast->expression->accept(ast->expression, visitor);
+    ast->expression->accept(module, ast->expression, visitor);
 
     return NULL;
 }
 
 define_visitor(mamba_postfix, node_postfix_t)
 {
-    ast->expression->accept(ast->expression, visitor);
+    ast->expression->accept(module, ast->expression, visitor);
     write_ops(ast->op);
 
     return NULL;
@@ -485,37 +486,18 @@ define_visitor(mamba_postfix, node_postfix_t)
 
 void save_code(node_visitor_t *visitor)
 {
-    uint8_t *code = visitor->code->data;
-    char *token;
-    token = strtok(filename_g, ".");
-
-    if (token)
-    {
-        char *fn = malloc(strlen(token) + 5);
-        strcpy(fn, token);
-        strcat(fn, ".py");
-
-        FILE *file = fopen(fn, "w");
-
-        if (!file)
-            return;
-
-        fwrite(code, 1, visitor->code->used_size, file);
-        fclose(file);
-
-        free(fn);
-    }
-
     sarray_free(visitor->code);
 }
 
-void mamba_exit(node_visitor_t *visitor)
+void mamba_exit(module_t *module, node_visitor_t *visitor)
 {
+    (void)module;
     save_code(visitor);
 }
 
-void *mamba_entry(node_visitor_t *visitor, node_ast_t *ast)
+void *mamba_entry(module_t *module, node_visitor_t *visitor, node_ast_t *ast)
 {
+    (void)module;
     (void)visitor;
     (void)ast;
 
@@ -540,8 +522,9 @@ void *mamba_entry(node_visitor_t *visitor, node_ast_t *ast)
     return NULL;
 }
 
-void *mamba_leave(node_visitor_t *visitor, node_ast_t *ast)
+void *mamba_leave(module_t *module, node_visitor_t *visitor, node_ast_t *ast)
 {
+    (void)module;
     (void)visitor;
     (void)ast;
     return NULL;
@@ -571,10 +554,12 @@ node_visitor_t mamba_visitor = {
     .block_fun = mamba_block,
     .break_fun = mamba_break,
     .while_fun = mamba_while,
+    .export_fun = def_export,
     .struct_fun = def_struct,
     .unary_fun = mamba_unary,
     .array_fun = mamba_array,
     .bool_fun = mamba_boolean,
+    .methods_fun = def_methods,
     .number_fun = mamba_number,
     .symbol_fun = mamba_symbol,
     .return_fun = mamba_return,
@@ -589,6 +574,7 @@ node_visitor_t mamba_visitor = {
     .parameter_fun = mamba_parameter,
     .expression_fun = mamba_expression,
     .identifier_fun = mamba_identifier,
+    .object_access_fun = def_object_access,
     .array_access_fun = mamba_array_access,
     .function_dec_fun = mamba_function_dec,
     .statements_fun = mamba_source_elements,

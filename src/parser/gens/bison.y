@@ -2,14 +2,15 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "file/path.h"
 #include "parser/ptree.h"
 #include "parser/error.h"
-#include "parser/symtab.h"
+#include "parser/module.h"
 
 int yylex();
 void yyerror(const char *msg);
 
-extern ptree_t *ptree_g;
+ptree_t *ptree_g = NULL;
 %}
           
 %define parse.error verbose      
@@ -33,10 +34,10 @@ extern ptree_t *ptree_g;
 
 %token<num>     OR AND LSHIFT RSHIFT IS_EQUAL LESS_EQ GREATER_EQ NOT_EQUAL INCREMENT DECREMENT FORWARD_ARROW
                 OR_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN SUB_ASSIGN SHL_ASSIGN SHR_ASSIGN
-                AND_ASSIGN XOR_ASSIGN BACKWARD_ARROW FUN_ARROW
+                AND_ASSIGN XOR_ASSIGN BACKWARD_ARROW FUN_ARROW SCOPE
 
 %token<num>     LET MUT FUN RETURN IF ELSE BREAK CONTINUE DO FOR WHILE SWITCH CASE DEFAULT TYPE CONST STRUCT UNION TRUE_VAL
-                ENUM METHODS MATCH FALSE_VAL CLASS
+                ENUM METHODS MATCH FALSE_VAL CLASS EXPORT MODULE IMPORT
 
 %token<num>     S8 S16 S32 S64 U8 U16 U32 U64 F32 F64 T_STRING T_BOOLEAN T_VOID T_CHAR   
 
@@ -52,7 +53,7 @@ extern ptree_t *ptree_g;
                 typed_arguments typed_parameters type_params function_declaration parameters_list type_annotation struct_statement
                 field_list methods_statement method_list union_statement enum_statement enum_members enum_member array_literal
                 element_list object_literal keyvalue_list keyvalue function_expression function_expression_body parameter
-                parameter_is_mut class_statement
+                parameter_is_mut class_statement export_statement module_statement import_statement qualified_identifier
 
 %nonassoc '(' ')'
 
@@ -167,6 +168,15 @@ statement:
         $$ = $1;
     }
     | class_statement {
+        $$ = $1;
+    }
+    | export_statement {
+        $$ = $1;
+    }
+    | import_statement {
+        $$ = $1;
+    }
+    | module_statement {
         $$ = $1;
     }
     ;
@@ -470,8 +480,8 @@ postfix_expression:
         $$ = ptree_create(PTREE_POSTFIX, 2, $2, $1);
     }
     | postfix_expression '.' WORD {
-        ptree_t *w = ptree_create_symbol($3);
-        ptree_t *dot =ptree_create(PTREE_DOT, 0);
+        ptree_t *w = ptree_create_word($3);
+        ptree_t *dot = ptree_create(PTREE_DOT, 0);
         $$ = ptree_create(PTREE_OBJECT_ACCESS, 3, $1, dot, w);
     }
     | postfix_expression '[' expression ']' {
@@ -508,8 +518,8 @@ postfix_operator:
     ;
 
 primary_expression:
-    WORD {
-        $$ = ptree_create_symbol($1);
+    qualified_identifier {
+        $$ = $1;
     }
     | literal {
         $$ = $1;
@@ -524,6 +534,22 @@ primary_expression:
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_LBRACE, 0);
         $$ = ptree_create(PTREE_EXPRESSION, 3, left, $2, right);
+    }
+    ;
+
+qualified_identifier:
+    WORD {
+        ptree_t *symbol =  ptree_create_word($1);
+        $$ = ptree_create(PTREE_SYMBOL, 1, symbol);
+    }
+    | qualified_identifier SCOPE WORD {
+        ptree_t *symbol =  ptree_create_word($3);
+        $$ = ptree_add($1, 1, symbol);
+    }
+    | SCOPE WORD {
+        ptree_t *root =  ptree_create_word("root");
+        ptree_t *symbol =  ptree_create_word($2);
+        $$ = ptree_create(PTREE_SYMBOL, 2, root, symbol);
     }
     ;
 
@@ -566,11 +592,10 @@ element_list:
     ;
 
 object_literal:
-    WORD '{' keyvalue_list '}' {
-        ptree_t *w = ptree_create_symbol($1);
+    qualified_identifier '{' keyvalue_list '}' {
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
-        $$ = ptree_create(PTREE_OBJECT_LITERAL, 4, w, left, $3, right);
+        $$ = ptree_create(PTREE_OBJECT_LITERAL, 4, $1, left, $3, right);
     }
     ;
 
@@ -658,7 +683,7 @@ continue_statement:
 
 labeled_statement:
     WORD ':' statement {
-        ptree_t *w = ptree_create_symbol($1);
+        ptree_t *w = ptree_create_word($1);
         ptree_t *c = ptree_create(PTREE_COLON, 0);
         $$ = ptree_create(PTREE_LABEL, 3, w, c, $3);
     }
@@ -955,22 +980,22 @@ enum_members:
 
 enum_member:
     WORD {
-        $$ = ptree_create_symbol($1);
+        $$ = ptree_create_word($1);
     }
     | WORD '(' types_list ')' {
-        ptree_t *w = ptree_create_symbol($1);
+        ptree_t *w = ptree_create_word($1);
         ptree_t *left = ptree_create(PTREE_LPRN, 0);
         ptree_t *right = ptree_create(PTREE_RPRN, 0);
         $$ = ptree_create(PTREE_ENUM_STRUCT, 4, w, left, $3, right);
     }
     | WORD '{' field_list '}' {
-        ptree_t *w = ptree_create_symbol($1);
+        ptree_t *w = ptree_create_word($1);
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
         $$ = ptree_create(PTREE_ENUM_NAMED_STRUCT, 4, w, left, $3, right);
     }
     | WORD '=' NUMBER {
-        ptree_t *w = ptree_create_symbol($1);
+        ptree_t *w = ptree_create_word($1);
         ptree_t *num = ptree_create_num($3);
         ptree_t *eq = ptree_create(PTREE_ASSIGN, 0);
         $$ = ptree_create(PTREE_ENUM_DEFAULT, 3, w, eq, num);
@@ -978,11 +1003,10 @@ enum_member:
     ;
 
 methods_statement:
-    METHODS WORD '{' method_list '}' {
-        ptree_t *w = ptree_create_symbol($2);
+    METHODS qualified_identifier '{' method_list '}' {
         ptree_t *left = ptree_create(PTREE_LBRACE, 0);
         ptree_t *right = ptree_create(PTREE_RBRACE, 0);
-        $$ = ptree_create(PTREE_METHODS, 4, w, left, $4, right);
+        $$ = ptree_create(PTREE_METHODS, 4, $2, left, $4, right);
     }
     ;
 
@@ -1004,5 +1028,30 @@ class_statement:
     }
     ;
 
+export_statement:
+    EXPORT function_declaration {
+        $$ = ptree_create(PTREE_EXPORT, 1, $2);
+    }
+    | EXPORT struct_statement {
+        $$ = ptree_create(PTREE_EXPORT, 1, $2);
+    }
+    | EXPORT module_statement {
+        $$ = ptree_create(PTREE_EXPORT, 1, $2);
+    }
+    ;
+
+import_statement:
+    IMPORT WORD ';' {
+        ptree_t *w = ptree_create_symbol($2);
+        $$ = ptree_create(PTREE_IMPORT, 1, w);
+    }
+    ;
+
+module_statement:
+    MODULE WORD '{' source_elements '}' {
+        ptree_t *w = ptree_create_symbol($2);
+        $$ = ptree_create(PTREE_MODULE, 2, w, $4);
+    }
+    ;
 
 %%
