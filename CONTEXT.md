@@ -98,6 +98,12 @@ CONTEXT.md   — this entry
 
 ---
 
+## SESSION 3 — 2026-10-09 — Verify toolchain and initialise crate — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Install the toolchain (rustup stable, `llvm-21-dev`, `libgc-dev`), initialise the crate per MEMORY.md decisions 8–12, then run a discovery interview for `PRPs/prp-001-lexer.md` (or the `tests/programs/` runner first). See `TODO.md`.
