@@ -690,6 +690,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issue removed, file tree, 
 
 ---
 
+## SESSION 14 — 2026-10-09 — Milestone 4 discovery — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 3 is complete (tag `m3`). Next is milestone 4: runtime and C (spec §11). It covers:
