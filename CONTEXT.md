@@ -410,6 +410,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md — commands, file tree, known issues, progress
 
 ---
 
+## SESSION 9 — 2026-10-09 — Milestone 2 discovery — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 1 is complete. Next is milestone 2 (spec §11): `let`/`let mut`, assignment, blocks with tail values, `if` expressions, `while`, `for` over ranges, `=` bodies, calls and recursion — integers only, all treated as `i64` (CLAUDE.md rule 9).
