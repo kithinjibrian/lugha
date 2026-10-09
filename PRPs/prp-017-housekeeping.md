@@ -1,6 +1,6 @@
 ## FEATURE: Housekeeping — a real README, CI on every push and PR, harness-enforced protected files, and `setup.md` moved into `docs/`.
 
-**Status:** implemented 2026-10-09 — session 20 (branch `prp-017-housekeeping`, awaiting merge)
+**Status:** merged into `main` 2026-10-09 — session 20
 **Milestone:** none; post-v0 housekeeping (TODO "Setup" items)
 **Spec:** §9 (command-line interface, which the README documents), §10 (the README's example program)
 **Decisions:** DECISION-005 / MEMORY 10 (LLVM 21, dynamic linking), MEMORY 12 (tests), CLAUDE.md PROTECTED FILES and `.llmignore`

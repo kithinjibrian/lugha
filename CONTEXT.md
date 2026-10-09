@@ -1030,7 +1030,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — tree, commands, v0 complete, dec
 
 ---
 
-## SESSION 20 — 2026-10-09 — Housekeeping — open
+## SESSION 20 — 2026-10-09 — Housekeeping — closed
 
 Branch: main → prp-017-housekeeping
 
@@ -1071,6 +1071,10 @@ CHANGELOG.md, MEMORY.md  — entry, decision 19
 ### PENDING DECISIONS OPENED
 
 - None.
+
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-017-housekeeping` fast-forward merged into `main` and deleted.
 
 ---
 
