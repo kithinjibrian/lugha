@@ -1,6 +1,6 @@
 ## FEATURE: Codegen reads the checker's type table and lowers real `i32`, `i64`, `u8`, `f64` and `bool`, with spec §4 casts — removing codegen's interim value kinds and closing milestone 3.
 
-**Status:** implemented 2026-10-09 — session 13 (branch `prp-010-codegen_on_real_types`)
+**Status:** merged into `main` 2026-10-09 — session 13
 **Milestone:** 3, last of three PRPs; tag `m3` after the merge
 **Spec:** §4 (types, LLVM lowering table, casts), §5 (arithmetic semantics), §8 (symbol naming), §9 (lowering notes: opaque pointers need the checker's types, `llvm.fptosi.sat`, if-phi rules), §11 (milestone 3)
 **Decisions:** CLAUDE.md architecture rule 4 (codegen never infers types; it reads the checker's side table); PRP-004 / spec §11 (overflow and division panics are milestone 4, so wrap and trap stay)

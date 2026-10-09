@@ -636,7 +636,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progres
 
 ---
 
-## SESSION 13 — 2026-10-09 — PRP-010 codegen on real types — open
+## SESSION 13 — 2026-10-09 — PRP-010 codegen on real types — closed
 
 Branch: main → prp-010-codegen_on_real_types
 
@@ -686,23 +686,18 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issue removed, file tree, 
 
 ### STILL OPEN AT CLOSE
 
-- Branch `prp-010-codegen_on_real_types` not yet merged into `main`; tag `m3` after the merge.
+- Nothing. Branch `prp-010-codegen_on_real_types` fast-forward merged into `main` and deleted; tagged `m3`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 3, last PRP: PRP-010 codegen on real types.
-- Codegen reads the checker's `Checked.types` (by `ExprId`) instead of its interim `Int`/`Bool`/`Never` value kinds.
-- It lowers `i32`/`i64`/`u8`/`f64`/`bool` for real, with `u8` unsigned division and remainder, and `f64` arithmetic and comparisons.
-- `as` casts per spec §4: truncate, extend, `sitofp`/`uitofp`, and `llvm.fptosi.sat` saturation.
-- Delete every "not implemented yet: … (milestone 3)" stop; codegen trusts the checker.
+Milestone 3 is complete (tag `m3`). Next is milestone 4: runtime and C (spec §11). It covers:
+- `lugha_rt.c` — resolve DECISION-009 first (how it is built and found at link time).
+- Intrinsics `print`, `println`, `panic`, `to_string`, with the spec §5 float formatting.
+- `extern fun` (spec §8 types and string-pointer adjustment), and string literals.
+- Integer overflow and division panics: `panic: integer overflow at file:line:col`, exit 101. These replace the interim wrap and trap.
 
-Overflow and division panics remain milestone 4: keep wrap and trap. Add `tests/programs/m3/` run-mode programs (f64, i32, u8, casts), then tag `m3`. `codegen/control.rs` is exactly 300 lines — expect restructuring.
+Done-when: hello world, recursion (`fib(30)` → `832040`) and the libc example run, with exact stdout.
 
-Discovery questions:
-- how `lugha_fn_main`'s `i64` return becomes a real `i32`;
-- what `Never`/divergence looks like once types come from the checker;
-- f64 printing is milestone 4, so f64 results must reach the exit code through a cast.
-
-See `TODO.md`.
+Start with a discovery interview on how to split it into PRPs. The checker stops on strings, intrinsics and `extern` with milestone 4 — those stops become real rules. See `TODO.md`.
