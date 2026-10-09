@@ -522,7 +522,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, milesto
 
 ## SESSION 11 — 2026-10-09 — Milestone 3 discovery — open
 
-Branch: main
+Branch: main → prp-008-checker_core
 
 ---
 
