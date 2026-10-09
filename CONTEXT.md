@@ -295,6 +295,54 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, shipped item, progres
 
 Branch: main → prp-004-codegen_and_link
 
+### WHAT WAS DONE
+
+Discovery for PRP-004, with the recommended answer accepted every time:
+- Unsupported constructs give a typed `CodegenError::Unsupported { what, milestone, span }`; the driver will print it with exit 2.
+- Arithmetic: `+ - *` wrap and `/ %` trap until milestone 4. Spec §11 moves overflow and division checks from milestone 3 to milestone 4, where `lugha_rt_panic` exists.
+- Testing: build and run real binaries.
+
+Implemented test-first against `todo!()` stubs. One test expectation was wrong: codegen reports the outermost unsupported construct, so `[1][0]` is "indexing". The test was corrected and a separate array case added. All checks pass; no `unsafe`; the largest file is 217 lines.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/codegen/mod.rs     — OptLevel, CodegenError, emit_ir, emit_object, host target machine (PIC)
+src/codegen/lower.rs   — find_main, lugha_fn_main, C main wrapper, statement errors + 4 tests
+src/codegen/expr.rs    — i64 literals, neg, + - * / %, trap guard, expression errors + 3 tests
+src/link.rs            — link() via `cc … -lgc -lm -o`, LinkError
+src/lib.rs             — declares codegen, link
+tests/codegen.rs       — 6 build-and-run tests at -O0 and -O2
+docs/specs/…Specification.md — §11: overflow checks moved to M4; interim wrap/trap note
+PRPs/prp-004-codegen_and_link.md — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progress
+```
+
+### TESTS WRITTEN
+
+- Unit: the C `main` wrapper and `lugha_fn_main` naming; a void main returns 0; no `nsw`/`nuw`; `/` and `%` guarded by `llvm.trap`; Unsupported for items, statements and expressions with milestone and span.
+- Integration:
+  - `2 + 3 * 4` exits 14.
+  - `-7 / 2` exits 253, `7 % -3` exits 1, `-(3 - 10)` exits 7.
+  - The wrapping case exits 254.
+  - `1 / 0`, `1 % 0` and `MIN / -1` give SIGILL.
+  - A void main exits 0.
+  - `link` failure carries `cc`'s stderr.
+  - Every case matches at -O0 and -O2.
+
+### DECISIONS MADE
+
+- Overflow and division checks belong to milestone 4 (spec §11 amended).
+- Outermost-first reporting of unsupported constructs.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Branch `prp-004-codegen_and_link` not yet merged into `main`.
+
 ---
 
 ## NEXT SESSION START POINT

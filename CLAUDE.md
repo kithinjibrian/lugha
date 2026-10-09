@@ -221,12 +221,15 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
 │   ├── lexer/       — mod.rs (lex, main loop), token.rs, number.rs, string.rs
 │   ├── ast/         — mod.rs (items, types, statements), expr.rs (expressions, ExprId)
-│   └── parser/      — mod.rs (parse, cursor, errors), recover.rs, describe.rs,
-│                      expr.rs (Pratt), primary.rs, stmt.rs, item.rs, sexp.rs, test_util.rs
+│   ├── parser/      — mod.rs (parse, cursor, errors), recover.rs, describe.rs,
+│   │                  expr.rs (Pratt), primary.rs, stmt.rs, item.rs, sexp.rs, test_util.rs
+│   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (main, C main), expr.rs
+│   └── link.rs      — `cc … -lgc -lm -o out`, LinkError
 ├── tests/
 │   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
 │   ├── lexer.rs     — lexer public-API tests (every spec program lexes)
 │   ├── parser.rs    — parser public-API tests (every spec program parses)
+│   ├── codegen.rs   — builds and runs real executables at -O0 and -O2
 │   ├── common/      — spec_programs.rs: the §10/§11 programs, shared by test crates
 │   ├── programs/    — m1/ … m5/: <name>.la + .stdout/.exit/.stderr expectations
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, execute, report)
@@ -262,3 +265,5 @@ These look like bugs but are specified behavior:
 - **Boehm may keep garbage alive** when an integer looks like a pointer. Conservative GC, spec §7.
 - **Extern C code keeping a Lugha pointer is undefined behavior.** Spec §7–8 accept this for v0.
 - **`as` casts truncate/saturate silently.** The only place values wrap (spec §4).
+- **Until milestone 4, integer `+ - *` wrap and `/ %` by zero or `MIN / -1` trap with SIGILL.** The specified panics need `lugha_rt_panic` (spec §11). Do not add overflow checks before then.
+- **Codegen reports the outermost unsupported construct first** (`[1][0]` → indexing, not arrays). The message names the milestone that adds it; it goes away by milestone 5.

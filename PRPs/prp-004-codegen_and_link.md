@@ -1,6 +1,6 @@
 ## FEATURE: Lower milestone 1 programs (integer arithmetic in `main`) to LLVM IR, emit a native object file, and link it into an executable with `cc`.
 
-**Status:** approved 2026-10-09 — session 7
+**Status:** implemented 2026-10-09 — session 7 (branch `prp-004-codegen_and_link`)
 **Milestone:** 1 (codegen subset: every value is `i64`, CLAUDE.md rule 9)
 **Spec:** §6 (entry point), §8 (symbol prefixes), §9 (compilation stages 4–6, lowering notes), §11 (milestone 1)
 **Decisions:** DECISION-005 (LLVM 21, inkwell `llvm21-1-prefer-dynamic`), DECISION-002 (`thiserror` for internal errors)
@@ -14,6 +14,13 @@ Library code can take a parsed `Program` and produce a running executable. `fun 
 - Ending state: `src/codegen/{mod,lower,expr}.rs` and `src/link.rs` created, `tests/codegen.rs` created, `src/lib.rs` declares `codegen` and `link`. Spec §11 amended. CLAUDE.md KNOWN ISSUES gains the M1–M3 arithmetic behaviour.
 - Related existing code: `src/ast/`, `src/span.rs`.
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 7)
+- Three more `Unsupported` cases the table didn't list:
+  - A program with no `main`: "programs without a `main` function", milestone 3, the checker's job.
+  - A second `main`: "duplicate functions", milestone 3.
+  - `fun main(): i32 { }` with no tail: "`main` without a result value", milestone 3.
+- Codegen reports the **outermost** unsupported construct first. `[1][0]` reports indexing, not the inner array literal; the test was corrected to match. Recorded in CLAUDE.md KNOWN ISSUES.
 
 ### Discovery answers (session 7)
 1. Unsupported constructs give a typed internal error, `CodegenError::Unsupported { what, milestone, span }`. The driver will print it and exit 2. No E-code is used.
@@ -102,20 +109,20 @@ Everything else returns `CodegenError::Unsupported`, with the span of the first 
 ## TESTS TO WRITE
 
 Unit tests (`src/codegen/`):
-- [ ] IR for `fun main(): i32 { 2 + 3 * 4 }` contains `define i32 @main()` and `@lugha_fn_main`, and passes verification.
-- [ ] IR for arithmetic has no `nsw`/`nuw`.
-- [ ] IR for `/` contains a call to `llvm.trap`.
-- [ ] A `void` main's C `main` returns 0.
-- [ ] Unsupported: `let`, a second function, `extern fun`, `struct`, a string, a float, `if`, and a call each give `Unsupported` with the milestone from the table and a span slicing to the right source text.
+- [x] IR for `fun main(): i32 { 2 + 3 * 4 }` contains `define i32 @main()` and `@lugha_fn_main`, and passes verification.
+- [x] IR for arithmetic has no `nsw`/`nuw`.
+- [x] IR for `/` contains a call to `llvm.trap`.
+- [x] A `void` main's C `main` returns 0.
+- [x] Unsupported: `let`, a second function, `extern fun`, `struct`, a string, a float, `if`, and a call each give `Unsupported` with the milestone from the table and a span slicing to the right source text.
 
 Integration (`tests/codegen.rs`, building into a temp dir removed on drop):
-- [ ] `2 + 3 * 4` exits 14 (the milestone 1 done-when, through the library).
-- [ ] `-7 / 2` exits 253 (−3 truncates toward zero); `7 % -3` exits 1 (sign of dividend); `-(3 - 10)` exits 7.
-- [ ] Wrapping: `(9223372036854775807 + 1) / 4611686018427387904` exits 254 (`MIN / 2^62 = -2`).
-- [ ] `1 / 0`, `1 % 0` and `(0 - 9223372036854775807 - 1) / -1` are killed by SIGILL.
-- [ ] `fun main() { }` and `fun main() { 5 }` exit 0.
-- [ ] Every case gives the same result at `-O0` and `-O2`.
-- [ ] `link` with a missing object file returns `LinkError::Failed` with non-empty stderr.
+- [x] `2 + 3 * 4` exits 14 (the milestone 1 done-when, through the library).
+- [x] `-7 / 2` exits 253 (−3 truncates toward zero); `7 % -3` exits 1 (sign of dividend); `-(3 - 10)` exits 7.
+- [x] Wrapping: `(9223372036854775807 + 1) / 4611686018427387904` exits 254 (`MIN / 2^62 = -2`).
+- [x] `1 / 0`, `1 % 0` and `(0 - 9223372036854775807 - 1) / -1` are killed by SIGILL.
+- [x] `fun main() { }` and `fun main() { 5 }` exit 0.
+- [x] Every case gives the same result at `-O0` and `-O2`.
+- [x] `link` with a missing object file returns `LinkError::Failed` with non-empty stderr.
 
 ## ROLLBACK PLAN
 

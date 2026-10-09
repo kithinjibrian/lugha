@@ -37,7 +37,7 @@ Done when `fun main(): i32 { 2 + 3 * 4 }` exits with 14.
 - [x] PRP-001: test runner for `tests/programs/` (DECISION-008)
 - [x] PRP-002: lexer (full §2 token set, E0101–E0109)
 - [x] PRP-003: parser (full §3 grammar, E0201–E0206, S-expression printer)
-- [ ] PRP: codegen + link (inkwell, object file, `cc`)
+- [x] PRP-004: codegen + link (inkwell, object file, `cc`)
 - [ ] PRP: `lughac build` driver and exit codes — must remove the `#[ignore]` on `tests/programs.rs::programs`
 
 ### Milestone 2 — Variables, control flow, functions
