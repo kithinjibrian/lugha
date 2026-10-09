@@ -1,6 +1,6 @@
 ## FEATURE: Compile locals and control flow inside `main` — `let`/`let mut`, assignment, blocks with tail values, `if` expressions, `while`, `for` over ranges, `break`/`continue`, comparisons and boolean operators.
 
-**Status:** implemented 2026-10-09 — session 9 (branch `prp-006-locals_and_control_flow`)
+**Status:** merged into `main` 2026-10-09 — session 9
 **Milestone:** 2, first of two PRPs (the second, PRP-007, adds functions and reaches the §11 done-when)
 **Spec:** §3 (statements), §5 (evaluation order, blocks and tails, `if`, `while`, `for` desugaring, `break`/`continue`, `&&`/`||`), §7 (stack locals), §9 (lowering notes: short-circuit and `if` with `phi`)
 **Decisions:** CLAUDE.md rule 9 (milestones 1–2: every integer is `i64`)

@@ -410,7 +410,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md — commands, file tree, known issues, progress
 
 ---
 
-## SESSION 9 — 2026-10-09 — Milestone 2 discovery and PRP-006 — open
+## SESSION 9 — 2026-10-09 — Milestone 2 discovery and PRP-006 — closed
 
 Branch: main → prp-006-locals_and_control_flow
 
@@ -460,15 +460,21 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progres
 
 ### STILL OPEN AT CLOSE
 
-- Branch `prp-006-locals_and_control_flow` not yet merged into `main`.
+- Nothing. Branch `prp-006-locals_and_control_flow` fast-forward merged into `main` and deleted.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 1 is complete. Next is milestone 2 (spec §11): `let`/`let mut`, assignment, blocks with tail values, `if` expressions, `while`, `for` over ranges, `=` bodies, calls and recursion — integers only, all treated as `i64` (CLAUDE.md rule 9).
-- Done-when: the §11 milestone 2 program exits with 55. Add it as `tests/programs/m2/`.
-- Comparisons produce booleans, so codegen needs an `i1` story even before the checker exists. Raise it in discovery.
-- Start with a discovery interview and decide how to split milestone 2 into PRPs.
+Milestone 2, second PRP: PRP-007 functions. It covers:
+- Multiple functions with parameters (annotations `i32`/`i64`/`u8` treated as `i64`, `bool` as `i1`).
+- Calls, including forward calls; collect all signatures first (spec §6).
+- Recursion, `return` / `return;`, void functions, and `=` bodies (already parsed).
+
+Done-when: the §11 milestone 2 program, added as `tests/programs/m2/milestone2.la`, exits 55. Then tag `m2`.
+
+Notes:
+- `codegen/expr.rs` and `control.rs` are at 282 lines; put calls in a new module (e.g. `codegen/call.rs`).
+- Discovery questions to expect: definite-return checking before the checker exists; calls to undefined functions or with the wrong argument count (stop-if-forced policy); the fact that `println` isn't available until milestone 4.
 
 See `TODO.md`.
