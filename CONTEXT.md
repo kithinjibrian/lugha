@@ -1157,7 +1157,7 @@ CONTEXT.md     — this session
 
 ## SESSION 23 — 2026-10-09 — PRP-018 move on last use — open
 
-Branch: main
+Branch: main → prp-018-move_on_last_use
 
 ---
 
