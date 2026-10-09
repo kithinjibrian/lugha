@@ -5,6 +5,7 @@
 //! produced a value, nothing, or code that never finishes — blocks have no
 //! `ExprId`, and divergence decides phi edges (spec §9).
 
+use inkwell::AddressSpace;
 use inkwell::context::Context;
 use inkwell::types::{BasicTypeEnum, IntType};
 use inkwell::values::BasicValueEnum;
@@ -33,6 +34,8 @@ pub(super) fn llvm_type(context: &Context, ty: Type) -> BasicTypeEnum<'_> {
         Type::U8 => context.i8_type().into(),
         Type::F64 => context.f64_type().into(),
         Type::Bool => context.bool_type().into(),
+        // Strings are pointers to runtime objects (spec §7).
+        Type::String => context.ptr_type(AddressSpace::default()).into(),
         Type::Void | Type::Never | Type::Error => unreachable!("checked: {ty} is not a value type"),
     }
 }
@@ -56,7 +59,8 @@ pub(super) fn annotation_type(ty: &Annotation) -> Type {
         TypeKind::U8 => Type::U8,
         TypeKind::F64 => Type::F64,
         TypeKind::Bool => Type::Bool,
-        _ => unreachable!("checked: only milestone 3 types reach codegen"),
+        TypeKind::String => Type::String,
+        _ => unreachable!("checked: arrays and structs stop before codegen"),
     }
 }
 
@@ -84,6 +88,7 @@ impl<'ctx> Lowerer<'ctx> {
 fn undef(context: &Context, ty: Type) -> BasicValueEnum<'_> {
     match llvm_type(context, ty) {
         BasicTypeEnum::FloatType(t) => t.get_undef().into(),
+        BasicTypeEnum::PointerType(t) => t.get_undef().into(),
         other => other.into_int_type().get_undef().into(),
     }
 }

@@ -109,6 +109,19 @@ pub(super) fn not_function(name: &str, span: Span) -> Diagnostic {
     Diagnostic::error("E0406", format!("`{name}` is not a function"), span)
 }
 
+pub(super) fn intrinsic_argument(name: &str, found: Type, span: Span) -> Diagnostic {
+    let expected = match name {
+        "print" | "println" => "a number, bool or string",
+        "to_string" => "a number or bool",
+        _ => "a string",
+    };
+    Diagnostic::error(
+        "E0403",
+        format!("`{name}` expects {expected}, found {found}"),
+        span,
+    )
+}
+
 pub(super) fn not_callable(span: Span) -> Diagnostic {
     Diagnostic::error("E0406", "this expression is not a function", span)
 }

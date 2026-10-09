@@ -32,18 +32,6 @@ None.
 
 ---
 
-### DECISION-009 — How lugha_rt.c is built and found at link time
-
-**Status:** deferred
-**Raised:** 2026-10-09 — Session 1
-**Revisit when:** Starting milestone 4.
-
-**Question:** Is `lugha_rt.c` compiled by `build.rs` and embedded in the binary, embedded as source and compiled on first use, or installed alongside `lughac`?
-
-**Notes:** Must work for `lughac run` from any directory. Spec §9 only says it is "compiled once and linked into every program".
-
----
-
 ### DECISION-010 — Cost of array copies
 
 **Status:** deferred
@@ -185,6 +173,22 @@ None.
 **Outcome:** Keep codespan-reporting with ASCII characters, and strip trailing whitespace from every line. The spec §10 example and §9 text now follow codespan's layout: `  --> ` and a blank line after each diagnostic. No other string patching.
 
 **Rationale:** A maintained crate handles multi-line spans, overlapping labels and line-number widths. DECISION-006 allowed adjusting the spec example, and patching codespan's text would break silently on upgrades.
+
+**Copied to MEMORY.md:** yes
+
+---
+
+### DECISION-009 — How lugha_rt.c is built and found at link time
+
+**Status:** resolved
+**Raised:** 2026-10-09 — Session 1
+**Resolved:** 2026-10-09 — Session 14
+
+**Question:** Is `lugha_rt.c` compiled by `build.rs` and embedded, embedded as source and compiled on use, or installed alongside `lughac`?
+
+**Outcome:** `runtime/lugha_rt.c` is embedded with `include_str!` (`link::RUNTIME_SOURCE`). Each link writes it to a private temp file and passes it to the one `cc` call: `cc prog.o lugha_rt.c -lgc -lm -o prog`.
+
+**Rationale:** No new dependency, no install layout, and it works from any directory. The cost is a few milliseconds of C compilation per build.
 
 **Copied to MEMORY.md:** yes
 

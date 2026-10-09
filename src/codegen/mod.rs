@@ -15,6 +15,7 @@ mod control;
 mod expr;
 mod function;
 mod lower;
+mod runtime;
 mod scope;
 mod stmt;
 mod value;
@@ -30,7 +31,33 @@ use inkwell::targets::{
 
 use crate::ast::Program;
 use crate::check::Checked;
+
 use crate::span::Span;
+pub use runtime::RUNTIME_SYMBOLS;
+
+/// The source file being compiled, for panic locations (spec §5).
+#[derive(Debug, Clone, Copy)]
+pub struct SourceInfo<'a> {
+    /// The path as given on the command line.
+    pub name: &'a str,
+    /// The file's text.
+    pub text: &'a str,
+}
+
+impl SourceInfo<'_> {
+    /// 1-based line and byte column of `offset` (spec §9).
+    pub(crate) fn line_col(&self, offset: usize) -> (usize, usize) {
+        let before = &self.text.as_bytes()[..offset.min(self.text.len())];
+        let line_start = before
+            .iter()
+            .rposition(|&b| b == b'\n')
+            .map_or(0, |i| i + 1);
+        (
+            before.iter().filter(|&&b| b == b'\n').count() + 1,
+            before.len() - line_start + 1,
+        )
+    }
+}
 
 /// Optimisation level for the LLVM pass pipeline.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -66,9 +93,13 @@ pub enum CodegenError {
 ///
 /// [`CodegenError::Unsupported`] for constructs beyond the current milestone;
 /// [`CodegenError::Verify`] if the generated IR is invalid.
-pub fn emit_ir(program: &Program, checked: &Checked) -> Result<String, CodegenError> {
+pub fn emit_ir(
+    program: &Program,
+    checked: &Checked,
+    source: &SourceInfo,
+) -> Result<String, CodegenError> {
     let context = Context::create();
-    let module = lower::lower(&context, program, checked)?;
+    let module = lower::lower(&context, program, checked, source)?;
     Ok(module.print_to_string().to_string())
 }
 
@@ -81,11 +112,12 @@ pub fn emit_ir(program: &Program, checked: &Checked) -> Result<String, CodegenEr
 pub fn emit_object(
     program: &Program,
     checked: &Checked,
+    source: &SourceInfo,
     opt: OptLevel,
     path: &Path,
 ) -> Result<(), CodegenError> {
     let context = Context::create();
-    let module = lower::lower(&context, program, checked)?;
+    let module = lower::lower(&context, program, checked, source)?;
     let machine = host_machine(opt)?;
     module.set_triple(&machine.get_triple());
     module.set_data_layout(&machine.get_target_data().get_data_layout());
@@ -136,6 +168,10 @@ pub(crate) mod test_util {
         let (tokens, _) = lexer::lex(src).expect("test source lexes");
         let (program, _) = parser::parse(&tokens).expect("test source parses");
         let (checked, _) = check::check(&program).unwrap_or_else(|e| panic!("{src:?}: {e:?}"));
-        emit_ir(&program, &checked).unwrap_or_else(|e| panic!("{src:?}: {e}"))
+        let source = super::SourceInfo {
+            name: "test.la",
+            text: src,
+        };
+        emit_ir(&program, &checked, &source).unwrap_or_else(|e| panic!("{src:?}: {e}"))
     }
 }

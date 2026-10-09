@@ -89,7 +89,7 @@ impl Checker {
             TypeKind::U8 => Type::U8,
             TypeKind::F64 => Type::F64,
             TypeKind::Bool => Type::Bool,
-            TypeKind::String => return Err(stop("strings", 4, ty.span)),
+            TypeKind::String => Type::String,
             TypeKind::Array(_) => return Err(stop("arrays", 5, ty.span)),
             TypeKind::Named(name) => {
                 self.report(errors::unknown_type(name, ty.span));
@@ -175,8 +175,8 @@ mod tests {
             ("structs", 5, "struct P { x: i64 }")
         );
         assert_eq!(
-            stopped("fun main() { let s: string = 1; }"),
-            ("strings", 4, "string")
+            errors("fun main() { let s: string = 1; }"),
+            [("E0401", "1")]
         );
         assert_eq!(
             stopped("fun main() { let a: i64[] = 1; }"),

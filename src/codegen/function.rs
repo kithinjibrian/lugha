@@ -120,7 +120,8 @@ impl<'ctx> Lowerer<'ctx> {
             unreachable!("checked: E0406 rejects non-name callees")
         };
         let Some(signature) = self.functions.get(name).cloned() else {
-            return Err(unsupported("intrinsics", 4, callee.span));
+            // Not a declared function, so one of the intrinsics (checked: E0301 otherwise).
+            return self.intrinsic(call, name, args);
         };
         let mut values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len());
         for (arg, &ty) in args.iter().zip(&signature.params) {

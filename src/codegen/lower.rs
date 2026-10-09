@@ -7,10 +7,11 @@ use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::values::{FunctionValue, ValueKind};
 
-use super::CodegenError;
 use super::control::Loop;
 use super::function::Signature;
+use super::runtime::Constants;
 use super::scope::Scopes;
+use super::{CodegenError, SourceInfo};
 use crate::ast::{Item, Program};
 use crate::check::{Checked, Type};
 use crate::span::Span;
@@ -36,6 +37,26 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) scopes: Scopes<'ctx>,
     /// Enclosing loops, innermost last, for `break` and `continue`.
     pub(super) loops: Vec<Loop<'ctx>>,
+    /// String literals and the file name, emitted once each.
+    pub(super) constants: Constants<'ctx>,
+    /// The source file, for panic locations.
+    pub(super) source: OwnedSource,
+}
+
+/// The source name and text, owned so the lowerer has no extra lifetime.
+pub(super) struct OwnedSource {
+    pub name: String,
+    text: String,
+}
+
+impl OwnedSource {
+    pub(super) fn line_col(&self, offset: usize) -> (usize, usize) {
+        SourceInfo {
+            name: &self.name,
+            text: &self.text,
+        }
+        .line_col(offset)
+    }
 }
 
 /// Lowers a checked `program` into a verified module.
@@ -43,6 +64,7 @@ pub(super) fn lower<'ctx>(
     context: &'ctx Context,
     program: &Program,
     checked: &Checked,
+    source: &SourceInfo,
 ) -> Result<Module<'ctx>, CodegenError> {
     let mut lowerer = Lowerer {
         context,
@@ -54,6 +76,11 @@ pub(super) fn lower<'ctx>(
         ret: None,
         scopes: Scopes::default(),
         loops: Vec::new(),
+        constants: Constants::default(),
+        source: OwnedSource {
+            name: source.name.to_string(),
+            text: source.text.to_string(),
+        },
     };
     lowerer.declare_functions(program)?;
     for item in &program.items {
@@ -94,6 +121,7 @@ impl<'ctx> Lowerer<'ctx> {
             .add_function("main", i32_type.fn_type(&[], false), None);
         self.builder
             .position_at_end(self.context.append_basic_block(main, "entry"));
+        self.call_runtime_init();
         let call = self
             .builder
             .build_call(user_main, &[], "result")

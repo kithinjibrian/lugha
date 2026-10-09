@@ -54,9 +54,9 @@ Done when the §10 rejected program reports E0401 in both formats.
 
 ### Milestone 4 — Runtime and C
 Done when hello world, recursion and the libc example run.
-- [ ] Resolve DECISION-009 — runtime build/location
-- [ ] PRP: `lugha_rt.c` and intrinsics (`print`, `println`, `panic`, `to_string`, float formatting)
-- [ ] PRP: `extern fun` and string literals
+- [x] Resolve DECISION-009 — runtime embedded as source, compiled in the link step
+- [x] PRP-011: `lugha_rt.c` and intrinsics (`print`, `println`, `panic`, `to_string`, float formatting), string literals
+- [ ] PRP-012: `extern fun` and integer overflow/division panics — done-when: the libc example runs
 
 ### Milestone 5 — Heap data
 Done when every §10 program passes.

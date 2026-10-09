@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-/// A type in the checker. Strings, arrays and structs join in milestones 4 and 5.
+/// A type in the checker. Arrays and structs join in milestone 5.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Type {
     I32,
@@ -10,6 +10,8 @@ pub enum Type {
     U8,
     F64,
     Bool,
+    /// Immutable UTF-8 text (spec §4); its operations arrive in milestone 5.
+    String,
     /// No value: statements, blocks without a tail, `if` without `else`,
     /// functions without a return type.
     Void,
@@ -55,6 +57,7 @@ impl fmt::Display for Type {
             Type::U8 => "u8",
             Type::F64 => "f64",
             Type::Bool => "bool",
+            Type::String => "string",
             Type::Void => "void",
             Type::Never => "never",
             Type::Error => "{error}",

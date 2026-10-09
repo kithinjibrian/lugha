@@ -63,7 +63,7 @@ impl<'ctx> Lowerer<'ctx> {
                 return self.if_expr(expr, cond, then, else_.as_deref());
             }
             ExprKind::Block(block) => return self.block(block),
-            ExprKind::Str(_) => return Err(unsupported("strings", 4, expr.span)),
+            ExprKind::Str(text) => self.string_literal(text).into(),
             ExprKind::Index(..) => return Err(unsupported("indexing", 5, expr.span)),
             ExprKind::Field(..) => return Err(unsupported("field access", 5, expr.span)),
             ExprKind::StructLit(..) => return Err(unsupported("structs", 5, expr.span)),

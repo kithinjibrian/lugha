@@ -1,7 +1,7 @@
 //! Binary operators and literal inference between operands (spec §4).
 
 use super::expr::{Expect, is_literal};
-use super::{Checker, Checking, Type, errors};
+use super::{Checker, Checking, Type, errors, stop};
 use crate::ast::{BinOp, Expr};
 use crate::span::Span;
 
@@ -34,6 +34,9 @@ impl Checker {
         // Only arithmetic passes the context's type to its operands; a comparison's `bool` doesn't.
         let outer = if arithmetic { expect } else { None };
         let (l, r) = self.operands(lhs, rhs, outer)?;
+        if l == Type::String || r == Type::String {
+            return Err(stop("string operations", 5, expr.span));
+        }
         let (l, r) = match (l, r) {
             (Type::Error, _) | (_, Type::Error) => return Ok(Type::Error),
             (Type::Never, ty) | (ty, Type::Never) => (ty, ty),

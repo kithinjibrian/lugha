@@ -1,0 +1,9 @@
+// stdout written before the panic is flushed; the panic goes to stderr, exit 101.
+fun fail(): i32 {
+    panic("boom");
+}
+
+fun main(): i32 {
+    println("before");
+    fail()
+}

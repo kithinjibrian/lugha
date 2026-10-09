@@ -22,7 +22,8 @@ impl Checker {
                 self.report(errors::wrong_literal(true, ty, expr.span, reason));
                 Type::Error
             }
-            (ExprKind::Int(_), Some(ty @ (Type::F64 | Type::Bool))) => {
+            // Only integer types hold integer literals: not f64, bool or string.
+            (ExprKind::Int(_), Some(ty)) if !ty.is_integer() => {
                 self.report(errors::wrong_literal(false, ty, expr.span, reason));
                 Type::Error
             }

@@ -104,15 +104,22 @@ pub(super) fn front(path: &Path) -> Result<Front, Failure> {
 
 /// The program's LLVM IR, for `--emit=ir`.
 pub(super) fn ir(front: &Front) -> Result<String, Failure> {
-    codegen::emit_ir(&front.program, checked(front)).map_err(|e| codegen_failure(&front.source, e))
+    codegen::emit_ir(&front.program, checked(front), &source_info(front))
+        .map_err(|e| codegen_failure(&front.source, e))
 }
 
 /// Compiles and links `front` into the executable `exe`.
 pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Failure> {
     let temp = TempDir::new().map_err(|e| internal(&front.source, temp_error(e)))?;
     let object = temp.path.join("prog.o");
-    codegen::emit_object(&front.program, checked(front), opt, &object)
-        .map_err(|e| codegen_failure(&front.source, e))?;
+    codegen::emit_object(
+        &front.program,
+        checked(front),
+        &source_info(front),
+        opt,
+        &object,
+    )
+    .map_err(|e| codegen_failure(&front.source, e))?;
     link::link(&[&object], exe).map_err(|e| internal(&front.source, e.to_string()))
 }
 
@@ -146,6 +153,14 @@ pub(super) fn default_output(file: &Path) -> PathBuf {
         stem.with_extension("out")
     } else {
         stem
+    }
+}
+
+/// The source name and text codegen needs for panic locations.
+fn source_info(front: &Front) -> codegen::SourceInfo<'_> {
+    codegen::SourceInfo {
+        name: &front.source.name,
+        text: &front.source.text,
     }
 }
 

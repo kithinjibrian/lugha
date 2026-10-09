@@ -97,7 +97,7 @@ impl Checker {
                 self.if_expr(expr, cond, then, else_.as_deref(), expect)
             }
             ExprKind::Block(block) => self.block(block, expect),
-            ExprKind::Str(_) => Err(stop("strings", 4, expr.span)),
+            ExprKind::Str(_) => Ok(Type::String),
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
             ExprKind::Index(..) => Err(stop("indexing", 5, expr.span)),
             ExprKind::Field(..) => Err(stop("field access", 5, expr.span)),
@@ -189,8 +189,10 @@ mod tests {
     #[test]
     fn later_milestone_expressions_stop_the_checker() {
         let cases = [
-            ("fun main() { let s = \"a\"; }", ("strings", 4, "\"a\"")),
-            ("fun main() { println(1); }", ("intrinsics", 4, "println")),
+            (
+                "fun main() { let t = \"a\" + \"b\"; }",
+                ("string operations", 5, "\"a\" + \"b\""),
+            ),
             ("fun main() { let a = [1]; }", ("arrays", 5, "[1]")),
             (
                 "fun main() { let x = 1; let y = x.len; }",

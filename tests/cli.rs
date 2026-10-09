@@ -174,12 +174,12 @@ fn invalid_utf8_is_e0110() {
 
 #[test]
 fn unsupported_constructs_are_internal_errors() {
-    let dir = TempDir::with(&[("fib.la", b"fun main() { println(1); }")]);
+    let dir = TempDir::with(&[("fib.la", b"fun main() { let a = [1]; }")]);
     let human = lughac(&dir.0, &["build", "fib.la"]);
     assert_eq!(human.status.code(), Some(2));
     let stderr = text(&human.stderr);
     assert!(
-        stderr.starts_with("error: not implemented yet: intrinsics (milestone 4)\n"),
+        stderr.starts_with("error: not implemented yet: arrays (milestone 5)\n"),
         "{stderr}"
     );
     let json = text(&lughac(&dir.0, &["build", "--diagnostics=json", "fib.la"]).stderr);

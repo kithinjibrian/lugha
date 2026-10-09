@@ -1,0 +1,16 @@
+// Every primitive prints in its spec form; `u8` prints as a number.
+fun main() {
+    let a: i32 = -42;
+    let b: i64 = -9223372036854775808;
+    let c: u8 = 255;
+    println(a);
+    println(b);
+    println(c);
+    println(true);
+    println(false);
+    print(1);
+    print(2);
+    println(3);
+    println();
+    println("done");
+}

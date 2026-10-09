@@ -1,6 +1,6 @@
 ## FEATURE: The C runtime `lugha_rt.c`, the intrinsics `print`, `println`, `panic` and `to_string`, and string literals as values — so programs can print.
 
-**Status:** approved 2026-10-09 — session 14
+**Status:** implemented 2026-10-09 — session 14 (branch `prp-011-runtime_and_intrinsics`)
 **Milestone:** 4, first of two PRPs. Done-when: the spec §10 hello world and recursion programs print their exact output. PRP-012 adds `extern fun` and the overflow and division panics.
 **Spec:** §4 (`string` type), §5 (intrinsics, float formatting, panics), §6 (`panic` diverges; entry point and `GC_INIT`), §7 (heap layout, `lugha_rt_alloc`, string literals as constant globals), §9 (runtime library, link command)
 **Decisions:** DECISION-009, resolved here: embed the runtime source and compile it in the existing `cc` call
@@ -22,6 +22,15 @@
   - New `tests/programs/m4/`. DECISION-009 resolved.
 - Related existing code: `src/link.rs`, `src/check/{types,call,env,errors,ops}.rs`, `src/codegen/{lower,expr,function,value}.rs`, `src/driver/pipeline.rs`.
 - Open decisions that must be resolved first: none (DECISION-009 is resolved by this PRP).
+
+### Amendments during implementation (session 14)
+- **Checker bug found and fixed:** `literal()` let an integer literal take any non-`f64`/`bool` expected type, so `let s: string = 1;` was accepted. It is now E0401 "integer literal where string expected" — only integer types hold integer literals.
+- **Runtime source location:** `link` writes the runtime to its own private temp file (`create_new`, removed on drop), not next to the objects. A link whose object directory doesn't exist must still report `cc`'s error, not an I/O error.
+- **C ABI for narrow types:** `bool` and `u8` cross into the runtime zero-extended to `i32` (recorded in spec §9), so nothing depends on C's narrow-parameter extension rules.
+- **Updated earlier tests:**
+  - The checker tests no longer expect strings and `println` to stop; a string `+` stop replaces them.
+  - `tests/cli.rs`'s "not implemented" example is now an array literal (milestone 5).
+- **Goldens:** the `m4/` expected outputs, including the float table and the panic line, were written by hand from the spec and matched on the first run.
 
 ### Discovery answers (session 14)
 1. Milestone 4 is two PRPs: 011 runtime and intrinsics; 012 `extern fun` and overflow/division panics.
@@ -124,13 +133,13 @@
 ## TESTS TO WRITE
 
 Unit tests:
-- [ ] Checker: string literal typing; `string` annotations; each intrinsic's arity (E0405) and argument rules (E0403/E0407); `to_string("s")` rejected; `panic` makes a function definitely return (no E0503); string `+` and `==` stop with milestone 5; `let p = println;` → E0406.
-- [ ] Codegen IR: a literal becomes a `private unnamed_addr constant { i64, [N x i8] }` with the right length and NUL; `println(1)` calls `lugha_rt_print_i64` then `lugha_rt_print_newline`; `panic` passes the right line and column; the C `main` calls `lugha_rt_init` first.
-- [ ] Link: `RUNTIME_SOURCE` is non-empty and defines every `lugha_rt_*` symbol codegen declares (checked by name).
+- [x] Checker: string literal typing; `string` annotations; each intrinsic's arity (E0405) and argument rules (E0403/E0407); `to_string("s")` rejected; `panic` makes a function definitely return (no E0503); string `+` and `==` stop with milestone 5; `let p = println;` → E0406.
+- [x] Codegen IR: a literal becomes a `private unnamed_addr constant { i64, [N x i8] }` with the right length and NUL; `println(1)` calls `lugha_rt_print_i64` then `lugha_rt_print_newline`; `panic` passes the right line and column; the C `main` calls `lugha_rt_init` first.
+- [x] Link: `RUNTIME_SOURCE` is non-empty and defines every `lugha_rt_*` symbol codegen declares (checked by name).
 
 Acceptance:
-- [ ] All six `m4/` programs pass through `lughac run` and agree at `-O0`/`-O2`.
-- [ ] All existing tests still pass (programs without intrinsics link the runtime too).
+- [x] All six `m4/` programs pass through `lughac run` and agree at `-O0`/`-O2`.
+- [x] All existing tests still pass (programs without intrinsics link the runtime too).
 
 ## ROLLBACK PLAN
 

@@ -690,9 +690,63 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issue removed, file tree, 
 
 ---
 
-## SESSION 14 — 2026-10-09 — Milestone 4 discovery — open
+## SESSION 14 — 2026-10-09 — Milestone 4 discovery and PRP-011 — open
 
 Branch: main → prp-011-runtime_and_intrinsics
+
+### WHAT WAS DONE
+
+Milestone 4 discovery, with the recommended answer accepted every time:
+- Two PRPs: 011 runtime and intrinsics, 012 `extern` and panics.
+- DECISION-009: embed `lugha_rt.c` as source and compile it in the link call.
+
+Implemented PRP-011:
+- Six `m4/` programs written first, with hand-written expected output (red).
+- `runtime/lugha_rt.c`: GC allocation, panic, printers, `to_string`, §5 float formatting. Compiles with `-Wall -Wextra -Werror`.
+- `link.rs` embeds and compiles it.
+- Checker: the `string` type and intrinsic typing.
+- Codegen: string-literal globals and intrinsic calls in `codegen/runtime.rs`; `SourceInfo` for panic locations; `lugha_rt_init` in the C `main`.
+
+A real checker bug turned up and was fixed: integer literals were accepted where `string` was expected. **The milestone 4 first half is done:** hello world and `fib(30)` → `832040` print. 157 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+runtime/lugha_rt.c       — the C runtime (230 lines)
+src/link.rs              — RUNTIME_SOURCE, private runtime temp file, cc … lugha_rt.c
+src/codegen/runtime.rs   — RUNTIME_SYMBOLS, runtime declarations, string literals, intrinsics, panic_at + 3 tests
+src/codegen/{mod,lower,value,expr,function}.rs — SourceInfo, constants, string type, init call, intrinsic dispatch
+src/check/{types,env,expr,call,ops,errors,literal}.rs — Type::String, intrinsics, string-op stop, literal bug fix + tests
+src/driver/pipeline.rs   — passes SourceInfo
+tests/programs/m4/       — hello, recursion, float_format, print_values, strings, panic (101, stderr)
+tests/codegen.rs         — SourceInfo; m4 in the -O0/-O2 cross-check; runtime compiles with -Werror
+tests/cli.rs             — unsupported example is now arrays (milestone 5)
+docs/specs/…Specification.md — §9 runtime table and link command
+DECISIONS.md, MEMORY.md  — DECISION-009 resolved; decision 15
+PRPs/prp-011-…md         — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md — file tree, progress
+```
+
+### TESTS WRITTEN
+
+- Unit:
+  - Checker: intrinsic arity and arguments; `panic` diverges; `println` as a value is E0406; string `+` stops; `let s: string = 1` is E0401.
+  - Codegen IR: string globals shared per text; `print_i64` before `print_newline`; `u8` widened; panic location; `lugha_rt_init` first.
+  - Link: every runtime symbol is defined.
+- Integration: the runtime compiles with -Werror; `m4/` at -O0/-O2.
+- Acceptance: six `m4/` programs with exact stdout and stderr.
+
+### DECISIONS MADE
+
+- DECISION-009 resolved (MEMORY decision 15), plus the amendments recorded in the PRP.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Branch `prp-011-runtime_and_intrinsics` not yet merged into `main`.
 
 ---
 

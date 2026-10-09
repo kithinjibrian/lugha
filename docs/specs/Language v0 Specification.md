@@ -457,7 +457,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 3. **Check.** Resolve names, compute a type for every expression, check every rule in sections 4–6. Output: the AST plus a side table mapping each expression to its type.
 4. **Lower.** Typed AST → LLVM IR via inkwell, one LLVM function per Lugha function. Run `module.verify()` afterwards; a verifier failure is a compiler bug, not a user error.
 5. **Optimize and emit.** Run LLVM's pass pipeline (`default<O0>` or `default<O2>`), then write an object file with `TargetMachine`.
-6. **Link.** Invoke the system C compiler: `cc prog.o lugha_rt.o -lgc -lm -o prog`.
+6. **Link.** Invoke the system C compiler, which also compiles the runtime: `cc prog.o lugha_rt.c -lgc -lm -o prog`. The runtime source is embedded in `lughac` and written to a private temporary file for each build.
 
 **Lowering notes.** These are the places where Lugha semantics need specific IR:
 
@@ -475,15 +475,17 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 
 | Function | Purpose |
 | --- | --- |
+| `lugha_rt_init()` | Runs `GC_INIT()`; the C `main` calls it first, since a C macro can't be called from IR |
 | `lugha_rt_alloc(size)` | Allocate zeroed GC memory |
 | `lugha_rt_panic(msg, file, line, col)` | Print the panic message and `exit(101)` |
 | `lugha_rt_str_concat(a, b)` | Implement string `+` |
 | `lugha_rt_str_eq(a, b)` | Implement string `==` |
-| `lugha_rt_print_*` / `lugha_rt_to_string_*` | One per primitive type, for the intrinsics |
+| `lugha_rt_print_*` / `lugha_rt_to_string_*` | One per primitive type (plus `lugha_rt_print_str`), for the intrinsics; `bool` and `u8` arguments are passed zero-extended to 32 bits |
+| `lugha_rt_print_newline()` | The newline `println` adds |
 
 The runtime writes through C's `stdout` stream, so output from `print`/`println` and from libc functions such as `puts` appears in program order.
 
-The C `main` emitted by the compiler calls `GC_INIT()`, then `lugha_fn_main()`, and returns its exit code.
+The C `main` emitted by the compiler calls `lugha_rt_init()` (which runs `GC_INIT()`), then `lugha_fn_main()`, and returns its exit code.
 
 **Command-line interface**
 

@@ -1,9 +1,10 @@
-//! Names used as values, and calls: locals shadow functions; intrinsics
-//! arrive in milestone 4 (spec §6).
+//! Names used as values, and calls: locals shadow functions, and the
+//! intrinsics `print`, `println`, `panic` and `to_string` are built in
+//! (spec §5, §6).
 
 use super::env::INTRINSICS;
 use super::expr::Expect;
-use super::{Checker, Checking, Type, errors, stop};
+use super::{Checker, Checking, Type, errors};
 use crate::ast::{Expr, ExprKind};
 use crate::span::Span;
 
@@ -13,10 +14,8 @@ impl Checker {
         if let Some(local) = self.local(name) {
             return Ok(local.ty);
         }
-        if self.functions.contains_key(name) {
+        if self.functions.contains_key(name) || INTRINSICS.contains(&name) {
             self.report(errors::not_value(name, span));
-        } else if INTRINSICS.contains(&name) {
-            return Err(stop("intrinsics", 4, span));
         } else {
             self.report(errors::undefined(name, span));
         }
@@ -38,7 +37,7 @@ impl Checker {
         }
         let Some(signature) = self.functions.get(name) else {
             if INTRINSICS.contains(&name.as_str()) {
-                return Err(stop("intrinsics", 4, callee.span));
+                return self.intrinsic(call, name, args);
             }
             self.report(errors::undefined(name, callee.span));
             return self.unchecked_args(args);
@@ -53,6 +52,35 @@ impl Checker {
             self.expect_type(arg, &Expect::of(ty))?;
         }
         Ok(ret)
+    }
+
+    /// `print(x)`, `println([x])`, `panic(msg)`, `to_string(x)` (spec §5).
+    /// `panic` never returns, so its type is `Never` (spec §6).
+    fn intrinsic(&mut self, call: &Expr, name: &str, args: &[Expr]) -> Checking<Type> {
+        let result = match name {
+            "print" | "println" => Type::Void,
+            "to_string" => Type::String,
+            _ => Type::Never,
+        };
+        let allowed = if name == "println" { 0..=1 } else { 1..=1 };
+        if !allowed.contains(&args.len()) {
+            self.report(errors::arity(name, 1, args.len(), call.span));
+            self.unchecked_args(args)?;
+            return Ok(result);
+        }
+        let Some(arg) = args.first() else {
+            return Ok(result);
+        };
+        let ty = self.value(arg, None)?;
+        let fits = match name {
+            "print" | "println" => ty.is_numeric() || matches!(ty, Type::Bool | Type::String),
+            "to_string" => ty.is_numeric() || ty == Type::Bool,
+            _ => ty == Type::String,
+        };
+        if !fits && !matches!(ty, Type::Error | Type::Never) {
+            self.report(errors::intrinsic_argument(name, ty, arg.span));
+        }
+        Ok(result)
     }
 
     /// Checks arguments of a call that is already wrong, for their own errors.
@@ -119,6 +147,43 @@ mod tests {
         assert_eq!(
             errors(&format!("{noop}fun main() {{ let y = noop() + 1; }}")),
             [("E0407", "noop()")]
+        );
+    }
+
+    #[test]
+    fn intrinsics_check_arity_and_argument_types() {
+        crate::check::test_util::ok(
+            "fun main() { print(1); println(); println(2.5); println(\"s\"); let t = to_string(true); println(t); }",
+        );
+        assert_eq!(errors("fun main() { print(); }"), [("E0405", "print()")]);
+        assert_eq!(
+            errors("fun main() { println(1, 2); }"),
+            [("E0405", "println(1, 2)")]
+        );
+        assert_eq!(
+            errors("fun main() { let s = to_string(\"s\"); }"),
+            [("E0403", "\"s\"")]
+        );
+        assert_eq!(errors("fun main() { panic(1); }"), [("E0403", "1")]);
+        assert_eq!(
+            errors("fun noop() {}\nfun main() { println(noop()); }"),
+            [("E0407", "noop()")]
+        );
+        assert_eq!(
+            errors("fun main() { let p = println; }"),
+            [("E0406", "println")]
+        );
+        assert_eq!(
+            let_type("fun main() { let s = to_string(1); }", "s"),
+            Type::String
+        );
+    }
+
+    #[test]
+    fn panic_counts_as_returning() {
+        crate::check::test_util::ok("fun f(): i64 { panic(\"no\"); }\nfun main() {}");
+        crate::check::test_util::ok(
+            "fun g(): i64 { while true { } panic(\"unreachable\"); }\nfun main() {}",
         );
     }
 }

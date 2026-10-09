@@ -151,6 +151,19 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 15. Runtime embedded as source (DECISION-009, PRP-011)
+
+**Decision:**
+- `runtime/lugha_rt.c` is embedded in lughac and compiled in the single `cc` link call.
+- `bool` and `u8` cross into the runtime zero-extended to `i32`.
+- The C `main` calls `lugha_rt_init()`, which runs `GC_INIT()`.
+
+**Why:** No build script, no new dependency, no install layout, and no reliance on C's narrow-parameter extension rules.
+
+**Rules out:** precompiled runtime objects; `build.rs`.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -159,6 +172,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-011 runtime and intrinsics: `runtime/lugha_rt.c`, `link::RUNTIME_SOURCE`, `check::Type::String`, intrinsics in checker and codegen (`codegen/runtime.rs`), `SourceInfo` for panic locations
 - PRP-010 codegen on real types: `emit_ir`/`emit_object` take `&Checked`; arith.rs and cast.rs; `lugha_fn_main` returns i32
 - PRP-009 casts and flow checks: `check/assign.rs`, `check/flow.rs`, `Binding` on locals, W0101 once per block; warnings returned from `check()`
 - PRP-008 checker core: `src/check/`, bidirectional checking with `Expect`, `Type::Error` recovery, `Never` for divergence; E0401 matches spec in both formats
@@ -182,4 +196,4 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Milestone 4: runtime and C (spec §11): `lugha_rt.c` (resolve DECISION-009 first), intrinsics `print`/`println`/`panic`/`to_string` with spec float formatting, `extern fun`, string literals, and integer overflow and division panics (spec §11 moved them here). Start with a discovery interview on how to split it into PRPs.
+Milestone 4, PRP-012: `extern fun` (spec §8 types; string arguments get the pointer adjusted 8 bytes past the header) and integer overflow and division panics (`panic: integer overflow at file:line:col`, exit 101, via `llvm.*.with.overflow` and `lugha_rt_panic`), replacing wrap and trap. Done-when: the §10 libc example prints `hello from libc` and `1.4142135623730951`. Then tag `m4`.

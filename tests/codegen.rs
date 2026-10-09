@@ -39,7 +39,17 @@ fn build_and_run(src: &str, opt: OptLevel) -> ExitStatus {
     let (checked, _) = check::check(&program).unwrap_or_else(|e| panic!("{src}: {e:?}"));
     let dir = TempDir::new();
     let (object, exe) = (dir.0.join("prog.o"), dir.0.join("prog"));
-    codegen::emit_object(&program, &checked, opt, &object).unwrap_or_else(|e| panic!("{src}: {e}"));
+    codegen::emit_object(
+        &program,
+        &checked,
+        &codegen::SourceInfo {
+            name: "test.la",
+            text: src,
+        },
+        opt,
+        &object,
+    )
+    .unwrap_or_else(|e| panic!("{src}: {e}"));
     link::link(&[&object], &exe).unwrap_or_else(|e| panic!("{src}: {e}"));
     Command::new(&exe).status().expect("built program runs")
 }
@@ -114,7 +124,7 @@ fn link_failure_reports_cc_stderr() {
 fn run_programs_agree_at_o0_and_o2() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/programs");
     let mut checked = 0;
-    for dir in ["m2", "m3"] {
+    for dir in ["m2", "m3", "m4"] {
         for entry in std::fs::read_dir(root.join(dir)).expect("program dir exists") {
             let path = entry.expect("entry").path();
             let exit = path.with_extension("exit");
@@ -133,10 +143,29 @@ fn run_programs_agree_at_o0_and_o2() {
             }
         }
     }
-    assert!(checked >= 19, "only {checked} run programs found");
+    assert!(checked >= 25, "only {checked} run programs found");
 }
 
 #[test]
 fn let_initialiser_reads_the_outer_binding() {
     assert_eq!(exit_code("let x: i32 = 2; let x = x + 1; x"), Some(3));
+}
+
+#[test]
+fn runtime_compiles_without_warnings() {
+    let dir = TempDir::new();
+    let source = dir.0.join("lugha_rt.c");
+    std::fs::write(&source, lugha::link::RUNTIME_SOURCE).expect("temp dir is writable");
+    let out = Command::new("cc")
+        .args(["-std=c11", "-Wall", "-Wextra", "-Werror", "-c"])
+        .arg(&source)
+        .arg("-o")
+        .arg(dir.0.join("lugha_rt.o"))
+        .output()
+        .expect("cc runs");
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
 }
