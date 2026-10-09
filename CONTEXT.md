@@ -139,6 +139,12 @@ TODO.md             — prerequisites and init checked off
 
 ---
 
+## SESSION 4 — 2026-10-09 — PRP-001 test runner discovery — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Run a discovery interview for `PRPs/prp-001-test_runner.md` (the `tests/programs/` runner, DECISION-008), then `prp-002-lexer.md`. See `TODO.md`.
