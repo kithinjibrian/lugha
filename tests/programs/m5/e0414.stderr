@@ -1,0 +1,8 @@
+error[E0414]: field `x` is given twice
+  --> tests/programs/m5/e0414.la:4:25
+  |
+4 |     let p = P { x: 1.0, x: 2.0 };
+  |                 -       ^
+  |                 |
+  |                 first given here
+

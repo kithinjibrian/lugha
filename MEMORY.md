@@ -178,6 +178,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 17. Structs (PRP-015)
+
+**Decision:**
+- `Type::Struct(name)`; `Checked.structs` lists fields in declaration order and is codegen's only source of struct layouts.
+- Codegen holds structs as SSA aggregates (`%S`). Fields use element storage (`bool` as `i8`). Sizes are hand-computed with natural alignment (`codegen/structs.rs::layout`) and are used for every element size.
+- Struct parameters are `ptr` to caller storage, used directly as the callee's slot and marked borrowed. Arguments are spilled to an entry `alloca`. Returns are by value.
+- Copy helpers length-prefix struct names (`lugha_copy_5Point_arr`).
+- A struct may contain itself through an array (spec §4 clarified).
+- Codes: E0307 recursive struct, E0308 duplicate field, E0413 missing fields, E0414 field given twice.
+
+**Why:** Fits the existing `Value` model. No `unsafe` (constant-index struct GEPs). One layout source.
+
+**Rules out:** structs by pointer everywhere; copying struct arguments.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -187,6 +203,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-015 structs: `check/structs.rs`, `check/errors/` split by code range, `codegen/structs.rs` (layout, literals, fields, place addresses); centroid prints `centroid: 2.0, 1.0`
 - PRP-014 arrays: `check/array.rs`, `codegen/{array,copy}.rs`; element layout in `heap.rs`; deep copies per spec §4; primes prints 25
 - PRP-013 string operations: `check/access.rs`, `codegen/heap.rs` (integer address arithmetic — user chose it over an audited `unsafe` GEP), `lugha_rt_panic_bounds`; AST `Index` bracket span
 - PRP-012 extern and panics: externs declared verbatim with C ABI (`zeroext`), string args via a safe struct GEP to field 1; checked arithmetic via `llvm.*.with.overflow`; AST operator spans
@@ -205,23 +222,18 @@ Open questions live in `DECISIONS.md`, not here.
 - v0 language spec reviewed and fixed
 
 ### In Progress
-- Milestone 5: PRP-013 and PRP-014 done; structs (PRP-015) and `lughac spec` (PRP-016) remain
+- Milestone 5: PRP-013, 014 and 015 done; `lughac spec` and the full §10 run (PRP-016) remain
 
 ### Not Started
-- PRP-015 structs, PRP-016 `lughac spec`
+- PRP-016 `lughac spec`
 
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 5, PRP-015: structs (spec §3, §4, §7). It covers:
-- Top-level `struct` declarations; a struct may not contain itself directly (a new E03xx code).
-- Struct literals that initialise every field exactly once, in any order; `p.x` reads and `p.x = v` writes, with the `let mut` root rule.
-- Layout per §7, and deep copies of structs that contain arrays, reusing `codegen/copy.rs` (copy sites per the §4 table, including struct-literal fields).
+Milestone 5, PRP-016: `lughac spec` and the full §10 acceptance — the last PRP of v0. It covers:
+- `lughac spec` printing the embedded language specification (spec §9/§11). Discovery: plain text vs a pager, and whether it takes a section argument.
+- Every §10 program in `tests/programs/` with exact stdout and exit codes (several already exist under m1–m5; fill the gaps from `tests/common/spec_programs.rs`).
+- Removing the dead `CheckError::Unsupported`, `CodegenError::Unsupported` and the checker's uninhabited `Stop`, now that every v0 construct compiles.
 
-Done-when: the §10 centroid program prints `centroid: 2.0, 1.0`.
-
-Discovery questions to expect:
-- codes for missing, duplicate and unknown fields in literals, and for recursive structs;
-- by-pointer vs by-value struct representation in codegen (§7);
-- `==` on structs (probably E0404, like arrays).
+Done-when: every §10 program passes — then tag `m5`.

@@ -13,8 +13,7 @@ use super::runtime::Constants;
 use super::scope::Scopes;
 use super::{CodegenError, SourceInfo};
 use crate::ast::{Item, Program};
-use crate::check::{Checked, Type};
-use crate::span::Span;
+use crate::check::{Checked, Structs, Type};
 
 /// Every builder call below happens after `position_at_end`, so a
 /// `BuilderError` can only mean a compiler bug.
@@ -27,6 +26,8 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) builder: Builder<'ctx>,
     /// The checker's type for every expression, by `ExprId`.
     pub(super) types: Vec<Type>,
+    /// Every struct's fields in declaration order.
+    pub(super) structs: Structs,
     /// Every declared function, by Lugha name.
     pub(super) functions: HashMap<String, Signature<'ctx>>,
     /// The function being emitted, for appending basic blocks.
@@ -71,6 +72,7 @@ pub(super) fn lower<'ctx>(
         module: context.create_module("lugha"),
         builder: context.create_builder(),
         types: checked.types.clone(),
+        structs: checked.structs.clone(),
         functions: HashMap::new(),
         function: None,
         ret: None,
@@ -82,6 +84,7 @@ pub(super) fn lower<'ctx>(
             text: source.text.to_string(),
         },
     };
+    lowerer.declare_structs();
     lowerer.declare_functions(program)?;
     for item in &program.items {
         if let Item::Fun(f) = item {
@@ -99,16 +102,6 @@ pub(super) fn lower<'ctx>(
         .verify()
         .map_err(|e| CodegenError::Verify(e.to_string()))?;
     Ok(lowerer.module)
-}
-
-/// A construct a later milestone adds. The checker stops on these first;
-/// codegen still refuses them because `emit_ir` is public.
-pub(super) fn unsupported(what: &'static str, milestone: u8, span: Span) -> CodegenError {
-    CodegenError::Unsupported {
-        what,
-        milestone,
-        span,
-    }
 }
 
 impl<'ctx> Lowerer<'ctx> {

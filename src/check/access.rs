@@ -1,17 +1,20 @@
 //! Field access and indexing (spec §4): `.len` and elements of strings and
-//! arrays. Structs join in PRP-015.
+//! arrays, and struct fields.
 
 use super::expr::Expect;
 use super::{Checker, Checking, Type, errors};
 use crate::ast::{Expr, Ident};
 
 impl Checker {
-    /// `base.field`: `.len` of strings and arrays.
+    /// `base.field`: `.len` of strings and arrays, or a struct's field.
     pub(super) fn field(&mut self, base: &Expr, field: &Ident) -> Checking<Type> {
         let ty = self.value(base, None)?;
         Ok(match (ty, field.name.as_str()) {
             (Type::Error | Type::Never, _) => Type::Error,
             (Type::String | Type::Array(_), "len") => Type::I64,
+            (Type::Struct(s), name) if self.struct_field(&s, name).is_some() => {
+                self.struct_field(&s, name).expect("just found")
+            }
             (ty, name) => {
                 self.report(errors::no_field(name, ty, field.span));
                 Type::Error

@@ -1,11 +1,10 @@
 //! Codegen — lowers a checked program to LLVM IR and native object files
 //! (spec §9 stages 4–5).
 //!
-//! Every type comes from the checker's table (CLAUDE.md rule 4): `i32`, `i64`,
-//! `u8`, `f64` and `bool` lower per spec §4. Until milestone 4 adds panics,
-//! integer arithmetic wraps and `/ %` trap on a bad divisor. Milestone 4/5
-//! constructs are `CodegenError::Unsupported`. Does not link — see
-//! `crate::link`.
+//! Every type comes from the checker's table (CLAUDE.md rule 4) and lowers
+//! per spec §4 and §7. Since PRP-015 every v0 construct lowers, so nothing
+//! produces `CodegenError::Unsupported` any more; PRP-016 removes it. Does not
+//! link — see `crate::link`.
 //!
 //! Depends on: ast, check (types), span, inkwell (LLVM 21).
 
@@ -21,6 +20,7 @@ mod lower;
 mod runtime;
 mod scope;
 mod stmt;
+mod structs;
 mod value;
 
 use std::path::Path;

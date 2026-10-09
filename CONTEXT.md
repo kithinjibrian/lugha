@@ -926,20 +926,62 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, progress, decision 16
 
 Branch: main → prp-015-structs
 
+### WHAT WAS DONE
+
+Discovery for PRP-015, with the recommended answer accepted every time:
+- Codes E0307/E0308/E0413/E0414.
+- Length-prefixed struct names in copy helpers.
+- SSA aggregates in codegen.
+
+The user also approved the spec clarification that a struct may contain itself through an array, and the split of `check/errors.rs` by code range.
+
+Implemented PRP-015, with the `m5/` programs written first:
+- **Checker:** `check/structs.rs` (pass-1 names, pass-2 field types, cycle detection, literals), struct field access, E0409 for structs in externs.
+- **Codegen:** `codegen/structs.rs` (named types, layout, literals, fields, place addresses), struct parameters by pointer, struct copy helpers in `copy.rs`.
+- **Stop paths:** the checker's and codegen's milestone stops are dead now; see the PRP amendments.
+
+The centroid program prints `centroid: 2.0, 1.0`. 186 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/errors/        — new: split of errors.rs (mod, names, types, places) + E0307/E0308/E0409 struct/E0413/E0414
+src/check/structs.rs     — new: StructInfo, collect/resolve, cycles, literals + 4 tests
+src/check/{types,mod,env,access,expr}.rs — Type::Struct, Structs, contains_array(&structs), Checked.structs, uninhabited Stop
+src/codegen/structs.rs   — new: layout, declare_structs, literals, struct_field, place_address + 3 tests
+src/codegen/{copy,heap,array,function,stmt,expr,value,lower,mod}.rs — struct copies, element sizes, params/args, places
+tests/programs/m5/       — centroid, struct_basics, struct_copies (run); e0307, e0308, e0413, e0414, e0501_field (reject)
+tests/cli.rs             — internal-error test now uses an unreadable file
+docs/specs/…Specification.md — §4 recursion through arrays; §9 codes and copy-helper mangling
+PRPs/prp-015-structs.md  — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, known issue removed, progress, decision 17
+```
+
+### TESTS WRITTEN
+
+- Unit:
+  - **Checker:** any-order resolution, E0302/E0305/E0308/E0307 (with the path, once per cycle; `Node[]` allowed), E0409, literal rules (E0413 listing, E0414, E0410, E0401), field E0410/E0404/E0501/E0507.
+  - **Codegen IR:** `%P` and `%F = { i8 }`, struct params as `ptr` with `alloca` arguments, constant field GEPs, `lugha_copy_4Wrap` only for array-holding structs, `Node`/`Node[]` helpers generated once.
+  - **Layout:** sizes 16/8/12.
+- Acceptance: three run and five reject `m5/` programs, cross-checked at `-O2`.
+
+### DECISIONS MADE
+
+- PRP-015 discovery answers; MEMORY 17 (structs).
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 5, PRP-015: structs (spec §3, §4, §7). It covers:
-- Top-level `struct` declarations; a struct may not contain itself directly (a new E03xx code).
-- Struct literals that initialise every field exactly once, in any order; `p.x` reads and `p.x = v` writes, with the `let mut` root rule.
-- Layout per §7, and deep copies of structs that contain arrays, reusing `codegen/copy.rs` (copy sites per the §4 table, including struct-literal fields).
+Milestone 5, PRP-016: `lughac spec` and the full §10 acceptance — the last PRP of v0. It covers:
+- `lughac spec` printing the embedded language specification (spec §9/§11). Discovery: plain text vs a pager, and whether it takes a section argument.
+- Every §10 program in `tests/programs/` with exact stdout and exit codes (several already exist under m1–m5; fill the gaps from `tests/common/spec_programs.rs`).
+- Removing the dead `CheckError::Unsupported`, `CodegenError::Unsupported` and the checker's uninhabited `Stop`, now that every v0 construct compiles.
 
-Done-when: the §10 centroid program prints `centroid: 2.0, 1.0`.
-
-Discovery questions to expect:
-- codes for missing, duplicate and unknown fields in literals, and for recursive structs;
-- by-pointer vs by-value struct representation in codegen (§7);
-- `==` on structs (probably E0404, like arrays).
+Done-when: every §10 program passes — then tag `m5`.
 
 See `TODO.md`.

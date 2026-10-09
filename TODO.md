@@ -62,5 +62,5 @@ Done when hello world, recursion and the libc example run.
 Done when every §10 program passes.
 - [x] PRP-013: string operations (`+`, `==`/`!=`, `.len`, bounds-checked `s[i]`); GC allocation landed in PRP-011
 - [x] PRP-014: arrays, bounds checks, repeat literals, `for`-`of`, array copies — primes prints 25
-- [ ] PRP-015: structs and their copies (centroid prints `centroid: 2.0, 1.0`)
-- [ ] PRP-016: `lughac spec` and every §10 program — **milestone 5 done**
+- [x] PRP-015: structs and their copies — centroid prints `centroid: 2.0, 1.0`
+- [ ] PRP-016: `lughac spec` and every §10 program — **milestone 5 done**; remove the now-dead `CheckError::Unsupported`/`CodegenError::Unsupported` and the checker's `Stop`

@@ -3,7 +3,7 @@
 //! Checking is bidirectional: the context may pass an `Expect` (a type and
 //! the reason for it), which numeric literals adopt (spec §4 rules 3–6).
 
-use super::{Checker, Checking, Type, errors, stop};
+use super::{Checker, Checking, Type, errors};
 use crate::ast::{Block, Expr, ExprKind, UnOp};
 use crate::diagnostic::Label;
 use crate::span::Span;
@@ -101,7 +101,7 @@ impl Checker {
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
             ExprKind::Index(base, _, index) => self.index(base, index),
             ExprKind::Field(base, field) => self.field(base, field),
-            ExprKind::StructLit(..) => Err(stop("structs", 5, expr.span)),
+            ExprKind::StructLit(name, fields) => self.struct_literal(expr, name, fields),
             ExprKind::Array(elements) => self.array_literal(expr, elements, expect),
             ExprKind::Repeat(value, count) => self.repeat(value, count, expect),
             ExprKind::Int(_) | ExprKind::Float(_) => unreachable!("literals are matched first"),
@@ -171,7 +171,7 @@ impl Checker {
 #[cfg(test)]
 mod tests {
     use crate::check::Type;
-    use crate::check::test_util::{errors, let_type, stopped};
+    use crate::check::test_util::{errors, let_type};
 
     #[test]
     fn if_branches_must_agree_unless_one_diverges() {
@@ -187,12 +187,5 @@ mod tests {
             ),
             Type::U8
         );
-    }
-
-    #[test]
-    fn later_milestone_expressions_stop_the_checker() {
-        // Strings (PRP-013) and arrays (PRP-014) are checked; struct literals arrive in PRP-015.
-        let src = "fun main() { let p = P { x: 1 }; }";
-        assert_eq!(stopped(src), ("structs", 5, "P { x: 1 }"));
     }
 }

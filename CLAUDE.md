@@ -231,13 +231,16 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── check/       — mod.rs (check, Checked, CheckError), types.rs, env.rs (globals, main, scopes),
 │   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), stmt.rs,
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
-│   │                  (fields, indexing), array.rs (literals, for … of, E0507 guard), errors.rs
+│   │                  (fields, indexing), array.rs (literals, for … of, E0507 guard), structs.rs
+│   │                  (declarations, E0307/E0308, literals), errors/ (mod.rs, names.rs E03xx,
+│   │                  types.rs E04xx, places.rs E05xx/W01xx)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
 │   │                  function.rs (signatures, bodies, return, calls), runtime.rs (intrinsics, string
 │   │                  literals, panics), heap.rs (headers, element layout, bounds checks, string ops),
-│   │                  array.rs (allocation, list/repeat literals, for … of), copy.rs (deep copies, copy sites)
+│   │                  array.rs (allocation, list/repeat literals, for … of), copy.rs (deep copies, copy sites),
+│   │                  structs.rs (named types, layout, literals, fields, place addresses)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_SOURCE, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes), pipeline.rs, source.rs (load, E0110, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)
@@ -282,4 +285,3 @@ These look like bugs but are specified behavior:
 - **Boehm may keep garbage alive** when an integer looks like a pointer. Conservative GC, spec §7.
 - **Extern C code keeping a Lugha pointer is undefined behavior.** Spec §7–8 accept this for v0.
 - **`as` casts truncate/saturate silently.** The only place values wrap (spec §4).
-- **Codegen reports the outermost unsupported construct first** (`[1][0]` → indexing, not arrays). The message names the milestone that adds it; it goes away by milestone 5.

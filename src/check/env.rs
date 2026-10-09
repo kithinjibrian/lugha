@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use super::{Binding, Checker, Checking, Local, Signature, Type, errors, stop};
+use super::{Binding, Checker, Checking, Local, Signature, Type, errors};
 use crate::ast::{Ident, Item, Program, Type as Annotation, TypeKind};
 
 /// Built into the compiler from milestone 4; their names are reserved (spec §6).
@@ -11,6 +11,8 @@ pub(super) const INTRINSICS: [&str; 4] = ["print", "println", "panic", "to_strin
 impl Checker {
     /// Collects signatures, checks `main`, then every function body (spec §6).
     pub(super) fn program(&mut self, program: &Program) -> Checking<()> {
+        self.collect_structs(program);
+        self.resolve_structs(program)?;
         self.collect(program)?;
         self.check_main(program);
         for item in &program.items {
@@ -33,7 +35,7 @@ impl Checker {
             let (name, params, ret, is_extern) = match item {
                 Item::Fun(f) => (&f.name, &f.params, f.ret.as_ref(), false),
                 Item::Extern(e) => (&e.name, &e.params, e.ret.as_ref(), true),
-                Item::Struct(s) => return Err(stop("structs", 5, s.span)),
+                Item::Struct(_) => continue,
             };
             let declared = params;
             let params = params
@@ -54,8 +56,10 @@ impl Checker {
                 // Arrays can't cross the C boundary (spec §8).
                 let annotations = declared.iter().map(|p| &p.ty).chain(ret);
                 for (annotation, ty) in annotations.zip(params.iter().chain([&ret_type])) {
-                    if matches!(ty, Type::Array(_)) {
-                        self.report(errors::extern_array(annotation.span));
+                    match ty {
+                        Type::Array(_) => self.report(errors::extern_array(annotation.span)),
+                        Type::Struct(_) => self.report(errors::extern_struct(annotation.span)),
+                        _ => {}
                     }
                 }
             }
@@ -64,8 +68,12 @@ impl Checker {
                 self.report(errors::reserved_extern(text, name.span));
             } else if INTRINSICS.contains(&text.as_str()) {
                 self.report(errors::reserved(text, name.span));
-            } else if let Some(first) = self.functions.get(text) {
-                let first = first.span;
+            } else if let Some(first) = self
+                .functions
+                .get(text)
+                .map(|f| f.span)
+                .or_else(|| self.structs.get(text).map(|s| s.span))
+            {
                 self.report(errors::duplicate(text, name.span, first));
             } else {
                 let signature = Signature {
@@ -106,6 +114,7 @@ impl Checker {
             TypeKind::Bool => Type::Bool,
             TypeKind::String => Type::String,
             TypeKind::Array(element) => Type::Array(Box::new(self.resolve(element)?)),
+            TypeKind::Named(name) if self.structs.contains_key(name) => Type::Struct(name.clone()),
             TypeKind::Named(name) => {
                 self.report(errors::unknown_type(name, ty.span));
                 Type::Error
@@ -148,7 +157,7 @@ impl Checker {
 
 #[cfg(test)]
 mod tests {
-    use crate::check::test_util::{errors, ok, stopped};
+    use crate::check::test_util::{errors, ok};
 
     #[test]
     fn duplicates_and_reserved_names_are_e0302() {
@@ -177,18 +186,6 @@ mod tests {
             [("E0305", "Pointt")]
         );
         assert_eq!(errors("fun f(p: Q) {}\nfun main() {}"), [("E0305", "Q")]);
-    }
-
-    #[test]
-    fn later_milestone_items_stop_the_checker() {
-        assert_eq!(
-            stopped("struct P { x: i64 }\nfun main() {}"),
-            ("structs", 5, "struct P { x: i64 }")
-        );
-        assert_eq!(
-            errors("fun main() { let s: string = 1; }"),
-            [("E0401", "1")]
-        );
     }
 
     #[test]

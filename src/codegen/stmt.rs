@@ -1,12 +1,10 @@
 //! Statements: `let`, assignment, expression statements, loops and jumps.
 
 use super::CodegenError;
-use super::lower::{Lowerer, POSITIONED, unsupported};
+use super::lower::{Lowerer, POSITIONED};
 use super::scope::Local;
 use super::value::{Value, annotation_type};
-use crate::ast::{
-    AssignOp, BinOp, Expr, ExprKind, ForIter, Ident, Stmt, StmtKind, Type as Annotation,
-};
+use crate::ast::{AssignOp, BinOp, Expr, ForIter, Ident, Stmt, StmtKind, Type as Annotation};
 use crate::check::Type;
 
 impl<'ctx> Lowerer<'ctx> {
@@ -83,18 +81,9 @@ impl<'ctx> Lowerer<'ctx> {
         value: &Expr,
     ) -> Result<(), CodegenError> {
         // The place is evaluated once, before the value (spec §5).
-        // A local's slot holds its value as is; an element is stored as one (`bool` as `i8`).
-        let (address, ty, element) = match &place.kind {
-            ExprKind::Name(name) => {
-                let local = self.scopes.lookup(name);
-                (local.ptr, local.ty, false)
-            }
-            ExprKind::Index(base, open, index) => {
-                let (address, ty) = self.element_place(base, open.start, index)?;
-                (address, ty, true)
-            }
-            _ => return Err(unsupported("assigning to fields", 5, place.span)),
-        };
+        // A local's slot holds its value as is; fields and elements are
+        // stored in element layout (`bool` as `i8`).
+        let (address, ty, element) = self.place_address(place)?;
         let new = match compound_op(op) {
             None => self.value_for_store(value, &ty)?,
             Some(op) => {

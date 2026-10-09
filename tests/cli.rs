@@ -176,21 +176,19 @@ fn invalid_utf8_is_e0110() {
 }
 
 #[test]
-fn unsupported_constructs_are_internal_errors() {
-    let dir = TempDir::with(&[("fib.la", b"struct P { x: i64 }\nfun main() {}")]);
-    let human = lughac(&dir.0, &["build", "fib.la"]);
-    assert_eq!(human.status.code(), Some(2));
-    let stderr = text(&human.stderr);
+fn internal_errors_have_no_code_or_span() {
+    // Every v0 construct compiles since PRP-015; an unreadable file is the
+    // remaining internal error a user can trigger without a broken toolchain.
+    let dir = TempDir::with(&[("ok.la", b"fun main() {}")]);
+    let json = lughac(&dir.0, &["build", "--diagnostics=json", "nope.la"]);
+    assert_eq!(json.status.code(), Some(2));
+    let line = text(&json.stderr);
     assert!(
-        stderr.starts_with("error: not implemented yet: structs (milestone 5)\n"),
-        "{stderr}"
+        line.starts_with(r#"{"severity":"error","code":null,"#),
+        "{line}"
     );
-    let json = text(&lughac(&dir.0, &["build", "--diagnostics=json", "fib.la"]).stderr);
-    assert!(
-        json.starts_with(r#"{"severity":"error","code":null,"#),
-        "{json}"
-    );
-    assert_eq!(dir.entries(), ["fib.la"]);
+    assert!(line.contains(r#""span":null"#), "{line}");
+    assert_eq!(dir.entries(), ["ok.la"]);
 }
 
 #[test]

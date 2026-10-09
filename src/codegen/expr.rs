@@ -4,7 +4,7 @@
 use inkwell::values::BasicValueEnum;
 
 use super::CodegenError;
-use super::lower::{Lowerer, POSITIONED, unsupported};
+use super::lower::{Lowerer, POSITIONED};
 use super::value::{Value, int_type};
 use crate::ast::{BinOp, Expr, ExprKind, UnOp};
 use crate::check::Type;
@@ -63,7 +63,7 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Str(text) => self.string_literal(text).into(),
             ExprKind::Index(base, open, index) => self.index(base, open.start, index)?,
             ExprKind::Field(base, field) => self.field(base, field)?,
-            ExprKind::StructLit(..) => return Err(unsupported("structs", 5, expr.span)),
+            ExprKind::StructLit(_, fields) => self.struct_literal(expr, fields)?,
             ExprKind::Array(elements) => self.array_literal(expr, elements)?,
             ExprKind::Repeat(value, count) => self.repeat(expr, value, count)?,
         };

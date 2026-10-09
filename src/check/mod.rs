@@ -1,11 +1,10 @@
-//! Type checker — names, types and inference for the milestone 3 subset
-//! (spec §4–§6).
+//! Type checker — names, types and inference for all of v0 (spec §4–§6).
 //!
 //! Gives every expression a type, recorded in a table keyed by `ExprId` for
 //! codegen (spec §9). Reports E03xx/E04xx and keeps going: an expression that
 //! already failed gets `Type::Error`, which fits anything and is never
-//! reported again. Constructs from later milestones stop the checker with
-//! `CheckError::Unsupported` (rule 9).
+//! reported again. Since PRP-015 no construct stops the checker, so
+//! `CheckError::Unsupported` is never returned; PRP-016 removes it.
 //!
 //! Depends on: ast, diagnostic, span.
 
@@ -20,11 +19,12 @@ mod flow;
 mod literal;
 mod ops;
 mod stmt;
+mod structs;
 mod types;
 
 use std::collections::HashMap;
 
-pub use types::Type;
+pub use types::{Structs, Type};
 
 use crate::ast::Program;
 use crate::diagnostic::{Diagnostic, Severity};
@@ -35,6 +35,8 @@ use crate::span::Span;
 pub struct Checked {
     /// The type of every expression, indexed by `ExprId`.
     pub types: Vec<Type>,
+    /// Every struct's fields in declaration order.
+    pub structs: Structs,
 }
 
 /// Why checking failed.
@@ -61,6 +63,7 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), CheckError
         types: vec![None; program.expr_count as usize],
         diagnostics: Vec::new(),
         functions: HashMap::new(),
+        structs: HashMap::new(),
         scopes: Vec::new(),
         ret: Type::Void,
         loops: 0,
@@ -68,15 +71,7 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), CheckError
         iterating: Vec::new(),
     };
     match checker.program(program) {
-        Err(Stop {
-            what,
-            milestone,
-            span,
-        }) => Err(CheckError::Unsupported {
-            what,
-            milestone,
-            span,
-        }),
+        Err(stop) => match stop {},
         Ok(())
             if checker
                 .diagnostics
@@ -92,25 +87,20 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), CheckError
                 .into_iter()
                 .map(|t| t.unwrap_or(Type::Error))
                 .collect();
-            Ok((Checked { types }, checker.diagnostics))
+            let structs = checker
+                .structs
+                .into_iter()
+                .map(|(name, info)| (name, info.fields))
+                .collect();
+            Ok((Checked { types, structs }, checker.diagnostics))
         }
     }
 }
 
-/// A construct beyond milestone 3: checking stops here.
-pub(super) struct Stop {
-    what: &'static str,
-    milestone: u8,
-    span: Span,
-}
-
-pub(super) fn stop(what: &'static str, milestone: u8, span: Span) -> Stop {
-    Stop {
-        what,
-        milestone,
-        span,
-    }
-}
+/// A construct beyond the current milestone would stop checking here. Since
+/// PRP-015 the checker covers all of v0, so this has no values; PRP-016 removes
+/// the mechanism with `CheckError::Unsupported`.
+pub(super) enum Stop {}
 
 /// The result of a checking step that may hit an unsupported construct.
 pub(super) type Checking<T> = Result<T, Stop>;
@@ -144,6 +134,7 @@ pub(super) struct Checker {
     types: Vec<Option<Type>>,
     diagnostics: Vec<Diagnostic>,
     functions: HashMap<String, Signature>,
+    structs: HashMap<String, structs::StructInfo>,
     scopes: Vec<HashMap<String, Local>>,
     /// The return type of the function being checked.
     ret: Type,
@@ -210,18 +201,6 @@ pub(crate) mod test_util {
             .iter()
             .map(|d| (d.code, &src[d.span.start..d.span.end]))
             .collect()
-    }
-
-    /// `(what, milestone, spanned source)` of the unsupported construct in `src`.
-    pub fn stopped(src: &str) -> (&'static str, u8, &str) {
-        match check(&program(src)) {
-            Err(CheckError::Unsupported {
-                what,
-                milestone,
-                span,
-            }) => (what, milestone, &src[span.start..span.end]),
-            other => panic!("{src:?}: expected Unsupported, got {other:?}"),
-        }
     }
 
     /// The type of the initialiser of the first `let name` in `fun main`.

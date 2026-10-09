@@ -227,7 +227,7 @@ There is no null. Every string and array variable holds a valid object.
 
 **void is not a value.** `void` can't be written as a type, and no variable, parameter, field or array element can hold one. `let x = println(1);` is a type error. A `void` expression can only be used as a statement, as the tail of a `void` block or function, or as a branch of an `if` whose type is `void`.
 
-**Structs.** Declared at top level with named, typed fields. A struct literal must initialize every field exactly once, in any order. Structs may contain other structs and arrays, but a struct may not contain itself directly (it would have infinite size). Recursive data such as trees needs a boxed or optional type, planned for v1.
+**Structs.** Declared at top level with named, typed fields. A struct literal must initialize every field exactly once, in any order. Structs may contain other structs and arrays, but a struct may not contain itself directly or through other structs (it would have infinite size). Containing itself through an array is fine, because an array is a pointer: `struct Node { value: i64, kids: Node[] }` builds trees. Other recursive data, such as linked lists, needs a boxed or optional type, planned for v1.
 
 **Arrays.** `T[]` has a length fixed at creation, read with `.len` (type `i64`). Elements are read and written with `xs[i]`, where `i` must be `i64`. Every index is bounds-checked; an out-of-range index panics. Arrays are created two ways:
 
@@ -468,7 +468,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 - **if expressions:** lower each branch to its own basic block, as for statements, and merge a non-`void` result with a `phi` in the join block. A branch that definitely returns contributes no incoming edge.
 - **Float-to-int casts:** the `llvm.fptosi.sat` intrinsic gives the saturating behavior in section 4.
 - **Opaque pointers:** every `load`, `store` and `getelementptr` needs its element type, taken from the checker's type table.
-- **Array copies:** generate one deep-copy function per type that contains arrays (for example `lugha_copy_i64_arr`; the `lugha_copy_` prefix is disjoint from `lugha_fn_` and `lugha_rt_`), and call it at each copy site listed in section 4. For arrays of plain values, the copy is one `lugha_rt_alloc` plus `llvm.memcpy`.
+- **Array copies:** generate one deep-copy function per type that contains arrays (for example `lugha_copy_i64_arr_arr`, or `lugha_copy_5Point_arr` — struct names are length-prefixed so they can't be confused with `_arr` or primitive names; the `lugha_copy_` prefix is disjoint from `lugha_fn_` and `lugha_rt_`), and call it at each copy site listed in section 4. For arrays of plain values, the copy is one `lugha_rt_alloc` plus `llvm.memcpy`.
 - **Struct and array arguments:** pass a pointer to the caller's storage rather than the value itself, since the callee can't modify it.
 
 **Runtime library.** A small C file, `lugha_rt.c`, is compiled once and linked into every program. The compiler calls only these functions:
@@ -527,6 +527,8 @@ Name and type errors, reported by the checker:
 | E0304 | `main` with the wrong signature | `fun main(argc: i32): i32` |
 | E0305 | Unknown type name | `let p: Point = 1;` with no `Point` |
 | E0306 | Reserved extern name | `extern fun lugha_rt_alloc(size: i64): i64;` (§8) |
+| E0307 | Struct contains itself | `struct A { b: B }` with `struct B { a: A }` — hold it in an array instead (`A[]`) |
+| E0308 | Field declared twice | `struct P { x: i64, x: f64 }` |
 | E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
 | E0402 | Integer literal out of range for its type | `let b: u8 = 256;` |
 | E0403 | Type mismatch | `let n: i32 = ok;` where `ok` is `bool`; `if`/`else` of different types |
@@ -534,10 +536,12 @@ Name and type errors, reported by the checker:
 | E0405 | Wrong number of arguments | `add(1)` for `fun add(a: i64, b: i64)` |
 | E0406 | Not a function, or a function used as a value | `let step = 2; step(1);`, `let f = fib;` |
 | E0407 | `void` used as a value | `let x = log();` where `log` returns nothing |
-| E0410 | No such field | `s.size` on a `string`; `(5).len` |
+| E0410 | No such field | `s.size` on a `string`; `(5).len`; `p.z` or `Point { z: 1.0 }` on a `Point` without `z` |
 | E0411 | Not indexable or not iterable | `n[0]` where `n` is an `i64`; `for c of "abc"` |
 | E0412 | Cannot infer an array's element type | `let xs = [];` — annotate it: `let xs: i64[] = [];` |
-| E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array parameters or returns (§8) |
+| E0413 | Struct literal missing fields | `Point { x: 1.0 }` |
+| E0414 | Struct literal field given twice | `Point { x: 1.0, x: 2.0, y: 0.0 }` |
+| E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array or struct parameters or returns (§8) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut` |
 | E0502 | Assignment to something that isn't a place | `(a + b) = 3;` |

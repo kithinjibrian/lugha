@@ -9,7 +9,7 @@ use inkwell::values::{BasicValueEnum, IntValue, PointerValue, ValueKind};
 
 use super::CodegenError;
 use super::control::Loop;
-use super::heap::{element_of, element_size};
+use super::heap::element_of;
 use super::lower::{Lowerer, POSITIONED};
 use super::scope::Local;
 use crate::ast::{Block, Expr, Ident};
@@ -19,7 +19,7 @@ impl<'ctx> Lowerer<'ctx> {
     /// A new array of `len` elements of type `element`, with its length stored.
     pub(super) fn new_array(&self, len: IntValue<'ctx>, element: &Type) -> PointerValue<'ctx> {
         let i64_type = self.context.i64_type();
-        let size = i64_type.const_int(element_size(element), false);
+        let size = i64_type.const_int(self.element_size(element), false);
         let data = self
             .builder
             .build_int_mul(len, size, "bytes")
@@ -99,7 +99,7 @@ impl<'ctx> Lowerer<'ctx> {
             let address = self.element_address(
                 array,
                 i64_type.const_int(index as u64, false),
-                element_size(&element),
+                self.element_size(&element),
             );
             self.store_element(address, &element, value);
         }
@@ -124,13 +124,17 @@ impl<'ctx> Lowerer<'ctx> {
             .expect(POSITIONED);
         self.panic_if(negative, "negative array length", expr.span.start);
         let array = self.new_array(count, &element);
+        let (deep, size) = (
+            element.contains_array(&self.structs),
+            self.element_size(&element),
+        );
         self.count_loop(count, |this, i| {
-            let fill = if element.contains_array() {
+            let fill = if deep {
                 this.deep_copy(value, &element)
             } else {
                 value
             };
-            let address = this.element_address(array, i, element_size(&element));
+            let address = this.element_address(array, i, size);
             this.store_element(address, &element, fill);
             Ok(())
         })?;
@@ -178,7 +182,7 @@ impl<'ctx> Lowerer<'ctx> {
 
         self.builder.position_at_end(body_block);
         self.scopes.push();
-        let address = self.element_address(array, i, element_size(&element));
+        let address = self.element_address(array, i, self.element_size(&element));
         let item = self.load_element(address, &element);
         let slot = self.entry_alloca(&element, &var.name);
         self.builder.build_store(slot, item).expect(POSITIONED);

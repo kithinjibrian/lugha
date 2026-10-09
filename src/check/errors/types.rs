@@ -148,3 +148,27 @@ pub(in crate::check) fn bad_cast(from: Type, to: Type, span: Span) -> Diagnostic
         _ => d,
     }
 }
+
+pub(in crate::check) fn extern_struct(span: Span) -> Diagnostic {
+    Diagnostic::error("E0409", "structs can't cross the C boundary", span)
+        .with_help("pass the fields one by one instead")
+}
+
+pub(in crate::check) fn missing_fields(missing: &[&str], name: &str, span: Span) -> Diagnostic {
+    let s = if missing.len() == 1 { "" } else { "s" };
+    let list = missing
+        .iter()
+        .map(|f| format!("`{f}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    Diagnostic::error(
+        "E0413",
+        format!("missing field{s} {list} in `{name}`"),
+        span,
+    )
+}
+
+pub(in crate::check) fn field_given_twice(field: &str, span: Span, first: Span) -> Diagnostic {
+    Diagnostic::error("E0414", format!("field `{field}` is given twice"), span)
+        .with_label(first, "first given here")
+}

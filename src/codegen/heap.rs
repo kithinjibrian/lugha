@@ -19,16 +19,6 @@ use crate::check::Type;
 /// Bytes before the data: the `i64` length (spec §7).
 const HEADER: u64 = 8;
 
-/// Bytes per element of type `ty` (spec §7, 64-bit target).
-pub(super) fn element_size(ty: &Type) -> u64 {
-    match ty {
-        Type::U8 | Type::Bool => 1,
-        Type::I32 => 4,
-        Type::I64 | Type::F64 | Type::String | Type::Array(_) => 8,
-        _ => unreachable!("checked: {ty} is not an element type"),
-    }
-}
-
 /// The element type of an array type.
 pub(super) fn element_of(ty: &Type) -> Type {
     match ty {
@@ -39,7 +29,7 @@ pub(super) fn element_of(ty: &Type) -> Type {
 
 impl<'ctx> Lowerer<'ctx> {
     /// How an element is held in memory: `bool` as `i8`, anything else as itself.
-    fn storage_type(&self, ty: &Type) -> BasicTypeEnum<'ctx> {
+    pub(super) fn storage_type(&self, ty: &Type) -> BasicTypeEnum<'ctx> {
         if *ty == Type::Bool {
             self.context.i8_type().into()
         } else {
@@ -57,15 +47,7 @@ impl<'ctx> Lowerer<'ctx> {
             .builder
             .build_load(self.storage_type(ty), address, "elem")
             .expect(POSITIONED);
-        if *ty == Type::Bool {
-            let bool_type = self.context.bool_type();
-            return self
-                .builder
-                .build_int_truncate(raw.into_int_value(), bool_type, "elem.bool")
-                .expect(POSITIONED)
-                .into();
-        }
-        raw
+        self.loaded_form(raw, ty)
     }
 
     /// Stores `value` of type `ty` as an element at `address`.
@@ -75,15 +57,7 @@ impl<'ctx> Lowerer<'ctx> {
         ty: &Type,
         value: BasicValueEnum<'ctx>,
     ) {
-        let value = if *ty == Type::Bool {
-            let i8_type = self.context.i8_type();
-            self.builder
-                .build_int_z_extend(value.into_int_value(), i8_type, "elem.byte")
-                .expect(POSITIONED)
-                .into()
-        } else {
-            value
-        };
+        let value = self.stored_form(value, ty);
         self.builder.build_store(address, value).expect(POSITIONED);
     }
 
@@ -190,14 +164,16 @@ impl<'ctx> Lowerer<'ctx> {
             .into()
     }
 
-    /// `base.len` on a string or an array (checked: the only field so far).
+    /// `base.len` on a string or an array, or a struct's field.
     pub(super) fn field(
         &mut self,
         base: &Expr,
         field: &Ident,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
-        debug_assert_eq!(field.name, "len", "checked: `.len` is the only field");
         let ty = self.ty(base);
+        if matches!(ty, Type::Struct(_)) {
+            return self.struct_field(base, field);
+        }
         let object = self.get(base, &ty)?.into_pointer_value();
         Ok(self.length(object).into())
     }
@@ -232,7 +208,7 @@ impl<'ctx> Lowerer<'ctx> {
         let len = self.length(object);
         self.bounds_check(len, i, at);
         Ok((
-            self.element_address(object, i, element_size(&element)),
+            self.element_address(object, i, self.element_size(&element)),
             element,
         ))
     }

@@ -9,7 +9,7 @@ use inkwell::types::{BasicMetadataTypeEnum, BasicType};
 use inkwell::values::{BasicMetadataValueEnum, BasicValueEnum, FunctionValue, ValueKind};
 
 use super::CodegenError;
-use super::lower::{Lowerer, POSITIONED, unsupported};
+use super::lower::{Lowerer, POSITIONED};
 use super::scope::{Local, Scopes};
 use super::value::{Value, annotation_type, llvm_type};
 use crate::ast::{Expr, ExprKind, FunDecl, Item, Program};
@@ -33,14 +33,12 @@ impl<'ctx> Lowerer<'ctx> {
             let (name, params, ret, is_extern) = match item {
                 Item::Fun(f) => (&f.name.name, &f.params, f.ret.as_ref(), false),
                 Item::Extern(e) => (&e.name.name, &e.params, e.ret.as_ref(), true),
-                Item::Struct(s) => return Err(unsupported("structs", 5, s.span)),
+                Item::Struct(_) => continue,
             };
             let params: Vec<Type> = params.iter().map(|p| annotation_type(&p.ty)).collect();
             let ret = ret.map(annotation_type);
-            let param_types: Vec<BasicMetadataTypeEnum> = params
-                .iter()
-                .map(|ty| llvm_type(self.context, ty).into())
-                .collect();
+            let param_types: Vec<BasicMetadataTypeEnum> =
+                params.iter().map(|ty| self.param_type(ty)).collect();
             let fn_type = match &ret {
                 Some(ty) => llvm_type(self.context, ty).fn_type(&param_types, false),
                 None => self.context.void_type().fn_type(&param_types, false),
@@ -66,6 +64,14 @@ impl<'ctx> Lowerer<'ctx> {
             self.functions.insert(name.clone(), signature);
         }
         Ok(())
+    }
+
+    /// A struct parameter is a pointer to the caller's storage (spec §7, §9).
+    fn param_type(&self, ty: &Type) -> BasicMetadataTypeEnum<'ctx> {
+        match ty {
+            Type::Struct(_) => self.context.ptr_type(Default::default()).into(),
+            _ => llvm_type(self.context, ty).into(),
+        }
     }
 
     /// C passes `bool` and `u8` zero-extended (spec §8): mark them so LLVM
@@ -97,13 +103,20 @@ impl<'ctx> Lowerer<'ctx> {
 
         self.scopes.push();
         for (index, (param, ty)) in f.params.iter().zip(&signature.params).enumerate() {
-            let ptr = self.entry_alloca(ty, &param.name.name);
             let index = u32::try_from(index).expect("parameter count fits in u32");
             let arg = signature
                 .function
                 .get_nth_param(index)
                 .expect("declared with these parameters");
-            self.builder.build_store(ptr, arg).expect(POSITIONED);
+            // A struct arrives as a pointer to the caller's storage, which
+            // serves as its slot: parameters are immutable (spec §7).
+            let ptr = if matches!(ty, Type::Struct(_)) {
+                arg.into_pointer_value()
+            } else {
+                let ptr = self.entry_alloca(ty, &param.name.name);
+                self.builder.build_store(ptr, arg).expect(POSITIONED);
+                ptr
+            };
             self.scopes.declare(
                 &param.name.name,
                 Local {
@@ -177,6 +190,11 @@ impl<'ctx> Lowerer<'ctx> {
             let value = self.get(arg, ty)?;
             let value = if signature.is_extern && *ty == Type::String {
                 self.c_string(value)
+            } else if matches!(ty, Type::Struct(_)) {
+                // Passed as a pointer to caller storage, never copied (spec §4, §9).
+                let slot = self.entry_alloca(ty, "arg");
+                self.builder.build_store(slot, value).expect(POSITIONED);
+                slot.into()
             } else {
                 value
             };

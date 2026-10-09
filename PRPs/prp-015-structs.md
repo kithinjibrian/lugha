@@ -1,6 +1,6 @@
 ## FEATURE: Structs — declarations in any order, literals, field reads and writes, structs inside arrays and arrays inside structs, and value-semantics copies.
 
-**Status:** approved 2026-10-09 — session 18
+**Status:** implemented 2026-10-09 — session 18 (branch `prp-015-structs`, awaiting merge)
 **Milestone:** 5, third of four PRPs. Done-when: the spec §10 centroid program prints `centroid: 2.0, 1.0`.
 **Spec:** §3 (struct declarations and literals, no-struct-literal conditions), §4 (structs, copies table, deep copies, value semantics), §5 (field evaluation order), §6 (two-pass globals, shared namespace), §7 (stack layout, struct parameters and returns), §8 (no structs across C), §9 (lowering notes, copy helpers, codes)
 **Decisions:** MEMORY 14 (codegen reads the checker's types), MEMORY 16 (array value semantics and copy sites), PRP-013 (integer address arithmetic, no `unsafe`)
@@ -26,6 +26,18 @@ Structs behave as values (§4): `let q = p; q.x = 9.0;` never changes `p`, and t
   - New `m5/` programs; spec §4 clarification and §9 codes.
 - Related existing code: `src/check/{types,env,mod,access,assign,array,expr,ops,errors}.rs`, `src/codegen/{value,heap,copy,array,function,stmt,expr,scope}.rs`.
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 18)
+- **`check/errors.rs` split** (approved mid-session) into `check/errors/{mod,names,types,places}.rs` by code range. The new codes would have pushed it past 300 lines. Committed on its own.
+- **Dead stop paths:** with structs, nothing stops the checker or codegen.
+  - The checker's `Stop` became an uninhabited enum, so `Checking<T>` signatures are unchanged.
+  - `codegen::lower::unsupported` and the "outermost unsupported construct" known issue are gone.
+  - Removing `CheckError::Unsupported` and `CodegenError::Unsupported` themselves is left to PRP-016.
+  - The two milestone stop tests were deleted. The CLI internal-error test now uses an unreadable file and checks `code`/`span` are `null`.
+- **Shared helpers:** the `bool` ↔ `i8` conversion (`stored_form`/`loaded_form`) lives in `codegen/structs.rs` and is shared with array elements. `element_size` is now a `Lowerer` method backed by `layout`.
+- **E0307 help** names the struct (``a field of type `A[]` ``).
+- **IR test:** constant literals fold, so the test checks the folded store's declaration order instead of `insertvalue`.
+- **Goldens:** run goldens were written by hand and matched on the first run; the five reject goldens were captured and reviewed.
 
 ### Discovery answers (session 18)
 1. Codes:
@@ -144,24 +156,24 @@ The spec forbids a struct containing itself "directly or through other structs" 
 ## TESTS TO WRITE
 
 Unit tests:
-- [ ] Checker:
+- [x] Checker:
   - structs declared after use; E0302 for a struct named like a function;
   - E0305 for an unknown field type and for a literal of a non-struct;
   - E0308; E0307 direct (`A { a: A }`) and indirect (`A -> B -> A`) with the path label; no error for `Node { kids: Node[] }`;
   - literals: field types, any order, E0410, E0413 (all missing listed), E0414;
   - `p.x` type; E0410 on `p.z`; E0404 for `p == q`; E0409 for a struct extern parameter;
   - E0501 on `p.x = 1.0` with an immutable root; E0507 for `pts[0].x` inside `for p of pts`.
-- [ ] Codegen IR:
+- [x] Codegen IR:
   - `%Point = type { double, double }`;
   - a `bool` field is `i8`;
   - a struct parameter is `ptr` and the argument is an `alloca` pointer;
   - field writes use a struct GEP with a constant index;
   - `lugha_copy_4Wrap` exists and is called on `let w2 = w;`, but not for a struct without arrays;
   - the `Node`/`Node[]` copy helpers are generated once each.
-- [ ] Layout: hand-computed sizes for `{ u8, i64 }` (16), `{ i32, u8 }` (8) and a nested struct.
+- [x] Layout: hand-computed sizes for `{ u8, i64 }` (16), `{ i32, u8 }` (8) and a nested struct.
 
 Acceptance:
-- [ ] The three run programs and five reject programs pass; all earlier tests pass.
+- [x] The three run programs and five reject programs pass; all earlier tests pass.
 
 ## ROLLBACK PLAN
 
@@ -169,11 +181,11 @@ Acceptance:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] `lughac run tests/programs/m5/centroid.la` prints `centroid: 2.0, 1.0`.
-- [ ] Every test above exists and passes.
-- [ ] Spec §4 and §9, CLAUDE.md, CHANGELOG.md, TODO.md and MEMORY.md updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass.
+- [x] `lughac run tests/programs/m5/centroid.la` prints `centroid: 2.0, 1.0`.
+- [x] Every test above exists and passes.
+- [x] Spec §4 and §9, CLAUDE.md, CHANGELOG.md, TODO.md and MEMORY.md updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass.
 
 ## VALIDATION
 - `cargo fmt --check`

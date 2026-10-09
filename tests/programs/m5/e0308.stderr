@@ -1,0 +1,8 @@
+error[E0308]: field `x` is declared twice in `P`
+  --> tests/programs/m5/e0308.la:1:20
+  |
+1 | struct P { x: i64, x: f64 }
+  |            -       ^
+  |            |
+  |            first declared here
+

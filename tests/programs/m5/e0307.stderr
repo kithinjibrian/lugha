@@ -1,0 +1,8 @@
+error[E0307]: struct `A` contains itself
+  --> tests/programs/m5/e0307.la:1:8
+  |
+1 | struct A { b: B }
+  |        ^ A -> B -> A
+  |
+  = help: a struct can't hold itself inline; an array can, e.g. a field of type `A[]`
+

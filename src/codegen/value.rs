@@ -36,6 +36,11 @@ pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnu
         Type::Bool => context.bool_type().into(),
         // Strings and arrays are pointers to heap objects (spec §7).
         Type::String | Type::Array(_) => context.ptr_type(AddressSpace::default()).into(),
+        // Declared by `declare_structs` before anything is lowered.
+        Type::Struct(name) => context
+            .get_struct_type(name)
+            .expect("structs are declared before lowering")
+            .into(),
         Type::Void | Type::Never | Type::Error => unreachable!("checked: {ty} is not a value type"),
     }
 }
@@ -50,8 +55,7 @@ pub(super) fn is_signed(ty: &Type) -> bool {
     matches!(ty, Type::I32 | Type::I64)
 }
 
-/// The type an annotation declares. The checker has already resolved it, so
-/// only milestone 3 types reach codegen.
+/// The type an annotation declares; the checker has already resolved its names.
 pub(super) fn annotation_type(ty: &Annotation) -> Type {
     match ty.kind {
         TypeKind::I32 => Type::I32,
@@ -61,7 +65,7 @@ pub(super) fn annotation_type(ty: &Annotation) -> Type {
         TypeKind::Bool => Type::Bool,
         TypeKind::String => Type::String,
         TypeKind::Array(ref element) => Type::Array(Box::new(annotation_type(element))),
-        TypeKind::Named(_) => unreachable!("checked: structs stop before codegen"),
+        TypeKind::Named(ref name) => Type::Struct(name.clone()),
     }
 }
 
@@ -90,6 +94,7 @@ fn undef<'ctx>(context: &'ctx Context, ty: &Type) -> BasicValueEnum<'ctx> {
     match llvm_type(context, ty) {
         BasicTypeEnum::FloatType(t) => t.get_undef().into(),
         BasicTypeEnum::PointerType(t) => t.get_undef().into(),
+        BasicTypeEnum::StructType(t) => t.get_undef().into(),
         other => other.into_int_type().get_undef().into(),
     }
 }
