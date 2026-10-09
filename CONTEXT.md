@@ -983,15 +983,54 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, known issue removed, 
 
 Branch: main → prp-016-spec_command
 
+### WHAT WAS DONE
+
+Discovery for PRP-016, with the recommended answer accepted every time:
+- `lughac spec` prints the spec verbatim.
+- The tests extract §10 from the spec.
+
+Implemented PRP-016:
+- Tests first: the extraction helper, `tests/spec.rs`, and the CLI spec test.
+- `lugha::SPEC` and the `spec` subcommand (a broken pipe exits 0).
+- The lexer and parser tests switched to the extracted programs.
+- Then, as a separate commit, `CheckError`, `Stop`/`Checking` and `CodegenError::Unsupported` were removed; `check::check` now returns the standard stage shape.
+
+Every §10 program passes as extracted from the spec. 191 tests pass. **Milestone 5 complete — v0 complete.**
+
+### FILES CREATED OR MODIFIED
+
+```
+src/lib.rs               — SPEC
+src/driver/{mod,pipeline}.rs — spec subcommand; Unsupported handling removed
+src/check/*.rs           — Checking<T>/Ok/? removed; check() returns Result<(Checked, warnings), diagnostics>
+src/codegen/mod.rs       — CodegenError::Unsupported removed
+tests/common/spec_programs.rs — rewritten: extracts §10/§11 programs, results and the §9 JSON line from SPEC
+tests/spec.rs            — new: §10 acceptance at -O0/-O2, rejected program in both formats, milestone 2
+tests/{lexer,parser,cli}.rs — extracted programs; spec command test
+PRPs/prp-016-spec_command.md — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — tree, commands, v0 complete, decision 18
+```
+
+### TESTS WRITTEN
+
+- `tests/cli.rs`: `lughac spec` prints `SPEC` exactly and exits 0; extra arguments exit 2.
+- `tests/spec.rs`: extractor coverage with spot checks; every §10 program's stdout and exit at `-O0`/`-O2`; the rejected program's human and JSON diagnostics; milestone 2 exits 55.
+
+### DECISIONS MADE
+
+- PRP-016 discovery answers; MEMORY 18.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 5, PRP-016: `lughac spec` and the full §10 acceptance — the last PRP of v0. It covers:
-- `lughac spec` printing the embedded language specification (spec §9/§11). Discovery: plain text vs a pager, and whether it takes a section argument.
-- Every §10 program in `tests/programs/` with exact stdout and exit codes (several already exist under m1–m5; fill the gaps from `tests/common/spec_programs.rs`).
-- Removing the dead `CheckError::Unsupported`, `CodegenError::Unsupported` and the checker's uninhabited `Stop`, now that every v0 construct compiles.
+Lugha v0 is complete (tag `m5`). There is no next PRP in the spec. Candidates, each needing discovery and, for language changes, a spec change first (rule 1):
+- Housekeeping from TODO: README, CI (fmt/clippy/test with LLVM 21 and libgc), `.claude/settings.json` deny rules, where `setup.md` lives.
+- Deferred DECISION-004 and DECISION-010 (copy-on-write), now that measurements are possible.
+- v1 language work from spec §11/§12 (growable list, boxed/optional types, methods, generics, modules), starting with a spec draft.
 
-Done-when: every §10 program passes — then tag `m5`.
-
-See `TODO.md`.
+See `TODO.md` and `DECISIONS.md`.

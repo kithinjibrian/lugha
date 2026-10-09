@@ -136,6 +136,7 @@ cargo clippy --all-targets -- -D warnings     # lint
 cargo run -q -- build prog.la [-o out] [--emit=tokens|ast|ir] [-O0|-O2] [--diagnostics=human|json]
 cargo run -q -- run prog.la                   # exit code = the program's
 cargo run -q -- check prog.la                 # lex, parse, type-check
+cargo run -q -- spec                          # print the bundled language spec
 ```
 
 Run fmt, clippy and tests after every non-trivial change. A task is not done until all pass.
@@ -220,7 +221,7 @@ pub fn parse_number(src: &str) -> i64 {
 ├── runtime/         — lugha_rt.c: the C runtime, embedded in lughac (DECISION-009)
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
-│   ├── lib.rs       — compiler library; stage modules added per PRP
+│   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints)
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
@@ -228,7 +229,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── ast/         — mod.rs (items, types, statements), expr.rs (expressions, ExprId)
 │   ├── parser/      — mod.rs (parse, cursor, errors), recover.rs, describe.rs,
 │   │                  expr.rs (Pratt), primary.rs, stmt.rs, item.rs, sexp.rs, test_util.rs
-│   ├── check/       — mod.rs (check, Checked, CheckError), types.rs, env.rs (globals, main, scopes),
+│   ├── check/       — mod.rs (check, Checked), types.rs, env.rs (globals, main, scopes),
 │   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), stmt.rs,
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
 │   │                  (fields, indexing), array.rs (literals, for … of, E0507 guard), structs.rs
@@ -246,11 +247,12 @@ pub fn parse_number(src: &str) -> i64 {
 │                      render.rs (codespan, Report), json.rs (JSON lines)
 ├── tests/
 │   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
+│   ├── spec.rs      — spec §10 acceptance: programs and expected results extracted from lugha::SPEC
 │   ├── lexer.rs     — lexer public-API tests (every spec program lexes)
 │   ├── parser.rs    — parser public-API tests (every spec program parses)
 │   ├── codegen.rs   — builds and runs real executables at -O0 and -O2
 │   ├── cli.rs       — the lughac binary: commands, emit, diagnostics, exit codes
-│   ├── common/      — spec_programs.rs: the §10/§11 programs, shared by test crates
+│   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
 │   ├── programs/    — m1/ … m5/: <name>.la + .stdout/.exit/.stderr expectations
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, execute, report)
 ├── setup.md         — the guide this context system follows

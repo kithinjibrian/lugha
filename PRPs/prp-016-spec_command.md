@@ -1,6 +1,6 @@
 ## FEATURE: `lughac spec` prints the bundled language specification, every §10 program is tested straight from the spec, and the dead milestone stops are removed — completing v0.
 
-**Status:** approved 2026-10-09 — session 19
+**Status:** implemented 2026-10-09 — session 19 (branch `prp-016-spec_command`, awaiting merge)
 **Milestone:** 5, last of four PRPs. Done-when: every program in spec §10 passes, as extracted from the spec itself. Then tag `m5`.
 **Spec:** §9 (command-line interface, LLM-ready spec, JSON diagnostics line), §10 (example programs and their expected output), §11 (milestone 5 and the milestone 2 program)
 **Decisions:** DECISION-008 / MEMORY 12 (acceptance tests), MEMORY 13 (diagnostic rendering), PRP-015 amendments (remove the `Unsupported` paths in this PRP)
@@ -22,6 +22,12 @@
   - `check::check` returns the CLAUDE.md stage shape, `Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>>`. The `Unsupported` variants and `Stop` are gone.
 - Related existing code: `src/lib.rs`, `src/driver/{mod,pipeline}.rs`, `src/check/mod.rs`, `src/codegen/mod.rs`, `tests/common/spec_programs.rs`, `tests/{lexer,parser,cli}.rs`, `tests/support/`.
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 19)
+- **`check` signature:** the rewrite removed `Checking<T>` mechanically (signatures, `Ok(…)` wrappers, `?`). Six `?` operators on `Option`s were restored by hand. It landed as its own commit, as the PRP allowed.
+- **Codegen errors** now never carry a source span, so the driver's `codegen_failure` passes none.
+- **Rejected program:** its human diagnostics are compared with trailing whitespace trimmed; the JSON line is compared exactly.
+- **Extractor checks:** the test also spot-checks parsed expectations (hello's stdout, the two lines of the libc example, the rejected program's exit 1 and its E0401, milestone 2's 55), so a broken extractor can't pass vacuously.
 
 ### Discovery answers (session 19)
 1. `lughac spec` prints the **spec verbatim**: the Markdown file embedded with `include_str!`, unchanged, on stdout. It is one source of truth and about 12k tokens.
@@ -90,14 +96,14 @@
 
 ## TESTS TO WRITE
 
-- [ ] `tests/cli.rs`: `lughac spec` output equals `lugha::SPEC` and exits 0; `lughac spec extra` exits 2.
-- [ ] `tests/spec.rs`:
+- [x] `tests/cli.rs`: `lughac spec` output equals `lugha::SPEC` and exits 0; `lughac spec extra` exits 2.
+- [x] `tests/spec.rs`:
   - every extracted §10 program's stdout and exit at `-O0` and `-O2`;
   - the rejected program's human and JSON diagnostics;
   - the milestone 2 program exits 55;
   - the extractor finds hello, recursion, primes, centroid, calling C and the rejected program.
-- [ ] The lexer and parser tests still pass on the extracted programs.
-- [ ] The checker and driver tests are updated for the new `check` return type; all earlier tests pass.
+- [x] The lexer and parser tests still pass on the extracted programs.
+- [x] The checker and driver tests are updated for the new `check` return type; all earlier tests pass.
 
 ## ROLLBACK PLAN
 
@@ -105,12 +111,12 @@
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] `lughac spec` prints the bundled spec.
-- [ ] Every §10 program passes as extracted from the spec.
-- [ ] No `Unsupported` paths remain.
-- [ ] CLAUDE.md, CHANGELOG.md, TODO.md and MEMORY.md updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass.
+- [x] `lughac spec` prints the bundled spec.
+- [x] Every §10 program passes as extracted from the spec.
+- [x] No `Unsupported` paths remain.
+- [x] CLAUDE.md, CHANGELOG.md, TODO.md and MEMORY.md updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass.
 
 ## VALIDATION
 - `cargo fmt --check`

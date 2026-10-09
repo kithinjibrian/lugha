@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `lughac spec` prints the bundled language specification; the §10 programs are tested straight from it, and every one passes — **milestone 5 complete: Lugha v0 is complete**
 - Structs: declarations in any order, literals, field reads and writes, structs in arrays and arrays in structs, deep copies of structs holding arrays, and trees through `kids: Node[]` (E0307, E0308, E0413, E0414) — the §10 centroid program prints `centroid: 2.0, 1.0`
 - Arrays: `T[]` types, list and repeat literals, `.len`, bounds-checked element reads and writes, `for x of xs`, and value semantics with deep copies at the spec §4 copy sites (E0409 array case, E0411 iteration, E0412, E0507) — the §10 primes program prints 25
 - AI context system (CLAUDE.md, MEMORY.md, CONTEXT.md, DECISIONS.md, PRPs, code style guide)

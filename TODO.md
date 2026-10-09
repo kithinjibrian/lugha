@@ -58,9 +58,9 @@ Done when hello world, recursion and the libc example run.
 - [x] PRP-011: `lugha_rt.c` and intrinsics (`print`, `println`, `panic`, `to_string`, float formatting), string literals
 - [x] PRP-012: `extern fun` and integer overflow/division panics — libc example runs
 
-### Milestone 5 — Heap data
+### Milestone 5 — Heap data ✅
 Done when every §10 program passes.
 - [x] PRP-013: string operations (`+`, `==`/`!=`, `.len`, bounds-checked `s[i]`); GC allocation landed in PRP-011
 - [x] PRP-014: arrays, bounds checks, repeat literals, `for`-`of`, array copies — primes prints 25
 - [x] PRP-015: structs and their copies — centroid prints `centroid: 2.0, 1.0`
-- [ ] PRP-016: `lughac spec` and every §10 program — **milestone 5 done**; remove the now-dead `CheckError::Unsupported`/`CodegenError::Unsupported` and the checker's `Stop`
+- [x] PRP-016: `lughac spec` and every §10 program; dead `Unsupported` paths removed — **milestone 5 done**

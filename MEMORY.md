@@ -194,6 +194,16 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 18. The spec is the acceptance source (PRP-016)
+
+**Decision:** `lugha::SPEC` embeds the spec verbatim (`include_str!`). `lughac spec` prints it, and a broken pipe still exits 0. Tests extract the §10/§11 programs and their stated results from `SPEC` (`tests/common/spec_programs.rs`, `tests/spec.rs`). `check::check` returns the standard stage shape; no milestone stop mechanism remains.
+
+**Why:** One source of truth: the printed spec, the reference and the acceptance tests can't drift.
+
+**Rules out:** a condensed second copy of the spec; hand-maintained expected outputs for §10.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -203,6 +213,8 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- **Milestone 5 complete — Lugha v0 complete**: every §10 program passes, extracted from the spec; `lughac spec`
+- PRP-016 spec command: `lugha::SPEC`, `tests/spec.rs`, dead `Unsupported` paths removed
 - PRP-015 structs: `check/structs.rs`, `check/errors/` split by code range, `codegen/structs.rs` (layout, literals, fields, place addresses); centroid prints `centroid: 2.0, 1.0`
 - PRP-014 arrays: `check/array.rs`, `codegen/{array,copy}.rs`; element layout in `heap.rs`; deep copies per spec §4; primes prints 25
 - PRP-013 string operations: `check/access.rs`, `codegen/heap.rs` (integer address arithmetic — user chose it over an audited `unsafe` GEP), `lugha_rt_panic_bounds`; AST `Index` bracket span
@@ -222,18 +234,18 @@ Open questions live in `DECISIONS.md`, not here.
 - v0 language spec reviewed and fixed
 
 ### In Progress
-- Milestone 5: PRP-013, 014 and 015 done; `lughac spec` and the full §10 run (PRP-016) remain
+- Nothing
 
 ### Not Started
-- PRP-016 `lughac spec`
+- v1 work (spec §11 out-of-scope list) — needs spec changes first
 
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 5, PRP-016: `lughac spec` and the full §10 acceptance — the last PRP of v0. It covers:
-- `lughac spec` printing the embedded language specification (spec §9/§11). Discovery: plain text vs a pager, and whether it takes a section argument.
-- Every §10 program in `tests/programs/` with exact stdout and exit codes (several already exist under m1–m5; fill the gaps from `tests/common/spec_programs.rs`).
-- Removing the dead `CheckError::Unsupported`, `CodegenError::Unsupported` and the checker's uninhabited `Stop`, now that every v0 construct compiles.
+Lugha v0 is complete (tag `m5`). There is no next PRP in the spec. Candidates, each needing discovery and, for language changes, a spec change first (rule 1):
+- Housekeeping from TODO: README, CI (fmt/clippy/test with LLVM 21 and libgc), `.claude/settings.json` deny rules, where `setup.md` lives.
+- Deferred DECISION-004 and DECISION-010 (copy-on-write), now that measurements are possible.
+- v1 language work from spec §11/§12 (growable list, boxed/optional types, methods, generics, modules), starting with a spec draft.
 
-Done-when: every §10 program passes — then tag `m5`.
+See `TODO.md` and `DECISIONS.md`.
