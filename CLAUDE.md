@@ -219,10 +219,15 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
-│   └── lexer/       — mod.rs (lex, main loop), token.rs, number.rs, string.rs
+│   ├── lexer/       — mod.rs (lex, main loop), token.rs, number.rs, string.rs
+│   ├── ast/         — mod.rs (items, types, statements), expr.rs (expressions, ExprId)
+│   └── parser/      — mod.rs (parse, cursor, errors), recover.rs, describe.rs,
+│                      expr.rs (Pratt), primary.rs, stmt.rs, item.rs, sexp.rs, test_util.rs
 ├── tests/
 │   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
 │   ├── lexer.rs     — lexer public-API tests (every spec program lexes)
+│   ├── parser.rs    — parser public-API tests (every spec program parses)
+│   ├── common/      — spec_programs.rs: the §10/§11 programs, shared by test crates
 │   ├── programs/    — m1/ … m5/: <name>.la + .stdout/.exit/.stderr expectations
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, execute, report)
 ├── setup.md         — the guide this context system follows

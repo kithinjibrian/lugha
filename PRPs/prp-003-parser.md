@@ -1,6 +1,6 @@
 ## FEATURE: A parser that turns lexer tokens into an AST for the full §3 grammar, reporting several syntax errors per run with stable codes.
 
-**Status:** approved 2026-10-09 — session 6 (E0206 confirmed)
+**Status:** implemented 2026-10-09 — session 6 (branch `prp-003-parser`)
 **Milestone:** 1 (second pipeline stage; full syntax per CLAUDE.md rule 9)
 **Spec:** §3 (grammar, precedence, assignment, struct literals in conditions, block-like statements), §6 (expression bodies), §9 (error codes)
 **Decisions:** DECISION-002 (stage return type)
@@ -11,7 +11,17 @@
 ## CONTEXT
 
 - Starting state: `src/lexer/` produces `Vec<Token>` ending in `Eof`; `src/span.rs`, `src/diagnostic.rs` exist. `src/lexer/mod.rs` is at 299 lines — touch it only if unavoidable.
-- Ending state: `src/ast.rs`, `src/parser/{mod,item,stmt,expr,sexp}.rs`, `tests/parser.rs` created; `src/lib.rs` declares `ast` and `parser`; spec §3 amended.
+- Ending state: `src/ast/{mod,expr}.rs`, `src/parser/{mod,recover,describe,expr,primary,stmt,item,sexp,test_util}.rs`, `tests/parser.rs`, `tests/common/spec_programs.rs` created; `src/lib.rs` declares `ast` and `parser`; spec §3 amended.
+
+### Amendments during implementation (session 6)
+- **File split (user-approved).** After `cargo fmt`, four of the planned files were over 300 lines. Split by concern, with public paths unchanged:
+  - `ast` became a folder: `mod.rs` holds items, types and statements; `expr.rs` holds the expression nodes, re-exported.
+  - Recovery, the nesting limit and comma lists moved to `parser/recover.rs`.
+  - Primary expressions, struct literals, arrays and `if`/block expressions moved to `parser/primary.rs`.
+  - Test helpers moved to `parser/test_util.rs`.
+- **`parser/describe.rs`.** Token names for error messages. The lexer has no display text and is untouched.
+- **E0203 help** uses the actual operators with placeholder operands (`(a < b) && (b < c)`). The parser has no source text to quote real operands.
+- **Shared test programs.** The spec programs moved from `tests/lexer.rs` to `tests/common/spec_programs.rs` so the lexer and parser tests share one copy.
 - Related existing code: `src/lexer/token.rs` (`TokenKind`), `src/diagnostic.rs`.
 - Open decisions that must be resolved first: none.
 
@@ -141,29 +151,29 @@
 ## TESTS TO WRITE
 
 Unit tests (module bottoms), mostly as `source → s-expression` pairs:
-- [ ] Precedence: `2 + 3 * 4`, `a || b && c`, `a + b == c * d`, `-x as f64`, `!a && b`, `a * b as f64`, `-a * b`.
-- [ ] Left associativity: `a - b - c`, `a / b / c`.
-- [ ] Postfix chains: `a.b[i](c)`, `f(1, 2,)`, `pts[i].x`.
-- [ ] Literals: struct literal (trailing comma), `[]`, `[1, 2,]`, `[false; n + 1]`, strings, bools, floats.
-- [ ] `if` / `else if` / `else` as an expression in `let`.
-- [ ] Blocks: tail vs statement; `{ x * x; }` has no tail; `if c { a } - 1` is a statement followed by the tail `(neg 1)`; `if c { f(); };` records the semicolon.
-- [ ] Statements: `let`, `let mut x: i32 = 5;`, every assignment operator, `while`, `for i in 0..n`, `for (i in 0..n)`, `for x of xs`, `return;`, `return e;`, `break;`, `continue;`.
-- [ ] Conditions: `if (x > 0) {` and `if x > 0 {` give the same AST; `if p == (Point { x: 0.0 }) {}` parses; `if ok { Point { x: 1.0 } } else { o }` parses.
-- [ ] Items: fun with and without a return type, params with a trailing comma, the expression body equals the block form, extern, struct, array types `i64[][]`.
-- [ ] E0201: missing `;`, `expected expression, found )`, top-level `let` with help, lone `;`.
-- [ ] E0202: `fun main() { (1 + 2`, with the primary span on the opener.
-- [ ] E0203: `a < b < c`, `a == b != c` with help; `(a == b) == c` is fine.
-- [ ] E0204: `a = b = c;`, `if (x = 1) {}`, `f(x = 1);`.
-- [ ] E0205: `if p == Point { x: 0.0, y: 0.0 } { }`.
-- [ ] E0206: 300 nested `(` gives one E0206 and no stack overflow.
-- [ ] Recovery: three bad statements in one function plus a following good function give exactly 3 diagnostics, and the good function's body is never reported.
-- [ ] Ids: dense and unique across a program (`expr_count` equals the number of `Expr` nodes).
-- [ ] Spans: a binary expression's span covers both operands.
+- [x] Precedence: `2 + 3 * 4`, `a || b && c`, `a + b == c * d`, `-x as f64`, `!a && b`, `a * b as f64`, `-a * b`.
+- [x] Left associativity: `a - b - c`, `a / b / c`.
+- [x] Postfix chains: `a.b[i](c)`, `f(1, 2,)`, `pts[i].x`.
+- [x] Literals: struct literal (trailing comma), `[]`, `[1, 2,]`, `[false; n + 1]`, strings, bools, floats.
+- [x] `if` / `else if` / `else` as an expression in `let`.
+- [x] Blocks: tail vs statement; `{ x * x; }` has no tail; `if c { a } - 1` is a statement followed by the tail `(neg 1)`; `if c { f(); };` records the semicolon.
+- [x] Statements: `let`, `let mut x: i32 = 5;`, every assignment operator, `while`, `for i in 0..n`, `for (i in 0..n)`, `for x of xs`, `return;`, `return e;`, `break;`, `continue;`.
+- [x] Conditions: `if (x > 0) {` and `if x > 0 {` give the same AST; `if p == (Point { x: 0.0 }) {}` parses; `if ok { Point { x: 1.0 } } else { o }` parses.
+- [x] Items: fun with and without a return type, params with a trailing comma, the expression body equals the block form, extern, struct, array types `i64[][]`.
+- [x] E0201: missing `;`, `expected expression, found )`, top-level `let` with help, lone `;`.
+- [x] E0202: `fun main() { (1 + 2`, with the primary span on the opener.
+- [x] E0203: `a < b < c`, `a == b != c` with help; `(a == b) == c` is fine.
+- [x] E0204: `a = b = c;`, `if (x = 1) {}`, `f(x = 1);`.
+- [x] E0205: `if p == Point { x: 0.0, y: 0.0 } { }`.
+- [x] E0206: 300 nested `(` gives one E0206 and no stack overflow.
+- [x] Recovery: three bad statements in one function plus a following good function give exactly 3 diagnostics, and the good function's body is never reported.
+- [x] Ids: dense and unique across a program (`expr_count` equals the number of `Expr` nodes).
+- [x] Spans: a binary expression's span covers both operands.
 
 Integration (`tests/parser.rs`):
-- [ ] Every spec §10/§11 program parses with no diagnostics (lex, then parse).
-- [ ] The milestone 1 program prints exactly `(fun main () i32 (block (+ 2 (* 3 4))))`.
-- [ ] Parsing never panics on any token prefix of a large sample (truncate the token list and append `Eof`).
+- [x] Every spec §10/§11 program parses with no diagnostics (lex, then parse).
+- [x] The milestone 1 program prints exactly `(fun main () i32 (block (+ 2 (* 3 4))))`.
+- [x] Parsing never panics on any token prefix of a large sample (truncate the token list and append `Eof`).
 
 ## ROLLBACK PLAN
 

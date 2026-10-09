@@ -235,6 +235,60 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — rule 9, file tree, progress
 
 Branch: main → prp-003-parser
 
+### WHAT WAS DONE
+
+Discovery for PRP-003, with the recommended answer accepted every time:
+- An owned AST tree with dense `ExprId`s.
+- Recovery at statement and item boundaries.
+- Codes E0201–E0205, plus E0206 (nesting limit 256), which I proposed and the user confirmed.
+- An optional `;` after block-like statements; the struct-literal restriction lifts inside blocks; a lone `;` is an error.
+- An S-expression printer.
+
+Implemented test-first: 25 failing tests against stubs, then the parser. All passed on the first full run.
+
+After `cargo fmt`, four files exceeded 300 lines. The user approved a split by concern: `ast/` folder, `parser/recover.rs`, `parser/primary.rs`, `parser/test_util.rs`. The PRP records it, along with `describe.rs`, the E0203 help wording and the shared `tests/common/spec_programs.rs`. Spec §3 now records the grammar clarifications and the E0201–E0206 table.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/ast/mod.rs, src/ast/expr.rs         — AST (items, types, statements; expressions, ExprId, ops)
+src/parser/mod.rs                       — parse(), token cursor, mk, error reporting, close()
+src/parser/recover.rs                   — comma lists, nesting limit, struct-literal mode, sync
+src/parser/describe.rs                  — token names for messages
+src/parser/expr.rs                      — Pratt loop, prefix, postfix + 7 tests
+src/parser/primary.rs                   — literals, names, struct literals, arrays, if/block + 4 tests
+src/parser/stmt.rs                      — blocks and statements + 7 tests
+src/parser/item.rs                      — items and types + 5 tests
+src/parser/sexp.rs                      — S-expression printer + 2 tests + doctest
+src/parser/test_util.rs                 — test helpers
+src/lib.rs                              — declares ast, parser
+tests/parser.rs                         — spec programs parse; M1 tree; no panic on token prefixes
+tests/common/spec_programs.rs           — shared spec programs (moved from tests/lexer.rs)
+tests/lexer.rs                          — uses the shared programs
+docs/specs/…Specification.md            — §3 clarifications + parse error table
+PRPs/prp-003-parser.md                  — new PRP; implemented; amendments recorded
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, shipped item, progress
+```
+
+### TESTS WRITTEN
+
+- Precedence, associativity, postfix chains, every literal form, if/else chains, tail vs statement, let and all assignment operators, loops and jumps, optional parentheses, items, expression bodies, externs, structs, array types.
+- Each of E0201–E0206, including no stack overflow on 300 nested parens or 5,000 prefix minuses. Recovery at statements (3 errors) and items (2 errors). Dense ids and spans.
+- Integration: all spec programs parse; the exact milestone 1 tree; no panic on any token prefix.
+
+### DECISIONS MADE
+
+- File split by concern (user-approved).
+- `Type` derives `Eq` (needed because `TypeKind` holds `Box<Type>`).
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Branch `prp-003-parser` not yet merged into `main`.
+
 ---
 
 ## NEXT SESSION START POINT
