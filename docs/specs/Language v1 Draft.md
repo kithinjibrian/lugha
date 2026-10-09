@@ -12,7 +12,9 @@ This draft lists only what changes, in the order of the v0 sections. Everything 
    - It adds a built-in **`Option<T>`** and **recursive enums**.
    - User generics, modules and closures wait for v2.
 2. **Form:** a delta draft; v0 stays authoritative until v1 ships.
-3. **Enums:** positional payloads, built through the enum name with `.` (`Shape.Circle(2.0)`). There is no `::`.
+3. **Enums:** positional payloads, built through the enum name with `.` (`Shape.Circle(2.0)`). There is no `::` path syntax. Two rules make `.` unambiguous and forgiving (added after review):
+   - A local may not be named like a type (E0311), so `Shape.Circle` always means the type `Shape`.
+   - `::` is lexed only to report E0207 "write `Shape.Circle`", for code written with Rust habits.
 4. **`match`:**
    - It is an expression, with flat patterns: a variant with names or `_` for its payloads, an integer, `bool` or string literal, or `_`.
    - It must be exhaustive. There are no guards and no nested patterns.
@@ -41,6 +43,7 @@ This draft lists only what changes, in the order of the v0 sections. Everything 
   ```
 
 - **Operators and punctuation** gain `=>`. In type position, `<` and `>` also delimit `Option`'s type argument; they are the existing tokens.
+- **`::` is lexed as a token only so the parser can reject it helpfully.** Any use of it is E0207 "`::` is not Lugha syntax", with help "write `Shape.Circle`". The parser recovers as if `.` had been written, so later errors are still found.
 - `Option`, `Some` and `None` are **not keywords**. They are built-in global names, reserved like the intrinsics (§6), so a program can't define them.
 
 ## §3 Grammar — changes
@@ -122,7 +125,7 @@ primary      = … | "self" ;
   - With `mut self`, the call needs `x` to be a place with a `let mut` root (E0501). Assignments to `self`'s fields and elements change the caller's place in place, and `mut self` may be reassigned whole.
 - **Associated functions:** a function without a receiver is called as `T.f(args)`.
 - **Errors:** an unknown method or associated function is **E0415** "no method `m` on `T`". This is E0410's counterpart for calls.
-- **Name resolution for `T.f`:** if `T` is a local in scope, `.f` is a field or method of that value; otherwise `T` must name a type.
+- **Name resolution for `T.f`:** a local may never be named like a type. `let`, parameters, `for` variables and `match` bindings named after a struct, an enum or `Option` are **E0311** "`Shape` is the name of a type", with help "rename the variable". So a name before `.` is either a type, meaning a variant or associated function, or a local, meaning a field or method of its value; it is never ambiguous.
 - **Built-ins:** arrays have the built-in methods above and no others, and no `impl` may target a built-in type (E0305).
 
 **Copy table (§4) — additions.**
@@ -183,6 +186,8 @@ primary      = … | "self" ;
 | --- | --- | --- |
 | E0309 | Variant declared twice in one enum | `enum E { A, A }` |
 | E0310 | Method declared twice for a type, or named like a field | `impl P { fun x(self) {} }` where `P` has field `x` |
+| E0311 | A local named like a type | `let Shape = 3;`, `fun f(Point: i64)` |
+| E0207 | `::` used as a path separator | `Shape::Circle(1.0)` — help: write `Shape.Circle(1.0)` |
 | E0415 | No such method, associated function or variant | `p.size()`, `Shape.Circel(1.0)` |
 | E0416 | Wrong number of payloads in a constructor or pattern | `Shape.Rect(1.0)`, `Circle(a, b) => …` |
 | E0417 | Non-exhaustive `match` | `match s { Circle(r) => r }` with more variants |
