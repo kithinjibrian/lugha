@@ -10,8 +10,8 @@ use lugha::codegen::{self, OptLevel};
 use lugha::link::{self, LinkError};
 use lugha::{check, lexer, parser};
 
-/// SIGILL, raised by `llvm.trap` on x86-64 (`ud2`).
-const SIGILL: i32 = 4;
+/// The exit status of a panic (spec §5).
+const PANIC: i32 = 101;
 
 /// A temporary directory removed on drop.
 struct TempDir(PathBuf);
@@ -84,23 +84,25 @@ fn division_truncates_and_remainder_takes_the_dividends_sign() {
 }
 
 #[test]
-fn arithmetic_wraps_until_milestone_4() {
-    // i64::MAX + 1 wraps to MIN; MIN / 2^62 = -2, i.e. exit 254.
-    assert_eq!(
-        exit_code("let x: i64 = 9223372036854775807; ((x + 1) / 4611686018427387904) as i32"),
-        Some(254)
-    );
+fn integer_overflow_panics() {
+    for body in [
+        "let x: i64 = 9223372036854775807; (x + 1) as i32",
+        "let x: i32 = -2147483648; let y = -x; y",
+        "let b: u8 = 16; (b * b) as i32",
+    ] {
+        assert_eq!(exit_code(body), Some(PANIC), "{body}");
+    }
 }
 
 #[test]
-fn bad_divisions_trap() {
+fn bad_divisions_panic() {
     for body in [
         "1 / 0",
         "1 % 0",
         "let m: i64 = -9223372036854775808; (m / -1) as i32",
     ] {
         let status = run(&format!("fun main(): i32 {{ {body} }}"));
-        assert_eq!(status.signal(), Some(SIGILL), "{body}: {status:?}");
+        assert_eq!(status.code(), Some(PANIC), "{body}: {status:?}");
     }
 }
 

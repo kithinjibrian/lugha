@@ -1,0 +1,6 @@
+// u8 arithmetic overflows at 8 bits and panics (spec §5): 250 + 10 > 255.
+fun main(): i32 {
+    let b: u8 = 250;
+    let c = b + 10;
+    c as i32
+}

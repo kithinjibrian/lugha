@@ -12,6 +12,7 @@ Never deleted. Older entries are never modified.
 - AI context system (CLAUDE.md, MEMORY.md, CONTEXT.md, DECISIONS.md, PRPs, code style guide)
 - Lugha v0 language specification (`docs/specs/`)
 - `lughac` crate skeleton (builds against LLVM 21)
+- `extern fun` for calling C, and integer overflow and division panics at the operator (`panic: integer overflow at file:line:col`, exit 101) — **milestone 4 complete**
 - C runtime and the `print`, `println`, `panic` and `to_string` intrinsics, with spec float formatting; string literals as values — programs can print
 - Real `i32`, `i64`, `u8`, `f64` and `bool` in generated code, with spec §4 casts (saturating float-to-int) — **milestone 3 complete**
 - Checker rules for casts, mutability, assignment targets, missing returns (with "remove this semicolon"), `break`/`continue` outside loops and discarded `if` values (E0408, E0501–E0505), plus the unreachable-code warning W0101

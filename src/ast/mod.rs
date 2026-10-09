@@ -147,9 +147,11 @@ pub enum StmtKind {
         ty: Option<Type>,
         init: Expr,
     },
-    /// `place op value;` — the checker verifies `place` is a place expression.
+    /// `place op value;` — the checker verifies `place` is a place expression;
+    /// `op_span` is the operator, where overflow panics point.
     Assign {
         op: AssignOp,
+        op_span: Span,
         place: Expr,
         value: Expr,
     },

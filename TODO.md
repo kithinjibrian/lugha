@@ -52,11 +52,11 @@ Done when the §10 rejected program reports E0401 in both formats.
 - [x] PRP-010: codegen on real types (i32/i64/u8/f64/bool, §4 casts); overflow and division checks moved to milestone 4 (spec §11)
 - [x] Diagnostics: error codes, human + JSON (PRP-005), `lughac check` and "remove this semicolon" (PRP-008/009)
 
-### Milestone 4 — Runtime and C
+### Milestone 4 — Runtime and C ✅
 Done when hello world, recursion and the libc example run.
 - [x] Resolve DECISION-009 — runtime embedded as source, compiled in the link step
 - [x] PRP-011: `lugha_rt.c` and intrinsics (`print`, `println`, `panic`, `to_string`, float formatting), string literals
-- [ ] PRP-012: `extern fun` and integer overflow/division panics — done-when: the libc example runs
+- [x] PRP-012: `extern fun` and integer overflow/division panics — libc example runs
 
 ### Milestone 5 — Heap data
 Done when every §10 program passes.

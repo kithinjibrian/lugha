@@ -38,12 +38,9 @@ impl<'ctx> Lowerer<'ctx> {
                         .expect(POSITIONED)
                         .into()
                 } else {
-                    let zero = int_type(self.context, ty).const_zero();
-                    let value = value.into_int_value();
-                    self.builder
-                        .build_int_sub(zero, value, "neg")
-                        .expect(POSITIONED)
-                        .into()
+                    // Checked `0 - x`: negating the minimum overflows (spec §5).
+                    let zero = int_type(self.context, ty).const_zero().into();
+                    self.arithmetic(BinOp::Sub, ty, zero, value, expr.span.start)
                 }
             }
             ExprKind::Unary(UnOp::Not, operand) => {
@@ -53,10 +50,10 @@ impl<'ctx> Lowerer<'ctx> {
                     .expect(POSITIONED)
                     .into()
             }
-            ExprKind::Binary(op @ (BinOp::And | BinOp::Or), lhs, rhs) => {
+            ExprKind::Binary(op @ (BinOp::And | BinOp::Or), _, lhs, rhs) => {
                 self.short_circuit(*op, lhs, rhs)?
             }
-            ExprKind::Binary(op, lhs, rhs) => self.binary(*op, lhs, rhs)?,
+            ExprKind::Binary(op, op_span, lhs, rhs) => self.binary(*op, op_span.start, lhs, rhs)?,
             ExprKind::Cast(inner, _) => self.cast(expr, inner)?,
             ExprKind::Call(_, args) => return self.call(expr, args),
             ExprKind::If { cond, then, else_ } => {

@@ -1,0 +1,14 @@
+// C functions with each allowed parameter type; `strlen` must see the
+// string's bytes, not its length header (spec §8).
+extern fun abs(x: i32): i32;
+extern fun llabs(x: i64): i64;
+extern fun toupper(c: i32): i32;
+extern fun strlen(s: string): i64;
+
+fun main() {
+    let a: i32 = -5;
+    println(abs(a));
+    println(llabs(-9000000000));
+    println(toupper(97));
+    println(strlen("hello"));
+}

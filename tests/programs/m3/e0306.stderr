@@ -1,0 +1,6 @@
+error[E0306]: `lugha_rt_alloc`: names starting with `lugha_` are reserved for the compiler and runtime
+  --> tests/programs/m3/e0306.la:1:12
+  |
+1 | extern fun lugha_rt_alloc(size: i64): i64;
+  |            ^^^^^^^^^^^^^^
+

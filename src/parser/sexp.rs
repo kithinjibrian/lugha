@@ -100,7 +100,9 @@ fn stmt(stmt: &Stmt) -> String {
                 .unwrap_or_default();
             format!("(let{m} {}{t} {})", name.name, expr(init))
         }
-        StmtKind::Assign { op, place, value } => {
+        StmtKind::Assign {
+            op, place, value, ..
+        } => {
             format!("({} {} {})", op.symbol(), expr(place), expr(value))
         }
         StmtKind::Expr {
@@ -141,7 +143,7 @@ pub fn expr(expr: &Expr) -> String {
         ExprKind::Name(name) => name.clone(),
         ExprKind::Unary(UnOp::Neg, e) => list("neg", &[e]),
         ExprKind::Unary(UnOp::Not, e) => list("not", &[e]),
-        ExprKind::Binary(op, l, r) => list(op.symbol(), &[l, r]),
+        ExprKind::Binary(op, _, l, r) => list(op.symbol(), &[l, r]),
         ExprKind::Cast(e, t) => format!("(as {} {})", self::expr(e), ty(t)),
         ExprKind::Call(callee, args) => {
             let mut items = vec![&**callee];

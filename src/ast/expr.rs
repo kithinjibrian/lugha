@@ -28,7 +28,8 @@ pub enum ExprKind {
     /// A variable, function or intrinsic name.
     Name(String),
     Unary(UnOp, Box<Expr>),
-    Binary(BinOp, Box<Expr>, Box<Expr>),
+    /// `lhs op rhs`; the `Span` is the operator token, where overflow panics point.
+    Binary(BinOp, Span, Box<Expr>, Box<Expr>),
     /// `expr as Type`.
     Cast(Box<Expr>, Type),
     /// `callee(args)`.

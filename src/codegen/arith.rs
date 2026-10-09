@@ -1,11 +1,12 @@
-//! Binary arithmetic and comparisons at each type's width (spec §4, §5).
+//! Binary arithmetic and comparisons at each type's width (spec §4, §5, §9).
 //!
-//! Integers wrap (no `nsw`) and integer `/ %` trap on a bad divisor until
-//! milestone 4 adds panics. `f64` follows IEEE 754: no traps, and `!=` is
-//! true when either side is NaN.
+//! Integer `+ - *` are checked with `llvm.{s,u}{add,sub,mul}.with.overflow`
+//! and `/ %` check for zero and (signed) `MIN / -1`; a failure panics with
+//! `integer overflow` or `division by zero` at the operator. `f64` follows
+//! IEEE 754: no panics, and `!=` is true when either side is NaN.
 
 use inkwell::intrinsics::Intrinsic;
-use inkwell::values::{BasicValueEnum, IntValue};
+use inkwell::values::{BasicValueEnum, IntValue, ValueKind};
 use inkwell::{FloatPredicate, IntPredicate};
 
 use super::CodegenError;
@@ -15,10 +16,12 @@ use crate::ast::{BinOp, Expr};
 use crate::check::Type;
 
 impl<'ctx> Lowerer<'ctx> {
-    /// `lhs op rhs` for arithmetic and comparison operators.
+    /// `lhs op rhs` for arithmetic and comparison operators; `at` is the
+    /// operator's source offset, where a panic points.
     pub(super) fn binary(
         &mut self,
         op: BinOp,
+        at: usize,
         lhs: &Expr,
         rhs: &Expr,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
@@ -33,20 +36,22 @@ impl<'ctx> Lowerer<'ctx> {
             BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge | BinOp::Eq | BinOp::Ne => {
                 self.compare(op, ty, a, b).into()
             }
-            _ => self.arithmetic(op, ty, a, b),
+            _ => self.arithmetic(op, ty, a, b, at),
         })
     }
 
-    /// `+ - * / %` on values of type `ty`.
+    /// `+ - * / %` on values of type `ty`, panicking at `at` on integer
+    /// overflow or a bad divisor.
     pub(super) fn arithmetic(
         &mut self,
         op: BinOp,
         ty: Type,
         a: BasicValueEnum<'ctx>,
         b: BasicValueEnum<'ctx>,
+        at: usize,
     ) -> BasicValueEnum<'ctx> {
-        let builder = &self.builder;
         if ty == Type::F64 {
+            let builder = &self.builder;
             let (a, b) = (a.into_float_value(), b.into_float_value());
             return match op {
                 BinOp::Add => builder.build_float_add(a, b, "fadd"),
@@ -62,11 +67,9 @@ impl<'ctx> Lowerer<'ctx> {
         let (a, b) = (a.into_int_value(), b.into_int_value());
         let signed = is_signed(ty);
         match op {
-            BinOp::Add => builder.build_int_add(a, b, "add").expect(POSITIONED).into(),
-            BinOp::Sub => builder.build_int_sub(a, b, "sub").expect(POSITIONED).into(),
-            BinOp::Mul => builder.build_int_mul(a, b, "mul").expect(POSITIONED).into(),
+            BinOp::Add | BinOp::Sub | BinOp::Mul => self.checked(op, a, b, signed, at).into(),
             BinOp::Div | BinOp::Rem => {
-                self.trap_on_bad_divisor(a, b, signed);
+                self.check_divisor(a, b, signed, at);
                 let builder = &self.builder;
                 let result = match (op, signed) {
                     (BinOp::Div, true) => builder.build_int_signed_div(a, b, "div"),
@@ -78,6 +81,86 @@ impl<'ctx> Lowerer<'ctx> {
             }
             _ => unreachable!("only arithmetic operators reach here"),
         }
+    }
+
+    /// `a op b` through `llvm.{s,u}{add,sub,mul}.with.overflow.iN`.
+    fn checked(
+        &mut self,
+        op: BinOp,
+        a: IntValue<'ctx>,
+        b: IntValue<'ctx>,
+        signed: bool,
+        at: usize,
+    ) -> IntValue<'ctx> {
+        let operation = match op {
+            BinOp::Add => "add",
+            BinOp::Sub => "sub",
+            _ => "mul",
+        };
+        let name = format!(
+            "llvm.{}{operation}.with.overflow",
+            if signed { "s" } else { "u" }
+        );
+        let intrinsic = Intrinsic::find(&name)
+            .and_then(|i| i.get_declaration(&self.module, &[a.get_type().into()]))
+            .expect("LLVM 21 provides the overflow intrinsics");
+        let call = self
+            .builder
+            .build_call(intrinsic, &[a.into(), b.into()], "checked")
+            .expect(POSITIONED);
+        let ValueKind::Basic(pair) = call.try_as_basic_value() else {
+            unreachable!("overflow intrinsics return {{ iN, i1 }}")
+        };
+        let pair = pair.into_struct_value();
+        let value = self
+            .builder
+            .build_extract_value(pair, 0, "value")
+            .expect(POSITIONED)
+            .into_int_value();
+        let overflow = self
+            .builder
+            .build_extract_value(pair, 1, "overflow")
+            .expect(POSITIONED)
+            .into_int_value();
+        self.panic_if(overflow, "integer overflow", at);
+        value
+    }
+
+    /// Panics on a zero divisor, and on signed `MIN / -1`, which overflows (spec §5).
+    fn check_divisor(&mut self, a: IntValue<'ctx>, b: IntValue<'ctx>, signed: bool, at: usize) {
+        let int = a.get_type();
+        let eq = |this: &Self, x, y, name| {
+            this.builder
+                .build_int_compare(IntPredicate::EQ, x, y, name)
+                .expect(POSITIONED)
+        };
+        let zero = eq(self, b, int.const_zero(), "div.zero");
+        self.panic_if(zero, "division by zero", at);
+        if signed {
+            let min = int.const_int(1 << (int.get_bit_width() - 1), false);
+            let (is_min, is_minus_one) = (
+                eq(self, a, min, "div.min"),
+                eq(self, b, int.const_all_ones(), "div.minus_one"),
+            );
+            let overflow = self
+                .builder
+                .build_and(is_min, is_minus_one, "div.overflow")
+                .expect(POSITIONED);
+            self.panic_if(overflow, "integer overflow", at);
+        }
+    }
+
+    /// Branches to a panic with `message` at `at` when `condition` holds,
+    /// leaving the builder on the path where it doesn't.
+    fn panic_if(&mut self, condition: IntValue<'ctx>, message: &str, at: usize) {
+        let panic_block = self.append("panic");
+        let ok_block = self.append("ok");
+        self.builder
+            .build_conditional_branch(condition, panic_block, ok_block)
+            .expect(POSITIONED);
+        self.builder.position_at_end(panic_block);
+        self.emit_panic(message, at);
+        self.builder.position_at_end(ok_block);
     }
 
     /// Comparisons: signed for `i32`/`i64`, unsigned for `u8`, ordered for
@@ -122,42 +205,6 @@ impl<'ctx> Lowerer<'ctx> {
             .build_int_compare(predicate, a, b, "icmp")
             .expect(POSITIONED)
     }
-
-    /// Branches to `llvm.trap` on a zero divisor, or (signed) `MIN / -1` at
-    /// this width, leaving the builder where dividing is safe.
-    fn trap_on_bad_divisor(&mut self, lhs: IntValue<'ctx>, rhs: IntValue<'ctx>, signed: bool) {
-        let int = lhs.get_type();
-        let b = &self.builder;
-        let eq = |x, y, name| {
-            b.build_int_compare(IntPredicate::EQ, x, y, name)
-                .expect(POSITIONED)
-        };
-        let mut bad = eq(rhs, int.const_zero(), "div.zero");
-        if signed {
-            let min = int.const_int(1 << (int.get_bit_width() - 1), false);
-            let overflow = b
-                .build_and(
-                    eq(lhs, min, "div.min"),
-                    eq(rhs, int.const_all_ones(), "div.minus_one"),
-                    "div.overflow",
-                )
-                .expect(POSITIONED);
-            bad = b.build_or(bad, overflow, "div.bad").expect(POSITIONED);
-        }
-        let trap_block = self.append("div.trap");
-        let ok_block = self.append("div.ok");
-        self.builder
-            .build_conditional_branch(bad, trap_block, ok_block)
-            .expect(POSITIONED);
-
-        self.builder.position_at_end(trap_block);
-        let trap = Intrinsic::find("llvm.trap")
-            .and_then(|t| t.get_declaration(&self.module, &[]))
-            .expect("LLVM 21 provides the non-overloaded llvm.trap intrinsic");
-        self.builder.build_call(trap, &[], "").expect(POSITIONED);
-        self.builder.build_unreachable().expect(POSITIONED);
-        self.builder.position_at_end(ok_block);
-    }
 }
 
 #[cfg(test)]
@@ -165,29 +212,37 @@ mod tests {
     use crate::codegen::test_util::ir;
 
     #[test]
-    fn integers_use_their_width_and_wrap() {
-        let ir = ir("fun main(): i32 { let x: i32 = 1; x + 2 }");
-        assert!(ir.contains("add i32"), "{ir}");
-        assert!(!ir.contains("nsw") && !ir.contains("nuw"), "{ir}");
+    fn integer_arithmetic_is_checked_at_its_width() {
+        let ir = ir("fun main(): i32 { let x: i32 = 1; let b: u8 = 2; let c = b * b; x + 2 }");
+        assert!(ir.contains("@llvm.sadd.with.overflow.i32"), "{ir}");
+        assert!(ir.contains("@llvm.umul.with.overflow.i8"), "{ir}");
+        assert!(ir.contains("@lugha_rt_panic"), "{ir}");
+        assert!(!ir.contains("llvm.trap"), "{ir}");
     }
 
     #[test]
-    fn u8_divides_unsigned_with_only_a_zero_guard() {
+    fn u8_divides_unsigned_with_only_a_zero_check() {
         let ir = ir("fun main() { let a: u8 = 200; let b = a / 3; let c = a < b; }");
         assert!(ir.contains("udiv i8"), "{ir}");
         assert!(ir.contains("icmp ult i8"), "{ir}");
-        assert!(ir.contains("@llvm.trap()"), "{ir}");
-        assert!(!ir.contains("div.min"), "no MIN guard for unsigned: {ir}");
+        assert!(ir.contains("division by zero"), "{ir}");
+        assert!(!ir.contains("div.min"), "no MIN check for unsigned: {ir}");
     }
 
     #[test]
-    fn signed_division_guards_min_at_its_width() {
+    fn signed_division_checks_min_at_its_width() {
         let ir = ir("fun main() { let a: i32 = 7; let b = a / 2; }");
         assert!(ir.contains("sdiv i32"), "{ir}");
         assert!(
             ir.contains("icmp eq i32") && ir.contains(", -2147483648"),
-            "MIN guard at 32 bits: {ir}"
+            "MIN check at 32 bits: {ir}"
         );
+    }
+
+    #[test]
+    fn panics_point_at_the_operator() {
+        let ir = ir("fun main() {\n    let x: i64 = 1;\n    let y = x  *  x;\n}");
+        assert!(ir.contains("i64 3, i64 16)"), "line 3, column of `*`: {ir}");
     }
 
     #[test]
@@ -199,6 +254,6 @@ mod tests {
         assert!(ir.contains("fcmp olt double"), "{ir}");
         assert!(ir.contains("fcmp une double"), "{ir}");
         assert!(ir.contains("frem double"), "{ir}");
-        assert!(!ir.contains("llvm.trap"), "{ir}");
+        assert!(!ir.contains("lugha_rt_panic"), "{ir}");
     }
 }

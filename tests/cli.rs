@@ -74,18 +74,21 @@ fn build_writes_the_file_stem_or_dash_o() {
 fn run_passes_the_exit_code_through() {
     let dir = TempDir::with(&[
         ("arith.la", ARITH.as_bytes()),
-        ("div.la", b"fun main(): i32 { 1 / 0 }"),
+        ("abort.la", b"extern fun abort();\nfun main() { abort(); }"),
     ]);
     assert_eq!(lughac(&dir.0, &["run", "arith.la"]).status.code(), Some(14));
     assert_eq!(
         lughac(&dir.0, &["run", "-O2", "arith.la"]).status.code(),
         Some(14)
     );
-    // 128 + SIGILL, as a shell would report it.
-    assert_eq!(lughac(&dir.0, &["run", "div.la"]).status.code(), Some(132));
+    // 128 + SIGABRT, as a shell would report it.
+    assert_eq!(
+        lughac(&dir.0, &["run", "abort.la"]).status.code(),
+        Some(134)
+    );
     assert_eq!(
         dir.entries(),
-        ["arith.la", "div.la"],
+        ["abort.la", "arith.la"],
         "run leaves no files behind"
     );
 }
@@ -192,13 +195,16 @@ fn unsupported_constructs_are_internal_errors() {
 
 #[test]
 fn signals_are_not_exit_codes() {
-    // Sanity check of the SIGILL mapping used above: the program itself dies by signal.
-    let dir = TempDir::with(&[("div.la", b"fun main(): i32 { 1 / 0 }")]);
-    assert_eq!(lughac(&dir.0, &["build", "div.la"]).status.code(), Some(0));
-    let status = Command::new(dir.0.join("div"))
+    // Sanity check of the mapping used above: the program itself dies by SIGABRT (6).
+    let dir = TempDir::with(&[("abort.la", b"extern fun abort();\nfun main() { abort(); }")]);
+    assert_eq!(
+        lughac(&dir.0, &["build", "abort.la"]).status.code(),
+        Some(0)
+    );
+    let status = Command::new(dir.0.join("abort"))
         .status()
         .expect("binary runs");
-    assert_eq!(status.signal(), Some(4));
+    assert_eq!(status.signal(), Some(6));
 }
 
 #[test]

@@ -91,7 +91,7 @@ impl Checker {
             ExprKind::Bool(_) => Ok(Type::Bool),
             ExprKind::Name(name) => self.name(name, expr.span),
             ExprKind::Unary(op, operand) => self.unary(*op, operand, expr, expect),
-            ExprKind::Binary(op, lhs, rhs) => self.binary(expr, *op, lhs, rhs, expect),
+            ExprKind::Binary(op, _, lhs, rhs) => self.binary(expr, *op, lhs, rhs, expect),
             ExprKind::Call(callee, args) => self.call(expr, callee, args),
             ExprKind::If { cond, then, else_ } => {
                 self.if_expr(expr, cond, then, else_.as_deref(), expect)

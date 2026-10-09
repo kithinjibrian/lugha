@@ -107,11 +107,12 @@ impl Parser<'_> {
             _ => {
                 let expr = self.expr()?;
                 if let Some(op) = assign_op(self.peek()) {
-                    self.bump();
+                    let op_span = self.bump();
                     let value = self.expr()?;
                     self.expect(&TokenKind::Semi)?;
                     StmtKind::Assign {
                         op,
+                        op_span,
                         place: expr,
                         value,
                     }
@@ -274,5 +275,18 @@ mod tests {
             "fun a() {\n    let x = 1 +;\n    let y = (2;\n    foo(;\n}\nfun b() { let ok = 1; }";
         let codes: Vec<_> = errors(src).into_iter().map(|(code, _)| code).collect();
         assert_eq!(codes, ["E0201", "E0201", "E0201"]);
+    }
+
+    #[test]
+    fn compound_assignment_records_its_operator_span() {
+        let src = "fun t() { x += 1; }";
+        let p = crate::parser::test_util::parse_src(src).unwrap();
+        let crate::ast::Item::Fun(f) = &p.items[0] else {
+            unreachable!()
+        };
+        let crate::ast::StmtKind::Assign { op_span, .. } = &f.body.stmts[0].kind else {
+            panic!()
+        };
+        assert_eq!(&src[op_span.start..op_span.end], "+=");
     }
 }

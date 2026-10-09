@@ -167,11 +167,13 @@ Open questions live in `DECISIONS.md`, not here.
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 4 complete**: C runtime, intrinsics, `extern fun`, overflow/division panics; `m4/` programs pass
 - **Milestone 3 complete**: type checker (E03xx–E05xx, W0101), real-typed codegen, §4 casts; `m3/` programs pass
 - **Milestone 2 complete**: functions, recursion, locals, control flow; `m2/` acceptance programs pass (§11 program exits 55)
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-012 extern and panics: externs declared verbatim with C ABI (`zeroext`), string args via a safe struct GEP to field 1; checked arithmetic via `llvm.*.with.overflow`; AST operator spans
 - PRP-011 runtime and intrinsics: `runtime/lugha_rt.c`, `link::RUNTIME_SOURCE`, `check::Type::String`, intrinsics in checker and codegen (`codegen/runtime.rs`), `SourceInfo` for panic locations
 - PRP-010 codegen on real types: `emit_ir`/`emit_object` take `&Checked`; arith.rs and cast.rs; `lugha_fn_main` returns i32
 - PRP-009 casts and flow checks: `check/assign.rs`, `check/flow.rs`, `Binding` on locals, W0101 once per block; warnings returned from `check()`
@@ -190,10 +192,10 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- Milestones 4–5
+- Milestone 5
 
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 4, PRP-012: `extern fun` (spec §8 types; string arguments get the pointer adjusted 8 bytes past the header) and integer overflow and division panics (`panic: integer overflow at file:line:col`, exit 101, via `llvm.*.with.overflow` and `lugha_rt_panic`), replacing wrap and trap. Done-when: the §10 libc example prints `hello from libc` and `1.4142135623730951`. Then tag `m4`.
+Milestone 5: heap data (spec §11) — Boehm GC in use, string operations (`+`, `==`, `.len`, `s[i]`), arrays (literals, repeat, `.len`, bounds checks, `for`-`of`), structs, array copies (§4), `lughac spec`. Done-when: every §10 program passes. Start with a discovery interview on how to split it into PRPs.

@@ -1,0 +1,7 @@
+extern fun puts(s: string): i32;
+extern fun sqrt(x: f64): f64;
+
+fun main() {
+    puts("hello from libc");
+    println(sqrt(2.0));
+}

@@ -63,7 +63,9 @@ impl Checker {
                 ty,
                 init,
             } => self.let_stmt(*mutable, name, ty.as_ref(), init)?,
-            StmtKind::Assign { op, place, value } => self.assign(*op, place, value)?,
+            StmtKind::Assign {
+                op, place, value, ..
+            } => self.assign(*op, place, value)?,
             StmtKind::Expr { expr, .. } => return Ok(self.expr(expr, None)? == Type::Never),
             StmtKind::While { cond, body } => {
                 self.expect_type(cond, &Expect::of(Type::Bool))?;

@@ -47,9 +47,12 @@ impl Parser<'_> {
             {
                 return Err(self.chained(prev, op));
             }
-            self.bump();
+            let op_span = self.bump();
             let rhs = self.binary(op.level() + 1)?;
-            lhs = self.mk(start, ExprKind::Binary(op, Box::new(lhs), Box::new(rhs)));
+            lhs = self.mk(
+                start,
+                ExprKind::Binary(op, op_span, Box::new(lhs), Box::new(rhs)),
+            );
             previous = Some(op);
         }
         Ok(lhs)
@@ -206,10 +209,27 @@ mod tests {
         };
         let tail = f.body.tail.as_ref().unwrap();
         assert_eq!(tail.id, ExprId(2));
-        let ExprKind::Binary(_, l, r) = &tail.kind else {
+        let ExprKind::Binary(_, _, l, r) = &tail.kind else {
             panic!("{tail:?}")
         };
         assert_eq!((l.id, r.id), (ExprId(0), ExprId(1)));
         assert_eq!(&src[tail.span.start..tail.span.end], "1 + 2");
+    }
+
+    #[test]
+    fn binary_operators_record_their_span() {
+        let src = "fun t() { a + b == c }";
+        let p = parse_src(src).unwrap();
+        let Item::Fun(f) = &p.items[0] else {
+            unreachable!()
+        };
+        let ExprKind::Binary(_, eq, lhs, _) = &f.body.tail.as_ref().unwrap().kind else {
+            panic!()
+        };
+        assert_eq!(&src[eq.start..eq.end], "==");
+        let ExprKind::Binary(_, plus, ..) = &lhs.kind else {
+            panic!()
+        };
+        assert_eq!(&src[plus.start..plus.end], "+");
     }
 }

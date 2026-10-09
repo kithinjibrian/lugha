@@ -754,6 +754,57 @@ CLAUDE.md, CHANGELOG.md, TODO.md — file tree, progress
 
 Branch: main → prp-012-extern_and_panics
 
+### WHAT WAS DONE
+
+Discovery, with the recommended answer accepted every time: codes E0306 (reserved `lugha_` extern name) and E0409 (`string` return from an extern); panic location is the operator.
+
+Implemented:
+- Acceptance programs first, including four existing wrap/trap programs moved to panic expectations.
+- The AST gains operator spans (`Binary` and compound `Assign`).
+- Checked arithmetic via `llvm.*.with.overflow`, plus divisor checks calling `lugha_rt_panic`; `llvm.trap` removed.
+- `extern fun` in the checker (E0306/E0409, shared namespace) and codegen: verbatim names, `zeroext`, and string arguments via a safe struct GEP. inkwell's `build_gep` is `unsafe`, so it was avoided.
+
+Several pre-PRP tests were updated. 162 tests pass. **Milestone 4 complete:** the libc example prints `hello from libc` / `1.4142135623730951`.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/ast/{mod,expr}.rs    — operator spans on Binary and Assign
+src/parser/{expr,stmt,sexp}.rs — record and ignore operator spans + 2 tests
+src/check/{env,errors,expr,stmt}.rs — extern collection, E0306, E0409 + test
+src/codegen/arith.rs     — checked add/sub/mul, divisor checks, panic_if + 5 tests
+src/codegen/runtime.rs   — emit_panic / call_panic split
+src/codegen/function.rs  — extern declarations, C ABI zeroext, c_string GEP, is_extern + test
+src/codegen/{expr,stmt}.rs — checked negation; compound assignment located at op_span
+tests/programs/m4/       — libc, extern_types, overflow_add, overflow_neg, overflow_compound, div_zero
+tests/programs/m3/       — e0306, e0409; i32_overflow, u8_overflow, div_min_i32 now panic
+tests/programs/m1/div_zero — now a division-by-zero panic
+tests/cli.rs, tests/codegen.rs — signal tests via abort(); panic tests replace wrap/trap tests
+docs/specs/…Specification.md — §5 panic messages and locations; §9 E0306, E0409
+PRPs/prp-012-…md         — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issue removed, milestone 4 done
+```
+
+### TESTS WRITTEN
+
+- Unit:
+  - Operator spans; extern rules (E0306, E0409, E0302, E0305, call checks).
+  - Overflow intrinsics at each width; unsigned division checks only zero; signed checks `MIN`; panics point at the operator; `f64` has no panics.
+  - Extern C ABI and the string GEP.
+- Acceptance: six `m4/` programs, two reject programs, four updated programs.
+
+### DECISIONS MADE
+
+- Codes E0306/E0409; operator-located panics; safe struct GEP for C strings (PRP-012 amendments).
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Branch `prp-012-extern_and_panics` not yet merged into `main`; tag `m4` after the merge.
+
 ---
 
 ## NEXT SESSION START POINT

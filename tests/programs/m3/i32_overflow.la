@@ -1,4 +1,4 @@
-// i32 arithmetic wraps at 32 bits (until milestone 4's overflow panics).
+// i32 arithmetic overflows at 32 bits and panics (spec §5).
 fun main(): i32 {
     let x: i32 = 2147483647;
     let y = x + 1;

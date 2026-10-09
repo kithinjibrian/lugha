@@ -14,7 +14,12 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn stmt(&mut self, stmt: &Stmt) -> Result<bool, CodegenError> {
         match &stmt.kind {
             StmtKind::Let { name, ty, init, .. } => self.let_stmt(name, ty.as_ref(), init)?,
-            StmtKind::Assign { op, place, value } => self.assign(*op, place, value)?,
+            StmtKind::Assign {
+                op,
+                op_span,
+                place,
+                value,
+            } => self.assign(*op, op_span.start, place, value)?,
             StmtKind::Expr { expr, .. } => return Ok(matches!(self.expr(expr)?, Value::Never)),
             // Loops never definitely return (spec §6), whatever their body does.
             StmtKind::While { cond, body } => self.while_loop(cond, body)?,
@@ -61,7 +66,14 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// `name op value;` — the checker guarantees a mutable local of a fitting type.
-    fn assign(&mut self, op: AssignOp, place: &Expr, value: &Expr) -> Result<(), CodegenError> {
+    /// `at` is the compound operator, where an overflow panic points.
+    fn assign(
+        &mut self,
+        op: AssignOp,
+        at: usize,
+        place: &Expr,
+        value: &Expr,
+    ) -> Result<(), CodegenError> {
         let ExprKind::Name(name) = &place.kind else {
             return Err(unsupported(
                 "assigning to fields and elements",
@@ -76,7 +88,7 @@ impl<'ctx> Lowerer<'ctx> {
                 // `x op= e` reads `x` once, then evaluates `e` (spec §5).
                 let current = self.load(local, name);
                 let rhs = self.get(value, local.ty)?;
-                self.arithmetic(op, local.ty, current, rhs)
+                self.arithmetic(op, local.ty, current, rhs, at)
             }
         };
         self.builder.build_store(local.ptr, new).expect(POSITIONED);
@@ -115,7 +127,7 @@ mod tests {
     fn compound_assignment_uses_the_local_type() {
         let ir =
             ir("fun main() { let mut b: u8 = 250; b += 10; b /= 2; let mut f = 1.5; f *= 2.0; }");
-        assert!(ir.contains("add i8"), "{ir}");
+        assert!(ir.contains("@llvm.uadd.with.overflow.i8"), "{ir}");
         assert!(ir.contains("udiv i8"), "{ir}");
         assert!(ir.contains("fmul double"), "{ir}");
     }

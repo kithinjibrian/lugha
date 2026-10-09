@@ -24,6 +24,19 @@ pub(super) fn reserved(name: &str, span: Span) -> Diagnostic {
     )
 }
 
+pub(super) fn reserved_extern(name: &str, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0306",
+        format!("`{name}`: names starting with `lugha_` are reserved for the compiler and runtime"),
+        span,
+    )
+}
+
+pub(super) fn extern_string_return(span: Span) -> Diagnostic {
+    Diagnostic::error("E0409", "an extern function can't return `string`", span)
+        .with_help("C strings have no length header; return a number and use it from Lugha")
+}
+
 pub(super) fn missing_main() -> Diagnostic {
     Diagnostic::error("E0303", "no `main` function", Span::new(0, 0))
         .with_help("add `fun main() { }`")

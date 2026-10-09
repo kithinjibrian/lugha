@@ -180,6 +180,18 @@ impl<'ctx> Lowerer<'ctx> {
     /// Calls `lugha_rt_panic(message, file, line, col)` for the source offset
     /// `at`, then continues in a dead block: the call never returns.
     pub(super) fn panic_at(&mut self, message: BasicValueEnum<'ctx>, at: usize) {
+        self.call_panic(message, at);
+        self.start_dead_block("after.panic");
+    }
+
+    /// A panic with a fixed message, ending the current block (no dead block
+    /// follows; used on the failing path of checked arithmetic).
+    pub(super) fn emit_panic(&mut self, message: &str, at: usize) {
+        let message = self.string_literal(message).into();
+        self.call_panic(message, at);
+    }
+
+    fn call_panic(&mut self, message: BasicValueEnum<'ctx>, at: usize) {
         let file = match self.constants.file {
             Some(file) => file,
             None => {
@@ -208,7 +220,6 @@ impl<'ctx> Lowerer<'ctx> {
         ];
         self.builder.build_call(panic, &args, "").expect(POSITIONED);
         self.builder.build_unreachable().expect(POSITIONED);
-        self.start_dead_block("after.panic");
     }
 }
 

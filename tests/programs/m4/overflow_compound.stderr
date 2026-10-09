@@ -1,0 +1,1 @@
+panic: integer overflow at tests/programs/m4/overflow_compound.la:3:7

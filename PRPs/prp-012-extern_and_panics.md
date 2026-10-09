@@ -1,6 +1,6 @@
 ## FEATURE: `extern fun` declarations for calling C, and integer overflow and division panics replacing wrap-and-trap — completing milestone 4.
 
-**Status:** approved 2026-10-09 — session 15
+**Status:** implemented 2026-10-09 — session 15 (branch `prp-012-extern_and_panics`)
 **Milestone:** 4, second of two PRPs; tag `m4` after the merge
 **Spec:** §5 (arithmetic panics, panic format), §8 (C interop: allowed types, string pointer adjustment, symbol names, reserved `lugha_` prefix), §9 (lowering: `llvm.*.with.overflow`, division checks, error codes)
 **Decisions:** DECISION-009 / MEMORY 15 (runtime ABI: `bool` and `u8` widened to `i32` for runtime calls; extern calls follow C's ABI instead)
@@ -24,6 +24,18 @@
   - New `m4/` programs; spec §5 and §9 updated.
 - Related existing code: `src/ast/{mod,expr}.rs`, `src/parser/expr.rs`, `src/parser/stmt.rs`, `src/check/{env,call,errors}.rs`, `src/codegen/{arith,function,runtime,expr,stmt}.rs`.
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 15)
+- **String pointer adjustment uses inkwell's safe `build_struct_gep`** on `{ i64, [0 x i8] }`, field 1, instead of `build_gep`. `build_gep` is an `unsafe fn`, and CLAUDE.md forbids `unsafe` without approval. Same address, 8 bytes in.
+- **`zeroext` is set on the extern declaration only.** For direct calls LLVM reads parameter attributes from the callee (`CallBase::paramHasAttr`).
+- **Signal tests moved to `extern fun abort();`.** `tests/cli.rs` still covers `lughac run`'s 128 + N signal mapping (SIGABRT → 134), now that SIGILL traps are gone.
+- **Updated earlier tests:**
+  - `tests/codegen.rs`: the wrap/trap tests became `integer_overflow_panics` and `bad_divisions_panic` (exit 101).
+  - Unit tests now assert `with.overflow` calls and the `division by zero` message. With a constant divisor LLVM folds the zero comparison, so the test checks the message, not an instruction name.
+  - An old "extern stops" assertion was removed.
+- **Renames and goldens:**
+  - `m3/i32_wrap` → `m3/i32_overflow` and `m3/u8_wrap` → `m3/u8_overflow`.
+  - All panic `.stderr` goldens (columns computed by hand) matched on the first run. The E0306/E0409 goldens were captured and reviewed.
 
 ### Discovery answers (session 15)
 1. Codes: **E0306** reserved extern name (`lugha_` prefix) and **E0409** type not allowed in an extern signature (a `string` return). A duplicate or intrinsic-named extern reuses E0302; calls reuse E0403/E0405.
@@ -109,9 +121,9 @@
 ## TESTS TO WRITE
 
 Unit tests:
-- [ ] Parser: binary operator spans slice to `+`, `==`, …; compound `op_span` slices to `+=`. S-expressions are unchanged.
-- [ ] Checker: E0306 (`lugha_rt_alloc`); E0409 (`string` return); an extern named `println` or duplicating a function → E0302; extern calls checked like functions (E0405, E0403); a `string` parameter is allowed; unknown types are E0305.
-- [ ] Codegen IR:
+- [x] Parser: binary operator spans slice to `+`, `==`, …; compound `op_span` slices to `+=`. S-expressions are unchanged.
+- [x] Checker: E0306 (`lugha_rt_alloc`); E0409 (`string` return); an extern named `println` or duplicating a function → E0302; extern calls checked like functions (E0405, E0403); a `string` parameter is allowed; unknown types are E0305.
+- [x] Codegen IR:
   - an `extern` is declared verbatim, with `zeroext` on `bool`/`u8`;
   - a string argument gets `getelementptr i8, ptr …, i64 8`;
   - `i32` add calls `llvm.sadd.with.overflow.i32` and `u8` add calls `llvm.uadd.with.overflow.i8`;
@@ -119,8 +131,8 @@ Unit tests:
   - no `llvm.trap` anywhere; the panic call passes the operator's line and column.
 
 Integration and acceptance:
-- [ ] All new `m4/` programs and the two reject programs pass; the four updated programs panic as specified.
-- [ ] All other tests still pass.
+- [x] All new `m4/` programs and the two reject programs pass; the four updated programs panic as specified.
+- [x] All other tests still pass.
 
 ## ROLLBACK PLAN
 

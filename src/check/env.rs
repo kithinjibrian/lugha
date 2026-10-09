@@ -30,35 +30,40 @@ impl Checker {
     /// Pass 1: every function signature, in source order.
     fn collect(&mut self, program: &Program) -> Checking<()> {
         for item in &program.items {
-            let f = match item {
-                Item::Fun(f) => f,
-                Item::Extern(e) => return Err(stop("extern functions", 4, e.span)),
+            let (name, params, ret, is_extern) = match item {
+                Item::Fun(f) => (&f.name, &f.params, f.ret.as_ref(), false),
+                Item::Extern(e) => (&e.name, &e.params, e.ret.as_ref(), true),
                 Item::Struct(s) => return Err(stop("structs", 5, s.span)),
             };
-            let params = f
-                .params
+            let params = params
                 .iter()
                 .map(|p| self.resolve(&p.ty))
                 .collect::<Checking<Vec<_>>>()?;
-            let ret = match &f.ret {
+            let mut ret_type = match ret {
                 Some(ty) => self.resolve(ty)?,
                 None => Type::Void,
             };
-            let name = &f.name.name;
-            if INTRINSICS.contains(&name.as_str()) {
-                self.report(errors::reserved(name, f.name.span));
-            } else if let Some(first) = self.functions.get(name) {
+            if is_extern && ret_type == Type::String {
+                let span = ret.map_or(name.span, |ty| ty.span);
+                self.report(errors::extern_string_return(span));
+                // Keep the function callable so its calls don't cascade.
+                ret_type = Type::Error;
+            }
+            let text = &name.name;
+            if is_extern && text.starts_with("lugha_") {
+                self.report(errors::reserved_extern(text, name.span));
+            } else if INTRINSICS.contains(&text.as_str()) {
+                self.report(errors::reserved(text, name.span));
+            } else if let Some(first) = self.functions.get(text) {
                 let first = first.span;
-                self.report(errors::duplicate(name, f.name.span, first));
+                self.report(errors::duplicate(text, name.span, first));
             } else {
-                self.functions.insert(
-                    name.clone(),
-                    Signature {
-                        params,
-                        ret,
-                        span: f.name.span,
-                    },
-                );
+                let signature = Signature {
+                    params,
+                    ret: ret_type,
+                    span: name.span,
+                };
+                self.functions.insert(text.clone(), signature);
             }
         }
         Ok(())
@@ -167,10 +172,6 @@ mod tests {
     #[test]
     fn later_milestone_items_stop_the_checker() {
         assert_eq!(
-            stopped("extern fun abs(x: i32): i32;\nfun main() {}"),
-            ("extern functions", 4, "extern fun abs(x: i32): i32;")
-        );
-        assert_eq!(
             stopped("struct P { x: i64 }\nfun main() {}"),
             ("structs", 5, "struct P { x: i64 }")
         );
@@ -181,6 +182,41 @@ mod tests {
         assert_eq!(
             stopped("fun main() { let a: i64[] = 1; }"),
             ("arrays", 5, "i64[]")
+        );
+    }
+
+    #[test]
+    fn extern_declarations_follow_spec_section_8() {
+        ok(
+            "extern fun puts(s: string): i32;\nextern fun abs(x: i32): i32;\nfun main() { puts(\"hi\"); let a = abs(-3); }",
+        );
+        assert_eq!(
+            errors("extern fun lugha_rt_alloc(n: i64): i64;\nfun main() {}"),
+            [("E0306", "lugha_rt_alloc")]
+        );
+        assert_eq!(
+            errors("extern fun getenv(k: string): string;\nfun main() {}"),
+            [("E0409", "string")]
+        );
+        assert_eq!(
+            errors("extern fun print(x: i32);\nfun main() {}"),
+            [("E0302", "print")]
+        );
+        assert_eq!(
+            errors("extern fun f(x: i32);\nfun f() {}\nfun main() {}"),
+            [("E0302", "f")]
+        );
+        assert_eq!(
+            errors("extern fun abs(x: i32): i32;\nfun main() { abs(); }"),
+            [("E0405", "abs()")]
+        );
+        assert_eq!(
+            errors("extern fun abs(x: i32): i32;\nfun main() { abs(true); }"),
+            [("E0403", "true")]
+        );
+        assert_eq!(
+            errors("extern fun f(p: Point);\nfun main() {}"),
+            [("E0305", "Point")]
         );
     }
 }
