@@ -520,6 +520,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, milesto
 
 ---
 
+## SESSION 11 — 2026-10-09 — Milestone 3 discovery — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 2 is complete (tag `m2`). Next is milestone 3: the type checker and diagnostics (spec §11). It covers:
