@@ -1,6 +1,6 @@
 ## FEATURE: A lexer that turns `.la` source text into tokens with byte spans, reporting every lexical error with a stable code.
 
-**Status:** approved 2026-10-09 — session 5 (E0109 confirmed)
+**Status:** implemented 2026-10-09 — session 5 (branch `prp-002-lexer`)
 **Milestone:** 1 (first pipeline stage)
 **Spec:** §2 (lexical structure), §9 (diagnostics, error codes)
 **Decisions:** DECISION-002 (stage return type), DECISION-001 (library layout)
@@ -41,7 +41,7 @@
 - `Token { kind: TokenKind, span: Span }`.
 - `TokenKind`:
   - Literals: `Int(u64)`, `Float(f64)`, `Str(String)` (escapes decoded), `Ident(String)`.
-  - One variant per keyword in §2, including `True`, `False` and the type names `I32`, `I64`, `U8`, `F64`, `Bool`, `String`.
+  - One variant per keyword in §2, including `True`, `False` and the type names — named `TyI32`, `TyI64`, `TyU8`, `TyF64`, `TyBool`, `TyString` (implementation note: a bare `String` variant would read as the std type).
   - One variant per operator and punctuation token in §2.
   - `Eof`, always the last token, with an empty span at the end of the source.
 - `TokenKind` derives `PartialEq` (not `Eq`, because of `f64`).
@@ -118,28 +118,28 @@
 ## TESTS TO WRITE
 
 Unit tests (module bottoms):
-- [ ] span/diagnostic: builders set label and help; `error` sets `Severity::Error`.
-- [ ] Every keyword maps to its variant; `Fun` vs `fun_x` (identifier); case-sensitive (`Fun` is an identifier).
-- [ ] Longest match for each two-character operator; `a..b` → ident `..` ident; `1..10`.
-- [ ] Comments: `// x` to end of line skipped; `//` at EOF; UTF-8 inside comments.
-- [ ] Integers: `0`, `42`, `007`, `1_000_000`, `0xFF`, `0xff`, `0xDEAD_BEEF`, `18446744073709551615`.
-- [ ] Floats: `3.14`, `2.0e-3`, `2.0E5`, `1.5e+2`, `0.0`.
-- [ ] E0104: `18446744073709551616`. E0109: `1.0e999`.
-- [ ] E0105: `1__0`, `1_`, `0x_FF`, `1_0.5`, `0xF__F`.
-- [ ] E0106: `0x`, `2.0e`, `2.0e+`.
-- [ ] E0107: `2e5` with help `write 2.0e5`; `2E-3`.
-- [ ] E0108: `123abc`, `0XFF`, `0xFG`, `1.5x` — one diagnostic each.
-- [ ] Strings: `""`, `"hello\n"` decodes, every escape, `"héllo 👋"`.
-- [ ] E0102: `"abc` at EOF; `"abc⏎let x` — span ends at end of line 1, `let x` still lexed.
-- [ ] E0103: `"\q"` — span is the two characters `\q`; lexing continues.
-- [ ] E0101: `@`, `#`, `é` outside a string (span covers 2 bytes), lone `&`, lone `|`.
-- [ ] Recovery: a source with three separate errors reports exactly three diagnostics, in source order.
-- [ ] Spans: every token's span slices back to its source text; `Eof` span is `len..len`.
+- [x] span/diagnostic: builders set label and help; `error` sets `Severity::Error`.
+- [x] Every keyword maps to its variant; `Fun` vs `fun_x` (identifier); case-sensitive (`Fun` is an identifier).
+- [x] Longest match for each two-character operator; `a..b` → ident `..` ident; `1..10`.
+- [x] Comments: `// x` to end of line skipped; `//` at EOF; UTF-8 inside comments.
+- [x] Integers: `0`, `42`, `007`, `1_000_000`, `0xFF`, `0xff`, `0xDEAD_BEEF`, `18446744073709551615`.
+- [x] Floats: `3.14`, `2.0e-3`, `2.0E5`, `1.5e+2`, `0.0`.
+- [x] E0104: `18446744073709551616`. E0109: `1.0e999`.
+- [x] E0105: `1__0`, `1_`, `0x_FF`, `1_0.5`, `0xF__F`.
+- [x] E0106: `0x`, `2.0e`, `2.0e+`.
+- [x] E0107: `2e5` with help `write 2.0e5`; `2E-3`.
+- [x] E0108: `123abc`, `0XFF`, `0xFG`, `1.5x` — one diagnostic each.
+- [x] Strings: `""`, `"hello\n"` decodes, every escape, `"héllo 👋"`.
+- [x] E0102: `"abc` at EOF; `"abc⏎let x` — span ends at end of line 1, `let x` still lexed.
+- [x] E0103: `"\q"` — span is the two characters `\q`; lexing continues.
+- [x] E0101: `@`, `#`, `é` outside a string (span covers 2 bytes), lone `&`, lone `|`.
+- [x] Recovery: a source with three separate errors reports exactly three diagnostics, in source order.
+- [x] Spans: every token's span slices back to its source text; `Eof` span is `len..len`.
 
 Integration (`tests/lexer.rs`):
-- [ ] Each spec §10 program and the §11 milestone 2 program lexes with no diagnostics, ending in `Eof`.
-- [ ] `fun main(): i32 { 2 + 3 * 4 }` gives exactly the expected token kinds.
-- [ ] The §10 rejected program lexes cleanly (its error belongs to the checker).
+- [x] Each spec §10 program and the §11 milestone 2 program lexes with no diagnostics, ending in `Eof`.
+- [x] `fun main(): i32 { 2 + 3 * 4 }` gives exactly the expected token kinds.
+- [x] The §10 rejected program lexes cleanly (its error belongs to the checker).
 
 ## ROLLBACK PLAN
 
@@ -147,14 +147,14 @@ Integration (`tests/lexer.rs`):
 - To abandon: delete the branch. No migrations, no runtime state.
 
 ## ACCEPTANCE CRITERIA
-- [ ] Every test above exists and passes.
-- [ ] `lex` never panics. Covered by a test that lexes every prefix of a mixed sample source.
-- [ ] Spec §2 updated with the clarified rules and the E0101–E0109 table.
-- [ ] CLAUDE.md rule 9 amended; FILE ORGANIZATION lists the new modules.
-- [ ] No file over 300 lines; no new dependencies.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass.
-- [ ] Every `pub` item has a doc comment; functions returning `Result` document `# Errors`.
-- [ ] CHANGELOG.md updated.
+- [x] Every test above exists and passes.
+- [x] `lex` never panics. Covered by a test that lexes every prefix of a mixed sample source.
+- [x] Spec §2 updated with the clarified rules and the E0101–E0109 table.
+- [x] CLAUDE.md rule 9 amended; FILE ORGANIZATION lists the new modules.
+- [x] No file over 300 lines; no new dependencies.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass.
+- [x] Every `pub` item has a doc comment; functions returning `Result` document `# Errors`.
+- [x] CHANGELOG.md updated.
 
 ## VALIDATION
 - `cargo fmt --check`

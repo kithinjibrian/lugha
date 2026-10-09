@@ -75,7 +75,33 @@ Built-in type names are keywords, so they can't be shadowed by user structs.
 | String | `"hello\n"` | Double-quoted; escapes `\n` `\t` `\r` `\\` `\"` `\0` |
 | Boolean | `true`, `false` | Keywords |
 
-A literal with no fractional part or exponent is an integer literal. Unknown escape sequences and unterminated strings are lexer errors.
+**Number details.**
+
+- `_` may appear only between two digits, and only in integers. `1__0`, `1_`, `0x_FF` and `1_0.5` are errors.
+- The hex prefix is lowercase `0x` followed by at least one hex digit, in either case. `0XFF` and `0x` are errors.
+- Leading zeros are allowed and mean nothing special: `007` is 7.
+- A literal without a `.` is an integer. `2e5` is an error; write `2.0e5`.
+- An exponent is `e` or `E`, an optional sign, then at least one digit.
+- A `.` not followed by a digit ends an integer: `1..10` is `1` `..` `10`.
+- A letter directly after a number is an error (`123abc`, `1.5x`).
+- The lexer accepts integers up to 2⁶⁴−1. Whether a literal fits its actual type is checked later (section 4).
+- A float literal that rounds to infinity is an error. One that underflows rounds to zero.
+
+**String details.** A string may not contain a raw line break: write `\n`. An unclosed string is reported at the end of its line, and lexing continues on the next one. Any other UTF-8 may appear inside strings and comments. Outside them, only ASCII is allowed.
+
+**Lexical errors.** The lexer reports every error it finds, not just the first.
+
+| Code | Error | Example |
+| --- | --- | --- |
+| E0101 | Unexpected character | `@`, `#`, `é` outside a string, lone `&` |
+| E0102 | Unterminated string | `"abc` at end of line or file |
+| E0103 | Unknown escape sequence | `"\q"` |
+| E0104 | Integer literal too large | `18446744073709551616` |
+| E0105 | Misplaced `_` in a number | `1__0`, `1_`, `0x_FF`, `1_0.5` |
+| E0106 | Number is missing digits | `0x`, `2.0e`, `2.0e+` |
+| E0107 | Float needs a fractional part | `2e5` (help: write `2.0e5`) |
+| E0108 | Invalid character in a number | `123abc`, `0XFF`, `0xFG` |
+| E0109 | Float literal out of range | `1.0e999` |
 
 **Operators and punctuation.** The lexer uses longest match, so `<=` is one token, not `<` then `=`.
 

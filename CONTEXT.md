@@ -190,6 +190,45 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — tests/ tree, shipped item, progr
 
 Branch: main → prp-002-lexer
 
+### WHAT WAS DONE
+
+Discovery for PRP-002 (recommended answer accepted on every question): full §2 lexer now, with CLAUDE.md rule 9 amended so the lexer and parser cover the full syntax and only the checker and codegen follow milestone subsets; the full `Diagnostic` record without rendering; strict number rules; no raw newlines in strings; recovery after errors; codes E0101–E0108 plus E0109 (float out of range), which I added and the user confirmed. Implemented test-first: suites written against a `todo!()` stub (19 failing), then the lexer. One clippy finding (`3.14` read as approximate π in a test) fixed by changing the sample to `3.25`. Spec §2 now records the number and string rules and the error-code table.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/span.rs                — Span (byte range) + doctest
+src/diagnostic.rs          — Severity, Label, Diagnostic, builders + test
+src/lexer/mod.rs           — lex(), main loop, identifiers, punctuation, comments, E0101 + 6 tests
+src/lexer/token.rs         — Token, TokenKind, keyword table
+src/lexer/number.rs        — integers and floats, E0104–E0109 + 9 tests
+src/lexer/string.rs        — strings and escapes, E0102–E0103 + 4 tests
+src/lib.rs                 — declares span, diagnostic, lexer
+tests/lexer.rs             — every §10/§11 program lexes; M1 token list; no panic on any prefix
+docs/specs/…Specification.md — §2 number/string details + lexical error table
+PRPs/prp-002-lexer.md      — new PRP; implemented; Ty* naming note
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — rule 9, file tree, progress
+```
+
+### TESTS WRITTEN
+
+- Unit: keywords and case-sensitivity; longest-match operators; comments; E0101 incl. multi-byte; error ordering; spans; integers, floats, `1..10`; E0104–E0109; strings, escapes, UTF-8; E0102 at EOF and end of line with resumption; E0103 continuing.
+- Integration: all seven spec programs lex cleanly; exact milestone 1 tokens; every prefix of a mixed sample lexes without panicking.
+
+### DECISIONS MADE
+
+- Type-name keyword variants are `TyI32` … `TyString` (noted in the PRP).
+- Lone `&` / `|` get E0101 with a "did you mean `&&`/`||`?" help.
+- CRLF: `\r\n` ends a string's line like `\n`.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Branch `prp-002-lexer` not yet merged into `main`.
+
 ---
 
 ## NEXT SESSION START POINT

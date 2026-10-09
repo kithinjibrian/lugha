@@ -163,7 +163,7 @@ The language itself is defined by `docs/specs/Language v0 Specification.md`.
 6. **Exit codes are 0 / 1 / 2.** 1 = the user's program has errors; 2 = bad CLI usage or internal compiler error. A `module.verify()` failure or a Rust panic inside lughac is exit 2, never 1. *Why:* spec §9; tools tell "your bug" from "our bug" by it.
 7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
 8. **Generated code allocates only through `lugha_rt_alloc`.** Never emit calls to `malloc`. *Why:* Boehm can't see `malloc` memory and will free live objects.
-9. **Follow the milestone order (spec §11).** Implement only the current milestone's subset. In milestones 1–2 treat every value as `i64`. *Why:* each milestone must end in a running program.
+9. **Follow the milestone order (spec §11).** The lexer and parser cover the full §2–§3 syntax. The checker and codegen implement only the current milestone's subset; in milestones 1–2 treat every value as `i64`. *Why:* each milestone must end in a running program, while syntax is cheap to do once and fully specified.
 10. **The §10 programs are the acceptance tests.** Their stdout and exit codes must match exactly. *Why:* they define "conforming compiler".
 
 ---
@@ -216,9 +216,13 @@ pub fn parse_number(src: &str) -> i64 {
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
 │   ├── lib.rs       — compiler library; stage modules added per PRP
-│   └── main.rs      — `lughac` entry point (CLI only)
+│   ├── main.rs      — `lughac` entry point (CLI only)
+│   ├── span.rs      — byte-offset Span
+│   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
+│   └── lexer/       — mod.rs (lex, main loop), token.rs, number.rs, string.rs
 ├── tests/
 │   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
+│   ├── lexer.rs     — lexer public-API tests (every spec program lexes)
 │   ├── programs/    — m1/ … m5/: <name>.la + .stdout/.exit/.stderr expectations
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, execute, report)
 ├── setup.md         — the guide this context system follows
