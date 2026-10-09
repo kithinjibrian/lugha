@@ -809,7 +809,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issue removed, milestone 4
 
 ## SESSION 16 — 2026-10-09 — Milestone 5 discovery — open
 
-Branch: main
+Branch: main → prp-013-string_operations
 
 ---
 
