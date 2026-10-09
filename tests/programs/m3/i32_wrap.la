@@ -1,0 +1,6 @@
+// i32 arithmetic wraps at 32 bits (until milestone 4's overflow panics).
+fun main(): i32 {
+    let x: i32 = 2147483647;
+    let y = x + 1;
+    if y < 0 { 9 } else { 0 }
+}

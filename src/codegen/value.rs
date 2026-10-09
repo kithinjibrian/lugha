@@ -1,114 +1,89 @@
-//! The two kinds of value codegen tracks until the checker exists (PRP-006).
+//! Values and types: the checker's `Type` mapped to LLVM (spec §4).
 //!
-//! Not a type system: just enough to emit valid IR in milestone 2, where every
-//! integer is `i64` (CLAUDE.md rule 9) and conditions need `i1`. Mixing the
-//! kinds stops compilation with "type checking (milestone 3)". Milestone 3
-//! replaces this with real types.
+//! Codegen never infers types (CLAUDE.md rule 4): every expression's type
+//! comes from the checker's table. `Value` only remembers whether lowering
+//! produced a value, nothing, or code that never finishes — blocks have no
+//! `ExprId`, and divergence decides phi edges (spec §9).
 
 use inkwell::context::Context;
-use inkwell::types::IntType;
-use inkwell::values::IntValue;
+use inkwell::types::{BasicTypeEnum, IntType};
+use inkwell::values::BasicValueEnum;
 
 use super::CodegenError;
-use super::lower::{Lowerer, unsupported};
-use crate::ast::{Type, TypeKind};
-use crate::span::Span;
-
-/// What a non-void value is.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum Kind {
-    /// Any integer, lowered as `i64`.
-    Int,
-    /// A boolean, lowered as `i1`.
-    Bool,
-}
-
-impl Kind {
-    /// The LLVM type for values of this kind.
-    pub(super) fn llvm(self, context: &Context) -> IntType<'_> {
-        match self {
-            Kind::Int => context.i64_type(),
-            Kind::Bool => context.bool_type(),
-        }
-    }
-}
+use super::lower::Lowerer;
+use crate::ast::{Expr, Type as Annotation, TypeKind};
+use crate::check::Type;
 
 /// The result of lowering an expression.
 #[derive(Debug, Clone, Copy)]
 pub(super) enum Value<'ctx> {
-    Int(IntValue<'ctx>),
-    Bool(IntValue<'ctx>),
-    /// Statements, blocks without a tail, `if` without `else`, loops.
+    Val(BasicValueEnum<'ctx>),
+    /// Statements, blocks without a tail, `if` without `else`, void calls.
     Void,
-    /// Control never gets here: the code after `return`, `break` or
-    /// `continue`, or an `if` whose branches all do that (spec §6). It stands in
-    /// for any kind, so it carries `undef` placeholders; they only ever appear
-    /// in unreachable blocks.
-    Never {
-        int: IntValue<'ctx>,
-        bool: IntValue<'ctx>,
-    },
+    /// Control never gets here: after `return`, `break` or `continue`, or an
+    /// `if` whose branches all do that (spec §6).
+    Never,
 }
 
-impl<'ctx> Value<'ctx> {
-    /// Wraps an LLVM value of the given kind.
-    pub(super) fn of(kind: Kind, value: IntValue<'ctx>) -> Self {
-        match kind {
-            Kind::Int => Value::Int(value),
-            Kind::Bool => Value::Bool(value),
-        }
-    }
-
-    /// The integer, or a type-checking error at `span`.
-    pub(super) fn int(self, span: Span) -> Result<IntValue<'ctx>, CodegenError> {
-        match self {
-            Value::Int(value) | Value::Never { int: value, .. } => Ok(value),
-            _ => Err(type_error(span)),
-        }
-    }
-
-    /// The boolean, or a type-checking error at `span`.
-    pub(super) fn bool(self, span: Span) -> Result<IntValue<'ctx>, CodegenError> {
-        match self {
-            Value::Bool(value) | Value::Never { bool: value, .. } => Ok(value),
-            _ => Err(type_error(span)),
-        }
-    }
-
-    /// The kind and value of a non-void value, or a type-checking error at `span`.
-    pub(super) fn typed(self, span: Span) -> Result<(Kind, IntValue<'ctx>), CodegenError> {
-        match self {
-            Value::Int(value) => Ok((Kind::Int, value)),
-            Value::Bool(value) => Ok((Kind::Bool, value)),
-            Value::Never { int, .. } => Ok((Kind::Int, int)),
-            Value::Void => Err(type_error(span)),
-        }
+/// The LLVM type of a value of type `ty` (spec §4 lowering table).
+pub(super) fn llvm_type(context: &Context, ty: Type) -> BasicTypeEnum<'_> {
+    match ty {
+        Type::I32 => context.i32_type().into(),
+        Type::I64 => context.i64_type().into(),
+        Type::U8 => context.i8_type().into(),
+        Type::F64 => context.f64_type().into(),
+        Type::Bool => context.bool_type().into(),
+        Type::Void | Type::Never | Type::Error => unreachable!("checked: {ty} is not a value type"),
     }
 }
 
-/// A mistake only the milestone 3 checker can report properly.
-pub(super) fn type_error(span: Span) -> CodegenError {
-    unsupported("type checking", 3, span)
+/// The LLVM integer type of `i32`, `i64`, `u8` or `bool`.
+pub(super) fn int_type(context: &Context, ty: Type) -> IntType<'_> {
+    llvm_type(context, ty).into_int_type()
 }
 
-/// The kind an annotation requires; `i32` and `u8` are `i64` until milestone 3.
-pub(super) fn annotation_kind(ty: &Type) -> Result<Kind, CodegenError> {
-    match &ty.kind {
-        TypeKind::I32 | TypeKind::I64 | TypeKind::U8 => Ok(Kind::Int),
-        TypeKind::Bool => Ok(Kind::Bool),
-        TypeKind::F64 => Err(unsupported("floats", 3, ty.span)),
-        TypeKind::String => Err(unsupported("strings", 4, ty.span)),
-        TypeKind::Named(_) => Err(unsupported("structs", 5, ty.span)),
-        TypeKind::Array(_) => Err(unsupported("arrays", 5, ty.span)),
+/// `i32` and `i64` are signed; `u8` is not.
+pub(super) fn is_signed(ty: Type) -> bool {
+    matches!(ty, Type::I32 | Type::I64)
+}
+
+/// The type an annotation declares. The checker has already resolved it, so
+/// only milestone 3 types reach codegen.
+pub(super) fn annotation_type(ty: &Annotation) -> Type {
+    match ty.kind {
+        TypeKind::I32 => Type::I32,
+        TypeKind::I64 => Type::I64,
+        TypeKind::U8 => Type::U8,
+        TypeKind::F64 => Type::F64,
+        TypeKind::Bool => Type::Bool,
+        _ => unreachable!("checked: only milestone 3 types reach codegen"),
     }
 }
 
 impl<'ctx> Lowerer<'ctx> {
-    /// The value of code that never runs to completion.
-    pub(super) fn never(&self) -> Value<'ctx> {
-        Value::Never {
-            int: self.context.i64_type().get_undef(),
-            bool: self.context.bool_type().get_undef(),
-        }
+    /// The checker's type for `expr`.
+    pub(super) fn ty(&self, expr: &Expr) -> Type {
+        self.types[expr.id.0 as usize]
+    }
+
+    /// Lowers `expr` where a value of type `ty` is needed. In code that never
+    /// finishes there is no value; an `undef` keeps the IR well-formed.
+    pub(super) fn get(
+        &mut self,
+        expr: &Expr,
+        ty: Type,
+    ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
+        Ok(match self.expr(expr)? {
+            Value::Val(value) => value,
+            Value::Never => undef(self.context, ty),
+            Value::Void => unreachable!("checked: E0407 rejects void values"),
+        })
+    }
+}
+
+fn undef(context: &Context, ty: Type) -> BasicValueEnum<'_> {
+    match llvm_type(context, ty) {
+        BasicTypeEnum::FloatType(t) => t.get_undef().into(),
+        other => other.into_int_type().get_undef().into(),
     }
 }

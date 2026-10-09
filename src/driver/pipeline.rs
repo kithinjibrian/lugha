@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use super::render::Report;
 use super::source::{self, LoadError, Source};
 use crate::ast::Program;
-use crate::check::{self, CheckError};
+use crate::check::{self, CheckError, Checked};
 use crate::codegen::{self, CodegenError, OptLevel};
 use crate::diagnostic::Diagnostic;
 use crate::lexer::{self, Token};
@@ -33,6 +33,8 @@ pub(super) struct Front {
     pub source: Source,
     pub program: Program,
     pub warnings: Vec<Diagnostic>,
+    /// The checker's output; `None` for the parse-only front end (`--emit=ast`).
+    pub checked: Option<Checked>,
 }
 
 /// Reads `path`; an unreadable file is internal, invalid UTF-8 is E0110.
@@ -69,6 +71,7 @@ pub(super) fn parsed(path: &Path) -> Result<Front, Failure> {
                 source,
                 program,
                 warnings,
+                checked: None,
             })
         }
         Err(errors) => Err(Failure::Program(source, errors)),
@@ -79,9 +82,9 @@ pub(super) fn parsed(path: &Path) -> Result<Front, Failure> {
 pub(super) fn front(path: &Path) -> Result<Front, Failure> {
     let mut front = parsed(path)?;
     match check::check(&front.program) {
-        // The type table is consumed by codegen from PRP-010.
-        Ok((_checked, warnings)) => {
+        Ok((checked, warnings)) => {
             front.warnings.extend(warnings);
+            front.checked = Some(checked);
             Ok(front)
         }
         Err(CheckError::Program(errors)) => Err(Failure::Program(front.source, errors)),
@@ -101,14 +104,14 @@ pub(super) fn front(path: &Path) -> Result<Front, Failure> {
 
 /// The program's LLVM IR, for `--emit=ir`.
 pub(super) fn ir(front: &Front) -> Result<String, Failure> {
-    codegen::emit_ir(&front.program).map_err(|e| codegen_failure(&front.source, e))
+    codegen::emit_ir(&front.program, checked(front)).map_err(|e| codegen_failure(&front.source, e))
 }
 
 /// Compiles and links `front` into the executable `exe`.
 pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Failure> {
     let temp = TempDir::new().map_err(|e| internal(&front.source, temp_error(e)))?;
     let object = temp.path.join("prog.o");
-    codegen::emit_object(&front.program, opt, &object)
+    codegen::emit_object(&front.program, checked(front), opt, &object)
         .map_err(|e| codegen_failure(&front.source, e))?;
     link::link(&[&object], exe).map_err(|e| internal(&front.source, e.to_string()))
 }
@@ -144,6 +147,14 @@ pub(super) fn default_output(file: &Path) -> PathBuf {
     } else {
         stem
     }
+}
+
+/// The type table of a front end that ran the checker.
+fn checked(front: &Front) -> &Checked {
+    front
+        .checked
+        .as_ref()
+        .expect("codegen runs only after `front()` type-checked")
 }
 
 fn codegen_failure(source: &Source, error: CodegenError) -> Failure {

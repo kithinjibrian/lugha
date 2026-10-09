@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use lugha::codegen::{self, OptLevel};
 use lugha::link::{self, LinkError};
-use lugha::{lexer, parser};
+use lugha::{check, lexer, parser};
 
 /// SIGILL, raised by `llvm.trap` on x86-64 (`ud2`).
 const SIGILL: i32 = 4;
@@ -36,9 +36,10 @@ impl Drop for TempDir {
 fn build_and_run(src: &str, opt: OptLevel) -> ExitStatus {
     let (tokens, _) = lexer::lex(src).expect("lexes");
     let (program, _) = parser::parse(&tokens).expect("parses");
+    let (checked, _) = check::check(&program).unwrap_or_else(|e| panic!("{src}: {e:?}"));
     let dir = TempDir::new();
     let (object, exe) = (dir.0.join("prog.o"), dir.0.join("prog"));
-    codegen::emit_object(&program, opt, &object).unwrap_or_else(|e| panic!("{src}: {e}"));
+    codegen::emit_object(&program, &checked, opt, &object).unwrap_or_else(|e| panic!("{src}: {e}"));
     link::link(&[&object], &exe).unwrap_or_else(|e| panic!("{src}: {e}"));
     Command::new(&exe).status().expect("built program runs")
 }
@@ -76,14 +77,18 @@ fn division_truncates_and_remainder_takes_the_dividends_sign() {
 fn arithmetic_wraps_until_milestone_4() {
     // i64::MAX + 1 wraps to MIN; MIN / 2^62 = -2, i.e. exit 254.
     assert_eq!(
-        exit_code("(9223372036854775807 + 1) / 4611686018427387904"),
+        exit_code("let x: i64 = 9223372036854775807; ((x + 1) / 4611686018427387904) as i32"),
         Some(254)
     );
 }
 
 #[test]
 fn bad_divisions_trap() {
-    for body in ["1 / 0", "1 % 0", "(0 - 9223372036854775807 - 1) / -1"] {
+    for body in [
+        "1 / 0",
+        "1 % 0",
+        "let m: i64 = -9223372036854775808; (m / -1) as i32",
+    ] {
         let status = run(&format!("fun main(): i32 {{ {body} }}"));
         assert_eq!(status.signal(), Some(SIGILL), "{body}: {status:?}");
     }
@@ -106,31 +111,32 @@ fn link_failure_reports_cc_stderr() {
 }
 
 #[test]
-fn milestone_2_programs_agree_at_o0_and_o2() {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/programs/m2");
+fn run_programs_agree_at_o0_and_o2() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/programs");
     let mut checked = 0;
-    for entry in std::fs::read_dir(&dir).expect("m2 programs exist") {
-        let path = entry.expect("entry").path();
-        if path.extension().is_some_and(|e| e == "la") {
-            let src = std::fs::read_to_string(&path).expect("program is UTF-8");
-            let expected =
-                std::fs::read_to_string(path.with_extension("exit")).expect(".exit exists");
-            let expected: i32 = expected.trim().parse().expect(".exit is an integer");
-            // `run` asserts -O0 and -O2 agree.
-            assert_eq!(run(&src).code(), Some(expected), "{}", path.display());
-            checked += 1;
+    for dir in ["m2", "m3"] {
+        for entry in std::fs::read_dir(root.join(dir)).expect("program dir exists") {
+            let path = entry.expect("entry").path();
+            let exit = path.with_extension("exit");
+            if path.extension().is_some_and(|e| e == "la") && exit.exists() {
+                let src = std::fs::read_to_string(&path).expect("program is UTF-8");
+                let expected: i32 = std::fs::read_to_string(&exit)
+                    .expect(".exit")
+                    .trim()
+                    .parse()
+                    .expect("integer");
+                // `run` asserts -O0 and -O2 agree; a trap shows as 128 + signal, as in `lughac run`.
+                let status = run(&src);
+                let code = status.code().or(status.signal().map(|s| 128 + s));
+                assert_eq!(code, Some(expected), "{}", path.display());
+                checked += 1;
+            }
         }
     }
-    assert!(checked >= 7, "only {checked} m2 programs found");
-}
-
-#[test]
-fn assigning_to_an_immutable_binding_compiles_until_milestone_3() {
-    // Known issue (CLAUDE.md): the checker will reject this in milestone 3.
-    assert_eq!(exit_code("let x = 1; x = 5; x"), Some(5));
+    assert!(checked >= 19, "only {checked} run programs found");
 }
 
 #[test]
 fn let_initialiser_reads_the_outer_binding() {
-    assert_eq!(exit_code("let x = 2; let x = x + 1; x"), Some(3));
+    assert_eq!(exit_code("let x: i32 = 2; let x = x + 1; x"), Some(3));
 }

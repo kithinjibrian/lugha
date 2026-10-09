@@ -640,6 +640,54 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progres
 
 Branch: main → prp-010-codegen_on_real_types
 
+### WHAT WAS DONE
+
+Discovery: the user chose "types from the table" — codegen takes `&Checked`, and its own value kinds and milestone 3 checks are deleted.
+
+Six run-mode `m3/` programs were written first; all failed against the old all-`i64` codegen. Codegen was then rewritten:
+- `value.rs`: `Value { Val, Void, Never }` and the `Type` → LLVM mapping.
+- `scope.rs`: typed slots.
+- `expr.rs`, plus new `arith.rs` (widths, signedness, IEEE) and new `cast.rs` (§4, saturating).
+- `control.rs`, `stmt.rs`, `function.rs`, `lower.rs` reworked.
+- The driver passes the type table through.
+
+One unit test had a wrong expectation. Three older integration tests were ill-typed and were rewritten with explicit `i64` locals. 150 tests pass.
+
+**Milestone 3 is complete.**
+
+### FILES CREATED OR MODIFIED
+
+```
+src/codegen/*            — rewritten on the checker's types; new arith.rs, cast.rs; no milestone 3 stops left
+src/driver/pipeline.rs   — Front.checked; emit_ir/emit_object get the table
+tests/codegen.rs         — builds through check; three tests made well-typed; cross-check covers m2+m3
+tests/programs/m3/       — i32_wrap (9), u8_unsigned (66), u8_wrap (4), f64_math (19), casts (42), div_min_i32 (132)
+PRPs/prp-010-…md         — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issue removed, file tree, decision 14, milestone 3 done
+```
+
+### TESTS WRITTEN
+
+- Unit:
+  - IR widths: `add i32`, `udiv i8` with only a zero guard, the `MIN` guard at 32 bits.
+  - IEEE `f64`: `fdiv`, `fcmp olt`/`une`, `frem`, `fneg`.
+  - Casts: `sext`/`zext`/`trunc`, `uitofp`, `fptosi`/`fptoui.sat`.
+  - Signatures (`double @lugha_fn_half(i8`); `i32 main` without truncation; negated literals fold to one constant.
+  - `u8` ranges compare unsigned; compound assignment at the local's type.
+- Acceptance: six `m3/` run programs, cross-checked at -O0/-O2.
+
+### DECISIONS MADE
+
+- Codegen reads the checker's types (MEMORY decision 14).
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Branch `prp-010-codegen_on_real_types` not yet merged into `main`; tag `m3` after the merge.
+
 ---
 
 ## NEXT SESSION START POINT

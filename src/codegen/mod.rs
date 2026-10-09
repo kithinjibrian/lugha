@@ -1,13 +1,16 @@
-//! Codegen — lowers a parsed program to LLVM IR and native object files
+//! Codegen — lowers a checked program to LLVM IR and native object files
 //! (spec §9 stages 4–5).
 //!
-//! Milestone 2 subset so far (CLAUDE.md rule 9): one `main` with locals,
-//! blocks, `if`, loops and boolean operators; every integer is `i64`. Anything else is
-//! `CodegenError::Unsupported`, naming the milestone that adds it. Does not
-//! link — see `crate::link`.
+//! Every type comes from the checker's table (CLAUDE.md rule 4): `i32`, `i64`,
+//! `u8`, `f64` and `bool` lower per spec §4. Until milestone 4 adds panics,
+//! integer arithmetic wraps and `/ %` trap on a bad divisor. Milestone 4/5
+//! constructs are `CodegenError::Unsupported`. Does not link — see
+//! `crate::link`.
 //!
-//! Depends on: ast, span, inkwell (LLVM 21).
+//! Depends on: ast, check (types), span, inkwell (LLVM 21).
 
+mod arith;
+mod cast;
 mod control;
 mod expr;
 mod function;
@@ -26,6 +29,7 @@ use inkwell::targets::{
 };
 
 use crate::ast::Program;
+use crate::check::Checked;
 use crate::span::Span;
 
 /// Optimisation level for the LLVM pass pipeline.
@@ -56,27 +60,32 @@ pub enum CodegenError {
     Emit(String),
 }
 
-/// Lowers `program` to verified LLVM IR text.
+/// Lowers a checked `program` to verified LLVM IR text.
 ///
 /// # Errors
 ///
 /// [`CodegenError::Unsupported`] for constructs beyond the current milestone;
 /// [`CodegenError::Verify`] if the generated IR is invalid.
-pub fn emit_ir(program: &Program) -> Result<String, CodegenError> {
+pub fn emit_ir(program: &Program, checked: &Checked) -> Result<String, CodegenError> {
     let context = Context::create();
-    let module = lower::lower(&context, program)?;
+    let module = lower::lower(&context, program, checked)?;
     Ok(module.print_to_string().to_string())
 }
 
-/// Lowers `program`, optimises it at `opt`, and writes a native object file to `path`.
+/// Lowers a checked `program`, optimises it at `opt`, and writes a native object file to `path`.
 ///
 /// # Errors
 ///
 /// As [`emit_ir`], plus [`CodegenError::Emit`] if LLVM can't target the host
 /// or write the file.
-pub fn emit_object(program: &Program, opt: OptLevel, path: &Path) -> Result<(), CodegenError> {
+pub fn emit_object(
+    program: &Program,
+    checked: &Checked,
+    opt: OptLevel,
+    path: &Path,
+) -> Result<(), CodegenError> {
     let context = Context::create();
-    let module = lower::lower(&context, program)?;
+    let module = lower::lower(&context, program, checked)?;
     let machine = host_machine(opt)?;
     module.set_triple(&machine.get_triple());
     module.set_data_layout(&machine.get_target_data().get_data_layout());
@@ -119,28 +128,14 @@ fn host_machine(opt: OptLevel) -> Result<TargetMachine, CodegenError> {
 
 #[cfg(test)]
 pub(crate) mod test_util {
-    use super::{CodegenError, emit_ir};
-    use crate::{lexer, parser};
+    use super::emit_ir;
+    use crate::{check, lexer, parser};
 
-    fn program(src: &str) -> crate::ast::Program {
-        let (tokens, _) = lexer::lex(src).expect("test source lexes");
-        parser::parse(&tokens).expect("test source parses").0
-    }
-
-    /// The IR for `src`. Panics if codegen fails.
+    /// The IR for `src`, which must lex, parse, type-check and lower.
     pub fn ir(src: &str) -> String {
-        emit_ir(&program(src)).unwrap_or_else(|e| panic!("{src:?}: {e}"))
-    }
-
-    /// `(what, milestone, spanned source)` of the `Unsupported` error for `src`.
-    pub fn unsupported(src: &str) -> (&'static str, u8, &str) {
-        match emit_ir(&program(src)) {
-            Err(CodegenError::Unsupported {
-                what,
-                milestone,
-                span,
-            }) => (what, milestone, &src[span.start..span.end]),
-            other => panic!("{src:?}: expected Unsupported, got {other:?}"),
-        }
+        let (tokens, _) = lexer::lex(src).expect("test source lexes");
+        let (program, _) = parser::parse(&tokens).expect("test source parses");
+        let (checked, _) = check::check(&program).unwrap_or_else(|e| panic!("{src:?}: {e:?}"));
+        emit_ir(&program, &checked).unwrap_or_else(|e| panic!("{src:?}: {e}"))
     }
 }

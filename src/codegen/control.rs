@@ -1,18 +1,19 @@
 //! Blocks, `if`, `while`, `for` over ranges, `break` and `continue` (spec §5).
 //!
-//! After any terminator (`br` for `break`/`continue`) lowering continues in a
-//! fresh block with no predecessors, so whatever follows still produces valid
-//! IR.
+//! After any terminator (`br` for `break`/`continue`, `ret`) lowering
+//! continues in a fresh block with no predecessors, so whatever follows still
+//! produces valid IR. A branch that never finishes ends in `unreachable` and
+//! adds no phi edge (spec §9).
 
 use inkwell::IntPredicate;
 use inkwell::basic_block::BasicBlock;
 
 use super::CodegenError;
-use super::lower::{Lowerer, POSITIONED, unsupported};
+use super::lower::{Lowerer, POSITIONED};
 use super::scope::Local;
-use super::value::{Kind, Value, type_error};
+use super::value::{Value, int_type, is_signed, llvm_type};
 use crate::ast::{Block, Expr, Ident};
-use crate::span::Span;
+use crate::check::Type;
 
 /// Where `continue` and `break` jump in the innermost loop.
 pub(super) struct Loop<'ctx> {
@@ -21,13 +22,12 @@ pub(super) struct Loop<'ctx> {
 }
 
 impl<'ctx> Lowerer<'ctx> {
-    /// Lowers a block in its own scope; its value is the tail's, or `Void`.
+    /// A block in its own scope: the tail's value, `Void`, or `Never` once a
+    /// statement diverges. Statements after that still lower, into dead blocks.
     pub(super) fn block(&mut self, block: &Block) -> Result<Value<'ctx>, CodegenError> {
         self.scopes.push();
         let mut diverged = false;
         for stmt in &block.stmts {
-            // Statements after a diverging one are still lowered (into dead
-            // blocks) so their own errors are reported.
             diverged |= self.stmt(stmt)?;
         }
         let value = match &block.tail {
@@ -35,20 +35,18 @@ impl<'ctx> Lowerer<'ctx> {
             None => Value::Void,
         };
         self.scopes.pop();
-        Ok(if diverged { self.never() } else { value })
+        Ok(if diverged { Value::Never } else { value })
     }
 
-    /// `if cond { then } [else …]`. Both branches must have the same kind and
-    /// merge with a `phi`; a branch that never finishes adds no edge and fits
-    /// any kind (spec §6, §9).
+    /// `if cond { then } [else …]`, merged with a `phi` of the `if`'s type.
     pub(super) fn if_expr(
         &mut self,
-        span: Span,
+        expr: &Expr,
         cond: &Expr,
         then: &Block,
         else_: Option<&Expr>,
     ) -> Result<Value<'ctx>, CodegenError> {
-        let condition = self.expr(cond)?.bool(cond.span)?;
+        let condition = self.get(cond, Type::Bool)?.into_int_value();
         let then_block = self.append("if.then");
         let merge = self.append("if.end");
         let Some(else_expr) = else_ else {
@@ -77,28 +75,25 @@ impl<'ctx> Lowerer<'ctx> {
         self.finish_branch(else_value, merge);
 
         self.builder.position_at_end(merge);
-        let (kind, a, b) = match (then_value, else_value) {
-            (Value::Never { .. }, Value::Never { .. }) => return Ok(self.never()),
-            // The other branch's block is the merge block's only predecessor,
-            // so its value can be used directly.
-            (Value::Never { .. }, value) | (value, Value::Never { .. }) => return Ok(value),
-            (Value::Void, Value::Void) => return Ok(Value::Void),
-            (Value::Int(a), Value::Int(b)) => (Kind::Int, a, b),
-            (Value::Bool(a), Value::Bool(b)) => (Kind::Bool, a, b),
-            _ => return Err(type_error(span)),
-        };
-        let phi = self
-            .builder
-            .build_phi(kind.llvm(self.context), "if")
-            .expect(POSITIONED);
-        phi.add_incoming(&[(&a, then_end), (&b, else_end)]);
-        Ok(Value::of(kind, phi.as_basic_value().into_int_value()))
+        Ok(match (then_value, else_value) {
+            (Value::Never, Value::Never) => Value::Never,
+            // The other branch's block is the merge block's only predecessor.
+            (Value::Never, value) | (value, Value::Never) => value,
+            (Value::Val(a), Value::Val(b)) => {
+                let phi = self
+                    .builder
+                    .build_phi(llvm_type(self.context, self.ty(expr)), "if")
+                    .expect(POSITIONED);
+                phi.add_incoming(&[(&a, then_end), (&b, else_end)]);
+                Value::Val(phi.as_basic_value())
+            }
+            _ => Value::Void,
+        })
     }
 
-    /// Ends an `if` branch: jump to `merge`, or `unreachable` if the branch
-    /// never finishes, so it adds no edge to the merge block.
+    /// Ends an `if` branch: jump to `merge`, or `unreachable` if it never finishes.
     fn finish_branch(&self, value: Value<'ctx>, merge: BasicBlock<'ctx>) {
-        if matches!(value, Value::Never { .. }) {
+        if matches!(value, Value::Never) {
             self.builder.build_unreachable().expect(POSITIONED);
         } else {
             self.branch(merge);
@@ -113,7 +108,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(cond_block);
 
         self.builder.position_at_end(cond_block);
-        let condition = self.expr(cond)?.bool(cond.span)?;
+        let condition = self.get(cond, Type::Bool)?.into_int_value();
         self.builder
             .build_conditional_branch(condition, body_block, exit)
             .expect(POSITIONED);
@@ -131,9 +126,9 @@ impl<'ctx> Lowerer<'ctx> {
         Ok(())
     }
 
-    /// `for var in start..end { body }`, per the spec §5 desugaring: bounds are
-    /// evaluated once, `var` is a fresh binding each iteration, and the step
-    /// also runs on `continue`.
+    /// `for var in start..end { body }`, per the spec §5 desugaring, at the
+    /// range's integer type: bounds evaluated once, a fresh `var` each
+    /// iteration, and the step also runs on `continue`.
     pub(super) fn for_range(
         &mut self,
         var: &Ident,
@@ -141,12 +136,26 @@ impl<'ctx> Lowerer<'ctx> {
         end: &Expr,
         body: &Block,
     ) -> Result<(), CodegenError> {
-        let first = self.expr(start)?.int(start.span)?;
-        let limit = self.expr(end)?.int(end.span)?;
-        let counter = self.entry_alloca(Kind::Int, "for.i");
-        let end_slot = self.entry_alloca(Kind::Int, "for.end");
-        self.builder.build_store(counter, first).expect(POSITIONED);
-        self.builder.build_store(end_slot, limit).expect(POSITIONED);
+        let ty = [self.ty(start), self.ty(end)]
+            .into_iter()
+            .find(|t| t.is_integer())
+            .unwrap_or(Type::I64);
+        let first = self.get(start, ty)?;
+        let limit = self.get(end, ty)?;
+        let counter = Local {
+            ptr: self.entry_alloca(ty, "for.i"),
+            ty,
+        };
+        let end_slot = Local {
+            ptr: self.entry_alloca(ty, "for.end"),
+            ty,
+        };
+        self.builder
+            .build_store(counter.ptr, first)
+            .expect(POSITIONED);
+        self.builder
+            .build_store(end_slot.ptr, limit)
+            .expect(POSITIONED);
 
         let cond_block = self.append("for.cond");
         let body_block = self.append("for.body");
@@ -155,24 +164,16 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(cond_block);
 
         self.builder.position_at_end(cond_block);
-        let int = Kind::Int;
-        let i = self.load(
-            Local {
-                ptr: counter,
-                kind: int,
-            },
-            "i",
-        );
-        let bound = self.load(
-            Local {
-                ptr: end_slot,
-                kind: int,
-            },
-            "end",
-        );
+        let i = self.load(counter, "i").into_int_value();
+        let bound = self.load(end_slot, "end").into_int_value();
+        let less = if is_signed(ty) {
+            IntPredicate::SLT
+        } else {
+            IntPredicate::ULT
+        };
         let more = self
             .builder
-            .build_int_compare(IntPredicate::SLT, i, bound, "more")
+            .build_int_compare(less, i, bound, "more")
             .expect(POSITIONED);
         self.builder
             .build_conditional_branch(more, body_block, exit)
@@ -180,15 +181,12 @@ impl<'ctx> Lowerer<'ctx> {
 
         self.builder.position_at_end(body_block);
         self.scopes.push();
-        let var_slot = self.entry_alloca(Kind::Int, &var.name);
-        self.builder.build_store(var_slot, i).expect(POSITIONED);
-        self.scopes.declare(
-            &var.name,
-            Local {
-                ptr: var_slot,
-                kind: int,
-            },
-        );
+        let var_slot = Local {
+            ptr: self.entry_alloca(ty, &var.name),
+            ty,
+        };
+        self.builder.build_store(var_slot.ptr, i).expect(POSITIONED);
+        self.scopes.declare(&var.name, var_slot);
         self.loops.push(Loop { next: step, exit });
         self.block(body)?;
         self.loops.pop();
@@ -196,20 +194,14 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(step);
 
         self.builder.position_at_end(step);
-        let i = self.load(
-            Local {
-                ptr: counter,
-                kind: int,
-            },
-            "i",
-        );
-        let one = self.context.i64_type().const_int(1, false);
+        let i = self.load(counter, "i").into_int_value();
         // Can't overflow: `i < end` held, so `i + 1 <= end`.
-        let next = self
-            .builder
-            .build_int_add(i, one, "next")
+        let next =
+            self.builder
+                .build_int_add(i, int_type(self.context, ty).const_int(1, false), "next");
+        self.builder
+            .build_store(counter.ptr, next.expect(POSITIONED))
             .expect(POSITIONED);
-        self.builder.build_store(counter, next).expect(POSITIONED);
         self.branch(cond_block);
 
         self.builder.position_at_end(exit);
@@ -217,21 +209,20 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// `break` (`is_break`) or `continue` in the innermost loop.
-    pub(super) fn jump(&mut self, is_break: bool, span: Span) -> Result<(), CodegenError> {
-        let Some(target) = self.loops.last() else {
-            let what = if is_break {
-                "checking `break` outside loops"
-            } else {
-                "checking `continue` outside loops"
-            };
-            return Err(unsupported(what, 3, span));
-        };
+    pub(super) fn jump(&mut self, is_break: bool) {
+        let target = self
+            .loops
+            .last()
+            .expect("checked: E0504 rejects jumps outside loops");
         let to = if is_break { target.exit } else { target.next };
         self.branch(to);
-        // Code after the jump is unreachable but must still be valid IR.
-        let dead = self.append("after.jump");
+        self.start_dead_block("after.jump");
+    }
+
+    /// Continues lowering in a fresh block nothing jumps to, after a terminator.
+    pub(super) fn start_dead_block(&mut self, name: &str) {
+        let dead = self.append(name);
         self.builder.position_at_end(dead);
-        Ok(())
     }
 
     pub(super) fn append(&self, name: &str) -> BasicBlock<'ctx> {
@@ -254,47 +245,29 @@ impl<'ctx> Lowerer<'ctx> {
 
 #[cfg(test)]
 mod tests {
-    use crate::codegen::test_util::{ir, unsupported};
+    use crate::codegen::test_util::ir;
 
     #[test]
-    fn conditions_must_be_booleans() {
-        assert_eq!(
-            unsupported("fun main() { if 5 { } }"),
-            ("type checking", 3, "5")
-        );
-        assert_eq!(
-            unsupported("fun main() { while 1 { } }"),
-            ("type checking", 3, "1")
-        );
-    }
-
-    #[test]
-    fn if_branches_must_agree() {
-        let src = "fun main() { let v = if true { 1 } else { false }; }";
-        assert_eq!(
-            unsupported(src),
-            ("type checking", 3, "if true { 1 } else { false }")
-        );
-    }
-
-    #[test]
-    fn jumps_outside_loops_are_unsupported() {
-        assert_eq!(
-            unsupported("fun main() { break; }"),
-            ("checking `break` outside loops", 3, "break;")
-        );
-        assert_eq!(
-            unsupported("fun main() { continue; }"),
-            ("checking `continue` outside loops", 3, "continue;")
-        );
-    }
-
-    #[test]
-    fn code_after_break_still_verifies() {
+    fn code_after_jumps_still_verifies() {
         // `ir` panics if the module fails verification.
-        ir("fun main() { while true { break; let x = 1; x += 1; } }");
+        ir("fun main() { while true { break; let x = 1; } }");
         ir(
-            "fun main(): i32 { let mut n = 0; for i in 0..3 { if i == 1 { continue; n += 9; } n += i; } n }",
+            "fun main(): i32 { let n: i32 = 3; let mut t: i32 = 0; for i in 0..n { if i == 1 { continue; } t += i; } t }",
         );
+    }
+
+    #[test]
+    fn a_returning_branch_adds_no_phi_edge() {
+        let ir = ir("fun abs(x: i64): i64 { if x < 0 { return -x; } else { x } }\nfun main() {}");
+        let body = &ir[ir.find("define i64 @lugha_fn_abs").unwrap()..];
+        let body = &body[..body.find("\n}").unwrap()];
+        assert!(!body.contains("phi"), "{body}");
+        assert!(body.contains("unreachable"), "{body}");
+    }
+
+    #[test]
+    fn u8_ranges_compare_unsigned() {
+        let ir = ir("fun main() { let n: u8 = 200; for i in 0..n { } }");
+        assert!(ir.contains("icmp ult i8"), "{ir}");
     }
 }

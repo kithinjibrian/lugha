@@ -45,12 +45,12 @@ Done when the §11 milestone 2 program exits with 55.
 - [x] PRP-006: locals and control flow in `main` (`let`/`mut`, assignment, blocks, `if`, `while`, `for`, `break`/`continue`, comparisons, `&&`/`||`)
 - [x] PRP-007: functions, parameters, calls, recursion, `return`, `=` bodies — §11 program exits 55 — **milestone 2 done**
 
-### Milestone 3 — Type checker and diagnostics
+### Milestone 3 — Type checker and diagnostics ✅
 Done when the §10 rejected program reports E0401 in both formats.
 - [x] PRP-008: checker core (names, types, literal inference, calls, E0301–E0305, E0401–E0407) — E0401 done-when met
 - [x] PRP-009: casts, mutability, places, missing returns, loop context, discarded values, W0101 (E0408, E0501–E0505)
-- [ ] PRP: overflow and division checks in codegen
-- [ ] PRP: diagnostics (error codes, human + JSON, `lughac check`, "remove this semicolon")
+- [x] PRP-010: codegen on real types (i32/i64/u8/f64/bool, §4 casts); overflow and division checks moved to milestone 4 (spec §11)
+- [x] Diagnostics: error codes, human + JSON (PRP-005), `lughac check` and "remove this semicolon" (PRP-008/009)
 
 ### Milestone 4 — Runtime and C
 Done when hello world, recursion and the libc example run.

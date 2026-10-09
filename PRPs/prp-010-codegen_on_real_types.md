@@ -1,6 +1,6 @@
 ## FEATURE: Codegen reads the checker's type table and lowers real `i32`, `i64`, `u8`, `f64` and `bool`, with spec §4 casts — removing codegen's interim value kinds and closing milestone 3.
 
-**Status:** approved 2026-10-09 — session 13
+**Status:** implemented 2026-10-09 — session 13 (branch `prp-010-codegen_on_real_types`)
 **Milestone:** 3, last of three PRPs; tag `m3` after the merge
 **Spec:** §4 (types, LLVM lowering table, casts), §5 (arithmetic semantics), §8 (symbol naming), §9 (lowering notes: opaque pointers need the checker's types, `llvm.fptosi.sat`, if-phi rules), §11 (milestone 3)
 **Decisions:** CLAUDE.md architecture rule 4 (codegen never infers types; it reads the checker's side table); PRP-004 / spec §11 (overflow and division panics are milestone 4, so wrap and trap stay)
@@ -27,6 +27,15 @@ Codegen no longer makes up types or second-guesses the checker: every "not imple
   - The driver passes the type table through. New run-mode `tests/programs/m3/` programs.
 - Related existing code: `src/codegen/*`, `src/check/{mod,types}.rs`, `src/driver/pipeline.rs`, `tests/codegen.rs`.
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 13)
+- **New `codegen/arith.rs`:** arithmetic, comparisons and the trap guard moved out of `expr.rs` to keep both under 300 lines.
+- **Driver:** `Front.checked` is an `Option<Checked>`. It is `None` only for the parse-only front end used by `--emit=ast`; `pipeline::checked()` states the invariant.
+- **`tests/codegen.rs`:**
+  - Three milestone 1/2 tests returned `i64` values from `main(): i32`; they now use explicit `i64` locals and a final `as i32`, testing the same behaviour.
+  - The known-issue test "assigning to an immutable binding compiles" is deleted: the checker rejects it with E0501 since PRP-009.
+  - The `-O0`/`-O2` cross-check now covers every `m2/` and `m3/` program with an `.exit` file, mapping signals to 128 + N.
+- **One unit test was wrong, not the code:** it looked for `i32 -2147483648`, but LLVM prints the constant as `icmp eq i32 %x, -2147483648`.
 
 ### Discovery answers (session 13)
 1. Codegen takes `&Checked` and reads every expression's type from it. Its own kinds and milestone 3 checks are deleted. A small `Value` enum keeps `Never`, because blocks have no `ExprId` and the no-phi-edge rule for diverging branches (§9) needs it.
@@ -121,14 +130,14 @@ Fixed by the spec, not asked:
 ## TESTS TO WRITE
 
 Unit tests (`src/codegen/`):
-- [ ] IR widths: an `i32` add is `add i32`; a `u8` division is `udiv i8` with a zero guard and no `MIN` guard; `f64` uses `fadd double`/`fcmp olt` and `!=` is `fcmp une`.
-- [ ] Casts: `sext`/`zext`/`trunc` chosen by signedness; `uitofp` from `u8`; `llvm.fptosi.sat.i32.f64` and `llvm.fptoui.sat.i8.f64` are declared and called.
-- [ ] `define i32 @lugha_fn_main()` for `fun main(): i32`; the C `main` returns it with no truncation.
-- [ ] `-2147483648` as an `i32` is a single `i32` constant.
+- [x] IR widths: an `i32` add is `add i32`; a `u8` division is `udiv i8` with a zero guard and no `MIN` guard; `f64` uses `fadd double`/`fcmp olt` and `!=` is `fcmp une`.
+- [x] Casts: `sext`/`zext`/`trunc` chosen by signedness; `uitofp` from `u8`; `llvm.fptosi.sat.i32.f64` and `llvm.fptoui.sat.i8.f64` are declared and called.
+- [x] `define i32 @lugha_fn_main()` for `fun main(): i32`; the C `main` returns it with no truncation.
+- [x] `-2147483648` as an `i32` is a single `i32` constant.
 
 Integration and acceptance:
-- [ ] All six new `m3/` run programs pass through `lughac run`, and agree at `-O0`/`-O2`.
-- [ ] Every existing `m1/`, `m2/`, `m3/` and CLI test still passes.
+- [x] All six new `m3/` run programs pass through `lughac run`, and agree at `-O0`/`-O2`.
+- [x] Every existing `m1/`, `m2/`, `m3/` and CLI test still passes.
 
 ## ROLLBACK PLAN
 

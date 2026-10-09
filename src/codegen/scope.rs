@@ -2,16 +2,17 @@
 
 use std::collections::HashMap;
 
-use inkwell::values::{IntValue, PointerValue};
+use inkwell::values::{BasicValueEnum, PointerValue};
 
 use super::lower::{Lowerer, POSITIONED};
-use super::value::Kind;
+use super::value::llvm_type;
+use crate::check::Type;
 
 /// A local variable's stack slot.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct Local<'ctx> {
     pub ptr: PointerValue<'ctx>,
-    pub kind: Kind,
+    pub ty: Type,
 }
 
 /// Nested block scopes; inner names shadow outer ones (spec §5).
@@ -38,19 +39,20 @@ impl<'ctx> Scopes<'ctx> {
         scope.insert(name.to_string(), local);
     }
 
-    /// The innermost binding of `name`.
-    pub(super) fn lookup(&self, name: &str) -> Option<Local<'ctx>> {
+    /// The innermost binding of `name`; the checker guarantees one exists.
+    pub(super) fn lookup(&self, name: &str) -> Local<'ctx> {
         self.stack
             .iter()
             .rev()
             .find_map(|scope| scope.get(name).copied())
+            .unwrap_or_else(|| unreachable!("checked: `{name}` is in scope"))
     }
 }
 
 impl<'ctx> Lowerer<'ctx> {
     /// Allocates a stack slot at the top of the entry block, so `mem2reg` can
     /// promote it and loops don't allocate once per iteration (spec §7).
-    pub(super) fn entry_alloca(&self, kind: Kind, name: &str) -> PointerValue<'ctx> {
+    pub(super) fn entry_alloca(&self, ty: Type, name: &str) -> PointerValue<'ctx> {
         let function = self
             .function
             .expect("locals are allocated inside a function");
@@ -63,16 +65,15 @@ impl<'ctx> Lowerer<'ctx> {
             None => builder.position_at_end(entry),
         }
         builder
-            .build_alloca(kind.llvm(self.context), name)
+            .build_alloca(llvm_type(self.context, ty), name)
             .expect(POSITIONED)
     }
 
     /// Loads a local's current value.
-    pub(super) fn load(&self, local: Local<'ctx>, name: &str) -> IntValue<'ctx> {
-        let ty = local.kind.llvm(self.context);
+    pub(super) fn load(&self, local: Local<'ctx>, name: &str) -> BasicValueEnum<'ctx> {
+        let ty = llvm_type(self.context, local.ty);
         self.builder
             .build_load(ty, local.ptr, name)
             .expect(POSITIONED)
-            .into_int_value()
     }
 }

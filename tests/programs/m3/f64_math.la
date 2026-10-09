@@ -1,0 +1,6 @@
+// f64 results reach the exit code through a cast (printing is milestone 4).
+fun area(r: f64): f64 = 3.14159 * r * r;
+
+fun main(): i32 {
+    area(2.5) as i32
+}

@@ -3,26 +3,23 @@
 //! Every signature is declared before any body is lowered, so calls may name
 //! functions defined later in the file, including mutual recursion.
 
-use inkwell::types::BasicMetadataTypeEnum;
+use inkwell::types::{BasicMetadataTypeEnum, BasicType};
 use inkwell::values::{BasicMetadataValueEnum, FunctionValue, ValueKind};
 
 use super::CodegenError;
 use super::lower::{Lowerer, POSITIONED, unsupported};
 use super::scope::{Local, Scopes};
-use super::value::{Kind, Value, annotation_kind, type_error};
+use super::value::{Value, annotation_type, llvm_type};
 use crate::ast::{Expr, ExprKind, FunDecl, Item, Program};
-use crate::span::Span;
-
-/// Built into the compiler from milestone 4 (spec §5).
-const INTRINSICS: [&str; 4] = ["print", "println", "panic", "to_string"];
+use crate::check::Type;
 
 /// A declared function.
 #[derive(Debug, Clone)]
 pub(super) struct Signature<'ctx> {
     pub function: FunctionValue<'ctx>,
-    pub params: Vec<Kind>,
+    pub params: Vec<Type>,
     /// `None` for a void function.
-    pub ret: Option<Kind>,
+    pub ret: Option<Type>,
 }
 
 impl<'ctx> Lowerer<'ctx> {
@@ -34,21 +31,14 @@ impl<'ctx> Lowerer<'ctx> {
                 Item::Extern(e) => return Err(unsupported("extern functions", 4, e.span)),
                 Item::Struct(s) => return Err(unsupported("structs", 5, s.span)),
             };
-            if self.functions.contains_key(&f.name.name) {
-                return Err(unsupported("checking duplicate names", 3, f.name.span));
-            }
-            let params = f
-                .params
-                .iter()
-                .map(|p| annotation_kind(&p.ty))
-                .collect::<Result<Vec<_>, _>>()?;
-            let ret = f.ret.as_ref().map(annotation_kind).transpose()?;
+            let params: Vec<Type> = f.params.iter().map(|p| annotation_type(&p.ty)).collect();
+            let ret = f.ret.as_ref().map(annotation_type);
             let param_types: Vec<BasicMetadataTypeEnum> = params
                 .iter()
-                .map(|kind| kind.llvm(self.context).into())
+                .map(|&ty| llvm_type(self.context, ty).into())
                 .collect();
             let fn_type = match ret {
-                Some(kind) => kind.llvm(self.context).fn_type(&param_types, false),
+                Some(ty) => llvm_type(self.context, ty).fn_type(&param_types, false),
                 None => self.context.void_type().fn_type(&param_types, false),
             };
             let function =
@@ -66,7 +56,7 @@ impl<'ctx> Lowerer<'ctx> {
         Ok(())
     }
 
-    /// Lowers one function body. Parameters become immutable locals (spec §6).
+    /// Lowers one function body. Parameters become locals (spec §6).
     pub(super) fn define(&mut self, f: &FunDecl) -> Result<(), CodegenError> {
         let signature = self.functions[&f.name.name].clone();
         self.function = Some(signature.function);
@@ -77,177 +67,90 @@ impl<'ctx> Lowerer<'ctx> {
             .position_at_end(self.context.append_basic_block(signature.function, "entry"));
 
         self.scopes.push();
-        for (index, (param, &kind)) in f.params.iter().zip(&signature.params).enumerate() {
-            let ptr = self.entry_alloca(kind, &param.name.name);
+        for (index, (param, &ty)) in f.params.iter().zip(&signature.params).enumerate() {
+            let ptr = self.entry_alloca(ty, &param.name.name);
             let index = u32::try_from(index).expect("parameter count fits in u32");
             let arg = signature
                 .function
                 .get_nth_param(index)
                 .expect("declared with these parameters");
-            self.builder
-                .build_store(ptr, arg.into_int_value())
-                .expect(POSITIONED);
-            self.scopes.declare(&param.name.name, Local { ptr, kind });
+            self.builder.build_store(ptr, arg).expect(POSITIONED);
+            self.scopes.declare(&param.name.name, Local { ptr, ty });
         }
         let value = self.block(&f.body)?;
         self.scopes.pop();
 
         match (signature.ret, value) {
             // §6 guarantees control never reaches the end of a body that diverges.
-            (_, Value::Never { .. }) => {
+            (_, Value::Never) => {
                 self.builder.build_unreachable().expect(POSITIONED);
             }
             (None, _) => {
                 self.builder.build_return(None).expect(POSITIONED);
             }
-            (Some(Kind::Int), Value::Int(result)) | (Some(Kind::Bool), Value::Bool(result)) => {
+            (Some(_), Value::Val(result)) => {
                 self.builder.build_return(Some(&result)).expect(POSITIONED);
             }
-            (Some(_), Value::Void) => {
-                return Err(unsupported("checking missing returns", 3, f.name.span));
-            }
-            (Some(_), _) => {
-                let span = f.body.tail.as_ref().map_or(f.body.span, |tail| tail.span);
-                return Err(type_error(span));
-            }
+            (Some(_), Value::Void) => unreachable!("checked: E0503 rejects missing returns"),
         }
         Ok(())
     }
 
     /// `return [value];` — leaves the builder in a fresh dead block.
-    pub(super) fn return_stmt(
-        &mut self,
-        value: Option<&Expr>,
-        span: Span,
-    ) -> Result<(), CodegenError> {
+    pub(super) fn return_stmt(&mut self, value: Option<&Expr>) -> Result<(), CodegenError> {
         match (self.ret, value) {
-            (Some(kind), Some(expr)) => {
-                let result = match (kind, self.expr(expr)?) {
-                    (Kind::Int, value) => value.int(expr.span)?,
-                    (Kind::Bool, value) => value.bool(expr.span)?,
-                };
+            (Some(ty), Some(expr)) => {
+                let result = self.get(expr, ty)?;
                 self.builder.build_return(Some(&result)).expect(POSITIONED);
             }
-            (None, None) => {
+            _ => {
                 self.builder.build_return(None).expect(POSITIONED);
             }
-            _ => return Err(type_error(span)),
         }
-        let dead = self.append("after.return");
-        self.builder.position_at_end(dead);
+        self.start_dead_block("after.return");
         Ok(())
     }
 
-    /// `callee(args)`: locals shadow functions; arguments run left to right (spec §5, §6).
-    pub(super) fn call(
-        &mut self,
-        call: &Expr,
-        callee: &Expr,
-        args: &[Expr],
-    ) -> Result<Value<'ctx>, CodegenError> {
+    /// A call to a declared function; arguments run left to right (spec §5).
+    pub(super) fn call(&mut self, call: &Expr, args: &[Expr]) -> Result<Value<'ctx>, CodegenError> {
+        let ExprKind::Call(callee, _) = &call.kind else {
+            unreachable!("called with a call expression")
+        };
         let ExprKind::Name(name) = &callee.kind else {
-            return Err(unsupported("checking calls", 3, callee.span));
+            unreachable!("checked: E0406 rejects non-name callees")
         };
-        if self.scopes.lookup(name).is_some() {
-            return Err(unsupported("checking calls", 3, callee.span));
-        }
         let Some(signature) = self.functions.get(name).cloned() else {
-            return Err(if INTRINSICS.contains(&name.as_str()) {
-                unsupported("intrinsics", 4, callee.span)
-            } else {
-                unsupported("checking undefined names", 3, callee.span)
-            });
+            return Err(unsupported("intrinsics", 4, callee.span));
         };
-        if args.len() != signature.params.len() {
-            return Err(unsupported("checking calls", 3, call.span));
-        }
         let mut values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len());
-        for (arg, kind) in args.iter().zip(&signature.params) {
-            let value = self.expr(arg)?;
-            let value = match kind {
-                Kind::Int => value.int(arg.span)?,
-                Kind::Bool => value.bool(arg.span)?,
-            };
-            values.push(value.into());
+        for (arg, &ty) in args.iter().zip(&signature.params) {
+            values.push(self.get(arg, ty)?.into());
         }
         let site = self
             .builder
             .build_call(signature.function, &values, "call")
             .expect(POSITIONED);
-        Ok(match (signature.ret, site.try_as_basic_value()) {
-            (Some(kind), ValueKind::Basic(result)) => Value::of(kind, result.into_int_value()),
-            _ => Value::Void,
+        Ok(match site.try_as_basic_value() {
+            ValueKind::Basic(result) => Value::Val(result),
+            ValueKind::Instruction(_) => Value::Void,
         })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::codegen::test_util::{ir, unsupported};
+    use crate::codegen::test_util::ir;
 
     #[test]
-    fn call_mistakes_wait_for_the_checker() {
-        let cases = [
-            (
-                "fun f() {}\nfun f() {}\nfun main() {}",
-                ("checking duplicate names", 3, "f"),
-            ),
-            ("fun main() { g(); }", ("checking undefined names", 3, "g")),
-            (
-                "fun f(a: i64) {}\nfun main() { f(); }",
-                ("checking calls", 3, "f()"),
-            ),
-            (
-                "fun f(a: i64) {}\nfun main() { f(true); }",
-                ("type checking", 3, "true"),
-            ),
-            ("fun main() { let f = 1; f(); }", ("checking calls", 3, "f")),
-            (
-                "fun f() {}\nfun main() { let g = f; }",
-                ("type checking", 3, "f"),
-            ),
-            ("fun main() { println(1); }", ("intrinsics", 4, "println")),
-        ];
-        for (src, want) in cases {
-            assert_eq!(unsupported(src), want, "{src}");
-        }
+    fn functions_are_prefixed_and_typed_by_their_signature() {
+        let ir = ir("fun half(x: u8): f64 = x as f64 / 2.0;\nfun main(): i32 { half(9) as i32 }");
+        assert!(ir.contains("define double @lugha_fn_half(i8"), "{ir}");
+        assert!(ir.contains("call double @lugha_fn_half(i8"), "{ir}");
     }
 
     #[test]
-    fn return_must_match_the_function() {
-        assert_eq!(
-            unsupported("fun f() { return 1; }\nfun main() {}"),
-            ("type checking", 3, "return 1;")
-        );
-        assert_eq!(
-            unsupported("fun f(): i64 { return; }\nfun main() {}"),
-            ("type checking", 3, "return;")
-        );
-        assert_eq!(
-            unsupported("fun f(c: bool): i64 { if c { return 1; } }\nfun main() {}"),
-            ("checking missing returns", 3, "f")
-        );
-        // Spec §6: loops never definitely return.
-        assert_eq!(
-            unsupported("fun g(): i64 { while true { return 1; } }\nfun main() {}"),
-            ("checking missing returns", 3, "g")
-        );
-    }
-
-    #[test]
-    fn a_returning_branch_adds_no_phi_edge() {
-        let ir = ir("fun abs(x: i64): i64 { if x < 0 { return -x; } else { x } }\nfun main() {}");
-        let body = &ir[ir.find("define i64 @lugha_fn_abs").unwrap()..];
-        let body = &body[..body.find("\n}").unwrap()];
-        assert!(!body.contains("phi"), "{body}");
-        assert!(body.contains("unreachable"), "{body}");
-    }
-
-    #[test]
-    fn functions_are_prefixed_and_diverging_bodies_end_unreachable() {
-        let ir = ir("fun f(): i64 { return 1; }\nfun main(): i32 { f() }");
-        assert!(ir.contains("call i64 @lugha_fn_f()"), "{ir}");
-        assert!(ir.contains("define i64 @lugha_fn_main()"), "{ir}");
+    fn diverging_bodies_end_unreachable() {
+        let ir = ir("fun f(): i64 { return 1; }\nfun main() {}");
         let f = &ir[ir.find("define i64 @lugha_fn_f").unwrap()..];
         assert!(f[..f.find("\n}").unwrap()].contains("unreachable"), "{f}");
     }

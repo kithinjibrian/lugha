@@ -1,0 +1,5 @@
+// i32::MIN / -1 overflows at 32 bits: the trap guard fires (until milestone 4's panics).
+fun main(): i32 {
+    let m: i32 = -2147483648;
+    m / -1
+}

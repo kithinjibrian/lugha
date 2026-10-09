@@ -1,0 +1,6 @@
+// u8 arithmetic wraps at 8 bits: 250 + 10 = 4.
+fun main(): i32 {
+    let b: u8 = 250;
+    let c = b + 10;
+    c as i32
+}
