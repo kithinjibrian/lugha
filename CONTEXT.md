@@ -981,7 +981,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, known issue removed, 
 
 ## SESSION 19 — 2026-10-09 — PRP-016 lughac spec and §10 acceptance — open
 
-Branch: main
+Branch: main → prp-016-spec_command
 
 ---
 
