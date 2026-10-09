@@ -1,15 +1,19 @@
 //! Codegen — lowers a parsed program to LLVM IR and native object files
 //! (spec §9 stages 4–5).
 //!
-//! Milestone 1 subset (CLAUDE.md rule 9): one `main` whose body is an integer
-//! expression; every value is `i64`. Anything else is
+//! Milestone 2 subset so far (CLAUDE.md rule 9): one `main` with locals,
+//! blocks, `if`, loops and boolean operators; every integer is `i64`. Anything else is
 //! `CodegenError::Unsupported`, naming the milestone that adds it. Does not
 //! link — see `crate::link`.
 //!
 //! Depends on: ast, span, inkwell (LLVM 21).
 
+mod control;
 mod expr;
 mod lower;
+mod scope;
+mod stmt;
+mod value;
 
 use std::path::Path;
 

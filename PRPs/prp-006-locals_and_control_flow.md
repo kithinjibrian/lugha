@@ -1,6 +1,6 @@
 ## FEATURE: Compile locals and control flow inside `main` — `let`/`let mut`, assignment, blocks with tail values, `if` expressions, `while`, `for` over ranges, `break`/`continue`, comparisons and boolean operators.
 
-**Status:** approved 2026-10-09 — session 9
+**Status:** implemented 2026-10-09 — session 9 (branch `prp-006-locals_and_control_flow`)
 **Milestone:** 2, first of two PRPs (the second, PRP-007, adds functions and reaches the §11 done-when)
 **Spec:** §3 (statements), §5 (evaluation order, blocks and tails, `if`, `while`, `for` desugaring, `break`/`continue`, `&&`/`||`), §7 (stack locals), §9 (lowering notes: short-circuit and `if` with `phi`)
 **Decisions:** CLAUDE.md rule 9 (milestones 1–2: every integer is `i64`)
@@ -18,6 +18,15 @@ Programs whose `main` uses variables, loops and branches compile and run. For ex
   - CLAUDE.md KNOWN ISSUES is updated.
 - Related existing code: `src/codegen/*`, `src/ast/*`, `tests/codegen.rs`, `tests/programs/`.
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 9)
+- **More `Unsupported` cases:**
+  - An assignment target that isn't a place gives `checking assignment targets` (milestone 3).
+  - `fun main(): i32` whose block ends without a tail keeps the milestone 1 "`main` without a result value" (milestone 3).
+- **Error span for a `let` with a void initialiser:** the initialiser expression, e.g. `if true { }`.
+- **Updated earlier tests:**
+  - `tests/cli.rs` now uses `return` as its "not implemented" example, since `let` compiles.
+  - The codegen unit tests now expect `y + 1` to give "checking undefined names" instead of "variables".
 
 ### Discovery answers (session 9)
 1. Milestone 2 is split into PRP-006 (locals and control flow in `main`) and PRP-007 (functions, calls, recursion, `return`; done-when 55).
@@ -117,19 +126,19 @@ Programs whose `main` uses variables, loops and branches compile and run. For ex
 ## TESTS TO WRITE
 
 Unit tests (`src/codegen/`):
-- [ ] Value kinds: `if 5 {}`, `1 + true`, `let b: bool = 1;`, `if c { 1 } else { true }` each give `type checking` (milestone 3) with the right span.
-- [ ] `y + 1` with no `y` gives `checking undefined names` with the span `y`.
-- [ ] `break;` outside a loop gives `checking `break` outside loops`.
-- [ ] `return 1;` gives `` `return` `` (milestone 2). `for x of xs` gives arrays (5). `let s = "a";` gives strings (4). `pts[0] = 1;` gives milestone 5.
-- [ ] IR: locals are allocas in the entry block; `&&` produces a `phi`; IR verifies after code following `break`.
+- [x] Value kinds: `if 5 {}`, `1 + true`, `let b: bool = 1;`, `if c { 1 } else { true }` each give `type checking` (milestone 3) with the right span.
+- [x] `y + 1` with no `y` gives `checking undefined names` with the span `y`.
+- [x] `break;` outside a loop gives `checking `break` outside loops`.
+- [x] `return 1;` gives `` `return` `` (milestone 2). `for x of xs` gives arrays (5). `let s = "a";` gives strings (4). `pts[0] = 1;` gives milestone 5.
+- [x] IR: locals are allocas in the entry block; `&&` produces a `phi`; IR verifies after code following `break`.
 
 Integration (`tests/codegen.rs`, at `-O0` and `-O2`):
-- [ ] Every `tests/programs/m2/` program gives the same exit code at both levels.
-- [ ] Assigning to a non-`mut` variable compiles and runs (the documented known issue).
-- [ ] `let x = x + 1;` reads the outer `x`.
+- [x] Every `tests/programs/m2/` program gives the same exit code at both levels.
+- [x] Assigning to a non-`mut` variable compiles and runs (the documented known issue).
+- [x] `let x = x + 1;` reads the outer `x`.
 
 Acceptance:
-- [ ] All `tests/programs/m2/` cases pass through `lughac run`.
+- [x] All `tests/programs/m2/` cases pass through `lughac run`.
 
 ## ROLLBACK PLAN
 

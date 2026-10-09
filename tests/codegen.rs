@@ -104,3 +104,33 @@ fn link_failure_reports_cc_stderr() {
         other => panic!("expected LinkError::Failed, got {other:?}"),
     }
 }
+
+#[test]
+fn milestone_2_programs_agree_at_o0_and_o2() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/programs/m2");
+    let mut checked = 0;
+    for entry in std::fs::read_dir(&dir).expect("m2 programs exist") {
+        let path = entry.expect("entry").path();
+        if path.extension().is_some_and(|e| e == "la") {
+            let src = std::fs::read_to_string(&path).expect("program is UTF-8");
+            let expected =
+                std::fs::read_to_string(path.with_extension("exit")).expect(".exit exists");
+            let expected: i32 = expected.trim().parse().expect(".exit is an integer");
+            // `run` asserts -O0 and -O2 agree.
+            assert_eq!(run(&src).code(), Some(expected), "{}", path.display());
+            checked += 1;
+        }
+    }
+    assert!(checked >= 7, "only {checked} m2 programs found");
+}
+
+#[test]
+fn assigning_to_an_immutable_binding_compiles_until_milestone_3() {
+    // Known issue (CLAUDE.md): the checker will reject this in milestone 3.
+    assert_eq!(exit_code("let x = 1; x = 5; x"), Some(5));
+}
+
+#[test]
+fn let_initialiser_reads_the_outer_binding() {
+    assert_eq!(exit_code("let x = 2; let x = x + 1; x"), Some(3));
+}

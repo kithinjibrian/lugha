@@ -42,9 +42,8 @@ Done when `fun main(): i32 { 2 + 3 * 4 }` exits with 14.
 
 ### Milestone 2 — Variables, control flow, functions
 Done when the §11 milestone 2 program exits with 55.
-- [ ] PRP: `let` / `let mut`, assignment, blocks with tail values
-- [ ] PRP: `if` expressions, `while`, `for` over ranges, optional condition parentheses
-- [ ] PRP: functions, calls, recursion, `=` bodies
+- [x] PRP-006: locals and control flow in `main` (`let`/`mut`, assignment, blocks, `if`, `while`, `for`, `break`/`continue`, comparisons, `&&`/`||`)
+- [ ] PRP-007: functions, parameters, calls, recursion, `return`, `=` bodies — done-when: the §11 milestone 2 program exits 55
 
 ### Milestone 3 — Type checker and diagnostics
 Done when the §10 rejected program reports E0401 in both formats.

@@ -1,0 +1,10 @@
+// The bound is evaluated once, before the first iteration (spec §5).
+fun main(): i32 {
+    let mut n = 3;
+    let mut count = 0;
+    for i in 0..n {
+        n = 100;
+        count += 1;
+    }
+    count
+}

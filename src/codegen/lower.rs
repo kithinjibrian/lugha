@@ -6,7 +6,10 @@ use inkwell::module::Module;
 use inkwell::values::{FunctionValue, ValueKind};
 
 use super::CodegenError;
-use crate::ast::{FunDecl, Item, Program, Stmt, StmtKind, TypeKind};
+use super::control::Loop;
+use super::scope::Scopes;
+use super::value::{Value, type_error};
+use crate::ast::{FunDecl, Item, Program, TypeKind};
 use crate::span::Span;
 
 /// Every builder call below happens after `position_at_end`, so a
@@ -20,6 +23,10 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) builder: Builder<'ctx>,
     /// The function being emitted, for appending basic blocks.
     pub(super) function: Option<FunctionValue<'ctx>>,
+    /// Local variables in scope.
+    pub(super) scopes: Scopes<'ctx>,
+    /// Enclosing loops, innermost last, for `break` and `continue`.
+    pub(super) loops: Vec<Loop<'ctx>>,
 }
 
 /// Lowers `program` into a verified module.
@@ -32,6 +39,8 @@ pub(super) fn lower<'ctx>(
         module: context.create_module("lugha"),
         builder: context.create_builder(),
         function: None,
+        scopes: Scopes::default(),
+        loops: Vec::new(),
     };
     let main = find_main(program)?;
     let user_main = lowerer.main_function(main)?;
@@ -80,9 +89,6 @@ impl<'ctx> Lowerer<'ctx> {
             Some(ty) if ty.kind == TypeKind::I32 => true,
             Some(ty) => return Err(unsupported("this return type for main", 3, ty.span)),
         };
-        if let Some(stmt) = main.body.stmts.first() {
-            return Err(stmt_unsupported(stmt));
-        }
         let i32_type = self.context.i32_type();
         let fn_type = if returns_i32 {
             i32_type.fn_type(&[], false)
@@ -93,29 +99,24 @@ impl<'ctx> Lowerer<'ctx> {
         self.function = Some(function);
         self.builder
             .position_at_end(self.context.append_basic_block(function, "entry"));
-        let tail = match &main.body.tail {
-            Some(tail) => Some(self.expr(tail)?),
-            None => None,
-        };
-        match (returns_i32, tail) {
-            (true, Some(value)) => {
-                let value = self
-                    .builder
-                    .build_int_truncate(value, i32_type, "exit")
-                    .expect(POSITIONED);
-                self.builder.build_return(Some(&value)).expect(POSITIONED);
-            }
-            (true, None) => {
-                return Err(unsupported(
-                    "`main` without a result value",
-                    3,
-                    main.body.span,
-                ));
-            }
+        let value = self.block(&main.body)?;
+        if returns_i32 {
+            let result = match (value, &main.body.tail) {
+                (Value::Int(result), _) => result,
+                (_, None) => {
+                    let span = main.body.span;
+                    return Err(unsupported("`main` without a result value", 3, span));
+                }
+                (_, Some(tail)) => return Err(type_error(tail.span)),
+            };
+            let exit = self
+                .builder
+                .build_int_truncate(result, i32_type, "exit")
+                .expect(POSITIONED);
+            self.builder.build_return(Some(&exit)).expect(POSITIONED);
+        } else {
             // A void main's tail is evaluated for its effects (traps) and discarded.
-            (false, _) => {
-                self.builder.build_return(None).expect(POSITIONED);
-            }
+            self.builder.build_return(None).expect(POSITIONED);
         }
         Ok(function)
     }
@@ -138,20 +139,6 @@ impl<'ctx> Lowerer<'ctx> {
         };
         self.builder.build_return(Some(&code)).expect(POSITIONED);
     }
-}
-
-fn stmt_unsupported(stmt: &Stmt) -> CodegenError {
-    let what = match &stmt.kind {
-        StmtKind::Let { .. } => "`let` statements",
-        StmtKind::Assign { .. } => "assignments",
-        StmtKind::Expr { .. } => "expression statements",
-        StmtKind::While { .. } => "`while` loops",
-        StmtKind::For { .. } => "`for` loops",
-        StmtKind::Return(_) => "`return`",
-        StmtKind::Break => "`break`",
-        StmtKind::Continue => "`continue`",
-    };
-    unsupported(what, 2, stmt.span)
 }
 
 #[cfg(test)]
@@ -200,18 +187,14 @@ mod tests {
     }
 
     #[test]
-    fn statements_are_unsupported_until_milestone_2() {
+    fn i32_main_needs_an_integer_result() {
         assert_eq!(
-            unsupported("fun main(): i32 { let x = 1; x }"),
-            ("`let` statements", 2, "let x = 1;")
+            unsupported("fun main(): i32 { let x = 1; }"),
+            ("`main` without a result value", 3, "{ let x = 1; }")
         );
         assert_eq!(
-            unsupported("fun main() { 1; }"),
-            ("expression statements", 2, "1;")
-        );
-        assert_eq!(
-            unsupported("fun main() { while 1 { } }"),
-            ("`while` loops", 2, "while 1 { }")
+            unsupported("fun main(): i32 { true }"),
+            ("type checking", 3, "true")
         );
     }
 }

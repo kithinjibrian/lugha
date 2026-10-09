@@ -1,0 +1,6 @@
+fun main(): i32 {
+    let c = false;
+    let d = 2 > 1;
+    let v = if c { 3 } else if d { 4 } else { 5 };
+    v
+}

@@ -1,0 +1,14 @@
+// i = 0, 1, 2, 4 contribute i inner iterations each (3 is skipped): 7.
+fun main(): i32 {
+    let mut sum = 0;
+    for i in 0..5 {
+        if i == 3 { continue; }
+        let mut j = 0;
+        while true {
+            if j == i { break; }
+            sum += 1;
+            j += 1;
+        }
+    }
+    sum
+}

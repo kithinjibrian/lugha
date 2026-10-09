@@ -147,6 +147,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-006 locals and control flow: codegen `Value` kinds (Int i64 / Bool i1), scopes with entry-block allocas, if/while/for/break/continue, short-circuit; `tests/programs/m2/` (7 programs)
 - PRP-005 driver: `src/driver/` (clap CLI, pipeline, codespan render, hand-written JSON); E0110 for invalid UTF-8
 - PRP-004 codegen + link: `codegen::emit_ir`/`emit_object` (O0/O2), `link::link`; M1 subset; wrap + trap until M4
 - PRP-003 parser: `lugha::parser::parse`, full §3, codes E0201–E0206; AST with dense `ExprId`s; `parser::sexp` printer
@@ -165,4 +166,4 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Milestone 2: variables, control flow and functions (spec §11). Start with a discovery interview for its first PRP; add `tests/programs/m2/` (the §11 milestone 2 program exits 55).
+Milestone 2, second PRP: PRP-007 functions — multiple functions, parameters, calls, recursion, `return`, void functions, forward calls; the §11 milestone 2 program exits 55. `codegen/expr.rs` and `control.rs` are at 282 lines — put calls in a new module.

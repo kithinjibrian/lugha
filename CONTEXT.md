@@ -410,9 +410,57 @@ CLAUDE.md, CHANGELOG.md, TODO.md — commands, file tree, known issues, progress
 
 ---
 
-## SESSION 9 — 2026-10-09 — Milestone 2 discovery — open
+## SESSION 9 — 2026-10-09 — Milestone 2 discovery and PRP-006 — open
 
 Branch: main → prp-006-locals_and_control_flow
+
+### WHAT WAS DONE
+
+Milestone 2 discovery, with the recommended answer accepted every time:
+- Split milestone 2 into two PRPs: PRP-006 locals and control flow, PRP-007 functions.
+- Codegen tracks `Int`/`Bool` value kinds until the checker; mixing them gives "type checking (milestone 3)".
+- Pre-checker mistakes stop compilation where codegen must, and compile where it can. Non-`mut` assignment compiles — a known issue.
+
+Implemented PRP-006: seven `m2/` acceptance programs first (all red), then the codegen restructure into `value`/`scope`/`control`/`stmt` modules, rewritten `expr` and `lower`. Everything passed on the first full run. I added `-O0`/`-O2` cross-checks for all `m2/` programs.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/codegen/value.rs     — Kind (Int/Bool), Value, type_error
+src/codegen/scope.rs     — Scopes, Local, entry_alloca, load
+src/codegen/control.rs   — block, if (phi), while, for-range desugaring, break/continue + 4 tests
+src/codegen/stmt.rs      — let (annotations), assignment and compound ops + 4 tests
+src/codegen/expr.rs      — names, bools, comparisons, !, short-circuit &&/|| + 5 tests
+src/codegen/lower.rs     — Lowerer gains scopes/loops; main lowered as a block + 4 tests
+src/codegen/mod.rs       — module list, doc
+tests/programs/m2/       — 7 programs: even_sum 20, while_count 10, shadowing 12, short_circuit 7,
+                           nested_loops 7, if_value 4, for_bounds_once 3
+tests/codegen.rs         — m2 at -O0/-O2, immutable assignment known issue, let reads outer binding
+tests/cli.rs             — unsupported example switched to `return`
+PRPs/prp-006-…md         — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progress
+```
+
+### TESTS WRITTEN
+
+- Unit:
+  - Booleans required for conditions; branch kinds must agree; break/continue outside loops.
+  - IR stays valid after jumps; locals live in the entry block; `&&`/`||` produce a `phi`.
+  - Kind mismatches; undefined names; `let` annotations; assignment targets; `return`/arrays/strings unsupported.
+- Integration: every `m2/` program at -O0 and -O2; immutable assignment compiles; `let x = x + 1` reads the outer `x`.
+- Acceptance: 7 `m2/` programs via `lughac run`.
+
+### DECISIONS MADE
+
+- Milestone 2 split; `Int`/`Bool` value kinds; stop-if-forced policy (all recorded in PRP-006).
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Branch `prp-006-locals_and_control_flow` not yet merged into `main`.
 
 ---
 

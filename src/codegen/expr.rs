@@ -1,4 +1,5 @@
-//! Integer expressions: literals, unary `-`, and `+ - * / %` on `i64`.
+//! Expressions: literals, names, arithmetic, comparisons, `!`, short-circuit
+//! `&&`/`||`, and dispatch to blocks and `if` (spec §5).
 //!
 //! Until milestone 4 adds panics, `+ - *` wrap (no `nsw` flags, so it is
 //! defined behaviour) and `/ %` trap on a zero divisor or `MIN / -1`, both
@@ -10,36 +11,135 @@ use inkwell::values::IntValue;
 
 use super::CodegenError;
 use super::lower::{Lowerer, POSITIONED, unsupported};
+use super::value::{Kind, Value, type_error};
 use crate::ast::{BinOp, Expr, ExprKind, UnOp};
 
 impl<'ctx> Lowerer<'ctx> {
-    /// Lowers an integer expression to an `i64` value.
-    pub(super) fn expr(&mut self, expr: &Expr) -> Result<IntValue<'ctx>, CodegenError> {
-        let i64_type = self.context.i64_type();
-        match &expr.kind {
+    /// Lowers an expression to a value.
+    pub(super) fn expr(&mut self, expr: &Expr) -> Result<Value<'ctx>, CodegenError> {
+        Ok(match &expr.kind {
             // Literals above i64::MAX keep their bits; range checks arrive with the checker.
-            ExprKind::Int(value) => Ok(i64_type.const_int(*value, false)),
+            ExprKind::Int(value) => Value::Int(self.context.i64_type().const_int(*value, false)),
+            ExprKind::Bool(value) => {
+                Value::Bool(self.context.bool_type().const_int(u64::from(*value), false))
+            }
+            ExprKind::Name(name) => {
+                let local = self
+                    .scopes
+                    .lookup(name)
+                    .ok_or_else(|| unsupported("checking undefined names", 3, expr.span))?;
+                Value::of(local.kind, self.load(local, name))
+            }
             ExprKind::Unary(UnOp::Neg, operand) => {
-                let operand = self.expr(operand)?;
-                Ok(self
-                    .builder
-                    .build_int_sub(i64_type.const_zero(), operand, "neg")
-                    .expect(POSITIONED))
+                let operand = self.expr(operand)?.int(operand.span)?;
+                let zero = self.context.i64_type().const_zero();
+                Value::Int(
+                    self.builder
+                        .build_int_sub(zero, operand, "neg")
+                        .expect(POSITIONED),
+                )
             }
-            ExprKind::Binary(
-                op @ (BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div | BinOp::Rem),
-                lhs,
-                rhs,
-            ) => {
-                let lhs = self.expr(lhs)?;
-                let rhs = self.expr(rhs)?;
-                Ok(self.arithmetic(*op, lhs, rhs))
+            ExprKind::Unary(UnOp::Not, operand) => {
+                let operand = self.expr(operand)?.bool(operand.span)?;
+                Value::Bool(self.builder.build_not(operand, "not").expect(POSITIONED))
             }
-            _ => Err(expr_unsupported(expr)),
-        }
+            ExprKind::Binary(op @ (BinOp::And | BinOp::Or), lhs, rhs) => {
+                self.short_circuit(*op, lhs, rhs)?
+            }
+            ExprKind::Binary(op, lhs, rhs) => self.binary(*op, lhs, rhs)?,
+            ExprKind::If { cond, then, else_ } => {
+                self.if_expr(expr.span, cond, then, else_.as_deref())?
+            }
+            ExprKind::Block(block) => self.block(block)?,
+            _ => return Err(expr_unsupported(expr)),
+        })
     }
 
-    fn arithmetic(
+    fn binary(&mut self, op: BinOp, lhs: &Expr, rhs: &Expr) -> Result<Value<'ctx>, CodegenError> {
+        let left = self.expr(lhs)?;
+        let right = self.expr(rhs)?;
+        let compare = |predicate| (predicate, "cmp");
+        let (predicate, name) = match op {
+            BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div | BinOp::Rem => {
+                let (a, b) = (left.int(lhs.span)?, right.int(rhs.span)?);
+                return Ok(Value::Int(self.arithmetic(op, a, b)));
+            }
+            BinOp::Eq | BinOp::Ne => {
+                let (a, b) = match (left, right) {
+                    (Value::Int(a), Value::Int(b)) | (Value::Bool(a), Value::Bool(b)) => (a, b),
+                    _ => return Err(type_error(rhs.span)),
+                };
+                let predicate = if op == BinOp::Eq {
+                    IntPredicate::EQ
+                } else {
+                    IntPredicate::NE
+                };
+                let result = self
+                    .builder
+                    .build_int_compare(predicate, a, b, "eq")
+                    .expect(POSITIONED);
+                return Ok(Value::Bool(result));
+            }
+            BinOp::Lt => compare(IntPredicate::SLT),
+            BinOp::Le => compare(IntPredicate::SLE),
+            BinOp::Gt => compare(IntPredicate::SGT),
+            BinOp::Ge => compare(IntPredicate::SGE),
+            BinOp::And | BinOp::Or => {
+                unreachable!("short-circuit operators are lowered separately")
+            }
+        };
+        let (a, b) = (left.int(lhs.span)?, right.int(rhs.span)?);
+        Ok(Value::Bool(
+            self.builder
+                .build_int_compare(predicate, a, b, name)
+                .expect(POSITIONED),
+        ))
+    }
+
+    /// `&&` / `||`: the right operand runs in its own block only when needed,
+    /// and a `phi` joins the result (spec §5, §9).
+    fn short_circuit(
+        &mut self,
+        op: BinOp,
+        lhs: &Expr,
+        rhs: &Expr,
+    ) -> Result<Value<'ctx>, CodegenError> {
+        let left = self.expr(lhs)?.bool(lhs.span)?;
+        let left_end = self.current_block();
+        let rhs_block = self.append("logic.rhs");
+        let merge = self.append("logic.end");
+        let (on_true, on_false) = if op == BinOp::And {
+            (rhs_block, merge)
+        } else {
+            (merge, rhs_block)
+        };
+        self.builder
+            .build_conditional_branch(left, on_true, on_false)
+            .expect(POSITIONED);
+
+        self.builder.position_at_end(rhs_block);
+        let right = self.expr(rhs)?.bool(rhs.span)?;
+        let right_end = self.current_block();
+        self.builder
+            .build_unconditional_branch(merge)
+            .expect(POSITIONED);
+
+        self.builder.position_at_end(merge);
+        // Skipping the right operand means `false` for `&&` and `true` for `||`.
+        let skipped = self
+            .context
+            .bool_type()
+            .const_int(u64::from(op == BinOp::Or), false);
+        let phi = self
+            .builder
+            .build_phi(Kind::Bool.llvm(self.context), "logic")
+            .expect(POSITIONED);
+        phi.add_incoming(&[(&skipped, left_end), (&right, right_end)]);
+        Ok(Value::Bool(phi.as_basic_value().into_int_value()))
+    }
+
+    /// `+ - * / %` on `i64`: wrapping, with `/ %` guarded by a trap.
+    pub(super) fn arithmetic(
         &mut self,
         op: BinOp,
         lhs: IntValue<'ctx>,
@@ -80,11 +180,8 @@ impl<'ctx> Lowerer<'ctx> {
             .expect(POSITIONED);
         let bad = b.build_or(zero, overflow, "div.bad").expect(POSITIONED);
 
-        let function = self
-            .function
-            .expect("expressions are lowered inside a function");
-        let trap_block = self.context.append_basic_block(function, "div.trap");
-        let ok_block = self.context.append_basic_block(function, "div.ok");
+        let trap_block = self.append("div.trap");
+        let ok_block = self.append("div.ok");
         self.builder
             .build_conditional_branch(bad, trap_block, ok_block)
             .expect(POSITIONED);
@@ -99,27 +196,18 @@ impl<'ctx> Lowerer<'ctx> {
     }
 }
 
-/// The milestone that adds each expression form beyond integer arithmetic.
+/// The milestone that adds each expression form codegen can't lower yet.
 fn expr_unsupported(expr: &Expr) -> CodegenError {
     let (what, milestone) = match &expr.kind {
         ExprKind::Float(_) => ("floats", 3),
         ExprKind::Str(_) => ("strings", 4),
-        ExprKind::Bool(_) => ("`true` and `false`", 2),
-        ExprKind::Name(_) => ("variables", 2),
-        ExprKind::Unary(UnOp::Not, _) => ("`!`", 2),
-        ExprKind::Binary(BinOp::And | BinOp::Or, ..) => ("`&&` and `||`", 2),
-        ExprKind::Binary(..) => ("comparisons", 2),
         ExprKind::Cast(..) => ("`as` casts", 3),
         ExprKind::Call(..) => ("function calls", 2),
-        ExprKind::If { .. } => ("`if` expressions", 2),
-        ExprKind::Block(_) => ("block expressions", 2),
         ExprKind::Index(..) => ("indexing", 5),
         ExprKind::Field(..) => ("field access", 5),
         ExprKind::StructLit(..) => ("structs", 5),
         ExprKind::Array(_) | ExprKind::Repeat(..) => ("arrays", 5),
-        ExprKind::Int(_) | ExprKind::Unary(UnOp::Neg, _) => {
-            unreachable!("supported in milestone 1")
-        }
+        _ => unreachable!("lowered by Lowerer::expr"),
     };
     unsupported(what, milestone, expr.span)
 }
@@ -144,17 +232,41 @@ mod tests {
     }
 
     #[test]
-    fn expressions_beyond_milestone_1_are_unsupported() {
+    fn short_circuit_joins_with_a_phi() {
+        let ir = ir("fun main() { let b = true && false; let c = b || true; }");
+        assert_eq!(ir.matches("phi i1").count(), 2, "{ir}");
+    }
+
+    #[test]
+    fn kinds_must_match() {
+        assert_eq!(
+            unsupported("fun main(): i32 { 1 + true }"),
+            ("type checking", 3, "true")
+        );
+        assert_eq!(
+            unsupported("fun main() { let b = 1 == true; }"),
+            ("type checking", 3, "true")
+        );
+        assert_eq!(
+            unsupported("fun main() { let b = !1; }"),
+            ("type checking", 3, "1")
+        );
+        assert_eq!(
+            unsupported("fun main(): i32 { 1 < 2 }"),
+            ("type checking", 3, "1 < 2")
+        );
+        assert_eq!(
+            unsupported("fun main(): i32 { y + 1 }"),
+            ("checking undefined names", 3, "y")
+        );
+    }
+
+    #[test]
+    fn expressions_beyond_milestone_2_are_unsupported() {
         let cases = [
             ("fun main() { \"hi\" }", ("strings", 4, "\"hi\"")),
             ("fun main() { 1.5 }", ("floats", 3, "1.5")),
-            (
-                "fun main(): i32 { if 1 { 2 } else { 3 } }",
-                ("`if` expressions", 2, "if 1 { 2 } else { 3 }"),
-            ),
             ("fun main(): i32 { f(1) }", ("function calls", 2, "f(1)")),
-            ("fun main(): i32 { 1 + x }", ("variables", 2, "x")),
-            ("fun main(): i32 { 1 < 2 }", ("comparisons", 2, "1 < 2")),
             (
                 "fun main(): i32 { 1 as i32 }",
                 ("`as` casts", 3, "1 as i32"),
