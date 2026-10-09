@@ -807,6 +807,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issue removed, milestone 4
 
 ---
 
+## SESSION 16 — 2026-10-09 — Milestone 5 discovery — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 4 is complete (tag `m4`). Next is milestone 5, the last (spec §11): heap data. It covers:
