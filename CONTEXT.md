@@ -293,7 +293,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, shipped item, progres
 
 ## SESSION 7 — 2026-10-09 — PRP-004 codegen and link — open
 
-Branch: main
+Branch: main → prp-004-codegen_and_link
 
 ---
 
