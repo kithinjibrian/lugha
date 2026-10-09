@@ -61,6 +61,12 @@ docs/specs/Language v0 Specification.md — inconsistencies fixed, extension .la
 
 ---
 
+## SESSION 2 — 2026-10-09 — Resolve milestone 1 decisions — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Resolve the decisions blocking milestone 1 with the user, install the toolchain, `cargo init`, then write `PRPs/prp-001-lexer.md`. See `TODO.md`.
