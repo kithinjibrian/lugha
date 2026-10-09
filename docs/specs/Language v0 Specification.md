@@ -326,7 +326,7 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 
 **Expression statements.** Any expression followed by `;` is a statement, and its value is discarded. Discarding the result of a non-`void` call is allowed. Adding `;` after a would-be tail expression turns it into a statement, so `{ x * x; }` is a `void` block. When a value was expected, the checker reports this as "remove this semicolon" and points at it.
 
-**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), out-of-bounds indexing, a negative repeat-literal count, and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. They cannot be caught.
+**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), a negative repeat-literal count, and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. They cannot be caught.
 
 **Intrinsics.** These names are built into the compiler, not declared in source. They accept arguments that ordinary functions can't, which is why they are special.
 
@@ -479,7 +479,8 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_alloc(size)` | Allocate zeroed GC memory |
 | `lugha_rt_panic(msg, file, line, col)` | Print the panic message and `exit(101)` |
 | `lugha_rt_str_concat(a, b)` | Implement string `+` |
-| `lugha_rt_str_eq(a, b)` | Implement string `==` |
+| `lugha_rt_panic_bounds(len, index, file, line, col)` | The out-of-bounds panic, with the length and index |
+| `lugha_rt_str_eq(a, b)` | Implement string `==` and `!=`; returns 1 or 0 as `i32` |
 | `lugha_rt_print_*` / `lugha_rt_to_string_*` | One per primitive type (plus `lugha_rt_print_str`), for the intrinsics; `bool` and `u8` arguments are passed zero-extended to 32 bits |
 | `lugha_rt_print_newline()` | The newline `println` adds |
 
@@ -533,6 +534,8 @@ Name and type errors, reported by the checker:
 | E0405 | Wrong number of arguments | `add(1)` for `fun add(a: i64, b: i64)` |
 | E0406 | Not a function, or a function used as a value | `let step = 2; step(1);`, `let f = fib;` |
 | E0407 | `void` used as a value | `let x = log();` where `log` returns nothing |
+| E0410 | No such field | `s.size` on a `string`; `(5).len` |
+| E0411 | Not indexable | `n[0]` where `n` is an `i64` |
 | E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns (§8) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable |
@@ -540,6 +543,7 @@ Name and type errors, reported by the checker:
 | E0503 | Missing return | a non-void function whose body can end without a value (§6); a stray `;` after the result gets a "remove this semicolon" label |
 | E0504 | `break` or `continue` outside a loop | |
 | E0505 | Block-like statement with a discarded value | `if big { 100 } else { 1 }` followed by more statements |
+| E0506 | Assignment into a string | `s[0] = 104;`, `s.len = 2;` — strings are immutable (§4) |
 | W0101 | Unreachable code (warning) | statements after `return`, `break` or `continue`; reported once per block |
 
 **JSON diagnostics.** With `--diagnostics=json`, the compiler writes one JSON object per line to stderr, one per diagnostic, and nothing else. Lines and columns are 1-based; columns and offsets count UTF-8 bytes. `label` is the text shown under the primary span, or `null`. `labels` holds secondary spans, and `help` is an optional suggestion. Internal errors have `"code":null`, and `"span":null` when they have no location.

@@ -1,0 +1,1 @@
+panic: index out of bounds: the length is 5 but the index is -1 at tests/programs/m5/index_negative.la:4:14

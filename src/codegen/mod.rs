@@ -14,6 +14,7 @@ mod cast;
 mod control;
 mod expr;
 mod function;
+mod heap;
 mod lower;
 mod runtime;
 mod scope;

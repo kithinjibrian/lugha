@@ -230,12 +230,13 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  expr.rs (Pratt), primary.rs, stmt.rs, item.rs, sexp.rs, test_util.rs
 │   ├── check/       — mod.rs (check, Checked, CheckError), types.rs, env.rs (globals, main, scopes),
 │   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), stmt.rs,
-│   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), errors.rs
+│   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
+│   │                  (fields, indexing), errors.rs
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
 │   │                  function.rs (signatures, bodies, return, calls), runtime.rs (intrinsics, string
-│   │                  literals, panics)
+│   │                  literals, panics), heap.rs (headers, bounds checks, element addresses, string ops)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_SOURCE, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes), pipeline.rs, source.rs (load, E0110, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)

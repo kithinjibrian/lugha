@@ -150,7 +150,7 @@ pub fn expr(expr: &Expr) -> String {
             items.extend(args.iter());
             list("call", &items)
         }
-        ExprKind::Index(base, index) => list("index", &[base, index]),
+        ExprKind::Index(base, _, index) => list("index", &[base, index]),
         ExprKind::Field(base, field) => format!("(. {} {})", self::expr(base), field.name),
         ExprKind::StructLit(name, fields) => {
             let fields: String = fields

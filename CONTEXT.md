@@ -807,9 +807,62 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issue removed, milestone 4
 
 ---
 
-## SESSION 16 — 2026-10-09 — Milestone 5 discovery — open
+## SESSION 16 — 2026-10-09 — Milestone 5 discovery and PRP-013 — open
 
 Branch: main → prp-013-string_operations
+
+### WHAT WAS DONE
+
+Milestone 5 discovery, with the recommended answer accepted every time:
+- Four PRPs: 013 strings, 014 arrays with copies, 015 structs with copies, 016 `lughac spec` and §10.
+- Codes E0410/E0411/E0506.
+- The bounds panic reports length and index, formatted by a new runtime function and located at the `[`.
+- Run-time-indexed addresses use integer arithmetic. The user declined an audited `unsafe` GEP, so the codebase stays free of `unsafe`.
+
+Implemented PRP-013:
+- `m5/` programs first.
+- The AST `Index` gains the bracket span.
+- Runtime: `str_concat`, `str_eq`, `panic_bounds`.
+- Checker: string operators, `.len`, `s[i]` and E0410/E0411/E0506 in the new `check/access.rs`.
+- Codegen: the new `heap.rs` (length, element address, bounds check, string operators, field and index).
+
+One outdated stop test was updated. 168 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+runtime/lugha_rt.c       — lugha_rt_panic_bounds, lugha_rt_str_concat, lugha_rt_str_eq
+src/ast/expr.rs, src/parser/{expr,sexp}.rs — Index bracket span + test
+src/check/access.rs      — field and index typing + 3 tests
+src/check/{ops,expr,assign,errors,mod}.rs — string operators, E0410/E0411/E0506
+src/codegen/heap.rs      — length, element_address, bounds_check, string_binary, field, index + 2 tests
+src/codegen/{arith,expr,runtime,mod}.rs — routing, file_name(), RUNTIME_SYMBOLS
+tests/programs/m5/       — string_ops, index_oob, index_negative (run); e0410, e0411, e0506 (reject)
+tests/codegen.rs         — m5 in the -O0/-O2 cross-check
+docs/specs/…Specification.md — §5 bounds message; §9 runtime rows and codes
+PRPs/prp-013-…md         — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, progress
+```
+
+### TESTS WRITTEN
+
+- Unit:
+  - The parser bracket span.
+  - Checker: `.len`/`s[i]` types, E0410/E0411, index type errors, E0506, string operator typing.
+  - Codegen IR: runtime calls for `+`/`==`; the bounds check with `icmp ult`, the panic location, `ptrtoint`/`inttoptr`, and no run-time-indexed GEP.
+- Acceptance: three run and three reject `m5/` programs.
+
+### DECISIONS MADE
+
+- Milestone 5 split, codes, bounds message and integer addressing (PRP-013).
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Branch `prp-013-string_operations` not yet merged into `main`.
 
 ---
 

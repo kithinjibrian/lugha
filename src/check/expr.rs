@@ -99,8 +99,8 @@ impl Checker {
             ExprKind::Block(block) => self.block(block, expect),
             ExprKind::Str(_) => Ok(Type::String),
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
-            ExprKind::Index(..) => Err(stop("indexing", 5, expr.span)),
-            ExprKind::Field(..) => Err(stop("field access", 5, expr.span)),
+            ExprKind::Index(base, _, index) => self.index(base, index),
+            ExprKind::Field(base, field) => self.field(base, field),
             ExprKind::StructLit(..) => Err(stop("structs", 5, expr.span)),
             ExprKind::Array(_) | ExprKind::Repeat(..) => Err(stop("arrays", 5, expr.span)),
             ExprKind::Int(_) | ExprKind::Float(_) => unreachable!("literals are matched first"),
@@ -188,16 +188,10 @@ mod tests {
 
     #[test]
     fn later_milestone_expressions_stop_the_checker() {
+        // String operations and `.len` are checked since PRP-013 (see check/access.rs).
         let cases = [
-            (
-                "fun main() { let t = \"a\" + \"b\"; }",
-                ("string operations", 5, "\"a\" + \"b\""),
-            ),
             ("fun main() { let a = [1]; }", ("arrays", 5, "[1]")),
-            (
-                "fun main() { let x = 1; let y = x.len; }",
-                ("field access", 5, "x.len"),
-            ),
+            ("fun main() { let a = [0; 3]; }", ("arrays", 5, "[0; 3]")),
         ];
         for (src, want) in cases {
             assert_eq!(stopped(src), want, "{src}");

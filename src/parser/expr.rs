@@ -94,7 +94,7 @@ impl Parser<'_> {
                     let open = self.bump();
                     let index = self.expr()?;
                     self.close(open, &TokenKind::RBracket)?;
-                    ExprKind::Index(Box::new(expr), Box::new(index))
+                    ExprKind::Index(Box::new(expr), open, Box::new(index))
                 }
                 TokenKind::Dot => {
                     self.bump();
@@ -231,5 +231,18 @@ mod tests {
             panic!()
         };
         assert_eq!(&src[plus.start..plus.end], "+");
+    }
+
+    #[test]
+    fn index_records_its_bracket_span() {
+        let src = "fun t() { xs[i + 1] }";
+        let p = parse_src(src).unwrap();
+        let Item::Fun(f) = &p.items[0] else {
+            unreachable!()
+        };
+        let ExprKind::Index(_, open, _) = &f.body.tail.as_ref().unwrap().kind else {
+            panic!()
+        };
+        assert_eq!(&src[open.start..open.end], "[");
     }
 }

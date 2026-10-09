@@ -34,8 +34,8 @@ pub enum ExprKind {
     Cast(Box<Expr>, Type),
     /// `callee(args)`.
     Call(Box<Expr>, Vec<Expr>),
-    /// `base[index]`.
-    Index(Box<Expr>, Box<Expr>),
+    /// `base[index]`; the `Span` is the `[`, where a bounds panic points.
+    Index(Box<Expr>, Span, Box<Expr>),
     /// `base.field` (also `.len`).
     Field(Box<Expr>, Ident),
     /// `Name { field: value, … }` in source order.

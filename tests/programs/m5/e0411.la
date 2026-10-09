@@ -1,0 +1,4 @@
+fun main() {
+    let n = 5;
+    let d = n[0];
+}

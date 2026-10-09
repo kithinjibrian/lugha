@@ -1,0 +1,6 @@
+error[E0410]: no field `size` on `string`
+  --> tests/programs/m5/e0410.la:3:15
+  |
+3 |     let n = s.size;
+  |               ^^^^
+

@@ -126,7 +126,7 @@ fn link_failure_reports_cc_stderr() {
 fn run_programs_agree_at_o0_and_o2() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/programs");
     let mut checked = 0;
-    for dir in ["m2", "m3", "m4"] {
+    for dir in ["m2", "m3", "m4", "m5"] {
         for entry in std::fs::read_dir(root.join(dir)).expect("program dir exists") {
             let path = entry.expect("entry").path();
             let exit = path.with_extension("exit");

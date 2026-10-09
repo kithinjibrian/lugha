@@ -17,10 +17,13 @@ use crate::ast::Expr;
 use crate::check::Type;
 
 /// Every runtime function codegen may call; `lugha_rt.c` defines them all.
-pub const RUNTIME_SYMBOLS: [&str; 15] = [
+pub const RUNTIME_SYMBOLS: [&str; 18] = [
     "lugha_rt_init",
     "lugha_rt_alloc",
     "lugha_rt_panic",
+    "lugha_rt_panic_bounds",
+    "lugha_rt_str_concat",
+    "lugha_rt_str_eq",
     "lugha_rt_print_i32",
     "lugha_rt_print_i64",
     "lugha_rt_print_u8",
@@ -58,7 +61,12 @@ fn suffix(ty: Type) -> &'static str {
 impl<'ctx> Lowerer<'ctx> {
     /// The runtime function `name`, declared on first use. `bool` and `u8`
     /// cross as zero-extended `i32`, so no C parameter-extension rules apply.
-    fn runtime(&self, name: &str, params: &[Type], returns: Option<Type>) -> FunctionValue<'ctx> {
+    pub(super) fn runtime(
+        &self,
+        name: &str,
+        params: &[Type],
+        returns: Option<Type>,
+    ) -> FunctionValue<'ctx> {
         if let Some(function) = self.module.get_function(name) {
             return function;
         }
@@ -184,6 +192,21 @@ impl<'ctx> Lowerer<'ctx> {
         self.start_dead_block("after.panic");
     }
 
+    /// The source file name as a C string, emitted once per module.
+    pub(super) fn file_name(&mut self) -> PointerValue<'ctx> {
+        if let Some(file) = self.constants.file {
+            return file;
+        }
+        let name = self.source.name.clone();
+        let file = self
+            .builder
+            .build_global_string_ptr(&name, "file")
+            .expect(POSITIONED)
+            .as_pointer_value();
+        self.constants.file = Some(file);
+        file
+    }
+
     /// A panic with a fixed message, ending the current block (no dead block
     /// follows; used on the failing path of checked arithmetic).
     pub(super) fn emit_panic(&mut self, message: &str, at: usize) {
@@ -192,19 +215,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     fn call_panic(&mut self, message: BasicValueEnum<'ctx>, at: usize) {
-        let file = match self.constants.file {
-            Some(file) => file,
-            None => {
-                let name = self.source.name.clone();
-                let file = self
-                    .builder
-                    .build_global_string_ptr(&name, "file")
-                    .expect(POSITIONED)
-                    .as_pointer_value();
-                self.constants.file = Some(file);
-                file
-            }
-        };
+        let file = self.file_name();
         let (line, col) = self.source.line_col(at);
         let i64_type = self.context.i64_type();
         let panic = self.runtime(

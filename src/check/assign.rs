@@ -1,7 +1,7 @@
 //! Assignment: places (spec §3) and mutability (spec §4).
 
 use super::expr::Expect;
-use super::{Binding, Checker, Checking, Type, errors, stop};
+use super::{Binding, Checker, Checking, Type, errors};
 use crate::ast::{AssignOp, Expr, ExprKind};
 use crate::span::Span;
 
@@ -10,11 +10,16 @@ impl Checker {
     /// rooted in a `let mut` binding.
     pub(super) fn assign(&mut self, op: AssignOp, place: &Expr, value: &Expr) -> Checking<()> {
         let ExprKind::Name(name) = &place.kind else {
-            if matches!(place.kind, ExprKind::Field(..) | ExprKind::Index(..)) {
-                return Err(stop("assigning to fields and elements", 5, place.span));
-            }
+            // Typing the place reports E0410/E0411 for a bad field or index.
             self.expr(place, None)?;
-            self.report(errors::not_place(place.span));
+            match &place.kind {
+                ExprKind::Field(base, _) | ExprKind::Index(base, _, _) => {
+                    if self.types[base.id.0 as usize] == Some(Type::String) {
+                        self.report(errors::string_immutable(place.span));
+                    }
+                }
+                _ => self.report(errors::not_place(place.span)),
+            }
             self.expr(value, None)?;
             return Ok(());
         };

@@ -1,0 +1,19 @@
+// Strings: concatenation, comparison by content, byte length and bytes (spec §4).
+fun greet(name: string): string = "hello, " + name + "!";
+
+fun main() {
+    let g = greet("lugha");
+    println(g);
+    println(g == "hello, lugha!");
+    println(g != "hello, lugha!");
+    println("abc" == "abd");
+    println(g.len);
+    println("é👋".len);
+    println(g[0]);
+    let s = "abc";
+    let mut sum: i64 = 0;
+    for i in 0..s.len {
+        sum += s[i] as i64;
+    }
+    println(sum);
+}

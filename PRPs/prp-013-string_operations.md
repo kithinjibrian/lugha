@@ -1,6 +1,6 @@
 ## FEATURE: String operations — `+` concatenation, `==`/`!=` by content, `.len`, and bounds-checked `s[i]` — with an informative out-of-bounds panic.
 
-**Status:** approved 2026-10-09 — session 16
+**Status:** implemented 2026-10-09 — session 16 (branch `prp-013-string_operations`)
 **Milestone:** 5, first of four PRPs (014 arrays, 015 structs, 016 `lughac spec` and the full §10 acceptance)
 **Spec:** §4 (strings: immutable, `.len`, `s[i]` as `u8`, `+`, `==`), §5 (panics), §7 (string layout), §9 (bounds checks with `icmp ult`, runtime table, codes)
 **Decisions:** DECISION-009 / MEMORY 15 (runtime ABI); PRP-012 (operator spans for panic locations)
@@ -22,6 +22,12 @@ Strings can be joined, compared, measured and read byte by byte: `"hello, " + na
   - New `tests/programs/m5/`; spec §5 and §9 updated.
 - Related existing code: `src/check/{ops,expr,assign,errors}.rs`, `src/codegen/{arith,expr,runtime}.rs`, `runtime/lugha_rt.c`, `src/ast/expr.rs`, `src/parser/{expr,sexp}.rs`.
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 16)
+- **Checker:** field and index typing live in a new `check/access.rs`, keeping `expr.rs` small.
+- **Codegen:** the source-file C string is shared through `file_name()`, and `runtime()` is visible to sibling modules, so `heap.rs` can declare runtime calls.
+- **Updated test:** the checker test listing milestone 5 stops dropped string `+` and `.len` (now real rules) and gained a repeat-literal case.
+- **Goldens:** the `m5/` stdout and panic goldens were written by hand and matched on the first run. The three reject goldens were captured and reviewed.
 
 ### Discovery answers (session 16)
 1. Milestone 5 is four PRPs: 013 strings, 014 arrays with their copies and `for … of`, 015 structs with their copies, 016 `lughac spec` and every §10 program.
@@ -113,20 +119,20 @@ Strings can be joined, compared, measured and read byte by byte: `"hello, " + na
 ## TESTS TO WRITE
 
 Unit tests:
-- [ ] Parser: the `Index` bracket span slices to `[`.
-- [ ] Checker:
+- [x] Parser: the `Index` bracket span slices to `[`.
+- [x] Checker:
   - `+` and `==`/`!=` types; `"a" < "b"` and `"a" + 1` → E0404;
   - `.len` → `i64`; E0410 (`"s".size`, `(5).len`); `s[0]` → `u8`;
   - `s[1.5]` → E0401; `s[k]` with `k: i32` → E0403; E0411 (`n[0]`);
   - E0506 (`s[0] = 1;`, `s.len = 2;`).
-- [ ] Codegen IR:
+- [x] Codegen IR:
   - `+` calls `lugha_rt_str_concat`; `==` calls `lugha_rt_str_eq` then `icmp ne`;
   - `s[i]` has `icmp ult`, a `lugha_rt_panic_bounds` call at the `[` location, `ptrtoint`/`inttoptr`, and a `load i8`;
   - no `getelementptr` with a run-time index.
-- [ ] Runtime: the new symbols are in `RUNTIME_SYMBOLS`, and the C file still compiles with `-Werror`.
+- [x] Runtime: the new symbols are in `RUNTIME_SYMBOLS`, and the C file still compiles with `-Werror`.
 
 Acceptance:
-- [ ] The three run programs and three reject programs pass; all earlier tests pass.
+- [x] The three run programs and three reject programs pass; all earlier tests pass.
 
 ## ROLLBACK PLAN
 

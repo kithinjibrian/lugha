@@ -32,6 +32,9 @@ impl<'ctx> Lowerer<'ctx> {
             .unwrap_or(Type::I64);
         let a = self.get(lhs, ty)?;
         let b = self.get(rhs, ty)?;
+        if ty == Type::String {
+            return Ok(self.string_binary(op, a, b));
+        }
         Ok(match op {
             BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge | BinOp::Eq | BinOp::Ne => {
                 self.compare(op, ty, a, b).into()

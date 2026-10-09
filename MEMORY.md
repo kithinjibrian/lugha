@@ -173,6 +173,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-013 string operations: `check/access.rs`, `codegen/heap.rs` (integer address arithmetic — user chose it over an audited `unsafe` GEP), `lugha_rt_panic_bounds`; AST `Index` bracket span
 - PRP-012 extern and panics: externs declared verbatim with C ABI (`zeroext`), string args via a safe struct GEP to field 1; checked arithmetic via `llvm.*.with.overflow`; AST operator spans
 - PRP-011 runtime and intrinsics: `runtime/lugha_rt.c`, `link::RUNTIME_SOURCE`, `check::Type::String`, intrinsics in checker and codegen (`codegen/runtime.rs`), `SourceInfo` for panic locations
 - PRP-010 codegen on real types: `emit_ir`/`emit_object` take `&Checked`; arith.rs and cast.rs; `lugha_fn_main` returns i32
@@ -198,4 +199,10 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Milestone 5: heap data (spec §11) — Boehm GC in use, string operations (`+`, `==`, `.len`, `s[i]`), arrays (literals, repeat, `.len`, bounds checks, `for`-`of`), structs, array copies (§4), `lughac spec`. Done-when: every §10 program passes. Start with a discovery interview on how to split it into PRPs.
+Milestone 5, PRP-014: arrays. It covers:
+- List and repeat literals (a negative count panics), `T[]` types.
+- `.len` and bounds-checked indexing (reuse `codegen/heap.rs`); element assignment and place chains.
+- `for x of xs` with its no-assignment rule.
+- Deep copies at the §4 copy sites (`lugha_copy_*`).
+
+Done-when: the §10 primes program prints 25.

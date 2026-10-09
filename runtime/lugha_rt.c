@@ -28,6 +28,9 @@ typedef struct {
 void lugha_rt_init(void);
 void *lugha_rt_alloc(int64_t size);
 void lugha_rt_panic(const LughaString *msg, const char *file, int64_t line, int64_t col);
+void lugha_rt_panic_bounds(int64_t len, int64_t index, const char *file, int64_t line, int64_t col);
+LughaString *lugha_rt_str_concat(const LughaString *a, const LughaString *b);
+int32_t lugha_rt_str_eq(const LughaString *a, const LughaString *b);
 void lugha_rt_print_i32(int32_t value);
 void lugha_rt_print_i64(int64_t value);
 void lugha_rt_print_u8(uint32_t value);
@@ -72,6 +75,32 @@ void lugha_rt_panic(const LughaString *msg, const char *file, int64_t line, int6
     fwrite(msg->bytes, 1, (size_t)msg->len, stderr);
     fprintf(stderr, " at %s:%" PRId64 ":%" PRId64 "\n", file, line, col);
     exit(101);
+}
+
+/* Out-of-range indexing (spec §5, §9); `index` may be negative. */
+void lugha_rt_panic_bounds(int64_t len, int64_t index, const char *file, int64_t line, int64_t col) {
+    fflush(stdout);
+    fprintf(stderr,
+            "panic: index out of bounds: the length is %" PRId64 " but the index is %" PRId64
+            " at %s:%" PRId64 ":%" PRId64 "\n",
+            len, index, file, line, col);
+    exit(101);
+}
+
+/* `a + b` for strings: a new string holding both (spec §4). */
+LughaString *lugha_rt_str_concat(const LughaString *a, const LughaString *b) {
+    int64_t len = a->len + b->len;
+    LughaString *s = lugha_rt_alloc((int64_t)sizeof(LughaString) + len + 1);
+    s->len = len;
+    memcpy(s->bytes, a->bytes, (size_t)a->len);
+    memcpy(s->bytes + a->len, b->bytes, (size_t)b->len);
+    s->bytes[len] = '\0';
+    return s;
+}
+
+/* `a == b` for strings compares contents (spec §4); 1 or 0. */
+int32_t lugha_rt_str_eq(const LughaString *a, const LughaString *b) {
+    return a->len == b->len && memcmp(a->bytes, b->bytes, (size_t)a->len) == 0;
 }
 
 /* Appends `text` to `out` at `*used`, never past `cap - 1` bytes. */

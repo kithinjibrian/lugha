@@ -9,6 +9,7 @@
 //!
 //! Depends on: ast, diagnostic, span.
 
+mod access;
 mod assign;
 mod call;
 mod env;

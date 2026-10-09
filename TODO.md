@@ -60,7 +60,7 @@ Done when hello world, recursion and the libc example run.
 
 ### Milestone 5 — Heap data
 Done when every §10 program passes.
-- [ ] PRP: Boehm GC, strings
+- [x] PRP-013: string operations (`+`, `==`/`!=`, `.len`, bounds-checked `s[i]`); GC allocation landed in PRP-011
 - [ ] PRP: arrays, bounds checks, repeat literals, `for`-`of`
 - [ ] PRP: structs and array copies
 - [ ] PRP: `lughac spec`

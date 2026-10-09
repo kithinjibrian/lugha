@@ -135,6 +135,27 @@ pub(super) fn intrinsic_argument(name: &str, found: Type, span: Span) -> Diagnos
     )
 }
 
+pub(super) fn no_field(name: &str, ty: Type, span: Span) -> Diagnostic {
+    Diagnostic::error("E0410", format!("no field `{name}` on `{ty}`"), span)
+}
+
+pub(super) fn not_indexable(ty: Type, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0411",
+        format!("cannot index into a value of type `{ty}`"),
+        span,
+    )
+}
+
+pub(super) fn string_immutable(span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0506",
+        "cannot assign into a string: strings are immutable",
+        span,
+    )
+    .with_help("build a new string instead, e.g. with `+`")
+}
+
 pub(super) fn not_callable(span: Span) -> Diagnostic {
     Diagnostic::error("E0406", "this expression is not a function", span)
 }

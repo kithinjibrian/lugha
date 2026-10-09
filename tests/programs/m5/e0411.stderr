@@ -1,0 +1,6 @@
+error[E0411]: cannot index into a value of type `i64`
+  --> tests/programs/m5/e0411.la:3:13
+  |
+3 |     let d = n[0];
+  |             ^
+
