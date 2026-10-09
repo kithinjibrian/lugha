@@ -1207,6 +1207,12 @@ CLAUDE.md, MEMORY.md (decision 22), TODO.md, CHANGELOG.md
 
 ---
 
+## SESSION 24 — 2026-10-09 — v1 spec draft — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 No PRP is queued and no decisions are open. Remaining option:
