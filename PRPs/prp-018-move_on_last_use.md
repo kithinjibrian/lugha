@@ -1,6 +1,6 @@
 ## FEATURE: Move on last use — store a dead owned local's array without copying it.
 
-**Status:** implemented 2026-10-09 — session 23 (branch `prp-018-move_on_last_use`, awaiting merge)
+**Status:** merged into `main` 2026-10-09 — session 23
 **Milestone:** none; post-v0 optimization (TODO "Ideas", DECISION-010 follow-up)
 **Spec:** §4 (array copies table, value semantics), §5 (evaluation order: places before values, left to right)
 **Decisions:** DECISION-010 / MEMORY 20 (eager copies stay; move on last use noted), MEMORY 14 (codegen reads the checker's tables), MEMORY 16 (copy sites)

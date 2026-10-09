@@ -1155,7 +1155,7 @@ CONTEXT.md     — this session
 
 ---
 
-## SESSION 23 — 2026-10-09 — PRP-018 move on last use — open
+## SESSION 23 — 2026-10-09 — PRP-018 move on last use — closed
 
 Branch: main → prp-018-move_on_last_use
 
@@ -1200,6 +1200,10 @@ CLAUDE.md, MEMORY.md (decision 22), TODO.md, CHANGELOG.md
 ### PENDING DECISIONS OPENED
 
 - None.
+
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-018-move_on_last_use` fast-forward merged into `main` and deleted.
 
 ---
 
