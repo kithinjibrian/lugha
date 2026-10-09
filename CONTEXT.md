@@ -188,7 +188,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — tests/ tree, shipped item, progr
 
 ## SESSION 5 — 2026-10-09 — PRP-002 lexer — open
 
-Branch: main
+Branch: main → prp-002-lexer
 
 ---
 
