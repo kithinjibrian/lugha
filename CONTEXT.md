@@ -291,7 +291,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, shipped item, progres
 
 ---
 
-## SESSION 7 — 2026-10-09 — PRP-004 codegen and link — open
+## SESSION 7 — 2026-10-09 — PRP-004 codegen and link — closed
 
 Branch: main → prp-004-codegen_and_link
 
@@ -341,10 +341,10 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progres
 
 ### STILL OPEN AT CLOSE
 
-- Branch `prp-004-codegen_and_link` not yet merged into `main`.
+- Nothing. Branch `prp-004-codegen_and_link` fast-forward merged into `main` and deleted.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Run a discovery interview for the milestone 1 codegen + link PRP (`PRPs/prp-004-…`): integers treated as i64 (CLAUDE.md rule 9), LLVM 21 via inkwell, object file, `cc` link; the driver PRP then wires lex → parse → codegen into `lughac` and removes the `#[ignore]` on `tests/programs.rs`. See `TODO.md`.
+Run a discovery interview for the milestone 1 driver PRP (`PRPs/prp-005-…`): `lughac build`/`run`/`check`, `--emit=tokens|ast|ir`, `-O0`/`-O2`, human diagnostics via codespan-reporting (check early that it can reproduce the spec's E0401 layout — DECISION-006) and `--diagnostics=json`, exit codes 0/1/2, mapping `CodegenError`/`LinkError` to exit 2. Its done-when: remove the `#[ignore]` on `tests/programs.rs` and `m1/arith.la` passes — milestone 1 complete. See `TODO.md`.

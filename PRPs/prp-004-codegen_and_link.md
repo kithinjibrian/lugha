@@ -1,6 +1,6 @@
 ## FEATURE: Lower milestone 1 programs (integer arithmetic in `main`) to LLVM IR, emit a native object file, and link it into an executable with `cc`.
 
-**Status:** implemented 2026-10-09 — session 7 (branch `prp-004-codegen_and_link`)
+**Status:** merged into `main` 2026-10-09 — session 7
 **Milestone:** 1 (codegen subset: every value is `i64`, CLAUDE.md rule 9)
 **Spec:** §6 (entry point), §8 (symbol prefixes), §9 (compilation stages 4–6, lowering notes), §11 (milestone 1)
 **Decisions:** DECISION-005 (LLVM 21, inkwell `llvm21-1-prefer-dynamic`), DECISION-002 (`thiserror` for internal errors)
