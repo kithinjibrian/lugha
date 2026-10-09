@@ -1078,7 +1078,7 @@ CHANGELOG.md, MEMORY.md  — entry, decision 19
 
 ---
 
-## SESSION 21 — 2026-10-09 — DECISION-010 copy-on-write — open
+## SESSION 21 — 2026-10-09 — DECISION-010 copy-on-write — closed
 
 Branch: main → decision-010-copy_cost
 
@@ -1113,6 +1113,10 @@ DECISIONS.md, MEMORY.md (decision 20), TODO.md (unscheduled ideas), CHANGELOG.md
 ### PENDING DECISIONS OPENED
 
 - None.
+
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `decision-010-copy_cost` fast-forward merged into `main` and deleted.
 
 ---
 
