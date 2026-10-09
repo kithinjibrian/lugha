@@ -1030,6 +1030,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — tree, commands, v0 complete, dec
 
 ---
 
+## SESSION 20 — 2026-10-09 — Housekeeping — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Lugha v0 is complete (tag `m5`). There is no next PRP in the spec. Candidates, each needing discovery and, for language changes, a spec change first (rule 1):
