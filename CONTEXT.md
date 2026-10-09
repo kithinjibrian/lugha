@@ -186,7 +186,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — tests/ tree, shipped item, progr
 
 ---
 
-## SESSION 5 — 2026-10-09 — PRP-002 lexer — open
+## SESSION 5 — 2026-10-09 — PRP-002 lexer — closed
 
 Branch: main → prp-002-lexer
 
@@ -227,10 +227,10 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — rule 9, file tree, progress
 
 ### STILL OPEN AT CLOSE
 
-- Branch `prp-002-lexer` not yet merged into `main`.
+- Nothing. Branch `prp-002-lexer` fast-forward merged into `main` and deleted.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Run a discovery interview for `PRPs/prp-001-test_runner.md` (the `tests/programs/` runner, DECISION-008), then `prp-002-lexer.md`. See `TODO.md`.
+Run a discovery interview for `PRPs/prp-003-parser.md` (milestone 1; full §3 syntax per CLAUDE.md rule 9). Note `src/lexer/mod.rs` is at 299 lines — keep parser code in its own modules. See `TODO.md`.

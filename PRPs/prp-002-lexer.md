@@ -1,6 +1,6 @@
 ## FEATURE: A lexer that turns `.la` source text into tokens with byte spans, reporting every lexical error with a stable code.
 
-**Status:** implemented 2026-10-09 — session 5 (branch `prp-002-lexer`)
+**Status:** merged into `main` 2026-10-09 — session 5
 **Milestone:** 1 (first pipeline stage)
 **Spec:** §2 (lexical structure), §9 (diagnostics, error codes)
 **Decisions:** DECISION-002 (stage return type), DECISION-001 (library layout)
