@@ -638,7 +638,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progres
 
 ## SESSION 13 — 2026-10-09 — PRP-010 codegen on real types — open
 
-Branch: main
+Branch: main → prp-010-codegen_on_real_types
 
 ---
 
