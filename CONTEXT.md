@@ -233,7 +233,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — rule 9, file tree, progress
 
 ## SESSION 6 — 2026-10-09 — PRP-003 parser — open
 
-Branch: main
+Branch: main → prp-003-parser
 
 ---
 
