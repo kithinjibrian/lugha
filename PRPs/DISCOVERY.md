@@ -15,6 +15,8 @@ Any time a feature is described in one or two sentences without specifying:
 
 Ask one question at a time. Do not batch questions. Wait for each answer.
 
+Every question comes with a recommended answer and the reason for it, plus the realistic alternatives, so the user can accept with one word. Prefer the AskUserQuestion tool with the recommendation as the first option.
+
 1. What does it do — input, processing, output
 2. Who uses it and when
 3. What happens when it fails — the error returned on each failure path

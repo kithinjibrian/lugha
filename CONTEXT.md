@@ -139,9 +139,9 @@ TODO.md             — prerequisites and init checked off
 
 ---
 
-## SESSION 4 — 2026-10-09 — PRP-001 test runner discovery — open
+## SESSION 4 — 2026-10-09 — PRP-001 test runner — open
 
-Branch: main
+Branch: main → prp-001-test_runner
 
 ---
 
