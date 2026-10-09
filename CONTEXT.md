@@ -1078,6 +1078,12 @@ CHANGELOG.md, MEMORY.md  — entry, decision 19
 
 ---
 
+## SESSION 21 — 2026-10-09 — DECISION-010 copy-on-write — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Lugha v0 is complete and housekeeping is done. No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
