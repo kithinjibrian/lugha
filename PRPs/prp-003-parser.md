@@ -1,6 +1,6 @@
 ## FEATURE: A parser that turns lexer tokens into an AST for the full §3 grammar, reporting several syntax errors per run with stable codes.
 
-**Status:** implemented 2026-10-09 — session 6 (branch `prp-003-parser`)
+**Status:** merged into `main` 2026-10-09 — session 6
 **Milestone:** 1 (second pipeline stage; full syntax per CLAUDE.md rule 9)
 **Spec:** §3 (grammar, precedence, assignment, struct literals in conditions, block-like statements), §6 (expression bodies), §9 (error codes)
 **Decisions:** DECISION-002 (stage return type)

@@ -231,7 +231,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — rule 9, file tree, progress
 
 ---
 
-## SESSION 6 — 2026-10-09 — PRP-003 parser — open
+## SESSION 6 — 2026-10-09 — PRP-003 parser — closed
 
 Branch: main → prp-003-parser
 
@@ -287,10 +287,10 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, shipped item, progres
 
 ### STILL OPEN AT CLOSE
 
-- Branch `prp-003-parser` not yet merged into `main`.
+- Nothing. Branch `prp-003-parser` fast-forward merged into `main` and deleted.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Run a discovery interview for `PRPs/prp-003-parser.md` (milestone 1; full §3 syntax per CLAUDE.md rule 9). Note `src/lexer/mod.rs` is at 299 lines — keep parser code in its own modules. See `TODO.md`.
+Run a discovery interview for the milestone 1 codegen + link PRP (`PRPs/prp-004-…`): integers treated as i64 (CLAUDE.md rule 9), LLVM 21 via inkwell, object file, `cc` link; the driver PRP then wires lex → parse → codegen into `lughac` and removes the `#[ignore]` on `tests/programs.rs`. See `TODO.md`.
