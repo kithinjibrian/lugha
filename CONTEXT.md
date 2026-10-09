@@ -139,7 +139,7 @@ TODO.md             — prerequisites and init checked off
 
 ---
 
-## SESSION 4 — 2026-10-09 — PRP-001 test runner — open
+## SESSION 4 — 2026-10-09 — PRP-001 test runner — closed
 
 Branch: main → prp-001-test_runner
 
@@ -182,7 +182,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — tests/ tree, shipped item, progr
 
 ### STILL OPEN AT CLOSE
 
-- Branch `prp-001-test_runner` not yet merged into `main`.
+- Nothing. Branch `prp-001-test_runner` fast-forward merged into `main` and deleted.
 
 ---
 

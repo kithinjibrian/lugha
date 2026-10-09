@@ -1,6 +1,6 @@
 ## FEATURE: A test runner that compiles and runs every `.la` program under `tests/programs/` and compares its output with expectation files.
 
-**Status:** implemented 2026-10-09 — session 4 (branch `prp-001-test_runner`)
+**Status:** merged into `main` 2026-10-09 — session 4
 **Milestone:** pre-milestone 1 (infrastructure)
 **Spec:** §9 (exit codes, CLI), §10 (acceptance programs), §11 (milestone 1 done-when)
 **Decisions:** DECISION-008 (resolved)
