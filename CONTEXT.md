@@ -1120,6 +1120,12 @@ DECISIONS.md, MEMORY.md (decision 20), TODO.md (unscheduled ideas), CHANGELOG.md
 
 ---
 
+## SESSION 22 — 2026-10-09 — Close DECISION-004 — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 No PRP is queued. Remaining options, each starting with discovery:
