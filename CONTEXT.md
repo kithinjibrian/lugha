@@ -291,6 +291,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, shipped item, progres
 
 ---
 
+## SESSION 7 — 2026-10-09 — PRP-004 codegen and link — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Run a discovery interview for the milestone 1 codegen + link PRP (`PRPs/prp-004-…`): integers treated as i64 (CLAUDE.md rule 9), LLVM 21 via inkwell, object file, `cc` link; the driver PRP then wires lex → parse → codegen into `lughac` and removes the `#[ignore]` on `tests/programs.rs`. See `TODO.md`.
