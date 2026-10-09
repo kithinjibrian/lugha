@@ -1,6 +1,6 @@
 ## FEATURE: Housekeeping — a real README, CI on every push and PR, harness-enforced protected files, and `setup.md` moved into `docs/`.
 
-**Status:** approved 2026-10-09 — session 20
+**Status:** implemented 2026-10-09 — session 20 (branch `prp-017-housekeeping`, awaiting merge)
 **Milestone:** none; post-v0 housekeeping (TODO "Setup" items)
 **Spec:** §9 (command-line interface, which the README documents), §10 (the README's example program)
 **Decisions:** DECISION-005 / MEMORY 10 (LLVM 21, dynamic linking), MEMORY 12 (tests), CLAUDE.md PROTECTED FILES and `.llmignore`
@@ -21,6 +21,12 @@ A visitor to the repository can learn what Lugha is, install the prerequisites, 
   - `docs/setup.md`, with references updated.
 - Related existing code: `rust-toolchain.toml`, `Cargo.toml`, `.llmignore`, CLAUDE.md (PROTECTED FILES, COMMANDS, FILE ORGANIZATION), TODO.md, DECISIONS.md.
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 20)
+- **CI was green on its first run** (run 37964219151): no extra packages were needed beyond `llvm-21-dev libgc-dev build-essential curl ca-certificates git`, and all 191 tests ran in the container.
+- **Actions** pinned to `actions/checkout` v7.0.1 and `actions/cache` v6.1.0, the latest releases at the time.
+- **`rust-toolchain.toml`** already listed `rustfmt` and `clippy`, so it was unchanged.
+- **The first `git push`** hung inside `ssh git-receive-pack`; it was killed and retried with a timeout, which went through at once. This was not a repository problem.
 
 ### Discovery answers (session 20)
 1. **Scope:** all four items — README, CI, Claude deny rules, and moving `setup.md`.
@@ -90,10 +96,10 @@ A visitor to the repository can learn what Lugha is, install the prerequisites, 
 
 ## TESTS TO WRITE
 
-- [ ] CI itself is the test: a green run on the branch, with fmt, clippy and every test executed in the container (the log shows all test binaries, including `tests/spec.rs`).
-- [ ] The README's commands are run locally as written: the apt line is checked with `apt-get -s`; `cargo build --release`, the example program via `lughac run`, `lughac spec | head -1`.
-- [ ] `.claude/settings.json` is valid JSON with the expected deny entries (checked with `python3 -m json.tool`).
-- [ ] `cargo test` still passes after the move (nothing reads `setup.md`).
+- [x] CI itself is the test: a green run on the branch, with fmt, clippy and every test executed in the container (the log shows all test binaries, including `tests/spec.rs`).
+- [x] The README's commands are run locally as written: the apt line is checked with `apt-get -s`; `cargo build --release`, the example program via `lughac run`, `lughac spec | head -1`.
+- [x] `.claude/settings.json` is valid JSON with the expected deny entries (checked with `python3 -m json.tool`).
+- [x] `cargo test` still passes after the move (nothing reads `setup.md`).
 
 ## ROLLBACK PLAN
 
@@ -101,11 +107,11 @@ A visitor to the repository can learn what Lugha is, install the prerequisites, 
 - To abandon: delete the branch. To disable CI later, delete the workflow file.
 
 ## ACCEPTANCE CRITERIA
-- [ ] README covers the overview, an example, prerequisites, build, usage, tests, pointers and the license.
-- [ ] CI is green on the branch.
-- [ ] `.claude/settings.json` denies the protected files.
-- [ ] `setup.md` lives in `docs/`; the live references are updated.
-- [ ] CLAUDE.md, TODO.md, CHANGELOG.md, MEMORY.md updated.
+- [x] README covers the overview, an example, prerequisites, build, usage, tests, pointers and the license.
+- [x] CI is green on the branch.
+- [x] `.claude/settings.json` denies the protected files.
+- [x] `setup.md` lives in `docs/`; the live references are updated.
+- [x] CLAUDE.md, TODO.md, CHANGELOG.md, MEMORY.md updated.
 
 ## VALIDATION
 - `cargo fmt --check`

@@ -204,6 +204,19 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 19. CI and protected-file enforcement (PRP-017)
+
+**Decision:**
+- **CI:** `.github/workflows/ci.yml` runs in the `ubuntu:26.04` container. It installs `llvm-21-dev libgc-dev build-essential` from the stock archive, gets Rust via rustup from `rust-toolchain.toml`, and runs fmt, clippy and test.
+- **Supply chain:** actions are pinned by SHA (`actions/checkout` v7.0.1, `actions/cache` v6.1.0); the token is `contents: read`.
+- **Protected files:** `.claude/settings.json` denies Read/Edit on the `.llmignore` paths. It blocks only Claude's own tools, not a sandbox.
+
+**Why:** CI matches the development machine package for package, with no third-party apt source.
+
+**Rules out:** apt.llvm.org; unpinned or third-party actions.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -213,6 +226,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-017 housekeeping: README, CI (green), `.claude/settings.json` deny rules, `docs/setup.md`
 - **Milestone 5 complete — Lugha v0 complete**: every §10 program passes, extracted from the spec; `lughac spec`
 - PRP-016 spec command: `lugha::SPEC`, `tests/spec.rs`, dead `Unsupported` paths removed
 - PRP-015 structs: `check/structs.rs`, `check/errors/` split by code range, `codegen/structs.rs` (layout, literals, fields, place addresses); centroid prints `centroid: 2.0, 1.0`
@@ -243,9 +257,9 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Lugha v0 is complete (tag `m5`). There is no next PRP in the spec. Candidates, each needing discovery and, for language changes, a spec change first (rule 1):
-- Housekeeping from TODO: README, CI (fmt/clippy/test with LLVM 21 and libgc), `.claude/settings.json` deny rules, where `setup.md` lives.
-- Deferred DECISION-004 and DECISION-010 (copy-on-write), now that measurements are possible.
+Lugha v0 is complete and housekeeping is done. No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
+- DECISION-010 (copy-on-write for arrays): measure copy costs on realistic programs, then decide.
+- DECISION-004 (design system): likely close as "not applicable" — lughac has no UI.
 - v1 language work from spec §11/§12 (growable list, boxed/optional types, methods, generics, modules), starting with a spec draft.
 
 See `TODO.md` and `DECISIONS.md`.

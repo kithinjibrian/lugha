@@ -1034,13 +1034,51 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — tree, commands, v0 complete, dec
 
 Branch: main → prp-017-housekeeping
 
+### WHAT WAS DONE
+
+Discovery for PRP-017, with the recommended answer accepted every time:
+- All four TODO setup items.
+- CI in the `ubuntu:26.04` container.
+
+Implemented PRP-017:
+- CI workflow first, as the test. It was pushed and green on the first run.
+- README; every command in it was run locally as written.
+- `.claude/settings.json` deny rules.
+- `setup.md` → `docs/setup.md`, with the live references updated.
+
+### FILES CREATED OR MODIFIED
+
+```
+.github/workflows/ci.yml — new: fmt, clippy, test in ubuntu:26.04 (LLVM 21, libgc), SHA-pinned actions
+.claude/settings.json    — new: Read/Edit deny rules mirroring .llmignore
+README.md                — rewritten
+docs/setup.md            — moved from setup.md
+.llmignore, CLAUDE.md, TODO.md, DECISIONS.md — sync notes, tree, ticks, reference
+PRPs/prp-017-housekeeping.md — new PRP; implemented; amendments
+CHANGELOG.md, MEMORY.md  — entry, decision 19
+```
+
+### TESTS WRITTEN
+
+- CI run 37964219151: every step green, and every test binary ran in the container (191 tests).
+- README commands run locally: `apt-get -s` install, release build, the example via `lughac run` (832040), `lughac spec | head -1`.
+- `python3 -m json.tool` on the settings file.
+
+### DECISIONS MADE
+
+- PRP-017 discovery answers; MEMORY 19.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT
 
-Lugha v0 is complete (tag `m5`). There is no next PRP in the spec. Candidates, each needing discovery and, for language changes, a spec change first (rule 1):
-- Housekeeping from TODO: README, CI (fmt/clippy/test with LLVM 21 and libgc), `.claude/settings.json` deny rules, where `setup.md` lives.
-- Deferred DECISION-004 and DECISION-010 (copy-on-write), now that measurements are possible.
+Lugha v0 is complete and housekeeping is done. No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
+- DECISION-010 (copy-on-write for arrays): measure copy costs on realistic programs, then decide.
+- DECISION-004 (design system): likely close as "not applicable" — lughac has no UI.
 - v1 language work from spec §11/§12 (growable list, boxed/optional types, methods, generics, modules), starting with a spec draft.
 
 See `TODO.md` and `DECISIONS.md`.
