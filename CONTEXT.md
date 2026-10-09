@@ -1120,17 +1120,45 @@ DECISIONS.md, MEMORY.md (decision 20), TODO.md (unscheduled ideas), CHANGELOG.md
 
 ---
 
-## SESSION 22 — 2026-10-09 — Close DECISION-004 — open
+## SESSION 22 — 2026-10-09 — Close DECISION-004 — closed
 
 Branch: main
+
+### WHAT WAS DONE
+
+At the user's request, closed DECISION-004 (design system) as not applicable. Lugha has no UI, and diagnostics formatting is already governed by spec §9 and DECISION-011. A future UI would open a new decision. This was a docs-only change, committed directly to `main`.
+
+### FILES CREATED OR MODIFIED
+
+```
+DECISIONS.md   — DECISION-004 moved to RESOLVED; DEFERRED now empty
+MEMORY.md      — decision 21, state, next start point
+CHANGELOG.md   — entry
+CONTEXT.md     — this session
+```
+
+### TESTS WRITTEN
+
+- None (no code changes).
+
+### DECISIONS MADE
+
+- DECISION-004 resolved as not applicable.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Nothing. No open or deferred decisions remain.
 
 ---
 
 ## NEXT SESSION START POINT
 
-No PRP is queued. Remaining options, each starting with discovery:
-- DECISION-004 (design system): likely close as not applicable, since lughac has no UI.
+No PRP is queued, and no decisions are open or deferred. Options, each starting with discovery:
 - Move on last use (TODO ideas): a copy-avoiding optimization with no spec change; needs a PRP.
 - v1 language work from spec §11 (growable list, boxed/optional types, methods, generics, modules, swap/move), starting with a spec draft.
 
-See `TODO.md` and `DECISIONS.md`.
+See `TODO.md`.

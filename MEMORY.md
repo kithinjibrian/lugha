@@ -227,6 +227,16 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 21. No design system (DECISION-004)
+
+**Decision:** Not applicable. There is no UI and no `docs/DESIGN.md`. Diagnostics formatting follows spec §9 and DECISION-011. A future UI opens a new decision.
+
+**Why:** Nothing to style.
+
+**Rules out:** creating `docs/DESIGN.md` without a UI proposal.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -236,6 +246,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- DECISION-004 closed as not applicable (no UI)
 - DECISION-010 resolved: eager copies stay, with measurements in `docs/decisions/decision-010.md`
 - PRP-017 housekeeping: README, CI (green), `.claude/settings.json` deny rules, `docs/setup.md`
 - **Milestone 5 complete — Lugha v0 complete**: every §10 program passes, extracted from the spec; `lughac spec`
@@ -268,9 +279,8 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-No PRP is queued. Remaining options, each starting with discovery:
-- DECISION-004 (design system): likely close as not applicable, since lughac has no UI.
+No PRP is queued, and no decisions are open or deferred. Options, each starting with discovery:
 - Move on last use (TODO ideas): a copy-avoiding optimization with no spec change; needs a PRP.
 - v1 language work from spec §11 (growable list, boxed/optional types, methods, generics, modules, swap/move), starting with a spec draft.
 
-See `TODO.md` and `DECISIONS.md`.
+See `TODO.md`.

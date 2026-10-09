@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- DECISION-004 (design system) closed as not applicable — Lugha has no UI
 - DECISION-010 resolved: array copies stay eager (no copy-on-write), backed by measurements in `docs/decisions/decision-010.md`; spec §12 updated
 - README with prerequisites, usage and tests; CI (fmt, clippy, tests in `ubuntu:26.04` with LLVM 21 and libgc) on every push and PR; Claude Code deny rules for the protected files; `setup.md` moved to `docs/`
 - `lughac spec` prints the bundled language specification; the §10 programs are tested straight from it, and every one passes — **milestone 5 complete: Lugha v0 is complete**

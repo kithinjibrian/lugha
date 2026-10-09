@@ -20,15 +20,7 @@ None.
 
 ## DEFERRED — Acknowledged, not yet needed
 
-### DECISION-004 — Design system (docs/DESIGN.md)
-
-**Status:** deferred
-**Raised:** 2026-10-09 — Session 1
-**Revisit when:** Any UI (web playground, editor extension, GUI) is proposed.
-
-**Question:** What design tokens and component rules apply?
-
-**Notes:** lughac is a CLI; `docs/setup.md` Step 9 was skipped.
+None.
 
 ---
 
@@ -199,5 +191,21 @@ None.
 - It would save at most ~65% on `particles`, and only with full reference counting: increments, scope-exit decrements, and a check on every element write. Boehm makes that bookkeeping unnecessary otherwise.
 - The savings that matter come from dead locals, which a compile-time move-on-last-use check can remove. Rewriting `particles` to update through the place chain is already 10× faster.
 - The spec §10 programs make no copies.
+
+**Copied to MEMORY.md:** yes
+
+---
+
+### DECISION-004 — Design system (docs/DESIGN.md)
+
+**Status:** resolved — not applicable
+**Raised:** 2026-10-09 — Session 1
+**Resolved:** 2026-10-09 — Session 22
+
+**Question:** What design tokens and component rules apply?
+
+**Outcome:** None. Lugha has no UI, so there is no `docs/DESIGN.md` (`docs/setup.md` Step 9 does not apply). The compiler's only visual output, its diagnostics, is governed by spec §9 and DECISION-011. If a UI is ever proposed (a web playground, an editor extension, a GUI), it opens a new decision rather than reopening this one.
+
+**Rationale:** A design system with nothing to style would be dead documentation; keeping it deferred only kept a non-question on the list.
 
 **Copied to MEMORY.md:** yes
