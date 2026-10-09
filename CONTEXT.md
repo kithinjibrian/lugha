@@ -979,6 +979,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, known issue removed, 
 
 ---
 
+## SESSION 19 — 2026-10-09 — PRP-016 lughac spec and §10 acceptance — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 5, PRP-016: `lughac spec` and the full §10 acceptance — the last PRP of v0. It covers:
