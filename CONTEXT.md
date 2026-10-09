@@ -922,7 +922,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, progress, decision 16
 
 ---
 
-## SESSION 18 — 2026-10-09 — PRP-015 structs — open
+## SESSION 18 — 2026-10-09 — PRP-015 structs — closed
 
 Branch: main → prp-015-structs
 
@@ -972,6 +972,10 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, known issue removed, 
 ### PENDING DECISIONS OPENED
 
 - None.
+
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-015-structs` fast-forward merged into `main` and deleted.
 
 ---
 

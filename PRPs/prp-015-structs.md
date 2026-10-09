@@ -1,6 +1,6 @@
 ## FEATURE: Structs — declarations in any order, literals, field reads and writes, structs inside arrays and arrays inside structs, and value-semantics copies.
 
-**Status:** implemented 2026-10-09 — session 18 (branch `prp-015-structs`, awaiting merge)
+**Status:** merged into `main` 2026-10-09 — session 18
 **Milestone:** 5, third of four PRPs. Done-when: the spec §10 centroid program prints `centroid: 2.0, 1.0`.
 **Spec:** §3 (struct declarations and literals, no-struct-literal conditions), §4 (structs, copies table, deep copies, value semantics), §5 (field evaluation order), §6 (two-pass globals, shared namespace), §7 (stack layout, struct parameters and returns), §8 (no structs across C), §9 (lowering notes, copy helpers, codes)
 **Decisions:** MEMORY 14 (codegen reads the checker's types), MEMORY 16 (array value semantics and copy sites), PRP-013 (integer address arithmetic, no `unsafe`)
