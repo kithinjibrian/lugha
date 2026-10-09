@@ -2,7 +2,7 @@
 
 use super::expr::Expect;
 use super::flow::Flow;
-use super::{Binding, Checker, Checking, Type, errors, stop};
+use super::{Binding, Checker, Checking, Type, errors};
 use crate::ast::{Block, Expr, ForIter, FunDecl, Ident, Stmt, StmtKind};
 use crate::span::Span;
 
@@ -79,9 +79,10 @@ impl Checker {
                 body,
             } => self.for_range(var, start, end, body)?,
             StmtKind::For {
-                iter: ForIter::Array(_),
-                ..
-            } => return Err(stop("arrays", 5, stmt.span)),
+                var,
+                iter: ForIter::Array(iter),
+                body,
+            } => self.for_of(var, iter, body)?,
             StmtKind::Return(value) => {
                 self.return_stmt(value.as_ref(), stmt.span)?;
                 return Ok(true);
@@ -169,7 +170,7 @@ impl Checker {
 #[cfg(test)]
 mod tests {
     use crate::check::Type;
-    use crate::check::test_util::{errors, let_type, ok, stopped};
+    use crate::check::test_util::{errors, let_type, ok};
 
     #[test]
     fn let_and_assignment_check_types() {
@@ -225,8 +226,8 @@ mod tests {
             [("E0401", "2.5")]
         );
         assert_eq!(
-            stopped("fun main() { let xs = 1; for x of xs { } }"),
-            ("arrays", 5, "for x of xs { }")
+            errors("fun main() { let xs = 1; for x of xs { } }"),
+            [("E0411", "xs")]
         );
     }
 

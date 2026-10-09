@@ -1,0 +1,10 @@
+error[E0501]: cannot assign to `xs`: it is not mutable
+  --> tests/programs/m5/e0501_element.la:3:5
+  |
+2 |     let xs = [1, 2];
+  |         -- declared here
+3 |     xs[0] = 5;
+  |     ^^^^^
+  |
+  = help: make it mutable: `let mut xs`
+

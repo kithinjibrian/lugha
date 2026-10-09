@@ -1,0 +1,31 @@
+// Arrays: literals of each element type, .len, reads, writes, nested
+// arrays, and for-of (spec §4, §5).
+fun main() {
+    let flags = [true, false, true];
+    let names = ["ada", "lin"];
+    let small: u8[] = [1, 2, 255];
+    let mut nums = [10, 20, 30];
+    nums[1] = 25;
+    nums[2] += 5;
+    println(nums.len);
+    println(nums[0] + nums[1] + nums[2]);
+    println(flags[2]);
+    println(names[1]);
+    println(small[2]);
+    let mut grid = [[0; 3]; 2];
+    grid[1][2] = 7;
+    grid[0][0] += 1;
+    let mut total = 0;
+    for row of grid {
+        for cell of row {
+            total += cell;
+        }
+    }
+    println(total);
+    let ratios = [0.5, 1.5];
+    let mut sum = 0.0;
+    for r of ratios {
+        sum += r;
+    }
+    println(sum);
+}

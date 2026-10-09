@@ -17,20 +17,36 @@ use crate::check::Type;
 
 /// Where `continue` and `break` jump in the innermost loop.
 pub(super) struct Loop<'ctx> {
-    next: BasicBlock<'ctx>,
-    exit: BasicBlock<'ctx>,
+    pub next: BasicBlock<'ctx>,
+    pub exit: BasicBlock<'ctx>,
 }
 
 impl<'ctx> Lowerer<'ctx> {
     /// A block in its own scope: the tail's value, `Void`, or `Never` once a
     /// statement diverges. Statements after that still lower, into dead blocks.
     pub(super) fn block(&mut self, block: &Block) -> Result<Value<'ctx>, CodegenError> {
+        self.block_inner(block, false)
+    }
+
+    /// A block; for a function body (`returns`), the tail is lowered as a
+    /// returned value while its locals are still in scope (spec §4).
+    pub(super) fn block_inner(
+        &mut self,
+        block: &Block,
+        returns: bool,
+    ) -> Result<Value<'ctx>, CodegenError> {
         self.scopes.push();
         let mut diverged = false;
         for stmt in &block.stmts {
             diverged |= self.stmt(stmt)?;
         }
         let value = match &block.tail {
+            Some(tail)
+                if returns && !matches!(self.ty(tail), Type::Never) && self.ret.is_some() =>
+            {
+                let ty = self.ty(tail);
+                Value::Val(self.value_for_return(tail, &ty)?)
+            }
             Some(tail) => self.expr(tail)?,
             None => Value::Void,
         };
@@ -145,10 +161,12 @@ impl<'ctx> Lowerer<'ctx> {
         let counter = Local {
             ptr: self.entry_alloca(&ty, "for.i"),
             ty: ty.clone(),
+            borrowed: false,
         };
         let end_slot = Local {
             ptr: self.entry_alloca(&ty, "for.end"),
             ty: ty.clone(),
+            borrowed: false,
         };
         self.builder
             .build_store(counter.ptr, first)
@@ -184,6 +202,7 @@ impl<'ctx> Lowerer<'ctx> {
         let var_slot = Local {
             ptr: self.entry_alloca(&ty, &var.name),
             ty: ty.clone(),
+            borrowed: false,
         };
         self.builder.build_store(var_slot.ptr, i).expect(POSITIONED);
         self.scopes.declare(&var.name, var_slot);
@@ -236,7 +255,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.builder.get_insert_block().expect(POSITIONED)
     }
 
-    fn branch(&self, to: BasicBlock<'ctx>) {
+    pub(super) fn branch(&self, to: BasicBlock<'ctx>) {
         self.builder
             .build_unconditional_branch(to)
             .expect(POSITIONED);

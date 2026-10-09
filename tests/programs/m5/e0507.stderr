@@ -1,0 +1,8 @@
+error[E0507]: cannot assign to `xs` while iterating over it
+  --> tests/programs/m5/e0507.la:4:9
+  |
+3 |     for x of xs {
+  |              -- iterated here
+4 |         xs[0] = x;
+  |         ^^^^^
+

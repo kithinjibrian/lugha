@@ -155,7 +155,7 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// Branches to a panic with `message` at `at` when `condition` holds,
     /// leaving the builder on the path where it doesn't.
-    fn panic_if(&mut self, condition: IntValue<'ctx>, message: &str, at: usize) {
+    pub(super) fn panic_if(&mut self, condition: IntValue<'ctx>, message: &str, at: usize) {
         let panic_block = self.append("panic");
         let ok_block = self.append("ok");
         self.builder

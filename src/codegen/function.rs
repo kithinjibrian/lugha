@@ -109,10 +109,11 @@ impl<'ctx> Lowerer<'ctx> {
                 Local {
                     ptr,
                     ty: ty.clone(),
+                    borrowed: true,
                 },
             );
         }
-        let value = self.block(&f.body)?;
+        let value = self.block_inner(&f.body, true)?;
         self.scopes.pop();
 
         match (&signature.ret, value) {
@@ -135,7 +136,7 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn return_stmt(&mut self, value: Option<&Expr>) -> Result<(), CodegenError> {
         match (self.ret.clone(), value) {
             (Some(ty), Some(expr)) => {
-                let result = self.get(expr, &ty)?;
+                let result = self.value_for_return(expr, &ty)?;
                 self.builder.build_return(Some(&result)).expect(POSITIONED);
             }
             _ => {

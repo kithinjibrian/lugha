@@ -240,12 +240,12 @@ There is no null. Every string and array variable holds a valid object.
 | --- | --- | --- |
 | `let ys = xs;` or `ys = xs;` | Yes | `ys` gets its own array |
 | A place used as a struct-literal field or array-literal element (`Wrap { data: xs }`) | Yes | The new struct or array gets its own copy |
-| `return p;` where `p` is a parameter or part of one | Yes | Otherwise the caller's argument would be shared |
+| `return p;` where `p` is a parameter, a `for … of` variable, or part of one | Yes | Otherwise the caller's argument, or the iterated array, would be shared |
 | `return xs;` where `xs` is a local or part of one | No | The local is about to go away, so the array simply moves |
 | Passing an argument, `f(xs)` | No | Parameters are immutable, and nothing else runs during the call |
 | A fresh value: literal, call result, string concatenation | No | Nothing else refers to it |
 
-A function's tail value follows the same rules as `return`: a body ending in `p` copies, and one ending in `xs` moves.
+A function's tail value follows the same rules as `return`: a body ending in `p` copies, and one ending in `xs` moves. "From a place" looks through `if` and block tails: `let ys = if c { xs } else { [0] };` copies.
 
 Copies are deep. Copying an `i64[][]` copies every inner array, and copying a struct copies the arrays inside it. Strings inside are shared, since they are immutable.
 
@@ -535,15 +535,17 @@ Name and type errors, reported by the checker:
 | E0406 | Not a function, or a function used as a value | `let step = 2; step(1);`, `let f = fib;` |
 | E0407 | `void` used as a value | `let x = log();` where `log` returns nothing |
 | E0410 | No such field | `s.size` on a `string`; `(5).len` |
-| E0411 | Not indexable | `n[0]` where `n` is an `i64` |
-| E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns (§8) |
+| E0411 | Not indexable or not iterable | `n[0]` where `n` is an `i64`; `for c of "abc"` |
+| E0412 | Cannot infer an array's element type | `let xs = [];` — annotate it: `let xs: i64[] = [];` |
+| E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array parameters or returns (§8) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
-| E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable |
+| E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut` |
 | E0502 | Assignment to something that isn't a place | `(a + b) = 3;` |
 | E0503 | Missing return | a non-void function whose body can end without a value (§6); a stray `;` after the result gets a "remove this semicolon" label |
 | E0504 | `break` or `continue` outside a loop | |
 | E0505 | Block-like statement with a discarded value | `if big { 100 } else { 1 }` followed by more statements |
 | E0506 | Assignment into a string | `s[0] = 104;`, `s.len = 2;` — strings are immutable (§4) |
+| E0507 | Assignment to the array being iterated | `for x of xs { xs[0] = x; }` |
 | W0101 | Unreachable code (warning) | statements after `return`, `break` or `continue`; reported once per block |
 
 **JSON diagnostics.** With `--diagnostics=json`, the compiler writes one JSON object per line to stderr, one per diagnostic, and nothing else. Lines and columns are 1-based; columns and offsets count UTF-8 bytes. `label` is the text shown under the primary span, or `null`. `labels` holds secondary spans, and `help` is an optional suggestion. Internal errors have `"code":null`, and `"span":null` when they have no location.

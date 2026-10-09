@@ -1,0 +1,19 @@
+fun count_primes(limit: i64): i64 {
+    let mut is_composite = [false; limit + 1];
+    let mut count = 0;
+    for i in 2..limit + 1 {
+        if !is_composite[i] {
+            count += 1;
+            let mut j = i * i;
+            while j <= limit {
+                is_composite[j] = true;
+                j += i;
+            }
+        }
+    }
+    count
+}
+
+fun main() {
+    println(count_primes(100));
+}

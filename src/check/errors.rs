@@ -156,6 +156,31 @@ pub(super) fn string_immutable(span: Span) -> Diagnostic {
     .with_help("build a new string instead, e.g. with `+`")
 }
 
+pub(super) fn empty_array(span: Span) -> Diagnostic {
+    Diagnostic::error("E0412", "cannot infer the element type of `[]`", span)
+        .with_help("annotate it: `let xs: i64[] = [];`")
+}
+
+pub(super) fn not_iterable(ty: &Type, span: Span) -> Diagnostic {
+    Diagnostic::error("E0411", format!("cannot iterate over `{ty}`"), span).with_help(
+        "`for … of` walks arrays; use `for i in 0..s.len` with `s[i]` for a string's bytes",
+    )
+}
+
+pub(super) fn assign_while_iterating(name: &str, span: Span, for_span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0507",
+        format!("cannot assign to `{name}` while iterating over it"),
+        span,
+    )
+    .with_label(for_span, "iterated here")
+}
+
+pub(super) fn extern_array(span: Span) -> Diagnostic {
+    Diagnostic::error("E0409", "arrays can't cross the C boundary", span)
+        .with_help("pass a number or a string instead")
+}
+
 pub(super) fn not_callable(span: Span) -> Diagnostic {
     Diagnostic::error("E0406", "this expression is not a function", span)
 }

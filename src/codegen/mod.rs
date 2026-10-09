@@ -10,8 +10,10 @@
 //! Depends on: ast, check (types), span, inkwell (LLVM 21).
 
 mod arith;
+mod array;
 mod cast;
 mod control;
+mod copy;
 mod expr;
 mod function;
 mod heap;

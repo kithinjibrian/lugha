@@ -151,7 +151,7 @@ impl<'ctx> Lowerer<'ctx> {
                 if let Some((ty, value)) = arg {
                     let print = self.runtime(
                         &format!("lugha_rt_print_{}", suffix(&ty)),
-                        &[ty.clone()],
+                        std::slice::from_ref(&ty),
                         None,
                     );
                     let value = self.abi_value(&ty, value);
@@ -168,7 +168,7 @@ impl<'ctx> Lowerer<'ctx> {
             ("to_string", Some((ty, value))) => {
                 let convert = self.runtime(
                     &format!("lugha_rt_to_string_{}", suffix(&ty)),
-                    &[ty.clone()],
+                    std::slice::from_ref(&ty),
                     Some(Type::String),
                 );
                 let value = self.abi_value(&ty, value);

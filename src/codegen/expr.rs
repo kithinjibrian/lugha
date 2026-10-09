@@ -64,9 +64,8 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Index(base, open, index) => self.index(base, open.start, index)?,
             ExprKind::Field(base, field) => self.field(base, field)?,
             ExprKind::StructLit(..) => return Err(unsupported("structs", 5, expr.span)),
-            ExprKind::Array(_) | ExprKind::Repeat(..) => {
-                return Err(unsupported("arrays", 5, expr.span));
-            }
+            ExprKind::Array(elements) => self.array_literal(expr, elements)?,
+            ExprKind::Repeat(value, count) => self.repeat(expr, value, count)?,
         };
         Ok(Value::Val(value))
     }

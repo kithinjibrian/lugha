@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- Arrays: `T[]` types, list and repeat literals, `.len`, bounds-checked element reads and writes, `for x of xs`, and value semantics with deep copies at the spec §4 copy sites (E0409 array case, E0411 iteration, E0412, E0507) — the §10 primes program prints 25
 - AI context system (CLAUDE.md, MEMORY.md, CONTEXT.md, DECISIONS.md, PRPs, code style guide)
 - Lugha v0 language specification (`docs/specs/`)
 - `lughac` crate skeleton (builds against LLVM 21)

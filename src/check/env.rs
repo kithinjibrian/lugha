@@ -35,6 +35,7 @@ impl Checker {
                 Item::Extern(e) => (&e.name, &e.params, e.ret.as_ref(), true),
                 Item::Struct(s) => return Err(stop("structs", 5, s.span)),
             };
+            let declared = params;
             let params = params
                 .iter()
                 .map(|p| self.resolve(&p.ty))
@@ -48,6 +49,15 @@ impl Checker {
                 self.report(errors::extern_string_return(span));
                 // Keep the function callable so its calls don't cascade.
                 ret_type = Type::Error;
+            }
+            if is_extern {
+                // Arrays can't cross the C boundary (spec §8).
+                let annotations = declared.iter().map(|p| &p.ty).chain(ret);
+                for (annotation, ty) in annotations.zip(params.iter().chain([&ret_type])) {
+                    if matches!(ty, Type::Array(_)) {
+                        self.report(errors::extern_array(annotation.span));
+                    }
+                }
             }
             let text = &name.name;
             if is_extern && text.starts_with("lugha_") {
@@ -95,7 +105,7 @@ impl Checker {
             TypeKind::F64 => Type::F64,
             TypeKind::Bool => Type::Bool,
             TypeKind::String => Type::String,
-            TypeKind::Array(_) => return Err(stop("arrays", 5, ty.span)),
+            TypeKind::Array(element) => Type::Array(Box::new(self.resolve(element)?)),
             TypeKind::Named(name) => {
                 self.report(errors::unknown_type(name, ty.span));
                 Type::Error
@@ -178,10 +188,6 @@ mod tests {
         assert_eq!(
             errors("fun main() { let s: string = 1; }"),
             [("E0401", "1")]
-        );
-        assert_eq!(
-            stopped("fun main() { let a: i64[] = 1; }"),
-            ("arrays", 5, "i64[]")
         );
     }
 

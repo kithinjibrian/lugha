@@ -13,6 +13,9 @@ use crate::check::Type;
 pub(super) struct Local<'ctx> {
     pub ptr: PointerValue<'ctx>,
     pub ty: Type,
+    /// A parameter or `for … of` variable: part of someone else's data, so
+    /// returning it copies (spec §4).
+    pub borrowed: bool,
 }
 
 /// Nested block scopes; inner names shadow outer ones (spec §5).

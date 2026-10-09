@@ -29,9 +29,10 @@ impl<'ctx> Lowerer<'ctx> {
                 body,
             } => self.for_range(var, start, end, body)?,
             StmtKind::For {
-                iter: ForIter::Array(_),
-                ..
-            } => return Err(unsupported("arrays", 5, stmt.span)),
+                var,
+                iter: ForIter::Array(iter),
+                body,
+            } => self.for_of(var, iter, body)?,
             StmtKind::Return(value) => {
                 self.return_stmt(value.as_ref())?;
                 return Ok(true);
@@ -58,10 +59,17 @@ impl<'ctx> Lowerer<'ctx> {
             (Type::Never | Type::Error, None) => Type::I64,
             (ty, _) => ty,
         };
-        let value = self.get(init, &ty)?;
+        let value = self.value_for_store(init, &ty)?;
         let ptr = self.entry_alloca(&ty, &name.name);
         self.builder.build_store(ptr, value).expect(POSITIONED);
-        self.scopes.declare(&name.name, Local { ptr, ty });
+        self.scopes.declare(
+            &name.name,
+            Local {
+                ptr,
+                ty,
+                borrowed: false,
+            },
+        );
         Ok(())
     }
 
@@ -74,24 +82,34 @@ impl<'ctx> Lowerer<'ctx> {
         place: &Expr,
         value: &Expr,
     ) -> Result<(), CodegenError> {
-        let ExprKind::Name(name) = &place.kind else {
-            return Err(unsupported(
-                "assigning to fields and elements",
-                5,
-                place.span,
-            ));
+        // The place is evaluated once, before the value (spec §5).
+        // A local's slot holds its value as is; an element is stored as one (`bool` as `i8`).
+        let (address, ty, element) = match &place.kind {
+            ExprKind::Name(name) => {
+                let local = self.scopes.lookup(name);
+                (local.ptr, local.ty, false)
+            }
+            ExprKind::Index(base, open, index) => {
+                let (address, ty) = self.element_place(base, open.start, index)?;
+                (address, ty, true)
+            }
+            _ => return Err(unsupported("assigning to fields", 5, place.span)),
         };
-        let local = self.scopes.lookup(name);
         let new = match compound_op(op) {
-            None => self.get(value, &local.ty)?,
+            None => self.value_for_store(value, &ty)?,
             Some(op) => {
                 // `x op= e` reads `x` once, then evaluates `e` (spec §5).
-                let current = self.load(&local, name);
-                let rhs = self.get(value, &local.ty)?;
-                self.arithmetic(op, local.ty, current, rhs, at)
+                // Compound operators need a numeric type, which has no `bool` widening.
+                let current = self.load_element(address, &ty);
+                let rhs = self.get(value, &ty)?;
+                self.arithmetic(op, ty.clone(), current, rhs, at)
             }
         };
-        self.builder.build_store(local.ptr, new).expect(POSITIONED);
+        if element {
+            self.store_element(address, &ty, new);
+        } else {
+            self.builder.build_store(address, new).expect(POSITIONED);
+        }
         Ok(())
     }
 }

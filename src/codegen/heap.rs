@@ -1,23 +1,92 @@
 //! Heap objects: the length header, bounds checks, element addresses and
 //! string operations (spec §4, §7, §9).
 //!
-//! Strings (and, from PRP-014, arrays) are pointers to `{ i64 len, data }`.
+//! Strings and arrays are pointers to `{ i64 len, data }`.
 //! Run-time-indexed addresses are computed with integer arithmetic
 //! (`ptrtoint` + `8 + i * size` + `inttoptr`) using only safe builder calls;
 //! LLVM optimizes this a little less well, which v0 accepts (spec §1).
 
 use inkwell::IntPredicate;
+use inkwell::types::BasicTypeEnum;
 use inkwell::values::{BasicValueEnum, IntValue, PointerValue, ValueKind};
 
 use super::CodegenError;
 use super::lower::{Lowerer, POSITIONED};
+use super::value::llvm_type;
 use crate::ast::{BinOp, Expr, Ident};
 use crate::check::Type;
 
 /// Bytes before the data: the `i64` length (spec §7).
 const HEADER: u64 = 8;
 
+/// Bytes per element of type `ty` (spec §7, 64-bit target).
+pub(super) fn element_size(ty: &Type) -> u64 {
+    match ty {
+        Type::U8 | Type::Bool => 1,
+        Type::I32 => 4,
+        Type::I64 | Type::F64 | Type::String | Type::Array(_) => 8,
+        _ => unreachable!("checked: {ty} is not an element type"),
+    }
+}
+
+/// The element type of an array type.
+pub(super) fn element_of(ty: &Type) -> Type {
+    match ty {
+        Type::Array(element) => (**element).clone(),
+        _ => unreachable!("checked: {ty} is an array type"),
+    }
+}
+
 impl<'ctx> Lowerer<'ctx> {
+    /// How an element is held in memory: `bool` as `i8`, anything else as itself.
+    fn storage_type(&self, ty: &Type) -> BasicTypeEnum<'ctx> {
+        if *ty == Type::Bool {
+            self.context.i8_type().into()
+        } else {
+            llvm_type(self.context, ty)
+        }
+    }
+
+    /// Loads the element of type `ty` at `address`.
+    pub(super) fn load_element(
+        &self,
+        address: PointerValue<'ctx>,
+        ty: &Type,
+    ) -> BasicValueEnum<'ctx> {
+        let raw = self
+            .builder
+            .build_load(self.storage_type(ty), address, "elem")
+            .expect(POSITIONED);
+        if *ty == Type::Bool {
+            let bool_type = self.context.bool_type();
+            return self
+                .builder
+                .build_int_truncate(raw.into_int_value(), bool_type, "elem.bool")
+                .expect(POSITIONED)
+                .into();
+        }
+        raw
+    }
+
+    /// Stores `value` of type `ty` as an element at `address`.
+    pub(super) fn store_element(
+        &self,
+        address: PointerValue<'ctx>,
+        ty: &Type,
+        value: BasicValueEnum<'ctx>,
+    ) {
+        let value = if *ty == Type::Bool {
+            let i8_type = self.context.i8_type();
+            self.builder
+                .build_int_z_extend(value.into_int_value(), i8_type, "elem.byte")
+                .expect(POSITIONED)
+                .into()
+        } else {
+            value
+        };
+        self.builder.build_store(address, value).expect(POSITIONED);
+    }
+
     /// The length stored in an object's header.
     pub(super) fn length(&self, object: PointerValue<'ctx>) -> IntValue<'ctx> {
         let i64_type = self.context.i64_type();
@@ -121,33 +190,51 @@ impl<'ctx> Lowerer<'ctx> {
             .into()
     }
 
-    /// `base.field` — `string.len` so far.
+    /// `base.len` on a string or an array (checked: the only field so far).
     pub(super) fn field(
         &mut self,
         base: &Expr,
         field: &Ident,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
-        debug_assert_eq!(field.name, "len", "checked: strings only have `.len`");
-        let object = self.get(base, &Type::String)?.into_pointer_value();
+        debug_assert_eq!(field.name, "len", "checked: `.len` is the only field");
+        let ty = self.ty(base);
+        let object = self.get(base, &ty)?.into_pointer_value();
         Ok(self.length(object).into())
     }
 
-    /// `base[index]` — a string's byte, bounds-checked at the `[` (`at`).
+    /// `base[index]` — a string's byte or an array's element, bounds-checked
+    /// at the `[` (`at`).
     pub(super) fn index(
         &mut self,
         base: &Expr,
         at: usize,
         index: &Expr,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
-        let object = self.get(base, &Type::String)?.into_pointer_value();
+        let (address, ty) = self.element_place(base, at, index)?;
+        Ok(self.load_element(address, &ty))
+    }
+
+    /// The bounds-checked address of `base[index]` and its type: `base`,
+    /// then `index`, then the check (spec §5).
+    pub(super) fn element_place(
+        &mut self,
+        base: &Expr,
+        at: usize,
+        index: &Expr,
+    ) -> Result<(PointerValue<'ctx>, Type), CodegenError> {
+        let base_type = self.ty(base);
+        let element = match &base_type {
+            Type::String => Type::U8,
+            array => element_of(array),
+        };
+        let object = self.get(base, &base_type)?.into_pointer_value();
         let i = self.get(index, &Type::I64)?.into_int_value();
         let len = self.length(object);
         self.bounds_check(len, i, at);
-        let address = self.element_address(object, i, 1);
-        Ok(self
-            .builder
-            .build_load(self.context.i8_type(), address, "byte")
-            .expect(POSITIONED))
+        Ok((
+            self.element_address(object, i, element_size(&element)),
+            element,
+        ))
     }
 }
 

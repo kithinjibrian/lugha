@@ -1,0 +1,6 @@
+fun make(n: i64): i64[] = [0; n];
+
+fun main() {
+    let xs = make(-1);
+    println(xs.len);
+}

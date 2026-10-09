@@ -1,17 +1,17 @@
-//! Field access and indexing (spec §4). Strings have `.len` and bytes;
-//! arrays and structs join in milestone 5's later PRPs.
+//! Field access and indexing (spec §4): `.len` and elements of strings and
+//! arrays. Structs join in PRP-015.
 
 use super::expr::Expect;
 use super::{Checker, Checking, Type, errors};
 use crate::ast::{Expr, Ident};
 
 impl Checker {
-    /// `base.field`: only `string.len` exists so far.
+    /// `base.field`: `.len` of strings and arrays.
     pub(super) fn field(&mut self, base: &Expr, field: &Ident) -> Checking<Type> {
         let ty = self.value(base, None)?;
         Ok(match (ty, field.name.as_str()) {
             (Type::Error | Type::Never, _) => Type::Error,
-            (Type::String, "len") => Type::I64,
+            (Type::String | Type::Array(_), "len") => Type::I64,
             (ty, name) => {
                 self.report(errors::no_field(name, ty, field.span));
                 Type::Error
@@ -19,13 +19,14 @@ impl Checker {
         })
     }
 
-    /// `base[index]`: a string's byte is a `u8`; the index is an `i64`.
+    /// `base[index]`: a string's byte (`u8`) or an array's element; the index is an `i64`.
     pub(super) fn index(&mut self, base: &Expr, index: &Expr) -> Checking<Type> {
         let ty = self.value(base, None)?;
         self.expect_type(index, &Expect::of(Type::I64))?;
         Ok(match ty {
             Type::Error | Type::Never => Type::Error,
             Type::String => Type::U8,
+            Type::Array(element) => *element,
             ty => {
                 self.report(errors::not_indexable(ty, base.span));
                 Type::Error

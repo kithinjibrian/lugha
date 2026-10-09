@@ -10,6 +10,7 @@
 //! Depends on: ast, diagnostic, span.
 
 mod access;
+mod array;
 mod assign;
 mod call;
 mod env;
@@ -64,6 +65,7 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), CheckError
         ret: Type::Void,
         loops: 0,
         dead: false,
+        iterating: Vec::new(),
     };
     match checker.program(program) {
         Err(Stop {
@@ -150,6 +152,8 @@ pub(super) struct Checker {
     /// True while checking code after a divergence, so nested blocks don't
     /// repeat W0101.
     dead: bool,
+    /// Places being iterated by enclosing `for … of` loops, with the loop's span (E0507).
+    iterating: Vec<(array::Path, Span)>,
 }
 
 impl Checker {

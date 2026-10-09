@@ -1,0 +1,8 @@
+error[E0412]: cannot infer the element type of `[]`
+  --> tests/programs/m5/e0412.la:2:14
+  |
+2 |     let xs = [];
+  |              ^^
+  |
+  = help: annotate it: `let xs: i64[] = [];`
+

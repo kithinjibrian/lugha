@@ -102,7 +102,8 @@ impl Checker {
             ExprKind::Index(base, _, index) => self.index(base, index),
             ExprKind::Field(base, field) => self.field(base, field),
             ExprKind::StructLit(..) => Err(stop("structs", 5, expr.span)),
-            ExprKind::Array(_) | ExprKind::Repeat(..) => Err(stop("arrays", 5, expr.span)),
+            ExprKind::Array(elements) => self.array_literal(expr, elements, expect),
+            ExprKind::Repeat(value, count) => self.repeat(value, count, expect),
             ExprKind::Int(_) | ExprKind::Float(_) => unreachable!("literals are matched first"),
         }
     }
@@ -190,13 +191,8 @@ mod tests {
 
     #[test]
     fn later_milestone_expressions_stop_the_checker() {
-        // String operations and `.len` are checked since PRP-013 (see check/access.rs).
-        let cases = [
-            ("fun main() { let a = [1]; }", ("arrays", 5, "[1]")),
-            ("fun main() { let a = [0; 3]; }", ("arrays", 5, "[0; 3]")),
-        ];
-        for (src, want) in cases {
-            assert_eq!(stopped(src), want, "{src}");
-        }
+        // Strings (PRP-013) and arrays (PRP-014) are checked; struct literals arrive in PRP-015.
+        let src = "fun main() { let p = P { x: 1 }; }";
+        assert_eq!(stopped(src), ("structs", 5, "P { x: 1 }"));
     }
 }

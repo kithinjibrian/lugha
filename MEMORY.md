@@ -164,6 +164,20 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 16. Array value semantics (PRP-014)
+
+**Decision:**
+- `check::Type` is recursive (`Array(Box<Type>)`), so it is `Clone`, not `Copy`.
+- Codegen copies a value whose type contains arrays when it is read from a place (looking through `if`/block tails) and stored: `let`, assignment, literal elements, repeat fill. On `return`/tail it copies unless the place is rooted in an owned `let` local (which moves). Parameters and `for … of` variables are borrowed (`Local.borrowed`).
+- Call arguments and fresh values are never copied. Plain element arrays copy with `llvm.memcpy`; nested ones through internal `lugha_copy_<mangle>` functions generated on demand.
+- `for x of xs` assignments to an overlapping place are E0507 (conservative: any two indexes may be equal).
+
+**Why:** spec §4 value semantics without copy-on-write (DECISION-010 deferred).
+
+**Rules out:** copying call arguments; sharing arrays between places.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -173,6 +187,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-014 arrays: `check/array.rs`, `codegen/{array,copy}.rs`; element layout in `heap.rs`; deep copies per spec §4; primes prints 25
 - PRP-013 string operations: `check/access.rs`, `codegen/heap.rs` (integer address arithmetic — user chose it over an audited `unsafe` GEP), `lugha_rt_panic_bounds`; AST `Index` bracket span
 - PRP-012 extern and panics: externs declared verbatim with C ABI (`zeroext`), string args via a safe struct GEP to field 1; checked arithmetic via `llvm.*.with.overflow`; AST operator spans
 - PRP-011 runtime and intrinsics: `runtime/lugha_rt.c`, `link::RUNTIME_SOURCE`, `check::Type::String`, intrinsics in checker and codegen (`codegen/runtime.rs`), `SourceInfo` for panic locations
@@ -190,19 +205,23 @@ Open questions live in `DECISIONS.md`, not here.
 - v0 language spec reviewed and fixed
 
 ### In Progress
-- Nothing
+- Milestone 5: PRP-013 and PRP-014 done; structs (PRP-015) and `lughac spec` (PRP-016) remain
 
 ### Not Started
-- Milestone 5
+- PRP-015 structs, PRP-016 `lughac spec`
 
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 5, PRP-014: arrays. It covers:
-- List and repeat literals (a negative count panics), `T[]` types.
-- `.len` and bounds-checked indexing (reuse `codegen/heap.rs`); element assignment and place chains.
-- `for x of xs` with its no-assignment rule.
-- Deep copies at the §4 copy sites (`lugha_copy_*`).
+Milestone 5, PRP-015: structs (spec §3, §4, §7). It covers:
+- Top-level `struct` declarations; a struct may not contain itself directly (a new E03xx code).
+- Struct literals that initialise every field exactly once, in any order; `p.x` reads and `p.x = v` writes, with the `let mut` root rule.
+- Layout per §7, and deep copies of structs that contain arrays, reusing `codegen/copy.rs` (copy sites per the §4 table, including struct-literal fields).
 
-Done-when: the §10 primes program prints 25.
+Done-when: the §10 centroid program prints `centroid: 2.0, 1.0`.
+
+Discovery questions to expect:
+- codes for missing, duplicate and unknown fields in literals, and for recursive structs;
+- by-pointer vs by-value struct representation in codegen (§7);
+- `==` on structs (probably E0404, like arrays).

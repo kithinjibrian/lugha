@@ -1,0 +1,38 @@
+// Arrays behave as values (spec §4): every line prints the original, unchanged.
+fun same(p: i64[]): i64[] = p;
+
+fun first(rows: i64[][]): i64[] {
+    for r of rows {
+        return r;
+    }
+    panic("empty");
+}
+
+fun main() {
+    let xs = [1, 2, 3];
+    let mut ys = xs;
+    ys[0] = 9;
+    println(xs[0]);
+
+    let mut zs = [0, 0, 0];
+    zs = xs;
+    zs[1] = 9;
+    println(xs[1]);
+
+    let grid = [[1, 2], [3, 4]];
+    let mut copy = grid;
+    copy[0][0] = 9;
+    println(grid[0][0]);
+
+    let mut back = same(xs);
+    back[2] = 9;
+    println(xs[2]);
+
+    let mut row = first(grid);
+    row[0] = 9;
+    println(grid[0][0]);
+
+    let mut rows = [[0; 2]; 2];
+    rows[0][0] = 5;
+    println(rows[1][0]);
+}

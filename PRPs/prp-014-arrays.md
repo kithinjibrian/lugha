@@ -1,6 +1,6 @@
 ## FEATURE: Arrays — `T[]` types, list and repeat literals, `.len`, bounds-checked element reads and writes, `for x of xs`, and value-semantics deep copies.
 
-**Status:** approved 2026-10-09 — session 17
+**Status:** implemented 2026-10-09 — session 17 (branch `prp-014-arrays`, awaiting merge)
 **Milestone:** 5, second of four PRPs. Done-when: the spec §10 primes program prints `25`.
 **Spec:** §4 (arrays, array copies table, deep copies, mutability of places), §5 (`for … of`, evaluation order, panics), §7 (heap layout, natural alignment, `bool` stored as `i8`), §8 (no arrays across C), §9 (bounds checks, `lugha_copy_*`, `llvm.memcpy`)
 **Decisions:** PRP-013 (integer address arithmetic in `codegen/heap.rs`, no `unsafe`; bounds panic message); MEMORY 14 (codegen reads the checker's types)
@@ -26,6 +26,14 @@ Arrays behave as values (§4): `let ys = xs; ys[0] = 9;` never changes `xs`, and
   - New `m5/` programs; spec §4 refinement and §9 codes.
 - Related existing code: `src/check/{types,env,expr,access,assign,stmt,errors}.rs`, `src/codegen/{value,heap,expr,stmt,control,function,runtime}.rs`.
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 17)
+- **`Type` refactor** landed as its own commit (`7ba1c8d`) before the feature, so the mechanical `Copy` → `Clone` change is reviewable apart from the array rules.
+- **Layout helpers:** `element_size`, `element_of` and the `bool`-as-`i8` element load/store live in `heap.rs` next to `element_address`, keeping `array.rs` under 300 lines.
+- **Function tails:** `control::block_inner(block, returns)` lowers a function body's tail while its locals are still in scope, so the move-vs-copy decision can see whether the root is an owned local.
+- **E0507 label** points at the iterated expression (`xs` in `for x of xs`), not the whole loop, which was noisy.
+- **Updated test:** the CLI internal-error test used an array literal as its unsupported construct; it now uses a struct.
+- **Goldens:** the run-program goldens were written by hand and matched on the first run; the three reject goldens were captured and reviewed.
 
 ### Discovery answers (session 17)
 1. Codes:
@@ -137,13 +145,13 @@ Arrays behave as values (§4): `let ys = xs; ys[0] = 9;` never changes `xs`, and
 ## TESTS TO WRITE
 
 Unit tests:
-- [ ] Checker:
+- [x] Checker:
   - literal typing (expected, first-element, mismatch with label); E0412; repeat typing; `T[]` annotations;
   - `xs[i]` and `.len`; E0404 on `==`; E0411 for `for c of "abc"`;
   - E0501 and E0506 on element places;
   - E0507 for `xs`, `xs[0]` and `grid[0][1]` inside `for x of grid[0]`; no E0507 for unrelated arrays;
   - E0409 for an array extern parameter.
-- [ ] Codegen IR:
+- [x] Codegen IR:
   - a literal allocates `8 + n*size` and stores `len`;
   - `bool` elements are `i8` (`zext`/`trunc`);
   - a negative-length check calls `lugha_rt_panic`;
@@ -153,7 +161,7 @@ Unit tests:
   - `for … of` reads the length once.
 
 Acceptance:
-- [ ] The five run programs and three reject programs pass; all earlier tests pass after the `Type: Clone` refactor.
+- [x] The five run programs and three reject programs pass; all earlier tests pass after the `Type: Clone` refactor.
 
 ## ROLLBACK PLAN
 
@@ -161,11 +169,11 @@ Acceptance:
 - To abandon: delete the branch. The `Type` refactor lives in the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] `lughac run tests/programs/m5/primes.la` prints `25`.
-- [ ] Every test above exists and passes.
-- [ ] Spec §4 and §9, CLAUDE.md, CHANGELOG.md, TODO.md and MEMORY.md updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass.
+- [x] `lughac run tests/programs/m5/primes.la` prints `25`.
+- [x] Every test above exists and passes.
+- [x] Spec §4 and §9, CLAUDE.md, CHANGELOG.md, TODO.md and MEMORY.md updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass.
 
 ## VALIDATION
 - `cargo fmt --check`

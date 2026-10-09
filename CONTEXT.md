@@ -870,21 +870,66 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, progress
 
 Branch: main → prp-014-arrays
 
+### WHAT WAS DONE
+
+Discovery for PRP-014, with the recommended answer accepted every time:
+- Codes E0412 and E0507.
+- `for … of` variables are borrowed, like parameters.
+- `Type::Array(Box<Type>)`.
+
+Implemented PRP-014:
+- `m5/` programs first.
+- `check::Type` made recursive (its own commit).
+- Checker: `check/array.rs` (literals, repeat, `for … of`, the E0507 guard), element places in `assign.rs`, E0409 for arrays in externs.
+- Codegen: `array.rs` (allocation, literals, repeat with the negative-length panic, `for … of`), `copy.rs` (memcpy and generated `lugha_copy_*` deep copies, copy-site rules), element layout and element places in `heap.rs`, `Local.borrowed`.
+
+The primes program prints 25. 179 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/types.rs       — recursive Type (commit 7ba1c8d)
+src/check/array.rs       — new: literals, repeat, for … of, Path overlap + tests
+src/check/{access,assign,env,errors,expr,mod,stmt}.rs — array access, element places, E0409/E0411/E0412/E0507
+src/codegen/array.rs     — new: new_array, count_loop, literals, repeat, for_of + 3 tests
+src/codegen/copy.rs      — new: value_for_store/return, deep_copy, lugha_copy_* + 3 tests
+src/codegen/{heap,stmt,expr,function,control,scope,arith,runtime,mod}.rs — element layout/places, wiring
+tests/programs/m5/       — primes, array_basics, value_semantics, array_oob, negative_length (run); e0412, e0507, e0501_element (reject)
+tests/cli.rs             — internal-error example is now a struct
+docs/specs/…Specification.md — §4 copy table row and "from a place"; §9 codes
+PRPs/prp-014-arrays.md   — implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, progress, decision 16
+```
+
+### TESTS WRITTEN
+
+- Unit:
+  - Checker: literal typing and E0412, repeat, `.len`/indexing, E0501/E0506 on element places, E0507 guards (and shadowing), E0409 for array externs.
+  - Codegen IR: allocation size and header, `bool` as `i8`, the negative-length panic, the length read once by `for … of`, memcpy and `lugha_copy_i64_arr_arr`, parameter copy vs local move, no copies for arguments.
+- Acceptance: five run and three reject `m5/` programs, cross-checked at `-O2`.
+
+### DECISIONS MADE
+
+- PRP-014 discovery answers; MEMORY 16 (array value semantics).
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 5, PRP-014: arrays (spec §4, §5, §7, §9). It covers:
-- `T[]` types, list literals (`[]` needs an expected type), and repeat literals `[v; n]`, where `v` is evaluated before `n` and a negative `n` panics with `negative array length`.
-- `.len`, and bounds-checked `xs[i]` read and assignment (reuse `codegen/heap.rs`), including place chains like `xs[i][j]` and the `let mut` root rule.
-- `for x of xs` — `xs` evaluated once, not copied; the body may not assign to `xs`.
-- Value semantics: the deep copies at the §4 copy-site table (`lugha_copy_<type>`), and passing arrays by pointer.
+Milestone 5, PRP-015: structs (spec §3, §4, §7). It covers:
+- Top-level `struct` declarations; a struct may not contain itself directly (a new E03xx code).
+- Struct literals that initialise every field exactly once, in any order; `p.x` reads and `p.x = v` writes, with the `let mut` root rule.
+- Layout per §7, and deep copies of structs that contain arrays, reusing `codegen/copy.rs` (copy sites per the §4 table, including struct-literal fields).
 
-Done-when: the §10 primes program prints 25.
+Done-when: the §10 centroid program prints `centroid: 2.0, 1.0`.
 
 Discovery questions to expect:
-- code allocation (empty literal without context, for-of mutation);
-- copy-function naming and layout of nested arrays (pointers to inner arrays, §7);
-- how codegen decides "place vs fresh value" for copies.
+- codes for missing, duplicate and unknown fields in literals, and for recursive structs;
+- by-pointer vs by-value struct representation in codegen (§7);
+- `==` on structs (probably E0404, like arrays).
 
 See `TODO.md`.
