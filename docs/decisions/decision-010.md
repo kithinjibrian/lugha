@@ -65,3 +65,17 @@ The spec §10 programs (primes, centroid) make **no copies at all**.
 ## Reproducing
 
 Build the programs with `lughac build -O2` and time them. The `count` and `nocopy` builds need a local patch to `codegen/copy.rs` and `runtime/lugha_rt.c` that adds the counter and the skip; it is described above and was deliberately not committed.
+
+## After PRP-018 (move on last use)
+
+PRP-018 made stores from a `let` local that is never mentioned again move instead of copy. The same programs, remeasured with the counting build, print exactly what they printed before:
+
+| Program | Copies before → after | Bytes before → after | Eager time (ms) before → after |
+| --- | ---: | ---: | ---: |
+| `life` | 40 400 → 20 300 | 8.7 MB → 4.4 MB | 457 → 450 |
+| `particles` | 8 004 000 → 4 004 000 | 256 MB → 128 MB | 253 → 130 |
+| `sort` | 95 → 95 | unchanged | 164 → 157 |
+| `matmul` | 2 400 → 2 400 | unchanged | 139 → 132 |
+
+- **`grid = next` and `ps[i] = p`** no longer copy, so `particles` roughly halves its time.
+- **`sort` and `matmul`** are unchanged, as predicted: their copies come from arrays that are still in use.

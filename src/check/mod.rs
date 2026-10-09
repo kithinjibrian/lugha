@@ -16,16 +16,17 @@ mod errors;
 mod expr;
 mod flow;
 mod literal;
+mod liveness;
 mod ops;
 mod stmt;
 mod structs;
 mod types;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub use types::{Structs, Type};
 
-use crate::ast::Program;
+use crate::ast::{ExprId, Program};
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::span::Span;
 
@@ -36,6 +37,8 @@ pub struct Checked {
     pub types: Vec<Type>,
     /// Every struct's fields in declaration order.
     pub structs: Structs,
+    /// Values read from a place for the last time: stored without a copy (PRP-018).
+    pub moves: HashSet<ExprId>,
 }
 
 /// Type-checks `program`, returning the type table and any warnings.
@@ -54,6 +57,7 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagno
         loops: 0,
         dead: false,
         iterating: Vec::new(),
+        mentions: HashMap::new(),
     };
     checker.program(program);
     if checker
@@ -74,7 +78,15 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagno
         .into_iter()
         .map(|(name, info)| (name, info.fields))
         .collect();
-    Ok((Checked { types, structs }, checker.diagnostics))
+    let moves = liveness::moves(program, &checker.mentions);
+    Ok((
+        Checked {
+            types,
+            structs,
+            moves,
+        },
+        checker.diagnostics,
+    ))
 }
 
 /// A declared function.
@@ -117,6 +129,8 @@ pub(super) struct Checker {
     dead: bool,
     /// Places being iterated by enclosing `for … of` loops, with the loop's span (E0507).
     iterating: Vec<(array::Path, Span)>,
+    /// The local every `Name` expression resolved to, for move on last use.
+    mentions: HashMap<ExprId, liveness::Mention>,
 }
 
 impl Checker {

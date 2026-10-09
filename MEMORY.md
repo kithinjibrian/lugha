@@ -237,6 +237,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 22. Move on last use (PRP-018)
+
+**Decision:**
+- The checker records the binding each local `Name` resolves to (`mentions`), and `check/liveness.rs` computes `Checked.moves`.
+- **What moves:** store-site values (let init, assignment value, list-literal element, struct-literal field) that are place chains rooted in a `let` local, where:
+  - no mention of that binding starts after the value ends;
+  - every enclosing loop also encloses the declaration.
+- **Codegen:** `value_for_store` skips the deep copy for them. Parameters, `for … of` variables and repeat values never move.
+- **Spec:** §4 says the compiler may move from a local that is never used again.
+
+**Why:** It removes unobservable copies (`grid = next`, `ps[i] = p`) with no runtime cost; `particles` went from 253 to 130 ms. The rule errs towards copying: no flow-sensitive dataflow.
+
+**Rules out:** moves from parameters or loop variables; flow-sensitive liveness without a new PRP.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -246,6 +262,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-018 move on last use: `check/liveness.rs`, `Checked.moves`; particles benchmark 2× faster
 - DECISION-004 closed as not applicable (no UI)
 - DECISION-010 resolved: eager copies stay, with measurements in `docs/decisions/decision-010.md`
 - PRP-017 housekeeping: README, CI (green), `.claude/settings.json` deny rules, `docs/setup.md`
@@ -279,8 +296,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-No PRP is queued, and no decisions are open or deferred. Options, each starting with discovery:
-- Move on last use (TODO ideas): a copy-avoiding optimization with no spec change; needs a PRP.
-- v1 language work from spec §11 (growable list, boxed/optional types, methods, generics, modules, swap/move), starting with a spec draft.
+No PRP is queued and no decisions are open. Remaining option:
+- v1 language work from spec §11 (growable list, boxed/optional types, methods, generics, modules, swap/move), starting with a spec draft and discovery.
 
 See `TODO.md`.

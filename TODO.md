@@ -67,5 +67,5 @@ Done when every §10 program passes.
 
 ## Ideas — noted, not scheduled
 
-- [ ] Move on last use: store a dead local's array without copying it (`grid = next`, `ps[i] = p`). A compiler optimization with no spec change; it needs a PRP. See DECISION-010.
+- [x] Move on last use: store a dead local's array without copying it (`grid = next`, `ps[i] = p`) — PRP-018.
 - [ ] v1 language question: a swap or move operation for buffers (`ys = buf` while `buf` stays in use is a full copy). See DECISION-010.

@@ -1,6 +1,6 @@
 //! The module: every function, then the C `main` that calls `lugha_fn_main`.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use inkwell::builder::Builder;
 use inkwell::context::Context;
@@ -12,7 +12,7 @@ use super::function::Signature;
 use super::runtime::Constants;
 use super::scope::Scopes;
 use super::{CodegenError, SourceInfo};
-use crate::ast::{Item, Program};
+use crate::ast::{ExprId, Item, Program};
 use crate::check::{Checked, Structs, Type};
 
 /// Every builder call below happens after `position_at_end`, so a
@@ -28,6 +28,8 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) types: Vec<Type>,
     /// Every struct's fields in declaration order.
     pub(super) structs: Structs,
+    /// Values read from a place for the last time, stored without a copy.
+    pub(super) moves: HashSet<ExprId>,
     /// Every declared function, by Lugha name.
     pub(super) functions: HashMap<String, Signature<'ctx>>,
     /// The function being emitted, for appending basic blocks.
@@ -73,6 +75,7 @@ pub(super) fn lower<'ctx>(
         builder: context.create_builder(),
         types: checked.types.clone(),
         structs: checked.structs.clone(),
+        moves: checked.moves.clone(),
         functions: HashMap::new(),
         function: None,
         ret: None,

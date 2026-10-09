@@ -245,7 +245,7 @@ There is no null. Every string and array variable holds a valid object.
 | Passing an argument, `f(xs)` | No | Parameters are immutable, and nothing else runs during the call |
 | A fresh value: literal, call result, string concatenation | No | Nothing else refers to it |
 
-A function's tail value follows the same rules as `return`: a body ending in `p` copies, and one ending in `xs` moves. "From a place" looks through `if` and block tails: `let ys = if c { xs } else { [0] };` copies.
+A function's tail value follows the same rules as `return`: a body ending in `p` copies, and one ending in `xs` moves. "From a place" looks through `if` and block tails: `let ys = if c { xs } else { [0] };` copies. When the value comes from a local that is never used again, the compiler may move it instead of copying; no program can tell the difference.
 
 Copies are deep. Copying an `i64[][]` copies every inner array, and copying a struct copies the arrays inside it. Strings inside are shared, since they are immutable.
 

@@ -236,7 +236,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), stmt.rs,
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
 │   │                  (fields, indexing), array.rs (literals, for … of, E0507 guard), structs.rs
-│   │                  (declarations, E0307/E0308, literals), errors/ (mod.rs, names.rs E03xx,
+│   │                  (declarations, E0307/E0308, literals), liveness.rs (move on last use), errors/ (mod.rs, names.rs E03xx,
 │   │                  types.rs E04xx, places.rs E05xx/W01xx)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at

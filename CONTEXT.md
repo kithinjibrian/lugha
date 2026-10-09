@@ -1159,12 +1159,53 @@ CONTEXT.md     — this session
 
 Branch: main → prp-018-move_on_last_use
 
+### WHAT WAS DONE
+
+Discovery for PRP-018, with the recommended answer accepted every time:
+- The rule is "dead owned local".
+- The checker records it.
+- One spec §4 sentence.
+
+Implemented PRP-018:
+- `check/liveness.rs` with 5 unit tests, written with the pass.
+- An IR test (failing first), and the `moves.la` acceptance program, which passed with eager copies before the change.
+- Then the codegen change.
+- Remeasured with a throwaway counting build: particles 2× faster; life copies halved; sort and matmul unchanged; outputs identical.
+
+197 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/liveness.rs    — new: Mention, moves(), the walk + 5 tests
+src/check/{mod,expr}.rs  — mentions recorded; Checked.moves
+src/codegen/{copy,lower}.rs — skip copies for moves; IR test; two tests keep sources alive
+tests/programs/m5/moves.la (+ .stdout/.exit) — semantics unchanged under moves
+docs/specs/…Specification.md — §4 move sentence
+docs/decisions/decision-010.md — "After PRP-018" measurements
+PRPs/prp-018-move_on_last_use.md — new PRP; implemented; amendments
+CLAUDE.md, MEMORY.md (decision 22), TODO.md, CHANGELOG.md
+```
+
+### TESTS WRITTEN
+
+- Liveness: dead vs live (read and write), the loop rule, shadowing, a record round trip, parameters and for-of, field places, `[a, a]` (only the last moves), struct fields.
+- IR: a dead source has no memcpy; a live one has.
+- Acceptance: `moves.la`, at -O0 and -O2.
+
+### DECISIONS MADE
+
+- PRP-018 discovery answers; MEMORY 22.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT
 
-No PRP is queued, and no decisions are open or deferred. Options, each starting with discovery:
-- Move on last use (TODO ideas): a copy-avoiding optimization with no spec change; needs a PRP.
-- v1 language work from spec §11 (growable list, boxed/optional types, methods, generics, modules, swap/move), starting with a spec draft.
+No PRP is queued and no decisions are open. Remaining option:
+- v1 language work from spec §11 (growable list, boxed/optional types, methods, generics, modules, swap/move), starting with a spec draft and discovery.
 
 See `TODO.md`.

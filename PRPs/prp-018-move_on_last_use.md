@@ -1,6 +1,6 @@
 ## FEATURE: Move on last use — store a dead owned local's array without copying it.
 
-**Status:** approved 2026-10-09 — session 23
+**Status:** implemented 2026-10-09 — session 23 (branch `prp-018-move_on_last_use`, awaiting merge)
 **Milestone:** none; post-v0 optimization (TODO "Ideas", DECISION-010 follow-up)
 **Spec:** §4 (array copies table, value semantics), §5 (evaluation order: places before values, left to right)
 **Decisions:** DECISION-010 / MEMORY 20 (eager copies stay; move on last use noted), MEMORY 14 (codegen reads the checker's tables), MEMORY 16 (copy sites)
@@ -20,6 +20,11 @@ Copies that no program could ever observe disappear: storing a value read from a
   - The spec §4 note is added. New `m5/` programs pin that semantics are unchanged.
 - Related existing code: `src/check/{mod,call,stmt,array,structs,assign}.rs`, `src/codegen/{copy,lower,stmt,array,structs}.rs`, `docs/decisions/decision-010*`.
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 23)
+- **Mention positions:** each recorded mention also stores where it starts (`liveness::Mention { decl, binding, at }`), so the pass needs no second scope walk.
+- **Updated tests:** two existing IR tests in `codegen/copy.rs` copied from locals that are now dead, so their copies correctly became moves. They gained a later read to keep testing copies.
+- **Measurement:** `life` dropped from 40 400 to 20 300 copies, and `particles` from 8 004 000 to 4 004 000 (253 → 130 ms). `sort` and `matmul` are unchanged. All outputs are identical. The counts are recorded in `docs/decisions/decision-010.md`.
 
 ### Discovery answers (session 23)
 1. **Rule: dead owned local.** A store site's value moves when it is a plain place (`p`, `w.data`, `g[0]`) rooted in a `let` local and both of these hold:
@@ -89,19 +94,19 @@ Copies that no program could ever observe disappear: storing a value read from a
 ## TESTS TO WRITE
 
 Unit tests — `check/liveness.rs` (via the checker's `ok()`, asserting which source spans are in `moves`):
-- [ ] `let ys = xs;` with `xs` unused afterwards → moved; with a later `xs[0]` read, or a later write `xs[0] = 1` → not moved.
-- [ ] `grid = next;` at the end of a loop body where `next` is declared in that body → moved.
-- [ ] A store inside a loop from a local declared outside the loop → not moved, even with no later mention.
-- [ ] Shadowing: `let a = [1]; let b = a; let a = [2]; println(a[0]);` → the first `a` moves (the later `a` is another binding).
-- [ ] `ps[i] = p;` with `p` dead → moved; `let mut p = ps[i];` → not moved (`ps` is used again).
-- [ ] Parameters and `for … of` variables → never moved; a field place of a dead local (`let d = w.data;`) → moved.
-- [ ] A list-literal element and a struct-literal field from dead locals → moved; the same local used twice in one literal (`[a, a]`) → the first not moved, the last moved.
+- [x] `let ys = xs;` with `xs` unused afterwards → moved; with a later `xs[0]` read, or a later write `xs[0] = 1` → not moved.
+- [x] `grid = next;` at the end of a loop body where `next` is declared in that body → moved.
+- [x] A store inside a loop from a local declared outside the loop → not moved, even with no later mention.
+- [x] Shadowing: `let a = [1]; let b = a; let a = [2]; println(a[0]);` → the first `a` moves (the later `a` is another binding).
+- [x] `ps[i] = p;` with `p` dead → moved; `let mut p = ps[i];` → not moved (`ps` is used again).
+- [x] Parameters and `for … of` variables → never moved; a field place of a dead local (`let d = w.data;`) → moved.
+- [x] A list-literal element and a struct-literal field from dead locals → moved; the same local used twice in one literal (`[a, a]`) → the first not moved, the last moved.
 
 Codegen IR tests — `codegen/copy.rs`:
-- [ ] `let ys = xs;` with `xs` dead → no `llvm.memcpy` in that function; with `xs` used later → `llvm.memcpy`.
+- [x] `let ys = xs;` with `xs` dead → no `llvm.memcpy` in that function; with `xs` used later → `llvm.memcpy`.
 
 Acceptance — `tests/programs/m5/` (also at `-O2`):
-- [ ] `moves.la`: programs where a *wrong* move would change the output:
+- [x] `moves.la`: programs where a *wrong* move would change the output:
   - a loop copying from an outer local and then mutating the copy;
   - a later read after the store;
   - `[a, a]` with one element mutated;
@@ -109,10 +114,10 @@ Acceptance — `tests/programs/m5/` (also at `-O2`):
   - double buffering whose result is checked.
 
   Expected stdout is written by hand from value semantics.
-- [ ] All earlier tests pass unchanged; `value_semantics.la` and `struct_copies.la` still print their originals.
+- [x] All earlier tests pass unchanged; `value_semantics.la` and `struct_copies.la` still print their originals.
 
 Measurement:
-- [ ] Rerun the DECISION-010 `count` build for `life` and `particles` and record the copy counts before and after in the decision doc.
+- [x] Rerun the DECISION-010 `count` build for `life` and `particles` and record the copy counts before and after in the decision doc.
 
 ## ROLLBACK PLAN
 
@@ -120,11 +125,11 @@ Measurement:
 - To abandon: delete the branch. To disable after merging, make `moves` always empty; the copies return.
 
 ## ACCEPTANCE CRITERIA
-- [ ] Every test above exists and passes; outputs are unchanged.
-- [ ] `life` and `particles` copy counts drop (recorded).
-- [ ] Spec §4 note, CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] Every test above exists and passes; outputs are unchanged.
+- [x] `life` and `particles` copy counts drop (recorded).
+- [x] Spec §4 note, CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

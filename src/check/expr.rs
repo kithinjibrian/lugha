@@ -3,7 +3,7 @@
 //! Checking is bidirectional: the context may pass an `Expect` (a type and
 //! the reason for it), which numeric literals adopt (spec §4 rules 3–6).
 
-use super::{Checker, Type, errors};
+use super::{Checker, Type, errors, liveness};
 use crate::ast::{Block, Expr, ExprKind, UnOp};
 use crate::diagnostic::Label;
 use crate::span::Span;
@@ -89,7 +89,17 @@ impl Checker {
                 ty
             }
             ExprKind::Bool(_) => Type::Bool,
-            ExprKind::Name(name) => self.name(name, expr.span),
+            ExprKind::Name(name) => {
+                if let Some(local) = self.local(name) {
+                    let mention = liveness::Mention {
+                        decl: local.span,
+                        binding: local.binding,
+                        at: expr.span.start,
+                    };
+                    self.mentions.insert(expr.id, mention);
+                }
+                self.name(name, expr.span)
+            }
             ExprKind::Unary(op, operand) => self.unary(*op, operand, expr, expect),
             ExprKind::Binary(op, _, lhs, rhs) => self.binary(expr, *op, lhs, rhs, expect),
             ExprKind::Call(callee, args) => self.call(expr, callee, args),

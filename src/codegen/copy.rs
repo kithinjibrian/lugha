@@ -18,14 +18,16 @@ use crate::ast::{Expr, ExprKind};
 use crate::check::Type;
 
 impl<'ctx> Lowerer<'ctx> {
-    /// Lowers `expr` for storing into a place, copying it if it was read from one.
+    /// Lowers `expr` for storing into a place, copying it if it was read from
+    /// one that is still in use; a last use moves (PRP-018).
     pub(super) fn value_for_store(
         &mut self,
         expr: &Expr,
         ty: &Type,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         let value = self.get(expr, ty)?;
-        Ok(if ty.contains_array(&self.structs) && aliasing(expr) {
+        let copies = aliasing(expr) && !self.moves.contains(&expr.id);
+        Ok(if ty.contains_array(&self.structs) && copies {
             self.deep_copy(value, ty)
         } else {
             value
@@ -217,7 +219,10 @@ mod tests {
 
     #[test]
     fn copy_sites_follow_the_spec_table() {
-        let ir = ir("fun main() { let xs = [1, 2]; let ys = xs; let g = [[1]]; let h = g; }");
+        // The later reads keep `xs` and `g` alive, so these are copies, not moves.
+        let ir = ir(
+            "fun main() { let xs = [1, 2]; let ys = xs; let g = [[1]]; let h = g; println(xs[0] + g[0][0]); }",
+        );
         assert!(
             ir.contains("llvm.memcpy"),
             "plain arrays copy with memcpy: {ir}"
@@ -247,7 +252,7 @@ mod tests {
     #[test]
     fn structs_holding_arrays_copy_through_helpers() {
         let src = "struct Wrap { data: i64[] }\nstruct P { x: i64 }\n\
-                   fun main() { let w = Wrap { data: [1] }; let w2 = w; let p = P { x: 1 }; let q = p; }";
+                   fun main() { let w = Wrap { data: [1] }; let w2 = w; let p = P { x: 1 }; let q = p; println(w.data[0]); }";
         let ir = ir(src);
         assert!(
             ir.contains("define internal %Wrap @lugha_copy_4Wrap(%Wrap"),
@@ -280,5 +285,13 @@ mod tests {
             1,
             "{ir}"
         );
+    }
+
+    #[test]
+    fn a_dead_source_moves_and_a_live_one_copies() {
+        let dead = ir("fun f() { let xs = [1, 2]; let ys = xs; }\nfun main() {}");
+        assert!(!body(&dead, "f").contains("memcpy"), "{dead}");
+        let live = ir("fun f() { let xs = [1, 2]; let ys = xs; println(xs[0]); }\nfun main() {}");
+        assert!(body(&live, "f").contains("memcpy"), "{live}");
     }
 }
