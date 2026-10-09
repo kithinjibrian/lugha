@@ -922,6 +922,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, progress, decision 16
 
 ---
 
+## SESSION 18 — 2026-10-09 — PRP-015 structs — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 5, PRP-015: structs (spec §3, §4, §7). It covers:
