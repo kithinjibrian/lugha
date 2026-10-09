@@ -16,7 +16,7 @@ Branch: main
 
 Scaffolded the AI context system described in `setup.md`, adapted from its TypeScript examples to Rust: CLAUDE.md, MEMORY.md, CONTEXT.md, DECISIONS.md, CHANGELOG.md, TODO.md, .llmignore, PRPs/ templates, docs/CODE_STYLE.md and the docs/ and reports/ folder structure. Project-specific facts that are not yet known (crate layout, error crate, edition/MSRV) were opened as decisions rather than guessed. `docs/DESIGN.md` was skipped — there is no UI.
 
-Then reviewed `docs/specs/Language v0 Specification.md` and fixed its inconsistencies at the user's request: symbol prefixes (`lugha_fn_` / `lugha_rt_`), milestone 2 test program, struct passing, negative literal folding, negative repeat counts, exact acceptance outputs and float formatting, associativity, prefix grammar, `void` as a non-value. Source extension changed from `.lugha` to `.la`. PRP filenames set to `prp-{NNN}-{feature_name}.md`.
+Then reviewed `docs/specs/Language v0 Specification.md` and fixed its inconsistencies at the user's request: symbol prefixes (`lugha_fn_` / `lugha_rt_`), milestone 2 test program, struct passing, negative literal folding, negative repeat counts, exact acceptance outputs and float formatting, associativity, prefix grammar, `void` as a non-value. Source extension changed from `.lugha` to `.la`. PRP filenames set to `prp-{NNN}-{feature_name}.md`. Finally, updated CLAUDE.md (stack, 10 architecture rules, two kinds of error, anti-patterns, known issues), MEMORY.md (decisions 3–7), DECISIONS.md (001 narrowed to crate layout; new 005–010) and TODO.md (prerequisites and milestones) from the spec.
 
 ### FILES CREATED OR MODIFIED
 
@@ -51,14 +51,16 @@ docs/specs/Language v0 Specification.md — inconsistencies fixed, extension .la
 - DECISION-001 — What lugha is and its crate layout
 - DECISION-002 — Error derive crate
 - DECISION-003 — Rust edition and MSRV
+- DECISION-005..008 — LLVM version, diagnostics crate, CLI parsing, test harness (open)
+- DECISION-009, -010 — runtime location, array-copy cost (deferred)
 
 ### STILL OPEN AT CLOSE
 
-- DECISIONS.md, MEMORY.md, CLAUDE.md STACK/ARCHITECTURE and TODO.md not yet updated from the spec.
-- DECISION-001 is mostly answered by the spec (lughac, Rust + inkwell); crate layout still open.
+- Seven decisions block milestone 1: DECISION-001 (crate layout), -002, -003, -005, -006, -007, -008.
+- Rust, LLVM dev and libgc dev are not installed on the dev machine.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Update DECISIONS.md / MEMORY.md / CLAUDE.md / TODO.md from the v0 spec. Resolve the crate-layout part of DECISION-001 with the user, then `cargo init` accordingly, fill in CLAUDE.md STACK / ARCHITECTURE RULES / FILE ORGANIZATION, and work down `TODO.md`.
+Resolve the decisions blocking milestone 1 with the user, install the toolchain, `cargo init`, then write `PRPs/prp-001-lexer.md`. See `TODO.md`.

@@ -136,19 +136,35 @@ cargo clippy --all-targets -- -D warnings     # lint
 Run fmt, clippy and tests after every non-trivial change. A task is not done until all pass.
 
 > No `Cargo.toml` exists yet — these commands start working once DECISION-001 is resolved and the crate is initialised.
+> End-to-end tests also need LLVM (DECISION-005), `cc`, and `libgc` installed.
 
 ---
 
 ## STACK
 
-- Rust (stable). Edition and MSRV: see DECISION-003.
+- Rust (stable) — the compiler `lughac`. Edition and MSRV: DECISION-003.
+- inkwell + LLVM — codegen. Version: DECISION-005. Requires opaque pointers and the new pass manager.
+- C (`lugha_rt.c`) — the runtime linked into every compiled program.
+- Boehm GC (`libgc`), `libc`, `libm` — linked into every compiled program via the system `cc`.
+- Diagnostics rendering: DECISION-006. CLI parsing: DECISION-007.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
+
+The language itself is defined by `docs/specs/Language v0 Specification.md`.
 
 ---
 
 ## ARCHITECTURE RULES
 
-[Fill in once DECISION-001 is resolved. Each rule says what to do AND why deviating breaks something.]
+1. **The spec is the source of truth.** Read the relevant section of `docs/specs/Language v0 Specification.md` before implementing any language feature, and cite the section in the PRP. If code and spec disagree, the code is wrong. If the spec looks wrong, stop and propose a spec change — never edit the spec without explicit approval. *Why:* `lughac spec` ships the spec as the language reference; drift makes it lie.
+2. **Stages only depend backwards.** lexer → parser → check → codegen → driver. A stage never imports a later one. *Why:* `lughac check` and `--emit=tokens|ast|ir` must run the pipeline partway.
+3. **Every token and AST node carries a byte-offset `Span`.** *Why:* every diagnostic needs a location, and spans can't be recovered later.
+4. **Codegen never infers types.** It reads the checker's expression → type side table. *Why:* opaque pointers need the element type on every load/store/GEP (spec §9), and two type computations will disagree.
+5. **User-program errors are `Diagnostic` records, never panics or strings.** Each has a stable code from its stage's range (E01xx lex … E05xx, W01xx). New codes take the next unused number; a code is never reused or renumbered. Human and JSON output render from the same record. *Why:* spec §9; codes are a public contract.
+6. **Exit codes are 0 / 1 / 2.** 1 = the user's program has errors; 2 = bad CLI usage or internal compiler error. A `module.verify()` failure or a Rust panic inside lughac is exit 2, never 1. *Why:* spec §9; tools tell "your bug" from "our bug" by it.
+7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
+8. **Generated code allocates only through `lugha_rt_alloc`.** Never emit calls to `malloc`. *Why:* Boehm can't see `malloc` memory and will free live objects.
+9. **Follow the milestone order (spec §11).** Implement only the current milestone's subset. In milestones 1–2 treat every value as `i64`. *Why:* each milestone must end in a running program.
+10. **The §10 programs are the acceptance tests.** Their stdout and exit codes must match exactly. *Why:* they define "conforming compiler".
 
 ---
 
@@ -179,6 +195,10 @@ pub fn parse_number(src: &str) -> i64 {
 - **Never** swallow an error with `let _ =` or `.ok()` without a comment explaining why ignoring it is safe.
 - Propagate with `?`; convert between error types with `From` impls, not ad-hoc `map_err` everywhere.
 
+**Two kinds of error in this project — keep them apart:**
+- **Errors in the user's `.la` program** (bad token, type mismatch) are expected output of the compiler. They become `Diagnostic` records (architecture rule 5) and the stage keeps going to find more where it can. Exact stage return type: DECISION-002.
+- **Errors in lughac itself** (I/O failure, linker not found) use Rust error types and `Result`. A violated compiler invariant is a bug → exit 2.
+
 ---
 
 ## FILE ORGANIZATION
@@ -194,7 +214,8 @@ pub fn parse_number(src: &str) -> i64 {
 ├── .llmignore       — protected paths
 ├── setup.md         — the guide this context system follows
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
-├── docs/            — CODE_STYLE.md, source/, specs/, decisions/, incidents/, status/
+├── docs/            — CODE_STYLE.md, source/, decisions/, incidents/, status/
+│   └── specs/       — Language v0 Specification.md (the language definition)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```
 
@@ -207,9 +228,19 @@ Update this tree when `src/` and `tests/` are created.
 1. **Never add a crate without a PRP line justifying it.** Dependencies are permanent cost and licensing risk.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
+4. **Never add an implicit conversion or coercion.** Spec §4 forbids them; every one is a type hole the checker can't see.
+5. **Never implement a §11 "out of scope" feature** (enums, generics, closures, methods, modules…) even partially. It belongs to v1 and needs a spec change first.
+6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
+7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 
 ---
 
 ## KNOWN ISSUES — DO NOT FIX
 
-None yet.
+These look like bugs but are specified behavior:
+
+- **A function whose only exit is a `return` inside `while true` is rejected** as missing a return. Spec §6 rejects it on purpose to keep return checking simple; users add `panic("unreachable");`.
+- **Integer overflow always panics**, even at `-O2`. Spec §12 decided against wrapping.
+- **Boehm may keep garbage alive** when an integer looks like a pointer. Conservative GC, spec §7.
+- **Extern C code keeping a Lugha pointer is undefined behavior.** Spec §7–8 accept this for v0.
+- **`as` casts truncate/saturate silently.** The only place values wrap (spec §4).
