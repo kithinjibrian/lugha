@@ -98,7 +98,7 @@ CONTEXT.md   — this entry
 
 ---
 
-## SESSION 3 — 2026-10-09 — Verify toolchain and initialise crate — open
+## SESSION 3 — 2026-10-09 — Verify toolchain and initialise crate — closed
 
 Branch: main
 
