@@ -1,6 +1,6 @@
 ## FEATURE: `extern fun` declarations for calling C, and integer overflow and division panics replacing wrap-and-trap — completing milestone 4.
 
-**Status:** implemented 2026-10-09 — session 15 (branch `prp-012-extern_and_panics`)
+**Status:** merged into `main` 2026-10-09 — session 15
 **Milestone:** 4, second of two PRPs; tag `m4` after the merge
 **Spec:** §5 (arithmetic panics, panic format), §8 (C interop: allowed types, string pointer adjustment, symbol names, reserved `lugha_` prefix), §9 (lowering: `llvm.*.with.overflow`, division checks, error codes)
 **Decisions:** DECISION-009 / MEMORY 15 (runtime ABI: `bool` and `u8` widened to `i32` for runtime calls; extern calls follow C's ABI instead)

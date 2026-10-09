@@ -750,7 +750,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md — file tree, progress
 
 ---
 
-## SESSION 15 — 2026-10-09 — PRP-012 extern and panics — open
+## SESSION 15 — 2026-10-09 — PRP-012 extern and panics — closed
 
 Branch: main → prp-012-extern_and_panics
 
@@ -803,21 +803,19 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issue removed, milestone 4
 
 ### STILL OPEN AT CLOSE
 
-- Branch `prp-012-extern_and_panics` not yet merged into `main`; tag `m4` after the merge.
+- Nothing. Branch `prp-012-extern_and_panics` fast-forward merged into `main` and deleted; tagged `m4`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 4, PRP-012: `extern fun` and overflow and division panics.
-- **`extern fun` (spec §8):**
-  - Allowed types: `i32`, `i64`, `u8`, `f64`, `bool`, `string` parameters only.
-  - A string argument is adjusted to point 8 bytes past the header, at the first data byte.
-  - No `string` return; names starting with `lugha_` are rejected with an E03xx code (needs allocating).
-  - Remove the checker and codegen milestone 4 stops for `extern`.
-- **Integer overflow and division panics (spec §5, §9):**
-  - `+ - *` and unary `-` use `llvm.{s,u}{add,sub,mul}.with.overflow`; division and remainder check zero and `MIN / -1`.
-  - On failure, `lugha_rt_panic("integer overflow" / "division by zero", file, line, col)`, exit 101.
-  - Compound assignment is checked the same way. Remove the wrap and trap known issue and `llvm.trap`.
+Milestone 4 is complete (tag `m4`). Next is milestone 5, the last (spec §11): heap data. It covers:
+- String operations: `+` via `lugha_rt_str_concat`, `==`/`!=` via `lugha_rt_str_eq`, `.len`, and `s[i]` as a bounds-checked `u8`.
+- Arrays: list and repeat literals (a negative count panics), `.len`, bounds-checked indexing (`icmp ult`), and `for x of xs` with its no-assignment rule.
+- Structs: declarations, recursive-struct detection (E03xx), literals, field access and assignment.
+- Value semantics: deep array copies at the §4 copy sites (`lugha_copy_*`).
+- `lughac spec`.
 
-Done-when: the §10 libc example prints `hello from libc` then `1.4142135623730951`. Update the `m1/div_zero`, `m3/i32_wrap`, `m3/u8_wrap` and `m3/div_min_i32` expectations — they become panics. Then tag `m4`. See `TODO.md`.
+Done-when: every §10 program passes (`primes` prints 25, `centroid` prints `centroid: 2.0, 1.0`), and `lughac spec` prints the bundled spec.
+
+Start with a discovery interview on how to split milestone 5 into PRPs. The checker and codegen stop on these constructs with "milestone 5" today. See `TODO.md`.
