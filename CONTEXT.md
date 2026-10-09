@@ -520,7 +520,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, milesto
 
 ---
 
-## SESSION 11 — 2026-10-09 — Milestone 3 discovery and PRP-008 — open
+## SESSION 11 — 2026-10-09 — Milestone 3 discovery and PRP-008 — closed
 
 Branch: main → prp-008-checker_core
 
@@ -574,22 +574,18 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, known issues, progres
 
 ### STILL OPEN AT CLOSE
 
-- Branch `prp-008-checker_core` not yet merged into `main`.
+- Nothing. Branch `prp-008-checker_core` fast-forward merged into `main` and deleted.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 2 is complete (tag `m2`). Next is milestone 3: the type checker and diagnostics (spec §11). It covers:
-- All primitive types (`i32`, `i64`, `u8`, `f64`, `bool`), literal inference, casts.
-- Mutability checks, return checking, error codes E03xx–E05xx, W0101.
-- `lughac check` running the checker, and "remove this semicolon".
+Milestone 3, PRP-009: casts and flow checks. It covers:
+- `as` casts between numeric types (spec §4: no `bool` casts).
+- Mutability — assignment needs `let mut` at the root (§4).
+- Missing returns using the §6 definite-return rules.
+- `break`/`continue` outside a loop.
+- Assignment targets must be places (§3).
+- "remove this semicolon" (§5), block-like statements in the middle of a block must be `void` (§5), and W0101 unreachable code (§6).
 
-Its done-when: the §10 rejected program reports E0401 in both formats (the expected output is already in the spec and the renderer tests).
-
-Milestone 3 replaces codegen's interim `Int`/`Bool`/`Never` value kinds and every "not implemented yet: … (milestone 3)" stop. Plan it in discovery:
-- how to split it into PRPs (likely: name resolution and types; inference and casts; mutability and return checking; codegen on real types);
-- the checker's module layout (the side table keyed by `ExprId`, spec §9);
-- error-code allocation.
-
-`codegen/control.rs` is exactly 300 lines. See `TODO.md`.
+Allocate the E05xx codes (and the cast code) in discovery. The checker lives in `src/check/` (largest file `stmt.rs`, 270 lines). Codegen still stops on missing returns, break outside loops and non-place assignment until PRP-010. See `TODO.md`.

@@ -1,6 +1,6 @@
 ## FEATURE: The type checker core — name resolution, types for every expression with literal inference and operator typing, calls, and `lughac check` running it — reaching the milestone 3 done-when (E0401 in both formats).
 
-**Status:** implemented 2026-10-09 — session 11 (branch `prp-008-checker_core`)
+**Status:** merged into `main` 2026-10-09 — session 11
 **Milestone:** 3, first of three PRPs. PRP-009 adds casts and flow checks (E05xx, W0101, "remove this semicolon"); PRP-010 moves codegen onto real types.
 **Spec:** §4 (types, inference rules 1–6, operator typing, value semantics of `void`), §5 (`if` typing, blocks and tails), §6 (names, two-pass collection, entry point, definitely-returning blocks), §9 (checker output: AST + ExprId → Type table; diagnostics), §10 (rejected program)
 **Decisions:** DECISION-002 (stage results); CLAUDE.md rule 9 (the checker covers the milestone 3 subset only)
