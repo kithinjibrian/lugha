@@ -13,3 +13,7 @@ pub mod lexer;
 pub mod link;
 pub mod parser;
 pub mod span;
+
+/// The language specification this compiler implements, embedded verbatim;
+/// `lughac spec` prints it (spec §9, "LLM-ready spec").
+pub const SPEC: &str = include_str!("../docs/specs/Language v0 Specification.md");

@@ -1,6 +1,7 @@
 //! Driver — the `lughac` command line (spec §9).
 //!
 //! Parses arguments, runs the pipeline for `build`, `run` and `check`, prints
+//! the bundled spec for `spec`, prints
 //! diagnostics (human or JSON) and chooses the exit code: 0 success, 1 the
 //! program has errors, 2 bad usage or an internal error.
 //!
@@ -75,6 +76,7 @@ where
             out.diagnostics(&front.source, &front.warnings);
             0
         }),
+        Command::Spec => Ok(spec(out.stdout, out.stderr)),
     };
     match result {
         Ok(code) => code,
@@ -126,6 +128,25 @@ enum Command {
         #[arg(long, value_enum, default_value = "human")]
         diagnostics: Format,
     },
+    /// Print the LLM-ready spec bundled with this compiler version
+    Spec,
+}
+
+/// `lughac spec`: the embedded spec, byte for byte (spec §9).
+fn spec(stdout: &mut dyn Write, stderr: &mut dyn Write) -> u8 {
+    match stdout
+        .write_all(crate::SPEC.as_bytes())
+        .and_then(|()| stdout.flush())
+    {
+        Ok(()) => 0,
+        // A reader that stops early (`lughac spec | head`) is not a failure.
+        Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => 0,
+        Err(error) => {
+            // Nowhere better to report it; if stderr fails too, the exit code still says so.
+            let _ = writeln!(stderr, "error: cannot write the spec: {error}");
+            2
+        }
+    }
 }
 
 impl Command {
@@ -133,6 +154,7 @@ impl Command {
         match self {
             Command::Build { options, .. } | Command::Run { options, .. } => options.diagnostics,
             Command::Check { diagnostics, .. } => *diagnostics,
+            Command::Spec => Format::Human,
         }
     }
 }

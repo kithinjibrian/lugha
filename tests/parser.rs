@@ -7,8 +7,6 @@ use lugha::span::Span;
 #[path = "common/spec_programs.rs"]
 mod spec_programs;
 
-use spec_programs::ALL;
-
 fn tokens(src: &str) -> Vec<Token> {
     lex(src)
         .unwrap_or_else(|d| panic!("{src:?} does not lex: {d:?}"))
@@ -17,8 +15,8 @@ fn tokens(src: &str) -> Vec<Token> {
 
 #[test]
 fn every_spec_program_parses_without_diagnostics() {
-    for (name, src) in ALL {
-        let (_, warnings) = parse(&tokens(src)).unwrap_or_else(|d| panic!("{name}: {d:?}"));
+    for (name, src) in spec_programs::all() {
+        let (_, warnings) = parse(&tokens(&src)).unwrap_or_else(|d| panic!("{name}: {d:?}"));
         assert!(warnings.is_empty(), "{name}: {warnings:?}");
     }
 }
@@ -34,9 +32,9 @@ fn milestone_1_program_has_the_expected_tree() {
 
 #[test]
 fn parsing_never_panics_on_any_token_prefix() {
-    let all: String = ALL
-        .iter()
-        .map(|(_, src)| *src)
+    let all: String = spec_programs::all()
+        .into_iter()
+        .map(|(_, src)| src)
         .collect::<Vec<_>>()
         .join("\n");
     let full = tokens(&all);

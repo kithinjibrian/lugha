@@ -248,3 +248,13 @@ fn every_valid_acceptance_program_type_checks() {
     }
     assert!(checked >= 15, "only {checked} programs checked");
 }
+
+#[test]
+fn spec_prints_the_bundled_specification() {
+    let dir = TempDir::with(&[]);
+    let out = lughac(&dir.0, &["spec"]);
+    assert_eq!(out.status.code(), Some(0));
+    assert_eq!(text(&out.stdout), lugha::SPEC);
+    assert!(out.stderr.is_empty(), "{}", text(&out.stderr));
+    assert_eq!(lughac(&dir.0, &["spec", "extra"]).status.code(), Some(2));
+}

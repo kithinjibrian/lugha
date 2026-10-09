@@ -5,12 +5,10 @@ use lugha::lexer::{TokenKind, lex};
 #[path = "common/spec_programs.rs"]
 mod spec_programs;
 
-use spec_programs::{ALL, CENTROID};
-
 #[test]
 fn every_spec_program_lexes_without_diagnostics() {
-    for (name, src) in ALL {
-        let (tokens, warnings) = lex(src).unwrap_or_else(|d| panic!("{name}: {d:?}"));
+    for (name, src) in spec_programs::all() {
+        let (tokens, warnings) = lex(&src).unwrap_or_else(|d| panic!("{name}: {d:?}"));
         assert!(warnings.is_empty(), "{name}: {warnings:?}");
         assert_eq!(
             tokens.last().map(|t| &t.kind),
@@ -49,7 +47,8 @@ fn milestone_1_program_has_the_expected_tokens() {
 fn lexing_never_panics_on_any_prefix() {
     // Cutting a valid program at every char boundary produces every kind of
     // half-finished token: open strings, `0x`, `2.0e`, lone `&`, multi-byte chars.
-    let sample = format!("{CENTROID}\nlet s = \"h\\é👋\"; let n = 0xFF + 2.0e-3 && x || y; // c");
+    let centroid = spec_programs::source("Structs, for-of and casts");
+    let sample = format!("{centroid}\nlet s = \"h\\é👋\"; let n = 0xFF + 2.0e-3 && x || y; // c");
     for (i, _) in sample.char_indices() {
         let _ = lex(&sample[..i]);
     }
