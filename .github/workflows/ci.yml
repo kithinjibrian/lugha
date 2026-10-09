@@ -1,0 +1,54 @@
+# fmt, clippy and the full test suite on every push and pull request
+# (PRP-017). Runs in the same Ubuntu release as development, so LLVM 21 and
+# libgc come from the stock archive — no third-party apt source.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    container: ubuntu:26.04
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: Install system packages
+        # llvm-21-dev: inkwell's LLVM (DECISION-005, linked dynamically).
+        # libgc-dev and build-essential: `cc … -lgc -lm` links every test program.
+        # curl and ca-certificates: rustup's installer. git: a real checkout.
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            llvm-21-dev libgc-dev build-essential curl ca-certificates git
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Rust
+        # The toolchain and its rustfmt/clippy come from rust-toolchain.toml.
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+            | sh -s -- -y --profile minimal --default-toolchain none
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+
+      - name: Format
+        run: cargo fmt --check
+
+      - name: Lint
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test
