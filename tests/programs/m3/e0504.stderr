@@ -1,0 +1,6 @@
+error[E0504]: `break` outside of a loop
+  --> tests/programs/m3/e0504.la:4:9
+  |
+4 |         break;
+  |         ^^^^^^
+

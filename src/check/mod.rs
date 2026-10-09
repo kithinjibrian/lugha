@@ -9,10 +9,12 @@
 //!
 //! Depends on: ast, diagnostic, span.
 
+mod assign;
 mod call;
 mod env;
 mod errors;
 mod expr;
+mod flow;
 mod literal;
 mod ops;
 mod stmt;
@@ -23,7 +25,7 @@ use std::collections::HashMap;
 pub use types::Type;
 
 use crate::ast::Program;
-use crate::diagnostic::Diagnostic;
+use crate::diagnostic::{Diagnostic, Severity};
 use crate::span::Span;
 
 /// The checker's output.
@@ -59,6 +61,8 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), CheckError
         functions: HashMap::new(),
         scopes: Vec::new(),
         ret: Type::Void,
+        loops: 0,
+        dead: false,
     };
     match checker.program(program) {
         Err(Stop {
@@ -70,16 +74,23 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), CheckError
             milestone,
             span,
         }),
-        Ok(()) if checker.diagnostics.is_empty() => {
+        Ok(())
+            if checker
+                .diagnostics
+                .iter()
+                .any(|d| d.severity == Severity::Error) =>
+        {
+            Err(CheckError::Program(checker.diagnostics))
+        }
+        Ok(()) => {
             // Every expression of a valid program has been visited; `Error` is a safe filler.
             let types = checker
                 .types
                 .into_iter()
                 .map(|t| t.unwrap_or(Type::Error))
                 .collect();
-            Ok((Checked { types }, Vec::new()))
+            Ok((Checked { types }, checker.diagnostics))
         }
-        Ok(()) => Err(CheckError::Program(checker.diagnostics)),
     }
 }
 
@@ -112,6 +123,17 @@ pub(super) struct Signature {
 #[derive(Clone, Copy)]
 pub(super) struct Local {
     pub ty: Type,
+    pub binding: Binding,
+    /// Where the name was declared, for "declared here" labels.
+    pub span: Span,
+}
+
+/// How a local was bound, which decides whether it may be assigned (spec §4).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Binding {
+    Let { mutable: bool },
+    Param,
+    LoopVar,
 }
 
 /// Checking state for one program.
@@ -122,6 +144,11 @@ pub(super) struct Checker {
     scopes: Vec<HashMap<String, Local>>,
     /// The return type of the function being checked.
     ret: Type,
+    /// How many loops enclose the current statement, for `break`/`continue`.
+    loops: u32,
+    /// True while checking code after a divergence, so nested blocks don't
+    /// repeat W0101.
+    dead: bool,
 }
 
 impl Checker {
@@ -161,6 +188,23 @@ pub(crate) mod test_util {
                 .collect(),
             other => panic!("{src:?}: expected diagnostics, got {other:?}"),
         }
+    }
+
+    /// Every diagnostic for `src`, which must have at least one error.
+    pub fn diagnostics(src: &str) -> Vec<crate::diagnostic::Diagnostic> {
+        match check(&program(src)) {
+            Err(CheckError::Program(diags)) => diags,
+            other => panic!("{src:?}: expected diagnostics, got {other:?}"),
+        }
+    }
+
+    /// `(code, spanned source)` of every warning for `src`, which must have no errors.
+    pub fn warnings(src: &str) -> Vec<(&'static str, &str)> {
+        let (_, warnings) = check(&program(src)).unwrap_or_else(|e| panic!("{src:?}: {e:?}"));
+        warnings
+            .iter()
+            .map(|d| (d.code, &src[d.span.start..d.span.end]))
+            .collect()
     }
 
     /// `(what, milestone, spanned source)` of the unsupported construct in `src`.

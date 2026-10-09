@@ -1,0 +1,8 @@
+error[E0503]: `sign` may end without returning a value of type i64
+  --> tests/programs/m3/e0503.la:1:5
+  |
+1 | fun sign(x: i64): i64 {
+  |     ^^^^
+  |
+  = help: end the body with a value, or `return` on every path
+

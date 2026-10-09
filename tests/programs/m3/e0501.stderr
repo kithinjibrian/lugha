@@ -1,0 +1,10 @@
+error[E0501]: cannot assign to `total`: it is not mutable
+  --> tests/programs/m3/e0501.la:3:5
+  |
+2 |     let total = 0;
+  |         ----- declared here
+3 |     total = 5;
+  |     ^^^^^
+  |
+  = help: make it mutable: `let mut total`
+

@@ -1,0 +1,6 @@
+fun main() {
+    let done = true;
+    if done {
+        break;
+    }
+}

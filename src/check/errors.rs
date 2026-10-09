@@ -1,6 +1,7 @@
 //! One constructor per checker error code, so the wording lives in one place
 //! (spec §9: codes are stable, messages may improve).
 
+use super::Binding;
 use super::types::Type;
 use crate::diagnostic::{Diagnostic, Label};
 use crate::span::Span;
@@ -123,6 +124,74 @@ pub(super) fn not_value(name: &str, span: Span) -> Diagnostic {
 pub(super) fn no_value(span: Span) -> Diagnostic {
     Diagnostic::error("E0407", "this expression has no value", span)
         .with_primary_label("its type is void")
+}
+
+pub(super) fn bad_cast(from: Type, to: Type, span: Span) -> Diagnostic {
+    let d = Diagnostic::error("E0408", format!("cannot cast `{from}` to `{to}`"), span);
+    match (from, to) {
+        (Type::Bool, _) => d.with_help("write `if b { 1 } else { 0 }`"),
+        (_, Type::Bool) => d.with_help("compare instead, e.g. `x != 0`"),
+        _ => d,
+    }
+}
+
+pub(super) fn not_mutable(name: &str, span: Span, binding: Binding, declared: Span) -> Diagnostic {
+    let help = match binding {
+        Binding::Param => {
+            format!("parameters are immutable; shadow it: `let mut {name} = {name};`")
+        }
+        Binding::LoopVar => "loop variables are immutable; copy it into a `let mut`".to_string(),
+        Binding::Let { .. } => format!("make it mutable: `let mut {name}`"),
+    };
+    Diagnostic::error(
+        "E0501",
+        format!("cannot assign to `{name}`: it is not mutable"),
+        span,
+    )
+    .with_label(declared, "declared here")
+    .with_help(help)
+}
+
+pub(super) fn not_place(span: Span) -> Diagnostic {
+    Diagnostic::error("E0502", "cannot assign to this expression", span)
+        .with_help("only variables, fields and elements can be assigned")
+}
+
+pub(super) fn missing_return(name: &str, ty: Type, span: Span, has_loop: bool) -> Diagnostic {
+    let help = if has_loop {
+        "loops never count as returning (spec §6); add `panic(\"unreachable\");` after the loop"
+    } else {
+        "end the body with a value, or `return` on every path"
+    };
+    Diagnostic::error(
+        "E0503",
+        format!("`{name}` may end without returning a value of type {ty}"),
+        span,
+    )
+    .with_help(help)
+}
+
+pub(super) fn with_stray_semicolon(d: Diagnostic, semicolon: Span) -> Diagnostic {
+    d.with_label(semicolon, "remove this semicolon")
+        .with_help("remove this semicolon to make it the result")
+}
+
+pub(super) fn outside_loop(keyword: &str, span: Span) -> Diagnostic {
+    Diagnostic::error("E0504", format!("`{keyword}` outside of a loop"), span)
+}
+
+pub(super) fn discarded(what: &str, ty: Type, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0505",
+        format!("this {what} has a value of type {ty} that is discarded"),
+        span,
+    )
+    .with_help("add `;` to discard it, or make it the block's last expression")
+}
+
+pub(super) fn unreachable(span: Span, cause: Span) -> Diagnostic {
+    Diagnostic::warning("W0101", "unreachable code", span)
+        .with_label(cause, "any code after this never runs")
 }
 
 fn with_reason(d: Diagnostic, reason: Option<&Label>) -> Diagnostic {

@@ -12,6 +12,7 @@ Never deleted. Older entries are never modified.
 - AI context system (CLAUDE.md, MEMORY.md, CONTEXT.md, DECISIONS.md, PRPs, code style guide)
 - Lugha v0 language specification (`docs/specs/`)
 - `lughac` crate skeleton (builds against LLVM 21)
+- Checker rules for casts, mutability, assignment targets, missing returns (with "remove this semicolon"), `break`/`continue` outside loops and discarded `if` values (E0408, E0501–E0505), plus the unreachable-code warning W0101
 - Type checker: names, primitive types, literal inference and operator typing, with error codes E0301–E0305 and E0401–E0407; `lughac check` now type-checks
 - Functions with parameters, calls (including forward and mutual recursion), `return` and void functions — **milestone 2 complete**
 - Variables, assignment, blocks with tail values, `if` expressions, `while` and `for` loops, `break`/`continue`, comparisons and short-circuit `&&`/`||` inside `main`

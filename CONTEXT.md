@@ -582,6 +582,58 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, known issues, progres
 
 Branch: main → prp-009-casts_and_flow_checks
 
+### WHAT WAS DONE
+
+Discovery, with the recommended answer accepted every time:
+- Codes E0408 and E0501–E0505, plus W0101. "Remove this semicolon" is a label and help on E0503/E0407.
+- W0101 once per block, never failing the build, and not repeated inside dead code.
+
+Implemented test-first: 10 failing unit tests, then:
+- `check/assign.rs`: places and mutability, using a `Binding` on each `Local`.
+- `check/flow.rs`: missing returns, the semicolon label, loop context, discarded values, unreachable code.
+- Casts in `ops.rs`.
+- `check()` now returns warnings.
+
+Everything passed on the first full run. Nine new `m3/` programs; goldens captured and reviewed. `w0101.la` exits 3 with the warning on stderr.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/assign.rs      — places (E0502), mutability (E0501) + 3 tests
+src/check/flow.rs        — Flow, reachable/after_statement (W0101, E0505), jump (E0504), missing_return (E0503), stray_semicolon + 6 tests
+src/check/ops.rs         — cast (E0408) + 1 test
+src/check/stmt.rs        — block uses Flow; loop depth; let/param/loop bindings; assign moved out
+src/check/expr.rs        — casts checked; E0407 gets the semicolon label for blocks
+src/check/mod.rs, env.rs — Binding, Local span, loops/dead state, warnings returned; test helpers
+src/check/errors.rs      — constructors for E0408, E0501–E0505, W0101
+tests/programs/m3/       — e0408, e0501, e0501_param, e0502, e0503, e0503_semicolon, e0504, e0505 (reject); w0101 (run, exit 3)
+docs/specs/…Specification.md — §9 rows E0408, E0501–E0505, W0101
+PRPs/prp-009-…md         — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progress
+```
+
+### TESTS WRITTEN
+
+- Unit:
+  - Casts allowed and E0408.
+  - E0501 for let, parameter and loop variable, with help by binding; E0502 for three non-places.
+  - E0503 including `while true`, with the loop help; the semicolon label on E0503 and E0407.
+  - E0504 inside and outside loops; E0505 and the accepted forms.
+  - W0101: once per block, the tail, not nested in dead code, returned in `Ok`.
+- Acceptance: nine `m3/` programs.
+
+### DECISIONS MADE
+
+- Codes and W0101 behaviour (PRP-009), plus the amendments recorded there.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Branch `prp-009-casts_and_flow_checks` not yet merged into `main`.
+
 ---
 
 ## NEXT SESSION START POINT

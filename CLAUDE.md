@@ -228,7 +228,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── parser/      — mod.rs (parse, cursor, errors), recover.rs, describe.rs,
 │   │                  expr.rs (Pratt), primary.rs, stmt.rs, item.rs, sexp.rs, test_util.rs
 │   ├── check/       — mod.rs (check, Checked, CheckError), types.rs, env.rs (globals, main, scopes),
-│   │                  expr.rs, literal.rs, call.rs, ops.rs, stmt.rs, errors.rs (E03xx/E04xx)
+│   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), stmt.rs,
+│   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), errors.rs
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (main, C main),
 │   │                  value.rs (Int/Bool kinds), scope.rs (locals), expr.rs, control.rs (blocks,
 │   │                  if, loops, jumps), stmt.rs, function.rs (signatures, bodies, return, calls)
@@ -277,5 +278,5 @@ These look like bugs but are specified behavior:
 - **Extern C code keeping a Lugha pointer is undefined behavior.** Spec §7–8 accept this for v0.
 - **`as` casts truncate/saturate silently.** The only place values wrap (spec §4).
 - **Until milestone 4, integer `+ - *` wrap and `/ %` by zero or `MIN / -1` trap with SIGILL.** The specified panics need `lugha_rt_panic` (spec §11). Do not add overflow checks before then.
-- **Until PRP-009, assigning to a non-`mut` variable, a missing return, `break` outside a loop and assignments to non-places pass the checker**; codegen still stops on the last three with "not implemented yet: … (milestone 3)". The checker (PRP-008) reports name and type errors; codegen's interim `Int`/`Bool`/`Never` kinds remain until PRP-010.
+- **Until PRP-010, codegen keeps its interim `Int`/`Bool`/`Never` kinds** and stops on `f64`, casts and non-`i64` integer arithmetic with "not implemented yet: … (milestone 3)". The checker (PRP-008, PRP-009) already reports every milestone 3 rule with a code.
 - **Codegen reports the outermost unsupported construct first** (`[1][0]` → indexing, not arrays). The message names the milestone that adds it; it goes away by milestone 5.

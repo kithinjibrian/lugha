@@ -1,0 +1,8 @@
+warning[W0101]: unreachable code
+  --> tests/programs/m3/w0101.la:4:5
+  |
+3 |     return 3;
+  |     --------- any code after this never runs
+4 |     let ignored = 1;
+  |     ^^^^^^^^^^^^^^^^
+

@@ -1,0 +1,11 @@
+error[E0501]: cannot assign to `n`: it is not mutable
+  --> tests/programs/m3/e0501_param.la:3:9
+  |
+1 | fun countdown(n: i64) {
+  |               - declared here
+2 |     while n > 0 {
+3 |         n -= 1;
+  |         ^
+  |
+  = help: parameters are immutable; shadow it: `let mut n = n;`
+

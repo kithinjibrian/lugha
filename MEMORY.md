@@ -148,6 +148,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-009 casts and flow checks: `check/assign.rs`, `check/flow.rs`, `Binding` on locals, W0101 once per block; warnings returned from `check()`
 - PRP-008 checker core: `src/check/`, bidirectional checking with `Expect`, `Type::Error` recovery, `Never` for divergence; E0401 matches spec in both formats
 - PRP-007 functions: signatures declared first (`lugha_fn_<name>`), params as locals, calls, `return`, `Value::Never` divergence per §6; `lugha_fn_main` returns i64 until M3 — **milestone 2 complete**
 - PRP-006 locals and control flow: codegen `Value` kinds (Int i64 / Bool i1), scopes with entry-block allocas, if/while/for/break/continue, short-circuit; `tests/programs/m2/` (7 programs)
@@ -169,4 +170,4 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Milestone 3, PRP-009: casts (`as`), mutability, missing returns, `break`/`continue` outside loops, assignment targets (E05xx), "remove this semicolon", W0101. Then PRP-010 moves codegen onto the type table. `codegen/control.rs` is exactly 300 lines.
+Milestone 3, PRP-010: move codegen onto the checker's type table (real `i32`/`i64`/`u8`/`f64`/`bool`, casts per §4 incl. `llvm.fptosi.sat`), delete codegen's interim value kinds and every "milestone 3" stop, then add `tests/programs/m3/` run-mode programs and tag `m3`. `codegen/control.rs` is exactly 300 lines.

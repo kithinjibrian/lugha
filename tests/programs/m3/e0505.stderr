@@ -1,0 +1,8 @@
+error[E0505]: this `if` has a value of type i64 that is discarded
+  --> tests/programs/m3/e0505.la:3:5
+  |
+3 |     if big { 100 } else { 1 }
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: add `;` to discard it, or make it the block's last expression
+

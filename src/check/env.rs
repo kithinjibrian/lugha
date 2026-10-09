@@ -2,8 +2,8 @@
 
 use std::collections::HashMap;
 
-use super::{Checker, Checking, Local, Signature, Type, errors, stop};
-use crate::ast::{Item, Program, Type as Annotation, TypeKind};
+use super::{Binding, Checker, Checking, Local, Signature, Type, errors, stop};
+use crate::ast::{Ident, Item, Program, Type as Annotation, TypeKind};
 
 /// Built into the compiler from milestone 4; their names are reserved (spec §6).
 pub(super) const INTRINSICS: [&str; 4] = ["print", "println", "panic", "to_string"];
@@ -107,12 +107,19 @@ impl Checker {
     }
 
     /// Declares a local in the innermost scope, shadowing earlier bindings.
-    pub(super) fn declare(&mut self, name: &str, ty: Type) {
+    pub(super) fn declare(&mut self, name: &Ident, ty: Type, binding: Binding) {
         let scope = self
             .scopes
             .last_mut()
             .expect("locals are declared inside a scope");
-        scope.insert(name.to_string(), Local { ty });
+        scope.insert(
+            name.name.clone(),
+            Local {
+                ty,
+                binding,
+                span: name.span,
+            },
+        );
     }
 
     /// The innermost local named `name`.

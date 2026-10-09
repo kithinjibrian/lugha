@@ -1,8 +1,9 @@
 //! Statements, blocks and function bodies.
 
 use super::expr::Expect;
-use super::{Checker, Checking, Type, errors, stop};
-use crate::ast::{AssignOp, Block, Expr, ExprKind, ForIter, FunDecl, Ident, Stmt, StmtKind};
+use super::flow::Flow;
+use super::{Binding, Checker, Checking, Type, errors, stop};
+use crate::ast::{Block, Expr, ForIter, FunDecl, Ident, Stmt, StmtKind};
 use crate::span::Span;
 
 impl Checker {
@@ -14,13 +15,14 @@ impl Checker {
         self.scopes.clear();
         self.push();
         for (param, ty) in f.params.iter().zip(params) {
-            self.declare(&param.name.name, ty);
+            self.declare(&param.name, ty, Binding::Param);
         }
         let expect = (ret != Type::Void).then(|| Expect::of(ret));
         let body = self.block(&f.body, expect.as_ref())?;
         self.pop();
-        // A `void` body in a non-void function is a missing return: PRP-009.
-        if ret != Type::Void && body != Type::Void && !body.fits(ret) {
+        if ret != Type::Void && body == Type::Void {
+            self.missing_return(f, ret);
+        } else if ret != Type::Void && !body.fits(ret) {
             let span = f.body.tail.as_ref().map_or(f.body.span, |tail| tail.span);
             self.report(errors::mismatch(ret, body, span, None));
         }
@@ -31,14 +33,23 @@ impl Checker {
     /// statement diverges (spec §5, §6).
     pub(super) fn block(&mut self, block: &Block, expect: Option<&Expect>) -> Checking<Type> {
         self.push();
+        let was_dead = self.dead;
+        let mut flow = Flow::default();
         let mut diverged = false;
         for stmt in &block.stmts {
-            diverged |= self.stmt(stmt)?;
+            self.reachable(&mut flow, stmt.span);
+            let diverges = self.stmt(stmt)?;
+            self.after_statement(&mut flow, stmt, diverges);
+            diverged |= diverges;
         }
         let ty = match &block.tail {
-            Some(tail) => self.expr(tail, expect)?,
+            Some(tail) => {
+                self.reachable(&mut flow, tail.span);
+                self.expr(tail, expect)?
+            }
             None => Type::Void,
         };
+        self.dead = was_dead;
         self.pop();
         Ok(if diverged { Type::Never } else { ty })
     }
@@ -46,12 +57,19 @@ impl Checker {
     /// Checks a statement and reports whether it diverges.
     fn stmt(&mut self, stmt: &Stmt) -> Checking<bool> {
         match &stmt.kind {
-            StmtKind::Let { name, ty, init, .. } => self.let_stmt(name, ty.as_ref(), init)?,
+            StmtKind::Let {
+                mutable,
+                name,
+                ty,
+                init,
+            } => self.let_stmt(*mutable, name, ty.as_ref(), init)?,
             StmtKind::Assign { op, place, value } => self.assign(*op, place, value)?,
             StmtKind::Expr { expr, .. } => return Ok(self.expr(expr, None)? == Type::Never),
             StmtKind::While { cond, body } => {
                 self.expect_type(cond, &Expect::of(Type::Bool))?;
+                self.loops += 1;
                 self.block(body, None)?;
+                self.loops -= 1;
             }
             StmtKind::For {
                 var,
@@ -66,7 +84,15 @@ impl Checker {
                 self.return_stmt(value.as_ref(), stmt.span)?;
                 return Ok(true);
             }
-            StmtKind::Break | StmtKind::Continue => return Ok(true),
+            StmtKind::Break | StmtKind::Continue => {
+                let keyword = if matches!(stmt.kind, StmtKind::Break) {
+                    "break"
+                } else {
+                    "continue"
+                };
+                self.jump(keyword, stmt.span);
+                return Ok(true);
+            }
         }
         Ok(false)
     }
@@ -74,6 +100,7 @@ impl Checker {
     /// `let`: the annotation, if any, is expected; the binding enters scope afterwards (spec §5).
     fn let_stmt(
         &mut self,
+        mutable: bool,
         name: &Ident,
         annotation: Option<&crate::ast::Type>,
         init: &Expr,
@@ -91,39 +118,7 @@ impl Checker {
                 ty => ty,
             },
         };
-        self.declare(&name.name, ty);
-        Ok(())
-    }
-
-    /// Assignment to a local. Places other than names, and mutability, are PRP-009.
-    fn assign(&mut self, op: AssignOp, place: &Expr, value: &Expr) -> Checking<()> {
-        let ExprKind::Name(name) = &place.kind else {
-            if matches!(place.kind, ExprKind::Field(..) | ExprKind::Index(..)) {
-                return Err(stop("assigning to fields and elements", 5, place.span));
-            }
-            self.expr(place, None)?;
-            self.expr(value, None)?;
-            return Ok(());
-        };
-        let target = match self.local(name) {
-            Some(local) => local.ty,
-            None => {
-                self.expr(place, None)?;
-                self.expr(value, None)?;
-                return Ok(());
-            }
-        };
-        self.record(place, target);
-        if op != AssignOp::Assign && !target.is_numeric() && target != Type::Error {
-            let span = Span::new(place.span.start, value.span.end);
-            self.report(errors::bad_operands(op.symbol(), &[target], span));
-            self.expr(value, None)?;
-            return Ok(());
-        }
-        self.expect_type(
-            value,
-            &Expect::because(target, place.span, format!("`{name}` is {target}")),
-        )?;
+        self.declare(name, ty, Binding::Let { mutable });
         Ok(())
     }
 
@@ -142,8 +137,10 @@ impl Checker {
             (ty, _) => ty,
         };
         self.push();
-        self.declare(&var.name, ty);
+        self.declare(var, ty, Binding::LoopVar);
+        self.loops += 1;
         self.block(body, None)?;
+        self.loops -= 1;
         self.pop();
         Ok(())
     }

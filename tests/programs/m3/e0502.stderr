@@ -1,0 +1,8 @@
+error[E0502]: cannot assign to this expression
+  --> tests/programs/m3/e0502.la:4:6
+  |
+4 |     (a + b) = 3;
+  |      ^^^^^
+  |
+  = help: only variables, fields and elements can be assigned
+

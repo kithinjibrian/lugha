@@ -48,7 +48,7 @@ Done when the §11 milestone 2 program exits with 55.
 ### Milestone 3 — Type checker and diagnostics
 Done when the §10 rejected program reports E0401 in both formats.
 - [x] PRP-008: checker core (names, types, literal inference, calls, E0301–E0305, E0401–E0407) — E0401 done-when met
-- [ ] PRP: mutability and return checking
+- [x] PRP-009: casts, mutability, places, missing returns, loop context, discarded values, W0101 (E0408, E0501–E0505)
 - [ ] PRP: overflow and division checks in codegen
 - [ ] PRP: diagnostics (error codes, human + JSON, `lughac check`, "remove this semicolon")
 

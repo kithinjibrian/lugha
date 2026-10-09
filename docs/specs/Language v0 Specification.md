@@ -530,6 +530,13 @@ Name and type errors, reported by the checker:
 | E0405 | Wrong number of arguments | `add(1)` for `fun add(a: i64, b: i64)` |
 | E0406 | Not a function, or a function used as a value | `let step = 2; step(1);`, `let f = fib;` |
 | E0407 | `void` used as a value | `let x = log();` where `log` returns nothing |
+| E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
+| E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable |
+| E0502 | Assignment to something that isn't a place | `(a + b) = 3;` |
+| E0503 | Missing return | a non-void function whose body can end without a value (§6); a stray `;` after the result gets a "remove this semicolon" label |
+| E0504 | `break` or `continue` outside a loop | |
+| E0505 | Block-like statement with a discarded value | `if big { 100 } else { 1 }` followed by more statements |
+| W0101 | Unreachable code (warning) | statements after `return`, `break` or `continue`; reported once per block |
 
 **JSON diagnostics.** With `--diagnostics=json`, the compiler writes one JSON object per line to stderr, one per diagnostic, and nothing else. Lines and columns are 1-based; columns and offsets count UTF-8 bytes. `label` is the text shown under the primary span, or `null`. `labels` holds secondary spans, and `help` is an optional suggestion. Internal errors have `"code":null`, and `"span":null` when they have no location.
 

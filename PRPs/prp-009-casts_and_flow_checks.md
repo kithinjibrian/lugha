@@ -1,6 +1,6 @@
 ## FEATURE: Checker rules for casts, mutability, places, missing returns, loop context, block-like statements and unreachable code — E0408, E0501–E0505, W0101, and "remove this semicolon".
 
-**Status:** approved 2026-10-09 — session 12
+**Status:** implemented 2026-10-09 — session 12 (branch `prp-009-casts_and_flow_checks`)
 **Milestone:** 3, second of three PRPs (PRP-010 moves codegen onto real types and closes the milestone)
 **Spec:** §3 (place expressions), §4 (casts, mutability), §5 (block-like statements, "remove this semicolon", `break`/`continue`), §6 (definitely-returns rules, unreachable code), §9 (codes)
 **Decisions:** PRP-008 checker design (`Expect`, `Type::Error`, `Never`)
@@ -27,6 +27,11 @@ Dead code after `return` gets one warning, without failing the build.
   - New `m3/` cases; spec §9 table extended; CLAUDE.md known issues updated.
 - Related existing code: `src/check/*`, `src/driver/pipeline.rs` (already prints warnings), `src/diagnostic.rs`.
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 12)
+- **"Remove this semicolon" fires when the last `expr;` has any value type**, not only one that fits the wanted type. A statement expression is checked with no expected type, so `{ 1 + 1; }` has an `i64` statement even where `i32` is wanted; requiring an exact fit would have hidden the help in exactly the case §5 describes.
+- **E0502's span** is the place expression without its parentheses (`a + b`), because the AST doesn't keep them.
+- **Goldens:** all eight new `.stderr` goldens and the W0101 run-mode golden were captured on the first passing run and reviewed.
 
 ### Discovery answers (session 12)
 1. Codes:
@@ -113,22 +118,22 @@ Dead code after `return` gets one warning, without failing the build.
 ## TESTS TO WRITE
 
 Unit tests (`src/check/`), as (code, spanned text):
-- [ ] E0408: `true as i32`, `x as bool`; `2.5 as i32` and `300 as u8` are OK (truncation is defined); `x as i64` where `x: i64` is OK.
-- [ ] E0501 for `let`, a parameter and a loop variable, each with the right help; `let mut` and shadowing with `let mut x = x;` are OK; compound assignment.
-- [ ] E0502: `1 = 2;`, `f() = 3;`, `(a + b) += 1;`.
-- [ ] E0503:
+- [x] E0408: `true as i32`, `x as bool`; `2.5 as i32` and `300 as u8` are OK (truncation is defined); `x as i64` where `x: i64` is OK.
+- [x] E0501 for `let`, a parameter and a loop variable, each with the right help; `let mut` and shadowing with `let mut x = x;` are OK; compound assignment.
+- [x] E0502: `1 = 2;`, `f() = 3;`, `(a + b) += 1;`.
+- [x] E0503:
   - missing `else` return
   - `while true { return 1; }` (§6), with help mentioning `panic("unreachable")`
   - `fun sq(x: i32): i32 { x * x; }`, with the "remove this semicolon" label on the `;`
   - OK: tail; `if/else` both return; early return then tail.
-- [ ] Semicolon help on E0407: `let v: i32 = { 1 + 1; };`.
-- [ ] E0504: `break;` and `continue;` outside loops; OK inside nested loops and inside an `if` inside a loop.
-- [ ] E0505: `if c { 1 } else { 2 }` mid-block. OK: with `;`, as the tail, `void` ifs, `{ }` blocks mid-block.
-- [ ] W0101: after `return`, after `break`, after a diverging `if/else`, on the tail. Once per block. None nested inside dead code. Warnings come back in `Ok` and don't make the result an error.
+- [x] Semicolon help on E0407: `let v: i32 = { 1 + 1; };`.
+- [x] E0504: `break;` and `continue;` outside loops; OK inside nested loops and inside an `if` inside a loop.
+- [x] E0505: `if c { 1 } else { 2 }` mid-block. OK: with `;`, as the tail, `void` ifs, `{ }` blocks mid-block.
+- [x] W0101: after `return`, after `break`, after a diverging `if/else`, on the tail. Once per block. None nested inside dead code. Warnings come back in `Ok` and don't make the result an error.
 
 Acceptance and CLI:
-- [ ] All new `m3/` programs pass, including `w0101.la` exiting 3 with the warning on stderr.
-- [ ] All existing tests still pass (no `m1/`/`m2/` program is affected by the new rules).
+- [x] All new `m3/` programs pass, including `w0101.la` exiting 3 with the warning on stderr.
+- [x] All existing tests still pass (no `m1/`/`m2/` program is affected by the new rules).
 
 ## ROLLBACK PLAN
 

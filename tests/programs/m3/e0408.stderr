@@ -1,0 +1,8 @@
+error[E0408]: cannot cast `bool` to `i32`
+  --> tests/programs/m3/e0408.la:3:13
+  |
+3 |     let n = ready as i32;
+  |             ^^^^^^^^^^^^
+  |
+  = help: write `if b { 1 } else { 0 }`
+

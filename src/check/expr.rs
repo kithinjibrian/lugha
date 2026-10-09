@@ -52,7 +52,13 @@ impl Checker {
     pub(super) fn value(&mut self, expr: &Expr, expect: Option<&Expect>) -> Checking<Type> {
         let ty = self.expr(expr, expect)?;
         if ty == Type::Void {
-            self.report(errors::no_value(expr.span));
+            let mut d = errors::no_value(expr.span);
+            if let ExprKind::Block(block) = &expr.kind
+                && let Some(semicolon) = self.stray_semicolon(block)
+            {
+                d = errors::with_stray_semicolon(d, semicolon);
+            }
+            self.report(d);
             return Ok(Type::Error);
         }
         Ok(ty)
@@ -92,7 +98,7 @@ impl Checker {
             }
             ExprKind::Block(block) => self.block(block, expect),
             ExprKind::Str(_) => Err(stop("strings", 4, expr.span)),
-            ExprKind::Cast(..) => Err(stop("`as` casts", 3, expr.span)),
+            ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
             ExprKind::Index(..) => Err(stop("indexing", 5, expr.span)),
             ExprKind::Field(..) => Err(stop("field access", 5, expr.span)),
             ExprKind::StructLit(..) => Err(stop("structs", 5, expr.span)),
@@ -189,10 +195,6 @@ mod tests {
             (
                 "fun main() { let x = 1; let y = x.len; }",
                 ("field access", 5, "x.len"),
-            ),
-            (
-                "fun main() { let x = 1 as i32; }",
-                ("`as` casts", 3, "1 as i32"),
             ),
         ];
         for (src, want) in cases {

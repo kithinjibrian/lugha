@@ -1,0 +1,10 @@
+error[E0503]: `square` may end without returning a value of type i32
+  --> tests/programs/m3/e0503_semicolon.la:1:5
+  |
+1 | fun square(x: i32): i32 {
+  |     ^^^^^^
+2 |     x * x;
+  |          - remove this semicolon
+  |
+  = help: remove this semicolon to make it the result
+
