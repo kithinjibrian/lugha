@@ -868,7 +868,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, progress
 
 ## SESSION 17 — 2026-10-09 — PRP-014 arrays — open
 
-Branch: main
+Branch: main → prp-014-arrays
 
 ---
 
