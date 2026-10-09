@@ -349,6 +349,65 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progres
 
 Branch: main → prp-005-driver
 
+### WHAT WAS DONE
+
+Before discovery, I ran the DECISION-006 check in a scratch crate: codespan-reporting can't reproduce the spec's E0401 output byte-for-byte. The differences are `  --> `, trailing spaces, and a blank line after each diagnostic. The check also exposed a missing primary-label field.
+
+Discovery outcomes, with the recommended answer accepted every time:
+- Keep codespan, strip trailing whitespace, and change the spec layout (DECISION-011).
+- Add `Diagnostic::label` and a JSON `"label"` key.
+- `run` passes exit codes through (128+N for a signal); `--emit` prints tokens, S-expression or IR.
+- Missing file exits 2; invalid UTF-8 is E0110, exit 1; `build` writes `./<stem>`; internal errors have `"code":null`.
+
+Implemented test-first against stubs. All 104 tests passed on the first run, including the un-ignored `programs()` suite and two hand-written golden `.stderr` files. Then three clippy fixes: boxed error payloads twice, and a struct-update `Config`.
+
+**Milestone 1 is complete:** `lughac run tests/programs/m1/arith.la` exits 14.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/driver/mod.rs        — clap CLI (build/run/check, --emit, -O, --diagnostics), exit codes, Output
+src/driver/pipeline.rs   — load/front/ir/build/run, Failure, TempDir, default_output + 1 test
+src/driver/source.rs     — load (E0110), line_col + 2 tests
+src/driver/render.rs     — Report, human rendering via codespan + 2 tests (spec E0401 exact)
+src/driver/json.rs       — JSON lines, escaping + 3 tests (spec example exact)
+src/diagnostic.rs        — label field + with_primary_label
+src/main.rs, src/lib.rs  — main calls lugha::driver::main; declares driver
+tests/cli.rs             — 9 tests driving the real binary
+tests/programs.rs        — #[ignore] removed
+tests/programs/m1/       — void_main, div_zero (132), bad_char (E0101), unclosed (E0201) cases
+docs/specs/…Specification.md — §2 E0110; §9 codespan layout, label, code null; §10 example layout
+DECISIONS.md, MEMORY.md  — DECISION-011; decision 13; milestone 1 done
+PRPs/prp-005-driver.md   — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md — commands, file tree, known issues, progress
+```
+
+### TESTS WRITTEN
+
+- Unit:
+  - The spec E0401 renders exactly in both human and JSON form.
+  - Help notes; internal errors without a code; JSON escaping; null code and span.
+  - Byte columns; E0110 position; default output never overwrites the source.
+- CLI:
+  - `build` default and `-o`; `run` exit pass-through (14, 132); `check` exit 0 and 1.
+  - All three `--emit` modes write no files.
+  - JSON gives one line per diagnostic.
+  - A missing file, no arguments, or an unknown flag exits 2; `--help` exits 0.
+  - E0110; Unsupported gives exit 2 in human and JSON form.
+- Acceptance: five `m1/` programs.
+
+### DECISIONS MADE
+
+- DECISION-011 (renderer layout), plus the amendments listed in the PRP.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Branch `prp-005-driver` not yet merged into `main`.
+
 ---
 
 ## NEXT SESSION START POINT

@@ -37,6 +37,8 @@ pub struct Diagnostic {
     pub message: String,
     /// The primary location.
     pub span: Span,
+    /// Text shown under the primary span, e.g. `expected i32`.
+    pub label: Option<String>,
     /// Secondary locations, in the order they should be shown.
     pub labels: Vec<Label>,
     /// Optional suggestion, e.g. `write 2.0e5`.
@@ -70,9 +72,16 @@ impl Diagnostic {
             code,
             message,
             span,
+            label: None,
             labels: Vec::new(),
             help: None,
         }
+    }
+
+    /// Sets the text shown under the primary span.
+    pub fn with_primary_label(mut self, text: impl Into<String>) -> Self {
+        self.label = Some(text.into());
+        self
     }
 
     /// Adds a secondary label.
@@ -99,7 +108,8 @@ mod tests {
     fn builders_set_severity_labels_and_help() {
         let d = Diagnostic::warning("W0101", "unreachable code", Span::new(3, 9))
             .with_label(Span::new(0, 2), "returns here")
-            .with_help("remove it");
+            .with_help("remove it")
+            .with_primary_label("never runs");
         assert_eq!(d.severity, Severity::Warning);
         assert_eq!(
             d.labels,
@@ -109,6 +119,7 @@ mod tests {
             }]
         );
         assert_eq!(d.help.as_deref(), Some("remove it"));
+        assert_eq!(d.label.as_deref(), Some("never runs"));
         assert_eq!(
             Diagnostic::error("E0101", "x", Span::new(0, 1)).severity,
             Severity::Error

@@ -1,0 +1,8 @@
+error[E0201]: expected `)`, found `}`
+  --> tests/programs/m1/unclosed.la:1:26
+  |
+1 | fun main(): i32 { (1 + 2 }
+  |                   -      ^
+  |                   |
+  |                   to match this `(`
+

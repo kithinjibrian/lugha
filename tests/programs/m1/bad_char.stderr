@@ -1,0 +1,6 @@
+error[E0101]: unexpected character '@'
+  --> tests/programs/m1/bad_char.la:1:21
+  |
+1 | fun main(): i32 { 2 @ 3 }
+  |                     ^
+

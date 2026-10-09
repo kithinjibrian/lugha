@@ -102,6 +102,7 @@ Built-in type names are keywords, so they can't be shadowed by user structs.
 | E0107 | Float needs a fractional part | `2e5` (help: write `2.0e5`) |
 | E0108 | Invalid character in a number | `123abc`, `0XFF`, `0xFG` |
 | E0109 | Float literal out of range | `1.0e999` |
+| E0110 | Source is not valid UTF-8 | A Latin-1 `é` byte; reported at the first bad byte |
 
 **Operators and punctuation.** The lexer uses longest match, so `<=` is one token, not `<` then `=`.
 
@@ -490,7 +491,7 @@ The C `main` emitted by the compiler calls `GC_INIT()`, then `lugha_fn_main()`, 
 | --- | --- |
 | `lughac build prog.la [-o prog]` | Compile and link an executable |
 | `lughac run prog.la` | Build to a temporary file and run it |
-| `lughac check prog.la` | Lex, parse and type-check only; no codegen or linking |
+| `lughac check prog.la` | Lex, parse and type-check only; no codegen or linking (type checking from milestone 3) |
 | `lughac spec` | Print the LLM-ready spec bundled with this compiler version |
 | `lughac build --emit=tokens\|ast\|ir prog.la` | Print an intermediate stage and stop |
 | `--diagnostics=human\|json` | Diagnostic format for `build`, `run` and `check`; `human` is the default |
@@ -498,7 +499,9 @@ The C `main` emitted by the compiler calls `GC_INIT()`, then `lugha_fn_main()`, 
 
 Exit codes: 0 on success, 1 when the program has errors, 2 for bad command-line usage or an internal compiler error.
 
-**Diagnostics.** Errors print the file, line and column, the offending source line, and a caret under the span, in the style of rustc. The `ariadne` crate is a good fit. The checker reports as many errors as it can find instead of stopping at the first one.
+**Diagnostics.** Errors print the file, line and column, the offending source line, a caret under the span with its label, and any secondary labels, in a rustc-like layout rendered by the `codespan-reporting` crate. Each diagnostic is followed by a blank line, and lines carry no trailing whitespace. The checker reports as many errors as it can find instead of stopping at the first one.
+
+Internal errors — an unreadable file, a construct the compiler doesn't support yet, a failed link — have no code and exit with 2. They print as `error: <message>`, with a source snippet when they have a location.
 
 **Error codes.** Every diagnostic has a stable code, grouped by stage. A code is never reused or renumbered once released; its message wording may improve.
 
@@ -511,10 +514,10 @@ Exit codes: 0 on success, 1 when the program has errors, 2 for bad command-line 
 | E05xx | Mutability and control flow: assignment to immutable bindings, missing returns, `break` outside a loop |
 | W01xx | Warnings: unreachable code |
 
-**JSON diagnostics.** With `--diagnostics=json`, the compiler writes one JSON object per line to stderr, one per diagnostic, and nothing else. Lines and columns are 1-based; columns and offsets count UTF-8 bytes. `labels` holds secondary spans, and `help` is an optional suggestion.
+**JSON diagnostics.** With `--diagnostics=json`, the compiler writes one JSON object per line to stderr, one per diagnostic, and nothing else. Lines and columns are 1-based; columns and offsets count UTF-8 bytes. `label` is the text shown under the primary span, or `null`. `labels` holds secondary spans, and `help` is an optional suggestion. Internal errors have `"code":null`, and `"span":null` when they have no location.
 
 ```json
-{"severity":"error","code":"E0401","message":"float literal where i32 expected","file":"main.la","span":{"start":{"line":3,"col":17,"offset":49},"end":{"line":3,"col":20,"offset":52}},"labels":[{"span":{"start":{"line":3,"col":13,"offset":45},"end":{"line":3,"col":14,"offset":46}},"message":"this operand is i32"}],"help":null}
+{"severity":"error","code":"E0401","message":"float literal where i32 expected","file":"main.la","span":{"start":{"line":3,"col":17,"offset":49},"end":{"line":3,"col":20,"offset":52}},"label":"expected i32","labels":[{"span":{"start":{"line":3,"col":13,"offset":45},"end":{"line":3,"col":14,"offset":46}},"message":"this operand is i32"}],"help":null}
 ```
 
 Both formats come from the same internal diagnostic records, so they always report the same errors.
@@ -618,7 +621,7 @@ fun main() {
 
 ```
 error[E0401]: float literal where i32 expected
- --> main.la:3:17
+  --> main.la:3:17
   |
 3 |     let y = x + 2.5;
   |             -   ^^^ expected i32

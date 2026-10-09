@@ -114,7 +114,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 **Why:** Closest to rustc's layout used by the spec; clap's usage-error exit code is already 2.
 
-**Rules out:** `ariadne`. Open caveat: milestone 3 must confirm codespan's output matches spec §10 byte-for-byte, or open a new decision.
+**Rules out:** `ariadne`. Its output can't match the original spec byte-for-byte; see decision 13.
 
 ---
 
@@ -128,11 +128,26 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 13. Diagnostics rendering and records (DECISION-011, PRP-005)
+
+**Decision:**
+- Human output comes from codespan-reporting with ASCII characters and trailing whitespace stripped; the spec example follows its layout (`  --> `, blank line after).
+- `Diagnostic` has `label` for the primary span's text, and JSON has a matching `"label"` key.
+- Internal errors have no code (`"code":null`) and exit 2.
+
+**Why:** A maintained renderer beats string patches, and both formats must come from one record (spec §9).
+
+**Rules out:** Hand-rolled rendering; patching codespan's text beyond trimming; putting primary text in `labels`.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-005 driver: `src/driver/` (clap CLI, pipeline, codespan render, hand-written JSON); E0110 for invalid UTF-8
 - PRP-004 codegen + link: `codegen::emit_ir`/`emit_object` (O0/O2), `link::link`; M1 subset; wrap + trap until M4
 - PRP-003 parser: `lugha::parser::parse`, full §3, codes E0201–E0206; AST with dense `ExprId`s; `parser::sexp` printer
 - PRP-002 lexer: `lugha::lexer::lex`, full §2, codes E0101–E0109; `Span`, `Diagnostic` types
@@ -144,10 +159,10 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- Milestones 1–5
+- Milestones 2–5
 
 ---
 
 ## NEXT SESSION START POINT
 
-Run a discovery interview for the milestone 1 driver PRP (`prp-005-…`): `lughac build`/`run`/`check`, `--emit`, `-O`, human + JSON diagnostics via codespan-reporting (verify the E0401 layout early, DECISION-006), exit codes 0/1/2; it removes the `#[ignore]` on `tests/programs.rs`.
+Milestone 2: variables, control flow and functions (spec §11). Start with a discovery interview for its first PRP; add `tests/programs/m2/` (the §11 milestone 2 program exits 55).

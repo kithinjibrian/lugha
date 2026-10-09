@@ -136,6 +136,8 @@ None.
 
 **Rationale:** Its layout is closest to rustc's, which the spec's E0401 example uses. **Must verify in the milestone 3 PRP** that the output matches the spec example byte-for-byte; if it can't, open a new decision (custom renderer vs. spec change) — do not silently change the spec.
 
+**Verified 2026-10-09 — Session 8:** it can't match byte-for-byte. See DECISION-011 for the outcome.
+
 **Copied to MEMORY.md:** yes
 
 ---
@@ -169,3 +171,20 @@ None.
 **Rationale:** No extra dependency; adding a test is adding files; the §10 programs drop straight in.
 
 **Copied to MEMORY.md:** yes
+
+---
+
+### DECISION-011 — Human diagnostics layout
+
+**Status:** resolved
+**Raised:** 2026-10-09 — Session 8 (verifying DECISION-006)
+**Resolved:** 2026-10-09 — Session 8
+
+**Question:** codespan-reporting 0.13 renders the spec's E0401 example with three differences: `  --> ` instead of ` --> `, trailing spaces on the connector line, and a blank line after each diagnostic. Change the renderer, patch its output, or change the spec?
+
+**Outcome:** Keep codespan-reporting with ASCII characters, and strip trailing whitespace from every line. The spec §10 example and §9 text now follow codespan's layout: `  --> ` and a blank line after each diagnostic. No other string patching.
+
+**Rationale:** A maintained crate handles multi-line spans, overlapping labels and line-number widths. DECISION-006 allowed adjusting the spec example, and patching codespan's text would break silently on upgrades.
+
+**Copied to MEMORY.md:** yes
+

@@ -32,13 +32,13 @@ Every feature below gets a PRP (`PRPs/prp-{NNN}-{feature_name}.md`) before code.
 
 ## Milestones (spec §11) — build strictly in order
 
-### Milestone 1 — Expressions to a binary
+### Milestone 1 — Expressions to a binary ✅
 Done when `fun main(): i32 { 2 + 3 * 4 }` exits with 14.
 - [x] PRP-001: test runner for `tests/programs/` (DECISION-008)
 - [x] PRP-002: lexer (full §2 token set, E0101–E0109)
 - [x] PRP-003: parser (full §3 grammar, E0201–E0206, S-expression printer)
 - [x] PRP-004: codegen + link (inkwell, object file, `cc`)
-- [ ] PRP: `lughac build` driver and exit codes — must remove the `#[ignore]` on `tests/programs.rs::programs`
+- [x] PRP-005: `lughac` driver and exit codes; `#[ignore]` removed — **milestone 1 done**
 
 ### Milestone 2 — Variables, control flow, functions
 Done when the §11 milestone 2 program exits with 55.

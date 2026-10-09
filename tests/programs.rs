@@ -11,7 +11,6 @@ use support::runner::{
 };
 
 #[test]
-#[ignore = "enable in milestone 1 driver PRP"]
 fn programs() {
     let workdir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let lughac = Path::new(env!("CARGO_BIN_EXE_lughac"));

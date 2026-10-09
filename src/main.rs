@@ -1,6 +1,5 @@
-//! lughac — command-line entry point.
-//!
-//! Only parses the command line and calls into the `lugha` library.
-//! The CLI itself is added by the milestone 1 driver PRP.
+//! lughac — command-line entry point. All logic lives in `lugha::driver`.
 
-fn main() {}
+fn main() -> std::process::ExitCode {
+    lugha::driver::main()
+}

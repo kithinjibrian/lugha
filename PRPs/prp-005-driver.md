@@ -1,6 +1,6 @@
 ## FEATURE: The `lughac` command line — `build`, `run`, `check`, `--emit`, `-O`, human and JSON diagnostics, and exit codes 0/1/2 — completing milestone 1.
 
-**Status:** approved 2026-10-09 — session 8
+**Status:** implemented 2026-10-09 — session 8 (branch `prp-005-driver`)
 **Milestone:** 1 (final PRP; done-when `m1/arith.la` exits 14 through `lughac`)
 **Spec:** §9 (CLI, exit codes, diagnostics, JSON format), §10 (rejected-program output), §2 (lexical errors)
 **Decisions:** DECISION-006 (codespan-reporting) — outcome amended here as DECISION-011; DECISION-007 (clap); DECISION-008 (test runner)
@@ -23,6 +23,13 @@
   - New `tests/cli.rs`; new `tests/programs/m1/` cases; `programs()` is no longer ignored.
 - Related existing code: `src/diagnostic.rs`, `src/parser/sexp.rs`, `src/codegen/mod.rs`, `src/link.rs`, `tests/support/runner/`.
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 8)
+- **Default output:** a source file with no extension builds to `<stem>.out`, so `lughac build prog` never overwrites `prog` itself.
+- **Boxed failure payloads:** `Failure::Internal` holds a `Box<Report>` and `LoadError::Utf8` a `Box<Diagnostic>`. clippy's `result_large_err` flagged ~190-byte error variants on every `Result` in the pipeline.
+- **`--emit=tokens`** lexes only; it doesn't need the file to parse.
+- **Warnings** from the lexer and parser are printed on success, though no stage produces any yet.
+- **Golden files:** the two hand-written `.stderr` files (`bad_char`, `unclosed`) matched codespan's output on the first run.
 
 ### Discovery answers (session 8)
 0. Pre-check: codespan-reporting 0.13 (ASCII) renders E0401 with `  --> ` instead of ` --> `, trailing spaces on the connector line, and a blank line after the diagnostic. It cannot match spec §10 byte-for-byte.
@@ -143,25 +150,25 @@
 ## TESTS TO WRITE
 
 Unit tests:
-- [ ] render: a hand-built E0401 diagnostic (primary label + secondary label) renders exactly the new spec §10 text, including the trailing blank line and no trailing spaces.
-- [ ] render: `help` appears as a `help:` note; an internal error without a span prints `error: …`.
-- [ ] json: the same diagnostic serialises exactly to the new spec §9 example line.
-- [ ] json: escaping of `"`, `\`, `\n` and control characters; `"code":null` and `"span":null` cases.
-- [ ] source: line/col for offsets on line 1, after `\n`, and after multi-byte characters (byte columns); E0110 position for invalid UTF-8.
+- [x] render: a hand-built E0401 diagnostic (primary label + secondary label) renders exactly the new spec §10 text, including the trailing blank line and no trailing spaces.
+- [x] render: `help` appears as a `help:` note; an internal error without a span prints `error: …`.
+- [x] json: the same diagnostic serialises exactly to the new spec §9 example line.
+- [x] json: escaping of `"`, `\`, `\n` and control characters; `"code":null` and `"span":null` cases.
+- [x] source: line/col for offsets on line 1, after `\n`, and after multi-byte characters (byte columns); E0110 position for invalid UTF-8.
 
 Integration — `tests/cli.rs` (runs the real binary, temp dirs removed on drop):
-- [ ] `build` writes `./<stem>` (in a temp cwd) and `-o` overrides it; the binary exits 14.
-- [ ] `run` passes the exit code through (14) and maps SIGILL to 132.
-- [ ] `check` on a valid file → exit 0 and no output; on a lexer error → exit 1 with E0101 on stderr.
-- [ ] `--emit=tokens` first lines are `1:1 Fun`, `1:5 Ident("main")`; `--emit=ast` prints the milestone 1 S-expression; `--emit=ir` contains `define i32 @main()`. No files are written.
-- [ ] `--diagnostics=json` gives exactly one JSON line per diagnostic, and nothing else on stderr.
-- [ ] Missing file → exit 2, `cannot read`.
-- [ ] Invalid UTF-8 → exit 1, E0110.
-- [ ] Unsupported construct (`let`) → exit 2, `not implemented yet: `let` statements (milestone 2)`, and in JSON `"code":null`.
-- [ ] No arguments / an unknown flag → exit 2.
+- [x] `build` writes `./<stem>` (in a temp cwd) and `-o` overrides it; the binary exits 14.
+- [x] `run` passes the exit code through (14) and maps SIGILL to 132.
+- [x] `check` on a valid file → exit 0 and no output; on a lexer error → exit 1 with E0101 on stderr.
+- [x] `--emit=tokens` first lines are `1:1 Fun`, `1:5 Ident("main")`; `--emit=ast` prints the milestone 1 S-expression; `--emit=ir` contains `define i32 @main()`. No files are written.
+- [x] `--diagnostics=json` gives exactly one JSON line per diagnostic, and nothing else on stderr.
+- [x] Missing file → exit 2, `cannot read`.
+- [x] Invalid UTF-8 → exit 1, E0110.
+- [x] Unsupported construct (`let`) → exit 2, `not implemented yet: `let` statements (milestone 2)`, and in JSON `"code":null`.
+- [x] No arguments / an unknown flag → exit 2.
 
 Acceptance (`tests/programs`):
-- [ ] `programs()` runs un-ignored, and all five `m1/` cases pass.
+- [x] `programs()` runs un-ignored, and all five `m1/` cases pass.
 
 ## ROLLBACK PLAN
 
