@@ -1,6 +1,6 @@
 ## FEATURE: `lughac spec` prints the bundled language specification, every §10 program is tested straight from the spec, and the dead milestone stops are removed — completing v0.
 
-**Status:** implemented 2026-10-09 — session 19 (branch `prp-016-spec_command`, awaiting merge)
+**Status:** merged into `main` 2026-10-09 — session 19; tagged `m5`
 **Milestone:** 5, last of four PRPs. Done-when: every program in spec §10 passes, as extracted from the spec itself. Then tag `m5`.
 **Spec:** §9 (command-line interface, LLM-ready spec, JSON diagnostics line), §10 (example programs and their expected output), §11 (milestone 5 and the milestone 2 program)
 **Decisions:** DECISION-008 / MEMORY 12 (acceptance tests), MEMORY 13 (diagnostic rendering), PRP-015 amendments (remove the `Unsupported` paths in this PRP)

@@ -979,7 +979,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, known issue removed, 
 
 ---
 
-## SESSION 19 — 2026-10-09 — PRP-016 lughac spec and §10 acceptance — open
+## SESSION 19 — 2026-10-09 — PRP-016 lughac spec and §10 acceptance — closed
 
 Branch: main → prp-016-spec_command
 
@@ -1023,6 +1023,10 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — tree, commands, v0 complete, dec
 ### PENDING DECISIONS OPENED
 
 - None.
+
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-016-spec_command` fast-forward merged into `main` and deleted; `m5` tagged on the merged work.
 
 ---
 
