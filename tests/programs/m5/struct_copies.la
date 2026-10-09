@@ -1,0 +1,37 @@
+struct P { x: i64, y: i64 }
+struct Wrap { data: i64[] }
+struct Node { value: i64, kids: Node[] }
+
+fun same(w: Wrap): Wrap = w;
+
+fun main() {
+    let p = P { x: 1, y: 2 };
+    let mut q = p;
+    q.x = 9;
+    println(p.x);
+
+    let w = Wrap { data: [1, 2] };
+    let mut v = w;
+    v.data[0] = 9;
+    println(w.data[0]);
+
+    let mut xs = [3, 4];
+    let held = Wrap { data: xs };
+    xs[0] = 9;
+    println(held.data[0]);
+
+    let mut back = same(w);
+    back.data[1] = 9;
+    println(w.data[1]);
+
+    let ws = [Wrap { data: [5] }, Wrap { data: [6] }];
+    let mut ws2 = ws;
+    ws2[0].data[0] = 9;
+    println(ws[0].data[0]);
+
+    let leaf = Node { value: 7, kids: [] };
+    let tree = Node { value: 1, kids: [leaf, Node { value: 2, kids: [leaf] }] };
+    let mut copy = tree;
+    copy.kids[1].kids[0].value = 9;
+    println(tree.kids[1].kids[0].value);
+}

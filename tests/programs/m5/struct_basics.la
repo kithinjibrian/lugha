@@ -1,0 +1,36 @@
+fun area(r: Rect): f64 = (r.max.x - r.min.x) * (r.max.y - r.min.y);
+
+fun make(w: f64, h: f64): Rect {
+    Rect { max: Vec2 { y: h, x: w }, min: Vec2 { x: 0.0, y: 0.0 } }
+}
+
+struct Rect { min: Vec2, max: Vec2 }
+struct Vec2 { x: f64, y: f64 }
+struct Mixed { flag: bool, byte: u8, small: i32, big: i64, name: string }
+struct Wrap { data: i64[] }
+
+fun main() {
+    let m = Mixed { name: "lin", big: 9000000000, small: -7, byte: 255, flag: true };
+    println(m.flag);
+    println(m.byte);
+    println(m.small);
+    println(m.big);
+    println(m.name);
+
+    let mut r = make(3.0, 2.0);
+    println(area(r));
+    r.max.x = 5.0;
+    println(area(r));
+
+    let mut pts = [Vec2 { x: 1.0, y: 2.0 }, Vec2 { x: 3.0, y: 4.0 }];
+    pts[1].x += 1.0;
+    let mut sum = 0.0;
+    for p of pts {
+        sum += p.x + p.y;
+    }
+    println(sum);
+
+    let mut w = Wrap { data: [1, 2, 3] };
+    w.data[0] = 5;
+    println(w.data[0] + w.data.len);
+}
