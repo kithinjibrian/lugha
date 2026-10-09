@@ -8,9 +8,9 @@ Every feature below gets a PRP (`PRPs/prp-{NNN}-{feature_name}.md`) before code.
 
 ## Machine prerequisites
 
-- [ ] Install Rust via rustup (none installed as of 2026-10-09)
-- [ ] Install `llvm-21-dev` (DECISION-005)
-- [ ] Install Boehm GC dev package (`libgc-dev`; headers missing) — needed from milestone 4/5
+- [x] Install Rust via rustup (1.99.0)
+- [x] Install `llvm-21-dev` (21.1.8)
+- [x] Install Boehm GC dev package (`libgc-dev`)
 - [x] C compiler (`cc`, GCC 15.2) — present
 
 ## Setup
@@ -22,8 +22,8 @@ Every feature below gets a PRP (`PRPs/prp-{NNN}-{feature_name}.md`) before code.
 - [x] Resolve DECISION-006 — diagnostic rendering crate
 - [x] Resolve DECISION-007 — CLI parsing
 - [x] Resolve DECISION-008 — acceptance test harness
-- [ ] `cargo init --lib` + `src/main.rs`, edition 2024, `rust-toolchain.toml` pinned; commit `Cargo.toml` + `Cargo.lock`
-- [ ] Fill in CLAUDE.md FILE ORGANIZATION `src/` tree and the pinned Rust version
+- [x] `cargo init --lib` + `src/main.rs`, edition 2024, `rust-toolchain.toml` pinned; commit `Cargo.toml` + `Cargo.lock`
+- [x] Fill in CLAUDE.md FILE ORGANIZATION `src/` tree and the pinned Rust version
 - [x] Copy resolved decisions into MEMORY.md
 - [ ] Replace the one-line README.md with a project description
 - [ ] Add CI: fmt, clippy, test — installing LLVM and libgc

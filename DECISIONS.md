@@ -114,7 +114,9 @@ None.
 
 **Question:** Which LLVM major version and inkwell feature?
 
-**Outcome:** LLVM 21 via `inkwell` 0.10 with the `llvm21-1` feature. Install with `apt install llvm-21-dev`.
+**Outcome:** LLVM 21 via `inkwell` 0.10 with the `llvm21-1-prefer-dynamic` feature (links `libLLVM.so`). Install with `apt install llvm-21-dev`.
+
+**Amended 2026-10-09 — Session 3:** the plain `llvm21-1` feature links LLVM statically and fails on Ubuntu with `could not find native static library Polly` (the dev package ships no static Polly). `-prefer-dynamic` links the shared library instead; verified by building and verifying an LLVM module.
 
 **Rationale:** LLVM 21 is Ubuntu 26.04's default `llvm-dev`, so contributors get it with one package, and it is supported by inkwell 0.8–0.10 (checked on crates.io 2026-10-09). It meets the spec's needs: opaque pointers, the new pass manager, `llvm.fptosi.sat`.
 

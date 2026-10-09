@@ -136,15 +136,14 @@ cargo clippy --all-targets -- -D warnings     # lint
 
 Run fmt, clippy and tests after every non-trivial change. A task is not done until all pass.
 
-> No `Cargo.toml` exists yet — these commands start working once the crate is initialised.
 > End-to-end tests also need `llvm-21-dev`, `cc`, and `libgc-dev` installed.
 
 ---
 
 ## STACK
 
-- Rust, edition 2024, toolchain pinned in `rust-toolchain.toml` — the compiler `lughac`.
-- `inkwell` 0.10, feature `llvm21-1` + LLVM 21 (`llvm-21-dev`) — codegen. Never use another LLVM major.
+- Rust 1.99.0 (pinned in `rust-toolchain.toml`), edition 2024 — package `lugha`, binary `lughac`.
+- `inkwell` 0.10, feature `llvm21-1-prefer-dynamic` + LLVM 21 (`llvm-21-dev`) — codegen. Never use another LLVM major; never switch to static LLVM linking (fails on Ubuntu, see DECISION-005).
 - C (`lugha_rt.c`) — the runtime linked into every compiled program.
 - Boehm GC (`libgc`), `libc`, `libm` — linked into every compiled program via the system `cc`.
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
@@ -213,6 +212,11 @@ pub fn parse_number(src: &str) -> i64 {
 ├── CHANGELOG.md     — what shipped
 ├── TODO.md          — outstanding tasks
 ├── .llmignore       — protected paths
+├── Cargo.toml       — package `lugha`, binary `lughac`
+├── rust-toolchain.toml — pinned Rust 1.99.0
+├── src/
+│   ├── lib.rs       — compiler library; stage modules added per PRP
+│   └── main.rs      — `lughac` entry point (CLI only)
 ├── setup.md         — the guide this context system follows
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, source/, decisions/, incidents/, status/
@@ -220,7 +224,7 @@ pub fn parse_number(src: &str) -> i64 {
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```
 
-Update this tree when `src/` and `tests/` are created.
+Update this tree when modules or `tests/` are added.
 
 ---
 

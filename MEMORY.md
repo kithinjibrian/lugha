@@ -100,7 +100,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ### 10. Toolchain (DECISION-003, DECISION-005)
 
-**Decision:** Rust edition 2024, toolchain pinned exactly in `rust-toolchain.toml` (stable at init) and mirrored in `rust-version`. LLVM 21 via `inkwell` 0.10, feature `llvm21-1`.
+**Decision:** Rust edition 2024, toolchain pinned to 1.99.0 in `rust-toolchain.toml` and mirrored as `rust-version = "1.99"`. LLVM 21 via `inkwell` 0.10, feature `llvm21-1-prefer-dynamic` (shared `libLLVM.so`; static linking fails on Ubuntu for lack of a static Polly library).
 
 **Why:** LLVM 21 is Ubuntu 26.04's default `llvm-dev` and supported by inkwell 0.8–0.10.
 
@@ -131,6 +131,8 @@ Open questions live in `DECISIONS.md`, not here.
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
+- Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
 - AI context system scaffolded from `setup.md`
 - v0 language spec reviewed and fixed
 
@@ -138,12 +140,10 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- Toolchain install (Rust, `llvm-21-dev`, `libgc-dev`)
-- Crate initialisation (no longer blocked — all milestone 1 decisions resolved)
 - Milestones 1–5
 
 ---
 
 ## NEXT SESSION START POINT
 
-Install the toolchain (rustup stable, `llvm-21-dev`, `libgc-dev`), initialise the crate per MEMORY decisions 8–12, then run discovery for `PRPs/prp-001-lexer.md`.
+Run a discovery interview for `PRPs/prp-001-test_runner.md` (the `tests/programs/` runner, DECISION-008), then `prp-002-lexer.md`.
