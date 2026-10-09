@@ -636,6 +636,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progres
 
 ---
 
+## SESSION 13 — 2026-10-09 — PRP-010 codegen on real types — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 3, last PRP: PRP-010 codegen on real types.
