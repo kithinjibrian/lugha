@@ -61,7 +61,7 @@ docs/specs/Language v0 Specification.md — inconsistencies fixed, extension .la
 
 ---
 
-## SESSION 2 — 2026-10-09 — Resolve milestone 1 decisions — open
+## SESSION 2 — 2026-10-09 — Resolve milestone 1 decisions — closed
 
 Branch: main
 
