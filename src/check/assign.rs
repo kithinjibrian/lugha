@@ -2,7 +2,7 @@
 //! immutable strings, and the iteration guard (spec §5).
 
 use super::expr::Expect;
-use super::{Binding, Checker, Checking, Type, errors};
+use super::{Binding, Checker, Type, errors};
 use crate::ast::{AssignOp, Expr, ExprKind};
 use crate::span::Span;
 
@@ -10,22 +10,21 @@ impl Checker {
     /// `place op value;` — the place must be a variable, field or element
     /// whose root is a `let mut` binding, not inside a string, and not part of
     /// an array being iterated.
-    pub(super) fn assign(&mut self, op: AssignOp, place: &Expr, value: &Expr) -> Checking<()> {
+    pub(super) fn assign(&mut self, op: AssignOp, place: &Expr, value: &Expr) {
         // Typing the place reports E0301/E0406/E0410/E0411 as for any expression.
-        let target = self.expr(place, None)?;
+        let target = self.expr(place, None);
         if !self.check_place(place) {
-            self.expr(value, None)?;
-            return Ok(());
+            self.expr(value, None);
+            return;
         }
         if op != AssignOp::Assign && !target.is_numeric() && target != Type::Error {
             let span = Span::new(place.span.start, value.span.end);
             self.report(errors::bad_operands(op.symbol(), &[target], span));
-            self.expr(value, None)?;
-            return Ok(());
+            self.expr(value, None);
+            return;
         }
         let why = format!("`{}` is {target}", root_text(place));
-        self.expect_type(value, &Expect::because(target, place.span, why))?;
-        Ok(())
+        self.expect_type(value, &Expect::because(target, place.span, why));
     }
 
     /// Reports why `place` can't be assigned, if it can't; true when the

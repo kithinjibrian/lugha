@@ -5,7 +5,7 @@ use std::collections::HashSet;
 
 use super::env::INTRINSICS;
 use super::expr::Expect;
-use super::{Checker, Checking, Type, errors};
+use super::{Checker, Type, errors};
 use crate::ast::{Expr, Ident, Item, Program};
 use crate::span::Span;
 
@@ -40,7 +40,7 @@ impl Checker {
 
     /// Pass 2: every field's type (E0305, E0308), then structs that contain
     /// themselves (E0307).
-    pub(super) fn resolve_structs(&mut self, program: &Program) -> Checking<()> {
+    pub(super) fn resolve_structs(&mut self, program: &Program) {
         for item in &program.items {
             let Item::Struct(s) = item else { continue };
             if self
@@ -52,7 +52,7 @@ impl Checker {
             }
             let mut fields: Vec<(String, Type)> = Vec::new();
             for (i, field) in s.fields.iter().enumerate() {
-                let ty = self.resolve(&field.ty)?;
+                let ty = self.resolve(&field.ty);
                 if let Some(first) = s.fields[..i]
                     .iter()
                     .find(|f| f.name.name == field.name.name)
@@ -95,7 +95,6 @@ impl Checker {
                 reported.extend(path);
             }
         }
-        Ok(())
     }
 
     /// Extends `path` until it returns to `path[0]` through fields held inline
@@ -137,13 +136,13 @@ impl Checker {
         expr: &Expr,
         name: &Ident,
         given: &[(Ident, Expr)],
-    ) -> Checking<Type> {
+    ) -> Type {
         let Some(info) = self.structs.get(&name.name) else {
             self.report(errors::unknown_type(&name.name, name.span));
             for (_, value) in given {
-                self.value(value, None)?;
+                self.value(value, None);
             }
-            return Ok(Type::Error);
+            return Type::Error;
         };
         let declared = info.fields.clone();
         let ty = Type::Struct(name.name.clone());
@@ -158,11 +157,11 @@ impl Checker {
             match declared.iter().find(|(f, _)| *f == field.name) {
                 Some((_, field_ty)) => {
                     let why = format!("`{}` is declared as {field_ty}", field.name);
-                    self.expect_type(value, &Expect::because(field_ty.clone(), field.span, why))?;
+                    self.expect_type(value, &Expect::because(field_ty.clone(), field.span, why));
                 }
                 None => {
                     self.report(errors::no_field(&field.name, ty.clone(), field.span));
-                    self.value(value, None)?;
+                    self.value(value, None);
                 }
             }
         }
@@ -174,7 +173,7 @@ impl Checker {
         if !missing.is_empty() {
             self.report(errors::missing_fields(&missing, &name.name, expr.span));
         }
-        Ok(ty)
+        ty
     }
 }
 

@@ -1,7 +1,7 @@
 //! Binary operators and literal inference between operands (spec §4).
 
 use super::expr::{Expect, is_literal};
-use super::{Checker, Checking, Type, errors};
+use super::{Checker, Type, errors};
 use crate::ast::{BinOp, Expr};
 use crate::span::Span;
 
@@ -14,18 +14,18 @@ impl Checker {
         lhs: &Expr,
         rhs: &Expr,
         expect: Option<&Expect>,
-    ) -> Checking<Type> {
+    ) -> Type {
         if matches!(op, BinOp::And | BinOp::Or) {
             let boolean = Expect::of(Type::Bool);
             let (a, b) = (
-                self.expect_type(lhs, &boolean)?,
-                self.expect_type(rhs, &boolean)?,
+                self.expect_type(lhs, &boolean),
+                self.expect_type(rhs, &boolean),
             );
-            return Ok(if a == Type::Error || b == Type::Error {
+            return if a == Type::Error || b == Type::Error {
                 Type::Error
             } else {
                 Type::Bool
-            });
+            };
         }
         let arithmetic = matches!(
             op,
@@ -33,9 +33,9 @@ impl Checker {
         );
         // Only arithmetic passes the context's type to its operands; a comparison's `bool` doesn't.
         let outer = if arithmetic { expect } else { None };
-        let (l, r) = self.operands(lhs, rhs, outer)?;
+        let (l, r) = self.operands(lhs, rhs, outer);
         let (l, r) = match (l, r) {
-            (Type::Error, _) | (_, Type::Error) => return Ok(Type::Error),
+            (Type::Error, _) | (_, Type::Error) => return Type::Error,
             (Type::Never, ty) | (ty, Type::Never) => (ty.clone(), ty),
             pair => pair,
         };
@@ -49,9 +49,9 @@ impl Checker {
         if !allowed && l != Type::Never {
             let types = if l == r { vec![l] } else { vec![l, r] };
             self.report(errors::bad_operands(op.symbol(), &types, expr.span));
-            return Ok(Type::Error);
+            return Type::Error;
         }
-        Ok(if arithmetic { l } else { Type::Bool })
+        if arithmetic { l } else { Type::Bool }
     }
 
     /// Checks two operands (or range bounds) so a literal takes its type from
@@ -61,40 +61,35 @@ impl Checker {
         lhs: &Expr,
         rhs: &Expr,
         outer: Option<&Expect>,
-    ) -> Checking<(Type, Type)> {
+    ) -> (Type, Type) {
         if is_literal(lhs) && !is_literal(rhs) {
-            let r = self.value(rhs, outer)?;
-            let l = self.value(lhs, from_operand(&r, rhs.span).as_ref())?;
-            return Ok((l, r));
+            let r = self.value(rhs, outer);
+            let l = self.value(lhs, from_operand(&r, rhs.span).as_ref());
+            return (l, r);
         }
-        let l = self.value(lhs, outer)?;
+        let l = self.value(lhs, outer);
         let expect = match outer {
             Some(outer) if is_literal(lhs) => Some(outer.clone()),
             _ => from_operand(&l, lhs.span),
         };
-        let r = self.value(rhs, expect.as_ref())?;
-        Ok((l, r))
+        let r = self.value(rhs, expect.as_ref());
+        (l, r)
     }
 }
 
 impl Checker {
     /// `expr as T` between numeric types; `bool` can't be cast (spec §4).
-    pub(super) fn cast(
-        &mut self,
-        expr: &Expr,
-        inner: &Expr,
-        target: &crate::ast::Type,
-    ) -> Checking<Type> {
-        let to = self.resolve(target)?;
-        let from = self.value(inner, None)?;
+    pub(super) fn cast(&mut self, expr: &Expr, inner: &Expr, target: &crate::ast::Type) -> Type {
+        let to = self.resolve(target);
+        let from = self.value(inner, None);
         if matches!(from, Type::Error | Type::Never) || to == Type::Error {
-            return Ok(to);
+            return to;
         }
         if from.is_numeric() && to.is_numeric() {
-            return Ok(to);
+            return to;
         }
         self.report(errors::bad_cast(from, to, expr.span));
-        Ok(Type::Error)
+        Type::Error
     }
 }
 
@@ -128,7 +123,7 @@ mod tests {
         let src = "fun main() {\n    let x: i32 = 5;\n    let y = x + 2.5;\n}\n";
         let (tokens, _) = lexer::lex(src).unwrap();
         let (program, _) = parser::parse(&tokens).unwrap();
-        let Err(check::CheckError::Program(diags)) = check::check(&program) else {
+        let Err(diags) = check::check(&program) else {
             panic!("expected E0401")
         };
         assert_eq!(diags.len(), 1, "{diags:?}");

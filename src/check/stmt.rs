@@ -2,13 +2,13 @@
 
 use super::expr::Expect;
 use super::flow::Flow;
-use super::{Binding, Checker, Checking, Type, errors};
+use super::{Binding, Checker, Type, errors};
 use crate::ast::{Block, Expr, ForIter, FunDecl, Ident, Stmt, StmtKind};
 use crate::span::Span;
 
 impl Checker {
     /// Checks one function body against its signature.
-    pub(super) fn function(&mut self, f: &FunDecl) -> Checking<()> {
+    pub(super) fn function(&mut self, f: &FunDecl) {
         let signature = &self.functions[&f.name.name];
         let (params, ret) = (signature.params.clone(), signature.ret.clone());
         self.ret = ret.clone();
@@ -18,7 +18,7 @@ impl Checker {
             self.declare(&param.name, ty, Binding::Param);
         }
         let expect = (ret != Type::Void).then(|| Expect::of(ret.clone()));
-        let body = self.block(&f.body, expect.as_ref())?;
+        let body = self.block(&f.body, expect.as_ref());
         self.pop();
         if ret != Type::Void && body == Type::Void {
             self.missing_return(f, ret);
@@ -26,66 +26,65 @@ impl Checker {
             let span = f.body.tail.as_ref().map_or(f.body.span, |tail| tail.span);
             self.report(errors::mismatch(ret, body, span, None));
         }
-        Ok(())
     }
 
     /// A block in its own scope: the tail's type, `void`, or `Never` once a
     /// statement diverges (spec §5, §6).
-    pub(super) fn block(&mut self, block: &Block, expect: Option<&Expect>) -> Checking<Type> {
+    pub(super) fn block(&mut self, block: &Block, expect: Option<&Expect>) -> Type {
         self.push();
         let was_dead = self.dead;
         let mut flow = Flow::default();
         let mut diverged = false;
         for stmt in &block.stmts {
             self.reachable(&mut flow, stmt.span);
-            let diverges = self.stmt(stmt)?;
+            let diverges = self.stmt(stmt);
             self.after_statement(&mut flow, stmt, diverges);
             diverged |= diverges;
         }
         let ty = match &block.tail {
             Some(tail) => {
                 self.reachable(&mut flow, tail.span);
-                self.expr(tail, expect)?
+                self.expr(tail, expect)
             }
             None => Type::Void,
         };
         self.dead = was_dead;
         self.pop();
-        Ok(if diverged { Type::Never } else { ty })
+        if diverged { Type::Never } else { ty }
     }
 
     /// Checks a statement and reports whether it diverges.
-    fn stmt(&mut self, stmt: &Stmt) -> Checking<bool> {
+    fn stmt(&mut self, stmt: &Stmt) -> bool {
         match &stmt.kind {
             StmtKind::Let {
                 mutable,
                 name,
                 ty,
                 init,
-            } => self.let_stmt(*mutable, name, ty.as_ref(), init)?,
+            } => self.let_stmt(*mutable, name, ty.as_ref(), init),
             StmtKind::Assign {
                 op, place, value, ..
-            } => self.assign(*op, place, value)?,
-            StmtKind::Expr { expr, .. } => return Ok(self.expr(expr, None)? == Type::Never),
+            } => self.assign(*op, place, value),
+            StmtKind::Expr { expr, .. } => return self.expr(expr, None) == Type::Never,
             StmtKind::While { cond, body } => {
-                self.expect_type(cond, &Expect::of(Type::Bool))?;
+                self.expect_type(cond, &Expect::of(Type::Bool));
                 self.loops += 1;
-                self.block(body, None)?;
+                self.block(body, None);
                 self.loops -= 1;
             }
             StmtKind::For {
                 var,
                 iter: ForIter::Range(start, end),
                 body,
-            } => self.for_range(var, start, end, body)?,
+            } => self.for_range(var, start, end, body),
             StmtKind::For {
                 var,
                 iter: ForIter::Array(iter),
                 body,
-            } => self.for_of(var, iter, body)?,
+            } => self.for_of(var, iter, body),
             StmtKind::Return(value) => {
-                self.return_stmt(value.as_ref(), stmt.span)?;
-                return Ok(true);
+                self.return_stmt(value.as_ref(), stmt.span);
+                return true;
             }
             StmtKind::Break | StmtKind::Continue => {
                 let keyword = if matches!(stmt.kind, StmtKind::Break) {
@@ -94,10 +93,10 @@ impl Checker {
                     "continue"
                 };
                 self.jump(keyword, stmt.span);
-                return Ok(true);
+                return true;
             }
         }
-        Ok(false)
+        false
     }
 
     /// `let`: the annotation, if any, is expected; the binding enters scope afterwards (spec §5).
@@ -107,27 +106,26 @@ impl Checker {
         name: &Ident,
         annotation: Option<&crate::ast::Type>,
         init: &Expr,
-    ) -> Checking<()> {
+    ) {
         let ty = match annotation {
             Some(annotation) => {
-                let ty = self.resolve(annotation)?;
+                let ty = self.resolve(annotation);
                 let why = "expected because of this annotation".to_string();
-                self.expect_type(init, &Expect::because(ty.clone(), annotation.span, why))?;
+                self.expect_type(init, &Expect::because(ty.clone(), annotation.span, why));
                 ty
             }
-            None => match self.value(init, None)? {
+            None => match self.value(init, None) {
                 // Nothing useful to bind; `Error` keeps later uses quiet.
                 Type::Never => Type::Error,
                 ty => ty,
             },
         };
         self.declare(name, ty, Binding::Let { mutable });
-        Ok(())
     }
 
     /// `for var in start..end`: both bounds share one integer type (spec §5).
-    fn for_range(&mut self, var: &Ident, start: &Expr, end: &Expr, body: &Block) -> Checking<()> {
-        let ty = match self.operands(start, end, None)? {
+    fn for_range(&mut self, var: &Ident, start: &Expr, end: &Expr, body: &Block) {
+        let ty = match self.operands(start, end, None) {
             (Type::Error, _) | (_, Type::Error) => Type::Error,
             (a, b) if a != b => {
                 self.report(errors::mismatch(a, b, end.span, None));
@@ -142,28 +140,26 @@ impl Checker {
         self.push();
         self.declare(var, ty, Binding::LoopVar);
         self.loops += 1;
-        self.block(body, None)?;
+        self.block(body, None);
         self.loops -= 1;
         self.pop();
-        Ok(())
     }
 
     /// `return [value];` must match the function's return type (spec §6).
-    fn return_stmt(&mut self, value: Option<&Expr>, span: Span) -> Checking<()> {
+    fn return_stmt(&mut self, value: Option<&Expr>, span: Span) {
         match (self.ret.clone(), value) {
             (Type::Void, None) => {}
             (Type::Void, Some(value)) => {
-                let ty = self.expr(value, None)?;
+                let ty = self.expr(value, None);
                 if !matches!(ty, Type::Void | Type::Never | Type::Error) {
                     self.report(errors::mismatch(Type::Void, ty, span, None));
                 }
             }
             (ret, None) => self.report(errors::mismatch(ret, Type::Void, span, None)),
             (ret, Some(value)) => {
-                self.expect_type(value, &Expect::of(ret))?;
+                self.expect_type(value, &Expect::of(ret));
             }
         }
-        Ok(())
     }
 }
 

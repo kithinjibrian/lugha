@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use super::render::Report;
 use super::source::{self, LoadError, Source};
 use crate::ast::Program;
-use crate::check::{self, CheckError, Checked};
+use crate::check::{self, Checked};
 use crate::codegen::{self, CodegenError, OptLevel};
 use crate::diagnostic::Diagnostic;
 use crate::lexer::{self, Token};
@@ -87,18 +87,7 @@ pub(super) fn front(path: &Path) -> Result<Front, Failure> {
             front.checked = Some(checked);
             Ok(front)
         }
-        Err(CheckError::Program(errors)) => Err(Failure::Program(front.source, errors)),
-        Err(CheckError::Unsupported {
-            what,
-            milestone,
-            span,
-        }) => {
-            let message = format!("not implemented yet: {what} (milestone {milestone})");
-            Err(Failure::Internal(
-                front.source,
-                Box::new(Report::internal(message, Some(span))),
-            ))
-        }
+        Err(errors) => Err(Failure::Program(front.source, errors)),
     }
 }
 
@@ -173,13 +162,10 @@ fn checked(front: &Front) -> &Checked {
 }
 
 fn codegen_failure(source: &Source, error: CodegenError) -> Failure {
-    let span = match &error {
-        CodegenError::Unsupported { span, .. } => Some(*span),
-        CodegenError::Verify(_) | CodegenError::Emit(_) => None,
-    };
+    // Codegen errors are compiler or LLVM failures, with no source location.
     Failure::Internal(
         source.clone(),
-        Box::new(Report::internal(error.to_string(), span)),
+        Box::new(Report::internal(error.to_string(), None)),
     )
 }
 

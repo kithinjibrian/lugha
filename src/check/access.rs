@@ -2,14 +2,14 @@
 //! arrays, and struct fields.
 
 use super::expr::Expect;
-use super::{Checker, Checking, Type, errors};
+use super::{Checker, Type, errors};
 use crate::ast::{Expr, Ident};
 
 impl Checker {
     /// `base.field`: `.len` of strings and arrays, or a struct's field.
-    pub(super) fn field(&mut self, base: &Expr, field: &Ident) -> Checking<Type> {
-        let ty = self.value(base, None)?;
-        Ok(match (ty, field.name.as_str()) {
+    pub(super) fn field(&mut self, base: &Expr, field: &Ident) -> Type {
+        let ty = self.value(base, None);
+        match (ty, field.name.as_str()) {
             (Type::Error | Type::Never, _) => Type::Error,
             (Type::String | Type::Array(_), "len") => Type::I64,
             (Type::Struct(s), name) if self.struct_field(&s, name).is_some() => {
@@ -19,14 +19,14 @@ impl Checker {
                 self.report(errors::no_field(name, ty, field.span));
                 Type::Error
             }
-        })
+        }
     }
 
     /// `base[index]`: a string's byte (`u8`) or an array's element; the index is an `i64`.
-    pub(super) fn index(&mut self, base: &Expr, index: &Expr) -> Checking<Type> {
-        let ty = self.value(base, None)?;
-        self.expect_type(index, &Expect::of(Type::I64))?;
-        Ok(match ty {
+    pub(super) fn index(&mut self, base: &Expr, index: &Expr) -> Type {
+        let ty = self.value(base, None);
+        self.expect_type(index, &Expect::of(Type::I64));
+        match ty {
             Type::Error | Type::Never => Type::Error,
             Type::String => Type::U8,
             Type::Array(element) => *element,
@@ -34,7 +34,7 @@ impl Checker {
                 self.report(errors::not_indexable(ty, base.span));
                 Type::Error
             }
-        })
+        }
     }
 }
 

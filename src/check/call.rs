@@ -4,28 +4,28 @@
 
 use super::env::INTRINSICS;
 use super::expr::Expect;
-use super::{Checker, Checking, Type, errors};
+use super::{Checker, Type, errors};
 use crate::ast::{Expr, ExprKind};
 use crate::span::Span;
 
 impl Checker {
     /// A name used as a value: locals first, then globals (spec §6).
-    pub(super) fn name(&mut self, name: &str, span: Span) -> Checking<Type> {
+    pub(super) fn name(&mut self, name: &str, span: Span) -> Type {
         if let Some(local) = self.local(name) {
-            return Ok(local.ty);
+            return local.ty;
         }
         if self.functions.contains_key(name) || INTRINSICS.contains(&name) {
             self.report(errors::not_value(name, span));
         } else {
             self.report(errors::undefined(name, span));
         }
-        Ok(Type::Error)
+        Type::Error
     }
 
     /// `callee(args)`: the callee must name a function (spec §6).
-    pub(super) fn call(&mut self, call: &Expr, callee: &Expr, args: &[Expr]) -> Checking<Type> {
+    pub(super) fn call(&mut self, call: &Expr, callee: &Expr, args: &[Expr]) -> Type {
         let ExprKind::Name(name) = &callee.kind else {
-            self.expr(callee, None)?;
+            self.expr(callee, None);
             self.report(errors::not_callable(callee.span));
             return self.unchecked_args(args);
         };
@@ -45,18 +45,18 @@ impl Checker {
         let (params, ret) = (signature.params.clone(), signature.ret.clone());
         if args.len() != params.len() {
             self.report(errors::arity(name, params.len(), args.len(), call.span));
-            self.unchecked_args(args)?;
-            return Ok(ret);
+            self.unchecked_args(args);
+            return ret;
         }
         for (arg, ty) in args.iter().zip(params) {
-            self.expect_type(arg, &Expect::of(ty))?;
+            self.expect_type(arg, &Expect::of(ty));
         }
-        Ok(ret)
+        ret
     }
 
     /// `print(x)`, `println([x])`, `panic(msg)`, `to_string(x)` (spec §5).
     /// `panic` never returns, so its type is `Never` (spec §6).
-    fn intrinsic(&mut self, call: &Expr, name: &str, args: &[Expr]) -> Checking<Type> {
+    fn intrinsic(&mut self, call: &Expr, name: &str, args: &[Expr]) -> Type {
         let result = match name {
             "print" | "println" => Type::Void,
             "to_string" => Type::String,
@@ -65,13 +65,13 @@ impl Checker {
         let allowed = if name == "println" { 0..=1 } else { 1..=1 };
         if !allowed.contains(&args.len()) {
             self.report(errors::arity(name, 1, args.len(), call.span));
-            self.unchecked_args(args)?;
-            return Ok(result);
+            self.unchecked_args(args);
+            return result;
         }
         let Some(arg) = args.first() else {
-            return Ok(result);
+            return result;
         };
-        let ty = self.value(arg, None)?;
+        let ty = self.value(arg, None);
         let fits = match name {
             "print" | "println" => ty.is_numeric() || matches!(ty, Type::Bool | Type::String),
             "to_string" => ty.is_numeric() || ty == Type::Bool,
@@ -80,15 +80,15 @@ impl Checker {
         if !fits && !matches!(ty, Type::Error | Type::Never) {
             self.report(errors::intrinsic_argument(name, ty, arg.span));
         }
-        Ok(result)
+        result
     }
 
     /// Checks arguments of a call that is already wrong, for their own errors.
-    fn unchecked_args(&mut self, args: &[Expr]) -> Checking<Type> {
+    fn unchecked_args(&mut self, args: &[Expr]) -> Type {
         for arg in args {
-            self.expr(arg, None)?;
+            self.expr(arg, None);
         }
-        Ok(Type::Error)
+        Type::Error
     }
 }
 

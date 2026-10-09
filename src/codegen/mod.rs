@@ -2,9 +2,7 @@
 //! (spec §9 stages 4–5).
 //!
 //! Every type comes from the checker's table (CLAUDE.md rule 4) and lowers
-//! per spec §4 and §7. Since PRP-015 every v0 construct lowers, so nothing
-//! produces `CodegenError::Unsupported` any more; PRP-016 removes it. Does not
-//! link — see `crate::link`.
+//! per spec §4 and §7. Does not link — see `crate::link`.
 //!
 //! Depends on: ast, check (types), span, inkwell (LLVM 21).
 
@@ -35,7 +33,6 @@ use inkwell::targets::{
 use crate::ast::Program;
 use crate::check::Checked;
 
-use crate::span::Span;
 pub use runtime::RUNTIME_SYMBOLS;
 
 /// The source file being compiled, for panic locations (spec §5).
@@ -75,13 +72,6 @@ pub enum OptLevel {
 /// mistake, so the driver reports them with exit code 2.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum CodegenError {
-    /// Valid syntax that a later milestone will compile.
-    #[error("not implemented yet: {what} (milestone {milestone})")]
-    Unsupported {
-        what: &'static str,
-        milestone: u8,
-        span: Span,
-    },
     /// The generated module is invalid — a compiler bug.
     #[error("generated LLVM IR failed verification (compiler bug): {0}")]
     Verify(String),
@@ -94,7 +84,6 @@ pub enum CodegenError {
 ///
 /// # Errors
 ///
-/// [`CodegenError::Unsupported`] for constructs beyond the current milestone;
 /// [`CodegenError::Verify`] if the generated IR is invalid.
 pub fn emit_ir(
     program: &Program,

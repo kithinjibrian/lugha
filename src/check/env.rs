@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use super::{Binding, Checker, Checking, Local, Signature, Type, errors};
+use super::{Binding, Checker, Local, Signature, Type, errors};
 use crate::ast::{Ident, Item, Program, Type as Annotation, TypeKind};
 
 /// Built into the compiler from milestone 4; their names are reserved (spec §6).
@@ -10,10 +10,10 @@ pub(super) const INTRINSICS: [&str; 4] = ["print", "println", "panic", "to_strin
 
 impl Checker {
     /// Collects signatures, checks `main`, then every function body (spec §6).
-    pub(super) fn program(&mut self, program: &Program) -> Checking<()> {
+    pub(super) fn program(&mut self, program: &Program) {
         self.collect_structs(program);
-        self.resolve_structs(program)?;
-        self.collect(program)?;
+        self.resolve_structs(program);
+        self.collect(program);
         self.check_main(program);
         for item in &program.items {
             // A duplicate or reserved definition was reported; skip its body to avoid a cascade.
@@ -23,14 +23,13 @@ impl Checker {
                     .get(&f.name.name)
                     .is_some_and(|sig| sig.span == f.name.span)
             {
-                self.function(f)?;
+                self.function(f);
             }
         }
-        Ok(())
     }
 
     /// Pass 1: every function signature, in source order.
-    fn collect(&mut self, program: &Program) -> Checking<()> {
+    fn collect(&mut self, program: &Program) {
         for item in &program.items {
             let (name, params, ret, is_extern) = match item {
                 Item::Fun(f) => (&f.name, &f.params, f.ret.as_ref(), false),
@@ -41,9 +40,9 @@ impl Checker {
             let params = params
                 .iter()
                 .map(|p| self.resolve(&p.ty))
-                .collect::<Checking<Vec<_>>>()?;
+                .collect::<Vec<_>>();
             let mut ret_type = match ret {
-                Some(ty) => self.resolve(ty)?,
+                Some(ty) => self.resolve(ty),
                 None => Type::Void,
             };
             if is_extern && ret_type == Type::String {
@@ -84,7 +83,6 @@ impl Checker {
                 self.functions.insert(text.clone(), signature);
             }
         }
-        Ok(())
     }
 
     /// `main` must exist as `fun main()` or `fun main(): i32` (spec §6).
@@ -105,21 +103,21 @@ impl Checker {
     }
 
     /// The type an annotation names. Unknown names are E0305 and become `Error`.
-    pub(super) fn resolve(&mut self, ty: &Annotation) -> Checking<Type> {
-        Ok(match &ty.kind {
+    pub(super) fn resolve(&mut self, ty: &Annotation) -> Type {
+        match &ty.kind {
             TypeKind::I32 => Type::I32,
             TypeKind::I64 => Type::I64,
             TypeKind::U8 => Type::U8,
             TypeKind::F64 => Type::F64,
             TypeKind::Bool => Type::Bool,
             TypeKind::String => Type::String,
-            TypeKind::Array(element) => Type::Array(Box::new(self.resolve(element)?)),
+            TypeKind::Array(element) => Type::Array(Box::new(self.resolve(element))),
             TypeKind::Named(name) if self.structs.contains_key(name) => Type::Struct(name.clone()),
             TypeKind::Named(name) => {
                 self.report(errors::unknown_type(name, ty.span));
                 Type::Error
             }
-        })
+        }
     }
 
     pub(super) fn push(&mut self) {

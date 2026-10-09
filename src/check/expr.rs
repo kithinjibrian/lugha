@@ -3,7 +3,7 @@
 //! Checking is bidirectional: the context may pass an `Expect` (a type and
 //! the reason for it), which numeric literals adopt (spec §4 rules 3–6).
 
-use super::{Checker, Checking, Type, errors};
+use super::{Checker, Type, errors};
 use crate::ast::{Block, Expr, ExprKind, UnOp};
 use crate::diagnostic::Label;
 use crate::span::Span;
@@ -42,15 +42,15 @@ pub(super) fn is_literal(expr: &Expr) -> bool {
 
 impl Checker {
     /// Checks `expr`, records its type and returns it.
-    pub(super) fn expr(&mut self, expr: &Expr, expect: Option<&Expect>) -> Checking<Type> {
-        let ty = self.expr_kind(expr, expect)?;
+    pub(super) fn expr(&mut self, expr: &Expr, expect: Option<&Expect>) -> Type {
+        let ty = self.expr_kind(expr, expect);
         self.record(expr, ty.clone());
-        Ok(ty)
+        ty
     }
 
     /// Checks an expression used as a value: `void` is E0407 and becomes `Error`.
-    pub(super) fn value(&mut self, expr: &Expr, expect: Option<&Expect>) -> Checking<Type> {
-        let ty = self.expr(expr, expect)?;
+    pub(super) fn value(&mut self, expr: &Expr, expect: Option<&Expect>) -> Type {
+        let ty = self.expr(expr, expect);
         if ty == Type::Void {
             let mut d = errors::no_value(expr.span);
             if let ExprKind::Block(block) = &expr.kind
@@ -59,14 +59,14 @@ impl Checker {
                 d = errors::with_stray_semicolon(d, semicolon);
             }
             self.report(d);
-            return Ok(Type::Error);
+            return Type::Error;
         }
-        Ok(ty)
+        ty
     }
 
     /// Checks `expr` where a value of `expect.ty` is required (E0403 otherwise).
-    pub(super) fn expect_type(&mut self, expr: &Expr, expect: &Expect) -> Checking<Type> {
-        let found = self.value(expr, Some(expect))?;
+    pub(super) fn expect_type(&mut self, expr: &Expr, expect: &Expect) -> Type {
+        let found = self.value(expr, Some(expect));
         if !found.fits(&expect.ty) {
             self.report(errors::mismatch(
                 expect.ty.clone(),
@@ -74,21 +74,21 @@ impl Checker {
                 expr.span,
                 expect.reason.as_ref(),
             ));
-            return Ok(Type::Error);
+            return Type::Error;
         }
-        Ok(found)
+        found
     }
 
-    fn expr_kind(&mut self, expr: &Expr, expect: Option<&Expect>) -> Checking<Type> {
+    fn expr_kind(&mut self, expr: &Expr, expect: Option<&Expect>) -> Type {
         match &expr.kind {
             _ if is_literal(expr) => {
                 let ty = self.literal(expr, expect);
                 if let ExprKind::Unary(_, inner) = &expr.kind {
                     self.record(inner, ty.clone());
                 }
-                Ok(ty)
+                ty
             }
-            ExprKind::Bool(_) => Ok(Type::Bool),
+            ExprKind::Bool(_) => Type::Bool,
             ExprKind::Name(name) => self.name(name, expr.span),
             ExprKind::Unary(op, operand) => self.unary(*op, operand, expr, expect),
             ExprKind::Binary(op, _, lhs, rhs) => self.binary(expr, *op, lhs, rhs, expect),
@@ -97,7 +97,7 @@ impl Checker {
                 self.if_expr(expr, cond, then, else_.as_deref(), expect)
             }
             ExprKind::Block(block) => self.block(block, expect),
-            ExprKind::Str(_) => Ok(Type::String),
+            ExprKind::Str(_) => Type::String,
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
             ExprKind::Index(base, _, index) => self.index(base, index),
             ExprKind::Field(base, field) => self.field(base, field),
@@ -108,30 +108,24 @@ impl Checker {
         }
     }
 
-    fn unary(
-        &mut self,
-        op: UnOp,
-        operand: &Expr,
-        expr: &Expr,
-        expect: Option<&Expect>,
-    ) -> Checking<Type> {
+    fn unary(&mut self, op: UnOp, operand: &Expr, expr: &Expr, expect: Option<&Expect>) -> Type {
         let (ty, ok, symbol) = match op {
             UnOp::Neg => {
-                let ty = self.value(operand, expect)?;
+                let ty = self.value(operand, expect);
                 let ok = matches!(ty, Type::I32 | Type::I64 | Type::F64);
                 (ty, ok, "-")
             }
             UnOp::Not => {
-                let ty = self.value(operand, Some(&Expect::of(Type::Bool)))?;
+                let ty = self.value(operand, Some(&Expect::of(Type::Bool)));
                 let ok = ty == Type::Bool;
                 (ty, ok, "!")
             }
         };
         if ok || matches!(ty, Type::Error | Type::Never) {
-            return Ok(ty);
+            return ty;
         }
         self.report(errors::bad_operands(symbol, &[ty], expr.span));
-        Ok(Type::Error)
+        Type::Error
     }
 
     /// `if`: a `bool` condition; with `else`, both branches agree unless one
@@ -143,15 +137,15 @@ impl Checker {
         then: &Block,
         else_: Option<&Expr>,
         expect: Option<&Expect>,
-    ) -> Checking<Type> {
-        self.expect_type(cond, &Expect::of(Type::Bool))?;
+    ) -> Type {
+        self.expect_type(cond, &Expect::of(Type::Bool));
         let Some(else_expr) = else_ else {
-            self.block(then, None)?;
-            return Ok(Type::Void);
+            self.block(then, None);
+            return Type::Void;
         };
-        let then_ty = self.block(then, expect)?;
-        let else_ty = self.expr(else_expr, expect)?;
-        Ok(match (then_ty, else_ty) {
+        let then_ty = self.block(then, expect);
+        let else_ty = self.expr(else_expr, expect);
+        match (then_ty, else_ty) {
             (Type::Never, ty) | (ty, Type::Never) => ty,
             (Type::Error, _) | (_, Type::Error) => Type::Error,
             (a, b) if a == b => a,
@@ -164,7 +158,7 @@ impl Checker {
                 ));
                 Type::Error
             }
-        })
+        }
     }
 }
 

@@ -3,8 +3,7 @@
 //! Gives every expression a type, recorded in a table keyed by `ExprId` for
 //! codegen (spec §9). Reports E03xx/E04xx and keeps going: an expression that
 //! already failed gets `Type::Error`, which fits anything and is never
-//! reported again. Since PRP-015 no construct stops the checker, so
-//! `CheckError::Unsupported` is never returned; PRP-016 removes it.
+//! reported again.
 //!
 //! Depends on: ast, diagnostic, span.
 
@@ -39,26 +38,12 @@ pub struct Checked {
     pub structs: Structs,
 }
 
-/// Why checking failed.
-#[derive(Debug, Clone, PartialEq)]
-pub enum CheckError {
-    /// Errors in the program (E03xx/E04xx) — exit 1.
-    Program(Vec<Diagnostic>),
-    /// A construct a later milestone adds — exit 2.
-    Unsupported {
-        what: &'static str,
-        milestone: u8,
-        span: Span,
-    },
-}
-
-/// Type-checks `program`.
+/// Type-checks `program`, returning the type table and any warnings.
 ///
 /// # Errors
 ///
-/// [`CheckError::Program`] with every diagnostic found, or
-/// [`CheckError::Unsupported`] at the first milestone 4/5 construct.
-pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), CheckError> {
+/// Every diagnostic found (errors and warnings) when there is at least one error.
+pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
     let mut checker = Checker {
         types: vec![None; program.expr_count as usize],
         diagnostics: Vec::new(),
@@ -70,40 +55,27 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), CheckError
         dead: false,
         iterating: Vec::new(),
     };
-    match checker.program(program) {
-        Err(stop) => match stop {},
-        Ok(())
-            if checker
-                .diagnostics
-                .iter()
-                .any(|d| d.severity == Severity::Error) =>
-        {
-            Err(CheckError::Program(checker.diagnostics))
-        }
-        Ok(()) => {
-            // Every expression of a valid program has been visited; `Error` is a safe filler.
-            let types = checker
-                .types
-                .into_iter()
-                .map(|t| t.unwrap_or(Type::Error))
-                .collect();
-            let structs = checker
-                .structs
-                .into_iter()
-                .map(|(name, info)| (name, info.fields))
-                .collect();
-            Ok((Checked { types, structs }, checker.diagnostics))
-        }
+    checker.program(program);
+    if checker
+        .diagnostics
+        .iter()
+        .any(|d| d.severity == Severity::Error)
+    {
+        return Err(checker.diagnostics);
     }
+    // Every expression of a valid program has been visited; `Error` is a safe filler.
+    let types = checker
+        .types
+        .into_iter()
+        .map(|t| t.unwrap_or(Type::Error))
+        .collect();
+    let structs = checker
+        .structs
+        .into_iter()
+        .map(|(name, info)| (name, info.fields))
+        .collect();
+    Ok((Checked { types, structs }, checker.diagnostics))
 }
-
-/// A construct beyond the current milestone would stop checking here. Since
-/// PRP-015 the checker covers all of v0, so this has no values; PRP-016 removes
-/// the mechanism with `CheckError::Unsupported`.
-pub(super) enum Stop {}
-
-/// The result of a checking step that may hit an unsupported construct.
-pub(super) type Checking<T> = Result<T, Stop>;
 
 /// A declared function.
 pub(super) struct Signature {
@@ -159,7 +131,7 @@ impl Checker {
 
 #[cfg(test)]
 pub(crate) mod test_util {
-    use super::{CheckError, Checked, Type, check};
+    use super::{Checked, Type, check};
     use crate::ast::{Item, StmtKind};
     use crate::{lexer, parser};
 
@@ -178,7 +150,7 @@ pub(crate) mod test_util {
     /// `(code, spanned source)` of every diagnostic for `src`.
     pub fn errors(src: &str) -> Vec<(&'static str, &str)> {
         match check(&program(src)) {
-            Err(CheckError::Program(diags)) => diags
+            Err(diags) => diags
                 .iter()
                 .map(|d| (d.code, &src[d.span.start..d.span.end]))
                 .collect(),
@@ -189,7 +161,7 @@ pub(crate) mod test_util {
     /// Every diagnostic for `src`, which must have at least one error.
     pub fn diagnostics(src: &str) -> Vec<crate::diagnostic::Diagnostic> {
         match check(&program(src)) {
-            Err(CheckError::Program(diags)) => diags,
+            Err(diags) => diags,
             other => panic!("{src:?}: expected diagnostics, got {other:?}"),
         }
     }

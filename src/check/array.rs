@@ -2,7 +2,7 @@
 //! behind the "don't assign to what you're iterating" rule (spec §4, §5).
 
 use super::expr::Expect;
-use super::{Binding, Checker, Checking, Type, errors};
+use super::{Binding, Checker, Type, errors};
 use crate::ast::{Block, Expr, ExprKind, Ident};
 use crate::span::Span;
 
@@ -42,71 +42,66 @@ impl Checker {
         expr: &Expr,
         elements: &[Expr],
         expect: Option<&Expect>,
-    ) -> Checking<Type> {
+    ) -> Type {
         let expected = match expect.map(|e| &e.ty) {
             Some(Type::Array(element)) => Some((**element).clone()),
             _ => None,
         };
         let Some(first) = elements.first() else {
-            return Ok(match expected {
+            return match expected {
                 Some(element) => Type::Array(Box::new(element)),
                 None => {
                     self.report(errors::empty_array(expr.span));
                     Type::Error
                 }
-            });
+            };
         };
         let element = match expected {
             Some(element) => {
                 for e in elements {
-                    self.expect_type(e, &Expect::of(element.clone()))?;
+                    self.expect_type(e, &Expect::of(element.clone()));
                 }
                 element
             }
             None => {
-                let ty = match self.value(first, None)? {
+                let ty = match self.value(first, None) {
                     Type::Never => Type::Error,
                     ty => ty,
                 };
                 let why = format!("the first element is {ty}");
                 for e in &elements[1..] {
-                    self.expect_type(e, &Expect::because(ty.clone(), first.span, why.clone()))?;
+                    self.expect_type(e, &Expect::because(ty.clone(), first.span, why.clone()));
                 }
                 ty
             }
         };
-        Ok(if element == Type::Error {
+        if element == Type::Error {
             Type::Error
         } else {
             Type::Array(Box::new(element))
-        })
+        }
     }
 
     /// `[value; count]`: `value` first, then an `i64` count (spec §4, §5).
-    pub(super) fn repeat(
-        &mut self,
-        value: &Expr,
-        count: &Expr,
-        expect: Option<&Expect>,
-    ) -> Checking<Type> {
+    pub(super) fn repeat(&mut self, value: &Expr, count: &Expr, expect: Option<&Expect>) -> Type {
         let element = match expect.map(|e| &e.ty) {
             Some(Type::Array(element)) => {
-                self.expect_type(value, &Expect::of((**element).clone()))?;
+                self.expect_type(value, &Expect::of((**element).clone()));
                 (**element).clone()
             }
-            _ => self.value(value, None)?,
+            _ => self.value(value, None),
         };
-        self.expect_type(count, &Expect::of(Type::I64))?;
-        Ok(match element {
+        self.expect_type(count, &Expect::of(Type::I64));
+        match element {
             Type::Error | Type::Never => Type::Error,
             element => Type::Array(Box::new(element)),
-        })
+        }
     }
 
     /// `for var of iter { body }`: `iter` is an array, `var` an immutable
     /// element, and the body may not assign to `iter` (spec §5, E0507).
-    pub(super) fn for_of(&mut self, var: &Ident, iter: &Expr, body: &Block) -> Checking<()> {
-        let element = match self.value(iter, None)? {
+    pub(super) fn for_of(&mut self, var: &Ident, iter: &Expr, body: &Block) {
+        let element = match self.value(iter, None) {
             Type::Array(element) => *element,
             Type::Error | Type::Never => Type::Error,
             other => {
@@ -121,13 +116,12 @@ impl Checker {
         self.push();
         self.declare(var, element, Binding::LoopVar);
         self.loops += 1;
-        self.block(body, None)?;
+        self.block(body, None);
         self.loops -= 1;
         self.pop();
         if guard.is_some() {
             self.iterating.pop();
         }
-        Ok(())
     }
 
     /// The path of a place expression rooted in a local, if `expr` is one.
