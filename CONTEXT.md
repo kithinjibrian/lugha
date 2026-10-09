@@ -347,7 +347,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progres
 
 ## SESSION 8 — 2026-10-09 — PRP-005 lughac driver — open
 
-Branch: main
+Branch: main → prp-005-driver
 
 ---
 
