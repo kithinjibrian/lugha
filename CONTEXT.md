@@ -578,7 +578,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, known issues, progres
 
 ---
 
-## SESSION 12 — 2026-10-09 — PRP-009 casts and flow checks — open
+## SESSION 12 — 2026-10-09 — PRP-009 casts and flow checks — closed
 
 Branch: main → prp-009-casts_and_flow_checks
 
@@ -632,18 +632,23 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progres
 
 ### STILL OPEN AT CLOSE
 
-- Branch `prp-009-casts_and_flow_checks` not yet merged into `main`.
+- Nothing. Branch `prp-009-casts_and_flow_checks` fast-forward merged into `main` and deleted.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 3, PRP-009: casts and flow checks. It covers:
-- `as` casts between numeric types (spec §4: no `bool` casts).
-- Mutability — assignment needs `let mut` at the root (§4).
-- Missing returns using the §6 definite-return rules.
-- `break`/`continue` outside a loop.
-- Assignment targets must be places (§3).
-- "remove this semicolon" (§5), block-like statements in the middle of a block must be `void` (§5), and W0101 unreachable code (§6).
+Milestone 3, last PRP: PRP-010 codegen on real types.
+- Codegen reads the checker's `Checked.types` (by `ExprId`) instead of its interim `Int`/`Bool`/`Never` value kinds.
+- It lowers `i32`/`i64`/`u8`/`f64`/`bool` for real, with `u8` unsigned division and remainder, and `f64` arithmetic and comparisons.
+- `as` casts per spec §4: truncate, extend, `sitofp`/`uitofp`, and `llvm.fptosi.sat` saturation.
+- Delete every "not implemented yet: … (milestone 3)" stop; codegen trusts the checker.
 
-Allocate the E05xx codes (and the cast code) in discovery. The checker lives in `src/check/` (largest file `stmt.rs`, 270 lines). Codegen still stops on missing returns, break outside loops and non-place assignment until PRP-010. See `TODO.md`.
+Overflow and division panics remain milestone 4: keep wrap and trap. Add `tests/programs/m3/` run-mode programs (f64, i32, u8, casts), then tag `m3`. `codegen/control.rs` is exactly 300 lines — expect restructuring.
+
+Discovery questions:
+- how `lugha_fn_main`'s `i64` return becomes a real `i32`;
+- what `Never`/divergence looks like once types come from the checker;
+- f64 printing is milestone 4, so f64 results must reach the exit code through a cast.
+
+See `TODO.md`.

@@ -1,6 +1,6 @@
 ## FEATURE: Checker rules for casts, mutability, places, missing returns, loop context, block-like statements and unreachable code — E0408, E0501–E0505, W0101, and "remove this semicolon".
 
-**Status:** implemented 2026-10-09 — session 12 (branch `prp-009-casts_and_flow_checks`)
+**Status:** merged into `main` 2026-10-09 — session 12
 **Milestone:** 3, second of three PRPs (PRP-010 moves codegen onto real types and closes the milestone)
 **Spec:** §3 (place expressions), §4 (casts, mutability), §5 (block-like statements, "remove this semicolon", `break`/`continue`), §6 (definitely-returns rules, unreachable code), §9 (codes)
 **Decisions:** PRP-008 checker design (`Expect`, `Type::Error`, `Never`)
