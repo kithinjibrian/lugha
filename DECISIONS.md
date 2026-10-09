@@ -28,7 +28,7 @@ None.
 
 **Question:** What design tokens and component rules apply?
 
-**Notes:** lughac is a CLI; `setup.md` Step 9 was skipped.
+**Notes:** lughac is a CLI; `docs/setup.md` Step 9 was skipped.
 
 ---
 

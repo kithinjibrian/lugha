@@ -121,7 +121,7 @@ Never read, modify, or delete:
 - `target/` — build output
 - `LICENSE` — GPL-3.0, changed only by the human
 
-If a task seems to require touching a protected file, stop and ask. See also `.llmignore`.
+If a task seems to require touching a protected file, stop and ask. See also `.llmignore`. `.claude/settings.json` denies Claude's Read and Edit tools on the same paths. Keep all three in sync. The deny rules block only Claude's own tools, not a sandbox: cargo still writes `Cargo.lock` and `target/`.
 
 ---
 
@@ -217,6 +217,9 @@ pub fn parse_number(src: &str) -> i64 {
 ├── CHANGELOG.md     — what shipped
 ├── TODO.md          — outstanding tasks
 ├── .llmignore       — protected paths
+├── .claude/         — settings.json: harness deny rules mirroring .llmignore
+├── .github/         — workflows/ci.yml: fmt, clippy, test in ubuntu:26.04 (LLVM 21, libgc)
+├── README.md        — overview, prerequisites, usage, tests
 ├── Cargo.toml       — package `lugha`, binary `lughac`
 ├── runtime/         — lugha_rt.c: the C runtime, embedded in lughac (DECISION-009)
 ├── rust-toolchain.toml — pinned Rust 1.99.0
@@ -255,9 +258,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
 │   ├── programs/    — m1/ … m5/: <name>.la + .stdout/.exit/.stderr expectations
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, execute, report)
-├── setup.md         — the guide this context system follows
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
-├── docs/            — CODE_STYLE.md, source/, decisions/, incidents/, status/
+├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
 │   └── specs/       — Language v0 Specification.md (the language definition)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```

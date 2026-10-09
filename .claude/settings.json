@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Edit(./.env)",
+      "Read(./.env.*)",
+      "Edit(./.env.*)",
+      "Read(./Cargo.lock)",
+      "Edit(./Cargo.lock)",
+      "Read(./target/**)",
+      "Edit(./target/**)",
+      "Read(./LICENSE)",
+      "Edit(./LICENSE)"
+    ]
+  }
+}

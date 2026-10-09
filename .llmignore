@@ -1,6 +1,7 @@
 # .llmignore
 # Files and directories the AI must never touch.
-# Keep this in sync with the PROTECTED FILES section in CLAUDE.md.
+# Keep this in sync with the PROTECTED FILES section in CLAUDE.md and the
+# permissions.deny list in .claude/settings.json.
 
 # Environment and secrets
 .env

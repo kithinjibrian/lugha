@@ -25,10 +25,10 @@ Every feature below gets a PRP (`PRPs/prp-{NNN}-{feature_name}.md`) before code.
 - [x] `cargo init --lib` + `src/main.rs`, edition 2024, `rust-toolchain.toml` pinned; commit `Cargo.toml` + `Cargo.lock`
 - [x] Fill in CLAUDE.md FILE ORGANIZATION `src/` tree and the pinned Rust version
 - [x] Copy resolved decisions into MEMORY.md
-- [ ] Replace the one-line README.md with a project description
-- [ ] Add CI: fmt, clippy, test — installing LLVM and libgc
-- [ ] Mirror `.llmignore` as deny rules in `.claude/settings.json`
-- [ ] Decide whether `setup.md` stays at the root or moves to `docs/`
+- [x] Replace the one-line README.md with a project description (PRP-017)
+- [x] Add CI: fmt, clippy, test — installing LLVM and libgc (PRP-017)
+- [x] Mirror `.llmignore` as deny rules in `.claude/settings.json` (PRP-017)
+- [x] Move `setup.md` to `docs/setup.md` (PRP-017)
 
 ## Milestones (spec §11) — build strictly in order
 
