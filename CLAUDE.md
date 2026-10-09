@@ -217,6 +217,10 @@ pub fn parse_number(src: &str) -> i64 {
 ├── src/
 │   ├── lib.rs       — compiler library; stage modules added per PRP
 │   └── main.rs      — `lughac` entry point (CLI only)
+├── tests/
+│   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
+│   ├── programs/    — m1/ … m5/: <name>.la + .stdout/.exit/.stderr expectations
+│   └── support/     — fixture.rs (temp dirs), runner/ (discover, execute, report)
 ├── setup.md         — the guide this context system follows
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, source/, decisions/, incidents/, status/

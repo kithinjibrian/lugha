@@ -11,3 +11,5 @@ Never deleted. Older entries are never modified.
 ### Added
 - AI context system (CLAUDE.md, MEMORY.md, CONTEXT.md, DECISIONS.md, PRPs, code style guide)
 - Lugha v0 language specification (`docs/specs/`)
+- `lughac` crate skeleton (builds against LLVM 21)
+- Acceptance-test runner: drop a `.la` program and its expected output into `tests/programs/` and `cargo test -- --ignored` checks it

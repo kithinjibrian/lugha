@@ -143,6 +143,47 @@ TODO.md             — prerequisites and init checked off
 
 Branch: main → prp-001-test_runner
 
+### WHAT WAS DONE
+
+Ran the discovery interview for PRP-001; the user asked for a recommended answer with every question, now a rule in `PRPs/DISCOVERY.md`. Answers: mode chosen by `.exit` (run vs reject, optional `.stderr` for panic tests); per-milestone subfolders; one end-to-end test reporting every failure; strict malformed-case handling with a 10 s timeout; runner logic unit-tested now, end-to-end test `#[ignore]`d until milestone 1. PRP approved and implemented test-first on branch `prp-001-test_runner`. After `cargo fmt` the planned two files exceeded 300 lines; the user approved splitting by job (discover / execute / report, tests at the bottom of each), and the PRP's Structure section records the amendment.
+
+### FILES CREATED OR MODIFIED
+
+```
+PRPs/prp-001-test_runner.md        — new PRP; status implemented; structure amended
+PRPs/DISCOVERY.md                  — every question carries a recommended answer
+tests/programs.rs                  — end-to-end acceptance test (ignored until M1)
+tests/support/mod.rs               — module root
+tests/support/fixture.rs           — temp-dir Fixture, exited() helper
+tests/support/runner/mod.rs        — shared types, DEFAULT_TIMEOUT
+tests/support/runner/discover.rs   — case discovery + 9 tests
+tests/support/runner/execute.rs    — process running with timeout + 2 tests
+tests/support/runner/report.rs     — compare and report formatting + 6 tests
+tests/programs/m1/arith.{la,stdout,exit} — §11 milestone 1 program, expects exit 14
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — tests/ tree, shipped item, progress
+```
+
+### TESTS WRITTEN
+
+- discover.rs — recursive sorted discovery; run vs reject mode; 6 malformed layouts; empty root.
+- execute.rs — timeout kills the child (200 ms limit); stdout/stderr/exit captured.
+- report.rs — match, newline-sensitive mismatch, multiple mismatches, reject exit 1, timeout, escaping and truncation.
+- programs.rs — end-to-end (ignored); currently fails with exactly `m1/arith.la: exit code, expected 14, actual 0`.
+
+### DECISIONS MADE
+
+- Recommended answers accompany every discovery question (user request).
+- Runner split into discover / execute / report modules (user-approved file split).
+- Timeouts kill the whole process group via `kill -KILL -<pgid>`, since `lughac run` spawns the compiled program.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Branch `prp-001-test_runner` not yet merged into `main`.
+
 ---
 
 ## NEXT SESSION START POINT

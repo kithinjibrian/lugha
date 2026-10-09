@@ -1,6 +1,6 @@
 ## FEATURE: A test runner that compiles and runs every `.la` program under `tests/programs/` and compares its output with expectation files.
 
-**Status:** approved 2026-10-09 — session 4
+**Status:** implemented 2026-10-09 — session 4 (branch `prp-001-test_runner`)
 **Milestone:** pre-milestone 1 (infrastructure)
 **Spec:** §9 (exit codes, CLI), §10 (acceptance programs), §11 (milestone 1 done-when)
 **Decisions:** DECISION-008 (resolved)
@@ -11,7 +11,7 @@ Adding an acceptance test means adding files, never code. `cargo test` runs the 
 ## CONTEXT
 
 - Starting state: `src/lib.rs` and `src/main.rs` hold only module docs; `lughac` does nothing. No `tests/` directory exists.
-- Ending state: `tests/programs.rs`, `tests/support/mod.rs`, `tests/support/runner.rs`, `tests/programs/m1/arith.{la,stdout,exit}` created.
+- Ending state: `tests/programs.rs`, `tests/support/{mod,fixture}.rs`, `tests/support/runner/{mod,discover,execute,report}.rs`, `tests/programs/m1/arith.{la,stdout,exit}` created (see Structure — amended during implementation).
 - Related existing code: `Cargo.toml` (binary name `lughac`), `CLAUDE.md` TESTING RULE.
 - Related source files: discovery interview, session 4 (answers recorded below).
 - Open decisions that must be resolved first: none.
@@ -72,9 +72,15 @@ Adding an acceptance test means adding files, never code. `cargo test` runs the 
 - A program with several mismatches reports each one.
 
 **Structure** (each file under the 300-line limit)
-- `tests/support/runner.rs` — discovery, expectation loading, running, comparison, report formatting. Pure functions where possible: `discover(root) -> Result<Vec<Case>, Vec<Malformed>>`, `compare(&Case, &Outcome) -> Vec<Mismatch>`, `format_report(...) -> String`.
-- `tests/support/mod.rs` — `pub mod runner;`
-- `tests/programs.rs` — the end-to-end test `programs()` marked `#[ignore = "enable in milestone 1 driver PRP"]`, plus the runner's unit tests.
+
+*Amended 2026-10-09, session 4, with user approval:* the original two-file plan (`runner.rs` + all unit tests in `programs.rs`) came to 351 and 310 lines after `cargo fmt`. Split by job, with each module's unit tests at its bottom per the CLAUDE.md testing rule:
+- `tests/programs.rs` — only the end-to-end test `programs()`, marked `#[ignore = "enable in milestone 1 driver PRP"]`.
+- `tests/support/mod.rs` — `pub mod fixture; pub mod runner;`
+- `tests/support/fixture.rs` — temp-dir `Fixture` (removed on drop) and the `exited` outcome helper.
+- `tests/support/runner/mod.rs` — shared types (`Mode`, `Case`, `Malformed`, `Outcome`, `Mismatch`), `DEFAULT_TIMEOUT`, re-exports.
+- `tests/support/runner/discover.rs` — `discover(root) -> Result<Vec<Case>, Vec<Malformed>>`, exit-code parsing + tests.
+- `tests/support/runner/execute.rs` — `run_case`, `run_command` (timeout, process-group kill) + tests.
+- `tests/support/runner/report.rs` — `compare(&Case, &Outcome) -> Vec<Mismatch>`, `format_report`, `format_malformed` + tests.
 
 **First program**
 - `tests/programs/m1/arith.la` — `fun main(): i32 { 2 + 3 * 4 }` (spec §11 milestone 1).
@@ -101,25 +107,25 @@ Adding an acceptance test means adding files, never code. `cargo test` runs the 
 
 ## TESTS TO WRITE
 
-Unit tests in `tests/programs.rs`, against fixture directories:
-- [ ] Discovery finds `.la` files recursively and returns them sorted.
-- [ ] Run mode: `.exit` + `.stdout` → run-mode case; `.stderr` alongside is attached as expected stderr.
-- [ ] Reject mode: `.stderr` only → reject-mode case expecting exit 1.
-- [ ] Malformed: `.la` with no `.exit`/`.stderr`.
-- [ ] Malformed: `.exit` without `.stdout`.
-- [ ] Malformed: `.stdout` in reject mode.
-- [ ] Malformed: `.exit` of `abc`, `256`, `-1`.
-- [ ] Malformed: orphan `.stdout` with no `.la`.
-- [ ] Empty root → "no programs found".
-- [ ] Compare: identical outcome → no mismatches.
-- [ ] Compare: `"55\n"` vs `"55"` → stdout mismatch (no normalisation).
-- [ ] Compare: wrong exit code and wrong stdout → two mismatches.
-- [ ] Compare: timeout outcome → timeout mismatch.
-- [ ] Report: formats the header, escapes `\n`, truncates over 2,000 bytes.
-- [ ] Timeout: a child that sleeps past the limit is killed and reported (use `sleep 30` via `sh -c` with a shortened limit, e.g. 200 ms — the limit is a parameter, 10 s is only the default).
+Unit tests at the bottom of each `tests/support/runner/` module, against fixture directories:
+- [x] Discovery finds `.la` files recursively and returns them sorted.
+- [x] Run mode: `.exit` + `.stdout` → run-mode case; `.stderr` alongside is attached as expected stderr.
+- [x] Reject mode: `.stderr` only → reject-mode case expecting exit 1.
+- [x] Malformed: `.la` with no `.exit`/`.stderr`.
+- [x] Malformed: `.exit` without `.stdout`.
+- [x] Malformed: `.stdout` in reject mode.
+- [x] Malformed: `.exit` of `abc`, `256`, `-1`.
+- [x] Malformed: orphan `.stdout` with no `.la`.
+- [x] Empty root → "no programs found".
+- [x] Compare: identical outcome → no mismatches.
+- [x] Compare: `"55\n"` vs `"55"` → stdout mismatch (no normalisation).
+- [x] Compare: wrong exit code and wrong stdout → two mismatches.
+- [x] Compare: timeout outcome → timeout mismatch.
+- [x] Report: formats the header, escapes `\n`, truncates over 2,000 bytes.
+- [x] Timeout: a child that sleeps past the limit is killed and reported (use `sleep 30` via `sh -c` with a shortened limit, e.g. 200 ms — the limit is a parameter, 10 s is only the default).
 
 End-to-end (ignored until milestone 1):
-- [ ] `programs()` runs `m1/arith.la`; currently fails because lughac is a stub.
+- [x] `programs()` runs `m1/arith.la`; currently fails because lughac is a stub.
 
 ## ROLLBACK PLAN
 
@@ -127,14 +133,14 @@ End-to-end (ignored until milestone 1):
 - To abandon: delete the branch. Nothing outside `tests/` changes, no migrations.
 
 ## ACCEPTANCE CRITERIA
-- [ ] Every test in TESTS TO WRITE exists and passes (except the ignored end-to-end test).
-- [ ] `cargo test -- --ignored` runs `m1/arith.la` and prints a readable failure (exit 0 vs 14).
-- [ ] Adding a new program needs no code change.
-- [ ] No file over 300 lines; no new dependencies.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass.
-- [ ] Every `pub` item in `tests/support/` has a doc comment.
-- [ ] CLAUDE.md FILE ORGANIZATION updated with `tests/`.
-- [ ] CHANGELOG.md updated.
+- [x] Every test in TESTS TO WRITE exists and passes (except the ignored end-to-end test).
+- [x] `cargo test -- --ignored` runs `m1/arith.la` and prints a readable failure (exit 0 vs 14).
+- [x] Adding a new program needs no code change.
+- [x] No file over 300 lines; no new dependencies.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass.
+- [x] Every `pub` item in `tests/support/` has a doc comment.
+- [x] CLAUDE.md FILE ORGANIZATION updated with `tests/`.
+- [x] CHANGELOG.md updated.
 
 ## VALIDATION
 - `cargo fmt --check`

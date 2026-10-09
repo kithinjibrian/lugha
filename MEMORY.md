@@ -133,6 +133,7 @@ Open questions live in `DECISIONS.md`, not here.
 ### Fully Working
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-001 test runner: `tests/programs/` cases run by `tests/programs.rs` (ignored until milestone 1); 17 unit tests
 - AI context system scaffolded from `setup.md`
 - v0 language spec reviewed and fixed
 
@@ -146,4 +147,4 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Run a discovery interview for `PRPs/prp-001-test_runner.md` (the `tests/programs/` runner, DECISION-008), then `prp-002-lexer.md`.
+Run a discovery interview for `PRPs/prp-002-lexer.md` (milestone 1). `cargo test -- --ignored` shows milestone 1 progress.
