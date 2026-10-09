@@ -807,7 +807,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issue removed, milestone 4
 
 ---
 
-## SESSION 16 — 2026-10-09 — Milestone 5 discovery and PRP-013 — open
+## SESSION 16 — 2026-10-09 — Milestone 5 discovery and PRP-013 — closed
 
 Branch: main → prp-013-string_operations
 
@@ -862,19 +862,23 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, progress
 
 ### STILL OPEN AT CLOSE
 
-- Branch `prp-013-string_operations` not yet merged into `main`.
+- Nothing. Branch `prp-013-string_operations` fast-forward merged into `main` and deleted.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 4 is complete (tag `m4`). Next is milestone 5, the last (spec §11): heap data. It covers:
-- String operations: `+` via `lugha_rt_str_concat`, `==`/`!=` via `lugha_rt_str_eq`, `.len`, and `s[i]` as a bounds-checked `u8`.
-- Arrays: list and repeat literals (a negative count panics), `.len`, bounds-checked indexing (`icmp ult`), and `for x of xs` with its no-assignment rule.
-- Structs: declarations, recursive-struct detection (E03xx), literals, field access and assignment.
-- Value semantics: deep array copies at the §4 copy sites (`lugha_copy_*`).
-- `lughac spec`.
+Milestone 5, PRP-014: arrays (spec §4, §5, §7, §9). It covers:
+- `T[]` types, list literals (`[]` needs an expected type), and repeat literals `[v; n]`, where `v` is evaluated before `n` and a negative `n` panics with `negative array length`.
+- `.len`, and bounds-checked `xs[i]` read and assignment (reuse `codegen/heap.rs`), including place chains like `xs[i][j]` and the `let mut` root rule.
+- `for x of xs` — `xs` evaluated once, not copied; the body may not assign to `xs`.
+- Value semantics: the deep copies at the §4 copy-site table (`lugha_copy_<type>`), and passing arrays by pointer.
 
-Done-when: every §10 program passes (`primes` prints 25, `centroid` prints `centroid: 2.0, 1.0`), and `lughac spec` prints the bundled spec.
+Done-when: the §10 primes program prints 25.
 
-Start with a discovery interview on how to split milestone 5 into PRPs. The checker and codegen stop on these constructs with "milestone 5" today. See `TODO.md`.
+Discovery questions to expect:
+- code allocation (empty literal without context, for-of mutation);
+- copy-function naming and layout of nested arrays (pointers to inner arrays, §7);
+- how codegen decides "place vs fresh value" for copies.
+
+See `TODO.md`.

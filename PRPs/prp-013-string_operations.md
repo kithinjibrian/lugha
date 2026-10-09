@@ -1,6 +1,6 @@
 ## FEATURE: String operations — `+` concatenation, `==`/`!=` by content, `.len`, and bounds-checked `s[i]` — with an informative out-of-bounds panic.
 
-**Status:** implemented 2026-10-09 — session 16 (branch `prp-013-string_operations`)
+**Status:** merged into `main` 2026-10-09 — session 16
 **Milestone:** 5, first of four PRPs (014 arrays, 015 structs, 016 `lughac spec` and the full §10 acceptance)
 **Spec:** §4 (strings: immutable, `.len`, `s[i]` as `u8`, `+`, `==`), §5 (panics), §7 (string layout), §9 (bounds checks with `icmp ult`, runtime table, codes)
 **Decisions:** DECISION-009 / MEMORY 15 (runtime ABI); PRP-012 (operator spans for panic locations)
