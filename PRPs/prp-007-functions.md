@@ -1,6 +1,6 @@
 ## FEATURE: Compile functions — parameters, calls (including forward and mutual recursion), `return`, void functions and `=` bodies — completing milestone 2.
 
-**Status:** implemented 2026-10-09 — session 10 (branch `prp-007-functions`)
+**Status:** merged into `main` 2026-10-09 — session 10
 **Milestone:** 2, second of two PRPs. Done-when: the spec §11 milestone 2 program exits 55.
 **Spec:** §6 (functions, item order, names, expression bodies, return checking, entry point), §8 (`lugha_fn_` prefix), §9 (lowering: a definitely-returning branch adds no phi edge)
 **Decisions:** CLAUDE.md rule 9 (milestones 1–2: integers are `i64`); PRP-006 policies (`Int`/`Bool` value kinds; stop where forced, compile where possible)

@@ -464,7 +464,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progres
 
 ---
 
-## SESSION 10 — 2026-10-09 — PRP-007 functions — open
+## SESSION 10 — 2026-10-09 — PRP-007 functions — closed
 
 Branch: main → prp-007-functions
 
@@ -516,21 +516,22 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, milesto
 
 ### STILL OPEN AT CLOSE
 
-- Branch `prp-007-functions` not yet merged into `main`; tag `m2` after the merge.
+- Nothing. Branch `prp-007-functions` fast-forward merged into `main` and deleted; tagged `m2`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 2, second PRP: PRP-007 functions. It covers:
-- Multiple functions with parameters (annotations `i32`/`i64`/`u8` treated as `i64`, `bool` as `i1`).
-- Calls, including forward calls; collect all signatures first (spec §6).
-- Recursion, `return` / `return;`, void functions, and `=` bodies (already parsed).
+Milestone 2 is complete (tag `m2`). Next is milestone 3: the type checker and diagnostics (spec §11). It covers:
+- All primitive types (`i32`, `i64`, `u8`, `f64`, `bool`), literal inference, casts.
+- Mutability checks, return checking, error codes E03xx–E05xx, W0101.
+- `lughac check` running the checker, and "remove this semicolon".
 
-Done-when: the §11 milestone 2 program, added as `tests/programs/m2/milestone2.la`, exits 55. Then tag `m2`.
+Its done-when: the §10 rejected program reports E0401 in both formats (the expected output is already in the spec and the renderer tests).
 
-Notes:
-- `codegen/expr.rs` and `control.rs` are at 282 lines; put calls in a new module (e.g. `codegen/call.rs`).
-- Discovery questions to expect: definite-return checking before the checker exists; calls to undefined functions or with the wrong argument count (stop-if-forced policy); the fact that `println` isn't available until milestone 4.
+Milestone 3 replaces codegen's interim `Int`/`Bool`/`Never` value kinds and every "not implemented yet: … (milestone 3)" stop. Plan it in discovery:
+- how to split it into PRPs (likely: name resolution and types; inference and casts; mutability and return checking; codegen on real types);
+- the checker's module layout (the side table keyed by `ExprId`, spec §9);
+- error-code allocation.
 
-See `TODO.md`.
+`codegen/control.rs` is exactly 300 lines. See `TODO.md`.
