@@ -1,6 +1,6 @@
 ## FEATURE: The C runtime `lugha_rt.c`, the intrinsics `print`, `println`, `panic` and `to_string`, and string literals as values — so programs can print.
 
-**Status:** implemented 2026-10-09 — session 14 (branch `prp-011-runtime_and_intrinsics`)
+**Status:** merged into `main` 2026-10-09 — session 14
 **Milestone:** 4, first of two PRPs. Done-when: the spec §10 hello world and recursion programs print their exact output. PRP-012 adds `extern fun` and the overflow and division panics.
 **Spec:** §4 (`string` type), §5 (intrinsics, float formatting, panics), §6 (`panic` diverges; entry point and `GC_INIT`), §7 (heap layout, `lugha_rt_alloc`, string literals as constant globals), §9 (runtime library, link command)
 **Decisions:** DECISION-009, resolved here: embed the runtime source and compile it in the existing `cc` call

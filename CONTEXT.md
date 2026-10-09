@@ -690,7 +690,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issue removed, file tree, 
 
 ---
 
-## SESSION 14 — 2026-10-09 — Milestone 4 discovery and PRP-011 — open
+## SESSION 14 — 2026-10-09 — Milestone 4 discovery and PRP-011 — closed
 
 Branch: main → prp-011-runtime_and_intrinsics
 
@@ -746,18 +746,21 @@ CLAUDE.md, CHANGELOG.md, TODO.md — file tree, progress
 
 ### STILL OPEN AT CLOSE
 
-- Branch `prp-011-runtime_and_intrinsics` not yet merged into `main`.
+- Nothing. Branch `prp-011-runtime_and_intrinsics` fast-forward merged into `main` and deleted.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 3 is complete (tag `m3`). Next is milestone 4: runtime and C (spec §11). It covers:
-- `lugha_rt.c` — resolve DECISION-009 first (how it is built and found at link time).
-- Intrinsics `print`, `println`, `panic`, `to_string`, with the spec §5 float formatting.
-- `extern fun` (spec §8 types and string-pointer adjustment), and string literals.
-- Integer overflow and division panics: `panic: integer overflow at file:line:col`, exit 101. These replace the interim wrap and trap.
+Milestone 4, PRP-012: `extern fun` and overflow and division panics.
+- **`extern fun` (spec §8):**
+  - Allowed types: `i32`, `i64`, `u8`, `f64`, `bool`, `string` parameters only.
+  - A string argument is adjusted to point 8 bytes past the header, at the first data byte.
+  - No `string` return; names starting with `lugha_` are rejected with an E03xx code (needs allocating).
+  - Remove the checker and codegen milestone 4 stops for `extern`.
+- **Integer overflow and division panics (spec §5, §9):**
+  - `+ - *` and unary `-` use `llvm.{s,u}{add,sub,mul}.with.overflow`; division and remainder check zero and `MIN / -1`.
+  - On failure, `lugha_rt_panic("integer overflow" / "division by zero", file, line, col)`, exit 101.
+  - Compound assignment is checked the same way. Remove the wrap and trap known issue and `llvm.trap`.
 
-Done-when: hello world, recursion (`fib(30)` → `832040`) and the libc example run, with exact stdout.
-
-Start with a discovery interview on how to split it into PRPs. The checker stops on strings, intrinsics and `extern` with milestone 4 — those stops become real rules. See `TODO.md`.
+Done-when: the §10 libc example prints `hello from libc` then `1.4142135623730951`. Update the `m1/div_zero`, `m3/i32_wrap`, `m3/u8_wrap` and `m3/div_min_i32` expectations — they become panics. Then tag `m4`. See `TODO.md`.
