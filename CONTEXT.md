@@ -466,7 +466,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progres
 
 ## SESSION 10 — 2026-10-09 — PRP-007 functions — open
 
-Branch: main
+Branch: main → prp-007-functions
 
 ---
 
