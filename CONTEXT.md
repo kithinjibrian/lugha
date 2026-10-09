@@ -752,7 +752,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md — file tree, progress
 
 ## SESSION 15 — 2026-10-09 — PRP-012 extern and panics — open
 
-Branch: main
+Branch: main → prp-012-extern_and_panics
 
 ---
 
