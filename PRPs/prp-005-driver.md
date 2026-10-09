@@ -1,6 +1,6 @@
 ## FEATURE: The `lughac` command line — `build`, `run`, `check`, `--emit`, `-O`, human and JSON diagnostics, and exit codes 0/1/2 — completing milestone 1.
 
-**Status:** implemented 2026-10-09 — session 8 (branch `prp-005-driver`)
+**Status:** merged into `main` 2026-10-09 — session 8
 **Milestone:** 1 (final PRP; done-when `m1/arith.la` exits 14 through `lughac`)
 **Spec:** §9 (CLI, exit codes, diagnostics, JSON format), §10 (rejected-program output), §2 (lexical errors)
 **Decisions:** DECISION-006 (codespan-reporting) — outcome amended here as DECISION-011; DECISION-007 (clap); DECISION-008 (test runner)

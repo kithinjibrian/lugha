@@ -345,7 +345,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progres
 
 ---
 
-## SESSION 8 — 2026-10-09 — PRP-005 lughac driver — open
+## SESSION 8 — 2026-10-09 — PRP-005 lughac driver — closed
 
 Branch: main → prp-005-driver
 
@@ -406,10 +406,15 @@ CLAUDE.md, CHANGELOG.md, TODO.md — commands, file tree, known issues, progress
 
 ### STILL OPEN AT CLOSE
 
-- Branch `prp-005-driver` not yet merged into `main`.
+- Nothing. Branch `prp-005-driver` fast-forward merged into `main` and deleted. Milestone 1 complete.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Run a discovery interview for the milestone 1 driver PRP (`PRPs/prp-005-…`): `lughac build`/`run`/`check`, `--emit=tokens|ast|ir`, `-O0`/`-O2`, human diagnostics via codespan-reporting (check early that it can reproduce the spec's E0401 layout — DECISION-006) and `--diagnostics=json`, exit codes 0/1/2, mapping `CodegenError`/`LinkError` to exit 2. Its done-when: remove the `#[ignore]` on `tests/programs.rs` and `m1/arith.la` passes — milestone 1 complete. See `TODO.md`.
+Milestone 1 is complete. Next is milestone 2 (spec §11): `let`/`let mut`, assignment, blocks with tail values, `if` expressions, `while`, `for` over ranges, `=` bodies, calls and recursion — integers only, all treated as `i64` (CLAUDE.md rule 9).
+- Done-when: the §11 milestone 2 program exits with 55. Add it as `tests/programs/m2/`.
+- Comparisons produce booleans, so codegen needs an `i1` story even before the checker exists. Raise it in discovery.
+- Start with a discovery interview and decide how to split milestone 2 into PRPs.
+
+See `TODO.md`.
