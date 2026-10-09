@@ -866,6 +866,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, progress
 
 ---
 
+## SESSION 17 — 2026-10-09 — PRP-014 arrays — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 5, PRP-014: arrays (spec §4, §5, §7, §9). It covers:
