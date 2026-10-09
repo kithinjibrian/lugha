@@ -231,6 +231,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — rule 9, file tree, progress
 
 ---
 
+## SESSION 6 — 2026-10-09 — PRP-003 parser — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Run a discovery interview for `PRPs/prp-003-parser.md` (milestone 1; full §3 syntax per CLAUDE.md rule 9). Note `src/lexer/mod.rs` is at 299 lines — keep parser code in its own modules. See `TODO.md`.
