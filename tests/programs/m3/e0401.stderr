@@ -1,0 +1,8 @@
+error[E0401]: float literal where i32 expected
+  --> tests/programs/m3/e0401.la:3:17
+  |
+3 |     let y = x + 2.5;
+  |             -   ^^^ expected i32
+  |             |
+  |             this operand is i32
+

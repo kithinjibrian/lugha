@@ -1,0 +1,6 @@
+error[E0304]: `main` must be `fun main()` or `fun main(): i32`
+  --> tests/programs/m3/e0304.la:1:5
+  |
+1 | fun main(argc: i32): i32 {
+  |     ^^^^
+

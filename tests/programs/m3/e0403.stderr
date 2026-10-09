@@ -1,0 +1,8 @@
+error[E0403]: expected i32, found bool
+  --> tests/programs/m3/e0403.la:3:18
+  |
+3 |     let n: i32 = ok;
+  |            ---   ^^ expected i32
+  |            |
+  |            expected because of this annotation
+

@@ -5,6 +5,7 @@
 //! The language itself is defined in `docs/specs/Language v0 Specification.md`.
 
 pub mod ast;
+pub mod check;
 pub mod codegen;
 pub mod diagnostic;
 pub mod driver;

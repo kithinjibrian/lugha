@@ -1,0 +1,8 @@
+error[E0402]: integer literal out of range for u8
+  --> tests/programs/m3/e0402.la:2:20
+  |
+2 |     let byte: u8 = 256;
+  |                    ^^^
+  |
+  = help: u8 holds 0 to 255
+

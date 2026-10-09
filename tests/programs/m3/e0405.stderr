@@ -1,0 +1,6 @@
+error[E0405]: `add` takes 2 arguments but 1 was given
+  --> tests/programs/m3/e0405.la:4:13
+  |
+4 |     let n = add(1);
+  |             ^^^^^^
+

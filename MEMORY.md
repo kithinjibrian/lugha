@@ -148,6 +148,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-008 checker core: `src/check/`, bidirectional checking with `Expect`, `Type::Error` recovery, `Never` for divergence; E0401 matches spec in both formats
 - PRP-007 functions: signatures declared first (`lugha_fn_<name>`), params as locals, calls, `return`, `Value::Never` divergence per §6; `lugha_fn_main` returns i64 until M3 — **milestone 2 complete**
 - PRP-006 locals and control flow: codegen `Value` kinds (Int i64 / Bool i1), scopes with entry-block allocas, if/while/for/break/continue, short-circuit; `tests/programs/m2/` (7 programs)
 - PRP-005 driver: `src/driver/` (clap CLI, pipeline, codespan render, hand-written JSON); E0110 for invalid UTF-8
@@ -168,4 +169,4 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Milestone 3: the type checker and diagnostics (spec §11). It replaces codegen's `Int`/`Bool`/`Never` value kinds and every "not implemented yet: … (milestone 3)" stop with real types and E03xx–E05xx codes, plus W0101. Start with a discovery interview on how to split it into PRPs. `codegen/control.rs` is exactly 300 lines.
+Milestone 3, PRP-009: casts (`as`), mutability, missing returns, `break`/`continue` outside loops, assignment targets (E05xx), "remove this semicolon", W0101. Then PRP-010 moves codegen onto the type table. `codegen/control.rs` is exactly 300 lines.

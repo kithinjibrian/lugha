@@ -1,0 +1,6 @@
+error[E0404]: cannot apply `+` to bool and i64
+  --> tests/programs/m3/e0404.la:3:13
+  |
+3 |     let n = flag + 1;
+  |             ^^^^^^^^
+

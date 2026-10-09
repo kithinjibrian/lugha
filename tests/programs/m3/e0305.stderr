@@ -1,0 +1,6 @@
+error[E0305]: cannot find type `Point`
+  --> tests/programs/m3/e0305.la:2:12
+  |
+2 |     let p: Point = 1;
+  |            ^^^^^
+

@@ -118,7 +118,7 @@ enum Command {
         #[command(flatten)]
         options: Options,
     },
-    /// Lex and parse only, reporting errors (type checking joins in milestone 3)
+    /// Lex, parse and type-check only, reporting errors
     Check {
         /// Source file
         file: PathBuf,
@@ -188,7 +188,12 @@ fn build(
         }
         return Ok(0);
     }
-    let front: Front = pipeline::front(file)?;
+    // `--emit=ast` shows the tree even when it doesn't type-check.
+    let front: Front = if let Some(Emit::Ast) = emit {
+        pipeline::parsed(file)?
+    } else {
+        pipeline::front(file)?
+    };
     out.diagnostics(&front.source, &front.warnings);
     match emit {
         Some(Emit::Ast) => out.print(&format!("{}\n", sexp::program(&front.program))),

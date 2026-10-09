@@ -1,0 +1,22 @@
+error[E0401]: float literal where i32 expected
+  --> tests/programs/m3/multiple_errors.la:5:17
+  |
+5 |     let y = x + 2.5;
+  |             -   ^^^ expected i32
+  |             |
+  |             this operand is i32
+
+error[E0301]: cannot find `missing` in this scope
+  --> tests/programs/m3/multiple_errors.la:7:13
+  |
+7 |     let w = missing + z;
+  |             ^^^^^^^
+
+error[E0403]: expected i32, found bool
+  --> tests/programs/m3/multiple_errors.la:9:18
+  |
+9 |     let n: i32 = b;
+  |            ---   ^ expected i32
+  |            |
+  |            expected because of this annotation
+

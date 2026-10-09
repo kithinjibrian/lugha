@@ -1,0 +1,6 @@
+error[E0407]: this expression has no value
+  --> tests/programs/m3/e0407.la:4:13
+  |
+4 |     let x = log();
+  |             ^^^^^ its type is void
+

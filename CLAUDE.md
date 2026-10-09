@@ -135,7 +135,7 @@ cargo clippy --all-targets -- -D warnings     # lint
 
 cargo run -q -- build prog.la [-o out] [--emit=tokens|ast|ir] [-O0|-O2] [--diagnostics=human|json]
 cargo run -q -- run prog.la                   # exit code = the program's
-cargo run -q -- check prog.la                 # lex + parse (checker from milestone 3)
+cargo run -q -- check prog.la                 # lex, parse, type-check
 ```
 
 Run fmt, clippy and tests after every non-trivial change. A task is not done until all pass.
@@ -227,6 +227,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── ast/         — mod.rs (items, types, statements), expr.rs (expressions, ExprId)
 │   ├── parser/      — mod.rs (parse, cursor, errors), recover.rs, describe.rs,
 │   │                  expr.rs (Pratt), primary.rs, stmt.rs, item.rs, sexp.rs, test_util.rs
+│   ├── check/       — mod.rs (check, Checked, CheckError), types.rs, env.rs (globals, main, scopes),
+│   │                  expr.rs, literal.rs, call.rs, ops.rs, stmt.rs, errors.rs (E03xx/E04xx)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (main, C main),
 │   │                  value.rs (Int/Bool kinds), scope.rs (locals), expr.rs, control.rs (blocks,
 │   │                  if, loops, jumps), stmt.rs, function.rs (signatures, bodies, return, calls)
@@ -275,6 +277,5 @@ These look like bugs but are specified behavior:
 - **Extern C code keeping a Lugha pointer is undefined behavior.** Spec §7–8 accept this for v0.
 - **`as` casts truncate/saturate silently.** The only place values wrap (spec §4).
 - **Until milestone 4, integer `+ - *` wrap and `/ %` by zero or `MIN / -1` trap with SIGILL.** The specified panics need `lugha_rt_panic` (spec §11). Do not add overflow checks before then.
-- **`lughac check` only lexes and parses** until the checker lands in milestone 3.
-- **Until milestone 3, assigning to a non-`mut` variable compiles**, and type or name mistakes that codegen runs into (`if 5 {}`, `1 + true`, an undefined name, `break` outside a loop, unknown functions, wrong argument counts or kinds, duplicate functions, missing returns) report "not implemented yet: … (milestone 3)" with exit 2. Codegen tracks only two value kinds (`Int`/`Bool`); this is not the type checker.
+- **Until PRP-009, assigning to a non-`mut` variable, a missing return, `break` outside a loop and assignments to non-places pass the checker**; codegen still stops on the last three with "not implemented yet: … (milestone 3)". The checker (PRP-008) reports name and type errors; codegen's interim `Int`/`Bool`/`Never` kinds remain until PRP-010.
 - **Codegen reports the outermost unsupported construct first** (`[1][0]` → indexing, not arrays). The message names the milestone that adds it; it goes away by milestone 5.

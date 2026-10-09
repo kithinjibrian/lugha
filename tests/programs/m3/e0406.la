@@ -1,0 +1,4 @@
+fun main() {
+    let step = 2;
+    step(1);
+}

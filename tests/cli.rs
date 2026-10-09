@@ -200,3 +200,47 @@ fn signals_are_not_exit_codes() {
         .expect("binary runs");
     assert_eq!(status.signal(), Some(4));
 }
+
+#[test]
+fn e0401_json_matches_the_spec_example() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let out = lughac(
+        root,
+        &["check", "--diagnostics=json", "tests/programs/m3/e0401.la"],
+    );
+    assert_eq!(out.status.code(), Some(1));
+    let expected = concat!(
+        r#"{"severity":"error","code":"E0401","message":"float literal where i32 expected","file":"tests/programs/m3/e0401.la","#,
+        r#""span":{"start":{"line":3,"col":17,"offset":49},"end":{"line":3,"col":20,"offset":52}},"#,
+        r#""label":"expected i32","#,
+        r#""labels":[{"span":{"start":{"line":3,"col":13,"offset":45},"end":{"line":3,"col":14,"offset":46}},"message":"this operand is i32"}],"#,
+        r#""help":null}"#,
+        "\n"
+    );
+    assert_eq!(text(&out.stderr), expected);
+}
+
+#[test]
+fn every_valid_acceptance_program_type_checks() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let mut checked = 0;
+    for dir in ["tests/programs/m1", "tests/programs/m2"] {
+        for entry in std::fs::read_dir(root.join(dir)).expect("program dir exists") {
+            let path = entry.expect("entry").path();
+            // Reject-mode cases (with a .stderr and no .exit) are meant to fail.
+            if path.extension().is_some_and(|e| e == "la") && path.with_extension("exit").exists() {
+                let rel = path.strip_prefix(root).expect("under the repo");
+                let out = lughac(root, &["check", rel.to_str().expect("UTF-8 path")]);
+                assert_eq!(
+                    out.status.code(),
+                    Some(0),
+                    "{}: {}",
+                    rel.display(),
+                    text(&out.stderr)
+                );
+                checked += 1;
+            }
+        }
+    }
+    assert!(checked >= 15, "only {checked} programs checked");
+}

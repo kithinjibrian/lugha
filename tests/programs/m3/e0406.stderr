@@ -1,0 +1,6 @@
+error[E0406]: `step` is not a function
+  --> tests/programs/m3/e0406.la:3:5
+  |
+3 |     step(1);
+  |     ^^^^
+

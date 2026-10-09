@@ -1,0 +1,4 @@
+fun main() {
+    let x: i32 = 5;
+    let y = x + 2.5;
+}

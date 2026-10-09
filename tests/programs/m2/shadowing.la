@@ -1,7 +1,7 @@
 // The inner `x` is 11 and leaves the outer `x` untouched; then `x` is
 // shadowed in the same block: 1 + 11 = 12.
 fun main(): i32 {
-    let x = 1;
+    let x: i32 = 1;
     let y = { let x = x + 10; x };
     let x = x + y;
     x

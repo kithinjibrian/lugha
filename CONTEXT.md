@@ -520,9 +520,61 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, milesto
 
 ---
 
-## SESSION 11 — 2026-10-09 — Milestone 3 discovery — open
+## SESSION 11 — 2026-10-09 — Milestone 3 discovery and PRP-008 — open
 
 Branch: main → prp-008-checker_core
+
+### WHAT WAS DONE
+
+Milestone 3 discovery, with the recommended answer accepted every time:
+- Three PRPs: 008 checker core, 009 casts and flow checks, 010 codegen on real types.
+- `Type::Error` recovery.
+- The checker stops with "not implemented" for milestone 4/5 constructs.
+- 12 codes: E0301–E0305 and E0401–E0407.
+
+Implemented PRP-008 test-first: 23 unit tests against a stub, then `src/check/`. One unit-test program was itself ill-typed; the checker was right.
+
+Wiring the checker into the driver exposed that eight `m2/` programs were ill-typed under spec §4: untyped `i64` results returned from `main(): i32`. They were annotated `i32`, with exit codes unchanged.
+
+Spec §10 E0401 matches byte-for-byte in human and JSON form — **milestone 3 done-when met**. The milestone closes after PRP-010.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/mod.rs, types.rs, env.rs, expr.rs, literal.rs, call.rs, ops.rs, stmt.rs, errors.rs — the checker + 23 tests
+src/driver/pipeline.rs   — front() type-checks; parsed() for --emit=ast; CheckError mapping
+src/driver/mod.rs        — check help text; --emit=ast uses parsed()
+src/lib.rs               — declares check
+tests/programs/m2/       — 8 programs annotated with i32 (same exit codes)
+tests/programs/m3/       — 13 reject-mode programs: e0301–e0305, e0401–e0407, multiple_errors
+tests/cli.rs             — exact spec JSON for E0401; check exits 0 on every valid m1/m2 program
+docs/specs/…Specification.md — §9 table of E0301–E0305, E0401–E0407
+PRPs/prp-008-checker_core.md — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, known issues, progress
+```
+
+### TESTS WRITTEN
+
+- Unit:
+  - Every code with spans.
+  - Literal defaults and inference from annotations, operands, ranges, arguments and returns.
+  - Negated-literal folding; `Never` unification.
+  - No cascades; a full type table for valid programs; milestone 4/5 stops.
+- Acceptance and CLI:
+  - 13 `m3/` reject programs; E0401 is the spec golden, the other 12 were captured and reviewed.
+  - The exact spec JSON line; `check` exits 0 on all valid programs.
+
+### DECISIONS MADE
+
+- Milestone 3 split, Error recovery, checker stops for later milestones, code list (in PRP-008), plus the amendments recorded there.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Branch `prp-008-checker_core` not yet merged into `main`.
 
 ---
 

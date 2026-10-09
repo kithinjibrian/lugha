@@ -1,6 +1,6 @@
 ## FEATURE: The type checker core — name resolution, types for every expression with literal inference and operator typing, calls, and `lughac check` running it — reaching the milestone 3 done-when (E0401 in both formats).
 
-**Status:** approved 2026-10-09 — session 11
+**Status:** implemented 2026-10-09 — session 11 (branch `prp-008-checker_core`)
 **Milestone:** 3, first of three PRPs. PRP-009 adds casts and flow checks (E05xx, W0101, "remove this semicolon"); PRP-010 moves codegen onto real types.
 **Spec:** §4 (types, inference rules 1–6, operator typing, value semantics of `void`), §5 (`if` typing, blocks and tails), §6 (names, two-pass collection, entry point, definitely-returning blocks), §9 (checker output: AST + ExprId → Type table; diagnostics), §10 (rejected program)
 **Decisions:** DECISION-002 (stage results); CLAUDE.md rule 9 (the checker covers the milestone 3 subset only)
@@ -22,6 +22,18 @@
   - Codegen is unchanged; its milestone 3 stops remain for what PRP-009 and PRP-010 cover.
 - Related existing code: `src/ast/`, `src/diagnostic.rs`, `src/driver/pipeline.rs`, `src/codegen/` (unchanged).
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 11)
+- **Code count:** 12 codes, not the 11 written during discovery: E0301–E0305 and E0401–E0407.
+- **Eight `m2/` programs were ill-typed under spec §4.** They returned untyped `i64` locals from `fun main(): i32` — fine when milestone 2 treated everything as `i64`. They were annotated with `i32` (results, a bound, a function signature) as the spec's own milestone 2 program does. Exit codes are unchanged.
+
+  The PRP's assumption that every `m2/` program would type-check as written was wrong.
+- **Operands only pass numeric types to literals.** `true + 1` is therefore E0404 (operator), not E0401 (literal). Literals reached through an explicit `bool` expectation (`!1`, `true && 1`, `if 5`) are E0401.
+- **Two adjacent literals:** the right one takes the left's type when there's no outer expectation, so `0..2.5` is E0401 at `2.5`.
+- **E0303** has no source location; its span is 0..0, rendered at 1:1.
+- **`--emit=ast`** uses a parse-only front end (`pipeline::parsed`), so it shows trees that don't type-check.
+- **File split (user-approved):** `check/expr.rs` reached 390 lines after `cargo fmt`. Literal inference moved to `check/literal.rs`; names and calls to `check/call.rs`.
+- **One unit-test program was itself ill-typed:** `for i in 0..3 { t += i; }` with `t: i32`. The checker was right; the test now uses an `i32` bound.
 
 ### Discovery answers (session 11)
 1. Milestone 3 is three PRPs: 008 checker core, 009 casts and flow checks, 010 codegen on real types.
@@ -154,26 +166,26 @@
 ## TESTS TO WRITE
 
 Unit tests (`src/check/`), as (code, spanned text) pairs:
-- [ ] E0301 variable and function; locals shadow functions; `let x = x + 1` uses the outer `x`.
-- [ ] E0302 duplicate `fun` (label on the first); `fun println()`. E0303. E0304 for parameters and an `i64` return. E0305.
-- [ ] Inference:
+- [x] E0301 variable and function; locals shadow functions; `let x = x + 1` uses the outer `x`.
+- [x] E0302 duplicate `fun` (label on the first); `fun println()`. E0303. E0304 for parameters and an `i64` return. E0305.
+- [x] Inference:
   - `let a = 5` is i64; `let b: i32 = 5` is i32; `b + 1` is i32; `1 + b` is i32 (literal on the left).
   - `let d = 2.5` is f64.
   - Range bounds `0..n` with `n: i32` give `i: i32`.
   - Call arguments and the return type flow into literals.
-- [ ] E0401 with the exact spec message, labels and spans; `let e: f64 = 5;`; `if 5 {}` (integer literal where bool expected).
-- [ ] E0402: `let b: u8 = 256;`, `let c: u8 = -1;`; `-2147483648` fits i32 but `2147483648` doesn't.
-- [ ] E0403: let annotation, argument, return, branches (both labels), assignment.
-- [ ] E0404: `true + 1`, `-b` on bool, `!1`, `-x` on u8, `1 == true` (U ≠ T), `x + y` with i32 and i64.
-- [ ] E0405, E0406 (both forms), E0407 (`let x = noop();`, `noop() + 1`).
-- [ ] `if x < 0 { return 0; } else { x }` is i64 (Never unifies). No error cascades from an undefined name.
-- [ ] The type table is filled for every expression of a valid program (no default entries remain).
-- [ ] Milestone 4/5 constructs stop with the right milestone (`"s"` → 4, `println(1)` → 4, `p.x` → 5, `[1]` → 5, `extern` → 4, `struct` → 5).
+- [x] E0401 with the exact spec message, labels and spans; `let e: f64 = 5;`; `if 5 {}` (integer literal where bool expected).
+- [x] E0402: `let b: u8 = 256;`, `let c: u8 = -1;`; `-2147483648` fits i32 but `2147483648` doesn't.
+- [x] E0403: let annotation, argument, return, branches (both labels), assignment.
+- [x] E0404: `true + 1`, `-b` on bool, `!1`, `-x` on u8, `1 == true` (U ≠ T), `x + y` with i32 and i64.
+- [x] E0405, E0406 (both forms), E0407 (`let x = noop();`, `noop() + 1`).
+- [x] `if x < 0 { return 0; } else { x }` is i64 (Never unifies). No error cascades from an undefined name.
+- [x] The type table is filled for every expression of a valid program (no default entries remain).
+- [x] Milestone 4/5 constructs stop with the right milestone (`"s"` → 4, `println(1)` → 4, `p.x` → 5, `[1]` → 5, `extern` → 4, `struct` → 5).
 
 Integration and acceptance:
-- [ ] All `tests/programs/m3/` cases pass, including the spec E0401 byte-for-byte.
-- [ ] `tests/cli.rs`: the exact spec JSON line; `lughac check` exits 1 on a type error and 0 on all `m1/` and `m2/` programs.
-- [ ] All existing tests pass: every `m1/` and `m2/` program type-checks cleanly.
+- [x] All `tests/programs/m3/` cases pass, including the spec E0401 byte-for-byte.
+- [x] `tests/cli.rs`: the exact spec JSON line; `lughac check` exits 1 on a type error and 0 on all `m1/` and `m2/` programs.
+- [x] All existing tests pass: every `m1/` and `m2/` program type-checks cleanly.
 
 ## ROLLBACK PLAN
 

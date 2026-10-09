@@ -514,6 +514,23 @@ Internal errors — an unreadable file, a construct the compiler doesn't support
 | E05xx | Mutability and control flow: assignment to immutable bindings, missing returns, `break` outside a loop |
 | W01xx | Warnings: unreachable code |
 
+Name and type errors, reported by the checker:
+
+| Code | Error | Example |
+| --- | --- | --- |
+| E0301 | Undefined name | `count + 1` with no `count` in scope; a call to an undefined function |
+| E0302 | Name defined more than once, or a function named like an intrinsic | two `fun area`; `fun println()` |
+| E0303 | No `main` function | |
+| E0304 | `main` with the wrong signature | `fun main(argc: i32): i32` |
+| E0305 | Unknown type name | `let p: Point = 1;` with no `Point` |
+| E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
+| E0402 | Integer literal out of range for its type | `let b: u8 = 256;` |
+| E0403 | Type mismatch | `let n: i32 = ok;` where `ok` is `bool`; `if`/`else` of different types |
+| E0404 | Operator applied to invalid operand types | `true + 1`, `-u` where `u` is `u8` |
+| E0405 | Wrong number of arguments | `add(1)` for `fun add(a: i64, b: i64)` |
+| E0406 | Not a function, or a function used as a value | `let step = 2; step(1);`, `let f = fib;` |
+| E0407 | `void` used as a value | `let x = log();` where `log` returns nothing |
+
 **JSON diagnostics.** With `--diagnostics=json`, the compiler writes one JSON object per line to stderr, one per diagnostic, and nothing else. Lines and columns are 1-based; columns and offsets count UTF-8 bytes. `label` is the text shown under the primary span, or `null`. `labels` holds secondary spans, and `help` is an optional suggestion. Internal errors have `"code":null`, and `"span":null` when they have no location.
 
 ```json

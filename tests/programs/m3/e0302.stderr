@@ -1,0 +1,9 @@
+error[E0302]: `area` is defined more than once
+  --> tests/programs/m3/e0302.la:3:5
+  |
+1 | fun area(): i64 = 1;
+  |     ---- first defined here
+2 |
+3 | fun area(): i64 = 2;
+  |     ^^^^ defined again here
+

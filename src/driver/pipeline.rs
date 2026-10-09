@@ -13,6 +13,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use super::render::Report;
 use super::source::{self, LoadError, Source};
 use crate::ast::Program;
+use crate::check::{self, CheckError};
 use crate::codegen::{self, CodegenError, OptLevel};
 use crate::diagnostic::Diagnostic;
 use crate::lexer::{self, Token};
@@ -57,8 +58,8 @@ pub(super) fn tokens(source: &Source) -> Result<(Vec<Token>, Vec<Diagnostic>), F
     lexer::lex(&source.text).map_err(|errors| Failure::Program(source.clone(), errors))
 }
 
-/// Reads, lexes and parses `path`.
-pub(super) fn front(path: &Path) -> Result<Front, Failure> {
+/// Reads, lexes and parses `path` — everything `--emit=ast` needs.
+pub(super) fn parsed(path: &Path) -> Result<Front, Failure> {
     let source = load(path)?;
     let (tokens, mut warnings) = tokens(&source)?;
     match parser::parse(&tokens) {
@@ -71,6 +72,30 @@ pub(super) fn front(path: &Path) -> Result<Front, Failure> {
             })
         }
         Err(errors) => Err(Failure::Program(source, errors)),
+    }
+}
+
+/// Reads, lexes, parses and type-checks `path` (spec §9 stages 1–3).
+pub(super) fn front(path: &Path) -> Result<Front, Failure> {
+    let mut front = parsed(path)?;
+    match check::check(&front.program) {
+        // The type table is consumed by codegen from PRP-010.
+        Ok((_checked, warnings)) => {
+            front.warnings.extend(warnings);
+            Ok(front)
+        }
+        Err(CheckError::Program(errors)) => Err(Failure::Program(front.source, errors)),
+        Err(CheckError::Unsupported {
+            what,
+            milestone,
+            span,
+        }) => {
+            let message = format!("not implemented yet: {what} (milestone {milestone})");
+            Err(Failure::Internal(
+                front.source,
+                Box::new(Report::internal(message, Some(span))),
+            ))
+        }
     }
 }
 

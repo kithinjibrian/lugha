@@ -1,0 +1,6 @@
+error[E0301]: cannot find `count` in this scope
+  --> tests/programs/m3/e0301.la:2:17
+  |
+2 |     let total = count + 1;
+  |                 ^^^^^
+
