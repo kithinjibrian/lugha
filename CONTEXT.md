@@ -750,6 +750,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md — file tree, progress
 
 ---
 
+## SESSION 15 — 2026-10-09 — PRP-012 extern and panics — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 4, PRP-012: `extern fun` and overflow and division panics.
