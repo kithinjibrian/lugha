@@ -57,6 +57,7 @@ Write the test before writing the implementation. No exceptions.
 - For every new function, write a failing test first, then the minimum code to make it pass.
 - Unit tests live in a `#[cfg(test)] mod tests` block at the bottom of the file they test.
 - Integration tests (public API only) live in `tests/`, one file per area: `src/lexer.rs` → `tests/lexer.rs`.
+- End-to-end tests are files in `tests/programs/`: `<name>.la` plus `<name>.stdout`, `<name>.exit`, and `<name>.stderr` for rejected programs. Add a test by adding files — never by editing the runner.
 - Test behavior visible to callers — inputs, outputs, and every error variant. Do not test private internals or third-party crate behavior.
 - Every new `pub` function gets at least one happy-path test and one test per error variant it can return.
 - Run the full suite (`cargo test`) after any non-trivial change before calling the task done.
@@ -135,18 +136,18 @@ cargo clippy --all-targets -- -D warnings     # lint
 
 Run fmt, clippy and tests after every non-trivial change. A task is not done until all pass.
 
-> No `Cargo.toml` exists yet — these commands start working once DECISION-001 is resolved and the crate is initialised.
-> End-to-end tests also need LLVM (DECISION-005), `cc`, and `libgc` installed.
+> No `Cargo.toml` exists yet — these commands start working once the crate is initialised.
+> End-to-end tests also need `llvm-21-dev`, `cc`, and `libgc-dev` installed.
 
 ---
 
 ## STACK
 
-- Rust (stable) — the compiler `lughac`. Edition and MSRV: DECISION-003.
-- inkwell + LLVM — codegen. Version: DECISION-005. Requires opaque pointers and the new pass manager.
+- Rust, edition 2024, toolchain pinned in `rust-toolchain.toml` — the compiler `lughac`.
+- `inkwell` 0.10, feature `llvm21-1` + LLVM 21 (`llvm-21-dev`) — codegen. Never use another LLVM major.
 - C (`lugha_rt.c`) — the runtime linked into every compiled program.
 - Boehm GC (`libgc`), `libc`, `libm` — linked into every compiled program via the system `cc`.
-- Diagnostics rendering: DECISION-006. CLI parsing: DECISION-007.
+- `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
 The language itself is defined by `docs/specs/Language v0 Specification.md`.
@@ -189,15 +190,15 @@ pub fn parse_number(src: &str) -> i64 {
 }
 ```
 
-- Each module defines its own error enum; errors are typed, never `String`. (Crate choice for deriving errors: DECISION-002.)
+- Each module defines its own error enum; errors are typed, never `String`, derived with `thiserror`.
 - **Never** `.unwrap()` / `.expect()` on anything derived from external input. `.expect("reason")` is allowed only for true invariants, and the message states the invariant.
 - **Never** return `Option` to signal an error — `None` cannot say *why*.
 - **Never** swallow an error with `let _ =` or `.ok()` without a comment explaining why ignoring it is safe.
 - Propagate with `?`; convert between error types with `From` impls, not ad-hoc `map_err` everywhere.
 
 **Two kinds of error in this project — keep them apart:**
-- **Errors in the user's `.la` program** (bad token, type mismatch) are expected output of the compiler. They become `Diagnostic` records (architecture rule 5) and the stage keeps going to find more where it can. Exact stage return type: DECISION-002.
-- **Errors in lughac itself** (I/O failure, linker not found) use Rust error types and `Result`. A violated compiler invariant is a bug → exit 2.
+- **Errors in the user's `.la` program** (bad token, type mismatch) are expected output of the compiler. They become `Diagnostic` records (architecture rule 5) and the stage keeps going to find more where it can. Every stage returns `Result<(Output, Vec<Diagnostic>), Vec<Diagnostic>>`: `Ok` = output + warnings, `Err` = all errors and warnings.
+- **Errors in lughac itself** (I/O failure, linker not found) use `thiserror` enums and `Result`. A violated compiler invariant is a bug → exit 2.
 
 ---
 

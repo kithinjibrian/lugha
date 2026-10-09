@@ -9,22 +9,22 @@ Every feature below gets a PRP (`PRPs/prp-{NNN}-{feature_name}.md`) before code.
 ## Machine prerequisites
 
 - [ ] Install Rust via rustup (none installed as of 2026-10-09)
-- [ ] Install LLVM dev package matching DECISION-005 (`llvm-NN-dev`; only runtime pieces of LLVM 21 present)
+- [ ] Install `llvm-21-dev` (DECISION-005)
 - [ ] Install Boehm GC dev package (`libgc-dev`; headers missing) — needed from milestone 4/5
 - [x] C compiler (`cc`, GCC 15.2) — present
 
 ## Setup
 
-- [ ] Resolve DECISION-001 — crate layout
-- [ ] Resolve DECISION-002 — error and diagnostic types
-- [ ] Resolve DECISION-003 — edition and MSRV
-- [ ] Resolve DECISION-005 — LLVM version / inkwell feature
-- [ ] Resolve DECISION-006 — diagnostic rendering crate
-- [ ] Resolve DECISION-007 — CLI parsing
-- [ ] Resolve DECISION-008 — acceptance test harness
-- [ ] `cargo init` per DECISION-001; commit `Cargo.toml` + `Cargo.lock`
-- [ ] Fill in CLAUDE.md STACK versions and FILE ORGANIZATION `src/` tree
-- [ ] Copy resolved decisions into MEMORY.md
+- [x] Resolve DECISION-001 — crate layout
+- [x] Resolve DECISION-002 — error and diagnostic types
+- [x] Resolve DECISION-003 — edition and MSRV
+- [x] Resolve DECISION-005 — LLVM version / inkwell feature
+- [x] Resolve DECISION-006 — diagnostic rendering crate
+- [x] Resolve DECISION-007 — CLI parsing
+- [x] Resolve DECISION-008 — acceptance test harness
+- [ ] `cargo init --lib` + `src/main.rs`, edition 2024, `rust-toolchain.toml` pinned; commit `Cargo.toml` + `Cargo.lock`
+- [ ] Fill in CLAUDE.md FILE ORGANIZATION `src/` tree and the pinned Rust version
+- [x] Copy resolved decisions into MEMORY.md
 - [ ] Replace the one-line README.md with a project description
 - [ ] Add CI: fmt, clippy, test — installing LLVM and libgc
 - [ ] Mirror `.llmignore` as deny rules in `.claude/settings.json`
@@ -34,6 +34,7 @@ Every feature below gets a PRP (`PRPs/prp-{NNN}-{feature_name}.md`) before code.
 
 ### Milestone 1 — Expressions to a binary
 Done when `fun main(): i32 { 2 + 3 * 4 }` exits with 14.
+- [ ] PRP: test runner for `tests/programs/` (DECISION-008)
 - [ ] PRP: lexer (tokens with spans; integer literals, operators, keywords)
 - [ ] PRP: parser (items, blocks, Pratt expressions)
 - [ ] PRP: codegen + link (inkwell, object file, `cc`)

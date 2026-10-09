@@ -65,8 +65,39 @@ docs/specs/Language v0 Specification.md — inconsistencies fixed, extension .la
 
 Branch: main
 
+### WHAT WAS DONE
+
+The user accepted the suggested option for every decision blocking milestone 1. Resolved DECISION-001, -002, -003, -005, -006, -007 and -008 and recorded them in MEMORY.md (decisions 8–12), CLAUDE.md (stack, testing, error handling) and TODO.md. For DECISION-005 the suggestion was "a version inkwell supports and Ubuntu packages"; checked both: Ubuntu 26.04's default `llvm-dev` is LLVM 21, and inkwell 0.10.0 (latest on crates.io) supports `llvm21-1`, so LLVM 21 was chosen. For DECISION-006 the suggestion was "codespan-reporting or hand-rolled"; chose codespan-reporting, with a milestone 3 check that it reproduces the spec's E0401 output.
+
+### FILES CREATED OR MODIFIED
+
+```
+DECISIONS.md — 001, 002, 003, 005, 006, 007, 008 moved to RESOLVED; no open decisions
+MEMORY.md    — decisions 8–12, state and next start point
+CLAUDE.md    — stack versions, tests/programs/ rule, stage return type
+TODO.md      — decisions checked off, install and init steps made concrete
+CONTEXT.md   — this entry
+```
+
+### TESTS WRITTEN
+
+- None — no code yet.
+
+### DECISIONS MADE
+
+- See above; all recorded in DECISIONS.md RESOLVED.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Toolchain not installed (rustup, `llvm-21-dev`, `libgc-dev`).
+- Crate not initialised.
+
 ---
 
 ## NEXT SESSION START POINT
 
-Resolve the decisions blocking milestone 1 with the user, install the toolchain, `cargo init`, then write `PRPs/prp-001-lexer.md`. See `TODO.md`.
+Install the toolchain (rustup stable, `llvm-21-dev`, `libgc-dev`), initialise the crate per MEMORY.md decisions 8–12, then run a discovery interview for `PRPs/prp-001-lexer.md` (or the `tests/programs/` runner first). See `TODO.md`.

@@ -78,6 +78,56 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 8. Crate layout (DECISION-001)
+
+**Decision:** One package: library `src/lib.rs` with stage modules `lexer`, `parser`, `check`, `codegen`, `driver`; thin binary `src/main.rs` that parses the CLI and calls the library.
+
+**Why:** Stages testable from `tests/` without spawning processes.
+
+**Rules out:** A Cargo workspace; logic in `main.rs`.
+
+---
+
+### 9. Stage results and errors (DECISION-002)
+
+**Decision:** Each stage returns `Result<(Output, Vec<Diagnostic>), Vec<Diagnostic>>` — `Ok` = output + warnings, `Err` = all errors and warnings. Internal lughac errors use `thiserror`.
+
+**Why:** Errors stop the pipeline (spec §9) while warnings still surface on success.
+
+**Rules out:** Panicking or returning a single error from a stage; `anyhow` in library code.
+
+---
+
+### 10. Toolchain (DECISION-003, DECISION-005)
+
+**Decision:** Rust edition 2024, toolchain pinned exactly in `rust-toolchain.toml` (stable at init) and mirrored in `rust-version`. LLVM 21 via `inkwell` 0.10, feature `llvm21-1`.
+
+**Why:** LLVM 21 is Ubuntu 26.04's default `llvm-dev` and supported by inkwell 0.8–0.10.
+
+**Rules out:** Unpinned toolchains; any other LLVM major without a new decision.
+
+---
+
+### 11. Diagnostics and CLI crates (DECISION-006, DECISION-007)
+
+**Decision:** `codespan-reporting` (ASCII characters) renders human diagnostics; `clap` derive parses the CLI.
+
+**Why:** Closest to rustc's layout used by the spec; clap's usage-error exit code is already 2.
+
+**Rules out:** `ariadne`. Open caveat: milestone 3 must confirm codespan's output matches spec §10 byte-for-byte, or open a new decision.
+
+---
+
+### 12. Acceptance tests (DECISION-008)
+
+**Decision:** `tests/programs/<name>.la` with sibling `.stdout`, `.exit` and (for rejected programs) `.stderr` files; one integration test runs them all and compares exactly.
+
+**Why:** No dependency; adding a test is adding files.
+
+**Rules out:** Snapshot crates (`insta`, `trycmd`).
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -88,12 +138,12 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- Toolchain install (Rust, LLVM dev, libgc dev)
-- Crate initialisation (blocked on DECISION-001, -003, -005)
+- Toolchain install (Rust, `llvm-21-dev`, `libgc-dev`)
+- Crate initialisation (no longer blocked — all milestone 1 decisions resolved)
 - Milestones 1–5
 
 ---
 
 ## NEXT SESSION START POINT
 
-Resolve the open DECISIONS.md entries that block milestone 1 (001, 002, 003, 005, 006, 007, 008) with the user, install the toolchain, `cargo init`, then write `PRPs/prp-001-lexer.md`.
+Install the toolchain (rustup stable, `llvm-21-dev`, `libgc-dev`), initialise the crate per MEMORY decisions 8–12, then run discovery for `PRPs/prp-001-lexer.md`.
