@@ -24,19 +24,23 @@ impl<'ctx> Lowerer<'ctx> {
     /// Lowers a block in its own scope; its value is the tail's, or `Void`.
     pub(super) fn block(&mut self, block: &Block) -> Result<Value<'ctx>, CodegenError> {
         self.scopes.push();
+        let mut diverged = false;
         for stmt in &block.stmts {
-            self.stmt(stmt)?;
+            // Statements after a diverging one are still lowered (into dead
+            // blocks) so their own errors are reported.
+            diverged |= self.stmt(stmt)?;
         }
         let value = match &block.tail {
             Some(tail) => self.expr(tail)?,
             None => Value::Void,
         };
         self.scopes.pop();
-        Ok(value)
+        Ok(if diverged { self.never() } else { value })
     }
 
-    /// `if cond { then } [else …]`; both branches must have the same kind,
-    /// merged with a `phi` when non-void (spec §9).
+    /// `if cond { then } [else …]`. Both branches must have the same kind and
+    /// merge with a `phi`; a branch that never finishes adds no edge and fits
+    /// any kind (spec §6, §9).
     pub(super) fn if_expr(
         &mut self,
         span: Span,
@@ -52,8 +56,8 @@ impl<'ctx> Lowerer<'ctx> {
                 .build_conditional_branch(condition, then_block, merge)
                 .expect(POSITIONED);
             self.builder.position_at_end(then_block);
-            self.block(then)?;
-            self.branch(merge);
+            let value = self.block(then)?;
+            self.finish_branch(value, merge);
             self.builder.position_at_end(merge);
             return Ok(Value::Void);
         };
@@ -65,15 +69,19 @@ impl<'ctx> Lowerer<'ctx> {
         self.builder.position_at_end(then_block);
         let then_value = self.block(then)?;
         let then_end = self.current_block();
-        self.branch(merge);
+        self.finish_branch(then_value, merge);
 
         self.builder.position_at_end(else_block);
         let else_value = self.expr(else_expr)?;
         let else_end = self.current_block();
-        self.branch(merge);
+        self.finish_branch(else_value, merge);
 
         self.builder.position_at_end(merge);
         let (kind, a, b) = match (then_value, else_value) {
+            (Value::Never { .. }, Value::Never { .. }) => return Ok(self.never()),
+            // The other branch's block is the merge block's only predecessor,
+            // so its value can be used directly.
+            (Value::Never { .. }, value) | (value, Value::Never { .. }) => return Ok(value),
             (Value::Void, Value::Void) => return Ok(Value::Void),
             (Value::Int(a), Value::Int(b)) => (Kind::Int, a, b),
             (Value::Bool(a), Value::Bool(b)) => (Kind::Bool, a, b),
@@ -85,6 +93,16 @@ impl<'ctx> Lowerer<'ctx> {
             .expect(POSITIONED);
         phi.add_incoming(&[(&a, then_end), (&b, else_end)]);
         Ok(Value::of(kind, phi.as_basic_value().into_int_value()))
+    }
+
+    /// Ends an `if` branch: jump to `merge`, or `unreachable` if the branch
+    /// never finishes, so it adds no edge to the merge block.
+    fn finish_branch(&self, value: Value<'ctx>, merge: BasicBlock<'ctx>) {
+        if matches!(value, Value::Never { .. }) {
+            self.builder.build_unreachable().expect(POSITIONED);
+        } else {
+            self.branch(merge);
+        }
     }
 
     /// `while cond { body }`: the condition is checked before every iteration.

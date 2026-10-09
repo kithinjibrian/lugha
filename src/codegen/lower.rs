@@ -1,4 +1,6 @@
-//! Items and functions: `lugha_fn_main` and the C `main` that calls it.
+//! The module: every function, then the C `main` that calls `lugha_fn_main`.
+
+use std::collections::HashMap;
 
 use inkwell::builder::Builder;
 use inkwell::context::Context;
@@ -7,8 +9,9 @@ use inkwell::values::{FunctionValue, ValueKind};
 
 use super::CodegenError;
 use super::control::Loop;
+use super::function::Signature;
 use super::scope::Scopes;
-use super::value::{Value, type_error};
+use super::value::Kind;
 use crate::ast::{FunDecl, Item, Program, TypeKind};
 use crate::span::Span;
 
@@ -21,8 +24,12 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) context: &'ctx Context,
     pub(super) module: Module<'ctx>,
     pub(super) builder: Builder<'ctx>,
+    /// Every declared function, by Lugha name.
+    pub(super) functions: HashMap<String, Signature<'ctx>>,
     /// The function being emitted, for appending basic blocks.
     pub(super) function: Option<FunctionValue<'ctx>>,
+    /// Its return kind; `None` for a void function.
+    pub(super) ret: Option<Kind>,
     /// Local variables in scope.
     pub(super) scopes: Scopes<'ctx>,
     /// Enclosing loops, innermost last, for `break` and `continue`.
@@ -38,12 +45,20 @@ pub(super) fn lower<'ctx>(
         context,
         module: context.create_module("lugha"),
         builder: context.create_builder(),
+        functions: HashMap::new(),
         function: None,
+        ret: None,
         scopes: Scopes::default(),
         loops: Vec::new(),
     };
-    let main = find_main(program)?;
-    let user_main = lowerer.main_function(main)?;
+    lowerer.declare_functions(program)?;
+    let main = check_main(program)?;
+    for item in &program.items {
+        if let Item::Fun(f) = item {
+            lowerer.define(f)?;
+        }
+    }
+    let user_main = lowerer.functions[&main.name.name].function;
     lowerer.c_main(user_main);
     lowerer
         .module
@@ -60,68 +75,30 @@ pub(super) fn unsupported(what: &'static str, milestone: u8, span: Span) -> Code
     }
 }
 
-/// Returns the only item milestone 1 can compile, `main`, or the first item it can't.
-fn find_main(program: &Program) -> Result<&FunDecl, CodegenError> {
-    let mut main = None;
-    for item in &program.items {
-        match item {
-            Item::Fun(f) if f.name.name == "main" && main.is_none() => main = Some(f),
-            Item::Fun(f) if f.name.name == "main" => {
-                return Err(unsupported("duplicate functions", 3, f.name.span));
-            }
-            Item::Fun(f) => return Err(unsupported("functions other than main", 2, f.name.span)),
-            Item::Extern(e) => return Err(unsupported("extern functions", 4, e.span)),
-            Item::Struct(s) => return Err(unsupported("structs", 5, s.span)),
-        }
+/// `main` must exist, take no parameters, and return `i32` or nothing (spec §6).
+fn check_main(program: &Program) -> Result<&FunDecl, CodegenError> {
+    let main = program
+        .items
+        .iter()
+        .find_map(|item| match item {
+            Item::Fun(f) if f.name.name == "main" => Some(f),
+            _ => None,
+        })
+        .ok_or_else(|| unsupported("programs without a `main` function", 3, Span::new(0, 0)))?;
+    if let Some(param) = main.params.first() {
+        return Err(unsupported("parameters for main", 3, param.name.span));
     }
-    main.ok_or_else(|| unsupported("programs without a `main` function", 3, Span::new(0, 0)))
+    match &main.ret {
+        Some(ty) if ty.kind != TypeKind::I32 => {
+            Err(unsupported("this return type for main", 3, ty.span))
+        }
+        _ => Ok(main),
+    }
 }
 
 impl<'ctx> Lowerer<'ctx> {
-    /// Emits `main` as `lugha_fn_main` (spec §8): returns its `i64` tail
-    /// truncated to `i32`, or `void`.
-    fn main_function(&mut self, main: &FunDecl) -> Result<FunctionValue<'ctx>, CodegenError> {
-        if let Some(param) = main.params.first() {
-            return Err(unsupported("parameters", 2, param.name.span));
-        }
-        let returns_i32 = match &main.ret {
-            None => false,
-            Some(ty) if ty.kind == TypeKind::I32 => true,
-            Some(ty) => return Err(unsupported("this return type for main", 3, ty.span)),
-        };
-        let i32_type = self.context.i32_type();
-        let fn_type = if returns_i32 {
-            i32_type.fn_type(&[], false)
-        } else {
-            self.context.void_type().fn_type(&[], false)
-        };
-        let function = self.module.add_function("lugha_fn_main", fn_type, None);
-        self.function = Some(function);
-        self.builder
-            .position_at_end(self.context.append_basic_block(function, "entry"));
-        let value = self.block(&main.body)?;
-        if returns_i32 {
-            let result = match (value, &main.body.tail) {
-                (Value::Int(result), _) => result,
-                (_, None) => {
-                    let span = main.body.span;
-                    return Err(unsupported("`main` without a result value", 3, span));
-                }
-                (_, Some(tail)) => return Err(type_error(tail.span)),
-            };
-            let exit = self
-                .builder
-                .build_int_truncate(result, i32_type, "exit")
-                .expect(POSITIONED);
-            self.builder.build_return(Some(&exit)).expect(POSITIONED);
-        } else {
-            // A void main's tail is evaluated for its effects (traps) and discarded.
-            self.builder.build_return(None).expect(POSITIONED);
-        }
-        Ok(function)
-    }
-
-    /// Emits the C entry point, which calls `lugha_fn_main` and returns its result or 0.
+    /// Emits the C entry point: calls `lugha_fn_main` and returns its result
+    /// truncated to `i32`, or 0 for a void `main`.
     fn c_main(&mut self, user_main: FunctionValue<'ctx>) {
         let i32_type = self.context.i32_type();
         let main = self
@@ -134,7 +111,13 @@ impl<'ctx> Lowerer<'ctx> {
             .build_call(user_main, &[], "result")
             .expect(POSITIONED);
         let code = match call.try_as_basic_value() {
-            ValueKind::Basic(value) => value.into_int_value(),
+            ValueKind::Basic(value) => {
+                // Integers are i64 until milestone 3; the exit status is the low bits (spec §11).
+                let value = value.into_int_value();
+                self.builder
+                    .build_int_truncate(value, i32_type, "exit")
+                    .expect(POSITIONED)
+            }
             ValueKind::Instruction(_) => i32_type.const_zero(),
         };
         self.builder.build_return(Some(&code)).expect(POSITIONED);
@@ -149,8 +132,8 @@ mod tests {
     fn main_is_prefixed_and_wrapped_by_a_c_main() {
         let ir = ir("fun main(): i32 { 2 + 3 * 4 }");
         assert!(ir.contains("define i32 @main()"), "{ir}");
-        assert!(ir.contains("call i32 @lugha_fn_main()"), "{ir}");
-        assert!(ir.contains("define i32 @lugha_fn_main()"), "{ir}");
+        assert!(ir.contains("call i64 @lugha_fn_main()"), "{ir}");
+        assert!(ir.contains("define i64 @lugha_fn_main()"), "{ir}");
     }
 
     #[test]
@@ -161,12 +144,8 @@ mod tests {
     }
 
     #[test]
-    fn items_beyond_milestone_1_are_unsupported() {
+    fn items_and_main_rules_wait_for_later_milestones() {
         let cases = [
-            (
-                "fun helper() {}\nfun main() {}",
-                ("functions other than main", 2, "helper"),
-            ),
             (
                 "extern fun abs(x: i32): i32;\nfun main() {}",
                 ("extern functions", 4, "extern fun abs(x: i32): i32;"),
@@ -175,10 +154,14 @@ mod tests {
                 "struct P { x: i64 }\nfun main() {}",
                 ("structs", 5, "struct P { x: i64 }"),
             ),
-            ("fun main(x: i64) {}", ("parameters", 2, "x")),
+            ("fun main(x: i64) {}", ("parameters for main", 3, "x")),
             (
                 "fun main(): i64 { 1 }",
                 ("this return type for main", 3, "i64"),
+            ),
+            (
+                "fun helper() {}",
+                ("programs without a `main` function", 3, ""),
             ),
         ];
         for (src, want) in cases {
@@ -190,7 +173,7 @@ mod tests {
     fn i32_main_needs_an_integer_result() {
         assert_eq!(
             unsupported("fun main(): i32 { let x = 1; }"),
-            ("`main` without a result value", 3, "{ let x = 1; }")
+            ("checking missing returns", 3, "main")
         );
         assert_eq!(
             unsupported("fun main(): i32 { true }"),

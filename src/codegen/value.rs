@@ -10,7 +10,8 @@ use inkwell::types::IntType;
 use inkwell::values::IntValue;
 
 use super::CodegenError;
-use super::lower::unsupported;
+use super::lower::{Lowerer, unsupported};
+use crate::ast::{Type, TypeKind};
 use crate::span::Span;
 
 /// What a non-void value is.
@@ -39,6 +40,14 @@ pub(super) enum Value<'ctx> {
     Bool(IntValue<'ctx>),
     /// Statements, blocks without a tail, `if` without `else`, loops.
     Void,
+    /// Control never gets here: the code after `return`, `break` or
+    /// `continue`, or an `if` whose branches all do that (spec §6). It stands in
+    /// for any kind, so it carries `undef` placeholders; they only ever appear
+    /// in unreachable blocks.
+    Never {
+        int: IntValue<'ctx>,
+        bool: IntValue<'ctx>,
+    },
 }
 
 impl<'ctx> Value<'ctx> {
@@ -53,7 +62,7 @@ impl<'ctx> Value<'ctx> {
     /// The integer, or a type-checking error at `span`.
     pub(super) fn int(self, span: Span) -> Result<IntValue<'ctx>, CodegenError> {
         match self {
-            Value::Int(value) => Ok(value),
+            Value::Int(value) | Value::Never { int: value, .. } => Ok(value),
             _ => Err(type_error(span)),
         }
     }
@@ -61,7 +70,7 @@ impl<'ctx> Value<'ctx> {
     /// The boolean, or a type-checking error at `span`.
     pub(super) fn bool(self, span: Span) -> Result<IntValue<'ctx>, CodegenError> {
         match self {
-            Value::Bool(value) => Ok(value),
+            Value::Bool(value) | Value::Never { bool: value, .. } => Ok(value),
             _ => Err(type_error(span)),
         }
     }
@@ -71,6 +80,7 @@ impl<'ctx> Value<'ctx> {
         match self {
             Value::Int(value) => Ok((Kind::Int, value)),
             Value::Bool(value) => Ok((Kind::Bool, value)),
+            Value::Never { int, .. } => Ok((Kind::Int, int)),
             Value::Void => Err(type_error(span)),
         }
     }
@@ -79,4 +89,26 @@ impl<'ctx> Value<'ctx> {
 /// A mistake only the milestone 3 checker can report properly.
 pub(super) fn type_error(span: Span) -> CodegenError {
     unsupported("type checking", 3, span)
+}
+
+/// The kind an annotation requires; `i32` and `u8` are `i64` until milestone 3.
+pub(super) fn annotation_kind(ty: &Type) -> Result<Kind, CodegenError> {
+    match &ty.kind {
+        TypeKind::I32 | TypeKind::I64 | TypeKind::U8 => Ok(Kind::Int),
+        TypeKind::Bool => Ok(Kind::Bool),
+        TypeKind::F64 => Err(unsupported("floats", 3, ty.span)),
+        TypeKind::String => Err(unsupported("strings", 4, ty.span)),
+        TypeKind::Named(_) => Err(unsupported("structs", 5, ty.span)),
+        TypeKind::Array(_) => Err(unsupported("arrays", 5, ty.span)),
+    }
+}
+
+impl<'ctx> Lowerer<'ctx> {
+    /// The value of code that never runs to completion.
+    pub(super) fn never(&self) -> Value<'ctx> {
+        Value::Never {
+            int: self.context.i64_type().get_undef(),
+            bool: self.context.bool_type().get_undef(),
+        }
+    }
 }

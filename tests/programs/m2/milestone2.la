@@ -1,0 +1,11 @@
+// The spec §11 milestone 2 program, verbatim: fib(10) + 0 + 1 + 2 - 3 = 55.
+fun fib(n: i32): i32 = if n < 2 { n } else { fib(n - 1) + fib(n - 2) };
+
+fun main(): i32 {
+    let n: i32 = 3;
+    let mut total: i32 = 0;
+    for i in 0..n {
+        total += i;
+    }
+    fib(10) + total - n
+}

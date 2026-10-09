@@ -1,0 +1,8 @@
+// A branch that returns adds no phi edge and stands in for any type (spec §6, §9).
+fun abs(x: i64): i64 {
+    if x < 0 { return -x; } else { x }
+}
+
+fun main(): i32 {
+    abs(-5)
+}

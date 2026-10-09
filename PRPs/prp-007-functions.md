@@ -1,6 +1,6 @@
 ## FEATURE: Compile functions — parameters, calls (including forward and mutual recursion), `return`, void functions and `=` bodies — completing milestone 2.
 
-**Status:** approved 2026-10-09 — session 10
+**Status:** implemented 2026-10-09 — session 10 (branch `prp-007-functions`)
 **Milestone:** 2, second of two PRPs. Done-when: the spec §11 milestone 2 program exits 55.
 **Spec:** §6 (functions, item order, names, expression bodies, return checking, entry point), §8 (`lugha_fn_` prefix), §9 (lowering: a definitely-returning branch adds no phi edge)
 **Decisions:** CLAUDE.md rule 9 (milestones 1–2: integers are `i64`); PRP-006 policies (`Int`/`Bool` value kinds; stop where forced, compile where possible)
@@ -20,6 +20,16 @@ Programs with several functions compile and run: recursion, calls to functions d
   - `tests/programs/m2/` gains the §11 program and four more; CLAUDE.md is updated.
 - Related existing code: `src/codegen/{lower,value,control,stmt,expr,scope}.rs`.
 - Open decisions that must be resolved first: none.
+
+### Amendments during implementation (session 10)
+- **`main` rules:**
+  - `main` with parameters now reports "parameters for main" (milestone 3) instead of milestone 1's "parameters" (2), since parameters are now supported in general.
+  - An `i32` `main` whose body can fall off the end reports "checking missing returns" (3) like any function, replacing milestone 1's "`main` without a result value".
+- **`Value::Never`** carries `i64` and `i1` `undef` placeholders, so the existing `.int()`/`.bool()` helpers work in unreachable code without extra context.
+- **Updated earlier tests:**
+  - `tests/cli.rs` uses `println(1)` ("intrinsics", milestone 4) as its "not implemented" example, now that `return` compiles.
+  - The entry-block alloca test now searches for `define i64 @lugha_fn_main`.
+- **`codegen/control.rs`** ended at exactly 300 lines, within the limit.
 
 ### Discovery answers (session 10)
 1. **Divergence is tracked with a third value kind, `Never`, following §6 exactly:**
@@ -117,14 +127,14 @@ Programs with several functions compile and run: recursion, calls to functions d
 ## TESTS TO WRITE
 
 Unit tests (`src/codegen/`):
-- [ ] Each "checking …" case: duplicate function, unknown function, wrong argument count, argument kind mismatch, calling a local, function used as a value, `println(1)` gives intrinsics (4), missing return, `return 1;` in a void function, `return;` in an `i64` function — each with milestone and span.
-- [ ] `fun g(): i64 { while true { return 1; } }` gives missing return (§6: loops never definitely return).
-- [ ] IR: an `if` with one `Never` branch has no `phi`, and its body verifies; `fun f(): i64 { return 1; }` ends in `unreachable` after the `ret`'s dead block; calls go to `lugha_fn_<name>`.
-- [ ] `define i64 @lugha_fn_main()` for `fun main(): i32`; the C `main` truncates.
+- [x] Each "checking …" case: duplicate function, unknown function, wrong argument count, argument kind mismatch, calling a local, function used as a value, `println(1)` gives intrinsics (4), missing return, `return 1;` in a void function, `return;` in an `i64` function — each with milestone and span.
+- [x] `fun g(): i64 { while true { return 1; } }` gives missing return (§6: loops never definitely return).
+- [x] IR: an `if` with one `Never` branch has no `phi`, and its body verifies; `fun f(): i64 { return 1; }` ends in `unreachable` after the `ret`'s dead block; calls go to `lugha_fn_<name>`.
+- [x] `define i64 @lugha_fn_main()` for `fun main(): i32`; the C `main` truncates.
 
 Integration and acceptance:
-- [ ] All five new `m2/` programs pass through `lughac run` and agree at `-O0`/`-O2`.
-- [ ] All existing tests still pass.
+- [x] All five new `m2/` programs pass through `lughac run` and agree at `-O0`/`-O2`.
+- [x] All existing tests still pass.
 
 ## ROLLBACK PLAN
 

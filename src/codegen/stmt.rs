@@ -3,29 +3,45 @@
 use super::CodegenError;
 use super::lower::{Lowerer, POSITIONED, unsupported};
 use super::scope::Local;
-use super::value::{Kind, type_error};
-use crate::ast::{AssignOp, BinOp, Expr, ExprKind, ForIter, Ident, Stmt, StmtKind, Type, TypeKind};
+use super::value::{Kind, Value, annotation_kind, type_error};
+use crate::ast::{AssignOp, BinOp, Expr, ExprKind, ForIter, Ident, Stmt, StmtKind, Type};
 
 impl<'ctx> Lowerer<'ctx> {
-    pub(super) fn stmt(&mut self, stmt: &Stmt) -> Result<(), CodegenError> {
+    /// Lowers a statement and reports whether it diverges — whether control
+    /// can't reach the next statement (spec §6).
+    pub(super) fn stmt(&mut self, stmt: &Stmt) -> Result<bool, CodegenError> {
         match &stmt.kind {
-            StmtKind::Let { name, ty, init, .. } => self.let_stmt(name, ty.as_ref(), init),
-            StmtKind::Assign { op, place, value } => self.assign(*op, place, value),
-            StmtKind::Expr { expr, .. } => self.expr(expr).map(|_| ()),
-            StmtKind::While { cond, body } => self.while_loop(cond, body),
+            StmtKind::Let { name, ty, init, .. } => self.let_stmt(name, ty.as_ref(), init)?,
+            StmtKind::Assign { op, place, value } => self.assign(*op, place, value)?,
+            StmtKind::Expr { expr, .. } => {
+                let value = self.expr(expr)?;
+                return Ok(matches!(value, Value::Never { .. }));
+            }
+            // Loops never definitely return (spec §6), whatever their body does.
+            StmtKind::While { cond, body } => self.while_loop(cond, body)?,
             StmtKind::For {
                 var,
                 iter: ForIter::Range(start, end),
                 body,
-            } => self.for_range(var, start, end, body),
+            } => {
+                self.for_range(var, start, end, body)?;
+            }
             StmtKind::For {
                 iter: ForIter::Array(_),
                 ..
-            } => Err(unsupported("arrays", 5, stmt.span)),
-            StmtKind::Return(_) => Err(unsupported("`return`", 2, stmt.span)),
-            StmtKind::Break => self.jump(true, stmt.span),
-            StmtKind::Continue => self.jump(false, stmt.span),
+            } => {
+                return Err(unsupported("arrays", 5, stmt.span));
+            }
+            StmtKind::Return(value) => {
+                self.return_stmt(value.as_ref(), stmt.span)?;
+                return Ok(true);
+            }
+            StmtKind::Break | StmtKind::Continue => {
+                self.jump(matches!(stmt.kind, StmtKind::Break), stmt.span)?;
+                return Ok(true);
+            }
         }
+        Ok(false)
     }
 
     /// `let [mut] name [: ty] = init;` — `init` is evaluated before `name` is
@@ -98,18 +114,6 @@ fn compound_op(op: AssignOp) -> Option<BinOp> {
     }
 }
 
-/// The kind a `let` annotation requires; `i32` and `u8` are `i64` until milestone 3.
-fn annotation_kind(ty: &Type) -> Result<Kind, CodegenError> {
-    match &ty.kind {
-        TypeKind::I32 | TypeKind::I64 | TypeKind::U8 => Ok(Kind::Int),
-        TypeKind::Bool => Ok(Kind::Bool),
-        TypeKind::F64 => Err(unsupported("floats", 3, ty.span)),
-        TypeKind::String => Err(unsupported("strings", 4, ty.span)),
-        TypeKind::Named(_) => Err(unsupported("structs", 5, ty.span)),
-        TypeKind::Array(_) => Err(unsupported("arrays", 5, ty.span)),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::codegen::test_util::{ir, unsupported};
@@ -152,10 +156,6 @@ mod tests {
     #[test]
     fn later_milestones_are_unsupported() {
         assert_eq!(
-            unsupported("fun main(): i32 { return 1; }"),
-            ("`return`", 2, "return 1;")
-        );
-        assert_eq!(
             unsupported("fun main() { for x of xs { } }"),
             ("arrays", 5, "for x of xs { }")
         );
@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn locals_live_in_the_entry_block() {
         let ir = ir("fun main(): i32 { let mut x = 1; while x < 5 { let y = x; x += y; } x }");
-        let body = &ir[ir.find("define i32 @lugha_fn_main").unwrap()..];
+        let body = &ir[ir.find("define i64 @lugha_fn_main").unwrap()..];
         let first_branch = body.find("br ").unwrap();
         assert_eq!(
             body.matches("alloca").count(),

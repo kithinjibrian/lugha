@@ -40,10 +40,10 @@ Done when `fun main(): i32 { 2 + 3 * 4 }` exits with 14.
 - [x] PRP-004: codegen + link (inkwell, object file, `cc`)
 - [x] PRP-005: `lughac` driver and exit codes; `#[ignore]` removed — **milestone 1 done**
 
-### Milestone 2 — Variables, control flow, functions
+### Milestone 2 — Variables, control flow, functions ✅
 Done when the §11 milestone 2 program exits with 55.
 - [x] PRP-006: locals and control flow in `main` (`let`/`mut`, assignment, blocks, `if`, `while`, `for`, `break`/`continue`, comparisons, `&&`/`||`)
-- [ ] PRP-007: functions, parameters, calls, recursion, `return`, `=` bodies — done-when: the §11 milestone 2 program exits 55
+- [x] PRP-007: functions, parameters, calls, recursion, `return`, `=` bodies — §11 program exits 55 — **milestone 2 done**
 
 ### Milestone 3 — Type checker and diagnostics
 Done when the §10 rejected program reports E0401 in both formats.

@@ -1,0 +1,14 @@
+// Parameters are immutable; shadow one with a mutable copy (spec §6).
+fun count(n: i64): i64 {
+    let mut n = n;
+    let mut c = 0;
+    while n > 0 {
+        n -= 1;
+        c += 1;
+    }
+    c
+}
+
+fun main(): i32 {
+    count(6)
+}

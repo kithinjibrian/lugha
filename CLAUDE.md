@@ -229,7 +229,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  expr.rs (Pratt), primary.rs, stmt.rs, item.rs, sexp.rs, test_util.rs
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (main, C main),
 │   │                  value.rs (Int/Bool kinds), scope.rs (locals), expr.rs, control.rs (blocks,
-│   │                  if, loops, jumps), stmt.rs
+│   │                  if, loops, jumps), stmt.rs, function.rs (signatures, bodies, return, calls)
 │   ├── link.rs      — `cc … -lgc -lm -o out`, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes), pipeline.rs, source.rs (load, E0110, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)
@@ -276,5 +276,5 @@ These look like bugs but are specified behavior:
 - **`as` casts truncate/saturate silently.** The only place values wrap (spec §4).
 - **Until milestone 4, integer `+ - *` wrap and `/ %` by zero or `MIN / -1` trap with SIGILL.** The specified panics need `lugha_rt_panic` (spec §11). Do not add overflow checks before then.
 - **`lughac check` only lexes and parses** until the checker lands in milestone 3.
-- **Until milestone 3, assigning to a non-`mut` variable compiles**, and type or name mistakes that codegen runs into (`if 5 {}`, `1 + true`, an undefined name, `break` outside a loop) report "not implemented yet: … (milestone 3)" with exit 2. Codegen tracks only two value kinds (`Int`/`Bool`); this is not the type checker.
+- **Until milestone 3, assigning to a non-`mut` variable compiles**, and type or name mistakes that codegen runs into (`if 5 {}`, `1 + true`, an undefined name, `break` outside a loop, unknown functions, wrong argument counts or kinds, duplicate functions, missing returns) report "not implemented yet: … (milestone 3)" with exit 2. Codegen tracks only two value kinds (`Int`/`Bool`); this is not the type checker.
 - **Codegen reports the outermost unsupported construct first** (`[1][0]` → indexing, not arrays). The message names the milestone that adds it; it goes away by milestone 5.

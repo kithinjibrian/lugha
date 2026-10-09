@@ -144,9 +144,11 @@ Open questions live in `DECISIONS.md`, not here.
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 2 complete**: functions, recursion, locals, control flow; `m2/` acceptance programs pass (§11 program exits 55)
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-007 functions: signatures declared first (`lugha_fn_<name>`), params as locals, calls, `return`, `Value::Never` divergence per §6; `lugha_fn_main` returns i64 until M3 — **milestone 2 complete**
 - PRP-006 locals and control flow: codegen `Value` kinds (Int i64 / Bool i1), scopes with entry-block allocas, if/while/for/break/continue, short-circuit; `tests/programs/m2/` (7 programs)
 - PRP-005 driver: `src/driver/` (clap CLI, pipeline, codespan render, hand-written JSON); E0110 for invalid UTF-8
 - PRP-004 codegen + link: `codegen::emit_ir`/`emit_object` (O0/O2), `link::link`; M1 subset; wrap + trap until M4
@@ -160,10 +162,10 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- Milestones 2–5
+- Milestones 3–5
 
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 2, second PRP: PRP-007 functions — multiple functions, parameters, calls, recursion, `return`, void functions, forward calls; the §11 milestone 2 program exits 55. `codegen/expr.rs` and `control.rs` are at 282 lines — put calls in a new module.
+Milestone 3: the type checker and diagnostics (spec §11). It replaces codegen's `Int`/`Bool`/`Never` value kinds and every "not implemented yet: … (milestone 3)" stop with real types and E03xx–E05xx codes, plus W0101. Start with a discovery interview on how to split it into PRPs. `codegen/control.rs` is exactly 300 lines.

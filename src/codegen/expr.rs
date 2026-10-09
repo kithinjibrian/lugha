@@ -24,10 +24,15 @@ impl<'ctx> Lowerer<'ctx> {
                 Value::Bool(self.context.bool_type().const_int(u64::from(*value), false))
             }
             ExprKind::Name(name) => {
-                let local = self
-                    .scopes
-                    .lookup(name)
-                    .ok_or_else(|| unsupported("checking undefined names", 3, expr.span))?;
+                let Some(local) = self.scopes.lookup(name) else {
+                    // v0 has no function values (spec §6).
+                    let what = if self.functions.contains_key(name) {
+                        "type checking"
+                    } else {
+                        "checking undefined names"
+                    };
+                    return Err(unsupported(what, 3, expr.span));
+                };
                 Value::of(local.kind, self.load(local, name))
             }
             ExprKind::Unary(UnOp::Neg, operand) => {
@@ -51,6 +56,7 @@ impl<'ctx> Lowerer<'ctx> {
                 self.if_expr(expr.span, cond, then, else_.as_deref())?
             }
             ExprKind::Block(block) => self.block(block)?,
+            ExprKind::Call(callee, args) => self.call(expr, callee, args)?,
             _ => return Err(expr_unsupported(expr)),
         })
     }
@@ -202,7 +208,6 @@ fn expr_unsupported(expr: &Expr) -> CodegenError {
         ExprKind::Float(_) => ("floats", 3),
         ExprKind::Str(_) => ("strings", 4),
         ExprKind::Cast(..) => ("`as` casts", 3),
-        ExprKind::Call(..) => ("function calls", 2),
         ExprKind::Index(..) => ("indexing", 5),
         ExprKind::Field(..) => ("field access", 5),
         ExprKind::StructLit(..) => ("structs", 5),
@@ -266,7 +271,6 @@ mod tests {
         let cases = [
             ("fun main() { \"hi\" }", ("strings", 4, "\"hi\"")),
             ("fun main() { 1.5 }", ("floats", 3, "1.5")),
-            ("fun main(): i32 { f(1) }", ("function calls", 2, "f(1)")),
             (
                 "fun main(): i32 { 1 as i32 }",
                 ("`as` casts", 3, "1 as i32"),

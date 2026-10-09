@@ -1,0 +1,19 @@
+// Void functions with an early `return;`, called as statements.
+fun check(n: i64) {
+    if n > 0 {
+        return;
+    }
+    let unused = n;
+}
+
+fun spin(times: i64) {
+    for i in 0..times {
+        check(i);
+    }
+}
+
+fun main(): i32 {
+    check(1);
+    spin(4);
+    3
+}

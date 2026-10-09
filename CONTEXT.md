@@ -468,6 +468,56 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, progres
 
 Branch: main → prp-007-functions
 
+### WHAT WAS DONE
+
+Discovery for PRP-007: the user chose divergence tracking with a third value kind, `Never`, following §6. Everything else followed the spec or the PRP-006 policies.
+
+Implemented test-first: five new `m2/` programs (all red), then:
+- `codegen/function.rs`: signatures declared first, bodies, `return`, calls.
+- `Value::Never` in `value.rs`.
+- Divergence in `block`/`if`.
+- `stmt()` reports divergence.
+- `lower.rs` lowers every function; the C `main` truncates the `i64` result.
+
+Two earlier tests broke as expected (`return` and the `i32` `lugha_fn_main` signature are no longer accurate) and were updated; see the PRP amendments.
+
+**Milestone 2 is complete:** `lughac run tests/programs/m2/milestone2.la` exits 55. 121 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/codegen/function.rs  — Signature, declare_functions, define, return_stmt, call + 4 tests
+src/codegen/value.rs     — Value::Never (undef placeholders), annotation_kind (moved), never()
+src/codegen/control.rs   — block divergence, if: Never branches add no phi edge (finish_branch)
+src/codegen/stmt.rs      — stmt() returns whether it diverges; return wired in
+src/codegen/expr.rs      — calls; a function name used as a value is a type error
+src/codegen/lower.rs     — functions table, ret kind, check_main, every function defined, C main truncates
+tests/programs/m2/       — milestone2 (55), early_return (5), mutual_recursion (1), void_helpers (3), param_shadow (6)
+tests/cli.rs             — unsupported example is now println (milestone 4)
+PRPs/prp-007-functions.md — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issues, file tree, milestone 2 done
+```
+
+### TESTS WRITTEN
+
+- Unit:
+  - Call mistakes: duplicate, undefined, argument count, argument kind, calling a local, a function used as a value, intrinsics.
+  - `return` vs function kind; missing returns, including `while true`.
+  - No `phi` for a returning branch; `unreachable` after a diverging body; `lugha_fn_` naming; `i64` main.
+- Acceptance: five new `m2/` programs; all twelve `m2/` programs cross-checked at -O0/-O2.
+
+### DECISIONS MADE
+
+- Divergence tracking with `Value::Never` (PRP-007), plus the amendments recorded there.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
+### STILL OPEN AT CLOSE
+
+- Branch `prp-007-functions` not yet merged into `main`; tag `m2` after the merge.
+
 ---
 
 ## NEXT SESSION START POINT

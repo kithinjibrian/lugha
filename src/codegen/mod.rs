@@ -10,6 +10,7 @@
 
 mod control;
 mod expr;
+mod function;
 mod lower;
 mod scope;
 mod stmt;
