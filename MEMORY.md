@@ -217,6 +217,16 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 20. Eager array copies stay (DECISION-010)
+
+**Decision:** Eager deep copies at the spec §4 copy sites; no copy-on-write. Measurements are in `docs/decisions/decision-010.md`. Spec §12 is ticked, with the tip to write through places.
+
+**Why:** Most copied arrays are written right away, so copy-on-write saves almost nothing. It would also need full reference counting, which Boehm makes unnecessary otherwise. The savings worth having come from dead locals (a static move-on-last-use check) or from writing in place.
+
+**Rules out:** copy-on-write and reference counts on arrays. A move-on-last-use optimization stays possible (unscheduled; TODO).
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -226,6 +236,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- DECISION-010 resolved: eager copies stay, with measurements in `docs/decisions/decision-010.md`
 - PRP-017 housekeeping: README, CI (green), `.claude/settings.json` deny rules, `docs/setup.md`
 - **Milestone 5 complete — Lugha v0 complete**: every §10 program passes, extracted from the spec; `lughac spec`
 - PRP-016 spec command: `lugha::SPEC`, `tests/spec.rs`, dead `Unsupported` paths removed
@@ -257,9 +268,9 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Lugha v0 is complete and housekeeping is done. No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
-- DECISION-010 (copy-on-write for arrays): measure copy costs on realistic programs, then decide.
-- DECISION-004 (design system): likely close as "not applicable" — lughac has no UI.
-- v1 language work from spec §11/§12 (growable list, boxed/optional types, methods, generics, modules), starting with a spec draft.
+No PRP is queued. Remaining options, each starting with discovery:
+- DECISION-004 (design system): likely close as not applicable, since lughac has no UI.
+- Move on last use (TODO ideas): a copy-avoiding optimization with no spec change; needs a PRP.
+- v1 language work from spec §11 (growable list, boxed/optional types, methods, generics, modules, swap/move), starting with a spec draft.
 
 See `TODO.md` and `DECISIONS.md`.

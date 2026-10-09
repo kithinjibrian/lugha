@@ -64,3 +64,8 @@ Done when every §10 program passes.
 - [x] PRP-014: arrays, bounds checks, repeat literals, `for`-`of`, array copies — primes prints 25
 - [x] PRP-015: structs and their copies — centroid prints `centroid: 2.0, 1.0`
 - [x] PRP-016: `lughac spec` and every §10 program; dead `Unsupported` paths removed — **milestone 5 done**
+
+## Ideas — noted, not scheduled
+
+- [ ] Move on last use: store a dead local's array without copying it (`grid = next`, `ps[i] = p`). A compiler optimization with no spec change; it needs a PRP. See DECISION-010.
+- [ ] v1 language question: a swap or move operation for buffers (`ys = buf` while `buf` stays in use is a full copy). See DECISION-010.

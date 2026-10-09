@@ -1,0 +1,36 @@
+// Sorting a copy of a parameter: one O(n) copy per O(n log n) sort.
+fun sorted(xs: i64[]): i64[] {
+    let mut ys = xs;
+    let mut width = 1;
+    let n = ys.len;
+    let mut buf = [0; n];
+    while width < n {
+        let mut lo = 0;
+        while lo < n {
+            let mid = if lo + width < n { lo + width } else { n };
+            let hi = if lo + 2 * width < n { lo + 2 * width } else { n };
+            let mut i = lo;
+            let mut j = mid;
+            for k in lo..hi {
+                if i < mid && (j >= hi || ys[i] <= ys[j]) { buf[k] = ys[i]; i += 1; } else { buf[k] = ys[j]; j += 1; }
+            }
+            lo = hi;
+        }
+        ys = buf;
+        width *= 2;
+    }
+    ys
+}
+
+fun main() {
+    let n = 200000;
+    let mut xs = [0; n];
+    let mut seed = 12345;
+    for i in 0..n { seed = (seed * 1103515245 + 12345) % 2147483648; xs[i] = seed; }
+    let mut total = 0;
+    for r in 0..5 {
+        let ys = sorted(xs);
+        total += ys[r] % 1000;
+    }
+    println(total);
+}

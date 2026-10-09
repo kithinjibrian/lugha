@@ -1080,15 +1080,47 @@ CHANGELOG.md, MEMORY.md  — entry, decision 19
 
 ## SESSION 21 — 2026-10-09 — DECISION-010 copy-on-write — open
 
-Branch: main
+Branch: main → decision-010-copy_cost
+
+### WHAT WAS DONE
+
+The user chose to measure by copy-vs-no-copy timing.
+- **Programs:** six benchmark programs: life, particles, particles_inplace, sort, matmul, histogram.
+- **Instrumented compiler:** a throwaway copy of the source in the scratchpad, never committed, could count copies and bytes or skip copies.
+- **Results:**
+  - Copy-on-write would save about 0% on life, sort and matmul (the copies are written right away), and at most ~65% on particles, only with full reference counting.
+  - The in-place rewrite of particles is 10× faster.
+  - The §10 programs make no copies.
+- **Resolution:** after an explanation, the user resolved DECISION-010 as **keep eager copies**. They also approved the spec §12 edit.
+
+### FILES CREATED OR MODIFIED
+
+```
+docs/decisions/decision-010.md — method, results, analysis, recommendation
+docs/decisions/decision-010/*.la — the six benchmark programs
+docs/specs/…Specification.md — §12 cost-of-copies item decided
+DECISIONS.md, MEMORY.md (decision 20), TODO.md (unscheduled ideas), CHANGELOG.md
+```
+
+### TESTS WRITTEN
+
+- None (no code changes); the benchmarks build and run with the released compiler.
+
+### DECISIONS MADE
+
+- DECISION-010 resolved: eager copies stay; no copy-on-write.
+
+### PENDING DECISIONS OPENED
+
+- None.
 
 ---
 
 ## NEXT SESSION START POINT
 
-Lugha v0 is complete and housekeeping is done. No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
-- DECISION-010 (copy-on-write for arrays): measure copy costs on realistic programs, then decide.
-- DECISION-004 (design system): likely close as "not applicable" — lughac has no UI.
-- v1 language work from spec §11/§12 (growable list, boxed/optional types, methods, generics, modules), starting with a spec draft.
+No PRP is queued. Remaining options, each starting with discovery:
+- DECISION-004 (design system): likely close as not applicable, since lughac has no UI.
+- Move on last use (TODO ideas): a copy-avoiding optimization with no spec change; needs a PRP.
+- v1 language work from spec §11 (growable list, boxed/optional types, methods, generics, modules, swap/move), starting with a spec draft.
 
 See `TODO.md` and `DECISIONS.md`.

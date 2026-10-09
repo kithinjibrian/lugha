@@ -1,0 +1,21 @@
+// Matrix multiply: results are fresh values, so copies are rare.
+fun mul(a: f64[][], b: f64[][]): f64[][] {
+    let n = a.len;
+    let mut out = [[0.0; n]; n];
+    for i in 0..n {
+        for k in 0..n {
+            let aik = a[i][k];
+            for j in 0..n { out[i][j] += aik * b[k][j]; }
+        }
+    }
+    out
+}
+
+fun main() {
+    let n = 200;
+    let mut m = [[0.0; n]; n];
+    let mut b = [[0.0; n]; n];
+    for i in 0..n { for j in 0..n { m[i][j] = ((i + j) % 7) as f64 / 7.0; b[i][j] = ((i * j) % 5) as f64 / 25.0; } }
+    for r in 0..10 { m = mul(m, b); }
+    println(m[0][0] + m[n - 1][n - 1]);
+}

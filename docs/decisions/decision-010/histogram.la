@@ -1,0 +1,9 @@
+// Counting into an array in place: no copies at all (a control).
+fun main() {
+    let mut counts = [0; 256];
+    let text = "the quick brown fox jumps over the lazy dog; pack my box with five dozen liquor jugs. ";
+    for r in 0..2000000 {
+        for i in 0..text.len { counts[text[i] as i64] += 1; }
+    }
+    println(counts[32]);
+}

@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- DECISION-010 resolved: array copies stay eager (no copy-on-write), backed by measurements in `docs/decisions/decision-010.md`; spec §12 updated
 - README with prerequisites, usage and tests; CI (fmt, clippy, tests in `ubuntu:26.04` with LLVM 21 and libgc) on every push and PR; Claude Code deny rules for the protected files; `setup.md` moved to `docs/`
 - `lughac spec` prints the bundled language specification; the §10 programs are tested straight from it, and every one passes — **milestone 5 complete: Lugha v0 is complete**
 - Structs: declarations in any order, literals, field reads and writes, structs in arrays and arrays in structs, deep copies of structs holding arrays, and trees through `kids: Node[]` (E0307, E0308, E0413, E0414) — the §10 centroid program prints `centroid: 2.0, 1.0`

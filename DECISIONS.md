@@ -32,18 +32,6 @@ None.
 
 ---
 
-### DECISION-010 — Cost of array copies
-
-**Status:** deferred
-**Raised:** 2026-10-09 — Session 1 (from spec §12)
-**Revisit when:** Milestone 5 works and real programs can be measured.
-
-**Question:** Keep eager deep copies, or move to copy-on-write?
-
-**Notes:** Copy-on-write needs a per-array reference count, which Boehm doesn't provide. Spec says measure first.
-
----
-
 ## RESOLVED
 
 ### DECISION-001 — Crate layout for lughac
@@ -192,3 +180,24 @@ None.
 
 **Copied to MEMORY.md:** yes
 
+---
+
+### DECISION-010 — Cost of array copies
+
+**Status:** resolved
+**Raised:** 2026-10-09 — Session 1 (from spec §12)
+**Resolved:** 2026-10-09 — Session 21
+
+**Question:** Keep eager deep copies, or move to copy-on-write?
+
+**Outcome:** Keep eager deep copies at the spec §4 copy sites; copy-on-write is rejected. Two follow-ups are noted in TODO but not scheduled:
+- a possible "move on last use" optimization for dead locals (no spec change);
+- a v1 language question about a swap or move operation for buffers.
+
+**Rationale:** Measurements in `docs/decisions/decision-010.md`:
+- Copy-on-write would save about 0% on `life`, `sort` and `matmul`, because the copied arrays are written right away and get copied anyway.
+- It would save at most ~65% on `particles`, and only with full reference counting: increments, scope-exit decrements, and a check on every element write. Boehm makes that bookkeeping unnecessary otherwise.
+- The savings that matter come from dead locals, which a compile-time move-on-last-use check can remove. Rewriting `particles` to update through the place chain is already 10× faster.
+- The spec §10 programs make no copies.
+
+**Copied to MEMORY.md:** yes

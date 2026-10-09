@@ -713,7 +713,7 @@ fun main(): i32 {
 These choices were made provisionally to keep the spec complete. Each is easy to change before implementation starts.
 
 - [x] **Return type syntax.** `fun f(): i32` (TypeScript) was chosen over `fun f() -> i32` (Rust) so that `:` always introduces a type.
-- [ ] **Cost of array copies.** Deep copies of large or nested arrays can be slow. Copy-on-write would make most copies free, but it needs a reference count on each array, which Boehm doesn't provide. Measure real programs before deciding.
+- [x] **Cost of array copies.** Decided: eager deep copies, measured on realistic programs. Copy-on-write would rarely help, because most copied arrays are written right away, so it would copy anyway. It would also need a reference count on every array, which Boehm doesn't provide. To change an array inside a struct or another array, write through the place (`ps[i].pos[0] += 1.0`) rather than copying the element out and back in.
 - [x] **Default integer type.** Decided: unannotated integer literals are `i64`. This matches `.len` and array indexes, so loop counters need no casts, and it pushes the overflow trap out to about 9.2 quintillion. Use `i32` explicitly where memory in large arrays matters.
 - [x] **Integer overflow.** Decided: always trap, like Swift, rather than wrapping or Rust's debug-only checks. One behavior in every build, at a cost of a few percent. Explicit wrapping operations can come later.
 - [x] **Semicolons.** Required, which keeps the parser simple. TypeScript-style automatic semicolon insertion is possible later but adds edge cases.
