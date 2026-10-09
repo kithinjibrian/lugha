@@ -128,7 +128,7 @@ impl<'ctx> Lowerer<'ctx> {
         field: &Ident,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         debug_assert_eq!(field.name, "len", "checked: strings only have `.len`");
-        let object = self.get(base, Type::String)?.into_pointer_value();
+        let object = self.get(base, &Type::String)?.into_pointer_value();
         Ok(self.length(object).into())
     }
 
@@ -139,8 +139,8 @@ impl<'ctx> Lowerer<'ctx> {
         at: usize,
         index: &Expr,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
-        let object = self.get(base, Type::String)?.into_pointer_value();
-        let i = self.get(index, Type::I64)?.into_int_value();
+        let object = self.get(base, &Type::String)?.into_pointer_value();
+        let i = self.get(index, &Type::I64)?.into_int_value();
         let len = self.length(object);
         self.bounds_check(len, i, at);
         let address = self.element_address(object, i, 1);

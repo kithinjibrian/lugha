@@ -44,7 +44,7 @@ impl Checker {
     /// Checks `expr`, records its type and returns it.
     pub(super) fn expr(&mut self, expr: &Expr, expect: Option<&Expect>) -> Checking<Type> {
         let ty = self.expr_kind(expr, expect)?;
-        self.record(expr, ty);
+        self.record(expr, ty.clone());
         Ok(ty)
     }
 
@@ -67,9 +67,9 @@ impl Checker {
     /// Checks `expr` where a value of `expect.ty` is required (E0403 otherwise).
     pub(super) fn expect_type(&mut self, expr: &Expr, expect: &Expect) -> Checking<Type> {
         let found = self.value(expr, Some(expect))?;
-        if !found.fits(expect.ty) {
+        if !found.fits(&expect.ty) {
             self.report(errors::mismatch(
-                expect.ty,
+                expect.ty.clone(),
                 found,
                 expr.span,
                 expect.reason.as_ref(),
@@ -84,7 +84,7 @@ impl Checker {
             _ if is_literal(expr) => {
                 let ty = self.literal(expr, expect);
                 if let ExprKind::Unary(_, inner) = &expr.kind {
-                    self.record(inner, ty);
+                    self.record(inner, ty.clone());
                 }
                 Ok(ty)
             }
@@ -117,11 +117,13 @@ impl Checker {
         let (ty, ok, symbol) = match op {
             UnOp::Neg => {
                 let ty = self.value(operand, expect)?;
-                (ty, matches!(ty, Type::I32 | Type::I64 | Type::F64), "-")
+                let ok = matches!(ty, Type::I32 | Type::I64 | Type::F64);
+                (ty, ok, "-")
             }
             UnOp::Not => {
                 let ty = self.value(operand, Some(&Expect::of(Type::Bool)))?;
-                (ty, ty == Type::Bool, "!")
+                let ok = ty == Type::Bool;
+                (ty, ok, "!")
             }
         };
         if ok || matches!(ty, Type::Error | Type::Never) {

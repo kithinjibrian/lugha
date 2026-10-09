@@ -132,7 +132,7 @@ impl Checker {
         self.scopes
             .iter()
             .rev()
-            .find_map(|scope| scope.get(name).copied())
+            .find_map(|scope| scope.get(name).cloned())
     }
 }
 

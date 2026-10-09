@@ -9,7 +9,7 @@ use super::value::llvm_type;
 use crate::check::Type;
 
 /// A local variable's stack slot.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub(super) struct Local<'ctx> {
     pub ptr: PointerValue<'ctx>,
     pub ty: Type,
@@ -44,7 +44,7 @@ impl<'ctx> Scopes<'ctx> {
         self.stack
             .iter()
             .rev()
-            .find_map(|scope| scope.get(name).copied())
+            .find_map(|scope| scope.get(name).cloned())
             .unwrap_or_else(|| unreachable!("checked: `{name}` is in scope"))
     }
 }
@@ -52,7 +52,7 @@ impl<'ctx> Scopes<'ctx> {
 impl<'ctx> Lowerer<'ctx> {
     /// Allocates a stack slot at the top of the entry block, so `mem2reg` can
     /// promote it and loops don't allocate once per iteration (spec §7).
-    pub(super) fn entry_alloca(&self, ty: Type, name: &str) -> PointerValue<'ctx> {
+    pub(super) fn entry_alloca(&self, ty: &Type, name: &str) -> PointerValue<'ctx> {
         let function = self
             .function
             .expect("locals are allocated inside a function");
@@ -70,8 +70,8 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Loads a local's current value.
-    pub(super) fn load(&self, local: Local<'ctx>, name: &str) -> BasicValueEnum<'ctx> {
-        let ty = llvm_type(self.context, local.ty);
+    pub(super) fn load(&self, local: &Local<'ctx>, name: &str) -> BasicValueEnum<'ctx> {
+        let ty = llvm_type(self.context, &local.ty);
         self.builder
             .build_load(ty, local.ptr, name)
             .expect(POSITIONED)

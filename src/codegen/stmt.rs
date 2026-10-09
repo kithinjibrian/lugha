@@ -58,8 +58,8 @@ impl<'ctx> Lowerer<'ctx> {
             (Type::Never | Type::Error, None) => Type::I64,
             (ty, _) => ty,
         };
-        let value = self.get(init, ty)?;
-        let ptr = self.entry_alloca(ty, &name.name);
+        let value = self.get(init, &ty)?;
+        let ptr = self.entry_alloca(&ty, &name.name);
         self.builder.build_store(ptr, value).expect(POSITIONED);
         self.scopes.declare(&name.name, Local { ptr, ty });
         Ok(())
@@ -83,11 +83,11 @@ impl<'ctx> Lowerer<'ctx> {
         };
         let local = self.scopes.lookup(name);
         let new = match compound_op(op) {
-            None => self.get(value, local.ty)?,
+            None => self.get(value, &local.ty)?,
             Some(op) => {
                 // `x op= e` reads `x` once, then evaluates `e` (spec §5).
-                let current = self.load(local, name);
-                let rhs = self.get(value, local.ty)?;
+                let current = self.load(&local, name);
+                let rhs = self.get(value, &local.ty)?;
                 self.arithmetic(op, local.ty, current, rhs, at)
             }
         };

@@ -29,7 +29,7 @@ impl Checker {
             self.expr(value, None)?;
             return Ok(());
         };
-        self.record(place, local.ty);
+        self.record(place, local.ty.clone());
         if local.binding != (Binding::Let { mutable: true }) {
             self.report(errors::not_mutable(
                 name,

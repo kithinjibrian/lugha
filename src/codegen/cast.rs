@@ -21,21 +21,21 @@ impl<'ctx> Lowerer<'ctx> {
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         let (from, to) = (self.ty(inner), self.ty(cast));
         let from = if matches!(from, Type::Never | Type::Error) {
-            to
+            to.clone()
         } else {
             from
         };
-        let value = self.get(inner, from)?;
+        let value = self.get(inner, &from)?;
         let b = &self.builder;
-        Ok(match (from, to) {
+        Ok(match (&from, &to) {
             _ if from == to => value,
             (Type::F64, _) => {
-                let name = if is_signed(to) {
+                let name = if is_signed(&to) {
                     "llvm.fptosi.sat"
                 } else {
                     "llvm.fptoui.sat"
                 };
-                let target = llvm_type(self.context, to);
+                let target = llvm_type(self.context, &to);
                 let source = self.context.f64_type().into();
                 let saturate = Intrinsic::find(name)
                     .and_then(|i| i.get_declaration(&self.module, &[target, source]))
@@ -50,7 +50,7 @@ impl<'ctx> Lowerer<'ctx> {
             }
             (_, Type::F64) => {
                 let (v, f64_type) = (value.into_int_value(), self.context.f64_type());
-                if is_signed(from) {
+                if is_signed(&from) {
                     b.build_signed_int_to_float(v, f64_type, "sitofp")
                 } else {
                     b.build_unsigned_int_to_float(v, f64_type, "uitofp")
@@ -59,11 +59,11 @@ impl<'ctx> Lowerer<'ctx> {
                 .into()
             }
             _ => {
-                let (v, target) = (value.into_int_value(), int_type(self.context, to));
+                let (v, target) = (value.into_int_value(), int_type(self.context, &to));
                 let (from_bits, to_bits) = (v.get_type().get_bit_width(), target.get_bit_width());
                 if to_bits < from_bits {
                     b.build_int_truncate(v, target, "trunc")
-                } else if is_signed(from) {
+                } else if is_signed(&from) {
                     b.build_int_s_extend(v, target, "sext")
                 } else {
                     b.build_int_z_extend(v, target, "zext")

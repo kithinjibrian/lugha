@@ -27,26 +27,26 @@ pub(super) enum Value<'ctx> {
 }
 
 /// The LLVM type of a value of type `ty` (spec §4 lowering table).
-pub(super) fn llvm_type(context: &Context, ty: Type) -> BasicTypeEnum<'_> {
+pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnum<'ctx> {
     match ty {
         Type::I32 => context.i32_type().into(),
         Type::I64 => context.i64_type().into(),
         Type::U8 => context.i8_type().into(),
         Type::F64 => context.f64_type().into(),
         Type::Bool => context.bool_type().into(),
-        // Strings are pointers to runtime objects (spec §7).
-        Type::String => context.ptr_type(AddressSpace::default()).into(),
+        // Strings and arrays are pointers to heap objects (spec §7).
+        Type::String | Type::Array(_) => context.ptr_type(AddressSpace::default()).into(),
         Type::Void | Type::Never | Type::Error => unreachable!("checked: {ty} is not a value type"),
     }
 }
 
 /// The LLVM integer type of `i32`, `i64`, `u8` or `bool`.
-pub(super) fn int_type(context: &Context, ty: Type) -> IntType<'_> {
+pub(super) fn int_type<'ctx>(context: &'ctx Context, ty: &Type) -> IntType<'ctx> {
     llvm_type(context, ty).into_int_type()
 }
 
 /// `i32` and `i64` are signed; `u8` is not.
-pub(super) fn is_signed(ty: Type) -> bool {
+pub(super) fn is_signed(ty: &Type) -> bool {
     matches!(ty, Type::I32 | Type::I64)
 }
 
@@ -60,14 +60,15 @@ pub(super) fn annotation_type(ty: &Annotation) -> Type {
         TypeKind::F64 => Type::F64,
         TypeKind::Bool => Type::Bool,
         TypeKind::String => Type::String,
-        _ => unreachable!("checked: arrays and structs stop before codegen"),
+        TypeKind::Array(ref element) => Type::Array(Box::new(annotation_type(element))),
+        TypeKind::Named(_) => unreachable!("checked: structs stop before codegen"),
     }
 }
 
 impl<'ctx> Lowerer<'ctx> {
     /// The checker's type for `expr`.
     pub(super) fn ty(&self, expr: &Expr) -> Type {
-        self.types[expr.id.0 as usize]
+        self.types[expr.id.0 as usize].clone()
     }
 
     /// Lowers `expr` where a value of type `ty` is needed. In code that never
@@ -75,7 +76,7 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn get(
         &mut self,
         expr: &Expr,
-        ty: Type,
+        ty: &Type,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         Ok(match self.expr(expr)? {
             Value::Val(value) => value,
@@ -85,7 +86,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 }
 
-fn undef(context: &Context, ty: Type) -> BasicValueEnum<'_> {
+fn undef<'ctx>(context: &'ctx Context, ty: &Type) -> BasicValueEnum<'ctx> {
     match llvm_type(context, ty) {
         BasicTypeEnum::FloatType(t) => t.get_undef().into(),
         BasicTypeEnum::PointerType(t) => t.get_undef().into(),

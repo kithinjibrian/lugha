@@ -10,19 +10,19 @@ impl Checker {
     /// Checks one function body against its signature.
     pub(super) fn function(&mut self, f: &FunDecl) -> Checking<()> {
         let signature = &self.functions[&f.name.name];
-        let (params, ret) = (signature.params.clone(), signature.ret);
-        self.ret = ret;
+        let (params, ret) = (signature.params.clone(), signature.ret.clone());
+        self.ret = ret.clone();
         self.scopes.clear();
         self.push();
         for (param, ty) in f.params.iter().zip(params) {
             self.declare(&param.name, ty, Binding::Param);
         }
-        let expect = (ret != Type::Void).then(|| Expect::of(ret));
+        let expect = (ret != Type::Void).then(|| Expect::of(ret.clone()));
         let body = self.block(&f.body, expect.as_ref())?;
         self.pop();
         if ret != Type::Void && body == Type::Void {
             self.missing_return(f, ret);
-        } else if ret != Type::Void && !body.fits(ret) {
+        } else if ret != Type::Void && !body.fits(&ret) {
             let span = f.body.tail.as_ref().map_or(f.body.span, |tail| tail.span);
             self.report(errors::mismatch(ret, body, span, None));
         }
@@ -111,7 +111,7 @@ impl Checker {
             Some(annotation) => {
                 let ty = self.resolve(annotation)?;
                 let why = "expected because of this annotation".to_string();
-                self.expect_type(init, &Expect::because(ty, annotation.span, why))?;
+                self.expect_type(init, &Expect::because(ty.clone(), annotation.span, why))?;
                 ty
             }
             None => match self.value(init, None)? {
@@ -149,7 +149,7 @@ impl Checker {
 
     /// `return [value];` must match the function's return type (spec §6).
     fn return_stmt(&mut self, value: Option<&Expr>, span: Span) -> Checking<()> {
-        match (self.ret, value) {
+        match (self.ret.clone(), value) {
             (Type::Void, None) => {}
             (Type::Void, Some(value)) => {
                 let ty = self.expr(value, None)?;

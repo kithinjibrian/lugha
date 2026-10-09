@@ -46,7 +46,7 @@ impl<'ctx> Lowerer<'ctx> {
         then: &Block,
         else_: Option<&Expr>,
     ) -> Result<Value<'ctx>, CodegenError> {
-        let condition = self.get(cond, Type::Bool)?.into_int_value();
+        let condition = self.get(cond, &Type::Bool)?.into_int_value();
         let then_block = self.append("if.then");
         let merge = self.append("if.end");
         let Some(else_expr) = else_ else {
@@ -82,7 +82,7 @@ impl<'ctx> Lowerer<'ctx> {
             (Value::Val(a), Value::Val(b)) => {
                 let phi = self
                     .builder
-                    .build_phi(llvm_type(self.context, self.ty(expr)), "if")
+                    .build_phi(llvm_type(self.context, &self.ty(expr)), "if")
                     .expect(POSITIONED);
                 phi.add_incoming(&[(&a, then_end), (&b, else_end)]);
                 Value::Val(phi.as_basic_value())
@@ -108,7 +108,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(cond_block);
 
         self.builder.position_at_end(cond_block);
-        let condition = self.get(cond, Type::Bool)?.into_int_value();
+        let condition = self.get(cond, &Type::Bool)?.into_int_value();
         self.builder
             .build_conditional_branch(condition, body_block, exit)
             .expect(POSITIONED);
@@ -140,15 +140,15 @@ impl<'ctx> Lowerer<'ctx> {
             .into_iter()
             .find(|t| t.is_integer())
             .unwrap_or(Type::I64);
-        let first = self.get(start, ty)?;
-        let limit = self.get(end, ty)?;
+        let first = self.get(start, &ty)?;
+        let limit = self.get(end, &ty)?;
         let counter = Local {
-            ptr: self.entry_alloca(ty, "for.i"),
-            ty,
+            ptr: self.entry_alloca(&ty, "for.i"),
+            ty: ty.clone(),
         };
         let end_slot = Local {
-            ptr: self.entry_alloca(ty, "for.end"),
-            ty,
+            ptr: self.entry_alloca(&ty, "for.end"),
+            ty: ty.clone(),
         };
         self.builder
             .build_store(counter.ptr, first)
@@ -164,9 +164,9 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(cond_block);
 
         self.builder.position_at_end(cond_block);
-        let i = self.load(counter, "i").into_int_value();
-        let bound = self.load(end_slot, "end").into_int_value();
-        let less = if is_signed(ty) {
+        let i = self.load(&counter, "i").into_int_value();
+        let bound = self.load(&end_slot, "end").into_int_value();
+        let less = if is_signed(&ty) {
             IntPredicate::SLT
         } else {
             IntPredicate::ULT
@@ -182,8 +182,8 @@ impl<'ctx> Lowerer<'ctx> {
         self.builder.position_at_end(body_block);
         self.scopes.push();
         let var_slot = Local {
-            ptr: self.entry_alloca(ty, &var.name),
-            ty,
+            ptr: self.entry_alloca(&ty, &var.name),
+            ty: ty.clone(),
         };
         self.builder.build_store(var_slot.ptr, i).expect(POSITIONED);
         self.scopes.declare(&var.name, var_slot);
@@ -194,11 +194,11 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(step);
 
         self.builder.position_at_end(step);
-        let i = self.load(counter, "i").into_int_value();
+        let i = self.load(&counter, "i").into_int_value();
         // Can't overflow: `i < end` held, so `i + 1 <= end`.
         let next =
             self.builder
-                .build_int_add(i, int_type(self.context, ty).const_int(1, false), "next");
+                .build_int_add(i, int_type(self.context, &ty).const_int(1, false), "next");
         self.builder
             .build_store(counter.ptr, next.expect(POSITIONED))
             .expect(POSITIONED);

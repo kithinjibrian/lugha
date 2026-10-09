@@ -42,7 +42,7 @@ impl Checker {
             self.report(errors::undefined(name, callee.span));
             return self.unchecked_args(args);
         };
-        let (params, ret) = (signature.params.clone(), signature.ret);
+        let (params, ret) = (signature.params.clone(), signature.ret.clone());
         if args.len() != params.len() {
             self.report(errors::arity(name, params.len(), args.len(), call.span));
             self.unchecked_args(args)?;

@@ -39,9 +39,9 @@ impl<'ctx> Lowerer<'ctx> {
             let ret = ret.map(annotation_type);
             let param_types: Vec<BasicMetadataTypeEnum> = params
                 .iter()
-                .map(|&ty| llvm_type(self.context, ty).into())
+                .map(|ty| llvm_type(self.context, ty).into())
                 .collect();
-            let fn_type = match ret {
+            let fn_type = match &ret {
                 Some(ty) => llvm_type(self.context, ty).fn_type(&param_types, false),
                 None => self.context.void_type().fn_type(&param_types, false),
             };
@@ -55,7 +55,7 @@ impl<'ctx> Lowerer<'ctx> {
                 .module
                 .add_function(&symbol, fn_type, Some(Linkage::External));
             if is_extern {
-                self.c_abi(function, &params, ret);
+                self.c_abi(function, &params, ret.as_ref());
             }
             let signature = Signature {
                 function,
@@ -70,7 +70,7 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// C passes `bool` and `u8` zero-extended (spec §8): mark them so LLVM
     /// lowers the call the way a C compiler would.
-    fn c_abi(&self, function: FunctionValue<'ctx>, params: &[Type], ret: Option<Type>) {
+    fn c_abi(&self, function: FunctionValue<'ctx>, params: &[Type], ret: Option<&Type>) {
         let zeroext = self
             .context
             .create_enum_attribute(Attribute::get_named_enum_kind_id("zeroext"), 0);
@@ -89,14 +89,14 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn define(&mut self, f: &FunDecl) -> Result<(), CodegenError> {
         let signature = self.functions[&f.name.name].clone();
         self.function = Some(signature.function);
-        self.ret = signature.ret;
+        self.ret = signature.ret.clone();
         self.scopes = Scopes::default();
         self.loops.clear();
         self.builder
             .position_at_end(self.context.append_basic_block(signature.function, "entry"));
 
         self.scopes.push();
-        for (index, (param, &ty)) in f.params.iter().zip(&signature.params).enumerate() {
+        for (index, (param, ty)) in f.params.iter().zip(&signature.params).enumerate() {
             let ptr = self.entry_alloca(ty, &param.name.name);
             let index = u32::try_from(index).expect("parameter count fits in u32");
             let arg = signature
@@ -104,12 +104,18 @@ impl<'ctx> Lowerer<'ctx> {
                 .get_nth_param(index)
                 .expect("declared with these parameters");
             self.builder.build_store(ptr, arg).expect(POSITIONED);
-            self.scopes.declare(&param.name.name, Local { ptr, ty });
+            self.scopes.declare(
+                &param.name.name,
+                Local {
+                    ptr,
+                    ty: ty.clone(),
+                },
+            );
         }
         let value = self.block(&f.body)?;
         self.scopes.pop();
 
-        match (signature.ret, value) {
+        match (&signature.ret, value) {
             // §6 guarantees control never reaches the end of a body that diverges.
             (_, Value::Never) => {
                 self.builder.build_unreachable().expect(POSITIONED);
@@ -127,9 +133,9 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// `return [value];` — leaves the builder in a fresh dead block.
     pub(super) fn return_stmt(&mut self, value: Option<&Expr>) -> Result<(), CodegenError> {
-        match (self.ret, value) {
+        match (self.ret.clone(), value) {
             (Some(ty), Some(expr)) => {
-                let result = self.get(expr, ty)?;
+                let result = self.get(expr, &ty)?;
                 self.builder.build_return(Some(&result)).expect(POSITIONED);
             }
             _ => {
@@ -166,9 +172,9 @@ impl<'ctx> Lowerer<'ctx> {
             return self.intrinsic(call, name, args);
         };
         let mut values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len());
-        for (arg, &ty) in args.iter().zip(&signature.params) {
+        for (arg, ty) in args.iter().zip(&signature.params) {
             let value = self.get(arg, ty)?;
-            let value = if signature.is_extern && ty == Type::String {
+            let value = if signature.is_extern && *ty == Type::String {
                 self.c_string(value)
             } else {
                 value

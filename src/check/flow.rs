@@ -40,7 +40,9 @@ impl Checker {
             semicolon: false,
         } = &stmt.kind
         {
-            let ty = self.types[expr.id.0 as usize].unwrap_or(Type::Error);
+            let ty = self.types[expr.id.0 as usize]
+                .clone()
+                .unwrap_or(Type::Error);
             if !matches!(ty, Type::Void | Type::Never | Type::Error) {
                 let what = if matches!(expr.kind, ExprKind::If { .. }) {
                     "`if`"
@@ -87,7 +89,7 @@ impl Checker {
         else {
             return None;
         };
-        let ty = self.types[expr.id.0 as usize]?;
+        let ty = self.types[expr.id.0 as usize].clone()?;
         // The parser ends a `semicolon: true` statement's span with its `;`.
         let has_value = !matches!(ty, Type::Void | Type::Never | Type::Error);
         has_value.then(|| Span::new(last.span.end - 1, last.span.end))

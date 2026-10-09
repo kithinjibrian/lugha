@@ -46,7 +46,7 @@ pub(super) struct Constants<'ctx> {
 }
 
 /// The runtime's name for a primitive or string type, as in `lugha_rt_print_<name>`.
-fn suffix(ty: Type) -> &'static str {
+fn suffix(ty: &Type) -> &'static str {
     match ty {
         Type::I32 => "i32",
         Type::I64 => "i64",
@@ -70,15 +70,15 @@ impl<'ctx> Lowerer<'ctx> {
         if let Some(function) = self.module.get_function(name) {
             return function;
         }
-        let abi = |ty: Type| -> BasicMetadataTypeEnum<'ctx> {
+        let abi = |ty: &Type| -> BasicMetadataTypeEnum<'ctx> {
             match ty {
                 Type::Bool | Type::U8 => self.context.i32_type().into(),
                 Type::String => self.context.ptr_type(AddressSpace::default()).into(),
                 _ => super::value::llvm_type(self.context, ty).into(),
             }
         };
-        let params: Vec<_> = params.iter().map(|&ty| abi(ty)).collect();
-        let fn_type = match returns {
+        let params: Vec<_> = params.iter().map(abi).collect();
+        let fn_type = match &returns {
             Some(Type::String) => self
                 .context
                 .ptr_type(AddressSpace::default())
@@ -97,7 +97,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Widens `bool`/`u8` to the runtime's `i32` parameters.
-    fn abi_value(&self, ty: Type, value: BasicValueEnum<'ctx>) -> BasicMetadataValueEnum<'ctx> {
+    fn abi_value(&self, ty: &Type, value: BasicValueEnum<'ctx>) -> BasicMetadataValueEnum<'ctx> {
         match ty {
             Type::Bool | Type::U8 => {
                 let i32_type = self.context.i32_type();
@@ -141,16 +141,20 @@ impl<'ctx> Lowerer<'ctx> {
         let arg = match args.first() {
             Some(arg) => {
                 let ty = self.ty(arg);
-                Some((ty, self.get(arg, ty)?))
+                let value = self.get(arg, &ty)?;
+                Some((ty, value))
             }
             None => None,
         };
         match (name, arg) {
             ("print" | "println", arg) => {
                 if let Some((ty, value)) = arg {
-                    let print =
-                        self.runtime(&format!("lugha_rt_print_{}", suffix(ty)), &[ty], None);
-                    let value = self.abi_value(ty, value);
+                    let print = self.runtime(
+                        &format!("lugha_rt_print_{}", suffix(&ty)),
+                        &[ty.clone()],
+                        None,
+                    );
+                    let value = self.abi_value(&ty, value);
                     self.builder
                         .build_call(print, &[value], "")
                         .expect(POSITIONED);
@@ -163,11 +167,11 @@ impl<'ctx> Lowerer<'ctx> {
             }
             ("to_string", Some((ty, value))) => {
                 let convert = self.runtime(
-                    &format!("lugha_rt_to_string_{}", suffix(ty)),
-                    &[ty],
+                    &format!("lugha_rt_to_string_{}", suffix(&ty)),
+                    &[ty.clone()],
                     Some(Type::String),
                 );
-                let value = self.abi_value(ty, value);
+                let value = self.abi_value(&ty, value);
                 let call = self
                     .builder
                     .build_call(convert, &[value], "str")

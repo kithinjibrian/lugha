@@ -30,8 +30,8 @@ impl<'ctx> Lowerer<'ctx> {
             .into_iter()
             .find(|t| !matches!(t, Type::Never | Type::Error))
             .unwrap_or(Type::I64);
-        let a = self.get(lhs, ty)?;
-        let b = self.get(rhs, ty)?;
+        let a = self.get(lhs, &ty)?;
+        let b = self.get(rhs, &ty)?;
         if ty == Type::String {
             return Ok(self.string_binary(op, a, b));
         }
@@ -68,7 +68,7 @@ impl<'ctx> Lowerer<'ctx> {
             .into();
         }
         let (a, b) = (a.into_int_value(), b.into_int_value());
-        let signed = is_signed(ty);
+        let signed = is_signed(&ty);
         match op {
             BinOp::Add | BinOp::Sub | BinOp::Mul => self.checked(op, a, b, signed, at).into(),
             BinOp::Div | BinOp::Rem => {
@@ -190,7 +190,7 @@ impl<'ctx> Lowerer<'ctx> {
                 .build_float_compare(predicate, a, b, "fcmp")
                 .expect(POSITIONED);
         }
-        let signed = is_signed(ty);
+        let signed = is_signed(&ty);
         let predicate = match op {
             BinOp::Lt if signed => IntPredicate::SLT,
             BinOp::Le if signed => IntPredicate::SLE,

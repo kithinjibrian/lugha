@@ -36,7 +36,7 @@ impl Checker {
         let (l, r) = self.operands(lhs, rhs, outer)?;
         let (l, r) = match (l, r) {
             (Type::Error, _) | (_, Type::Error) => return Ok(Type::Error),
-            (Type::Never, ty) | (ty, Type::Never) => (ty, ty),
+            (Type::Never, ty) | (ty, Type::Never) => (ty.clone(), ty),
             pair => pair,
         };
         let allowed = l == r
@@ -64,13 +64,13 @@ impl Checker {
     ) -> Checking<(Type, Type)> {
         if is_literal(lhs) && !is_literal(rhs) {
             let r = self.value(rhs, outer)?;
-            let l = self.value(lhs, from_operand(r, rhs.span).as_ref())?;
+            let l = self.value(lhs, from_operand(&r, rhs.span).as_ref())?;
             return Ok((l, r));
         }
         let l = self.value(lhs, outer)?;
         let expect = match outer {
             Some(outer) if is_literal(lhs) => Some(outer.clone()),
-            _ => from_operand(l, lhs.span),
+            _ => from_operand(&l, lhs.span),
         };
         let r = self.value(rhs, expect.as_ref())?;
         Ok((l, r))
@@ -100,9 +100,9 @@ impl Checker {
 
 /// The type an operand gives the other side. Only numeric types are passed
 /// on: `true + 1` is an operator error, not a literal error.
-fn from_operand(ty: Type, span: Span) -> Option<Expect> {
+fn from_operand(ty: &Type, span: Span) -> Option<Expect> {
     ty.is_numeric()
-        .then(|| Expect::because(ty, span, format!("this operand is {ty}")))
+        .then(|| Expect::because(ty.clone(), span, format!("this operand is {ty}")))
 }
 
 #[cfg(test)]

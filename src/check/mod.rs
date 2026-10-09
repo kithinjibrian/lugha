@@ -121,7 +121,7 @@ pub(super) struct Signature {
 }
 
 /// A local variable or parameter.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(super) struct Local {
     pub ty: Type,
     pub binding: Binding,
@@ -234,7 +234,7 @@ pub(crate) mod test_util {
             }
         }
         let id = found.unwrap_or_else(|| panic!("no `let {name}` in {src:?}"));
-        types[id as usize]
+        types[id as usize].clone()
     }
 
     fn visit(block: &crate::ast::Block, name: &str, found: &mut Option<u32>) {

@@ -13,7 +13,7 @@ impl Checker {
             kind => (false, kind),
         };
         let expected = expect
-            .map(|e| e.ty)
+            .map(|e| e.ty.clone())
             .filter(|t| !matches!(t, Type::Void | Type::Never | Type::Error));
         let reason = expect.and_then(|e| e.reason.as_ref());
         match (kind, expected) {

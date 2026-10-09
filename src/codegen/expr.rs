@@ -27,11 +27,11 @@ impl<'ctx> Lowerer<'ctx> {
                 .into(),
             ExprKind::Name(name) => {
                 let local = self.scopes.lookup(name);
-                self.load(local, name)
+                self.load(&local, name)
             }
             ExprKind::Unary(UnOp::Neg, operand) => {
                 let ty = self.ty(expr);
-                let value = self.get(operand, ty)?;
+                let value = self.get(operand, &ty)?;
                 if ty == Type::F64 {
                     self.builder
                         .build_float_neg(value.into_float_value(), "neg")
@@ -39,12 +39,12 @@ impl<'ctx> Lowerer<'ctx> {
                         .into()
                 } else {
                     // Checked `0 - x`: negating the minimum overflows (spec §5).
-                    let zero = int_type(self.context, ty).const_zero().into();
+                    let zero = int_type(self.context, &ty).const_zero().into();
                     self.arithmetic(BinOp::Sub, ty, zero, value, expr.span.start)
                 }
             }
             ExprKind::Unary(UnOp::Not, operand) => {
-                let value = self.get(operand, Type::Bool)?.into_int_value();
+                let value = self.get(operand, &Type::Bool)?.into_int_value();
                 self.builder
                     .build_not(value, "not")
                     .expect(POSITIONED)
@@ -81,7 +81,7 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Int(value) => {
                 // Two's complement at the target width: the bits of -v, truncated by LLVM.
                 let bits = if negate { value.wrapping_neg() } else { value };
-                int_type(self.context, self.ty(literal))
+                int_type(self.context, &self.ty(literal))
                     .const_int(bits, false)
                     .into()
             }
@@ -97,7 +97,7 @@ impl<'ctx> Lowerer<'ctx> {
         lhs: &Expr,
         rhs: &Expr,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
-        let left = self.get(lhs, Type::Bool)?.into_int_value();
+        let left = self.get(lhs, &Type::Bool)?.into_int_value();
         let left_end = self.current_block();
         let rhs_block = self.append("logic.rhs");
         let merge = self.append("logic.end");
@@ -111,7 +111,7 @@ impl<'ctx> Lowerer<'ctx> {
             .expect(POSITIONED);
 
         self.builder.position_at_end(rhs_block);
-        let right = self.get(rhs, Type::Bool)?.into_int_value();
+        let right = self.get(rhs, &Type::Bool)?.into_int_value();
         let right_end = self.current_block();
         self.builder
             .build_unconditional_branch(merge)
