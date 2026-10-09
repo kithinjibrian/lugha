@@ -578,6 +578,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, known issues, progres
 
 ---
 
+## SESSION 12 — 2026-10-09 — PRP-009 casts and flow checks — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 3, PRP-009: casts and flow checks. It covers:
