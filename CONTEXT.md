@@ -866,7 +866,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, progress
 
 ---
 
-## SESSION 17 — 2026-10-09 — PRP-014 arrays — open
+## SESSION 17 — 2026-10-09 — PRP-014 arrays — closed
 
 Branch: main → prp-014-arrays
 
@@ -915,6 +915,10 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, progress, decision 16
 ### PENDING DECISIONS OPENED
 
 - None.
+
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-014-arrays` fast-forward merged into `main` and deleted.
 
 ---
 

@@ -1,6 +1,6 @@
 ## FEATURE: Arrays — `T[]` types, list and repeat literals, `.len`, bounds-checked element reads and writes, `for x of xs`, and value-semantics deep copies.
 
-**Status:** implemented 2026-10-09 — session 17 (branch `prp-014-arrays`, awaiting merge)
+**Status:** merged into `main` 2026-10-09 — session 17
 **Milestone:** 5, second of four PRPs. Done-when: the spec §10 primes program prints `25`.
 **Spec:** §4 (arrays, array copies table, deep copies, mutability of places), §5 (`for … of`, evaluation order, panics), §7 (heap layout, natural alignment, `bool` stored as `i8`), §8 (no arrays across C), §9 (bounds checks, `lugha_copy_*`, `llvm.memcpy`)
 **Decisions:** PRP-013 (integer address arithmetic in `codegen/heap.rs`, no `unsafe`; bounds panic message); MEMORY 14 (codegen reads the checker's types)
