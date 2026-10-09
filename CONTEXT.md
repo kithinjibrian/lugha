@@ -1032,7 +1032,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — tree, commands, v0 complete, dec
 
 ## SESSION 20 — 2026-10-09 — Housekeeping — open
 
-Branch: main
+Branch: main → prp-017-housekeeping
 
 ---
 
