@@ -1,0 +1,16 @@
+# .llmignore
+# Files and directories the AI must never touch.
+# Keep this in sync with the PROTECTED FILES section in CLAUDE.md.
+
+# Environment and secrets
+.env
+.env.*
+
+# Dependency lockfile — changed only by cargo, never hand-edited
+Cargo.lock
+
+# Build output
+target/
+
+# License — changed only by the human
+LICENSE
