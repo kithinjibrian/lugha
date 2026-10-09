@@ -186,6 +186,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — tests/ tree, shipped item, progr
 
 ---
 
+## SESSION 5 — 2026-10-09 — PRP-002 lexer — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Run a discovery interview for `PRPs/prp-001-test_runner.md` (the `tests/programs/` runner, DECISION-008), then `prp-002-lexer.md`. See `TODO.md`.
