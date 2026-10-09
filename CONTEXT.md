@@ -412,7 +412,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md — commands, file tree, known issues, progress
 
 ## SESSION 9 — 2026-10-09 — Milestone 2 discovery — open
 
-Branch: main
+Branch: main → prp-006-locals_and_control_flow
 
 ---
 
