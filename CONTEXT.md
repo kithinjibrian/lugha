@@ -580,7 +580,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — file tree, known issues, progres
 
 ## SESSION 12 — 2026-10-09 — PRP-009 casts and flow checks — open
 
-Branch: main
+Branch: main → prp-009-casts_and_flow_checks
 
 ---
 
