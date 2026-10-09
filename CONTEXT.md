@@ -692,7 +692,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md — known issue removed, file tree, 
 
 ## SESSION 14 — 2026-10-09 — Milestone 4 discovery — open
 
-Branch: main
+Branch: main → prp-011-runtime_and_intrinsics
 
 ---
 
