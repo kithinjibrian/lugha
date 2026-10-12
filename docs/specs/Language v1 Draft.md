@@ -88,7 +88,7 @@ primary      = … | "self" ;
 | Type | Meaning | LLVM representation (§7) |
 | --- | --- | --- |
 | `E` (enum) | One of the declared variants, with its payloads | A tagged value `{ i32 tag, payload }`; payload slots that lead back to `E` hold a pointer to a heap copy |
-| `Option<T>` | `Some(T)` or `None` | As a non-recursive enum with those two variants |
+| `Option<T>` | `Some(T)` or `None` | As an enum with those two variants; `Some`'s slot is indirect when `T` leads back to the type holding it (`struct Node { next: Option<Node> }`) |
 
 **Enums.**
 - **Declaration:** at top level, in any order. A variant name is unique within its enum (E0309).
