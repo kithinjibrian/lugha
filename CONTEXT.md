@@ -1534,7 +1534,7 @@ CLAUDE.md, README.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 28)
 
 ---
 
-## SESSION 30 — 2026-10-12 — PRP-024 internal errors exit 2 — open
+## SESSION 30 — 2026-10-12 — PRP-024 internal errors exit 2 — closed
 
 Branch: main → prp-024-internal_error_exit
 
@@ -1570,13 +1570,16 @@ CLAUDE.md, TODO.md, CHANGELOG.md, MEMORY.md (decision 29)
 
 - None.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-024-internal_error_exit` fast-forward merged into `main` and deleted.
+
 ---
 
 ## NEXT SESSION START POINT
 
-Lugha v1 is complete (tag `m8`). No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
-- TODO "Found while working": a Rust panic in lughac exits 101, not 2 (rule 6).
-- TODO ideas: a `panic: stack overflow` for deep recursion; a swap/move operation for buffers.
+Lugha v1 is complete (tag `m8`), and the exit-code bug is fixed. No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
+- TODO ideas: a `panic: stack overflow` for deep recursion (an alternate signal stack and a SIGSEGV handler in the runtime); a swap/move operation for buffers (a language change).
 - v2 language work (spec §11 out-of-scope list): generics, modules, closures, richer patterns, a shared-reference type — starting with a v2 spec draft.
 
 See `TODO.md`.

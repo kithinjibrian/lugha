@@ -409,9 +409,8 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Lugha v1 is complete (tag `m8`). No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
-- TODO "Found while working": a Rust panic in lughac exits 101, not 2 (rule 6).
-- TODO ideas: a `panic: stack overflow` for deep recursion; a swap/move operation for buffers.
+Lugha v1 is complete (tag `m8`), and the exit-code bug is fixed. No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
+- TODO ideas: a `panic: stack overflow` for deep recursion (an alternate signal stack and a SIGSEGV handler in the runtime); a swap/move operation for buffers (a language change).
 - v2 language work (spec §11 out-of-scope list): generics, modules, closures, richer patterns, a shared-reference type — starting with a v2 spec draft.
 
 See `TODO.md`.

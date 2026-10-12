@@ -1,6 +1,6 @@
 ## FEATURE: A panic inside lughac is an internal compiler error — one error in the chosen diagnostics format, exit code 2.
 
-**Status:** implemented 2026-10-12 — session 30 (branch `prp-024-internal_error_exit`, awaiting merge)
+**Status:** merged into `main` 2026-10-12 — session 30
 **Milestone:** none; a bug fix from TODO ("Found while working"), seen in session 26
 **Spec:** §9 (exit codes 0/1/2: 2 for internal compiler errors; JSON diagnostics: "one JSON object per line … and nothing else"; internal errors have `"code":null`)
 **Decisions:** architecture rule 6 (a Rust panic inside lughac is exit 2, never 1), MEMORY 13 (diagnostics rendering)
