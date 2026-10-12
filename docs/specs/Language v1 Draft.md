@@ -18,7 +18,7 @@ This draft lists only what changes, in the order of the v0 sections. Everything 
 4. **`match`:**
    - It is an expression, with flat patterns: a variant with names or `_` for its payloads, an integer, `bool` or string literal, or `_`.
    - It must be exhaustive. There are no guards and no nested patterns.
-5. **Recursion:** an enum may contain itself. The compiler stores such values on the heap implicitly; there is no `Box`.
+5. **Recursion:** an enum may contain itself. There is no `Box` and no marker keyword (decided after review). Only the payload slots that lead back to the enum are stored on the heap, so variants like `Nil` cost nothing. This keeps "everything is a value" with no pointer-like types, and allocation never appears in the source.
 6. **Optional values:** a built-in generic `Option<T>` with `Some(T)` and `None`. `Option` is the only type that takes a type argument in v1.
 7. **Growable arrays:** there is no new list type. `T[]` itself gains `push`, `pop` and `clear`.
 8. **Methods:**
@@ -87,7 +87,7 @@ primary      = … | "self" ;
 
 | Type | Meaning | LLVM representation (§7) |
 | --- | --- | --- |
-| `E` (enum) | One of the declared variants, with its payloads | A tagged value `{ i32 tag, payload }`; a pointer to a heap node if `E` is recursive |
+| `E` (enum) | One of the declared variants, with its payloads | A tagged value `{ i32 tag, payload }`; payload slots that lead back to `E` hold a pointer to a heap copy |
 | `Option<T>` | `Some(T)` or `None` | As a non-recursive enum with those two variants |
 
 **Enums.**
@@ -95,7 +95,10 @@ primary      = … | "self" ;
 - **Construction:** `E.Variant(a, b)` or `E.Variant` for a payload-less variant. Each payload expects its declared type, and the count must match (E0416).
 - **`Option`:** values are written `Some(x)` and `None` without a prefix. `Some(x)` has type `Option<T>` where `x : T`. `None` needs an expected type, exactly like `[]`; otherwise it is E0412 "cannot infer the type of `None`".
 - **No operators:** there is no `==` or other operator on enums or `Option` (E0404). Compare with `match`.
-- **Recursion:** an enum may contain itself, directly or through structs or other enums. Such a **recursive enum** is stored behind a pointer to a GC-heap node, so it has a finite size; the program can't observe the pointer.
+- **Recursion:** an enum may contain itself, directly or through structs or other enums.
+  - **Indirect slots:** a payload slot whose type leads back to the enclosing enum (`List` in `Cons(i64, List)`) is an **indirect slot**. Its value lives on the GC heap, and the slot holds a pointer to it. Every other slot, and the enum value itself, stays inline, so `Nil` allocates nothing.
+  - **Invisible to programs:** reading `rest` in `Cons(x, rest)` gives a plain `List` value. No program can observe the pointer.
+  - **No `Box`:** Lugha has no `Box` type. Writing `Box<List>` is E0305, with help "recursive enums need no `Box`; write `List`".
 - **E0307 narrowed:** it now applies only to a struct cycle that passes through no enum and no array.
 
 **`match`.**
@@ -149,7 +152,7 @@ primary      = … | "self" ;
 
 - **Items:** a program may contain `enum` and `impl` items.
 - **Pass 1** also collects every enum, its variants, and every `impl` block's method signatures.
-- **Pass 2** resolves enum payload types and method parameter types. Recursive enums are found here (§4).
+- **Pass 2** resolves enum payload types and method parameter types. Indirect slots are found here (§4), by the same cycle search that reports E0307.
 - **Shared namespace:** functions, structs, enums, intrinsics and the built-ins `Option`, `Some` and `None` share one global namespace (E0302).
 - **Methods are not in it:** `impl` methods live in their type's namespace, so `fun dist()` and `Point.dist` can coexist.
 - **Symbols:** methods and associated functions are emitted as `lugha_fn_<Type>.<name>` (for example `lugha_fn_Point.dist`).
@@ -158,8 +161,9 @@ primary      = … | "self" ;
 
 ## §7 Memory model — changes
 
-- **Enums:** a non-recursive enum is a stack value `{ i32 tag; payload }`. The payload area has the size and alignment of the largest variant's payloads laid out as a struct, with natural alignment. Copying it is a load and store, plus deep copies for payloads that hold arrays or recursive enums.
-- **Recursive enums:** a value is a pointer to a GC-heap node `{ i32 tag; payload }` from `lugha_rt_alloc`. Copying deep-copies the node graph through a generated `lugha_copy_<mangled>` helper, length-prefixed like structs. Move on last use (PRP-018) applies.
+- **Enums:** every enum value is a stack value `{ i32 tag; payload }`. The payload area has the size and alignment of the largest variant's payloads laid out as a struct, with natural alignment.
+  - **Indirect slots** (§4) hold an 8-byte pointer to a GC-heap copy of their value, allocated with `lugha_rt_alloc` when the variant is built.
+- **Copying an enum** is a load and store, plus deep copies for payloads that hold arrays or indirect slots. Those go through a generated `lugha_copy_<mangled>` helper, length-prefixed like structs. Move on last use (PRP-018) applies.
 - **Arrays:** the heap object becomes `{ i64 len; i64 cap; T elems[cap] }`, still held by one pointer.
   - **Growth:** `push` beyond `cap` allocates a new object with doubled capacity (at least 4), copies the elements, and stores the new pointer into the array's place. Each array has exactly one owner (§7), so no other pointer can see the old object.
   - **Literal and copied arrays** have `cap == len`.
@@ -176,7 +180,7 @@ primary      = … | "self" ;
   - **On integers:** a `switch` on the value.
   - **On strings:** a chain of `lugha_rt_str_eq` calls.
   - **Payload bindings:** loads from the payload area at constant offsets (`build_struct_gep`).
-- **Recursive enums:** a pointer load first, then the same.
+- **Indirect slots:** a binding to one loads the pointer, then the value it points to.
 - **Growing arrays:** `push` and `pop` are inline header updates, plus a runtime call to grow: a new `lugha_rt_array_grow(ptr, elem_size)`, which returns the new pointer.
 - **Methods:** ordinary functions whose first parameter is the receiver. `self` is passed like a struct argument (a pointer to the caller's storage, §7). `mut self` passes a pointer to the caller's place itself.
 
@@ -298,7 +302,7 @@ fun main() {}
 
 | # | Milestone | Spec subset | Done when |
 | --- | --- | --- | --- |
-| 6 | Enums | `enum`, construction, `match` with flat patterns, exhaustiveness (E0417, W0102), `Option<T>`, recursive enums on the heap, enum copies | The shapes and linked-list programs pass, and the rejected program reports E0417 |
+| 6 | Enums | `enum`, construction, `match` with flat patterns, exhaustiveness (E0417, W0102), `Option<T>`, recursive enums with indirect slots, enum copies | The shapes and linked-list programs pass, and the rejected program reports E0417 |
 | 7 | Methods | `impl`, `self`/`mut self`, associated functions, method calls, E0310/E0415, `lugha_fn_<Type>.<name>` symbols | The methods program passes |
 | 8 | Growable arrays | The `{ len, cap, elems }` layout, `push`/`pop`/`clear`, `lugha_rt_array_grow`, E0507 for growth during `for … of` | The stack program passes; `lughac spec` prints the full v1 specification |
 
