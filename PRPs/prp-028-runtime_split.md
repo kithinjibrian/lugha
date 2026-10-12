@@ -1,6 +1,6 @@
 ## FEATURE: Split the C runtime into three source fragments, joined into one `lugha_rt.c` when lughac is built.
 
-**Status:** implemented 2026-10-12 — session 34
+**Status:** merged into `main` 2026-10-12 — session 34
 **Milestone:** none; housekeeping (CLAUDE.md file size rule: `runtime/lugha_rt.c` is 358 lines)
 **Spec:** §9 ("Link", "Runtime library"). No spec change: programs are still linked against one embedded `lugha_rt.c`.
 **Decisions:** DECISION-009 / MEMORY 15 (runtime embedded as source, compiled in the single `cc` link call); MEMORY 30 (stack overflow handler).
