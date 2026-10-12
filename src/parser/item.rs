@@ -1,7 +1,7 @@
 //! Top-level items and types (spec §3, §6, §8).
 
 use super::{PResult, Parser};
-use crate::ast::{Block, ExternDecl, FunDecl, Item, Param, StructDecl, Type, TypeKind};
+use crate::ast::{ExternDecl, Item, Param, StructDecl, Type, TypeKind};
 use crate::lexer::TokenKind;
 use crate::span::Span;
 
@@ -26,44 +26,20 @@ impl Parser<'_> {
 
     fn item(&mut self) -> PResult<Item> {
         match self.peek() {
-            TokenKind::Fun => self.fun_decl().map(Item::Fun),
+            TokenKind::Fun => self.fun_decl_with(false).map(Item::Fun),
             TokenKind::Extern => self.extern_decl().map(Item::Extern),
             TokenKind::Struct => self.struct_decl().map(Item::Struct),
+            TokenKind::Enum => self.enum_decl().map(Item::Enum),
+            TokenKind::Impl => self.impl_decl().map(Item::Impl),
             other => {
                 let is_statement = starts_statement(other);
-                let reported = self.expected("`fun`, `extern` or `struct`");
+                let reported = self.expected("`fun`, `extern`, `struct`, `enum` or `impl`");
                 if is_statement && let Some(last) = self.diagnostics.last_mut() {
                     last.help = Some("statements and variables must be inside a function".into());
                 }
                 Err(reported)
             }
         }
-    }
-
-    fn fun_decl(&mut self) -> PResult<FunDecl> {
-        let start = self.bump().start;
-        let name = self.ident("function name")?;
-        let params = self.params()?;
-        let ret = self.return_type()?;
-        let body = if self.eat(&TokenKind::Eq) {
-            // `= e;` means exactly `{ e }` (spec §6).
-            let tail = self.expr()?;
-            self.expect(&TokenKind::Semi)?;
-            Block {
-                stmts: Vec::new(),
-                span: tail.span,
-                tail: Some(Box::new(tail)),
-            }
-        } else {
-            self.block()?
-        };
-        Ok(FunDecl {
-            name,
-            params,
-            ret,
-            body,
-            span: Span::new(start, self.prev_end()),
-        })
     }
 
     fn extern_decl(&mut self) -> PResult<ExternDecl> {
@@ -98,7 +74,7 @@ impl Parser<'_> {
         self.comma_list(open, TokenKind::RParen, |p| p.param("parameter name"))
     }
 
-    fn param(&mut self, what: &str) -> PResult<Param> {
+    pub(super) fn param(&mut self, what: &str) -> PResult<Param> {
         let name = self.ident(what)?;
         self.expect(&TokenKind::Colon)?;
         Ok(Param {
@@ -107,7 +83,7 @@ impl Parser<'_> {
         })
     }
 
-    fn return_type(&mut self) -> PResult<Option<Type>> {
+    pub(super) fn return_type(&mut self) -> PResult<Option<Type>> {
         if self.eat(&TokenKind::Colon) {
             self.ty().map(Some)
         } else {
@@ -125,10 +101,24 @@ impl Parser<'_> {
             TokenKind::TyF64 => TypeKind::F64,
             TokenKind::TyBool => TypeKind::Bool,
             TokenKind::TyString => TypeKind::String,
-            TokenKind::Ident(name) => TypeKind::Named(name.clone()),
+            // `Option<T>` (v1); elsewhere `Option` is an ordinary name.
+            TokenKind::Ident(name) if name == "Option" && self.peek_at(1) == &TokenKind::Lt => {
+                self.bump();
+                self.bump();
+                let inner = self.ty()?;
+                self.expect(&TokenKind::Gt)?;
+                TypeKind::Option(Box::new(inner))
+            }
+            TokenKind::Ident(name) => {
+                let kind = TypeKind::Named(name.clone());
+                self.bump();
+                kind
+            }
             _ => return Err(self.expected("type")),
         };
-        self.bump();
+        if !matches!(kind, TypeKind::Option(_) | TypeKind::Named(_)) {
+            self.bump();
+        }
         let mut ty = Type {
             kind,
             span: Span::new(start, self.prev_end()),

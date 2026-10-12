@@ -100,10 +100,29 @@ impl Parser<'_> {
                     self.bump();
                     ExprKind::Field(Box::new(expr), self.ident("field name")?)
                 }
+                TokenKind::ColonColon => self.colon_colon(expr)?,
                 _ => return Ok(expr),
             };
             expr = self.mk(start, kind);
         }
+    }
+}
+
+impl Parser<'_> {
+    /// `base::member`: E0207, then read as `base.member` (v1 draft §2).
+    // Kept out of `postfix`, which runs once per nesting level, so its stack
+    // frame stays small enough for the E0206 depth limit.
+    #[inline(never)]
+    fn colon_colon(&mut self, base: Expr) -> PResult<ExprKind> {
+        let at = self.bump();
+        let member = self.ident("field name")?;
+        let help = match &base.kind {
+            ExprKind::Name(name) => format!("write `{name}.{}`", member.name),
+            _ => format!("write `.{}`", member.name),
+        };
+        let message = "`::` is not Lugha syntax";
+        self.error(Diagnostic::error("E0207", message, at).with_help(help));
+        Ok(ExprKind::Field(Box::new(base), member))
     }
 }
 

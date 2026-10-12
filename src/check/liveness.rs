@@ -145,6 +145,9 @@ impl Walk<'_> {
                 else_.iter().for_each(|e| self.expr(e));
             }
             ExprKind::Block(block) => self.block(block),
+            ExprKind::Match(..) => unreachable!(
+                "v1 constructs are stopped by the driver gate before checking (PRP-019)"
+            ),
             ExprKind::Int(_)
             | ExprKind::Float(_)
             | ExprKind::Str(_)

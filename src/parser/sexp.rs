@@ -4,7 +4,8 @@
 //! shape does. Forms are listed in PRP-003.
 
 use crate::ast::{
-    Block, Expr, ExprKind, ForIter, Item, Param, Program, Stmt, StmtKind, Type, TypeKind, UnOp,
+    Block, Expr, ExprKind, ForIter, FunDecl, Item, Param, PatSlot, Pattern, PatternKind, Program,
+    Stmt, StmtKind, Type, TypeKind, UnOp,
 };
 
 /// Prints every item, one per line.
@@ -27,15 +28,7 @@ pub fn program(program: &Program) -> String {
 
 fn item(item: &Item) -> String {
     match item {
-        Item::Fun(f) => {
-            format!(
-                "(fun {} {} {} {})",
-                f.name.name,
-                params(&f.params),
-                ret(&f.ret),
-                block(&f.body)
-            )
-        }
+        Item::Fun(f) => fun(f),
         Item::Extern(e) => format!(
             "(extern {} {} {})",
             e.name.name,
@@ -46,7 +39,42 @@ fn item(item: &Item) -> String {
             let fields: String = s.fields.iter().map(|f| format!(" {}", param(f))).collect();
             format!("(struct {}{fields})", s.name.name)
         }
+        Item::Enum(e) => {
+            let variants: String = e
+                .variants
+                .iter()
+                .map(|v| match v.payloads.as_slice() {
+                    [] => format!(" {}", v.name.name),
+                    payloads => {
+                        let types: Vec<String> = payloads.iter().map(ty).collect();
+                        format!(" ({} {})", v.name.name, types.join(" "))
+                    }
+                })
+                .collect();
+            format!("(enum {}{variants})", e.name.name)
+        }
+        Item::Impl(i) => {
+            let methods: String = i.methods.iter().map(|m| format!(" {}", fun(m))).collect();
+            format!("(impl {}{methods})", i.ty.name)
+        }
     }
+}
+
+/// `(fun name (receiver params…) ret body)`.
+fn fun(f: &FunDecl) -> String {
+    let mut list: Vec<String> = f
+        .receiver
+        .map(|r| if r.mutable { "(mut self)" } else { "self" }.to_string())
+        .into_iter()
+        .collect();
+    list.extend(f.params.iter().map(param));
+    format!(
+        "(fun {} ({}) {} {})",
+        f.name.name,
+        list.join(" "),
+        ret(&f.ret),
+        block(&f.body)
+    )
 }
 
 fn params(params: &[Param]) -> String {
@@ -74,6 +102,7 @@ fn ty(ty: &Type) -> String {
         TypeKind::String => "string".into(),
         TypeKind::Named(name) => name.clone(),
         TypeKind::Array(element) => format!("{}[]", self::ty(element)),
+        TypeKind::Option(inner) => format!("(Option {})", self::ty(inner)),
     }
 }
 
@@ -169,6 +198,35 @@ pub fn expr(expr: &Expr) -> String {
             format!("(if {} {}{otherwise})", self::expr(cond), block(then))
         }
         ExprKind::Block(b) => block(b),
+        ExprKind::Match(scrutinee, arms) => {
+            let arms: String = arms
+                .iter()
+                .map(|a| format!(" (=> {} {})", pattern(&a.pattern), self::expr(&a.body)))
+                .collect();
+            format!("(match {}{arms})", self::expr(scrutinee))
+        }
+    }
+}
+
+fn pattern(pattern: &Pattern) -> String {
+    match &pattern.kind {
+        PatternKind::Wildcard => "_".into(),
+        PatternKind::Variant(name, None) => name.name.clone(),
+        PatternKind::Variant(name, Some(slots)) => {
+            let slots: Vec<&str> = slots
+                .iter()
+                .map(|s| match s {
+                    PatSlot::Bind(n) => n.name.as_str(),
+                    PatSlot::Ignore(_) => "_",
+                })
+                .collect();
+            format!("({} {})", name.name, slots.join(" "))
+        }
+        PatternKind::Int { value, negative } => {
+            format!("{}{value}", if *negative { "-" } else { "" })
+        }
+        PatternKind::Str(text) => format!("{text:?}"),
+        PatternKind::Bool(value) => value.to_string(),
     }
 }
 

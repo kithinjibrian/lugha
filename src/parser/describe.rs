@@ -50,6 +50,10 @@ fn symbol(kind: &TokenKind) -> &'static str {
         Fun => "fun",
         Extern => "extern",
         Struct => "struct",
+        Enum => "enum",
+        Impl => "impl",
+        Match => "match",
+        SelfKw => "self",
         Let => "let",
         Mut => "mut",
         If => "if",
@@ -100,6 +104,8 @@ fn symbol(kind: &TokenKind) -> &'static str {
         Colon => ":",
         Dot => ".",
         DotDot => "..",
+        FatArrow => "=>",
+        ColonColon => "::",
         Eof => "end of file",
     }
 }

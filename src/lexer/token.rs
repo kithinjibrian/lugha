@@ -27,6 +27,10 @@ pub enum TokenKind {
     Fun,
     Extern,
     Struct,
+    Enum,
+    Impl,
+    Match,
+    SelfKw,
     Let,
     Mut,
     If,
@@ -82,6 +86,10 @@ pub enum TokenKind {
     Colon,
     Dot,
     DotDot,
+    /// `=>`, between a `match` pattern and its arm (v1).
+    FatArrow,
+    /// `::` is not Lugha syntax; lexed only so the parser can report E0207 (v1).
+    ColonColon,
 
     /// End of input; always the last token.
     Eof,
@@ -94,6 +102,10 @@ pub fn keyword(word: &str) -> Option<TokenKind> {
         "fun" => Fun,
         "extern" => Extern,
         "struct" => Struct,
+        "enum" => Enum,
+        "impl" => Impl,
+        "match" => Match,
+        "self" => SelfKw,
         "let" => Let,
         "mut" => Mut,
         "if" => If,

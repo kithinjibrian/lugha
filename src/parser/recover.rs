@@ -81,13 +81,21 @@ impl Parser<'_> {
         }
     }
 
-    /// After an error at top level: skips to the next `fun`, `extern` or `struct` outside brackets.
+    /// After an error at top level: skips to the next item keyword outside brackets.
     pub(super) fn sync_item(&mut self) {
         let mut depth = 0usize;
         loop {
             match self.peek() {
                 TokenKind::Eof => return,
-                TokenKind::Fun | TokenKind::Extern | TokenKind::Struct if depth == 0 => return,
+                TokenKind::Fun
+                | TokenKind::Extern
+                | TokenKind::Struct
+                | TokenKind::Enum
+                | TokenKind::Impl
+                    if depth == 0 =>
+                {
+                    return;
+                }
                 TokenKind::LParen | TokenKind::LBracket | TokenKind::LBrace => depth += 1,
                 TokenKind::RParen | TokenKind::RBracket | TokenKind::RBrace => {
                     depth = depth.saturating_sub(1);

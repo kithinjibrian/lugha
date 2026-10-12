@@ -7,6 +7,9 @@ use lugha::span::Span;
 #[path = "common/spec_programs.rs"]
 mod spec_programs;
 
+#[path = "common/v1_programs.rs"]
+mod v1_programs;
+
 fn tokens(src: &str) -> Vec<Token> {
     lex(src)
         .unwrap_or_else(|d| panic!("{src:?} does not lex: {d:?}"))
@@ -46,5 +49,13 @@ fn parsing_never_panics_on_any_token_prefix() {
             span: Span::new(end, end),
         });
         let _ = parse(&prefix);
+    }
+}
+
+#[test]
+fn every_v1_draft_program_parses_without_diagnostics() {
+    for (name, src) in v1_programs::ALL {
+        let (_, warnings) = parse(&tokens(src)).unwrap_or_else(|d| panic!("{name}: {d:?}"));
+        assert!(warnings.is_empty(), "{name}: {warnings:?}");
     }
 }

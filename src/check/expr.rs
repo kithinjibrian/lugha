@@ -107,6 +107,9 @@ impl Checker {
                 self.if_expr(expr, cond, then, else_.as_deref(), expect)
             }
             ExprKind::Block(block) => self.block(block, expect),
+            ExprKind::Match(..) => unreachable!(
+                "v1 constructs are stopped by the driver gate before checking (PRP-019)"
+            ),
             ExprKind::Str(_) => Type::String,
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
             ExprKind::Index(base, _, index) => self.index(base, index),

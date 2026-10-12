@@ -69,7 +69,9 @@ Done when every §10 program passes.
 
 ### Milestone 6 — Enums
 Done when the shapes and linked-list programs pass and the rejected program reports E0417.
-- [ ] PRP: enums, `match`, `Option<T>`, recursive enums with indirect slots (E0207, E0309, E0311, E0416, E0417, W0102)
+- [x] PRP-019: v1 syntax (lexer, parser, AST, E0207) and the driver gate
+- [ ] PRP-020: enums, `match`, `Option<T>` (non-recursive) + the v1 spec file (E0309, E0311, E0416, E0417, W0102)
+- [ ] PRP-021: recursive enums with indirect slots, enum copies — **milestone 6 done**, tag `m6`
 
 ### Milestone 7 — Methods
 Done when the methods program passes.

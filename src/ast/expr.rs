@@ -1,6 +1,6 @@
 //! Expression nodes of the AST.
 
-use super::{Block, Ident, Type};
+use super::{Arm, Block, Ident, Type};
 use crate::span::Span;
 
 /// Identity of one expression node, dense from 0.
@@ -52,6 +52,8 @@ pub enum ExprKind {
     },
     /// A block used as an expression.
     Block(Block),
+    /// `match scrutinee { arms }` (v1).
+    Match(Box<Expr>, Vec<Arm>),
 }
 
 /// Prefix operators.

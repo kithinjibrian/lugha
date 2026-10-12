@@ -228,10 +228,11 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
-│   ├── lexer/       — mod.rs (lex, main loop), token.rs, number.rs, string.rs
-│   ├── ast/         — mod.rs (items, types, statements), expr.rs (expressions, ExprId)
+│   ├── lexer/       — mod.rs (lex, main loop), token.rs, punct.rs (operators), number.rs, string.rs
+│   ├── ast/         — mod.rs (items, types, statements), expr.rs (expressions, ExprId), pattern.rs (match arms)
 │   ├── parser/      — mod.rs (parse, cursor, errors), recover.rs, describe.rs,
-│   │                  expr.rs (Pratt), primary.rs, stmt.rs, item.rs, sexp.rs, test_util.rs
+│   │                  expr.rs (Pratt), primary.rs, stmt.rs, item.rs, decl.rs (enum, impl, receivers),
+│   │                  pattern.rs (match, patterns), sexp.rs, test_util.rs
 │   ├── check/       — mod.rs (check, Checked), types.rs, env.rs (globals, main, scopes),
 │   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), stmt.rs,
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
@@ -246,7 +247,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  array.rs (allocation, list/repeat literals, for … of), copy.rs (deep copies, copy sites),
 │   │                  structs.rs (named types, layout, literals, fields, place addresses)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_SOURCE, LinkError
-│   └── driver/      — mod.rs (clap CLI, exit codes), pipeline.rs, source.rs (load, E0110, line_col),
+│   └── driver/      — mod.rs (clap CLI, exit codes), pipeline.rs, gate.rs (v1 feature gate), source.rs (load, E0110, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)
 ├── tests/
 │   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
@@ -255,7 +256,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── parser.rs    — parser public-API tests (every spec program parses)
 │   ├── codegen.rs   — builds and runs real executables at -O0 and -O2
 │   ├── cli.rs       — the lughac binary: commands, emit, diagnostics, exit codes
-│   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
+│   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec;
+│   │                  v1_programs.rs: the v1 draft §10 programs (until PRP-020 folds them in)
 │   ├── programs/    — m1/ … m5/: <name>.la + .stdout/.exit/.stderr expectations
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
@@ -290,3 +292,4 @@ These look like bugs but are specified behavior:
 - **Boehm may keep garbage alive** when an integer looks like a pointer. Conservative GC, spec §7.
 - **Extern C code keeping a Lugha pointer is undefined behavior.** Spec §7–8 accept this for v0.
 - **`as` casts truncate/saturate silently.** The only place values wrap (spec §4).
+- **v1 constructs stop with "not implemented yet: … (milestone N)"** (exit 2) until their milestone: `driver/gate.rs`. They parse, and `--emit=tokens|ast` works on them.

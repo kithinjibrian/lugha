@@ -8,6 +8,7 @@
 //! Depends on: span, diagnostic.
 
 mod number;
+mod punct;
 mod string;
 pub mod token;
 
@@ -122,61 +123,6 @@ impl Lexer<'_> {
         let kind = token::keyword(word).unwrap_or_else(|| TokenKind::Ident(word.to_string()));
         self.push(kind, start);
     }
-
-    fn punctuation(&mut self, start: usize, c: char) {
-        use TokenKind::*;
-        let next = self.byte_at(1);
-        let (kind, len) = match (c, next) {
-            ('<', Some(b'=')) => (LtEq, 2),
-            ('>', Some(b'=')) => (GtEq, 2),
-            ('=', Some(b'=')) => (EqEq, 2),
-            ('!', Some(b'=')) => (BangEq, 2),
-            ('&', Some(b'&')) => (AndAnd, 2),
-            ('|', Some(b'|')) => (OrOr, 2),
-            ('+', Some(b'=')) => (PlusEq, 2),
-            ('-', Some(b'=')) => (MinusEq, 2),
-            ('*', Some(b'=')) => (StarEq, 2),
-            ('/', Some(b'=')) => (SlashEq, 2),
-            ('.', Some(b'.')) => (DotDot, 2),
-            ('<', _) => (Lt, 1),
-            ('>', _) => (Gt, 1),
-            ('=', _) => (Eq, 1),
-            ('!', _) => (Bang, 1),
-            ('+', _) => (Plus, 1),
-            ('-', _) => (Minus, 1),
-            ('*', _) => (Star, 1),
-            ('/', _) => (Slash, 1),
-            ('%', _) => (Percent, 1),
-            ('.', _) => (Dot, 1),
-            ('(', _) => (LParen, 1),
-            (')', _) => (RParen, 1),
-            ('{', _) => (LBrace, 1),
-            ('}', _) => (RBrace, 1),
-            ('[', _) => (LBracket, 1),
-            (']', _) => (RBracket, 1),
-            (',', _) => (Comma, 1),
-            (';', _) => (Semi, 1),
-            (':', _) => (Colon, 1),
-            _ => return self.unexpected(start, c),
-        };
-        self.pos += len;
-        self.push(kind, start);
-    }
-
-    fn unexpected(&mut self, start: usize, c: char) {
-        self.pos += c.len_utf8();
-        let span = Span::new(start, self.pos);
-        let mut diagnostic =
-            Diagnostic::error("E0101", format!("unexpected character {c:?}"), span);
-        if let Some(fix) = match c {
-            '&' => Some("`&&`"),
-            '|' => Some("`||`"),
-            _ => None,
-        } {
-            diagnostic = diagnostic.with_help(format!("did you mean {fix}?"));
-        }
-        self.error(diagnostic);
-    }
 }
 
 fn is_ident_byte(b: u8) -> bool {
@@ -213,13 +159,22 @@ mod tests {
 
     #[test]
     fn keywords_are_recognised_exactly() {
-        let src = "fun extern struct let mut if else while for in of return break continue \
-                   true false as i32 i64 u8 f64 bool string";
+        let src = "fun extern struct enum impl match self let mut if else while for in of return \
+                   break continue true false as i32 i64 u8 f64 bool string";
         let expected = [
-            Fun, Extern, Struct, Let, Mut, If, Else, While, For, In, Of, Return, Break, Continue,
-            True, False, As, TyI32, TyI64, TyU8, TyF64, TyBool, TyString,
+            Fun, Extern, Struct, Enum, Impl, Match, SelfKw, Let, Mut, If, Else, While, For, In, Of,
+            Return, Break, Continue, True, False, As, TyI32, TyI64, TyU8, TyF64, TyBool, TyString,
         ];
         assert_eq!(kinds(src), expected);
+        // `Option`, `Some` and `None` are built-in names, not keywords (v1 §2).
+        assert_eq!(
+            kinds("Option Some None"),
+            [
+                Ident("Option".into()),
+                Ident("Some".into()),
+                Ident("None".into())
+            ]
+        );
         assert_eq!(
             kinds("fun_x Fun _ x9"),
             [
@@ -228,25 +183,6 @@ mod tests {
                 Ident("_".into()),
                 Ident("x9".into())
             ]
-        );
-    }
-
-    #[test]
-    fn operators_use_longest_match() {
-        let src = "<= >= == != && || += -= *= /= .. < > = ! + - * / % . ( ) { } [ ] , ; :";
-        let expected = [
-            LtEq, GtEq, EqEq, BangEq, AndAnd, OrOr, PlusEq, MinusEq, StarEq, SlashEq, DotDot, Lt,
-            Gt, Eq, Bang, Plus, Minus, Star, Slash, Percent, Dot, LParen, RParen, LBrace, RBrace,
-            LBracket, RBracket, Comma, Semi, Colon,
-        ];
-        assert_eq!(kinds(src), expected);
-        assert_eq!(
-            kinds("a..b"),
-            [Ident("a".into()), DotDot, Ident("b".into())]
-        );
-        assert_eq!(
-            kinds("x<=-y"),
-            [Ident("x".into()), LtEq, Minus, Ident("y".into())]
         );
     }
 

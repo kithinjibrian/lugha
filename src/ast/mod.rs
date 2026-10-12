@@ -8,8 +8,10 @@
 //! Depends on: span.
 
 mod expr;
+mod pattern;
 
 pub use expr::{BinOp, Expr, ExprId, ExprKind, UnOp};
+pub use pattern::{Arm, PatSlot, Pattern, PatternKind};
 
 use crate::span::Span;
 
@@ -40,6 +42,10 @@ pub enum Item {
     Extern(ExternDecl),
     /// `struct Name { fields }`.
     Struct(StructDecl),
+    /// `enum Name { variants }` (v1).
+    Enum(EnumDecl),
+    /// `impl Type { methods }` (v1).
+    Impl(ImplDecl),
 }
 
 /// A function with a body.
@@ -47,7 +53,9 @@ pub enum Item {
 pub struct FunDecl {
     /// Function name.
     pub name: Ident,
-    /// Parameters in order.
+    /// `self` or `mut self`; only methods in an `impl` have one (v1).
+    pub receiver: Option<Receiver>,
+    /// Parameters in order, after any receiver.
     pub params: Vec<Param>,
     /// Declared return type; `None` means `void`.
     pub ret: Option<Type>,
@@ -78,6 +86,48 @@ pub struct StructDecl {
     /// Fields in declaration order.
     pub fields: Vec<Field>,
     /// From `struct` to the closing brace.
+    pub span: Span,
+}
+
+/// A method's `self` or `mut self` parameter (v1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Receiver {
+    /// `mut self`.
+    pub mutable: bool,
+    /// From `mut` (if any) to `self`.
+    pub span: Span,
+}
+
+/// An enum declaration (v1).
+#[derive(Debug, Clone, PartialEq)]
+pub struct EnumDecl {
+    /// Enum name.
+    pub name: Ident,
+    /// Variants in declaration order.
+    pub variants: Vec<Variant>,
+    /// From `enum` to the closing brace.
+    pub span: Span,
+}
+
+/// One enum variant and its positional payload types.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Variant {
+    /// Variant name.
+    pub name: Ident,
+    /// Payload types in order; empty for `Empty` and for `Empty()`.
+    pub payloads: Vec<Type>,
+    /// From the name to the closing parenthesis, if any.
+    pub span: Span,
+}
+
+/// An `impl` block (v1).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ImplDecl {
+    /// The type the methods belong to.
+    pub ty: Ident,
+    /// Methods and associated functions in order.
+    pub methods: Vec<FunDecl>,
+    /// From `impl` to the closing brace.
     pub span: Span,
 }
 
@@ -115,6 +165,8 @@ pub enum TypeKind {
     Named(String),
     /// `T[]`.
     Array(Box<Type>),
+    /// `Option<T>` (v1).
+    Option(Box<Type>),
 }
 
 /// `{ stmts tail }`.

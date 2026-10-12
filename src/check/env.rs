@@ -35,6 +35,9 @@ impl Checker {
                 Item::Fun(f) => (&f.name, &f.params, f.ret.as_ref(), false),
                 Item::Extern(e) => (&e.name, &e.params, e.ret.as_ref(), true),
                 Item::Struct(_) => continue,
+                Item::Enum(_) | Item::Impl(_) => unreachable!(
+                    "v1 constructs are stopped by the driver gate before checking (PRP-019)"
+                ),
             };
             let declared = params;
             let params = params
@@ -112,6 +115,9 @@ impl Checker {
             TypeKind::Bool => Type::Bool,
             TypeKind::String => Type::String,
             TypeKind::Array(element) => Type::Array(Box::new(self.resolve(element))),
+            TypeKind::Option(_) => unreachable!(
+                "v1 constructs are stopped by the driver gate before checking (PRP-019)"
+            ),
             TypeKind::Named(name) if self.structs.contains_key(name) => Type::Struct(name.clone()),
             TypeKind::Named(name) => {
                 self.report(errors::unknown_type(name, ty.span));

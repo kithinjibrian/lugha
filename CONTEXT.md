@@ -1262,6 +1262,52 @@ CHANGELOG.md   — entry
 
 Branch: main → prp-019-v1_syntax
 
+### WHAT WAS DONE
+
+Milestone 6 discovery, with the recommended answer accepted every time:
+- a new v1 spec file, with v0 frozen;
+- three PRPs (019 syntax, 020 enums/`match`/`Option`, 021 recursion and copies);
+- a driver feature gate for constructs not yet implemented.
+
+Implemented PRP-019:
+- **Lexer:** the keywords `enum`, `match`, `impl`, `self`; the tokens `=>` and `::`; operator scanning split into `lexer/punct.rs`.
+- **AST:** enums, impls, receivers, `Option<T>`, `match`, patterns.
+- **Parser:** `decl.rs` and `pattern.rs`, E0207, recovery per arm and at `enum`/`impl`.
+- **S-expressions** for every new node.
+- **`driver/gate.rs`.**
+- **Tests:** the v1 draft programs as parser fixtures; CLI tests for the gate.
+
+212 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/lexer/{mod,token,punct}.rs — keywords, => and ::, punct split + tests
+src/ast/{mod,expr,pattern}.rs  — EnumDecl, ImplDecl, Receiver, Variant, TypeKind::Option, ExprKind::Match, patterns
+src/parser/{decl,pattern}.rs   — new: enum/impl/receivers; match/patterns/sync_arm + tests
+src/parser/{mod,item,primary,stmt,expr,sexp,describe,recover}.rs — wiring, E0207, Option<T>, sexp, recovery
+src/driver/{gate,pipeline,mod}.rs — new gate + tests; called before checking
+src/check/{env,expr,liveness}.rs, src/codegen/{function,value,expr}.rs — unreachable arms for gated nodes
+tests/common/v1_programs.rs, tests/{parser,cli}.rs — v1 fixtures, parse test, gate CLI test
+PRPs/prp-019-v1_syntax.md — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 24)
+```
+
+### TESTS WRITTEN
+
+- **Lexer:** the new keywords, `=>` and `::`, and that `Option`/`Some`/`None` stay identifiers.
+- **Parser:** enums, impls with receivers, `self` outside `impl` (E0201), `Option` types, `self` expressions, E0207 with help and an AST equal to the `.` form, `match` forms and patterns, block arms, per-arm recovery, top-level recovery.
+- **Gate:** milestones, source order, v0 untouched.
+- **Integration:** the v1 draft programs parse; the CLI gate message in human and JSON form; `--emit=ast` works.
+
+### DECISIONS MADE
+
+- M6 plan and the gate (MEMORY 24).
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

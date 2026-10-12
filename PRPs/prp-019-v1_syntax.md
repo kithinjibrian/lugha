@@ -1,6 +1,6 @@
 ## FEATURE: v1 syntax — the lexer, parser and AST for all of v1 (`enum`, `match`, `impl`, `self`, `Option<T>`, `=>`, and a helpful E0207 for `::`), with a driver gate that reports the not-yet-implemented constructs.
 
-**Status:** approved 2026-10-12 — session 25
+**Status:** implemented 2026-10-12 — session 25 (branch `prp-019-v1_syntax`, awaiting merge)
 **Milestone:** 6, first of three PRPs (019 syntax, 020 enums/`match`/`Option`, 021 recursive enums and copies)
 **Spec:** `docs/specs/Language v1 Draft.md` §2 (keywords, `=>`, `::`), §3 (grammar: `enum_decl`, `impl_decl`, `method`, `receiver`, `Option<T>`, `match_expr`, patterns, `self`)
 **Decisions:** MEMORY 23 (v1 direction), architecture rule 9 (the lexer and parser cover the full syntax at once), PRP-016 (no `Stop`/`Checking` machinery)
@@ -30,6 +30,13 @@ v0 programs behave exactly as before, unless they use the four new keywords as n
   - `src/driver/pipeline.rs`;
   - `tests/{lexer,parser,cli}.rs`.
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 25)
+- **Frame size:** the `::` handling lives in a separate `#[inline(never)] colon_colon`. Inlining it into `postfix` grew the per-level stack frame enough to overflow the existing E0206 deep-nesting test.
+- **`match` recovers per arm** (`sync_arm`): one bad arm reports one error and parsing continues at the next arm. Otherwise the statement recovery closed the function at the `match`'s `}`.
+- **Top level:** the item error now reads "expected `fun`, `extern`, `struct`, `enum` or `impl`", and item recovery also stops at `enum` and `impl`. No goldens depended on the old text.
+- **Fixtures:** the v1 draft programs live in `tests/common/v1_programs.rs` until PRP-020 moves them into the v1 spec.
+- **Gated arms:** the checker, liveness and codegen have `unreachable!` arms for gated nodes, with the message "v1 constructs are stopped by the driver gate before checking (PRP-019)".
 
 ### Discovery answers (session 25)
 1. **Spec file:** milestone 6 creates `Language v1 Specification.md` (v0 plus folded-in sections), and `lugha::SPEC` points at it. The v0 file is frozen. This happens in PRP-020, when the first v1 feature works; PRP-019 changes no spec text.
@@ -122,33 +129,33 @@ v0 programs behave exactly as before, unless they use the four new keywords as n
 ## TESTS TO WRITE
 
 Unit tests:
-- [ ] Lexer:
+- [x] Lexer:
   - the four keywords;
   - `=>` and `::` by longest match;
   - `= >` with a space is two tokens;
   - `Option`/`Some`/`None` are identifiers.
-- [ ] Parser, via S-expressions:
+- [x] Parser, via S-expressions:
   - enums (payloads, payload-less variants, trailing commas);
   - `impl` with `self`, `mut self` and associated functions;
   - `Option<Option<i64>>` and `Option<i64>[]`;
   - `match` as an expression and as a statement, with block arms without commas, every pattern kind, and a negative integer pattern;
   - `self` in expressions.
-- [ ] Parser errors:
+- [x] Parser errors:
   - `Shape::Circle(1.0)` → E0207 with help, and the AST equals the `.` form;
   - `self` as a parameter outside `impl` → E0201 with help;
   - a bad pattern → E0201;
   - `match` arms missing `=>` recover and report later errors too.
-- [ ] Gate:
+- [x] Gate:
   - each construct maps to its milestone;
   - the first one in source order wins;
   - a v0 program passes the gate untouched.
 
 Integration and acceptance:
-- [ ] `tests/parser.rs`: the four v1 draft example programs and the rejected one parse without diagnostics. They are inline fixtures until PRP-020 moves them into the spec.
-- [ ] `tests/cli.rs`:
+- [x] `tests/parser.rs`: the four v1 draft example programs and the rejected one parse without diagnostics. They are inline fixtures until PRP-020 moves them into the spec.
+- [x] `tests/cli.rs`:
   - `lughac check` on an enum program exits 2 with "not implemented yet: enums (milestone 6)", in human and JSON (`code: null`);
   - `--emit=ast` on it exits 0.
-- [ ] All earlier tests pass.
+- [x] All earlier tests pass.
 
 ## ROLLBACK PLAN
 
@@ -156,12 +163,12 @@ Integration and acceptance:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] Every v1 draft program parses; `--emit=ast` prints it.
-- [ ] `::` gives E0207 with recovery.
-- [ ] v1 constructs stop with the gate's internal error and their milestone.
-- [ ] CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md updated.
-- [ ] No file over 300 lines (with the splits above); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] Every v1 draft program parses; `--emit=ast` prints it.
+- [x] `::` gives E0207 with recovery.
+- [x] v1 constructs stop with the gate's internal error and their milestone.
+- [x] CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md updated.
+- [x] No file over 300 lines (with the splits above); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

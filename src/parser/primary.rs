@@ -33,7 +33,9 @@ impl Parser<'_> {
                 let open = self.bump();
                 return self.with_struct_literals(true, |p| p.array(start, open));
             }
-            TokenKind::If | TokenKind::LBrace => return self.block_like(),
+            TokenKind::If | TokenKind::LBrace | TokenKind::Match => return self.block_like(),
+            // `self` is a name the checker binds like a parameter (v1, milestone 7).
+            TokenKind::SelfKw => ExprKind::Name("self".to_string()),
             _ => return Err(self.expected("expression")),
         };
         self.bump();
@@ -92,10 +94,13 @@ impl Parser<'_> {
         Ok(self.mk(start, ExprKind::Array(elements)))
     }
 
-    /// An `if` expression or a block expression.
+    /// An `if`, `match` or block expression.
     pub(super) fn block_like(&mut self) -> PResult<Expr> {
         if self.at(&TokenKind::If) {
             return self.if_expr();
+        }
+        if self.at(&TokenKind::Match) {
+            return self.match_expr();
         }
         let start = self.span().start;
         let block = self.block()?;

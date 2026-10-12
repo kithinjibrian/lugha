@@ -258,3 +258,21 @@ fn spec_prints_the_bundled_specification() {
     assert!(out.stderr.is_empty(), "{}", text(&out.stderr));
     assert_eq!(lughac(&dir.0, &["spec", "extra"]).status.code(), Some(2));
 }
+
+#[test]
+fn v1_constructs_stop_at_the_gate_until_their_milestone() {
+    let src = b"enum Shape { Circle(f64), Empty }\nfun main() {}\n";
+    let dir = TempDir::with(&[("shapes.la", src)]);
+    let human = lughac(&dir.0, &["check", "shapes.la"]);
+    assert_eq!(human.status.code(), Some(2));
+    let stderr = text(&human.stderr);
+    assert!(
+        stderr.starts_with("error: not implemented yet: enums (milestone 6)\n"),
+        "{stderr}"
+    );
+    let json = text(&lughac(&dir.0, &["check", "--diagnostics=json", "shapes.la"]).stderr);
+    assert!(json.starts_with(r#"{"severity":"error","code":null,"message":"not implemented yet: enums (milestone 6)""#), "{json}");
+    let ast = lughac(&dir.0, &["build", "--emit=ast", "shapes.la"]);
+    assert_eq!(ast.status.code(), Some(0), "{}", text(&ast.stderr));
+    assert!(text(&ast.stdout).starts_with("(enum Shape (Circle f64) Empty)"));
+}

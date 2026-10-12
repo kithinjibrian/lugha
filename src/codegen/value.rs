@@ -66,6 +66,9 @@ pub(super) fn annotation_type(ty: &Annotation) -> Type {
         TypeKind::String => Type::String,
         TypeKind::Array(ref element) => Type::Array(Box::new(annotation_type(element))),
         TypeKind::Named(ref name) => Type::Struct(name.clone()),
+        TypeKind::Option(_) => {
+            unreachable!("v1 constructs are stopped by the driver gate before checking (PRP-019)")
+        }
     }
 }
 

@@ -34,6 +34,9 @@ impl<'ctx> Lowerer<'ctx> {
                 Item::Fun(f) => (&f.name.name, &f.params, f.ret.as_ref(), false),
                 Item::Extern(e) => (&e.name.name, &e.params, e.ret.as_ref(), true),
                 Item::Struct(_) => continue,
+                Item::Enum(_) | Item::Impl(_) => unreachable!(
+                    "v1 constructs are stopped by the driver gate before checking (PRP-019)"
+                ),
             };
             let params: Vec<Type> = params.iter().map(|p| annotation_type(&p.ty)).collect();
             let ret = ret.map(annotation_type);

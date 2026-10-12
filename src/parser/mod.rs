@@ -7,9 +7,11 @@
 //!
 //! Depends on: ast, lexer (tokens), diagnostic, span.
 
+mod decl;
 mod describe;
 mod expr;
 mod item;
+mod pattern;
 mod primary;
 mod recover;
 pub mod sexp;

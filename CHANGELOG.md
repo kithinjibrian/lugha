@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- v1 syntax: `enum`, `match`, `impl`, `self`, `Option<T>` and `=>` lex and parse (`--emit=ast` shows them); `Shape::Circle` is E0207 with help; v1 constructs stop with "not implemented yet" until their milestone
 - Lugha v1 spec draft approved: enums and `match`, `Option<T>`, recursive enums, methods, growable arrays (milestones 6–8)
 - Move on last use: storing a value from a local that is never used again moves it instead of copying (the particles benchmark runs 2× faster); spec §4 notes it
 - DECISION-004 (design system) closed as not applicable — Lugha has no UI

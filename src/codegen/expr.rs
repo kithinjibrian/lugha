@@ -60,6 +60,9 @@ impl<'ctx> Lowerer<'ctx> {
                 return self.if_expr(expr, cond, then, else_.as_deref());
             }
             ExprKind::Block(block) => return self.block(block),
+            ExprKind::Match(..) => unreachable!(
+                "v1 constructs are stopped by the driver gate before checking (PRP-019)"
+            ),
             ExprKind::Str(text) => self.string_literal(text).into(),
             ExprKind::Index(base, open, index) => self.index(base, open.start, index)?,
             ExprKind::Field(base, field) => self.field(base, field)?,

@@ -267,6 +267,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 24. Milestone 6 plan and the v1 gate (PRP-019)
+
+**Decision:**
+- **Split:** M6 is three PRPs:
+  - 019 syntax for all of v1;
+  - 020 enums/`match`/`Option` plus the new `Language v1 Specification.md` (v0 frozen);
+  - 021 recursive enums and copies.
+- **Gate:** v1 constructs parse, but `driver/gate.rs` stops them before checking with "not implemented yet: … (milestone N)" (exit 2). Each PRP deletes its entries; the checker and codegen keep `unreachable!` arms for gated nodes. No `Stop`/`Checking` comeback.
+- **AST:** `self` is `ExprKind::Name("self")`; receivers are `FunDecl.receiver`; `Option<T>` is `TypeKind::Option`.
+
+**Why:** It keeps the checker plumbing simple, and `--emit=ast` works on v1 at once.
+
+**Rules out:** reintroducing checker stops.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -276,6 +292,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-019 v1 syntax: lexer/parser/AST for all of v1, E0207, `driver/gate.rs`
 - v1 spec draft approved (`docs/specs/Language v1 Draft.md`): milestones 6–8 planned
 - PRP-018 move on last use: `check/liveness.rs`, `Checked.moves`; particles benchmark 2× faster
 - DECISION-004 closed as not applicable (no UI)
