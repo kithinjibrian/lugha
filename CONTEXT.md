@@ -1258,9 +1258,9 @@ CHANGELOG.md   — entry
 
 ---
 
-## SESSION 25 — 2026-10-12 — Milestone 6 discovery and PRP-019 enums — open
+## SESSION 25 — 2026-10-12 — Milestone 6 discovery and PRP-019 v1 syntax — open
 
-Branch: main
+Branch: main → prp-019-v1_syntax
 
 ---
 
