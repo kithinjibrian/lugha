@@ -1,6 +1,6 @@
 ## FEATURE: E0510 — a statement may not change what contains the place it writes — as Lugha v1.2.
 
-**Status:** implemented 2026-10-12 — session 33
+**Status:** merged into `main` 2026-10-12 — session 33 (tag `v1.2`)
 **Milestone:** none; Lugha v1.2. Tag `v1.2` after merge.
 **Spec:** `Language v1 Specification.md` §4 (places, mutability), §5 (evaluation order, compound assignment, method calls, `swap`), §9 (codes)
 **Decisions:**

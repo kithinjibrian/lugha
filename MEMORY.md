@@ -457,9 +457,8 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Lugha v1.1 is released (tag `v1.1`): v1 plus the `swap(a, b)` intrinsic. No PRP is queued. Candidates, each starting with discovery:
-- **Found while working (TODO):** an element write is lost when the same statement grows the array (`xs[0] = { xs.push(2); 9 };`). It needs a spec ruling first: re-resolve the place, or reject the growth.
-- **Housekeeping:** `runtime/lugha_rt.c` is 358 lines, over the 300-line rule since PRP-025. It needs an approved split.
+Lugha v1.2 is released (tag `v1.2`): v1 plus `swap(a, b)` (v1.1) and E0510 (v1.2). No PRP is queued. Candidates, each starting with discovery:
+- **Housekeeping:** `runtime/lugha_rt.c` is 358 lines, over the 300-line rule since PRP-025. It needs an approved split. `check/stmt.rs` (294) and `check/method_calls.rs` (285) are also close to the limit.
 - **v2 language work** (spec §11 out-of-scope list): generics, modules, closures, richer patterns, a shared-reference type. Start with a v2 spec draft.
 
 See `TODO.md`.
