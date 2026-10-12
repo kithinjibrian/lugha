@@ -1314,6 +1314,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 24)
 
 ---
 
+## SESSION 26 — 2026-10-12 — PRP-020 enums, match and Option — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 6, PRP-020: enums, `match` and `Option<T>` for non-recursive enums (`docs/specs/Language v1 Draft.md` §4, §5, §7, §9, §10). It covers:
