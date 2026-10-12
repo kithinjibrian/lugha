@@ -1996,7 +1996,7 @@ CLAUDE.md (stack, rules 1 and 7, tree), README.md, TODO.md, CHANGELOG.md, MEMORY
 
 ## SESSION 39 — 2026-10-13 — Nested patterns and guards (PRP-032) — open
 
-Branch: main
+Branch: prp-032-nested_patterns
 
 ---
 
