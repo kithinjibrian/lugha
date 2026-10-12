@@ -2050,7 +2050,7 @@ CLAUDE.md (tree), README.md, TODO.md, CHANGELOG.md, MEMORY.md (decision 36)
 
 ---
 
-## SESSION 40 — 2026-10-13 — v2 visibility amendment — open
+## SESSION 40 — 2026-10-13 — v2 visibility amendment — closed
 
 Branch: main → v2-visibility
 
@@ -2080,14 +2080,27 @@ TODO.md (milestone 10), CHANGELOG.md, MEMORY.md (decision 37)
 
 - None (the v3 questions are in the draft's §12).
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `v2-visibility` fast-forward merged into `main` and deleted.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 9 is complete** (tag `m9`): deep `==`, string order, nested patterns, guards and W0103. `lughac spec` prints `Language v2 Specification.md` ("in progress: milestone 10").
+**Milestone 9 is complete** (tag `m9`). The v2 draft's visibility rules were amended in session 40 (MEMORY 37, `docs/decisions/visibility.md`):
+- no keyword means visible to the whole program;
+- `private` limits items, methods and fields to their module;
+- `public` is reserved for v3 (E0317);
+- E0318 forbids leaking a private type.
 
-Next is **milestone 10, modules** (v2 draft §6, §8, §9; the two-module program in the draft's §10). It covers `import`, `pub`, multi-file loading from the main file's directory, cycles, per-module namespaces, E0312–E0314, E0313 for private items, module-qualified symbols (`lugha_fn_a.b.f`), per-file diagnostics with a `"file"` field, and `--emit` across modules. The gate still stops `import`, `pub` and qualified names.
+Next is **milestone 10, modules** (v2 draft §2, §3, §5, §6, §8, §9; the two-module program in §10). It covers:
+- the lexer: `pub` becomes `private`/`public`, plus field and method visibility in the parser;
+- `import`, multi-file loading from the main file's directory, and cycles;
+- per-module namespaces, E0312–E0314, E0313 for private items and fields, E0317, E0318;
+- module-qualified symbols (`lugha_fn_a.b.f`), per-file diagnostics with a `"file"` field, and `--emit` across modules;
+- teaching the spec extraction about the multi-file example.
 
-Start with discovery: it likely needs a split into several PRPs, as M9 had (for example driver loading and spans, then name resolution, then symbols). The spec-extraction test must also learn to handle the multi-file example.
+Start with discovery; it likely splits into several PRPs, as M9 did.
 
 See `TODO.md`.
