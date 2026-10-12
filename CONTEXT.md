@@ -2086,6 +2086,12 @@ TODO.md (milestone 10), CHANGELOG.md, MEMORY.md (decision 37)
 
 ---
 
+## SESSION 41 — 2026-10-13 — Milestone 10 discovery — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 9 is complete** (tag `m9`). The v2 draft's visibility rules were amended in session 40 (MEMORY 37, `docs/decisions/visibility.md`):
