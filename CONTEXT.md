@@ -1796,7 +1796,38 @@ CLAUDE.md (tree, stack, link line), CHANGELOG.md, TODO.md, MEMORY.md (decision 1
 
 ## SESSION 35 — 2026-10-12 — Split check/stmt.rs and check/method_calls.rs (PRP-029) — open
 
-Branch: prp-029-checker_split
+Branch: main → prp-029-checker_split
+
+### WHAT WAS DONE
+
+Discovery (1 question, answered with the recommended option): two new files rather than moving code into `flow.rs`/`array.rs`. PRP-029 approved.
+
+Implemented PRP-029 as pure moves:
+- `function`/`body` and one test to `check/body.rs`;
+- `builtin` and its test to `check/builtins.rs`.
+
+The moved blocks were checked to be verbatim. 252 tests pass, the same count as before.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/body.rs, src/check/builtins.rs — new (moved code and tests)
+src/check/stmt.rs, src/check/method_calls.rs, src/check/mod.rs — code removed, imports, modules
+PRPs/prp-029-checker_split.md — new PRP; implemented; amendments
+CLAUDE.md (tree), CHANGELOG.md, TODO.md, MEMORY.md (state)
+```
+
+### TESTS WRITTEN
+
+- None new (pure moves). The two moved tests pass in their new files.
+
+### DECISIONS MADE
+
+- None.
+
+### PENDING DECISIONS OPENED
+
+- None.
 
 ---
 

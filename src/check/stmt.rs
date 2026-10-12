@@ -1,61 +1,12 @@
-//! Statements, blocks and function bodies.
+//! Statements and blocks: `let`, `for … in`, `return` and expression statements.
 
 use super::expr::Expect;
 use super::flow::Flow;
 use super::{Binding, Checker, Type, errors};
-use crate::ast::{Block, Expr, ForIter, FunDecl, Ident, Stmt, StmtKind};
+use crate::ast::{Block, Expr, ForIter, Ident, Stmt, StmtKind};
 use crate::span::Span;
 
 impl Checker {
-    /// Checks one function body against its signature.
-    pub(super) fn function(&mut self, f: &FunDecl) {
-        let signature = &self.functions[&f.name.name];
-        let (params, ret) = (signature.params.clone(), signature.ret.clone());
-        self.body(f, params, ret, None);
-    }
-
-    /// Checks a function or method body. A method's receiver is bound as
-    /// `self`: immutable like a parameter, or assignable for `mut self` (v1 §4).
-    pub(super) fn body(
-        &mut self,
-        f: &FunDecl,
-        params: Vec<Type>,
-        ret: Type,
-        receiver: Option<Type>,
-    ) {
-        self.ret = ret.clone();
-        self.scopes.clear();
-        self.changes.clear();
-        self.push();
-        if let (Some(ty), Some(r)) = (receiver, f.receiver) {
-            let binding = if r.mutable {
-                Binding::SelfMut
-            } else {
-                Binding::Param
-            };
-            self.declare(
-                &Ident {
-                    name: "self".into(),
-                    span: r.span,
-                },
-                ty,
-                binding,
-            );
-        }
-        for (param, ty) in f.params.iter().zip(params) {
-            self.declare(&param.name, ty, Binding::Param);
-        }
-        let expect = (ret != Type::Void).then(|| Expect::of(ret.clone()));
-        let body = self.block(&f.body, expect.as_ref());
-        self.pop();
-        if ret != Type::Void && body == Type::Void {
-            self.missing_return(f, ret);
-        } else if ret != Type::Void && !body.fits(&ret) {
-            let span = f.body.tail.as_ref().map_or(f.body.span, |tail| tail.span);
-            self.report(errors::mismatch(ret, body, span, None));
-        }
-    }
-
     /// A block in its own scope: the tail's type, `void`, or `Never` once a
     /// statement diverges (spec §5, §6).
     pub(super) fn block(&mut self, block: &Block, expect: Option<&Expect>) -> Type {
@@ -194,7 +145,7 @@ impl Checker {
 #[cfg(test)]
 mod tests {
     use crate::check::Type;
-    use crate::check::test_util::{errors, let_type, ok};
+    use crate::check::test_util::{errors, let_type};
 
     #[test]
     fn let_and_assignment_check_types() {
@@ -281,14 +232,5 @@ mod tests {
             errors("fun f(): bool { 1 }\nfun main() {}"),
             [("E0401", "1")]
         );
-    }
-
-    #[test]
-    fn every_expression_of_a_valid_program_gets_a_type() {
-        // `0..3` alone would make `i` an i64 (spec §4); the i32 bound types the range.
-        let src = "fun fib(n: i32): i32 = if n < 2 { n } else { fib(n - 1) + fib(n - 2) };\n\
-                   fun main(): i32 { let n: i32 = 3; let mut t: i32 = 0; for i in 0..n { t += i; } fib(10) + t - n }";
-        let checked = ok(src);
-        assert!(!checked.types.contains(&Type::Error), "{:?}", checked.types);
     }
 }

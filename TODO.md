@@ -88,6 +88,8 @@ Done when the stack program passes and `lughac spec` prints the full v1 spec.
 
 - [x] (PRP-028) `runtime/lugha_rt.c` grew to 358 lines (PRP-025), over the 300-line rule. Split into fragments joined at build.
 
+- [x] (PRP-029) `check/stmt.rs` (294) and `check/method_calls.rs` (285) were close to 300 lines. Bodies and array built-ins moved to `body.rs` and `builtins.rs`.
+
 ## Ideas — noted, not scheduled
 
 - [x] Move on last use: store a dead local's array without copying it (`grid = next`, `ps[i] = p`) — PRP-018.

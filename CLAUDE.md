@@ -236,12 +236,12 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  expr.rs (Pratt), primary.rs, stmt.rs, item.rs, decl.rs (enum, impl, receivers),
 │   │                  pattern.rs (match, patterns), sexp.rs, test_util.rs
 │   ├── check/       — mod.rs (check, Checked), types.rs, env.rs (globals, main, scopes),
-│   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), stmt.rs,
+│   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), body.rs (function bodies), stmt.rs,
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
 │   │                  (fields, indexing), array.rs (literals, for … of, E0507 guard), structs.rs
 │   │                  (declarations, E0307/E0308, literals), liveness.rs (move on last use), enums.rs
 │   │                  (declarations, construction), matching.rs (match, E0417, W0102), methods.rs (impl,
-│   │                  E0310), method_calls.rs (calls, receivers, E0415, E0508), swap.rs (swap, E0509), conflicts.rs (E0510), errors/ (mod.rs, names.rs E03xx,
+│   │                  E0310), method_calls.rs (calls, receivers, E0415, E0508), builtins.rs (push, pop, clear), swap.rs (swap, E0509), conflicts.rs (E0510), errors/ (mod.rs, names.rs E03xx,
 │   │                  types.rs E04xx, places.rs E05xx/W01xx)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at

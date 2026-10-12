@@ -1,6 +1,6 @@
 ## FEATURE: Move function bodies out of `check/stmt.rs` and array built-ins out of `check/method_calls.rs`, before either passes 300 lines.
 
-**Status:** approved 2026-10-12 — session 35
+**Status:** implemented 2026-10-12 — session 35
 **Milestone:** none; housekeeping (CLAUDE.md file size rule: `stmt.rs` is 294 lines, `method_calls.rs` 285)
 **Spec:** none. No language or diagnostic change.
 **Decisions:** MEMORY 27 (methods), MEMORY 28 (growable arrays).
@@ -25,6 +25,10 @@ Both files get room for the next feature that touches them, through pure moves: 
   - The two old files are at about 235 and 225 lines.
 - **Related existing code:** `src/check/{mod,stmt,method_calls,env,methods}.rs` (callers of `function`/`body`).
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 35)
+- **Sizes:** `stmt.rs` 236, `body.rs` 72, `method_calls.rs` 230, `builtins.rs` 66.
+- **Check:** a script confirmed the moved functions and tests appear verbatim in the new files, with `builtin` differing only by `pub(super)`. Two now-unused imports were dropped (`FunDecl`, and the `ok` test helper in `stmt.rs`).
 
 ### Discovery answers (session 35)
 1. **Two new files:** `body.rs` and `builtins.rs`. Not moves into `flow.rs` and `array.rs`, which would push those to the limit.
@@ -62,9 +66,9 @@ Both files get room for the next feature that touches them, through pure moves: 
 ## TESTS TO WRITE
 
 No new behaviour, so no new tests: the moved tests and the whole suite are the check.
-- [ ] The two moved tests pass in their new files.
-- [ ] The test count is unchanged (252), and every test passes.
-- [ ] The moved code is identical, checked with a diff of the removed and added function bodies.
+- [x] The two moved tests pass in their new files.
+- [x] The test count is unchanged (252), and every test passes.
+- [x] The moved code is identical, checked with a diff of the removed and added function bodies.
 
 ## ROLLBACK PLAN
 
@@ -72,10 +76,10 @@ No new behaviour, so no new tests: the moved tests and the whole suite are the c
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] `stmt.rs` and `method_calls.rs` are each at most about 245 lines; no file over 300.
-- [ ] CLAUDE.md tree, CHANGELOG.md, TODO.md updated.
-- [ ] No new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] `stmt.rs` and `method_calls.rs` are each at most about 245 lines; no file over 300.
+- [x] CLAUDE.md tree, CHANGELOG.md, TODO.md updated.
+- [x] No new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

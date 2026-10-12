@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Changed
+- Checker housekeeping: function bodies moved to `check/body.rs` and the array built-in methods to `check/builtins.rs`, keeping `stmt.rs` and `method_calls.rs` well under 300 lines
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added

@@ -411,6 +411,7 @@ Open questions live in `DECISIONS.md`, not here.
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- PRP-029: `check/body.rs` (function bodies) and `check/builtins.rs` (array built-ins) split out of `stmt.rs` and `method_calls.rs`
 - PRP-028: the C runtime split into three fragments (`runtime/{lugha_rt,stack,print}.c`), joined into one `lugha_rt.c`
 - **Lugha v1.2**: PRP-027 E0510 (`check/conflicts.rs`): no lost writes when a statement changes what contains its place
 - **Lugha v1.1**: PRP-026 `swap(a, b)` intrinsic (`check/swap.rs`, `codegen/swap.rs`, E0509)
