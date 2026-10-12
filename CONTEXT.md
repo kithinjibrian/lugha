@@ -2086,9 +2086,9 @@ TODO.md (milestone 10), CHANGELOG.md, MEMORY.md (decision 37)
 
 ---
 
-## SESSION 41 — 2026-10-13 — Milestone 10 discovery — open
+## SESSION 41 — 2026-10-13 — Modules front end (PRP-033) — open
 
-Branch: main
+Branch: prp-033-module_loading
 
 ---
 
