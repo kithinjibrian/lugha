@@ -2,7 +2,7 @@
 
 Oct 9, 2026 · @kithinji
 
-**v1 status.** This document is v0 plus everything v1 has implemented so far: enums, `match`, `Option` and recursive data (milestone 6). The rest of v1 — methods and growable arrays — is specified in `Language v1 Draft.md` and joins this document as its milestones land. Every valid v0 program is a valid v1 program unless it uses one of the new keywords as a name.
+**v1 status.** This document is v0 plus everything v1 has implemented so far: enums, `match`, `Option` and recursive data (milestone 6), and methods (milestone 7). The rest of v1 — growable arrays — is specified in `Language v1 Draft.md` and joins this document as its milestones land. Every valid v0 program is a valid v1 program unless it uses one of the new keywords as a name.
 
 ## 1. Overview
 
@@ -19,7 +19,7 @@ v0 is a learning target: every feature in this spec should be implementable by o
 
 **Non-goals for v0**
 
-- Generics (other than the built-in `Option<T>`), modules, closures and methods. See section 11.
+- Generics (other than the built-in `Option<T>`), modules and closures. See section 11.
 - Performance tuning beyond what LLVM's optimizer gives for free.
 - A self-hosted compiler or a package manager.
 
@@ -66,7 +66,7 @@ return  break  continue  true  false  as  self
 i32  i64  u8  f64  bool  string
 ```
 
-Built-in type names are keywords, so they can't be shadowed by user structs. `impl` and `self` are reserved for methods (milestone 7). `Option`, `Some` and `None` are not keywords but built-in names, reserved like the intrinsics (section 6).
+Built-in type names are keywords, so they can't be shadowed by user structs. `Option`, `Some` and `None` are not keywords but built-in names, reserved like the intrinsics (section 6).
 
 **Literals**
 
@@ -122,7 +122,7 @@ The grammar is LL(1) apart from expressions, which use Pratt parsing with the pr
 
 ```ebnf
 program      = { item } EOF ;
-item         = fun_decl | extern_decl | struct_decl | enum_decl ;
+item         = fun_decl | extern_decl | struct_decl | enum_decl | impl_decl ;
 
 fun_decl     = "fun" IDENT "(" [ params ] ")" [ ":" type ] fun_body ;
 fun_body     = block | "=" expr ";" ;          (* "= e;" means "{ e }" *)
@@ -130,6 +130,9 @@ extern_decl  = "extern" "fun" IDENT "(" [ params ] ")" [ ":" type ] ";" ;
 struct_decl  = "struct" IDENT "{" [ field { "," field } [ "," ] ] "}" ;
 field        = IDENT ":" type ;
 enum_decl    = "enum" IDENT "{" [ variant { "," variant } [ "," ] ] "}" ;
+impl_decl    = "impl" IDENT "{" { method } "}" ;
+method       = "fun" IDENT "(" [ receiver [ "," params ] | params ] ")" [ ":" type ] fun_body ;
+receiver     = [ "mut" ] "self" ;
 variant      = IDENT [ "(" type { "," type } [ "," ] ")" ] ;
 params       = param { "," param } [ "," ] ;
 param        = IDENT ":" type ;
@@ -171,6 +174,7 @@ index        = "[" expr "]" ;
 member       = "." IDENT ;
 primary      = INT | FLOAT | STRING | "true" | "false"
              | IDENT [ struct_init ]
+             | "self"
              | "(" expr ")"
              | "[" [ expr ( ";" expr | { "," expr } [ "," ] ) ] "]"
              | block_like ;
@@ -276,6 +280,7 @@ There is no null. Every string and array variable holds a valid object.
 | `return p;` where `p` is a parameter, a `for … of` variable, or part of one | Yes | Otherwise the caller's argument, or the iterated array, would be shared |
 | `return xs;` where `xs` is a local or part of one | No | The local is about to go away, so the array simply moves |
 | Passing an argument, `f(xs)` | No | Parameters are immutable, and nothing else runs during the call |
+| Calling a method, `x.m()` | No | `self` is passed like any argument; a `mut self` method edits `x` itself, in place |
 | A fresh value: literal, call result, string concatenation | No | Nothing else refers to it |
 
 A function's tail value follows the same rules as `return`: a body ending in `p` copies, and one ending in `xs` moves. "From a place" looks through `if` and block tails: `let ys = if c { xs } else { [0] };` copies. When the value comes from a local that is never used again, the compiler may move it instead of copying; no program can tell the difference.
@@ -317,7 +322,16 @@ Structs and arrays have no `==` in v0. Compare their fields or elements instead.
 
 **Casts.** `expr as T` converts between numeric types (`i32`, `i64`, `u8`, `f64`). Integer narrowing truncates. Integer to float rounds to nearest. Float to integer truncates toward zero and saturates at the target's range; NaN becomes 0. `bool` cannot be cast; write `if b { 1 } else { 0 }` instead.
 
-**Names of types.** A local — a `let`, a parameter, a `for` variable or a `match` binding — may not be named like a struct, an enum or `Option` (E0311). So a name before `.` is always unambiguous: a type, meaning a variant follows, or a local, meaning a field follows.
+**Names of types.** A local — a `let`, a parameter, a `for` variable or a `match` binding — may not be named like a struct, an enum or `Option` (E0311). So a name before `.` is always unambiguous: a type, meaning a variant or associated function follows, or a local, meaning a field or method follows.
+
+**Methods.** An `impl T { … }` block attaches functions to a struct or enum `T` declared anywhere in the file; a type may have several `impl` blocks, and no `impl` may target a built-in type (E0305). Method names are unique per type and may not repeat a field or variant name (E0310).
+
+- **`self` methods.** A method whose first parameter is `self` is called on a value: `v.len_sq()`. `self` is an immutable, borrowed parameter of type `T`: storing or returning it copies it, like any parameter.
+- **`mut self` methods.** A method whose first parameter is `mut self` changes the caller's value in place: `v.scale(2.0)`. The receiver must be a place whose root is `let mut` (E0501), not inside a string (E0506), and not an array being iterated (E0507); it may be a variable, a field or an element (`r.min.shift(1.0)`, `ps[1].scale(2.0)`). Inside, `self`, its fields and its elements can be assigned, and `self` can be replaced whole.
+- **Associated functions.** A function in an `impl` without `self` is called on the type: `Vec2.new(1.0, 2.0)`.
+- **No aliasing.** An argument of a `mut self` call may not mention the receiver's root variable (E0508): in `v.add(v)` the method would see its own edits through `o`. Copy first: `let w = v; v.add(w);`.
+
+Calling a method that doesn't exist, a `self` method on a type or an associated function on a value is E0415. Arrays, strings and `Option` have no methods.
 
 **Mutability.** Bindings are immutable by default. Assigning to any place requires the variable at its root to be declared `let mut`. That covers the variable itself, a field (`p.x = 1.0`), an element (`xs[0] = 1`) and any chain of these (`shapes[i].pts[j].x = 2.0`). Because every variable owns its data, a variable declared without `mut` never changes after it is initialized.
 
@@ -326,6 +340,8 @@ Structs and arrays have no `==` in v0. Compare their fields or elements instead.
 Evaluation is strictly left to right: operands, call arguments and struct-literal fields are evaluated in source order. The only exceptions are `&&` and `||`, which skip their right operand when the left decides the result.
 
 **Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way. Float arithmetic follows IEEE 754: overflow gives an infinity and division by zero gives an infinity or NaN, never a panic. Explicit casts are the one place values wrap: narrowing with `as` truncates (section 4).
+
+**Method calls.** `x.m(a, b)` evaluates `x`, then `a`, then `b`. For a `mut self` call the place `x` is evaluated once, before the arguments, like an assignment's place.
 
 **`match` evaluation.** A `match` evaluates its scrutinee once, then tests the arms from top to bottom and runs the first that matches. A variant's payloads are evaluated left to right when it is built.
 
@@ -386,7 +402,7 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 2. Resolve struct field and enum payload types, check for structs that contain themselves through structs alone (E0307), and mark the enum payload slots that lead back to their enum (indirect slots, section 7).
 3. Check each function body against the global table.
 
-**Names.** Functions, structs, enums, intrinsics and the built-in names `Option`, `Some` and `None` share one global namespace, and duplicates are a compile error. No local may be named like a type (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then globals.
+**Names.** Functions, structs, enums, intrinsics and the built-in names `Option`, `Some` and `None` share one global namespace, and duplicates are a compile error. Methods live in their type's namespace, so a function `dist` and a method `Point.dist` can coexist. No local may be named like a type (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then globals.
 
 **Functions.** Declared with `fun`, typed parameters, and an optional `: type` return annotation. Omitting the annotation means `void`.
 
@@ -485,7 +501,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 
 - Extern functions are called exactly like Lugha functions.
 - Variadic C functions such as `printf` cannot be declared in v0. Use the `print` and `println` intrinsics instead.
-- The extern name is used as the C symbol name unchanged. Lugha functions themselves are emitted with a `lugha_fn_` prefix, so they never collide with C symbols.
+- The extern name is used as the C symbol name unchanged. Lugha functions themselves are emitted with a `lugha_fn_` prefix, so they never collide with C symbols. Methods and associated functions are `lugha_fn_<Type>.<name>` (for example `lugha_fn_Point.dist`); `.` can't appear in a Lugha name, so these can't collide either.
 - Runtime library functions use the `lugha_rt_` prefix. Neither prefix is a prefix of the other, so a Lugha function can never collide with a runtime function, whatever its name.
 - Extern names starting with `lugha_` are reserved and rejected with an E03xx error, so an extern declaration can't collide with either.
 - Extern C code must not keep a Lugha string after the call returns, and must not write through the pointer (section 7).
@@ -513,6 +529,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 - **Opaque pointers:** every `load`, `store` and `getelementptr` needs its element type, taken from the checker's type table.
 - **Array copies:** generate one deep-copy function per type that contains arrays (for example `lugha_copy_i64_arr_arr`, or `lugha_copy_5Point_arr` — struct names are length-prefixed so they can't be confused with `_arr` or primitive names; the `lugha_copy_` prefix is disjoint from `lugha_fn_` and `lugha_rt_`), and call it at each copy site listed in section 4. For arrays of plain values, the copy is one `lugha_rt_alloc` plus `llvm.memcpy`.
 - **Struct, enum and array arguments:** pass a pointer to the caller's storage rather than the value itself, since the callee can't modify it.
+- **Methods:** ordinary functions whose first parameter is the receiver. A `self` receiver is passed like a struct argument; a `mut self` receiver is the address of the caller's place itself, so the method's writes land there.
 - **`match`:** an LLVM `switch` on the tag for enums and on the value for integers and `bool`s; a chain of `lugha_rt_str_eq` tests for strings. Payload bindings load from the payload area at constant offsets. An exhaustive `match` without `_` ends in `unreachable`.
 
 **Runtime library.** A small C file, `lugha_rt.c`, is compiled once and linked into every program. The compiler calls only these functions:
@@ -574,6 +591,7 @@ Name and type errors, reported by the checker:
 | E0307 | Struct contains itself | `struct A { b: B }` with `struct B { a: A }` — hold it in an array instead (`A[]`) |
 | E0308 | Field declared twice | `struct P { x: i64, x: f64 }` |
 | E0309 | Variant declared twice | `enum E { A, B, A }` |
+| E0310 | Method declared twice, or named like a field or variant | `impl P { fun x(self) {} }` where `P` has a field `x` |
 | E0311 | A local named like a type | `let Shape = 3;`, `fun f(Point: i64)` |
 | E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
 | E0402 | Integer literal out of range for its type | `let b: u8 = 256;` |
@@ -587,7 +605,7 @@ Name and type errors, reported by the checker:
 | E0412 | Cannot infer an array's element type, or `None`'s type | `let xs = [];`, `let x = None;` — annotate it: `let xs: i64[] = [];` |
 | E0413 | Struct literal missing fields | `Point { x: 1.0 }` |
 | E0414 | Struct literal field given twice | `Point { x: 1.0, x: 2.0, y: 0.0 }` |
-| E0415 | No such variant | `Shape.Circel(1.0)`, a `Square` pattern on a `Shape` |
+| E0415 | No such variant or method | `Shape.Circel(1.0)`, a `Square` pattern on a `Shape`, `p.size()`, `xs.push(1)` |
 | E0416 | Wrong number of payloads | `Shape.Rect(1.0)`, `Rect(w) => …` |
 | E0417 | Non-exhaustive `match` | `match s { Circle(r) => r }` with more variants; an integer `match` without `_` |
 | E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum or `Option` parameters or returns (§8) |
@@ -598,7 +616,8 @@ Name and type errors, reported by the checker:
 | E0504 | `break` or `continue` outside a loop | |
 | E0505 | Block-like statement with a discarded value | `if big { 100 } else { 1 }` followed by more statements |
 | E0506 | Assignment into a string | `s[0] = 104;`, `s.len = 2;` — strings are immutable (§4) |
-| E0507 | Assignment to the array being iterated | `for x of xs { xs[0] = x; }` |
+| E0507 | Assignment to the array being iterated | `for x of xs { xs[0] = x; }`, or a `mut self` call on it |
+| E0508 | Argument aliases a `mut self` receiver | `v.add(v)` where `add` takes `mut self` |
 | W0101 | Unreachable code (warning) | statements after `return`, `break` or `continue`; reported once per block |
 | W0102 | Unreachable `match` arm (warning) | an arm after `_`, or a variant already covered |
 
@@ -740,6 +759,28 @@ fun main() {
 }
 ```
 
+**Methods** (milestone 7). Prints `5.0` then `6.0` on two lines, exits with 0.
+
+```
+struct Vec2 { x: f64, y: f64 }
+
+impl Vec2 {
+    fun new(x: f64, y: f64): Vec2 = Vec2 { x: x, y: y };
+    fun len_sq(self): f64 = self.x * self.x + self.y * self.y;
+    fun scale(mut self, k: f64) {
+        self.x *= k;
+        self.y *= k;
+    }
+}
+
+fun main() {
+    let mut v = Vec2.new(1.0, 2.0);
+    println(v.len_sq());
+    v.scale(2.0);
+    println(v.x + v.y);
+}
+```
+
 **A rejected enum program** (milestone 6). The checker reports the missing variant, and `lughac` exits with 1:
 
 ```
@@ -795,7 +836,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 4 | Runtime and C | `lugha_rt.c`, intrinsics, `extern fun`, string literals, integer overflow and division checks (panics) | Hello world and the libc example run |
 | 5 | Heap data | Boehm GC, strings, arrays, structs, array copies, `for`-`of`, bounds checks, panics; `lughac spec` | Every program in section 10 passes |
 | 6 | Enums (v1) | `enum`, construction, `match` with flat patterns, exhaustiveness, `Option<T>`, recursive enums | The enum programs in section 10 pass (done) |
-| 7 | Methods (v1) | `impl`, `self`/`mut self`, associated functions, method calls | Specified in `Language v1 Draft.md` |
+| 7 | Methods (v1) | `impl`, `self`/`mut self`, associated functions, method calls | The methods program in section 10 passes (done) |
 | 8 | Growable arrays (v1) | `push`, `pop`, `clear` on `T[]` | Specified in `Language v1 Draft.md`; then this document is the full v1 specification |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.

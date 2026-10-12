@@ -1428,6 +1428,51 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 26)
 
 Branch: main → prp-022-methods
 
+### WHAT WAS DONE
+
+Discovery:
+- One PRP for the milestone.
+- A `mut self` argument that aliases the receiver is rejected (E0508), not copied.
+
+Implemented PRP-022:
+- **Tests first:** the `m7/` programs.
+- **Checker:** `check/methods.rs` and `check/method_calls.rs` (the approved split), `Binding::SelfMut`, `body()` shared by functions and methods.
+- **Codegen:** `codegen/methods.rs`, `define_with` and shared `arguments`.
+- **Driver:** `driver/gate.rs` deleted.
+- **Spec:** methods folded into the v1 spec (§2–§10), with the methods program in §10.
+
+233 tests pass. **Milestone 7 complete.**
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/{methods,method_calls}.rs — new + tests
+src/check/{stmt,mod,env,expr,assign}.rs, src/check/errors/* — body(), SelfMut, wiring, check_place_for, E0310/E0415/E0508
+src/codegen/methods.rs — new + tests; src/codegen/{function,lower,expr,mod}.rs — define_with, arguments, routing
+src/driver/gate.rs — deleted; src/driver/{mod,pipeline}.rs
+docs/specs/Language v1 Specification.md, Language v1 Draft.md — methods folded in
+tests/programs/m7/ — methods (run); e0310, e0415, e0508, e0501_receiver (reject)
+tests/{cli,codegen,spec}.rs, tests/common/v1_programs.rs
+PRPs/prp-022-methods.md — new PRP; implemented; amendments
+CLAUDE.md (tree, rule 7, gate issue removed), CHANGELOG.md, TODO.md, MEMORY.md (decision 27)
+```
+
+### TESTS WRITTEN
+
+- **Checker:**
+  - methods across `impl`s, on enums; E0305 for unknown or built-in targets; E0310 (duplicate, field, variant); E0415 (unknown, wrong kind, `push`); arity;
+  - `self` immutable and `mut self` assignable; receiver E0501/E0502; E0508 (direct and via a field); E0507; `self` outside a method.
+- **Codegen:** receiver-first symbols, `mut self` passing the caller's own `alloca`, element receivers bounds-checked.
+- **Acceptance:** `m7/methods.la` at -O0/-O2; the spec §10 methods program; four reject goldens; the CLI `impl` run.
+
+### DECISIONS MADE
+
+- MEMORY 27 (methods).
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

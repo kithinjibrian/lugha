@@ -166,7 +166,7 @@ The language itself is defined by `docs/specs/Language v1 Specification.md` (v0 
 4. **Codegen never infers types.** It reads the checker's expression → type side table. *Why:* opaque pointers need the element type on every load/store/GEP (spec §9), and two type computations will disagree.
 5. **User-program errors are `Diagnostic` records, never panics or strings.** Each has a stable code from its stage's range (E01xx lex … E05xx, W01xx). New codes take the next unused number; a code is never reused or renumbered. Human and JSON output render from the same record. *Why:* spec §9; codes are a public contract.
 6. **Exit codes are 0 / 1 / 2.** 1 = the user's program has errors; 2 = bad CLI usage or internal compiler error. A `module.verify()` failure or a Rust panic inside lughac is exit 2, never 1. *Why:* spec §9; tools tell "your bug" from "our bug" by it.
-7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
+7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
 8. **Generated code allocates only through `lugha_rt_alloc`.** Never emit calls to `malloc`. *Why:* Boehm can't see `malloc` memory and will free live objects.
 9. **Follow the milestone order (spec §11).** The lexer and parser cover the full §2–§3 syntax. The checker and codegen implement only the current milestone's subset; in milestones 1–2 treat every value as `i64`. *Why:* each milestone must end in a running program, while syntax is cheap to do once and fully specified.
 10. **The §10 programs are the acceptance tests.** Their stdout and exit codes must match exactly. *Why:* they define "conforming compiler".
@@ -238,7 +238,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
 │   │                  (fields, indexing), array.rs (literals, for … of, E0507 guard), structs.rs
 │   │                  (declarations, E0307/E0308, literals), liveness.rs (move on last use), enums.rs
-│   │                  (declarations, construction), matching.rs (match, E0417, W0102), errors/ (mod.rs, names.rs E03xx,
+│   │                  (declarations, construction), matching.rs (match, E0417, W0102), methods.rs (impl,
+│   │                  E0310), method_calls.rs (calls, receivers, E0415, E0508), errors/ (mod.rs, names.rs E03xx,
 │   │                  types.rs E04xx, places.rs E05xx/W01xx)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
@@ -248,9 +249,9 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  array.rs (allocation, list/repeat literals, for … of), copy.rs (deep copies, copy sites),
 │   │                  structs.rs (named types, layout, literals, fields, place addresses), enums.rs
 │   │                  (enum layout, Option types, payload addresses), construct.rs (building enum values,
-│   │                  indirect slots), matching.rs (match lowering)
+│   │                  indirect slots), matching.rs (match lowering), methods.rs (method symbols, receivers, calls)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_SOURCE, LinkError
-│   └── driver/      — mod.rs (clap CLI, exit codes), pipeline.rs, gate.rs (v1 feature gate), source.rs (load, E0110, line_col),
+│   └── driver/      — mod.rs (clap CLI, exit codes), pipeline.rs, source.rs (load, E0110, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)
 ├── tests/
 │   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
@@ -297,4 +298,3 @@ These look like bugs but are specified behavior:
 - **Extern C code keeping a Lugha pointer is undefined behavior.** Spec §7–8 accept this for v0.
 - **`as` casts truncate/saturate silently.** The only place values wrap (spec §4).
 - **Too-deep recursion crashes with a signal (exit 139)**, not a panic: the native stack is finite (v1 spec §7). Walk very long lists with loops.
-- **Methods stop with "not implemented yet: methods (milestone 7)"** (exit 2) until milestone 7: `driver/gate.rs`. They parse, and `--emit=tokens|ast` works on them.

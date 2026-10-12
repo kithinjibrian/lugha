@@ -33,10 +33,8 @@ impl<'ctx> Lowerer<'ctx> {
             let (name, params, ret, is_extern) = match item {
                 Item::Fun(f) => (&f.name.name, &f.params, f.ret.as_ref(), false),
                 Item::Extern(e) => (&e.name.name, &e.params, e.ret.as_ref(), true),
-                Item::Struct(_) | Item::Enum(_) => continue,
-                Item::Impl(_) => unreachable!(
-                    "v1 constructs are stopped by the driver gate before checking (PRP-019)"
-                ),
+                // Methods are declared by `declare_methods`.
+                Item::Struct(_) | Item::Enum(_) | Item::Impl(_) => continue,
             };
             let params: Vec<Type> = params.iter().map(|p| self.annotation_type(&p.ty)).collect();
             let ret = ret.map(|t| self.annotation_type(t));
@@ -70,7 +68,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// A struct parameter is a pointer to the caller's storage (spec §7, §9).
-    fn param_type(&self, ty: &Type) -> BasicMetadataTypeEnum<'ctx> {
+    pub(super) fn param_type(&self, ty: &Type) -> BasicMetadataTypeEnum<'ctx> {
         match ty {
             ty if is_aggregate(ty) => self.context.ptr_type(Default::default()).into(),
             _ => llvm_type(self.context, ty).into(),
@@ -97,6 +95,18 @@ impl<'ctx> Lowerer<'ctx> {
     /// Lowers one function body. Parameters become locals (spec §6).
     pub(super) fn define(&mut self, f: &FunDecl) -> Result<(), CodegenError> {
         let signature = self.functions[&f.name.name].clone();
+        self.define_with(f, &signature, None)
+    }
+
+    /// Lowers a function or method body. A method's receiver arrives first,
+    /// as a pointer that serves as `self`'s slot: the caller's copy for
+    /// `self`, the caller's own place for `mut self` (v1 §7).
+    pub(super) fn define_with(
+        &mut self,
+        f: &FunDecl,
+        signature: &Signature<'ctx>,
+        receiver: Option<Type>,
+    ) -> Result<(), CodegenError> {
         self.function = Some(signature.function);
         self.ret = signature.ret.clone();
         self.scopes = Scopes::default();
@@ -105,8 +115,21 @@ impl<'ctx> Lowerer<'ctx> {
             .position_at_end(self.context.append_basic_block(signature.function, "entry"));
 
         self.scopes.push();
+        let first = u32::from(receiver.is_some());
+        if let Some(ty) = receiver {
+            let arg = signature
+                .function
+                .get_nth_param(0)
+                .expect("methods take their receiver first");
+            let local = Local {
+                ptr: arg.into_pointer_value(),
+                ty,
+                borrowed: true,
+            };
+            self.scopes.declare("self", local);
+        }
         for (index, (param, ty)) in f.params.iter().zip(&signature.params).enumerate() {
-            let index = u32::try_from(index).expect("parameter count fits in u32");
+            let index = first + u32::try_from(index).expect("parameter count fits in u32");
             let arg = signature
                 .function
                 .get_nth_param(index)
@@ -188,6 +211,24 @@ impl<'ctx> Lowerer<'ctx> {
             // Not a declared function, so one of the intrinsics (checked: E0301 otherwise).
             return self.intrinsic(call, name, args);
         };
+        let values = self.arguments(args, &signature)?;
+        let site = self
+            .builder
+            .build_call(signature.function, &values, "call")
+            .expect(POSITIONED);
+        Ok(match site.try_as_basic_value() {
+            ValueKind::Basic(result) => Value::Val(result),
+            ValueKind::Instruction(_) => Value::Void,
+        })
+    }
+
+    /// Lowers call arguments left to right (spec §5): aggregates are passed as
+    /// a pointer to a caller-side copy, strings to C as their bytes.
+    pub(super) fn arguments(
+        &mut self,
+        args: &[Expr],
+        signature: &Signature<'ctx>,
+    ) -> Result<Vec<BasicMetadataValueEnum<'ctx>>, CodegenError> {
         let mut values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len());
         for (arg, ty) in args.iter().zip(&signature.params) {
             let value = self.get(arg, ty)?;
@@ -203,14 +244,7 @@ impl<'ctx> Lowerer<'ctx> {
             };
             values.push(value.into());
         }
-        let site = self
-            .builder
-            .build_call(signature.function, &values, "call")
-            .expect(POSITIONED);
-        Ok(match site.try_as_basic_value() {
-            ValueKind::Basic(result) => Value::Val(result),
-            ValueKind::Instruction(_) => Value::Void,
-        })
+        Ok(values)
     }
 }
 

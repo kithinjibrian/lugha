@@ -59,13 +59,18 @@ impl<'ctx> Lowerer<'ctx> {
             }
             ExprKind::Binary(op, op_span, lhs, rhs) => self.binary(*op, op_span.start, lhs, rhs)?,
             ExprKind::Cast(inner, _) => self.cast(expr, inner)?,
-            ExprKind::Call(callee, args) => match self.constructed_variant(callee) {
-                Some(variant) => {
-                    let ty = self.ty(expr);
-                    self.construct(&ty, &variant, args)?
+            ExprKind::Call(callee, args) => {
+                if let Some(value) = self.method_call(callee, args)? {
+                    return Ok(value);
                 }
-                None => return self.call(expr, args),
-            },
+                match self.constructed_variant(callee) {
+                    Some(variant) => {
+                        let ty = self.ty(expr);
+                        self.construct(&ty, &variant, args)?
+                    }
+                    None => return self.call(expr, args),
+                }
+            }
             ExprKind::If { cond, then, else_ } => {
                 return self.if_expr(expr, cond, then, else_.as_deref());
             }

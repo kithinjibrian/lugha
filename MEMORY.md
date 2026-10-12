@@ -314,6 +314,23 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 27. Methods (PRP-022)
+
+**Decision:**
+- **Collection:** `impl` signatures are collected per type (methods live in the type's namespace) and keyed `Type.name`; the symbols are `lugha_fn_<Type>.<name>`.
+- **Receivers:**
+  - `self` is a borrowed parameter, passed as a pointer to a caller-side copy.
+  - `mut self` is `Binding::SelfMut`, assignable but never moved from. The caller passes its place's own address (`place_address`), so writes land in place.
+- **Call checks:** a `mut self` receiver gets the assignment place checks (E0501 with receiver wording, E0502, E0506, E0507). E0508 rejects an argument mentioning the receiver's root.
+- **Call order:** `method_call` before `construction` before plain calls (variants keep priority via E0310).
+- **The driver gate is deleted:** every v1 construct is checked, and `xs.push` is E0415 until milestone 8.
+
+**Why:** In-place `mut self` keeps value semantics without copies. E0508 closes the only aliasing hole at compile time.
+
+**Rules out:** methods on built-in types (until M8's built-ins), implicit argument copies, the gate.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -323,6 +340,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- **Milestone 7 complete** — PRP-022 methods: `check/{methods,method_calls}.rs`, `codegen/methods.rs`; driver gate removed
 - **Milestone 6 complete** — PRP-021 recursive enums: `indirect_slot`, `codegen/construct.rs`; the gate stops only methods
 - PRP-020 enums, `match`, `Option` (non-recursive) and `Language v1 Specification.md`
 - PRP-019 v1 syntax: lexer/parser/AST for all of v1, E0207, `driver/gate.rs`

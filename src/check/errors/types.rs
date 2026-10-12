@@ -238,3 +238,16 @@ pub(in crate::check) fn extern_enum(span: Span) -> Diagnostic {
     )
     .with_help("pass a number or a string instead")
 }
+
+pub(in crate::check) fn no_method(
+    name: &str,
+    ty: &Type,
+    span: Span,
+    help: Option<String>,
+) -> Diagnostic {
+    let d = Diagnostic::error("E0415", format!("no method `{name}` on `{ty}`"), span);
+    match help {
+        Some(help) => d.with_help(help),
+        None => d,
+    }
+}

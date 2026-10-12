@@ -73,9 +73,9 @@ Done when the shapes and linked-list programs pass and the rejected program repo
 - [x] PRP-020: enums, `match`, `Option<T>` (non-recursive) + the v1 spec file (E0309, E0311, E0415–E0417, W0102)
 - [x] PRP-021: recursive enums with indirect slots — **milestone 6 done**, tag `m6`
 
-### Milestone 7 — Methods
+### Milestone 7 — Methods ✅
 Done when the methods program passes.
-- [ ] PRP: `impl`, `self`/`mut self`, associated functions, method calls (E0310, E0415)
+- [x] PRP-022: `impl`, `self`/`mut self`, associated functions, method calls (E0310, E0415, E0508); driver gate removed — **milestone 7 done**
 
 ### Milestone 8 — Growable arrays
 Done when the stack program passes and `lughac spec` prints the full v1 spec.

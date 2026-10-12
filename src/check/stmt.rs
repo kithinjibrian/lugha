@@ -11,9 +11,36 @@ impl Checker {
     pub(super) fn function(&mut self, f: &FunDecl) {
         let signature = &self.functions[&f.name.name];
         let (params, ret) = (signature.params.clone(), signature.ret.clone());
+        self.body(f, params, ret, None);
+    }
+
+    /// Checks a function or method body. A method's receiver is bound as
+    /// `self`: immutable like a parameter, or assignable for `mut self` (v1 §4).
+    pub(super) fn body(
+        &mut self,
+        f: &FunDecl,
+        params: Vec<Type>,
+        ret: Type,
+        receiver: Option<Type>,
+    ) {
         self.ret = ret.clone();
         self.scopes.clear();
         self.push();
+        if let (Some(ty), Some(r)) = (receiver, f.receiver) {
+            let binding = if r.mutable {
+                Binding::SelfMut
+            } else {
+                Binding::Param
+            };
+            self.declare(
+                &Ident {
+                    name: "self".into(),
+                    span: r.span,
+                },
+                ty,
+                binding,
+            );
+        }
         for (param, ty) in f.params.iter().zip(params) {
             self.declare(&param.name, ty, Binding::Param);
         }

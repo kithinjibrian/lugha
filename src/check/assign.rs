@@ -29,7 +29,13 @@ impl Checker {
 
     /// Reports why `place` can't be assigned, if it can't; true when the
     /// value should still be type-checked against it.
-    fn check_place(&mut self, place: &Expr) -> bool {
+    pub(super) fn check_place(&mut self, place: &Expr) -> bool {
+        self.check_place_for(place, None)
+    }
+
+    /// `check_place` for an assignment (`method` is `None`) or for the
+    /// receiver of a `mut self` call to `method` (v1 §4).
+    pub(super) fn check_place_for(&mut self, place: &Expr, method: Option<&str>) -> bool {
         match &place.kind {
             ExprKind::Name(_) => {}
             ExprKind::Field(base, _) | ExprKind::Index(base, _, _) => {
@@ -60,14 +66,17 @@ impl Checker {
         };
         let name = root_name(place).expect("a place path has a root name");
         if let Some(local) = self.local(name)
-            && local.binding != (Binding::Let { mutable: true })
-        {
-            self.report(errors::not_mutable(
-                name,
-                place.span,
+            && !matches!(
                 local.binding,
-                local.span,
-            ));
+                Binding::Let { mutable: true } | Binding::SelfMut
+            )
+        {
+            let d = errors::not_mutable(name, place.span, local.binding, local.span);
+            let d = match method {
+                Some(m) => errors::for_receiver(d, name, m),
+                None => d,
+            };
+            self.report(d);
         }
         if let Some((_, for_span)) = self
             .iterating
@@ -82,7 +91,7 @@ impl Checker {
 }
 
 /// The variable at the root of a place chain, if the chain is rooted in one.
-fn root_name(place: &Expr) -> Option<&str> {
+pub(super) fn root_name(place: &Expr) -> Option<&str> {
     match &place.kind {
         ExprKind::Name(name) => Some(name),
         ExprKind::Field(base, _) | ExprKind::Index(base, _, _) => root_name(base),

@@ -1,6 +1,6 @@
 ## FEATURE: Methods — `impl` blocks with `self` / `mut self` receivers, associated functions, and method calls; the v1 gate is removed. Completes milestone 7.
 
-**Status:** approved 2026-10-12 — session 28
+**Status:** implemented 2026-10-12 — session 28 (branch `prp-022-methods`, awaiting merge)
 **Milestone:** 7 (one PRP). Done-when: the methods program prints `5.0` then `6.0`; then tag `m7`.
 **Spec:** `docs/specs/Language v1 Draft.md` §4 "Methods" and copy-table additions, §5 method-call evaluation, §6 symbols, §9 E0310/E0415, §10 methods program, folded into `Language v1 Specification.md`
 **Decisions:**
@@ -38,6 +38,15 @@ The methods program prints `5.0` and `6.0`.
   - `src/driver/{gate,pipeline,mod}.rs`;
   - `tests/{cli,codegen}.rs`, `tests/common/v1_programs.rs`.
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 28)
+- **Approved split:** `check/methods.rs` reached 357 lines, so calls moved to a new `check/method_calls.rs` (162 + 211 lines).
+- **E0501 wording:** for a `mut self` receiver it reads "cannot call `mut self` method `bump` on `p`: it is not mutable" (`check_place_for` with the method name).
+- **E0508's help** reads "copy it first: `let w = v;` and pass `w`".
+- **Function lowering:** `define` became `define_with(f, signature, receiver)`, and argument lowering is shared (`arguments`), so methods reuse both.
+- **IR names:** LLVM prints `lugha_fn_V.len_sq` unquoted.
+- **Element receivers:** the IR test checks the call sits in the `bounds.ok` block, because the failure block is laid out last.
+- **Gate removal:** `tests/codegen.rs` drops the exit-2 skip, and the CLI gate test now runs an `impl` program.
 
 ### Discovery answers (session 28)
 1. **One PRP** for the whole milestone.
@@ -131,7 +140,7 @@ The methods program prints `5.0` and `6.0`.
 ## TESTS TO WRITE
 
 Unit tests:
-- [ ] **Checker:**
+- [x] **Checker:**
   - methods in any order and across several `impl`s;
   - an `impl` on an unknown or built-in type → E0305;
   - E0310 (duplicate method, method named like a field, method named like a variant);
@@ -143,14 +152,14 @@ Unit tests:
   - E0508 for `v.add(v)` and `v.add(v.part)`, not for `v.add(w)`;
   - E0507 for a `mut self` call on an iterated array;
   - `self` in a free function → E0301.
-- [ ] **Codegen IR:**
+- [x] **Codegen IR:**
   - `define … @"lugha_fn_Vec2.len_sq"(ptr`;
   - a `mut self` call passes the variable's own `alloca`, with no temporary copy;
   - an element receiver `ps[i].scale(2.0)` is bounds-checked before the call.
 
 Acceptance:
-- [ ] **Spec §10:** the methods program prints `5.0` then `6.0` (from the spec, at `-O0`/`-O2`).
-- [ ] **`m7/methods.la`:**
+- [x] **Spec §10:** the methods program prints `5.0` then `6.0` (from the spec, at `-O0`/`-O2`).
+- [x] **`m7/methods.la`:**
   - methods on a struct and on an enum;
   - associated constructors;
   - a `mut self` method that reassigns `self` whole;
@@ -160,9 +169,9 @@ Acceptance:
   - a method returning `self`, then mutated by the caller while the original is unchanged.
 
   Expected stdout written by hand.
-- [ ] **Reject programs:** `e0310.la`, `e0415.la`, `e0508.la`, `e0501_receiver.la`. Goldens captured and reviewed.
-- [ ] **CLI:** an `impl` program runs (the gate is gone).
-- [ ] All earlier tests pass.
+- [x] **Reject programs:** `e0310.la`, `e0415.la`, `e0508.la`, `e0501_receiver.la`. Goldens captured and reviewed.
+- [x] **CLI:** an `impl` program runs (the gate is gone).
+- [x] All earlier tests pass.
 
 ## ROLLBACK PLAN
 
@@ -170,10 +179,10 @@ Acceptance:
 - To abandon: delete the branch; the gate keeps methods stopped.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The methods program prints `5.0` then `6.0`; every test above passes.
-- [ ] `driver/gate.rs` is gone; the v1 spec covers methods; CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The methods program prints `5.0` then `6.0`; every test above passes.
+- [x] `driver/gate.rs` is gone; the v1 spec covers methods; CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

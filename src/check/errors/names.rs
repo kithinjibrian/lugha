@@ -96,3 +96,31 @@ pub(in crate::check) fn local_named_like_type(name: &str, span: Span) -> Diagnos
     Diagnostic::error("E0311", format!("`{name}` is the name of a type"), span)
         .with_help("rename the variable")
 }
+
+pub(in crate::check) fn duplicate_method(
+    name: &str,
+    ty: &str,
+    span: Span,
+    first: Span,
+) -> Diagnostic {
+    Diagnostic::error(
+        "E0310",
+        format!("method `{name}` is declared twice for `{ty}`"),
+        span,
+    )
+    .with_label(first, "first declared here")
+}
+
+pub(in crate::check) fn method_named_like(
+    name: &str,
+    what: &str,
+    ty: &str,
+    span: Span,
+) -> Diagnostic {
+    Diagnostic::error(
+        "E0310",
+        format!("`{ty}` already has a {what} called `{name}`"),
+        span,
+    )
+    .with_help("give the method a different name")
+}

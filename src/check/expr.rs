@@ -105,10 +105,15 @@ impl Checker {
             }
             ExprKind::Unary(op, operand) => self.unary(*op, operand, expr, expect),
             ExprKind::Binary(op, _, lhs, rhs) => self.binary(expr, *op, lhs, rhs, expect),
-            ExprKind::Call(callee, args) => match self.construction(expr, callee, args, expect) {
-                Some(ty) => ty,
-                None => self.call(expr, callee, args),
-            },
+            ExprKind::Call(callee, args) => {
+                if let Some(ty) = self.method_call(expr, callee, args) {
+                    ty
+                } else if let Some(ty) = self.construction(expr, callee, args, expect) {
+                    ty
+                } else {
+                    self.call(expr, callee, args)
+                }
+            }
             ExprKind::If { cond, then, else_ } => {
                 self.if_expr(expr, cond, then, else_.as_deref(), expect)
             }

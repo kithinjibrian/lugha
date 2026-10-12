@@ -1,0 +1,6 @@
+error[E0415]: no method `size` on `P`
+  --> tests/programs/m7/e0415.la:5:15
+  |
+5 |     let n = p.size();
+  |               ^^^^
+

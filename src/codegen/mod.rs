@@ -18,6 +18,7 @@ mod function;
 mod heap;
 mod lower;
 mod matching;
+mod methods;
 mod runtime;
 mod scope;
 mod stmt;

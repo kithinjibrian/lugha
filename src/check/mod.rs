@@ -19,6 +19,8 @@ mod flow;
 mod literal;
 mod liveness;
 mod matching;
+mod method_calls;
+mod methods;
 mod ops;
 mod stmt;
 mod structs;
@@ -57,6 +59,7 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagno
         functions: HashMap::new(),
         structs: HashMap::new(),
         enums: HashMap::new(),
+        methods: HashMap::new(),
         scopes: Vec::new(),
         ret: Type::Void,
         loops: 0,
@@ -126,6 +129,8 @@ pub(super) enum Binding {
     LoopVar,
     /// A `match` payload binding: immutable and borrowed (v1 §4).
     Pattern,
+    /// `mut self`: assignable, but the caller's data, so never moved from (v1 §4).
+    SelfMut,
 }
 
 /// Checking state for one program.
@@ -135,6 +140,7 @@ pub(super) struct Checker {
     functions: HashMap<String, Signature>,
     structs: HashMap<String, structs::StructInfo>,
     enums: HashMap<String, enums::EnumInfo>,
+    methods: methods::Methods,
     scopes: Vec<HashMap<String, Local>>,
     /// The return type of the function being checked.
     ret: Type,

@@ -34,6 +34,8 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) moves: HashSet<ExprId>,
     /// Every declared function, by Lugha name.
     pub(super) functions: HashMap<String, Signature<'ctx>>,
+    /// Every method and associated function, by `Type.name` (v1).
+    pub(super) methods: HashMap<String, super::methods::Method<'ctx>>,
     /// The function being emitted, for appending basic blocks.
     pub(super) function: Option<FunctionValue<'ctx>>,
     /// Its return type; `None` for a void function.
@@ -80,6 +82,7 @@ pub(super) fn lower<'ctx>(
         enums: checked.enums.clone(),
         moves: checked.moves.clone(),
         functions: HashMap::new(),
+        methods: HashMap::new(),
         function: None,
         ret: None,
         scopes: Scopes::default(),
@@ -93,11 +96,13 @@ pub(super) fn lower<'ctx>(
     lowerer.declare_enums(program);
     lowerer.declare_structs();
     lowerer.declare_functions(program)?;
+    lowerer.declare_methods(program);
     for item in &program.items {
         if let Item::Fun(f) = item {
             lowerer.define(f)?;
         }
     }
+    lowerer.define_methods(program)?;
     let user_main = lowerer
         .functions
         .get("main")

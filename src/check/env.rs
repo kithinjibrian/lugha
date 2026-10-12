@@ -17,6 +17,7 @@ impl Checker {
         self.resolve_structs(program);
         self.resolve_enums(program);
         self.collect(program);
+        self.collect_methods(program);
         self.check_main(program);
         for item in &program.items {
             // A duplicate or reserved definition was reported; skip its body to avoid a cascade.
@@ -29,6 +30,7 @@ impl Checker {
                 self.function(f);
             }
         }
+        self.method_bodies(program);
     }
 
     /// Pass 1: every function signature, in source order.
@@ -37,10 +39,7 @@ impl Checker {
             let (name, params, ret, is_extern) = match item {
                 Item::Fun(f) => (&f.name, &f.params, f.ret.as_ref(), false),
                 Item::Extern(e) => (&e.name, &e.params, e.ret.as_ref(), true),
-                Item::Struct(_) | Item::Enum(_) => continue,
-                Item::Impl(_) => unreachable!(
-                    "v1 constructs are stopped by the driver gate before checking (PRP-019)"
-                ),
+                Item::Struct(_) | Item::Enum(_) | Item::Impl(_) => continue,
             };
             let declared = params;
             let params = params

@@ -39,6 +39,7 @@ pub(in crate::check) fn not_mutable(
         }
         Binding::LoopVar => "loop variables are immutable; copy it into a `let mut`".to_string(),
         Binding::Pattern => "match bindings are immutable; copy it into a `let mut`".to_string(),
+        Binding::SelfMut => unreachable!("`mut self` is assignable"),
         Binding::Let { .. } => format!("make it mutable: `let mut {name}`"),
     };
     Diagnostic::error(
@@ -100,4 +101,20 @@ pub(in crate::check) fn unreachable(span: Span, cause: Span) -> Diagnostic {
 pub(in crate::check) fn unreachable_arm(span: Span, cause: Span) -> Diagnostic {
     Diagnostic::warning("W0102", "unreachable match arm", span)
         .with_label(cause, "already covered here")
+}
+
+pub(in crate::check) fn mut_self_alias(name: &str, span: Span, receiver: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0508",
+        format!("cannot pass `{name}` to a `mut self` method called on `{name}`"),
+        span,
+    )
+    .with_label(receiver, format!("`{name}` is edited by this call"))
+    .with_help(format!("copy it first: `let w = {name};` and pass `w`"))
+}
+
+/// E0501 reworded for the receiver of a `mut self` call.
+pub(in crate::check) fn for_receiver(mut d: Diagnostic, name: &str, method: &str) -> Diagnostic {
+    d.message = format!("cannot call `mut self` method `{method}` on `{name}`: it is not mutable");
+    d
 }

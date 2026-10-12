@@ -1,0 +1,80 @@
+// Methods (PRP-022): self, mut self, associated functions, enums.
+struct Vec2 { x: f64, y: f64 }
+
+impl Vec2 {
+    fun new(x: f64, y: f64): Vec2 = Vec2 { x: x, y: y };
+    fun len_sq(self): f64 = self.x * self.x + self.y * self.y;
+    fun scale(mut self, k: f64) {
+        self.x *= k;
+        self.y *= k;
+    }
+    fun reset(mut self) {
+        self = Vec2.new(0.0, 0.0);
+    }
+    fun shift(mut self, d: f64) {
+        self.x += d;
+    }
+    fun doubled(self): Vec2 {
+        let mut v = self;
+        v.scale(2.0);
+        v
+    }
+    fun me(self): Vec2 = self;
+}
+
+struct Rect { min: Vec2, max: Vec2 }
+
+impl Rect {
+    fun width(self): f64 = self.max.x - self.min.x;
+    fun area(self): f64 = self.width() * (self.max.y - self.min.y);
+}
+
+enum Shape { Circle(f64), Square(f64) }
+
+impl Shape {
+    fun unit(): Shape = Shape.Square(1.0);
+    fun area(self): f64 = match self {
+        Circle(r) => 3.0 * r * r,
+        Square(s) => s * s,
+    };
+    fun grow(mut self) {
+        self = match self {
+            Circle(r) => Shape.Circle(r + 1.0),
+            Square(s) => Shape.Square(s + 1.0),
+        };
+    }
+}
+
+fun main() {
+    let mut v = Vec2.new(3.0, 4.0);
+    println(v.len_sq());
+    v.scale(2.0);
+    println(v.x);
+    v.reset();
+    println(v.len_sq());
+
+    println(Vec2.new(1.0, 1.0).len_sq());
+    let d = Vec2.new(1.0, 2.0).doubled();
+    println(d.y);
+
+    let mut r = Rect { min: Vec2.new(0.0, 0.0), max: Vec2.new(4.0, 2.0) };
+    println(r.area());
+    r.min.shift(1.0);
+    println(r.area());
+
+    let mut ps = [Vec2.new(1.0, 1.0), Vec2.new(2.0, 2.0)];
+    ps[1].scale(3.0);
+    println(ps[1].x);
+
+    let original = Vec2.new(5.0, 5.0);
+    let mut copy = original.me();
+    copy.scale(10.0);
+    println(original.x);
+    println(copy.x);
+
+    let mut s = Shape.unit();
+    s.grow();
+    println(s.area());
+    let c = Shape.Circle(1.0);
+    println(c.area());
+}
