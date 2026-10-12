@@ -1,0 +1,145 @@
+//! v2 generic and module syntax in declarations and types: type parameters
+//! after a name, `impl` headers, and `m.T` / `T<args>` types (v2 draft §3).
+
+use super::{PResult, Parser};
+use crate::ast::{AppliedType, Ident, TypeKind, TypeParam};
+use crate::lexer::TokenKind;
+
+impl Parser<'_> {
+    /// `<T, U: Eq + Ord>` after a declaration's name; empty when there is none.
+    pub(super) fn type_params(&mut self) -> PResult<Vec<TypeParam>> {
+        if !self.at(&TokenKind::Lt) {
+            return Ok(Vec::new());
+        }
+        let open = self.bump();
+        if self.at(&TokenKind::Gt) {
+            return Err(self.expected("type parameter name"));
+        }
+        self.comma_list(open, TokenKind::Gt, |p| {
+            let name = p.ident("type parameter name")?;
+            let mut bounds = Vec::new();
+            if p.eat(&TokenKind::Colon) {
+                loop {
+                    bounds.push(p.ident("bound name")?);
+                    if !p.eat(&TokenKind::Plus) {
+                        break;
+                    }
+                }
+            }
+            Ok(TypeParam { name, bounds })
+        })
+    }
+
+    /// The type's parameters in an `impl` header, `<T, U>`, without bounds:
+    /// those come from the type's declaration (v2 draft §3).
+    pub(super) fn impl_params(&mut self) -> PResult<Vec<Ident>> {
+        if !self.at(&TokenKind::Lt) {
+            return Ok(Vec::new());
+        }
+        let open = self.bump();
+        if self.at(&TokenKind::Gt) {
+            return Err(self.expected("type parameter name"));
+        }
+        self.comma_list(open, TokenKind::Gt, |p| p.ident("type parameter name"))
+    }
+
+    /// The rest of a named type after its first identifier: `Name`, `m.Name`,
+    /// `Name<args>` or `m.Name<args>`. Each argument list is one nesting
+    /// level, so `A<A<A<…>>>` hits E0206 instead of overflowing the stack.
+    pub(super) fn named_type(&mut self, first: Ident) -> PResult<TypeKind> {
+        let (module, name) = if self.eat(&TokenKind::Dot) {
+            (Some(first), self.ident("type name")?)
+        } else {
+            (None, first)
+        };
+        let args = if self.at(&TokenKind::Lt) {
+            let open = self.bump();
+            if self.at(&TokenKind::Gt) {
+                return Err(self.expected("type"));
+            }
+            self.nested(|p| p.comma_list(open, TokenKind::Gt, |p| p.ty()))?
+        } else {
+            Vec::new()
+        };
+        Ok(if module.is_none() && args.is_empty() {
+            TypeKind::Named(name.name)
+        } else {
+            TypeKind::Applied(Box::new(AppliedType { module, name, args }))
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::parser::test_util::{body, errors, expr, program};
+
+    #[test]
+    fn declarations_take_type_parameters_and_bounds() {
+        assert_eq!(
+            program("fun max<T: Ord>(a: T, b: T): T = a;"),
+            "(fun max (type-params (T Ord)) ((a T) (b T)) T (block a))"
+        );
+        assert_eq!(
+            program("struct Pair<A, B> { a: A, b: B }"),
+            "(struct Pair (type-params A B) (a A) (b B))"
+        );
+        assert_eq!(
+            program("enum Tree<T: Eq + Ord,> { Leaf, Node(Tree<T>, T) }"),
+            "(enum Tree (type-params (T Eq Ord)) Leaf (Node (applied Tree T) T))"
+        );
+        assert_eq!(errors("fun f<>() {}"), [("E0201", ">")]);
+        assert_eq!(errors("fun f<T:>() {}"), [("E0201", ">")]);
+    }
+
+    #[test]
+    fn impl_headers_name_the_type_and_its_parameters() {
+        assert_eq!(
+            program("impl Stack<T> { fun new(): Stack<T> = Stack { items: [] }; }"),
+            "(impl Stack (type-params T) (fun new () (applied Stack T) (block (struct-lit Stack (items (array))))))"
+        );
+        assert_eq!(program("impl geometry.Vec2 {}"), "(impl geometry.Vec2)");
+    }
+
+    #[test]
+    fn types_can_be_qualified_and_applied() {
+        assert_eq!(
+            program(
+                "fun f(s: Stack<i64>, t: Stack<Option<i64>>[], v: geometry.Vec2, p: m.Pair<i64, string>) {}"
+            ),
+            "(fun f ((s (applied Stack i64)) (t (applied Stack (Option i64))[]) (v (applied geometry.Vec2)) (p (applied m.Pair i64 string))) void (block))"
+        );
+        assert_eq!(
+            body("let s: Stack<i64> = x; let y = x as m.T;"),
+            "(block (let s (applied Stack i64) x) (let y (as x (applied m.T))))"
+        );
+        // `Box<L>` is kept for the checker's E0305 help.
+        assert_eq!(
+            program("enum L { N, C(Box<L>) }"),
+            "(enum L N (C (applied Box L)))"
+        );
+        let deep = format!("fun f(x: {}i64{}) {{}}", "A<".repeat(300), ">".repeat(300));
+        assert!(
+            errors(&deep).iter().any(|(code, _)| *code == "E0206"),
+            "{:?}",
+            errors(&deep)
+        );
+    }
+
+    #[test]
+    fn qualified_struct_literals_follow_the_condition_rule() {
+        assert_eq!(
+            expr("geometry.Vec2 { x: 1.0 }"),
+            "(struct-lit geometry.Vec2 (x 1.0))"
+        );
+        assert_eq!(
+            expr("geometry.Vec2 { x: 1.0 }.x"),
+            "(. (struct-lit geometry.Vec2 (x 1.0)) x)"
+        );
+        assert_eq!(
+            errors("fun t() { if p == geometry.Vec2 { x: 1.0 } { } }"),
+            [("E0205", "geometry.Vec2 { x: 1.0 }")]
+        );
+        // Not a literal: a block follows a field read in a condition.
+        assert_eq!(body("if a.b { }"), "(block (if (. a b) (block)))");
+    }
+}

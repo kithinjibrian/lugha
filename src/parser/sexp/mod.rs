@@ -3,108 +3,13 @@
 //! Ids and spans are omitted so the output only changes when the tree's
 //! shape does. Forms are listed in PRP-003.
 
-use crate::ast::{
-    Block, Expr, ExprKind, ForIter, FunDecl, Item, Param, PatSlot, Pattern, PatternKind, Program,
-    Stmt, StmtKind, Type, TypeKind, UnOp,
-};
+mod item;
 
-/// Prints every item, one per line.
-///
-/// # Examples
-///
-/// ```
-/// let (tokens, _) = lugha::lexer::lex("fun f(x: i64): i64 = x;").unwrap();
-/// let (program, _) = lugha::parser::parse(&tokens).unwrap();
-/// assert_eq!(lugha::parser::sexp::program(&program), "(fun f ((x i64)) i64 (block x))");
-/// ```
-pub fn program(program: &Program) -> String {
-    program
-        .items
-        .iter()
-        .map(item)
-        .collect::<Vec<_>>()
-        .join("\n")
-}
+pub use item::program;
 
-fn item(item: &Item) -> String {
-    match item {
-        Item::Fun(f) => fun(f),
-        Item::Extern(e) => format!(
-            "(extern {} {} {})",
-            e.name.name,
-            params(&e.params),
-            ret(&e.ret)
-        ),
-        Item::Struct(s) => {
-            let fields: String = s.fields.iter().map(|f| format!(" {}", param(f))).collect();
-            format!("(struct {}{fields})", s.name.name)
-        }
-        Item::Enum(e) => {
-            let variants: String = e
-                .variants
-                .iter()
-                .map(|v| match v.payloads.as_slice() {
-                    [] => format!(" {}", v.name.name),
-                    payloads => {
-                        let types: Vec<String> = payloads.iter().map(ty).collect();
-                        format!(" ({} {})", v.name.name, types.join(" "))
-                    }
-                })
-                .collect();
-            format!("(enum {}{variants})", e.name.name)
-        }
-        Item::Impl(i) => {
-            let methods: String = i.methods.iter().map(|m| format!(" {}", fun(m))).collect();
-            format!("(impl {}{methods})", i.ty.name)
-        }
-    }
-}
+use item::{qualified, ty};
 
-/// `(fun name (receiver params…) ret body)`.
-fn fun(f: &FunDecl) -> String {
-    let mut list: Vec<String> = f
-        .receiver
-        .map(|r| if r.mutable { "(mut self)" } else { "self" }.to_string())
-        .into_iter()
-        .collect();
-    list.extend(f.params.iter().map(param));
-    format!(
-        "(fun {} ({}) {} {})",
-        f.name.name,
-        list.join(" "),
-        ret(&f.ret),
-        block(&f.body)
-    )
-}
-
-fn params(params: &[Param]) -> String {
-    format!(
-        "({})",
-        params.iter().map(param).collect::<Vec<_>>().join(" ")
-    )
-}
-
-fn param(param: &Param) -> String {
-    format!("({} {})", param.name.name, ty(&param.ty))
-}
-
-fn ret(ret: &Option<Type>) -> String {
-    ret.as_ref().map_or_else(|| "void".to_string(), ty)
-}
-
-fn ty(ty: &Type) -> String {
-    match &ty.kind {
-        TypeKind::I32 => "i32".into(),
-        TypeKind::I64 => "i64".into(),
-        TypeKind::U8 => "u8".into(),
-        TypeKind::F64 => "f64".into(),
-        TypeKind::Bool => "bool".into(),
-        TypeKind::String => "string".into(),
-        TypeKind::Named(name) => name.clone(),
-        TypeKind::Array(element) => format!("{}[]", self::ty(element)),
-        TypeKind::Option(inner) => format!("(Option {})", self::ty(inner)),
-    }
-}
+use crate::ast::{Block, Expr, ExprKind, ForIter, Pattern, PatternKind, Stmt, StmtKind, UnOp};
 
 /// Prints one block: `(block stmt… tail)`.
 pub fn block(block: &Block) -> String {
@@ -181,12 +86,13 @@ pub fn expr(expr: &Expr) -> String {
         }
         ExprKind::Index(base, _, index) => list("index", &[base, index]),
         ExprKind::Field(base, field) => format!("(. {} {})", self::expr(base), field.name),
-        ExprKind::StructLit(name, fields) => {
-            let fields: String = fields
+        ExprKind::StructLit(lit) => {
+            let fields: String = lit
+                .fields
                 .iter()
                 .map(|(f, v)| format!(" ({} {})", f.name, self::expr(v)))
                 .collect();
-            format!("(struct-lit {}{fields})", name.name)
+            format!("(struct-lit {}{fields})", qualified(&lit.module, &lit.name))
         }
         ExprKind::Array(elements) => list("array", &elements.iter().collect::<Vec<_>>()),
         ExprKind::Repeat(value, count) => list("repeat", &[value, count]),
@@ -201,7 +107,18 @@ pub fn expr(expr: &Expr) -> String {
         ExprKind::Match(scrutinee, arms) => {
             let arms: String = arms
                 .iter()
-                .map(|a| format!(" (=> {} {})", pattern(&a.pattern), self::expr(&a.body)))
+                .map(|a| {
+                    let guard = a
+                        .guard
+                        .as_ref()
+                        .map(|g| format!(" (guard {})", self::expr(g)))
+                        .unwrap_or_default();
+                    format!(
+                        " (=> {}{guard} {})",
+                        pattern(&a.pattern),
+                        self::expr(&a.body)
+                    )
+                })
                 .collect();
             format!("(match {}{arms})", self::expr(scrutinee))
         }
@@ -213,13 +130,7 @@ fn pattern(pattern: &Pattern) -> String {
         PatternKind::Wildcard => "_".into(),
         PatternKind::Variant(name, None) => name.name.clone(),
         PatternKind::Variant(name, Some(slots)) => {
-            let slots: Vec<&str> = slots
-                .iter()
-                .map(|s| match s {
-                    PatSlot::Bind(n) => n.name.as_str(),
-                    PatSlot::Ignore(_) => "_",
-                })
-                .collect();
+            let slots: Vec<String> = slots.iter().map(self::pattern).collect();
             format!("({} {})", name.name, slots.join(" "))
         }
         PatternKind::Int { value, negative } => {

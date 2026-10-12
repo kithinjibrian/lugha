@@ -48,3 +48,21 @@ fn parsing_never_panics_on_any_token_prefix() {
         let _ = parse(&prefix);
     }
 }
+
+#[test]
+fn every_v2_draft_program_parses() {
+    // PRP-030: the draft isn't embedded in lughac, so read it from disk. Each
+    // §10 code block parses on its own, the two module files included.
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/docs/specs/Language v2 Draft.md"
+    );
+    let draft = std::fs::read_to_string(path).expect("the v2 draft exists");
+    let examples = &draft[draft.find("## §10").expect("§10")..draft.find("## §11").expect("§11")];
+    let blocks: Vec<&str> = examples.split("```").skip(1).step_by(2).collect();
+    assert_eq!(blocks.len(), 4, "patterns, geometry.la, main.la, generics");
+    for src in blocks {
+        let (_, warnings) = parse(&tokens(src)).unwrap_or_else(|d| panic!("{src}\n{d:?}"));
+        assert!(warnings.is_empty(), "{warnings:?}");
+    }
+}

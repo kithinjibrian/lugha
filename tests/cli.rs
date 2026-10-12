@@ -269,3 +269,28 @@ fn every_v1_construct_compiles_since_the_gate_is_gone() {
     let ast = lughac(&dir.0, &["build", "--emit=ast", "p.la"]);
     assert!(text(&ast.stdout).contains("(impl P (fun get (self) i64 (block (. self x))))"));
 }
+
+#[test]
+fn v2_constructs_parse_but_stop_at_the_gate() {
+    // PRP-030: v2 syntax parses; checking stops until its milestone lands.
+    let src = b"fun id<T>(x: T): T = x;\nfun main() {}\n";
+    let dir = TempDir::with(&[("g.la", src)]);
+    let ast = lughac(&dir.0, &["build", "--emit=ast", "g.la"]);
+    assert_eq!(ast.status.code(), Some(0), "{}", text(&ast.stderr));
+    assert!(text(&ast.stdout).contains("(fun id (type-params T) ((x T)) T (block x))"));
+    let human = lughac(&dir.0, &["check", "g.la"]);
+    assert_eq!(human.status.code(), Some(2));
+    let stderr = text(&human.stderr);
+    assert!(
+        stderr.contains("error: not implemented yet: generics (milestone 11)"),
+        "{stderr}"
+    );
+    let json = lughac(&dir.0, &["check", "--diagnostics=json", "g.la"]);
+    assert_eq!(json.status.code(), Some(2));
+    let line = text(&json.stderr);
+    assert_eq!(line.lines().count(), 1, "{line}");
+    assert!(
+        line.contains(r#""code":null"#) && line.contains("milestone 11"),
+        "{line}"
+    );
+}

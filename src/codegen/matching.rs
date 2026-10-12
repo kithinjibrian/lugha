@@ -9,7 +9,7 @@ use super::CodegenError;
 use super::lower::{Lowerer, POSITIONED};
 use super::scope::Local;
 use super::value::{Value, int_type};
-use crate::ast::{Arm, BinOp, Expr, PatSlot, PatternKind};
+use crate::ast::{Arm, BinOp, Expr, Pattern, PatternKind};
 use crate::check::Type;
 
 impl<'ctx> Lowerer<'ctx> {
@@ -150,11 +150,11 @@ impl<'ctx> Lowerer<'ctx> {
         sty: &Type,
         slot: PointerValue<'ctx>,
         variant: &str,
-        slots: &[PatSlot],
+        slots: &[Pattern],
     ) {
         let (_, payloads) = self.variant(sty, variant);
         for (i, (slot_pattern, ty)) in slots.iter().zip(&payloads).enumerate() {
-            let PatSlot::Bind(name) = slot_pattern else {
+            let Some(name) = slot_pattern.slot_binding() else {
                 continue;
             };
             let index = u32::try_from(i).expect("payload count fits in u32");

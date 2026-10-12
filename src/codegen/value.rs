@@ -78,6 +78,7 @@ impl<'ctx> Lowerer<'ctx> {
             TypeKind::String => Type::String,
             TypeKind::Array(element) => Type::Array(Box::new(self.annotation_type(element))),
             TypeKind::Option(inner) => Type::Option(Box::new(self.annotation_type(inner))),
+            TypeKind::Applied(_) => unreachable!("checked: E0305, or stopped by the gate"),
             TypeKind::Named(name) if self.enums.contains_key(name) => Type::Enum(name.clone()),
             TypeKind::Named(name) => Type::Struct(name.clone()),
         }

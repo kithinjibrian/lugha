@@ -12,6 +12,7 @@ impl Parser<'_> {
     pub(super) fn enum_decl(&mut self) -> PResult<EnumDecl> {
         let start = self.bump().start;
         let name = self.ident("enum name")?;
+        let type_params = self.type_params()?;
         let open = self.expect(&TokenKind::LBrace)?;
         let variants = self.comma_list(open, TokenKind::RBrace, |p| {
             let name = p.ident("variant name")?;
@@ -29,30 +30,43 @@ impl Parser<'_> {
             })
         })?;
         Ok(EnumDecl {
+            public: None,
             name,
+            type_params,
             variants,
             span: Span::new(start, self.prev_end()),
         })
     }
 
-    /// `impl Type { fun … }`.
+    /// `impl [m.]Type[<T, …>] { [pub] fun … }` (v2 draft §3).
     pub(super) fn impl_decl(&mut self) -> PResult<ImplDecl> {
         let start = self.bump().start;
-        let ty = self.ident("type name")?;
+        let first = self.ident("type name")?;
+        let (module, ty) = if self.eat(&TokenKind::Dot) {
+            (Some(first), self.ident("type name")?)
+        } else {
+            (None, first)
+        };
+        let params = self.impl_params()?;
         let open = self.expect(&TokenKind::LBrace)?;
         let mut methods = Vec::new();
         while !self.at(&TokenKind::RBrace) {
+            let public = self.at(&TokenKind::Pub).then(|| self.bump());
             if !self.at(&TokenKind::Fun) {
                 if self.at(&TokenKind::Eof) {
                     self.close(open, &TokenKind::RBrace)?;
                 }
                 return Err(self.expected("`fun` or `}`"));
             }
-            methods.push(self.fun_decl_with(true)?);
+            let mut method = self.fun_decl_with(true)?;
+            method.public = public;
+            methods.push(method);
         }
         self.bump();
         Ok(ImplDecl {
+            module,
             ty,
+            params,
             methods,
             span: Span::new(start, self.prev_end()),
         })
@@ -63,6 +77,7 @@ impl Parser<'_> {
     pub(super) fn fun_decl_with(&mut self, in_impl: bool) -> PResult<FunDecl> {
         let start = self.bump().start;
         let name = self.ident("function name")?;
+        let type_params = self.type_params()?;
         let (receiver, params) = self.receiver_params(in_impl)?;
         let ret = self.return_type()?;
         let body = if self.eat(&TokenKind::Eq) {
@@ -78,7 +93,9 @@ impl Parser<'_> {
             self.block()?
         };
         Ok(FunDecl {
+            public: None,
             name,
+            type_params,
             receiver,
             params,
             ret,

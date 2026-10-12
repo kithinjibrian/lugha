@@ -92,6 +92,8 @@ impl Parser<'_> {
                 | TokenKind::Struct
                 | TokenKind::Enum
                 | TokenKind::Impl
+                | TokenKind::Import
+                | TokenKind::Pub
                     if depth == 0 =>
                 {
                     return;

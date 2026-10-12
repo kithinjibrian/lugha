@@ -24,6 +24,7 @@ pub(super) fn opener(closer: &TokenKind) -> &'static str {
     match closer {
         TokenKind::RParen => "`(`",
         TokenKind::RBracket => "`[`",
+        TokenKind::Gt => "`<`",
         _ => "`{`",
     }
 }
@@ -52,6 +53,8 @@ fn symbol(kind: &TokenKind) -> &'static str {
         Struct => "struct",
         Enum => "enum",
         Impl => "impl",
+        Import => "import",
+        Pub => "pub",
         Match => "match",
         SelfKw => "self",
         Let => "let",

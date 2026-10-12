@@ -1883,7 +1883,56 @@ CHANGELOG.md — entry
 
 ## SESSION 37 — 2026-10-12 — v2 syntax and the gate (PRP-030) — open
 
-Branch: prp-030-v2_syntax
+Branch: main → prp-030-v2_syntax
+
+### WHAT WAS DONE
+
+Discovery (1 question, answered with the recommended option): split M9 into syntax plus gate (030), `==`/`<` (031), and patterns (032). PRP-030 approved.
+
+Implemented PRP-030:
+- **Lexer:** `import` and `pub` keywords.
+- **AST:** imports, `pub`, type parameters, `Applied` types, qualified struct literals, nested patterns, guards.
+- **Parser:** a new `generic.rs` and `import.rs`; E0208.
+- **Sexp:** forms for all of the above.
+- **Gate:** `driver/gate/`, run in `pipeline::front`, exit 2.
+- **Stack depth:** two boxings keep `Expr` small, after the E0206 depth test overflowed.
+- **Splits:** two, each approved (`sexp/`, `gate/`).
+
+All 4 code blocks in the draft's §10 parse. The real gate output on the draft programs was checked. 266 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/lexer/{token,mod}.rs — import, pub
+src/ast/{mod,expr,pattern}.rs, src/ast/header.rs (new) — v2 nodes
+src/parser/{mod,item,decl,pattern,primary,expr,recover,describe}.rs — v2 parsing
+src/parser/generic.rs, src/parser/import.rs (new); src/parser/sexp/{mod,item}.rs (split from sexp.rs)
+src/driver/gate/{mod,walk}.rs (new), src/driver/{mod,pipeline}.rs — the gate
+src/check/{env,expr,liveness,matching}.rs, src/codegen/{expr,matching,value}.rs — adapted to the new AST shapes
+tests/parser.rs, tests/cli.rs — draft programs parse; gate exit 2
+PRPs/prp-030-v2_syntax.md — new PRP; implemented; amendments
+CLAUDE.md (tree, known issue), TODO.md, CHANGELOG.md, MEMORY.md (decision 34)
+```
+
+### TESTS WRITTEN
+
+- **Lexer:** keywords.
+- **Parser:**
+  - imports, E0208, `pub`;
+  - type parameters, `impl` headers, applied and qualified types;
+  - qualified literals (including E0205);
+  - nested patterns and guards;
+  - E0206 for deep types and patterns.
+- **Gate:** 5 tests covering every row, first-in-source-order, and v1 passing through.
+- **Integration:** the v2 draft's §10 programs parse; `--emit=ast` exits 0 while `check` exits 2 (human and JSON).
+
+### DECISIONS MADE
+
+- MEMORY 34.
+
+### PENDING DECISIONS OPENED
+
+- None.
 
 ---
 

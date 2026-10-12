@@ -129,7 +129,7 @@ impl Walk<'_> {
     fn expr(&mut self, expr: &Expr) {
         match &expr.kind {
             ExprKind::Array(elements) => elements.iter().for_each(|e| self.store(e)),
-            ExprKind::StructLit(_, fields) => fields.iter().for_each(|(_, e)| self.store(e)),
+            ExprKind::StructLit(lit) => lit.fields.iter().for_each(|(_, e)| self.store(e)),
             ExprKind::Unary(_, e) | ExprKind::Cast(e, _) | ExprKind::Field(e, _) => self.expr(e),
             ExprKind::Binary(_, _, a, b) | ExprKind::Index(a, _, b) | ExprKind::Repeat(a, b) => {
                 self.expr(a);
@@ -220,7 +220,7 @@ mod tests {
             f(e);
             match &e.kind {
                 Array(es) => es.iter().for_each(|x| expr(x, f)),
-                StructLit(_, fs) => fs.iter().for_each(|(_, x)| expr(x, f)),
+                StructLit(lit) => lit.fields.iter().for_each(|(_, x)| expr(x, f)),
                 Index(a, _, b) => {
                     expr(a, f);
                     expr(b, f);

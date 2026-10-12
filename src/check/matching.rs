@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use super::expr::Expect;
 use super::{Binding, Checker, Type, errors};
-use crate::ast::{Arm, Expr, PatSlot, Pattern, PatternKind};
+use crate::ast::{Arm, Expr, Pattern, PatternKind};
 use crate::span::Span;
 
 /// What an arm's pattern covers, for exhaustiveness and W0102.
@@ -165,7 +165,7 @@ impl Checker {
         &mut self,
         pattern: &Pattern,
         name: &crate::ast::Ident,
-        slots: Option<&[PatSlot]>,
+        slots: Option<&[Pattern]>,
         sty: &Type,
     ) -> (Option<Covers>, Vec<(crate::ast::Ident, Type)>) {
         let covers = Some(Covers::Variant(name.name.clone()));
@@ -193,10 +193,7 @@ impl Checker {
         let bindings = slots
             .iter()
             .zip(payloads)
-            .filter_map(|(slot, ty)| match slot {
-                PatSlot::Bind(ident) => Some((ident.clone(), ty)),
-                PatSlot::Ignore(_) => None,
-            })
+            .filter_map(|(slot, ty)| slot.slot_binding().map(|ident| (ident.clone(), ty)))
             .collect();
         (covers, bindings)
     }

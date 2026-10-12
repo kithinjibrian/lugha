@@ -126,7 +126,7 @@ impl Checker {
                 Some(ty) => ty,
                 None => self.field(base, field),
             },
-            ExprKind::StructLit(name, fields) => self.struct_literal(expr, name, fields),
+            ExprKind::StructLit(lit) => self.struct_literal(expr, &lit.name, &lit.fields),
             ExprKind::Array(elements) => self.array_literal(expr, elements, expect),
             ExprKind::Repeat(value, count) => self.repeat(value, count, expect),
             ExprKind::Int(_) | ExprKind::Float(_) => unreachable!("literals are matched first"),

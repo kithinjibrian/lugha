@@ -129,6 +129,14 @@ impl Checker {
                 self.report(errors::unknown_type(name, ty.span));
                 Type::Error
             }
+            // The gate stops type arguments on declared types and every
+            // module-qualified type (PRP-030), so only unknown names like
+            // `Box<List>` get here.
+            TypeKind::Applied(applied) if applied.module.is_none() => {
+                self.report(errors::unknown_type(&applied.name.name, ty.span));
+                Type::Error
+            }
+            TypeKind::Applied(_) => unreachable!("the gate stops modules (milestone 10)"),
         }
     }
 

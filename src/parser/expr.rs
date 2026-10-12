@@ -5,7 +5,7 @@
 //! non-associative.
 
 use super::{PResult, Parser, Reported};
-use crate::ast::{BinOp, Expr, ExprKind, UnOp};
+use crate::ast::{BinOp, Expr, ExprKind, Ident, UnOp};
 use crate::diagnostic::Diagnostic;
 use crate::lexer::TokenKind;
 
@@ -96,10 +96,13 @@ impl Parser<'_> {
                     self.close(open, &TokenKind::RBracket)?;
                     ExprKind::Index(Box::new(expr), open, Box::new(index))
                 }
-                TokenKind::Dot => {
-                    self.bump();
-                    ExprKind::Field(Box::new(expr), self.ident("field name")?)
-                }
+                TokenKind::Dot => match self.member(start, expr)? {
+                    Ok(literal) => {
+                        expr = literal;
+                        continue;
+                    }
+                    Err(field) => field,
+                },
                 TokenKind::ColonColon => self.colon_colon(expr)?,
                 _ => return Ok(expr),
             };
@@ -109,6 +112,25 @@ impl Parser<'_> {
 }
 
 impl Parser<'_> {
+    /// `base.member`: a field read, or `Ok` with a struct literal for
+    /// `m.Name { … }` from module `m` (v2 draft §3).
+    // Out of `postfix` for the same stack-frame reason as `colon_colon`.
+    #[inline(never)]
+    fn member(&mut self, start: usize, base: Expr) -> PResult<Result<Expr, ExprKind>> {
+        self.bump();
+        let member = self.ident("field name")?;
+        if let ExprKind::Name(module) = &base.kind {
+            let module = Ident {
+                name: module.clone(),
+                span: base.span,
+            };
+            if let Some(literal) = self.struct_lit_after(start, Some(module), member.clone())? {
+                return Ok(Ok(literal));
+            }
+        }
+        Ok(Err(ExprKind::Field(Box::new(base), member)))
+    }
+
     /// `base::member`: E0207, then read as `base.member` (v1 draft §2).
     // Kept out of `postfix`, which runs once per nesting level, so its stack
     // frame stays small enough for the E0206 depth limit.

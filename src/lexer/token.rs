@@ -29,6 +29,10 @@ pub enum TokenKind {
     Struct,
     Enum,
     Impl,
+    /// `import` (v2 draft §2).
+    Import,
+    /// `pub` (v2 draft §2).
+    Pub,
     Match,
     SelfKw,
     Let,
@@ -104,6 +108,8 @@ pub fn keyword(word: &str) -> Option<TokenKind> {
         "struct" => Struct,
         "enum" => Enum,
         "impl" => Impl,
+        "import" => Import,
+        "pub" => Pub,
         "match" => Match,
         "self" => SelfKw,
         "let" => Let,

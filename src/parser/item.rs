@@ -1,16 +1,34 @@
-//! Top-level items and types (spec §3, §6, §8).
+//! Top-level items and types (spec §3, §6, §8; v2 draft §3).
 
 use super::{PResult, Parser};
-use crate::ast::{ExternDecl, Item, Param, StructDecl, Type, TypeKind};
+use crate::ast::{ExternDecl, Import, Item, Param, StructDecl, Type, TypeKind};
 use crate::lexer::TokenKind;
 use crate::span::Span;
 
 impl Parser<'_> {
-    /// Parses every item up to `Eof`, recovering at the next item after an error.
-    pub(super) fn program(&mut self) -> Vec<Item> {
-        let mut items = Vec::new();
+    /// Parses the imports, then every item up to `Eof`, recovering at the
+    /// next item after an error.
+    pub(super) fn program(&mut self) -> (Vec<Import>, Vec<Item>) {
+        let mut imports = Vec::new();
+        while self.at(&TokenKind::Import) {
+            match self.import() {
+                Ok(import) => imports.push(import),
+                Err(_) => self.sync_item(),
+            }
+        }
+        let mut items: Vec<Item> = Vec::new();
+        let mut first_item = None;
         while !self.at(&TokenKind::Eof) {
             let before = self.pos;
+            if self.at(&TokenKind::Import) {
+                let first = first_item.unwrap_or_else(|| self.span());
+                self.late_import(first);
+                if self.pos == before {
+                    self.bump();
+                }
+                continue;
+            }
+            first_item.get_or_insert(self.span());
             match self.item() {
                 Ok(item) => items.push(item),
                 Err(_) => {
@@ -21,7 +39,7 @@ impl Parser<'_> {
                 }
             }
         }
-        items
+        (imports, items)
     }
 
     fn item(&mut self) -> PResult<Item> {
@@ -31,6 +49,7 @@ impl Parser<'_> {
             TokenKind::Struct => self.struct_decl().map(Item::Struct),
             TokenKind::Enum => self.enum_decl().map(Item::Enum),
             TokenKind::Impl => self.impl_decl().map(Item::Impl),
+            TokenKind::Pub => self.pub_item(),
             other => {
                 let is_statement = starts_statement(other);
                 let reported = self.expected("`fun`, `extern`, `struct`, `enum` or `impl`");
@@ -42,7 +61,7 @@ impl Parser<'_> {
         }
     }
 
-    fn extern_decl(&mut self) -> PResult<ExternDecl> {
+    pub(super) fn extern_decl(&mut self) -> PResult<ExternDecl> {
         let start = self.bump().start;
         self.expect(&TokenKind::Fun)?;
         let name = self.ident("function name")?;
@@ -50,6 +69,7 @@ impl Parser<'_> {
         let ret = self.return_type()?;
         self.expect(&TokenKind::Semi)?;
         Ok(ExternDecl {
+            public: None,
             name,
             params,
             ret,
@@ -57,13 +77,16 @@ impl Parser<'_> {
         })
     }
 
-    fn struct_decl(&mut self) -> PResult<StructDecl> {
+    pub(super) fn struct_decl(&mut self) -> PResult<StructDecl> {
         let start = self.bump().start;
         let name = self.ident("struct name")?;
+        let type_params = self.type_params()?;
         let open = self.expect(&TokenKind::LBrace)?;
         let fields = self.comma_list(open, TokenKind::RBrace, |p| p.param("field name"))?;
         Ok(StructDecl {
+            public: None,
             name,
+            type_params,
             fields,
             span: Span::new(start, self.prev_end()),
         })
@@ -109,21 +132,16 @@ impl Parser<'_> {
                 self.expect(&TokenKind::Gt)?;
                 TypeKind::Option(Box::new(inner))
             }
-            TokenKind::Ident(name) => {
-                let kind = TypeKind::Named(name.clone());
-                self.bump();
-                // `Name<T>` is not a Lugha type (only `Option` takes one), but
-                // parse it so the checker can explain, e.g. `Box<List>` (E0305).
-                if self.at(&TokenKind::Lt) {
-                    self.bump();
-                    self.ty()?;
-                    self.expect(&TokenKind::Gt)?;
-                }
-                kind
+            TokenKind::Ident(_) => {
+                let first = self.ident("type")?;
+                self.named_type(first)?
             }
             _ => return Err(self.expected("type")),
         };
-        if !matches!(kind, TypeKind::Option(_) | TypeKind::Named(_)) {
+        if !matches!(
+            kind,
+            TypeKind::Option(_) | TypeKind::Named(_) | TypeKind::Applied(_)
+        ) {
             self.bump();
         }
         let mut ty = Type {

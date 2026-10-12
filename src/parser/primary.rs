@@ -2,7 +2,7 @@
 //! block-like `if` and `{ }` expressions (spec §3).
 
 use super::{PResult, Parser};
-use crate::ast::{Expr, ExprKind, Ident};
+use crate::ast::{Expr, ExprKind, Ident, StructLiteral};
 use crate::diagnostic::Diagnostic;
 use crate::lexer::TokenKind;
 use crate::span::Span;
@@ -45,33 +45,60 @@ impl Parser<'_> {
     /// After an identifier: a struct literal if `{` follows and literals are
     /// allowed; E0205 for an unparenthesised literal in a condition.
     fn name_or_struct(&mut self, start: usize, name: Ident) -> PResult<Expr> {
+        match self.struct_lit_after(start, None, name.clone())? {
+            Some(literal) => Ok(literal),
+            None => Ok(self.mk(start, ExprKind::Name(name.name))),
+        }
+    }
+
+    /// After `Name` or `module.Name`: the struct literal that a `{` starts,
+    /// or `None` when there is no `{`, or when in a condition it begins the
+    /// block instead (spec §3; v2 draft §3 for `m.Name { … }`).
+    // Not inlined: `primary` and `postfix` recurse once per nesting level,
+    // and their stack frames must stay small for the E0206 depth limit.
+    #[inline(never)]
+    pub(super) fn struct_lit_after(
+        &mut self,
+        start: usize,
+        module: Option<Ident>,
+        name: Ident,
+    ) -> PResult<Option<Expr>> {
         if !self.at(&TokenKind::LBrace) {
-            return Ok(self.mk(start, ExprKind::Name(name.name)));
+            return Ok(None);
         }
         if !self.no_struct {
-            return self.struct_lit(start, name);
+            return self.struct_lit(start, module, name).map(Some);
         }
         // `Name { field:` can't begin a block, so it must be a misplaced literal.
         let looks_like_literal =
             matches!(self.peek_at(1), TokenKind::Ident(_)) && self.peek_at(2) == &TokenKind::Colon;
         if !looks_like_literal {
-            return Ok(self.mk(start, ExprKind::Name(name.name)));
+            return Ok(None);
         }
-        let help = format!("wrap it in parentheses: `({} {{ … }})`", name.name);
-        let literal = self.with_struct_literals(true, |p| p.struct_lit(start, name))?;
+        let written = match &module {
+            Some(m) => format!("{}.{}", m.name, name.name),
+            None => name.name.clone(),
+        };
+        let help = format!("wrap it in parentheses: `({written} {{ … }})`");
+        let literal = self.with_struct_literals(true, |p| p.struct_lit(start, module, name))?;
         let message = "struct literal in a condition must be in parentheses";
         self.error(Diagnostic::error("E0205", message, literal.span).with_help(help));
-        Ok(literal)
+        Ok(Some(literal))
     }
 
-    fn struct_lit(&mut self, start: usize, name: Ident) -> PResult<Expr> {
+    fn struct_lit(&mut self, start: usize, module: Option<Ident>, name: Ident) -> PResult<Expr> {
         let open = self.bump();
         let fields = self.comma_list(open, TokenKind::RBrace, |p| {
             let field = p.ident("field name")?;
             p.expect(&TokenKind::Colon)?;
             Ok((field, p.expr()?))
         })?;
-        Ok(self.mk(start, ExprKind::StructLit(name, fields)))
+        let literal = StructLiteral {
+            module,
+            name,
+            fields,
+        };
+        Ok(self.mk(start, ExprKind::StructLit(Box::new(literal))))
     }
 
     /// `[]`, `[a, b, …]` or `[value; count]`, after the `[` at `open`.

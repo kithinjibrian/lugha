@@ -1,6 +1,6 @@
 ## FEATURE: v2 syntax — lex and parse all of the v2 draft's grammar, with a driver gate for constructs not yet built.
 
-**Status:** approved 2026-10-12 — session 37
+**Status:** implemented 2026-10-12 — session 37
 **Milestone:** 9 (first of three PRPs: 030 syntax, 031 deep `==` and string `<`, 032 nested patterns and guards)
 **Spec:** `Language v2 Draft.md` §2 (keywords), §3 (grammar, E0208), §10 (example programs). v1.2 stays authoritative for everything the gate doesn't stop.
 **Decisions:**
@@ -32,6 +32,21 @@ Every program in the v2 draft parses, and `--emit=ast` shows its new forms.
 
   Prior art: the old v1 gate, deleted in bf528e9.
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 37)
+- **Boxing for stack depth:**
+  - `ExprKind::StructLit` holds `Box<StructLiteral>`, and `TypeKind::Applied` holds `Box<AppliedType>`, instead of inline fields.
+  - The inline version grew `ExprKind` from 72 to 128 bytes (casts hold a `Type`), and the 256-level E0206 test overflowed a 2 MiB test thread. It is now 64 bytes.
+  - Member access in `postfix` and `struct_lit_after` are kept out of line (`#[inline(never)]`), like `colon_colon`.
+- **Gate and `Box<L>`:** type arguments are gated only on the program's own structs and enums. An unknown `Box<L>` still reaches the checker for its E0305 help, which the checker now also gives for `Applied` names.
+- **Splits approved mid-way** (file-size rule):
+  - `parser/sexp.rs` (316 lines) became `parser/sexp/{mod,item}.rs`;
+  - the new gate (327 lines) became `driver/gate/{mod,walk}.rs`.
+- **New AST file:** `ast/header.rs` (`Import`, `TypeParam`) keeps `ast/mod.rs` under 300 lines.
+- **Test order:**
+  - the parser, gate and lexer unit tests were written before their code, and ran red first;
+  - the lexer keyword test was added right after the keyword change;
+  - the two integration tests (draft programs parse, CLI gate) were written after the code and passed first time.
 
 ### Discovery answers (session 37)
 1. **Milestone 9 plan:** syntax first (this PRP, with a gate), then deep `==` and string `<` (PRP-031), then nested patterns and guards (PRP-032). This follows v1's approach and architecture rule 9.
@@ -117,35 +132,35 @@ Every program in the v2 draft parses, and `--emit=ast` shows its new forms.
 ## TESTS TO WRITE
 
 Lexer:
-- [ ] `import` and `pub` are keywords; `important` and `pubs` are identifiers.
+- [x] `import` and `pub` are keywords; `important` and `pubs` are identifiers.
 
 Parser unit tests (sexp):
-- [ ] **Imports:**
+- [x] **Imports:**
   - `import a;` and `import a.b.c;`;
   - E0208 for an import after a function, with parsing continuing;
   - E0201 for `import ;` and `import a.;`.
-- [ ] **`pub`:**
+- [x] **`pub`:**
   - on `fun`, `extern`, `struct`, `enum` and an `impl` method;
   - E0201 for `pub impl` and for `pub let` in a block.
-- [ ] **Type parameters:**
+- [x] **Type parameters:**
   - `fun max<T: Ord>(…)`, `struct Pair<A, B>`, `enum Tree<T: Eq>`, `<T: Eq + Ord,>`;
   - `impl Stack<T>`, `impl geometry.Vec2`;
   - E0201 for `<>`.
-- [ ] **Types:** `Stack<i64>`, `Stack<Option<i64>>[]`, `geometry.Vec2`, `m.Pair<i64, string>` in parameters, returns, fields, `let` annotations and `as`.
-- [ ] **Struct literals:** `geometry.Vec2 { x: 1.0 }`; inside an `if` condition it needs parentheses (E0205), as for plain names.
-- [ ] **Patterns:**
+- [x] **Types:** `Stack<i64>`, `Stack<Option<i64>>[]`, `geometry.Vec2`, `m.Pair<i64, string>` in parameters, returns, fields, `let` annotations and `as`.
+- [x] **Struct literals:** `geometry.Vec2 { x: 1.0 }`; inside an `if` condition it needs parentheses (E0205), as for plain names.
+- [x] **Patterns:**
   - `Some(Circle(r))`, `Rect(_, Some(1))`, `Some("x")`, `Some(-2)`;
   - a guard `Circle(r) if r > 1.0 =>`;
   - the nesting limit applies to deep nested patterns.
-- [ ] **Unchanged output:** every existing parser test output stays the same.
+- [x] **Unchanged output:** every existing parser test output stays the same.
 
 Integration:
-- [ ] **`tests/parser.rs`:** every §10 program in `Language v2 Draft.md` parses with no diagnostics, the two-module example as two files. The draft is read from disk by the test; it is not embedded in lughac.
-- [ ] **`tests/cli.rs`:**
+- [x] **`tests/parser.rs`:** every §10 program in `Language v2 Draft.md` parses with no diagnostics, the two-module example as two files. The draft is read from disk by the test; it is not embedded in lughac.
+- [x] **`tests/cli.rs`:**
   - `--emit=ast` on a generic program succeeds (exit 0) and shows `(type-params …)`;
   - `check` on it exits 2 with `not implemented yet: generics (milestone 11)`, in both human and JSON format.
-- [ ] **Gate:** a unit test per row in `driver/gate.rs`, plus "first in source order" and "v1.2 programs pass through ungated".
-- [ ] **Regression:** the whole existing suite passes (252), including every spec program and the `-O0`/`-O2` cross-check.
+- [x] **Gate:** a unit test per row in `driver/gate.rs`, plus "first in source order" and "v1.2 programs pass through ungated".
+- [x] **Regression:** the whole existing suite passes (252), including every spec program and the `-O0`/`-O2` cross-check.
 
 ## ROLLBACK PLAN
 
@@ -153,11 +168,11 @@ Integration:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All of the v2 draft's grammar parses; the draft's examples parse; `--emit=ast` shows them.
-- [ ] Gated constructs exit 2 with the milestone message; every v1.2 program behaves as before.
-- [ ] CLAUDE.md, TODO.md, CHANGELOG.md, MEMORY.md updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] All of the v2 draft's grammar parses; the draft's examples parse; `--emit=ast` shows them.
+- [x] Gated constructs exit 2 with the milestone message; every v1.2 program behaves as before.
+- [x] CLAUDE.md, TODO.md, CHANGELOG.md, MEMORY.md updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use super::gate;
 use super::render::Report;
 use super::source::{self, LoadError, Source};
 use crate::ast::Program;
@@ -78,9 +79,19 @@ pub(super) fn parsed(path: &Path) -> Result<Front, Failure> {
     }
 }
 
-/// Reads, lexes, parses and type-checks `path` (spec §9 stages 1–3).
+/// Reads, lexes, parses and type-checks `path` (spec §9 stages 1–3), stopping
+/// at v2 constructs whose milestone hasn't landed (exit 2).
 pub(super) fn front(path: &Path) -> Result<Front, Failure> {
     let mut front = parsed(path)?;
+    // v2 syntax parses, but the checker only knows what has landed (PRP-030).
+    if let Some(gated) = gate::first(&front.program) {
+        let message = format!(
+            "not implemented yet: {} (milestone {})",
+            gated.what, gated.milestone
+        );
+        let report = Report::internal(message, Some(gated.span));
+        return Err(Failure::Internal(front.source, Box::new(report)));
+    }
     match check::check(&front.program) {
         Ok((checked, warnings)) => {
             front.warnings.extend(warnings);

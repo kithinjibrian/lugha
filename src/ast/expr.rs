@@ -38,8 +38,10 @@ pub enum ExprKind {
     Index(Box<Expr>, Span, Box<Expr>),
     /// `base.field` (also `.len`).
     Field(Box<Expr>, Ident),
-    /// `Name { field: value, … }` in source order.
-    StructLit(Ident, Vec<(Ident, Expr)>),
+    /// `Name { field: value, … }` or `m.Name { … }` (v2 draft §3). Boxed
+    /// so every `Expr` stays small: the parser recurses once per nesting
+    /// level, and E0206's depth limit assumes small frames.
+    StructLit(Box<StructLiteral>),
     /// `[a, b, c]`.
     Array(Vec<Expr>),
     /// `[value; count]`.
@@ -116,4 +118,15 @@ impl BinOp {
             Mul | Div | Rem => 6,
         }
     }
+}
+
+/// The contents of a struct literal.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StructLiteral {
+    /// `m` in `m.Name { … }` (v2 draft §3).
+    pub module: Option<Ident>,
+    /// The struct's name.
+    pub name: Ident,
+    /// `field: value` pairs in source order.
+    pub fields: Vec<(Ident, Expr)>,
 }

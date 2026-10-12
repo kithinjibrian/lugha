@@ -231,10 +231,12 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── span.rs      — byte-offset Span
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
 │   ├── lexer/       — mod.rs (lex, main loop), token.rs, punct.rs (operators), number.rs, string.rs
-│   ├── ast/         — mod.rs (items, types, statements), expr.rs (expressions, ExprId), pattern.rs (match arms)
+│   ├── ast/         — mod.rs (items, types, statements), expr.rs (expressions, ExprId, StructLiteral),
+│   │                  pattern.rs (arms, nested patterns, guards), header.rs (imports, type parameters)
 │   ├── parser/      — mod.rs (parse, cursor, errors), recover.rs, describe.rs,
 │   │                  expr.rs (Pratt), primary.rs, stmt.rs, item.rs, decl.rs (enum, impl, receivers),
-│   │                  pattern.rs (match, patterns), sexp.rs, test_util.rs
+│   │                  pattern.rs (match, patterns, guards), generic.rs (type params, m.T / T<args>),
+│   │                  import.rs (import, pub), sexp/ (mod.rs exprs, item.rs items and types), test_util.rs
 │   ├── check/       — mod.rs (check, Checked), types.rs, env.rs (globals, main, scopes),
 │   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), body.rs (function bodies), stmt.rs,
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
@@ -255,6 +257,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  swap.rs (swap: loads and crossed stores)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_PARTS, RUNTIME_SOURCE, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes), guard.rs (panics → internal error, exit 2), pipeline.rs,
+│                      gate/ (mod.rs, walk.rs: stops v2 constructs until their milestone, PRP-030),
 │                      source.rs (load, E0110, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)
 ├── tests/
@@ -293,6 +296,8 @@ Update this tree when modules or `tests/` are added.
 ## KNOWN ISSUES — DO NOT FIX
 
 These look like bugs but are specified behavior:
+
+- **v2 constructs stop with `not implemented yet: … (milestone N)`, exit 2,** until their milestone lands (PRP-030 gate). They parse, and `--emit=ast` shows them. Each milestone PRP deletes its gate entries.
 
 - **A function whose only exit is a `return` inside `while true` is rejected** as missing a return. Spec §6 rejects it on purpose to keep return checking simple; users add `panic("unreachable");`.
 - **Integer overflow always panics**, even at `-O2`. Spec §12 decided against wrapping.

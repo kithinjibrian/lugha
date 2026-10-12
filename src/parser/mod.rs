@@ -10,6 +10,8 @@
 mod decl;
 mod describe;
 mod expr;
+mod generic;
+mod import;
 mod item;
 mod pattern;
 mod primary;
@@ -28,7 +30,7 @@ use crate::span::Span;
 ///
 /// # Errors
 ///
-/// Returns every syntax error found (codes E0201–E0206) if there is at least one.
+/// Returns every syntax error found (codes E0201–E0208) if there is at least one.
 ///
 /// # Examples
 ///
@@ -46,10 +48,11 @@ pub fn parse(tokens: &[Token]) -> Result<(Program, Vec<Diagnostic>), Vec<Diagnos
         no_struct: false,
         diagnostics: Vec::new(),
     };
-    let items = parser.program();
+    let (imports, items) = parser.program();
     if parser.diagnostics.is_empty() {
         Ok((
             Program {
+                imports,
                 items,
                 expr_count: parser.next_id,
             },

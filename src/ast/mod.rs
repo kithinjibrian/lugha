@@ -8,16 +8,20 @@
 //! Depends on: span.
 
 mod expr;
+mod header;
 mod pattern;
 
-pub use expr::{BinOp, Expr, ExprId, ExprKind, UnOp};
-pub use pattern::{Arm, PatSlot, Pattern, PatternKind};
+pub use expr::{BinOp, Expr, ExprId, ExprKind, StructLiteral, UnOp};
+pub use header::{Import, TypeParam};
+pub use pattern::{Arm, Pattern, PatternKind};
 
 use crate::span::Span;
 
 /// A whole `.la` file.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {
+    /// `import`s, which come before every item (v2 draft §3).
+    pub imports: Vec<Import>,
     /// Top-level items in source order.
     pub items: Vec<Item>,
     /// Number of `Expr` nodes; every `ExprId` is below this.
@@ -51,8 +55,12 @@ pub enum Item {
 /// A function with a body.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunDecl {
+    /// The `pub` keyword, if written (v2 draft §6).
+    pub public: Option<Span>,
     /// Function name.
     pub name: Ident,
+    /// `<T, U: Eq>` after the name (v2 draft §4).
+    pub type_params: Vec<TypeParam>,
     /// `self` or `mut self`; only methods in an `impl` have one (v1).
     pub receiver: Option<Receiver>,
     /// Parameters in order, after any receiver.
@@ -68,6 +76,8 @@ pub struct FunDecl {
 /// A C function declaration (spec §8).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ExternDecl {
+    /// The `pub` keyword, if written (v2 draft §8).
+    pub public: Option<Span>,
     /// The C symbol name.
     pub name: Ident,
     /// Parameters in order.
@@ -81,8 +91,12 @@ pub struct ExternDecl {
 /// A struct declaration.
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructDecl {
+    /// The `pub` keyword, if written (v2 draft §6).
+    pub public: Option<Span>,
     /// Struct name.
     pub name: Ident,
+    /// `<T, …>` after the name (v2 draft §4).
+    pub type_params: Vec<TypeParam>,
     /// Fields in declaration order.
     pub fields: Vec<Field>,
     /// From `struct` to the closing brace.
@@ -101,8 +115,12 @@ pub struct Receiver {
 /// An enum declaration (v1).
 #[derive(Debug, Clone, PartialEq)]
 pub struct EnumDecl {
+    /// The `pub` keyword, if written (v2 draft §6).
+    pub public: Option<Span>,
     /// Enum name.
     pub name: Ident,
+    /// `<T, …>` after the name (v2 draft §4).
+    pub type_params: Vec<TypeParam>,
     /// Variants in declaration order.
     pub variants: Vec<Variant>,
     /// From `enum` to the closing brace.
@@ -123,8 +141,12 @@ pub struct Variant {
 /// An `impl` block (v1).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ImplDecl {
+    /// `m` in `impl m.Type` (v2 draft §3).
+    pub module: Option<Ident>,
     /// The type the methods belong to.
     pub ty: Ident,
+    /// The type's parameters, `impl Stack<T>` (v2 draft §3).
+    pub params: Vec<Ident>,
     /// Methods and associated functions in order.
     pub methods: Vec<FunDecl>,
     /// From `impl` to the closing brace.
@@ -167,6 +189,20 @@ pub enum TypeKind {
     Array(Box<Type>),
     /// `Option<T>` (v1).
     Option(Box<Type>),
+    /// `m.T`, `T<args>` or `m.T<args>` (v2 draft §3). Boxed to keep `Type`,
+    /// and so `Expr` (through casts), small for the parser's recursion.
+    Applied(Box<AppliedType>),
+}
+
+/// A module-qualified type name, type arguments, or both (v2 draft §3).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AppliedType {
+    /// `m` in `m.T`.
+    pub module: Option<Ident>,
+    /// The type's name.
+    pub name: Ident,
+    /// `<args>` in order; empty for a plain `m.T`.
+    pub args: Vec<Type>,
 }
 
 /// `{ stmts tail }`.
