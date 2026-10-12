@@ -1,6 +1,6 @@
 ## FEATURE: Too-deep recursion panics with `panic: stack overflow` (exit 101) instead of crashing with a signal (exit 139).
 
-**Status:** implemented 2026-10-12 — session 31 (branch `prp-025-stack_overflow_panic`, awaiting merge)
+**Status:** merged into `main` 2026-10-12 — session 31
 **Milestone:** none; a TODO idea from PRP-021's discovery
 **Spec:** §5 (panics), §7 ("Recursion depth"), §9 (runtime)
 **Decisions:**

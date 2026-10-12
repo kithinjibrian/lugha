@@ -1576,7 +1576,7 @@ CLAUDE.md, TODO.md, CHANGELOG.md, MEMORY.md (decision 29)
 
 ---
 
-## SESSION 31 — 2026-10-12 — PRP-025 stack overflow panic — open
+## SESSION 31 — 2026-10-12 — PRP-025 stack overflow panic — closed
 
 Branch: main → prp-025-stack_overflow_panic
 
@@ -1616,12 +1616,16 @@ CLAUDE.md (known issue removed), TODO.md, CHANGELOG.md, MEMORY.md (decisions 26,
 
 - None.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-025-stack_overflow_panic` fast-forward merged into `main` and deleted.
+
 ---
 
 ## NEXT SESSION START POINT
 
-Lugha v1 is complete (tag `m8`), and the exit-code bug is fixed. No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
-- TODO ideas: a `panic: stack overflow` for deep recursion (an alternate signal stack and a SIGSEGV handler in the runtime); a swap/move operation for buffers (a language change).
+Lugha v1 is complete (tag `m8`); the exit-code bug and the stack-overflow panic are done. No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
+- TODO idea: a swap/move operation for buffers (a language change; DECISION-010).
 - v2 language work (spec §11 out-of-scope list): generics, modules, closures, richer patterns, a shared-reference type — starting with a v2 spec draft.
 
 See `TODO.md`.
