@@ -1576,6 +1576,12 @@ CLAUDE.md, TODO.md, CHANGELOG.md, MEMORY.md (decision 29)
 
 ---
 
+## SESSION 31 — 2026-10-12 — PRP-025 stack overflow panic — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Lugha v1 is complete (tag `m8`), and the exit-code bug is fixed. No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
