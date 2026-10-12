@@ -1479,6 +1479,12 @@ CLAUDE.md (tree, rule 7, gate issue removed), CHANGELOG.md, TODO.md, MEMORY.md (
 
 ---
 
+## SESSION 29 — 2026-10-12 — Milestone 8 discovery and PRP-023 growable arrays — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 8, the last v1 milestone: growable arrays (`docs/specs/Language v1 Draft.md` §4 "Growable arrays", §5, §7 array layout, §9 `lugha_rt_array_grow`, §10 stack program). It covers:
