@@ -1207,15 +1207,71 @@ CLAUDE.md, MEMORY.md (decision 22), TODO.md, CHANGELOG.md
 
 ---
 
-## SESSION 24 — 2026-10-09 — v1 spec draft — open
+## SESSION 24 — 2026-10-09 — v1 spec draft — closed
 
-Branch: main
+Branch: main → v1-spec-draft
+
+### WHAT WAS DONE
+
+Discovery for the v1 spec, with the recommended answer accepted every time:
+- Scope: enums with `match`, a growable list, methods.
+- Form: a delta draft.
+- Positional enums with dot access.
+- Flat `match`.
+- Implicit recursion.
+- A built-in `Option<T>`.
+- Growable `T[]`.
+- `impl` blocks.
+
+Wrote `docs/specs/Language v1 Draft.md`. Then the user asked for each choice to be justified by its advantages:
+- **Dot access** was kept, with two added rules: E0311 (a local named like a type) and E0207 (`::`, with help).
+- **Implicit boxing vs `Box<T>`:** kept implicit, but only the recursive payload slots go on the heap. There is no `Box` and no `indirect` marker; `Box<…>` is E0305 with help.
+- **The rationale** is Lugha's strengths: everything is a value, the spec is small enough for a model's prompt, there is one way to do each thing, mistakes are caught at compile time, and allocation is invisible.
+
+The user approved the draft on 2026-10-12.
+
+### FILES CREATED OR MODIFIED
+
+```
+docs/specs/Language v1 Draft.md — new: the approved v1 delta (§1–§12, examples, milestones 6–8)
+CLAUDE.md      — tree; anti-pattern 5 points v1 features to milestone PRPs
+MEMORY.md      — decision 23, state, next start point
+TODO.md        — v1 milestones 6–8
+CHANGELOG.md   — entry
+```
+
+### TESTS WRITTEN
+
+- None (spec work); the examples' expected outputs were checked by hand.
+
+### DECISIONS MADE
+
+- The v1 direction (MEMORY 23).
+
+### PENDING DECISIONS OPENED
+
+- None (the open questions are listed in the draft's §12).
+
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `v1-spec-draft` fast-forward merged into `main` and deleted.
 
 ---
 
 ## NEXT SESSION START POINT
 
-No PRP is queued and no decisions are open. Remaining option:
-- v1 language work from spec §11 (growable list, boxed/optional types, methods, generics, modules, swap/move), starting with a spec draft and discovery.
+Milestone 6, the first v1 PRP: enums (`docs/specs/Language v1 Draft.md` §2–§4, §7, §9–§11). It covers:
+- `enum` declarations; construction with `E.Variant(..)`; `Option<T>` with `Some`/`None`.
+- `match` with flat patterns, exhaustiveness (E0417) and unreachable arms (W0102).
+- Recursive enums with indirect slots, and enum copies.
+- E0207 (`::`), E0309, E0311, E0416; `Box<…>` help on E0305.
+- Folding the draft's enum sections into the spec.
+
+Done-when: the shapes and linked-list programs pass, and the rejected program reports E0417.
+
+Discovery questions to expect:
+- whether M6 folds into a new `Language v1 Specification.md` now, or extends v0's file;
+- the enum layout details (tag width, payload alignment);
+- how `match` on strings lowers.
 
 See `TODO.md`.

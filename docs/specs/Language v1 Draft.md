@@ -1,6 +1,6 @@
 # Lugha v1 — Draft (delta against v0)
 
-**Status:** draft for review — session 24, 2026-10-09
+**Status:** approved as the v1 direction — session 24, 2026-10-12. Error-code numbers are final when each milestone's PRP is approved.
 **Base:** `Language v0 Specification.md`, which stays the source of truth (and what `lughac spec` prints) until v1 is implemented. Each v1 milestone folds its sections into a full v1 specification.
 
 This draft lists only what changes, in the order of the v0 sections. Everything not mentioned keeps its v0 meaning, and every valid v0 program stays valid in v1 unless it uses one of the new keywords as an identifier.

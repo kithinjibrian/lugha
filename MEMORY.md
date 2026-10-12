@@ -253,6 +253,20 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 23. v1 direction (session 24)
+
+**Decision:** `docs/specs/Language v1 Draft.md` (a delta against v0) is approved.
+- **Scope:** enums with flat exhaustive `match`; a built-in `Option<T>`; recursive enums; methods in `impl` blocks with `self`/`mut self`; growable `T[]` (`push`/`pop`/`clear`).
+- **Dot access** (`Shape.Circle(2.0)`), with E0311 (a local named like a type) and E0207 (`::`, with help).
+- **Recursive enums:** no `Box`; only the slots that lead back to the enum live on the heap; `Box<…>` is E0305 with help.
+- **Milestones:** M6 enums, M7 methods, M8 growable arrays. v0 stays authoritative until each milestone folds its sections in.
+
+**Why:** Each choice plays to Lugha's strengths: everything is a value, the spec is small enough to sit in a model's prompt, there is one way to do each thing, mistakes are caught at compile time, and allocation is invisible.
+
+**Rules out:** user generics, modules and closures in v1; `Box`, `::` paths, `indirect` markers; a separate list type.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -262,6 +276,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- v1 spec draft approved (`docs/specs/Language v1 Draft.md`): milestones 6–8 planned
 - PRP-018 move on last use: `check/liveness.rs`, `Checked.moves`; particles benchmark 2× faster
 - DECISION-004 closed as not applicable (no UI)
 - DECISION-010 resolved: eager copies stay, with measurements in `docs/decisions/decision-010.md`
@@ -296,7 +311,16 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-No PRP is queued and no decisions are open. Remaining option:
-- v1 language work from spec §11 (growable list, boxed/optional types, methods, generics, modules, swap/move), starting with a spec draft and discovery.
+Milestone 6, the first v1 PRP: enums (`docs/specs/Language v1 Draft.md` §2–§4, §7, §9–§11). It covers:
+- `enum` declarations; construction with `E.Variant(..)`; `Option<T>` with `Some`/`None`.
+- `match` with flat patterns, exhaustiveness (E0417) and unreachable arms (W0102).
+- Recursive enums with indirect slots, and enum copies.
+- E0207 (`::`), E0309, E0311, E0416; `Box<…>` help on E0305.
+- Folding the draft's enum sections into the spec.
 
-See `TODO.md`.
+Done-when: the shapes and linked-list programs pass, and the rejected program reports E0417.
+
+Discovery questions to expect:
+- whether M6 folds into a new `Language v1 Specification.md` now, or extends v0's file;
+- the enum layout details (tag width, payload alignment);
+- how `match` on strings lowers.

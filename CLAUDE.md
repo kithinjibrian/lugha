@@ -260,7 +260,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
-│   └── specs/       — Language v0 Specification.md (the language definition)
+│   └── specs/       — Language v0 Specification.md (the language definition);
+│                      Language v1 Draft.md (approved v1 delta: enums, methods, growable arrays)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```
 
@@ -274,7 +275,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them; every one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (enums, generics, closures, methods, modules…) even partially. It belongs to v1 and needs a spec change first.
+5. **Never implement a §11 "out of scope" feature** (enums, generics, closures, methods, modules…) even partially. v1 features (enums, methods, growable arrays) come only through their milestone PRPs (6–8), which fold the approved `Language v1 Draft.md` sections into the spec first. Everything else stays v2 and needs a spec change first.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

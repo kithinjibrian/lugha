@@ -65,6 +65,20 @@ Done when every §10 program passes.
 - [x] PRP-015: structs and their copies — centroid prints `centroid: 2.0, 1.0`
 - [x] PRP-016: `lughac spec` and every §10 program; dead `Unsupported` paths removed — **milestone 5 done**
 
+## v1 milestones (`docs/specs/Language v1 Draft.md`) — build strictly in order
+
+### Milestone 6 — Enums
+Done when the shapes and linked-list programs pass and the rejected program reports E0417.
+- [ ] PRP: enums, `match`, `Option<T>`, recursive enums with indirect slots (E0207, E0309, E0311, E0416, E0417, W0102)
+
+### Milestone 7 — Methods
+Done when the methods program passes.
+- [ ] PRP: `impl`, `self`/`mut self`, associated functions, method calls (E0310, E0415)
+
+### Milestone 8 — Growable arrays
+Done when the stack program passes and `lughac spec` prints the full v1 spec.
+- [ ] PRP: `{ len, cap, elems }` layout, `push`/`pop`/`clear`, `lugha_rt_array_grow`
+
 ## Ideas — noted, not scheduled
 
 - [x] Move on last use: store a dead local's array without copying it (`grid = next`, `ps[i] = p`) — PRP-018.
