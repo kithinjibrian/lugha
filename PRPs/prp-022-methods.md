@@ -1,6 +1,6 @@
 ## FEATURE: Methods — `impl` blocks with `self` / `mut self` receivers, associated functions, and method calls; the v1 gate is removed. Completes milestone 7.
 
-**Status:** implemented 2026-10-12 — session 28 (branch `prp-022-methods`, awaiting merge)
+**Status:** merged into `main` 2026-10-12 — session 28; tagged `m7`
 **Milestone:** 7 (one PRP). Done-when: the methods program prints `5.0` then `6.0`; then tag `m7`.
 **Spec:** `docs/specs/Language v1 Draft.md` §4 "Methods" and copy-table additions, §5 method-call evaluation, §6 symbols, §9 E0310/E0415, §10 methods program, folded into `Language v1 Specification.md`
 **Decisions:**

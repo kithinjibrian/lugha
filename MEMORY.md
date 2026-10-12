@@ -379,19 +379,16 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Milestone 7: methods (`docs/specs/Language v1 Draft.md` §4 "Methods", §5 method calls, §6 symbols `lugha_fn_<Type>.<name>`, §9 E0310/E0415, §10 methods program). It covers:
-- `impl` blocks for structs and enums;
-- `self` / `mut self` receivers; `mut self` calls need a `let mut` place and edit it in place;
-- associated functions `T.f()`;
-- method calls `x.m(args)` (receiver first, then arguments);
-- E0310 (a duplicate method, or one named like a field) and E0415 (no such method);
-- removing the methods entry from the gate (the gate can then be deleted unless M8 needs it);
-- folding the methods sections and the methods program into the v1 spec.
+Milestone 8, the last v1 milestone: growable arrays (`docs/specs/Language v1 Draft.md` §4 "Growable arrays", §5, §7 array layout, §9 `lugha_rt_array_grow`, §10 stack program). It covers:
+- `xs.push(v)`, `xs.pop()` (returns `Option<T>`), `xs.clear()` on `T[]`, as built-in `mut self`-style methods: a `let mut` root (E0501), E0506 through strings, E0507 during `for … of`, and E0508-style aliasing (`xs.push(xs[0])`?).
+- **Layout:** `{ i64 len; i64 cap; T elems[cap] }`; literals and copies have `cap == len`; growth doubles (minimum 4) via `lugha_rt_array_grow` and stores the new pointer in the array's place.
+- **Offsets:** every array access shifts from 8 to 16 bytes (header); `copy_flat`, repeat and `for … of` follow.
+- **Spec:** fold the arrays section and the stack program; `lughac spec` then prints the full v1 specification (drop "in progress"; the draft is retired).
 
-Done-when: the methods program prints `5.0` then `6.0`.
+Done-when: the stack program prints `3`, `2`, `empty`; then tag `m8` (v1 complete).
 
 Discovery questions to expect:
-- how `mut self` is passed (a pointer to the caller's place);
-- whether one PRP covers it all;
-- whether `self` may be reassigned whole;
-- method calls on rvalues (`f().len_sq()`).
+- whether `xs.push(xs[0])` is E0508 or fine (the value is read before growth);
+- the growth factor;
+- `pop` on arrays of structs/enums (moves out);
+- retiring the draft file.
