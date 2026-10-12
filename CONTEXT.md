@@ -1794,9 +1794,9 @@ CLAUDE.md (tree, stack, link line), CHANGELOG.md, TODO.md, MEMORY.md (decision 1
 
 ---
 
-## SESSION 35 — 2026-10-12 — Split check/stmt.rs and check/method_calls.rs — open
+## SESSION 35 — 2026-10-12 — Split check/stmt.rs and check/method_calls.rs (PRP-029) — open
 
-Branch: main
+Branch: prp-029-checker_split
 
 ---
 
