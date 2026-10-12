@@ -97,9 +97,10 @@ mod tests {
             let_type("fun main() { let e = \"a\" == \"b\"; }", "e"),
             Type::Bool
         );
+        // Strings are ordered bytewise in v2 (draft §4).
         assert_eq!(
-            errors("fun main() { let o = \"a\" < \"b\"; }"),
-            [("E0404", "\"a\" < \"b\"")]
+            let_type("fun main() { let o = \"a\" < \"b\"; }", "o"),
+            Type::Bool
         );
         assert_eq!(
             errors("fun main() { let o = \"a\" + 1; }"),

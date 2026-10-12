@@ -35,6 +35,21 @@ impl<'ctx> Lowerer<'ctx> {
         if ty == Type::String {
             return Ok(self.string_binary(op, a, b));
         }
+        let composite = matches!(
+            ty,
+            Type::Struct(_) | Type::Enum(_) | Type::Option(_) | Type::Array(_)
+        );
+        if composite && matches!(op, BinOp::Eq | BinOp::Ne) {
+            let equal = self.equal(a, b, &ty);
+            return Ok(if op == BinOp::Eq {
+                equal.into()
+            } else {
+                self.builder
+                    .build_not(equal, "ne")
+                    .expect(POSITIONED)
+                    .into()
+            });
+        }
         Ok(match op {
             BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge | BinOp::Eq | BinOp::Ne => {
                 self.compare(op, ty, a, b).into()
@@ -168,7 +183,7 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// Comparisons: signed for `i32`/`i64`, unsigned for `u8`, ordered for
     /// `f64` except `!=` (unordered, so NaN != NaN).
-    fn compare(
+    pub(super) fn compare(
         &self,
         op: BinOp,
         ty: Type,

@@ -154,19 +154,19 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v1 Specification.md` (`lughac spec` prints it); v0's file is frozen. `Language v2 Draft.md` is the approved v2 delta, built milestone by milestone (9–11).
+The language itself is defined by `docs/specs/Language v2 Specification.md` (`lughac spec` prints it): v1.2 plus the v2 features landed so far, marked "in progress". `Language v2 Draft.md` is the approved v2 plan, folded in milestone by milestone (9–11). The v0 and v1 files are frozen.
 
 ---
 
 ## ARCHITECTURE RULES
 
-1. **The spec is the source of truth.** Read the relevant section of `docs/specs/Language v1 Specification.md` before implementing any language feature, and cite the section in the PRP. If code and spec disagree, the code is wrong. If the spec looks wrong, stop and propose a spec change — never edit the spec without explicit approval. *Why:* `lughac spec` ships the spec as the language reference; drift makes it lie.
+1. **The spec is the source of truth.** Read the relevant section of `docs/specs/Language v2 Specification.md` (and, for features not yet landed, `Language v2 Draft.md`) before implementing any language feature, and cite the section in the PRP. If code and spec disagree, the code is wrong. If the spec looks wrong, stop and propose a spec change — never edit the spec without explicit approval. *Why:* `lughac spec` ships the spec as the language reference; drift makes it lie.
 2. **Stages only depend backwards.** lexer → parser → check → codegen → driver. A stage never imports a later one. *Why:* `lughac check` and `--emit=tokens|ast|ir` must run the pipeline partway.
 3. **Every token and AST node carries a byte-offset `Span`.** *Why:* every diagnostic needs a location, and spans can't be recovered later.
 4. **Codegen never infers types.** It reads the checker's expression → type side table. *Why:* opaque pointers need the element type on every load/store/GEP (spec §9), and two type computations will disagree.
 5. **User-program errors are `Diagnostic` records, never panics or strings.** Each has a stable code from its stage's range (E01xx lex … E05xx, W01xx). New codes take the next unused number; a code is never reused or renumbered. Human and JSON output render from the same record. *Why:* spec §9; codes are a public contract.
 6. **Exit codes are 0 / 1 / 2.** 1 = the user's program has errors; 2 = bad CLI usage or internal compiler error. A `module.verify()` failure or a Rust panic inside lughac is exit 2, never 1. *Why:* spec §9; tools tell "your bug" from "our bug" by it.
-7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
+7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, equality helpers → `lugha_eq_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
 8. **Generated code allocates only through `lugha_rt_alloc`.** Never emit calls to `malloc`. *Why:* Boehm can't see `malloc` memory and will free live objects.
 9. **Follow the milestone order (spec §11).** The lexer and parser cover the full §2–§3 syntax. The checker and codegen implement only the current milestone's subset; in milestones 1–2 treat every value as `i64`. *Why:* each milestone must end in a running program, while syntax is cheap to do once and fully specified.
 10. **The §10 programs are the acceptance tests.** Their stdout and exit codes must match exactly. *Why:* they define "conforming compiler".
@@ -250,7 +250,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
 │   │                  function.rs (signatures, bodies, return, calls), runtime.rs (intrinsics, string
 │   │                  literals, panics), heap.rs (headers, element layout, bounds checks, string ops),
-│   │                  array.rs (allocation, list/repeat literals, for … of), copy.rs (deep copies, copy sites),
+│   │                  array.rs (allocation, list/repeat literals, for … of), copy.rs (deep copies, copy sites, mangle), equality.rs (deep ==, lugha_eq_*),
 │   │                  structs.rs (named types, layout, literals, fields, place addresses), enums.rs
 │   │                  (enum layout, Option types, payload addresses), growth.rs (push, pop, clear), construct.rs (building enum values,
 │   │                  indirect slots), matching.rs (match lowering), methods.rs (method symbols, receivers, calls),
@@ -272,8 +272,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
-│   └── specs/       — Language v1 Specification.md (the language definition, printed by `lughac spec`);
-│                      Language v2 Draft.md (approved v2 delta, milestones 9–11); Language v0 Specification.md (frozen)
+│   └── specs/       — Language v2 Specification.md (the language definition, in progress, printed by `lughac spec`);
+│                      Language v2 Draft.md (approved v2 plan, milestones 9–11); Language v1 (v1.2) and v0 Specification.md (frozen)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```
 

@@ -445,9 +445,29 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 35. Deep equality, string order, and the v2 spec file (PRP-031)
+
+**Decision:**
+- **Operators:** `==`/`!=` accept any type. `<`… accept numbers or strings (`lugha_rt_str_cmp`, bytewise, prefix smaller).
+- **Operand typing (`check/ops.rs`):** the side that *defers* (a literal, `None`, `[]`, a list or `Some` around one) is checked second and gets the other side's type, any type for comparisons. A number literal never takes a non-numeric type (so `"a" == 1` stays E0404). `None` and `[]` stay quiet on an expected `Error`, so `None == None` gives one E0412.
+- **Codegen (`codegen/equality.rs`):** `lugha_eq_<mangle>(T, T) -> i1` per struct, enum, `Option` and array, built like the copy helpers.
+  - Structs: field by field, with `bool` fields through `loaded_form`.
+  - Arrays: lengths first.
+  - Enums: tag compare, then a switch, with indirect payloads loaded through their pointer.
+
+  `mangle` is shared and gains `{len}{Enum}` and `{T}_opt`.
+- **Spec:** `Language v2 Specification.md` (v1.2 plus what has landed, "in progress: milestone 9") is `lugha::SPEC`; v1.2's file is frozen. Each PRP folds its draft sections in.
+
+**Why:** Architecture rule 1 requires the printed spec to match the compiler. Equality helpers mirror copy helpers, which already handle recursion.
+
+**Rules out:** a pointer-equality fast path (wrong for NaN); ordering structs or arrays.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- PRP-031: deep `==` on every type, string order; `Language v2 Specification.md` (in progress) printed by `lughac spec`
 - PRP-030: all v2 syntax parses (`--emit=ast`); `driver/gate/` stops v2 constructs until their milestone
 - PRP-029: `check/body.rs` (function bodies) and `check/builtins.rs` (array built-ins) split out of `stmt.rs` and `method_calls.rs`
 - PRP-028: the C runtime split into three fragments (`runtime/{lugha_rt,stack,print}.c`), joined into one `lugha_rt.c`

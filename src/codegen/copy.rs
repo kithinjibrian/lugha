@@ -198,13 +198,14 @@ fn root(expr: &Expr) -> Option<&str> {
     }
 }
 
-/// A type's name in a copy function's symbol: `i64[][]` is `i64_arr_arr`,
-/// `Point[]` is `5Point_arr`. Length-prefixing struct names keeps them apart
-/// from the `_arr` suffix and the primitive names (PRP-015).
-fn mangle(ty: &Type) -> String {
+/// A type in a `lugha_copy_`/`lugha_eq_` symbol: `i64[][]` → `i64_arr_arr`,
+/// `Point[]` → `5Point_arr`, `Option<L>` → `1L_opt`. Length-prefixed names
+/// can't be confused with the suffixes or primitive names (PRP-015, PRP-031).
+pub(super) fn mangle(ty: &Type) -> String {
     match ty {
         Type::Array(element) => format!("{}_arr", mangle(element)),
-        Type::Struct(name) => format!("{}{name}", name.len()),
+        Type::Struct(name) | Type::Enum(name) => format!("{}{name}", name.len()),
+        Type::Option(inner) => format!("{}_opt", mangle(inner)),
         Type::String => "str".to_string(),
         other => other.to_string(),
     }

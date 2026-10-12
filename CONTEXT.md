@@ -1942,7 +1942,51 @@ CLAUDE.md (tree, known issue), TODO.md, CHANGELOG.md, MEMORY.md (decision 34)
 
 ## SESSION 38 — 2026-10-12 — Deep == and string < (PRP-031) — open
 
-Branch: prp-031-deep_equality
+Branch: main → prp-031-deep_equality
+
+### WHAT WAS DONE
+
+Discovery (2 questions, each answered with the recommended option):
+- start the v2 spec file now;
+- either operand types the other.
+
+PRP-031 approved.
+
+Implemented PRP-031:
+- **Checker:** the operator rules and two-way operand typing, with failing tests first.
+- **Runtime:** `lugha_rt_str_cmp`.
+- **Codegen:** `codegen/equality.rs` with the `lugha_eq_*` helpers (IR tests first).
+- **Acceptance:** `m9/equality.la` (expected output written by hand; it matches at -O0 and -O2) and `e0404_struct_order`.
+- **Spec:** the new `Language v2 Specification.md` is `lugha::SPEC`.
+
+272 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/ops.rs (operators, defers, two-way typing), src/check/{enums,array}.rs (quiet on Error), src/check/stmt.rs
+src/check/{access,array,enums,structs}.rs — tests updated for v2 equality
+src/codegen/equality.rs (new), src/codegen/{arith,heap,copy,mod,runtime}.rs
+runtime/lugha_rt.c — lugha_rt_str_cmp
+docs/specs/Language v2 Specification.md (new), src/lib.rs (SPEC)
+tests/programs/m9/ (equality, e0404_struct_order), tests/codegen.rs (m9), tests/cli.rs (spec title)
+PRPs/prp-031-deep_equality.md — new PRP; implemented; amendments
+CLAUDE.md (stack, rules 1 and 7, tree), README.md, TODO.md, CHANGELOG.md, MEMORY.md (decision 35)
+```
+
+### TESTS WRITTEN
+
+- **Checker:** deep `==` on every type; string order; E0404 cases; two-way typing (6 forms); a single E0412.
+- **IR:** one helper per struct with `!=` negated; array lengths before elements; recursive and `Option` helpers; `lugha_rt_str_cmp`.
+- **Acceptance:** `m9/equality.la` (25 lines of expected output) and the `e0404_struct_order` golden; the spec title test.
+
+### DECISIONS MADE
+
+- MEMORY 35.
+
+### PENDING DECISIONS OPENED
+
+- None.
 
 ---
 

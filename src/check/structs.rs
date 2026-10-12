@@ -266,12 +266,10 @@ mod tests {
             )),
             [("E0410", "z")]
         );
-        assert_eq!(
-            errors(&format!(
-                "{POINT}fun main() {{ let p = P {{ x: 1.0, y: 2.0 }}; let q = p; let e = p == q; }}"
-            )),
-            [("E0404", "p == q")]
-        );
+        // Structs compare field by field in v2 (draft §4).
+        crate::check::test_util::ok(&format!(
+            "{POINT}fun main() {{ let p = P {{ x: 1.0, y: 2.0 }}; let q = p; let e = p == q; }}"
+        ));
         assert_eq!(
             errors(&format!(
                 "{POINT}fun main() {{ let p = P {{ x: 1.0, y: 2.0 }}; p.x = 2.0; }}"

@@ -1,6 +1,6 @@
 ## FEATURE: Deep `==`/`!=` on every type and `<` on strings — and the start of the v2 specification.
 
-**Status:** approved 2026-10-13 — session 38
+**Status:** implemented 2026-10-13 — session 38
 **Milestone:** 9 (second of three PRPs: 030 syntax, **031 equality and string order**, 032 nested patterns and guards)
 **Spec:** `Language v2 Draft.md` §4 (equality on every type, string order), §5 (evaluation of `==`), §9 (`lugha_eq_<type>`, `lugha_rt_str_cmp`). It folds into a new `Language v2 Specification.md`.
 **Decisions:**
@@ -35,6 +35,12 @@
   - `runtime/lugha_rt.c`, `src/codegen/runtime.rs` (`RUNTIME_SYMBOLS`);
   - `src/lib.rs` (`SPEC`), `tests/{spec,cli}.rs`.
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 38)
+- **One E0412 for `None == None`:** when the first operand failed, the second gets an `Error` expectation. `None` and `[]` then stay quiet, so one mistake gives one diagnostic.
+- **Existing tests:** four checker tests that asserted E0404 for `==` on arrays, enums and structs, and for string `<`, now assert v2 behaviour. One test was renamed to `arrays_have_len_elements_and_equality`.
+- **Codegen detail:** `compare` in `arith.rs` became `pub(super)`. `string_binary` (`heap.rs`) handles the orderings.
+- **Spec placement:** the operand-typing rule went into §4 next to the equality text. §11 got a milestone 9 row.
 
 ### Discovery answers (session 38)
 1. **Spec file:** start the v2 spec now, as v1 did at PRP-020.
@@ -124,30 +130,30 @@
 ## TESTS TO WRITE
 
 Unit tests — `check/ops.rs`:
-- [ ] **Equality accepted:** `==`/`!=` on a struct, an enum, an `Option`, `i64[][]`, and a struct holding arrays and strings.
-- [ ] **Operand typing:**
+- [x] **Equality accepted:** `==`/`!=` on a struct, an enum, an `Option`, `i64[][]`, and a struct holding arrays and strings.
+- [x] **Operand typing:**
   - `o == None` and `None == o`;
   - `o == Some(3)`, where `3` takes `u8`;
   - `xs == []` and `[] == xs`;
   - `[1] == bytes`, where the literal elements take `u8`.
-- [ ] **Order:** `"a" < "b"` gives `bool`.
-- [ ] **E0404 cases:**
+- [x] **Order:** `"a" < "b"` gives `bool`.
+- [x] **E0404 cases:**
   - `"a" < 1`, `true < false`, a struct `<`;
   - `"a" == 1` (E0404, not a literal error);
   - different struct types compared.
-- [ ] **E0412:** `None == None` and `[] == []`.
+- [x] **E0412:** `None == None` and `[] == []`.
 
 Codegen IR — `codegen/equality.rs`:
-- [ ] **Structs:** a struct `==` calls `@lugha_eq_…` defined once, and two comparisons share it.
-- [ ] **Arrays:** an array `==` compares lengths before the loop.
-- [ ] **Recursion and strings:** a recursive enum's helper calls itself, and a string `<` calls `@lugha_rt_str_cmp`.
-- [ ] **`!=`:** it negates the helper result.
+- [x] **Structs:** a struct `==` calls `@lugha_eq_…` defined once, and two comparisons share it.
+- [x] **Arrays:** an array `==` compares lengths before the loop.
+- [x] **Recursion and strings:** a recursive enum's helper calls itself, and a string `<` calls `@lugha_rt_str_cmp`.
+- [x] **`!=`:** it negates the helper result.
 
 Runtime:
-- [ ] The existing `-Werror` compile covers `lugha_rt_str_cmp`, and the `RUNTIME_SYMBOLS` test includes it.
+- [x] The existing `-Werror` compile covers `lugha_rt_str_cmp`, and the `RUNTIME_SYMBOLS` test includes it.
 
 Acceptance — `tests/programs/m9/` (also cross-checked at `-O2`; the expected output is written by hand):
-- [ ] **`equality.la`:**
+- [x] **`equality.la`:**
   - structs with arrays and strings;
   - nested arrays (equal, different lengths, different elements);
   - an enum with payloads;
@@ -156,9 +162,9 @@ Acceptance — `tests/programs/m9/` (also cross-checked at `-O2`; the expected o
   - `!=`;
   - `NaN` in an array (unequal to itself);
   - string order including the prefix case (`"ab" < "abc"`), and bytes ≥ 128 compared unsigned.
-- [ ] **`e0404_struct_order.la`:** a struct `<` is rejected. The golden is captured and reviewed.
-- [ ] **Spec:** `tests/spec.rs` passes against the new file. `lughac spec` prints a title starting "# Lugha v2 Specification".
-- [ ] **Regression:** every earlier test passes.
+- [x] **`e0404_struct_order.la`:** a struct `<` is rejected. The golden is captured and reviewed.
+- [x] **Spec:** `tests/spec.rs` passes against the new file. `lughac spec` prints a title starting "# Lugha v2 Specification".
+- [x] **Regression:** every earlier test passes.
 
 ## ROLLBACK PLAN
 
@@ -166,11 +172,11 @@ Acceptance — `tests/programs/m9/` (also cross-checked at `-O2`; the expected o
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] Deep `==`/`!=` and string order work as above, at `-O0` and `-O2`.
-- [ ] `lughac spec` prints the v2 spec (in progress), and v1.2's file is unchanged.
-- [ ] CLAUDE.md, README, TODO, CHANGELOG, MEMORY updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] Deep `==`/`!=` and string order work as above, at `-O0` and `-O2`.
+- [x] `lughac spec` prints the v2 spec (in progress), and v1.2's file is unchanged.
+- [x] CLAUDE.md, README, TODO, CHANGELOG, MEMORY updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

@@ -104,7 +104,7 @@ impl Checker {
 
     /// `for var in start..end`: both bounds share one integer type (spec §5).
     fn for_range(&mut self, var: &Ident, start: &Expr, end: &Expr, body: &Block) {
-        let ty = match self.operands(start, end, None) {
+        let ty = match self.operands(start, end, None, false) {
             (Type::Error, _) | (_, Type::Error) => Type::Error,
             (a, b) if a != b => {
                 self.report(errors::mismatch(a, b, end.span, None));

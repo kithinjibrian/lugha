@@ -67,6 +67,8 @@ impl Checker {
         let Some(first) = elements.first() else {
             return match expected {
                 Some(element) => Type::Array(Box::new(element)),
+                // The context already failed and was reported.
+                None if expect.is_some_and(|e| e.ty == Type::Error) => Type::Error,
                 None => {
                     self.report(errors::empty_array(expr.span));
                     Type::Error
@@ -209,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    fn arrays_have_len_elements_and_no_equality() {
+    fn arrays_have_len_elements_and_equality() {
         assert_eq!(
             let_type("fun main() { let xs = [1.5]; let x = xs[0]; }", "x"),
             Type::F64
@@ -218,9 +220,13 @@ mod tests {
             let_type("fun main() { let xs = [1]; let n = xs.len; }", "n"),
             Type::I64
         );
+        // Arrays compare deeply in v2 (draft §4).
         assert_eq!(
-            errors("fun main() { let a = [1]; let b = [1]; let e = a == b; }"),
-            [("E0404", "a == b")]
+            let_type(
+                "fun main() { let a = [1]; let b = [1]; let e = a == b; }",
+                "e"
+            ),
+            Type::Bool
         );
         assert_eq!(
             errors("fun main() { let a = [1]; let n = a.size; }"),

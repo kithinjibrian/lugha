@@ -182,6 +182,8 @@ impl Checker {
     pub(super) fn none(&mut self, span: Span, expect: Option<&Expect>) -> Type {
         match expect.map(|e| &e.ty) {
             Some(ty @ Type::Option(_)) => ty.clone(),
+            // The context already failed and was reported: one mistake, one diagnostic.
+            Some(Type::Error) => Type::Error,
             _ => {
                 self.report(errors::cannot_infer_none(span));
                 Type::Error
@@ -248,12 +250,10 @@ mod tests {
             errors(&format!("{SHAPE}fun main() {{ let s = Shape.Circle(1); }}")),
             [("E0401", "1")]
         );
-        assert_eq!(
-            errors(&format!(
-                "{SHAPE}fun main() {{ let a = Shape.Empty; let b = a == a; }}"
-            )),
-            [("E0404", "a == a")]
-        );
+        // Enums compare by variant and payloads in v2 (draft §4).
+        crate::check::test_util::ok(&format!(
+            "{SHAPE}fun main() {{ let a = Shape.Empty; let b = a == a; }}"
+        ));
     }
 
     #[test]

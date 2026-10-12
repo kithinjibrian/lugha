@@ -150,7 +150,8 @@ impl<'ctx> Lowerer<'ctx> {
         self.builder.position_at_end(ok);
     }
 
-    /// `+`, `==` and `!=` on strings, through the runtime.
+    /// `+`, `==`, `!=` and the orderings on strings, through the runtime
+    /// (v2 draft §4: bytewise order).
     pub(super) fn string_binary(
         &self,
         op: BinOp,
@@ -171,8 +172,23 @@ impl<'ctx> Lowerer<'ctx> {
         if op == BinOp::Add {
             return call("lugha_rt_str_concat", Type::String);
         }
-        let equal = call("lugha_rt_str_eq", Type::I32).into_int_value();
         let zero = self.context.i32_type().const_zero();
+        let order = match op {
+            BinOp::Lt => Some(IntPredicate::SLT),
+            BinOp::Le => Some(IntPredicate::SLE),
+            BinOp::Gt => Some(IntPredicate::SGT),
+            BinOp::Ge => Some(IntPredicate::SGE),
+            _ => None,
+        };
+        if let Some(predicate) = order {
+            let sign = call("lugha_rt_str_cmp", Type::I32).into_int_value();
+            return self
+                .builder
+                .build_int_compare(predicate, sign, zero, "str.cmp")
+                .expect(POSITIONED)
+                .into();
+        }
+        let equal = call("lugha_rt_str_eq", Type::I32).into_int_value();
         let predicate = if op == BinOp::Eq {
             IntPredicate::NE
         } else {

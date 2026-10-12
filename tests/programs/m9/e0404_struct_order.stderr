@@ -1,0 +1,6 @@
+error[E0404]: cannot apply `<` to P
+  --> tests/programs/m9/e0404_struct_order.la:6:13
+  |
+6 |     let c = a < b;
+  |             ^^^^^
+

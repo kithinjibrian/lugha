@@ -13,6 +13,7 @@ mod construct;
 mod control;
 mod copy;
 mod enums;
+mod equality;
 mod expr;
 mod function;
 mod growth;

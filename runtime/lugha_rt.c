@@ -51,6 +51,7 @@ void lugha_rt_panic_bounds(int64_t len, int64_t index, const char *file, int64_t
 LughaString *lugha_rt_str_concat(const LughaString *a, const LughaString *b);
 LughaArray *lugha_rt_array_grow(const LughaArray *array, int64_t elem_size);
 int32_t lugha_rt_str_eq(const LughaString *a, const LughaString *b);
+int32_t lugha_rt_str_cmp(const LughaString *a, const LughaString *b);
 void lugha_rt_print_i32(int32_t value);
 void lugha_rt_print_i64(int64_t value);
 void lugha_rt_print_u8(uint32_t value);
@@ -140,4 +141,16 @@ LughaString *lugha_rt_str_concat(const LughaString *a, const LughaString *b) {
 /* `a == b` for strings compares contents (spec §4); 1 or 0. */
 int32_t lugha_rt_str_eq(const LughaString *a, const LughaString *b) {
     return a->len == b->len && memcmp(a->bytes, b->bytes, (size_t)a->len) == 0;
+}
+
+/* `a < b` and friends for strings (v2 draft §4): bytewise, as unsigned
+ * values, and a proper prefix is smaller. -1, 0 or 1. Reads only `len` bytes
+ * of each, never relying on the terminating NUL. */
+int32_t lugha_rt_str_cmp(const LughaString *a, const LughaString *b) {
+    size_t shorter = (size_t)(a->len < b->len ? a->len : b->len);
+    int order = memcmp(a->bytes, b->bytes, shorter);
+    if (order != 0) {
+        return order < 0 ? -1 : 1;
+    }
+    return a->len < b->len ? -1 : a->len > b->len ? 1 : 0;
 }

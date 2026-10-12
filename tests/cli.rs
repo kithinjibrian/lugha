@@ -255,6 +255,8 @@ fn spec_prints_the_bundled_specification() {
     let out = lughac(&dir.0, &["spec"]);
     assert_eq!(out.status.code(), Some(0));
     assert_eq!(text(&out.stdout), lugha::SPEC);
+    // v2 is printed while it's being built (PRP-031); v1.2's file is frozen.
+    assert!(lugha::SPEC.starts_with("# Lugha v2 Specification"));
     assert!(out.stderr.is_empty(), "{}", text(&out.stderr));
     assert_eq!(lughac(&dir.0, &["spec", "extra"]).status.code(), Some(2));
 }

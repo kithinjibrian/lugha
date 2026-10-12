@@ -1,8 +1,9 @@
-//! Binary operators and literal inference between operands (spec §4).
+//! Binary operators and type inference between operands (spec §4; v2 draft
+//! §4: `==` on every type, string order, either operand typing the other).
 
 use super::expr::{Expect, is_literal};
 use super::{Checker, Type, errors};
-use crate::ast::{BinOp, Expr};
+use crate::ast::{BinOp, Expr, ExprKind};
 use crate::span::Span;
 
 impl Checker {
@@ -33,7 +34,8 @@ impl Checker {
         );
         // Only arithmetic passes the context's type to its operands; a comparison's `bool` doesn't.
         let outer = if arithmetic { expect } else { None };
-        let (l, r) = self.operands(lhs, rhs, outer);
+        // Comparing passes any type between operands (`o == None`); arithmetic only numbers.
+        let (l, r) = self.operands(lhs, rhs, outer, !arithmetic);
         let (l, r) = match (l, r) {
             (Type::Error, _) | (_, Type::Error) => return Type::Error,
             (Type::Never, ty) | (ty, Type::Never) => (ty.clone(), ty),
@@ -41,9 +43,13 @@ impl Checker {
         };
         let allowed = l == r
             && match op {
-                // Strings join with `+` and compare by content (spec §4).
+                // Strings join with `+` (spec §4).
                 BinOp::Add if l == Type::String => true,
-                BinOp::Eq | BinOp::Ne => l.is_numeric() || matches!(l, Type::Bool | Type::String),
+                // Every type has deep equality; numbers and strings are ordered (v2 draft §4).
+                BinOp::Eq | BinOp::Ne => true,
+                BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge => {
+                    l.is_numeric() || l == Type::String
+                }
                 _ => l.is_numeric(),
             };
         if !allowed && l != Type::Never {
@@ -54,26 +60,29 @@ impl Checker {
         if arithmetic { l } else { Type::Bool }
     }
 
-    /// Checks two operands (or range bounds) so a literal takes its type from
-    /// the other side: the non-literal is checked first (spec §4 rule 3).
+    /// Checks two operands (or range bounds) so one that can't be typed
+    /// alone (a literal, `None`, `[]`) takes its type from the other side,
+    /// which is checked first (spec §4 rule 3; v2 draft §4). `any` passes
+    /// every type across, not just numbers.
     pub(super) fn operands(
         &mut self,
         lhs: &Expr,
         rhs: &Expr,
         outer: Option<&Expect>,
+        any: bool,
     ) -> (Type, Type) {
-        if is_literal(lhs) && !is_literal(rhs) {
-            let r = self.value(rhs, outer);
-            let l = self.value(lhs, from_operand(&r, rhs.span).as_ref());
-            return (l, r);
-        }
-        let l = self.value(lhs, outer);
+        let swap = defers(lhs) && !defers(rhs);
+        let (first, second) = if swap { (rhs, lhs) } else { (lhs, rhs) };
+        let a = self.value(first, outer);
         let expect = match outer {
-            Some(outer) if is_literal(lhs) => Some(outer.clone()),
-            _ => from_operand(&l, lhs.span),
+            Some(outer) if defers(first) => Some(outer.clone()),
+            // Both sides need a type from context (`None == None`): the
+            // first already reported E0412, so the second stays quiet.
+            _ if a == Type::Error && defers(second) => Some(Expect::of(Type::Error)),
+            _ => from_operand(&a, first.span, second, any),
         };
-        let r = self.value(rhs, expect.as_ref());
-        (l, r)
+        let b = self.value(second, expect.as_ref());
+        if swap { (b, a) } else { (a, b) }
     }
 }
 
@@ -93,11 +102,29 @@ impl Checker {
     }
 }
 
-/// The type an operand gives the other side. Only numeric types are passed
-/// on: `true + 1` is an operator error, not a literal error.
-fn from_operand(ty: &Type, span: Span) -> Option<Expect> {
-    ty.is_numeric()
-        .then(|| Expect::because(ty.clone(), span, format!("this operand is {ty}")))
+/// The type an operand gives the other side, `to`. Numeric types always
+/// pass; with `any`, every type does, except to a numeric literal: `true + 1`
+/// and `"a" == 1` are operator errors (E0404), not literal errors.
+fn from_operand(ty: &Type, span: Span, to: &Expr, any: bool) -> Option<Expect> {
+    let passes =
+        ty.is_numeric() || (any && !is_literal(to) && !matches!(ty, Type::Error | Type::Never));
+    passes.then(|| Expect::because(ty.clone(), span, format!("this operand is {ty}")))
+}
+
+/// True if `e` can't be typed without an expected type: a numeric literal,
+/// `None`, `[]`, or a list, repeat or `Some` whose first value is one.
+fn defers(e: &Expr) -> bool {
+    match &e.kind {
+        _ if is_literal(e) => true,
+        ExprKind::Name(name) => name == "None",
+        ExprKind::Array(elements) => elements.first().is_none_or(defers),
+        ExprKind::Repeat(value, _) => defers(value),
+        ExprKind::Call(callee, args) => {
+            matches!(&callee.kind, ExprKind::Name(n) if n == "Some")
+                && args.first().is_some_and(defers)
+        }
+        _ => false,
+    }
 }
 
 #[cfg(test)]
@@ -161,6 +188,58 @@ mod tests {
         for (src, want) in cases {
             assert_eq!(errors(src), [want], "{src}");
         }
+    }
+
+    #[test]
+    fn equality_is_deep_and_strings_are_ordered() {
+        let types = "struct P { xs: i64[][], s: string }\nenum E { A(P), B }\n";
+        let src = format!(
+            "{types}fun main() {{ let p = P {{ xs: [[1]], s: \"a\" }}; let e = E.A(p); \
+             let a = p == p; let b = e != E.B; let c = [[1.5]] == [[2.5]]; let d = \"a\" < \"b\"; }}"
+        );
+        for name in ["a", "b", "c", "d"] {
+            assert_eq!(let_type(&src, name), Type::Bool, "{name}");
+        }
+        let order = [
+            ("fun main() { let a = \"a\" < 1; }", "\"a\" < 1"),
+            ("fun main() { let a = true < false; }", "true < false"),
+            ("fun main() { let a = \"a\" == 1; }", "\"a\" == 1"),
+            ("fun main() { let a = [1] < [2]; }", "[1] < [2]"),
+        ];
+        for (src, at) in order {
+            assert_eq!(errors(src), [("E0404", at)], "{src}");
+        }
+        assert_eq!(
+            errors("struct A {}\nstruct B {}\nfun main() { let e = A {} == B {}; }"),
+            [("E0404", "A {} == B {}")]
+        );
+    }
+
+    #[test]
+    fn either_operand_can_type_the_other() {
+        let o = "fun main() { let o: Option<u8> = Some(3); let xs: u8[] = [1];";
+        for (i, test) in [
+            "o == None",
+            "None == o",
+            "o == Some(3)",
+            "xs == []",
+            "[] == xs",
+            "[1] == xs",
+        ]
+        .iter()
+        .enumerate()
+        {
+            let src = format!("{o} let t{i} = {test}; }}");
+            assert_eq!(let_type(&src, &format!("t{i}")), Type::Bool, "{test}");
+        }
+        assert_eq!(
+            errors("fun main() { let e = None == None; }"),
+            [("E0412", "None")]
+        );
+        assert_eq!(
+            errors("fun main() { let e = [] == []; }"),
+            [("E0412", "[]")]
+        );
     }
 
     #[test]
