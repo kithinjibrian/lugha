@@ -461,8 +461,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Lugha v1.2 is released (tag `v1.2`). The C runtime is split into fragments (PRP-028), so every file is within the 300-line rule. No PRP is queued. Candidates, each starting with discovery:
-- **Near the limit:** `check/stmt.rs` (294 lines) and `check/method_calls.rs` (285 lines). Split them before the next feature that touches them.
-- **v2 language work** (spec §11 out-of-scope list): generics, modules, closures, richer patterns, a shared-reference type. Start with a v2 spec draft.
+Lugha v1.2 is released (tag `v1.2`). Housekeeping is done: every file is within the 300-line rule, with headroom in the checker (PRP-028, PRP-029). No PRP is queued. Candidate, starting with discovery:
+- **v2 language work** (spec §11 out-of-scope list): generics, modules, closures, richer patterns, a shared-reference type. Start with a v2 spec draft (architecture rule 1).
 
 See `TODO.md`.

@@ -1,6 +1,6 @@
 ## FEATURE: Move function bodies out of `check/stmt.rs` and array built-ins out of `check/method_calls.rs`, before either passes 300 lines.
 
-**Status:** implemented 2026-10-12 — session 35
+**Status:** merged into `main` 2026-10-12 — session 35
 **Milestone:** none; housekeeping (CLAUDE.md file size rule: `stmt.rs` is 294 lines, `method_calls.rs` 285)
 **Spec:** none. No language or diagnostic change.
 **Decisions:** MEMORY 27 (methods), MEMORY 28 (growable arrays).
