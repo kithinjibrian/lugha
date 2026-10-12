@@ -1749,6 +1749,12 @@ README.md, CLAUDE.md (tree), CHANGELOG.md, TODO.md, MEMORY.md (decision 32)
 
 ---
 
+## SESSION 34 — 2026-10-12 — Split the C runtime — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Lugha v1.2 is released (tag `v1.2`): v1 plus `swap(a, b)` (v1.1) and E0510 (v1.2). No PRP is queued. Candidates, each starting with discovery:
