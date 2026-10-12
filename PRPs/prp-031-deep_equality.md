@@ -1,6 +1,6 @@
 ## FEATURE: Deep `==`/`!=` on every type and `<` on strings — and the start of the v2 specification.
 
-**Status:** implemented 2026-10-13 — session 38
+**Status:** merged into `main` 2026-10-13 — session 38
 **Milestone:** 9 (second of three PRPs: 030 syntax, **031 equality and string order**, 032 nested patterns and guards)
 **Spec:** `Language v2 Draft.md` §4 (equality on every type, string order), §5 (evaluation of `==`), §9 (`lugha_eq_<type>`, `lugha_rt_str_cmp`). It folds into a new `Language v2 Specification.md`.
 **Decisions:**

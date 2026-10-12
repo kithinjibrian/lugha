@@ -519,12 +519,12 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Milestone 9 is in progress. PRP-030 is merged: all v2 syntax parses, and `driver/gate/` stops v2 constructs with exit 2 until their milestone. Next is **PRP-031: deep `==` on every type and string `<`** (v2 draft §4, §5, §9). It needs:
-- `lugha_eq_<type>` helpers, emitted like the copy helpers;
-- `lugha_rt_str_cmp` in `runtime/lugha_rt.c` (the core part);
-- operator typing changes in `check/ops.rs`;
-- the removal of v1.2's "no `==` on structs/enums/arrays" E0404 cases.
+Milestone 9 is in progress. PRP-030 (v2 syntax and the gate) and PRP-031 (deep `==`, string order, and `Language v2 Specification.md` as `lughac spec`) are merged. Next is **PRP-032: nested patterns and `if` guards** (v2 draft §3, §5; the draft's patterns program is milestone 9's acceptance test). It covers:
+- **Checker:** nested slot resolution, where a bare name is a variant if the slot's enum has one, else a binding; guards are `bool`. It needs a real exhaustiveness and usefulness check: guarded arms don't count, E0417 lists nested missing patterns, and W0102 applies. `check/matching.rs` is at 292 lines, so plan new files.
+- **Codegen:** a decision tree for nested tests, and guards.
+- **Gate:** delete the M9 entries.
+- **Spec:** fold the draft's pattern sections into the v2 spec, and mark milestone 9 done.
 
-It needs no gate change, since there is no new syntax. Then PRP-032 covers nested patterns and guards. Start with discovery.
+The draft's §12 question (an unused-binding warning for nested slots) is for discovery.
 
 See `TODO.md`.
