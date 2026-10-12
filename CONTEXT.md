@@ -1994,6 +1994,12 @@ CLAUDE.md (stack, rules 1 and 7, tree), README.md, TODO.md, CHANGELOG.md, MEMORY
 
 ---
 
+## SESSION 39 — 2026-10-13 — Nested patterns and guards (PRP-032) — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 9 is in progress. PRP-030 (v2 syntax and the gate) and PRP-031 (deep `==`, string order, and `Language v2 Specification.md` as `lughac spec`) are merged. Next is **PRP-032: nested patterns and `if` guards** (v2 draft §3, §5; the draft's patterns program is milestone 9's acceptance test). It covers:
