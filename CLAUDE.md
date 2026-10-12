@@ -296,4 +296,3 @@ These look like bugs but are specified behavior:
 - **Boehm may keep garbage alive** when an integer looks like a pointer. Conservative GC, spec §7.
 - **Extern C code keeping a Lugha pointer is undefined behavior.** Spec §7–8 accept this for v0.
 - **`as` casts truncate/saturate silently.** The only place values wrap (spec §4).
-- **Too-deep recursion crashes with a signal (exit 139)**, not a panic: the native stack is finite (v1 spec §7). Walk very long lists with loops.

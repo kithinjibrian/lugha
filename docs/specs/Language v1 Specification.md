@@ -389,7 +389,7 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 
 **Expression statements.** Any expression followed by `;` is a statement, and its value is discarded. Discarding the result of a non-`void` call is allowed. Adding `;` after a would-be tail expression turns it into a statement, so `{ x * x; }` is a `void` block. When a value was expected, the checker reports this as "remove this semicolon" and points at it.
 
-**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), a negative repeat-literal count, and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. They cannot be caught.
+**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), a negative repeat-literal count, too-deep recursion (`stack overflow`), and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. A stack overflow is the one panic without a location — it prints just `panic: stack overflow` — because the runtime can't tell which call went too deep. They cannot be caught.
 
 **Intrinsics.** These names are built into the compiler, not declared in source. They accept arguments that ordinary functions can't, which is why they are special.
 
@@ -461,7 +461,7 @@ Value types live on the stack; strings and arrays live on a garbage-collected he
 
 **Indirect slots.** A payload slot whose type leads back to its enum through values held inline — struct fields, enum payloads or `Option`'s payload, but not arrays — is an 8-byte pointer to a copy of the value on the GC heap, allocated with `lugha_rt_alloc` when the variant is built and never mutated afterwards. Every other slot, and the enum value itself, stays inline. `List` is therefore `{ i32 tag; i64 head; ptr rest }`.
 
-**Recursion depth.** Function calls use the native stack, which is finite. A recursion that goes too deep — for example walking a list of a million nodes recursively — crashes the program with a signal (exit code 139) instead of panicking. Walk very long lists with a loop.
+**Recursion depth.** Function calls use the native stack, which is finite. A recursion that goes too deep — for example walking a list of a million nodes recursively — panics with `stack overflow` (exit 101). The runtime detects it when the stack's guard area is hit, so ordinary calls cost nothing. Walk very long lists with a loop.
 
 **Heap objects.** All heap memory comes from one runtime function, `lugha_rt_alloc(size)`, which calls `GC_malloc`. Memory from `GC_malloc` is zeroed. Every heap object starts with a length header:
 
@@ -546,7 +546,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 
 | Function | Purpose |
 | --- | --- |
-| `lugha_rt_init()` | Runs `GC_INIT()`; the C `main` calls it first, since a C macro can't be called from IR |
+| `lugha_rt_init()` | Runs `GC_INIT()`, then installs the stack-overflow handler (an alternate signal stack and a `SIGSEGV` handler that panics only for faults at the stack's end); the C `main` calls it first, since a C macro can't be called from IR |
 | `lugha_rt_alloc(size)` | Allocate zeroed GC memory |
 | `lugha_rt_panic(msg, file, line, col)` | Print the panic message and `exit(101)` |
 | `lugha_rt_str_concat(a, b)` | Implement string `+` |

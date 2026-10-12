@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- Too-deep recursion panics with `panic: stack overflow` (exit 101) instead of crashing with a signal; other segfaults (from C code) are unchanged
 - A crash inside lughac is now reported as `error: internal compiler error: …` (or one JSON line) and exits with 2 instead of 101
 - Growable arrays: `xs.push(v)`, `xs.pop()` (an `Option`), `xs.clear()`, with a capacity header and doubling growth; the v1 specification is complete and is what `lughac spec` prints — **milestone 8 complete: Lugha v1 is complete**
 - Methods: `impl` blocks with `self` and `mut self` receivers, associated functions like `Vec2.new(…)`, method calls (E0310, E0415, E0508 for a `mut self` call whose argument aliases the receiver); every v1 construct now compiles — **milestone 7 complete**

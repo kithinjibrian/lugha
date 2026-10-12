@@ -1,6 +1,6 @@
 ## FEATURE: Too-deep recursion panics with `panic: stack overflow` (exit 101) instead of crashing with a signal (exit 139).
 
-**Status:** approved 2026-10-12 — session 31
+**Status:** implemented 2026-10-12 — session 31 (branch `prp-025-stack_overflow_panic`, awaiting merge)
 **Milestone:** none; a TODO idea from PRP-021's discovery
 **Spec:** §5 (panics), §7 ("Recursion depth"), §9 (runtime)
 **Decisions:**
@@ -22,6 +22,11 @@ A Lugha program that recurses too deeply stops the way every other runtime error
   - The spec and CLAUDE.md are updated.
 - **Related existing code:** `runtime/lugha_rt.c`, `src/link.rs` (the link command), `tests/codegen.rs` (`-Werror` runtime build), `tests/programs/`.
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 31)
+- **Re-raise:** a non-overflow SIGSEGV restores the default action and *re-raises*, rather than only returning. A real fault would repeat anyway, but a SIGSEGV sent by `raise()`/`kill()` would otherwise be swallowed. A second program, `m8/segv_from_c.la` (`raise(11)` through `extern fun`), pins exit 139.
+- **Link step:** `-pthread` was not needed; glibc on Ubuntu 26.04 includes pthread in libc.
+- **Bounds:** only the stack's lowest address is kept, since the handler checks a window around it.
 
 ### Discovery answers (session 31)
 1. **Guard-page signal handler.** There is no per-call counter. Detection happens only when the stack's guard area is hit, so normal code pays nothing.
@@ -73,12 +78,12 @@ A Lugha program that recurses too deeply stops the way every other runtime error
 
 ## TESTS TO WRITE
 
-- [ ] **`tests/programs/m8/stack_overflow.la`:** a function recursing without end, after printing a line first.
+- [x] **`tests/programs/m8/stack_overflow.la`:** a function recursing without end, after printing a line first.
   - stdout: that line.
   - stderr: exactly `panic: stack overflow\n`.
   - exit 101 (also at `-O2` via the cross-check). It must not be turned into a loop by LLVM's tail-call optimization: the recursion is not in tail position.
-- [ ] **`tests/codegen.rs`:** the runtime still compiles with `-std=c11 -Wall -Wextra -Werror`.
-- [ ] **Regression:** `m6/recursive.la` (a million-node loop, a deep tree) and every other program still pass.
+- [x] **`tests/codegen.rs`:** the runtime still compiles with `-std=c11 -Wall -Wextra -Werror`.
+- [x] **Regression:** `m6/recursive.la` (a million-node loop, a deep tree) and every other program still pass.
 
 ## ROLLBACK PLAN
 
@@ -86,10 +91,10 @@ A Lugha program that recurses too deeply stops the way every other runtime error
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] Unbounded recursion prints `panic: stack overflow` and exits 101; earlier output is not lost.
-- [ ] The spec (§5, §7, §9), CLAUDE.md, TODO, CHANGELOG, MEMORY updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] Unbounded recursion prints `panic: stack overflow` and exits 101; earlier output is not lost.
+- [x] The spec (§5, §7, §9), CLAUDE.md, TODO, CHANGELOG, MEMORY updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo test`

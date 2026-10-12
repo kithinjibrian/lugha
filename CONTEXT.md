@@ -1580,6 +1580,42 @@ CLAUDE.md, TODO.md, CHANGELOG.md, MEMORY.md (decision 29)
 
 Branch: main → prp-025-stack_overflow_panic
 
+### WHAT WAS DONE
+
+Discovery: a guard-page signal handler, with no per-call cost. The spec change (a panic without a location) was approved with the PRP.
+
+Implemented PRP-025:
+- The failing test first (`m8/stack_overflow.la` exited 139 and lost its output).
+- The runtime handler; it now panics with exit 101 and keeps earlier output.
+- An edge case found and fixed: non-overflow SIGSEGVs are re-raised, pinned by `m8/segv_from_c.la`.
+- Spec §5/§7/§9 updated; the CLAUDE.md known issue removed.
+
+239 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+runtime/lugha_rt.c — _GNU_SOURCE, stack bounds, alternate stack, SIGSEGV handler
+tests/programs/m8/stack_overflow.*, segv_from_c.* — new
+docs/specs/Language v1 Specification.md — §5 panic list, §7 recursion depth, §9 lugha_rt_init
+PRPs/prp-025-stack_overflow_panic.md — new PRP; implemented; amendments
+CLAUDE.md (known issue removed), TODO.md, CHANGELOG.md, MEMORY.md (decisions 26, 30)
+```
+
+### TESTS WRITTEN
+
+- `stack_overflow.la`: stdout `before`, stderr `panic: stack overflow`, exit 101, at -O0/-O2.
+- `segv_from_c.la`: a C-raised SIGSEGV still exits 139.
+- The runtime still compiles with `-Werror` (existing test).
+
+### DECISIONS MADE
+
+- MEMORY 30.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

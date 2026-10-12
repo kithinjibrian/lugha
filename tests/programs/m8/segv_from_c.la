@@ -1,0 +1,9 @@
+// A SIGSEGV that isn't a stack overflow keeps the default action (PRP-025):
+// the process dies by the signal, which `lughac run` reports as 128 + 11.
+extern fun raise(sig: i32): i32;
+
+fun main() {
+    println("before");
+    raise(11);
+    println("not reached");
+}

@@ -88,5 +88,5 @@ Done when the stack program passes and `lughac spec` prints the full v1 spec.
 ## Ideas — noted, not scheduled
 
 - [x] Move on last use: store a dead local's array without copying it (`grid = next`, `ps[i] = p`) — PRP-018.
-- [ ] A `panic: stack overflow` instead of a raw signal (exit 139) for too-deep recursion: an alternate signal stack and a SIGSEGV handler in the runtime (PRP-021 discovery).
+- [x] (PRP-025) A `panic: stack overflow` instead of a raw signal (exit 139) for too-deep recursion: an alternate signal stack and a SIGSEGV handler in the runtime (PRP-021 discovery).
 - [ ] v1 language question: a swap or move operation for buffers (`ys = buf` while `buf` stays in use is a full copy). See DECISION-010.

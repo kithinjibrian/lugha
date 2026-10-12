@@ -1,0 +1,8 @@
+// Unbounded recursion panics instead of crashing (PRP-025). The call is not
+// in tail position, so it can't be turned into a loop.
+fun depth(n: i64): i64 = depth(n + 1) + 1;
+
+fun main() {
+    println("before");
+    println(depth(0));
+}

@@ -306,7 +306,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Layout:** an indirect slot is an 8-byte pointer to a `lugha_rt_alloc` copy, made at construction and never mutated. Everything else stays inline, so `Nil` allocates nothing.
 - **Copies:** sharing (MEMORY 25) makes copies O(1).
 - **E0307** stays for struct-only cycles.
-- **Deep recursion:** documented as a crash (exit 139); a stack-overflow panic is a TODO idea.
+- **Deep recursion:** panics with `stack overflow` since PRP-025 (MEMORY 30).
 
 **Why:** It is the approved v1 direction (no `Box`), with the heap used only where needed.
 
@@ -357,6 +357,20 @@ Open questions live in `DECISIONS.md`, not here.
 **Why:** architecture rule 6 and spec §9 (JSON stderr carries nothing else).
 
 **Rules out:** `panic = "abort"`; a crash switch in the binary.
+
+---
+
+### 30. Stack overflow panic (PRP-025)
+
+**Decision:**
+- **Setup:** `lugha_rt_init`, after `GC_INIT`, records the main stack's lowest address (`pthread_getattr_np`), installs a 64 KiB static alternate signal stack, and installs a `SA_SIGINFO | SA_ONSTACK` SIGSEGV handler.
+- **Stack faults:** a fault within 64 KiB of the stack's end flushes stdout and prints `panic: stack overflow` (the one panic without a location), then `_exit(101)`.
+- **Other SIGSEGVs:** they restore the default action and re-raise (exit 139).
+- **Failures:** any failed setup step leaves the old behaviour. Linux/glibc only.
+
+**Why:** It costs nothing per call, and only C code can produce other segfaults, which stay visible.
+
+**Rules out:** per-call depth counters; catching other signals.
 
 ---
 
