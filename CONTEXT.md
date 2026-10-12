@@ -1258,7 +1258,7 @@ CHANGELOG.md   — entry
 
 ---
 
-## SESSION 25 — 2026-10-12 — Milestone 6 discovery and PRP-019 v1 syntax — open
+## SESSION 25 — 2026-10-12 — Milestone 6 discovery and PRP-019 v1 syntax — closed
 
 Branch: main → prp-019-v1_syntax
 
@@ -1308,22 +1308,30 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 24)
 
 - None.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-019-v1_syntax` fast-forward merged into `main` and deleted.
+
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 6, the first v1 PRP: enums (`docs/specs/Language v1 Draft.md` §2–§4, §7, §9–§11). It covers:
-- `enum` declarations; construction with `E.Variant(..)`; `Option<T>` with `Some`/`None`.
-- `match` with flat patterns, exhaustiveness (E0417) and unreachable arms (W0102).
-- Recursive enums with indirect slots, and enum copies.
-- E0207 (`::`), E0309, E0311, E0416; `Box<…>` help on E0305.
-- Folding the draft's enum sections into the spec.
+Milestone 6, PRP-020: enums, `match` and `Option<T>` for non-recursive enums (`docs/specs/Language v1 Draft.md` §4, §5, §7, §9, §10). It covers:
+- **Spec:** create `Language v1 Specification.md` (v0 plus the enum sections; v0 frozen), point `lugha::SPEC` at it, and move the shapes and rejected programs from `tests/common/v1_programs.rs` into its §10.
+- **Checker:**
+  - enum declarations (E0309);
+  - E0311 for locals named like types;
+  - construction `E.Variant(..)`, `Some`/`None`;
+  - `match` typing, exhaustiveness (E0417), W0102;
+  - E0416, and `Box<…>` help on E0305.
+- **Codegen:** the enum layout `{ i32 tag; payload }`, construction, `match` lowering (`switch` on tags, integers, a string chain), and payload bindings.
+- **Gate:** drop the enum entries for non-recursive enums. Recursive enums stay gated until PRP-021.
 
-Done-when: the shapes and linked-list programs pass, and the rejected program reports E0417.
+Done-when: the shapes program passes and the rejected program reports E0417.
 
 Discovery questions to expect:
-- whether M6 folds into a new `Language v1 Specification.md` now, or extends v0's file;
-- the enum layout details (tag width, payload alignment);
-- how `match` on strings lowers.
+- how spec_programs handles a second rejected program;
+- whether recursive enums are gated by the checker (cycle found) or the gate;
+- the payload layout for mixed-alignment variants.
 
 See `TODO.md`.

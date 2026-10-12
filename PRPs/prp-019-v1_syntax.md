@@ -1,6 +1,6 @@
 ## FEATURE: v1 syntax — the lexer, parser and AST for all of v1 (`enum`, `match`, `impl`, `self`, `Option<T>`, `=>`, and a helpful E0207 for `::`), with a driver gate that reports the not-yet-implemented constructs.
 
-**Status:** implemented 2026-10-12 — session 25 (branch `prp-019-v1_syntax`, awaiting merge)
+**Status:** merged into `main` 2026-10-12 — session 25
 **Milestone:** 6, first of three PRPs (019 syntax, 020 enums/`match`/`Option`, 021 recursive enums and copies)
 **Spec:** `docs/specs/Language v1 Draft.md` §2 (keywords, `=>`, `::`), §3 (grammar: `enum_decl`, `impl_decl`, `method`, `receiver`, `Option<T>`, `match_expr`, patterns, `self`)
 **Decisions:** MEMORY 23 (v1 direction), architecture rule 9 (the lexer and parser cover the full syntax at once), PRP-016 (no `Stop`/`Checking` machinery)
