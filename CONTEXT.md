@@ -1622,6 +1622,12 @@ CLAUDE.md (known issue removed), TODO.md, CHANGELOG.md, MEMORY.md (decisions 26,
 
 ---
 
+## SESSION 32 — 2026-10-12 — swap discovery and PRP-026 — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Lugha v1 is complete (tag `m8`); the exit-code bug and the stack-overflow panic are done. No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
