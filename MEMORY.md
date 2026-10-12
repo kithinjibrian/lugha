@@ -345,20 +345,16 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Milestone 6, PRP-020: enums, `match` and `Option<T>` for non-recursive enums (`docs/specs/Language v1 Draft.md` §4, §5, §7, §9, §10). It covers:
-- **Spec:** create `Language v1 Specification.md` (v0 plus the enum sections; v0 frozen), point `lugha::SPEC` at it, and move the shapes and rejected programs from `tests/common/v1_programs.rs` into its §10.
-- **Checker:**
-  - enum declarations (E0309);
-  - E0311 for locals named like types;
-  - construction `E.Variant(..)`, `Some`/`None`;
-  - `match` typing, exhaustiveness (E0417), W0102;
-  - E0416, and `Box<…>` help on E0305.
-- **Codegen:** the enum layout `{ i32 tag; payload }`, construction, `match` lowering (`switch` on tags, integers, a string chain), and payload bindings.
-- **Gate:** drop the enum entries for non-recursive enums. Recursive enums stay gated until PRP-021.
+Milestone 6, PRP-021: recursive enums (`docs/specs/Language v1 Draft.md` §4 "Recursion", §6 pass 2, §7 indirect slots). It covers:
+- **Indirect slots:** a payload slot whose type leads back to the enum is stored on the GC heap behind a pointer. This also covers structs that reach themselves through an enum or `Option`.
+- **Construction:** allocating the slot; reading it in `match` bindings.
+- **Copies:** with sharing (MEMORY 25), copies stay O(1).
+- **Gate:** drop the recursive-enum entry (methods stay gated).
+- **Spec:** fold the recursion text and the linked-list program into the v1 spec §10. The linked-list program prints `6`.
 
-Done-when: the shapes program passes and the rejected program reports E0417.
+Done-when: the linked-list program passes; milestone 6 is complete; tag `m6`.
 
 Discovery questions to expect:
-- how spec_programs handles a second rejected program;
-- whether recursive enums are gated by the checker (cycle found) or the gate;
-- the payload layout for mixed-alignment variants.
+- whether E0307 is relaxed in the checker, or the checker gains a cycle-through-enum analysis matching the gate;
+- the layout of an indirect slot (always 8 bytes; `lugha_rt_alloc` per construction);
+- tests for deep recursion (a 100 000-node list built in a loop).

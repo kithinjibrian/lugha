@@ -1,6 +1,6 @@
 ## FEATURE: Enums, `match` and `Option<T>` — non-recursive enums as values, exhaustive flat matching, and the first v1 specification file.
 
-**Status:** implemented 2026-10-12 — session 26 (branch `prp-020-enums_and_match`, awaiting merge)
+**Status:** merged into `main` 2026-10-12 — session 26
 **Milestone:** 6, second of three PRPs (019 syntax ✓, 020 this, 021 recursive enums)
 **Spec:** `docs/specs/Language v1 Draft.md` §2–§10 (enum parts), folded into a new `docs/specs/Language v1 Specification.md`
 **Decisions:**
