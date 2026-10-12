@@ -1749,9 +1749,9 @@ README.md, CLAUDE.md (tree), CHANGELOG.md, TODO.md, MEMORY.md (decision 32)
 
 ---
 
-## SESSION 34 — 2026-10-12 — Split the C runtime — open
+## SESSION 34 — 2026-10-12 — Split the C runtime into fragments (PRP-028) — open
 
-Branch: main
+Branch: prp-028-runtime_split
 
 ---
 
