@@ -2050,6 +2050,12 @@ CLAUDE.md (tree), README.md, TODO.md, CHANGELOG.md, MEMORY.md (decision 36)
 
 ---
 
+## SESSION 40 — 2026-10-13 — v2 visibility amendment — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 9 is complete** (tag `m9`): deep `==`, string order, nested patterns, guards and W0103. `lughac spec` prints `Language v2 Specification.md` ("in progress: milestone 10").
