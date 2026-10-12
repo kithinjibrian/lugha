@@ -485,6 +485,25 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 37. v2 visibility amendment (session 40)
+
+**Decision:** the owner's visibility note (`docs/decisions/visibility.md`) is adopted for v2. It replaces decision 33's per-item `pub`.
+- **Default:** no keyword means visible to every module in the program. There are no packages in v2, so the program is the package.
+- **`private`:** limits an item, method, associated function or struct field to its module (E0313).
+  - A struct literal outside the module needs every field visible.
+  - Variants share their enum's visibility.
+  - `private` means private to the module.
+- **`public`:** reserved for v3 packages; E0317 in v2.
+- **No leaking:** a non-`private` signature (parameters, return, field, payload) can't mention a `private` type (E0318).
+- **Keywords:** `private` and `public` replace `pub`; PRP-030's `pub` keyword changes in M10.
+- **v3:** interfaces, built-in impls, re-exports, `api-diff`.
+
+**Why:** Per-file `pub` would sit on nearly everything in a program. The package is the real API boundary, and private fields are the only way to protect invariants. The owner chose the keyword pair `private`/`public`.
+
+**Rules out:** `pub`, and private-by-default modules.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working

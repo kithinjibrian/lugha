@@ -4,14 +4,14 @@
 **Base:** `Language v1 Specification.md` (v1.2). It stays the source of truth, and what `lughac spec` prints, until v2 is implemented. Each v2 milestone folds its sections into a new `Language v2 Specification.md`; v1 is then frozen, as v0 was.
 
 This draft lists only what changes, in the order of the v1 sections. Everything not mentioned keeps its v1.2 meaning. Every valid v1.2 program stays valid in v2 unless it:
-- uses `import` or `pub` as a name; or
+- uses `import`, `private` or `public` as a name; or
 - defines something named `Eq` or `Ord`.
 
 ## Decisions behind this draft (discovery, session 36)
 
 1. **Scope:** v2 adds:
    - **richer patterns:** nested patterns, `if` guards, `==` on every type;
-   - **modules:** several files, `import`, `pub`;
+   - **modules:** several files, `import`, `private`;
    - **generics:** generic functions, structs, enums and methods.
 
    Closures and shared references wait for v3.
@@ -26,8 +26,14 @@ This draft lists only what changes, in the order of the v1 sections. Everything 
    - **Files:** a file is a module, named by its path from the main file's directory (`shapes/circle.la` is `shapes.circle`).
    - **Imports:** `import shapes.circle;` binds the name `circle`, and items are always used qualified (`circle.area(c)`). There are no selective or glob imports.
    - **Cycles:** import cycles are allowed.
-   - **Visibility:** it is per item. A `pub struct` exposes all its fields and a `pub enum` all its variants. A method is private to its module unless it is a `pub fun`.
+   - **Visibility (amended in session 40, see 9):** everything is visible to the whole program unless it is marked `private`.
 8. **Milestones:** M9 patterns and equality, then M10 modules, then M11 generics.
+9. **Visibility (amendment, session 40;** replaces the per-item `pub` of answer 7; rationale in `docs/decisions/visibility.md`**):**
+   - **Default:** no keyword means visible to every module in the program. v2 has no packages, so the program is the whole package.
+   - **`private`:** a function, extern, struct, enum, method, associated function or struct field marked `private` is visible only in its own module.
+     - A struct with any `private` field can't be built with a literal outside its module, so a type can protect its invariants (`Range.new` keeps `lo <= hi`).
+     - Variants share their enum's visibility.
+   - **`public`:** reserved for packages (v3), where it will mean "visible to other packages". In v2 it is an error.
 
 ## §1 Overview — changes
 
@@ -36,7 +42,7 @@ This draft lists only what changes, in the order of the v1 sections. Everything 
 
 ## §2 Lexical structure — changes
 
-- **New keywords:** `import`, `pub`.
+- **New keywords:** `import`, `private`, `public` (`public` is reserved for v3 packages; see §6).
 - **Built-in names:** `Eq` and `Ord` join `Option`, `Some` and `None` as built-in names. They are reserved like the intrinsics and can't be redefined (E0302).
 - **`<` and `>`:** no lexer change. In type positions they also bracket type arguments, which is unambiguous because Lugha has no `>>` operator.
 
@@ -45,12 +51,14 @@ This draft lists only what changes, in the order of the v1 sections. Everything 
 ```ebnf
 program      = { import } { item } EOF ;
 import       = "import" IDENT { "." IDENT } ";" ;
-item         = [ "pub" ] ( fun_decl | extern_decl | struct_decl | enum_decl ) | impl_decl ;
+item         = [ visibility ] ( fun_decl | extern_decl | struct_decl | enum_decl ) | impl_decl ;
+visibility   = "private" | "public" ;                  (* `public`: an error until v3 *)
 
 fun_decl     = "fun" IDENT [ type_params ] "(" [ params ] ")" [ ":" type ] fun_body ;
-struct_decl  = "struct" IDENT [ type_params ] "{" … "}" ;            (* fields as in v1 *)
+struct_decl  = "struct" IDENT [ type_params ] "{" [ field { "," field } [ "," ] ] "}" ;
+field        = [ visibility ] IDENT ":" type ;
 enum_decl    = "enum" IDENT [ type_params ] "{" … "}" ;              (* variants as in v1 *)
-impl_decl    = "impl" type_name [ "<" IDENT { "," IDENT } ">" ] "{" { [ "pub" ] method } "}" ;
+impl_decl    = "impl" type_name [ "<" IDENT { "," IDENT } ">" ] "{" { [ visibility ] method } "}" ;
 method       = "fun" IDENT [ type_params ] "(" … ")" [ ":" type ] fun_body ;
 type_params  = "<" type_param { "," type_param } [ "," ] ">" ;
 type_param   = IDENT [ ":" bound { "+" bound } ] ;
@@ -124,9 +132,11 @@ Equality is deep and costs time proportional to the values compared. `f64` keeps
 - **Panics:** a comparison never panics.
 
 **`import` and qualified names.**
-- **Calls:** `m.f(args)` calls the public function `f` of the imported module `m`.
-- **Types:** `m.T` names its public type, and `m.T.f()` / `m.T.V(…)` reach its associated functions and variants.
-- **Methods:** a method call on a value from another module (`p.len()`) needs the method to be `pub`. Otherwise it is E0313.
+- **Calls:** `m.f(args)` calls the function `f` of the imported module `m`.
+- **Types:** `m.T` names its type, and `m.T.f()` / `m.T.V(…)` reach its associated functions and variants.
+- **Private items:** naming a `private` item of another module is E0313. So is calling a `private` method, or reading or assigning a `private` field (including through `swap`) outside its module.
+- **Struct literals:** a literal outside the struct's module needs every field to be visible. A struct with a `private` field is built through one of its functions, such as `range.Range.new(1, 5)` (E0313).
+- **Whole values:** `==`, copies and passing values are unaffected, because they never name a field.
 
 ## §6 Functions and program structure — changes
 
@@ -141,11 +151,13 @@ Equality is deep and costs time proportional to the values compared. `f64` keeps
 
 **Names.**
 - **Namespaces:** each module has its own global namespace for functions, structs, enums and externs. The intrinsics and the built-in names `Option`, `Some`, `None`, `Eq` and `Ord` are visible in every module.
-- **Visibility:** items are private to their module unless declared `pub`. Using a private item through `m.` is E0313.
-  - `pub struct` exposes the type and all its fields.
-  - `pub enum` exposes all its variants.
-  - In an `impl`, each method is private unless written `pub fun`.
+- **Visibility:** everything is visible to every module in the program unless it is marked `private`, which limits it to its own module. That covers functions, externs, structs, enums, methods, associated functions and struct fields.
+  - A field can be no more visible than its struct: a `private` struct's fields are module-only already.
+  - Variants share their enum's visibility.
   - An `impl` must be in the module that declares its type.
+  - **`public`** is reserved for packages in v3. Writing it is E0317 ("`public` needs packages (v3)"), with help to remove it, since everything is already visible to the whole program.
+- **No leaking:** a declaration that isn't `private` may not mention a `private` type in its signature: its parameters, return type, a field's type, or a variant's payloads. Callers in other modules couldn't name that type. It is E0318, reported at the declaration.
+- **`main`** needs no keyword.
 - **Lookup order:** block scopes, parameters, the module's own items, then imported module names.
 
 **Generic functions.** They are declared once and instantiated per distinct list of type arguments. `main` can't be generic (E0304). An `extern fun` can't be generic, which the grammar enforces.
@@ -157,7 +169,7 @@ Equality is deep and costs time proportional to the values compared. `f64` keeps
 
 ## §8 C interop — changes
 
-- An `extern fun` is private to its module unless declared `pub`.
+- An `extern fun` follows the same visibility rules: visible to the whole program unless it is `private`.
 - Two modules may declare the same C function only with identical signatures. Otherwise it is E0306, extended.
 - Generic types can't appear in extern signatures (E0409).
 
@@ -190,10 +202,12 @@ Equality is deep and costs time proportional to the values compared. `f64` keeps
 | --- | --- | --- |
 | E0208 | `import` after an item | `fun f() {}` then `import geometry;` |
 | E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` |
-| E0313 | Private item used from another module | `circle.helper()` where `helper` isn't `pub` |
+| E0313 | `private` item or field used from another module | `range.helper()`; `r.lo`; `range.Range { lo: 1, hi: 5 }` |
 | E0314 | Import clash | `import a.util;` and `import b.util;` in one file |
 | E0315 | Unknown bound | `fun f<T: Hash>(x: T)` |
 | E0316 | Bad type parameter name | `fun f<T, T>()`, `struct S<i64>`, a parameter named like a struct |
+| E0317 | `public` used before packages exist | `public fun f() {}` — help: remove it; everything is visible to the program |
+| E0318 | A `private` type in a non-`private` signature | `private struct S {}` then `fun make(): S` |
 | E0418 | Wrong number of type arguments | `Stack<i64, i64>`, a bare `Stack` as a parameter type |
 | E0419 | Type argument doesn't satisfy its bound | `largest([[1]])`: `i64[]` is not `Ord` |
 | E0420 | Generic instantiation too deep | `fun f<T>(x: T) { f([x]); }` |
@@ -241,13 +255,13 @@ fun main() {
 
 ```
 // geometry.la
-pub struct Vec2 { x: f64, y: f64 }
+struct Vec2 { x: f64, y: f64 }
 
 impl Vec2 {
-    pub fun add(self, o: Vec2): Vec2 = Vec2 { x: self.x + o.x, y: self.y + o.y };
+    fun add(self, o: Vec2): Vec2 = Vec2 { x: self.x + o.x, y: self.y + o.y };
 }
 
-pub fun origin(): Vec2 = Vec2 { x: 0.0, y: 0.0 };
+fun origin(): Vec2 = Vec2 { x: 0.0, y: 0.0 };
 ```
 
 ```
@@ -309,7 +323,7 @@ fun main() {
 | # | Milestone | Adds | Done when |
 | --- | --- | --- | --- |
 | 9 | Patterns and equality | nested patterns, guards, deep `==` on every type, string `<` (`lugha_rt_str_cmp`, `lugha_eq_*`) | The patterns program passes |
-| 10 | Modules | `import`, `pub`, multi-file loading, per-file diagnostics, module-qualified symbols | The two-module program passes |
+| 10 | Modules | `import`, `private` (items, methods, fields), `public` reserved (E0317), no-leak rule (E0318), multi-file loading, per-file diagnostics, module-qualified symbols | The two-module program passes |
 | 11 | Generics | type parameters, `Eq`/`Ord` bounds, inference, monomorphization; `Option<T>` as an ordinary generic enum | The generics program passes, and the full v2 spec replaces v1 in `lughac spec` |
 
 **Order:**
@@ -324,7 +338,8 @@ The multi-file example needs the §10 extraction in `tests/common/` to understan
 - a shared reference type;
 - user-defined interfaces as bounds;
 - explicit type arguments at a use;
-- selective imports, per-field visibility, packages and search paths;
+- packages (a manifest, dependencies, search paths) with `public` for their API, re-exports, API-change checking;
+- selective imports;
 - or-patterns;
 - `mut` bindings in `match`;
 - string interpolation, bitwise operators, `u32`/`u64`/`f32`, wrapping arithmetic;
@@ -337,3 +352,5 @@ The multi-file example needs the §10 extraction in `tests/common/` to understan
 - [ ] **The instantiation depth limit:** 64. Large enough for real code, small enough to fail fast.
 - [ ] **NaN and `Ord`:** a `largest` over `f64`s that contain `NaN` gives an order-dependent answer, because every comparison with `NaN` is false. Documented rather than prevented.
 - [ ] **Module root:** the main file's directory, with no search path. Shared code outside it needs packages, which are v3.
+- [x] **Meaning of `private`:** decided (session 40): private to its module, not to a type's `impl` blocks. An `impl` must live in its type's module anyway.
+- [ ] **From the visibility note, for v3:** re-exports, API-change checking (`lughac api-diff`), and methods on built-in types across packages all wait for packages.

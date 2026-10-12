@@ -2052,7 +2052,33 @@ CLAUDE.md (tree), README.md, TODO.md, CHANGELOG.md, MEMORY.md (decision 36)
 
 ## SESSION 40 — 2026-10-13 — v2 visibility amendment — open
 
-Branch: main
+Branch: main → v2-visibility
+
+### WHAT WAS DONE
+
+The owner shared a visibility design note. I recommended adopting it for v2 with a package default, `private`, and `public` reserved until packages. When the first explanation was too dense, the owner asked for a plainer one. The owner chose the keywords `private`/`public` and approved the draft amendment.
+
+### FILES CREATED OR MODIFIED
+
+```
+docs/specs/Language v2 Draft.md — decision 9; §2 keywords; §3 grammar (visibility, fields, methods); §5 qualified names;
+                                  §6 visibility and no-leak rules; §8 externs; §9 E0313/E0317/E0318; §10 example (no pub);
+                                  §11 milestone 10 row and v3 list; §12 decisions
+docs/decisions/visibility.md — new: the owner's note plus its v2 adaptations
+TODO.md (milestone 10), CHANGELOG.md, MEMORY.md (decision 37)
+```
+
+### TESTS WRITTEN
+
+- None (spec work). The draft's §10 programs still parse (`tests/parser.rs`).
+
+### DECISIONS MADE
+
+- MEMORY 37 (replaces decision 33's visibility answer).
+
+### PENDING DECISIONS OPENED
+
+- None (the v3 questions are in the draft's §12).
 
 ---
 

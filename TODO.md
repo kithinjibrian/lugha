@@ -89,7 +89,7 @@ Done when the v2 draft's patterns program passes.
 
 ### Milestone 10 — Modules
 Done when the two-module program passes.
-- [ ] `import`, `pub`, multi-file loading, per-file diagnostics, module-qualified symbols (E0208, E0312–E0314)
+- [ ] `import`, `private` (items, methods, fields), `public` reserved (E0317), no-leak rule (E0318), multi-file loading, per-file diagnostics, module-qualified symbols (E0312–E0314). Visibility follows `docs/decisions/visibility.md` (amended draft, session 40)
 
 ### Milestone 11 — Generics
 Done when the generics program passes and the full v2 spec replaces v1 in `lughac spec`.
