@@ -81,6 +81,18 @@ Done when the methods program passes.
 Done when the stack program passes and `lughac spec` prints the full v1 spec.
 - [x] PRP-023: `{ len, cap, elems }` layout, `push`/`pop`/`clear`, `lugha_rt_array_grow`; v1 spec complete, draft retired — **milestone 8 done: v1 complete**
 
+### Milestone 9 — Patterns and equality
+Done when the v2 draft's patterns program passes.
+- [ ] Nested patterns, `if` guards, deep `==` on every type (`lugha_eq_*`), string `<` (`lugha_rt_str_cmp`)
+
+### Milestone 10 — Modules
+Done when the two-module program passes.
+- [ ] `import`, `pub`, multi-file loading, per-file diagnostics, module-qualified symbols (E0208, E0312–E0314)
+
+### Milestone 11 — Generics
+Done when the generics program passes and the full v2 spec replaces v1 in `lughac spec`.
+- [ ] Type parameters, `Eq`/`Ord` bounds, inference, monomorphization; `Option<T>` as a generic enum (E0315, E0316, E0418–E0420)
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.

@@ -13,6 +13,7 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- Lugha v2 spec draft approved (`docs/specs/Language v2 Draft.md`): nested patterns and guards, deep `==` and string `<` (milestone 9), modules with `import`/`pub` (milestone 10), generics with `Eq`/`Ord` bounds and inference (milestone 11)
 - **Lugha v1.2:** E0510 rejects a statement that changes what contains the place it writes (`xs[0] = { xs.push(2); 9 };`), which used to lose the write silently
 - **Lugha v1.1:** the `swap(a, b)` intrinsic exchanges two places of the same type (variables, fields, elements) without copying, so double buffering is free (the DECISION-010 merge sort: 95 copies → 5, 154 → 109 ms); E0509 rejects swapping a value with a part of itself
 - Too-deep recursion panics with `panic: stack overflow` (exit 101) instead of crashing with a signal; other segfaults (from C code) are unchanged

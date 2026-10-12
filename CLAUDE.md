@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v1 Specification.md` (`lughac spec` prints it); v0's file is frozen.
+The language itself is defined by `docs/specs/Language v1 Specification.md` (`lughac spec` prints it); v0's file is frozen. `Language v2 Draft.md` is the approved v2 delta, built milestone by milestone (9–11).
 
 ---
 
@@ -270,7 +270,7 @@ pub fn parse_number(src: &str) -> i64 {
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
 │   └── specs/       — Language v1 Specification.md (the language definition, printed by `lughac spec`);
-│                      Language v0 Specification.md (frozen)
+│                      Language v2 Draft.md (approved v2 delta, milestones 9–11); Language v0 Specification.md (frozen)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```
 
@@ -284,7 +284,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them; every one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (generics, closures, modules, nested patterns…) even partially. v1 is complete; anything else is v2 and needs a spec change first.
+5. **Never implement a §11 "out of scope" feature** (closures, shared references, user interfaces…) even partially. v2's features (nested patterns, `==`, modules, generics) are built only through milestone PRPs 9–11 against the approved `Language v2 Draft.md`; anything beyond it needs a spec change first.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

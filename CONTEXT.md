@@ -1837,7 +1837,43 @@ CLAUDE.md (tree), CHANGELOG.md, TODO.md, MEMORY.md (state)
 
 ## SESSION 36 — 2026-10-12 — v2 direction and spec draft — open
 
-Branch: main
+Branch: main → v2-spec-draft
+
+### WHAT WAS DONE
+
+Discovery for v2 (8 questions, each answered with the recommended option):
+- scope: generics, modules, richer patterns;
+- form: a delta draft;
+- two built-in bounds, `Eq`/`Ord`;
+- type arguments inferred only;
+- generic bodies checked once against their bounds;
+- `Eq` for every type, `Ord` for numbers and strings;
+- modules: file = module with qualified access, cycles allowed, per-item `pub`;
+- milestones: M9 patterns → M10 modules → M11 generics.
+
+Wrote `docs/specs/Language v2 Draft.md`, a delta against v1.2 with §1–§12, three acceptance programs and new codes. The parts of the examples that today's compiler accepts were run: the merged module example prints `3.5`, and a non-generic stack prints `b`. The user approved the draft.
+
+### FILES CREATED OR MODIFIED
+
+```
+docs/specs/Language v2 Draft.md — new: the approved v2 delta
+CLAUDE.md — stack note, tree, anti-pattern 5 points v2 features to milestone PRPs 9–11
+TODO.md — milestones 9–11
+MEMORY.md — decision 33, state
+CHANGELOG.md — entry
+```
+
+### TESTS WRITTEN
+
+- None (spec work); example outputs checked by hand.
+
+### DECISIONS MADE
+
+- The v2 direction (MEMORY 33).
+
+### PENDING DECISIONS OPENED
+
+- None (open questions are in the draft's §12).
 
 ---
 

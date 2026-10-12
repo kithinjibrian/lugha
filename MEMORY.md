@@ -408,6 +408,23 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 33. v2 direction (session 36)
+
+**Decision:** `docs/specs/Language v2 Draft.md`, a delta against v1.2, is approved.
+- **Scope:**
+  - M9: nested patterns, guards, deep `==` on every type, string `<` (bytewise).
+  - M10: modules. A file is a module, `import a.b;` binds `b`, access is always qualified, cycles are allowed, `pub` is per item, and a `pub struct` exposes all its fields.
+  - M11: generics on fun, struct, enum and methods, with built-in `Eq`/`Ord` bounds. Type arguments are always inferred (else E0412), bodies are checked once against their bounds, and codegen monomorphizes. `Option<T>` becomes an ordinary generic enum.
+- **Syntax:** `impl Stack<T>` (no `impl<T>`); bounds come from the type's declaration.
+- **Symbols:** `lugha_fn_a.b.f` and `lugha_fn_max<i64>`; root-module names unchanged; `lugha_eq_<type>` helpers.
+- **Codes:** E0208, E0312–E0316, E0418–E0420 proposed. v1.2 stays authoritative until M11 folds in a full v2 spec.
+
+**Why:** It plays to the same strengths as v1: one way to write each thing (dot everywhere, no turbofish, no selective imports), mistakes caught at compile time (bodies checked once), everything still a value, and a spec small enough for a model's prompt.
+
+**Rules out (v3):** closures, shared references, user interfaces, explicit type arguments, selective imports, per-field visibility, or-patterns.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -455,7 +472,7 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- v1 work (spec §11 out-of-scope list) — needs spec changes first
+- v2 milestones 9–11 (draft approved, session 36)
 
 ---
 
