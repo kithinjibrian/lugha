@@ -1536,7 +1536,7 @@ CLAUDE.md, README.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 28)
 
 ## SESSION 30 — 2026-10-12 — PRP-024 internal errors exit 2 — open
 
-Branch: main
+Branch: main → prp-024-internal_error_exit
 
 ---
 
