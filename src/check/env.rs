@@ -7,7 +7,7 @@ use crate::ast::{Ident, Item, Program, Type as Annotation, TypeKind};
 use crate::span::Span;
 
 /// Built into the compiler from milestone 4; their names are reserved (spec §6).
-pub(super) const INTRINSICS: [&str; 4] = ["print", "println", "panic", "to_string"];
+pub(super) const INTRINSICS: [&str; 5] = ["print", "println", "panic", "to_string", "swap"];
 
 impl Checker {
     /// Collects signatures, checks `main`, then every function body (spec §6).

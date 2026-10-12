@@ -30,37 +30,37 @@ impl Checker {
     /// Reports why `place` can't be assigned, if it can't; true when the
     /// value should still be type-checked against it.
     pub(super) fn check_place(&mut self, place: &Expr) -> bool {
-        self.check_place_for(place, None)
+        self.check_place_for(place, PlaceUse::Assign)
     }
 
-    /// `check_place` for an assignment (`method` is `None`) or for the
-    /// receiver of a `mut self` call to `method` (v1 §4).
-    pub(super) fn check_place_for(&mut self, place: &Expr, method: Option<&str>) -> bool {
+    /// `check_place` for any use of a place; `place_use` picks the wording.
+    pub(super) fn check_place_for(&mut self, place: &Expr, place_use: PlaceUse) -> bool {
+        let reword = |d| errors::for_use(d, root_name(place).unwrap_or_default(), place_use);
         match &place.kind {
             ExprKind::Name(_) => {}
             ExprKind::Field(base, _) | ExprKind::Index(base, _, _) => {
                 let base_ty = self.types[base.id.0 as usize].clone();
                 if base_ty == Some(Type::String) {
-                    self.report(errors::string_immutable(place.span));
+                    self.report(reword(errors::string_immutable(place.span)));
                     return false;
                 }
                 // `.len` reads a header; it is not a field you can assign.
                 if matches!(place.kind, ExprKind::Field(..))
                     && matches!(base_ty, Some(Type::Array(_)))
                 {
-                    self.report(errors::not_place(place.span));
+                    self.report(reword(errors::not_place(place.span)));
                     return false;
                 }
             }
             _ => {
-                self.report(errors::not_place(place.span));
+                self.report(reword(errors::not_place(place.span)));
                 return false;
             }
         }
         let Some(path) = self.place_path(place) else {
             // Rooted in an undefined name (already E0301) or a non-place base.
             if !matches!(place.kind, ExprKind::Name(_)) && root_name(place).is_none() {
-                self.report(errors::not_place(place.span));
+                self.report(reword(errors::not_place(place.span)));
             }
             return true;
         };
@@ -72,11 +72,7 @@ impl Checker {
             )
         {
             let d = errors::not_mutable(name, place.span, local.binding, local.span);
-            let d = match method {
-                Some(m) => errors::for_receiver(d, name, m),
-                None => d,
-            };
-            self.report(d);
+            self.report(reword(d));
         }
         if let Some((_, for_span)) = self
             .iterating
@@ -84,14 +80,22 @@ impl Checker {
             .find(|(iterated, _)| iterated.overlaps(&path))
         {
             let for_span = *for_span;
-            let mut d = errors::assign_while_iterating(name, place.span, for_span);
-            if let Some(m) = method {
-                d.message = format!("cannot call `{m}` on `{name}` while iterating over it");
-            }
-            self.report(d);
+            let d = errors::assign_while_iterating(name, place.span, for_span);
+            self.report(reword(d));
         }
         true
     }
+}
+
+/// What a place is checked for: the rules are the same, the wording differs.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(super) enum PlaceUse<'a> {
+    /// `place op value;`
+    Assign,
+    /// The receiver of a `mut self` call to this method (v1 §4).
+    Receiver(&'a str),
+    /// An argument of `swap` (v1.1 §5).
+    Swap,
 }
 
 /// The variable at the root of a place chain, if the chain is rooted in one.

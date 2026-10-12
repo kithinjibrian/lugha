@@ -1,6 +1,6 @@
 ## FEATURE: The `swap(a, b)` intrinsic — exchange the contents of two places without copying — as Lugha v1.1.
 
-**Status:** approved 2026-10-12 — session 32
+**Status:** implemented 2026-10-12 — session 32
 **Milestone:** none; Lugha v1.1 (a small compatible amendment to v1). Tag `v1.1` after merge.
 **Spec:** `Language v1 Specification.md` §4 (copy table, places, mutability), §5 (intrinsics), §9 (codes)
 **Decisions:**
@@ -32,6 +32,13 @@ The spec becomes "Lugha v1.1".
   - `src/codegen/{runtime,structs}.rs` (`place_address`);
   - `docs/decisions/decision-010*`.
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 32)
+- **Wording:** `PlaceUse` (Assign, Receiver(m), Swap) replaced `check_place_for`'s `Option<&str>`, and `errors::for_use` replaced `for_receiver`. Swap also rewords E0502 ("cannot swap this expression") and E0506 ("cannot swap inside a string").
+- **E0509 text:** the message names the containing place as written, with `[…]` for indexes (e.g. "cannot swap `n.kids` with a part of itself").
+- **Spec placement:** the swap rules, E0509 included, are a paragraph under the §5 intrinsics table. §4's mutability paragraph points to it.
+- **Measurement:** the copy counter is an uncommitted patch, so the copies (95 → 5) were derived from the program's structure and confirmed in the IR. Times are medians of 21 runs at `-O2`: 154 → 109 ms.
+- **Found, not fixed:** an element place whose array grows while the rest of the statement runs loses the write (`xs[0] = { xs.push(2); 9 };`). This predates `swap`, which shares it. Added to TODO "Found while working"; it needs a spec ruling.
 
 ### Discovery answers (session 32)
 1. **Form:** a `swap(a, b)` intrinsic. No new syntax; it works on any type.
@@ -100,22 +107,22 @@ The spec becomes "Lugha v1.1".
 ## TESTS TO WRITE
 
 Unit tests — `check/swap.rs`:
-- [ ] variables, fields, elements and same-root elements (`swap(xs[i], xs[j])`) accepted;
-- [ ] E0405 (one or three arguments);
-- [ ] E0502 (`swap(a, 1)`);
-- [ ] E0403 (different types);
-- [ ] E0501 with the swap wording;
-- [ ] E0506 (`swap(s[0], t[0])` on strings);
-- [ ] E0507 during `for … of`;
-- [ ] E0509 for `swap(n, n.kids[0])`, and none for `swap(xs[0], xs[1])`;
-- [ ] E0302 for `fun swap()`.
+- [x] variables, fields, elements and same-root elements (`swap(xs[i], xs[j])`) accepted;
+- [x] E0405 (one or three arguments);
+- [x] E0502 (`swap(a, 1)`);
+- [x] E0403 (different types);
+- [x] E0501 with the swap wording;
+- [x] E0506 (`swap(s[0], t[0])` on strings);
+- [x] E0507 during `for … of`;
+- [x] E0509 for `swap(n, n.kids[0])`, and none for `swap(xs[0], xs[1])`;
+- [x] E0302 for `fun swap()`.
 
 Codegen IR — `codegen/swap.rs`:
-- [ ] `swap(a, b)` on arrays emits two loads and two stores of `ptr`, and no `memcpy` or `lugha_rt_alloc`;
-- [ ] element swaps are bounds-checked first.
+- [x] `swap(a, b)` on arrays emits two loads and two stores of `ptr`, and no `memcpy` or `lugha_rt_alloc`;
+- [x] element swaps are bounds-checked first.
 
 Acceptance — `tests/programs/v1_1/` (also cross-checked at `-O2`):
-- [ ] **`swap.la`:**
+- [x] **`swap.la`:**
   - two arrays swapped, then each mutated independently;
   - `swap(xs[i], xs[j])` in a simple sort;
   - two struct fields;
@@ -125,8 +132,8 @@ Acceptance — `tests/programs/v1_1/` (also cross-checked at `-O2`):
   - a merge sort using `swap(ys, buf)`.
 
   Expected stdout written by hand.
-- [ ] **Reject programs:** `e0509.la`, `e0501_swap.la`. Goldens captured and reviewed.
-- [ ] All earlier tests pass.
+- [x] **Reject programs:** `e0509.la`, `e0501_swap.la`. Goldens captured and reviewed.
+- [x] All earlier tests pass.
 
 ## ROLLBACK PLAN
 
@@ -134,10 +141,10 @@ Acceptance — `tests/programs/v1_1/` (also cross-checked at `-O2`):
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] `swap` behaves as above; `sort_swap.la` matches `sort.la`'s output with no buffer copies (measured and recorded).
-- [ ] The spec is v1.1; README, CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] `swap` behaves as above; `sort_swap.la` matches `sort.la`'s output with no buffer copies (measured and recorded).
+- [x] The spec is v1.1; README, CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

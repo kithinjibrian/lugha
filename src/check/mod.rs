@@ -24,6 +24,7 @@ mod methods;
 mod ops;
 mod stmt;
 mod structs;
+mod swap;
 mod types;
 
 use std::collections::{HashMap, HashSet};

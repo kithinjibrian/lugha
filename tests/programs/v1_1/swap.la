@@ -1,0 +1,111 @@
+// swap(a, b) (PRP-026, v1.1): two places exchange their contents, no copy.
+struct Pair { left: i64[], right: i64[] }
+
+impl Pair {
+    fun flip(mut self) {
+        swap(self.left, self.right);
+    }
+}
+
+enum Shape { Circle(i64), Square(i64) }
+
+impl Shape {
+    fun side(self): i64 = match self {
+        Circle(r) => 0 - r,
+        Square(s) => s,
+    };
+}
+
+fun show(xs: i64[]) {
+    for i in 0..xs.len {
+        if i > 0 { print(","); }
+        print(xs[i]);
+    }
+    println();
+}
+
+fun bubble(xs: i64[]): i64[] {
+    let mut ys = xs;
+    for i in 0..ys.len {
+        for j in 0..ys.len - 1 - i {
+            if ys[j] > ys[j + 1] { swap(ys[j], ys[j + 1]); }
+        }
+    }
+    ys
+}
+
+// Bottom-up merge sort: each pass merges into `buf`, then the two trade places.
+fun merge_sort(xs: i64[]): i64[] {
+    let mut ys = xs;
+    let n = ys.len;
+    let mut buf = [0; n];
+    let mut width = 1;
+    while width < n {
+        let mut lo = 0;
+        while lo < n {
+            let mid = if lo + width < n { lo + width } else { n };
+            let hi = if lo + 2 * width < n { lo + 2 * width } else { n };
+            let mut i = lo;
+            let mut j = mid;
+            for k in lo..hi {
+                if i < mid && (j >= hi || ys[i] <= ys[j]) { buf[k] = ys[i]; i += 1; } else { buf[k] = ys[j]; j += 1; }
+            }
+            lo = hi;
+        }
+        swap(ys, buf);
+        width *= 2;
+    }
+    ys
+}
+
+fun main() {
+    // Two arrays trade contents; afterwards each is still its own array.
+    let mut a = [1, 2, 3];
+    let mut b = [9];
+    swap(a, b);
+    show(a);
+    show(b);
+    a.push(10);
+    b[0] = 100;
+    show(a);
+    show(b);
+
+    // Two elements of one array.
+    show(bubble([5, 3, 8, 1, 4]));
+
+    // Fields, through a `mut self` method and against a local.
+    let mut p = Pair { left: [1], right: [2, 2] };
+    p.flip();
+    show(p.left);
+    show(p.right);
+    let mut spare = [7, 7, 7];
+    swap(p.left, spare);
+    show(p.left);
+    show(spare);
+
+    // bool and u8, between a local and an element.
+    let mut t = true;
+    let mut flags = [false, true];
+    swap(t, flags[0]);
+    println(t);
+    println(flags[0]);
+    let mut bytes: u8[] = [1, 2];
+    let mut c: u8 = 200;
+    swap(bytes[1], c);
+    println(bytes[1]);
+    println(c);
+
+    // Enums.
+    let mut s = Shape.Circle(4);
+    let mut q = Shape.Square(3);
+    swap(s, q);
+    println(s.side());
+    println(q.side());
+
+    // A place with itself changes nothing.
+    swap(a, a);
+    swap(a[0], a[0]);
+    show(a);
+
+    show(merge_sort([5, 1, 4, 2, 3, 9, 0, 6]));
+}

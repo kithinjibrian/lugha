@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- **Lugha v1.1:** the `swap(a, b)` intrinsic exchanges two places of the same type (variables, fields, elements) without copying, so double buffering is free (the DECISION-010 merge sort: 95 copies → 5, 154 → 109 ms); E0509 rejects swapping a value with a part of itself
 - Too-deep recursion panics with `panic: stack overflow` (exit 101) instead of crashing with a signal; other segfaults (from C code) are unchanged
 - A crash inside lughac is now reported as `error: internal compiler error: …` (or one JSON line) and exits with 2 instead of 101
 - Growable arrays: `xs.push(v)`, `xs.pop()` (an `Option`), `xs.clear()`, with a capacity header and doubling growth; the v1 specification is complete and is what `lughac spec` prints — **milestone 8 complete: Lugha v1 is complete**

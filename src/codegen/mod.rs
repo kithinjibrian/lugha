@@ -24,6 +24,7 @@ mod runtime;
 mod scope;
 mod stmt;
 mod structs;
+mod swap;
 mod value;
 
 use std::path::Path;

@@ -84,9 +84,10 @@ Done when the stack program passes and `lughac spec` prints the full v1 spec.
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.
+- [ ] An element write is lost when evaluating the right-hand side grows the same array: `xs[0] = { xs.push(2); xs.push(3); 9 };` leaves `xs[0]` as 1. The place's address is computed first (spec §5), then growth moves the elements to a new array. `swap(xs[0], ys[{ xs.push(1); 0 }])` behaves the same way. Seen in session 32; needs a spec ruling (re-resolve the place, or reject growth inside a place's own statement).
 
 ## Ideas — noted, not scheduled
 
 - [x] Move on last use: store a dead local's array without copying it (`grid = next`, `ps[i] = p`) — PRP-018.
 - [x] (PRP-025) A `panic: stack overflow` instead of a raw signal (exit 139) for too-deep recursion: an alternate signal stack and a SIGSEGV handler in the runtime (PRP-021 discovery).
-- [ ] v1 language question: a swap or move operation for buffers (`ys = buf` while `buf` stays in use is a full copy). See DECISION-010.
+- [x] (PRP-026) v1 language question: a swap or move operation for buffers (`ys = buf` while `buf` stays in use is a full copy). See DECISION-010. Done as the `swap(a, b)` intrinsic, Lugha v1.1.

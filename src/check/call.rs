@@ -1,6 +1,6 @@
 //! Names used as values, and calls: locals shadow functions, and the
-//! intrinsics `print`, `println`, `panic` and `to_string` are built in
-//! (spec §5, §6).
+//! intrinsics `print`, `println`, `panic`, `to_string` and `swap` are built
+//! in (spec §5, §6).
 
 use super::env::INTRINSICS;
 use super::expr::Expect;
@@ -57,6 +57,9 @@ impl Checker {
     /// `print(x)`, `println([x])`, `panic(msg)`, `to_string(x)` (spec §5).
     /// `panic` never returns, so its type is `Never` (spec §6).
     fn intrinsic(&mut self, call: &Expr, name: &str, args: &[Expr]) -> Type {
+        if name == "swap" {
+            return self.swap(call, args);
+        }
         let result = match name {
             "print" | "println" => Type::Void,
             "to_string" => Type::String,

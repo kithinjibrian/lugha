@@ -1,7 +1,7 @@
 //! Method and associated-function calls (v1 §4, §5): `x.m(args)` and
 //! `T.f(args)`, the `mut self` receiver rules, E0415 and E0508.
 
-use super::assign::root_name;
+use super::assign::{PlaceUse, root_name};
 use super::expr::Expect;
 use super::methods::Method;
 use super::{Checker, Type, errors};
@@ -71,7 +71,7 @@ impl Checker {
             // apply, but the value is read before the array changes, so
             // E0508 doesn't (v1 §4).
             let ret = self.arguments(call, &name.name, &m, args);
-            self.check_place_for(base, Some(&name.name));
+            self.check_place_for(base, PlaceUse::Receiver(&name.name));
             return ret;
         }
         let Some(m) = self
@@ -85,7 +85,7 @@ impl Checker {
             return self.unchecked(args);
         };
         let ret = self.arguments(call, &name.name, &m, args);
-        if m.receiver == Some(true) && self.check_place_for(base, Some(&name.name)) {
+        if m.receiver == Some(true) && self.check_place_for(base, PlaceUse::Receiver(&name.name)) {
             self.no_alias(base, args);
         }
         ret

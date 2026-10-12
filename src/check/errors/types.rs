@@ -95,6 +95,15 @@ pub(in crate::check) fn intrinsic_argument(name: &str, found: Type, span: Span) 
     )
 }
 
+pub(in crate::check) fn swap_types(first: Type, second: Type, span: Span, at: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0403",
+        format!("`swap` expects two places of the same type, found {first} and {second}"),
+        span,
+    )
+    .with_label(at, format!("this is {first}"))
+}
+
 pub(in crate::check) fn no_field(name: &str, ty: Type, span: Span) -> Diagnostic {
     Diagnostic::error("E0410", format!("no field `{name}` on `{ty}`"), span)
 }

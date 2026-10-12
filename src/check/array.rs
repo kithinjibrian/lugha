@@ -33,6 +33,23 @@ impl Path {
                 _ => false,
             })
     }
+
+    /// How many steps the place takes into its root variable.
+    pub(super) fn depth(&self) -> usize {
+        self.steps.len()
+    }
+
+    /// The place as source-like text, with `[…]` for any index.
+    pub(super) fn describe(&self) -> String {
+        let mut text = self.root.0.clone();
+        for step in &self.steps {
+            match step {
+                Step::Index => text.push_str("[…]"),
+                Step::Field(name) => text.push_str(&format!(".{name}")),
+            }
+        }
+        text
+    }
 }
 
 impl Checker {

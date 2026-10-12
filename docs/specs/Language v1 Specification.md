@@ -1,8 +1,10 @@
-# Lugha v1 Specification
+# Lugha v1.1 Specification
 
 Oct 9, 2026 · @kithinji
 
 **v1.** This is v0 plus enums, `match`, `Option`, recursive data, methods and growable arrays (milestones 6–8). Every valid v0 program is a valid v1 program unless it uses one of the new keywords as a name.
+
+**Changes since v1.0:** the `swap(a, b)` intrinsic (section 5) and error E0509. Every valid v1.0 program is a valid v1.1 program unless it defines something named `swap`.
 
 ## 1. Overview
 
@@ -281,6 +283,7 @@ There is no null. Every string and array variable holds a valid object.
 | `return xs;` where `xs` is a local or part of one | No | The local is about to go away, so the array simply moves |
 | Passing an argument, `f(xs)` | No | Parameters are immutable, and nothing else runs during the call |
 | Calling a method, `x.m()` | No | `self` is passed like any argument; a `mut self` method edits `x` itself, in place |
+| `swap(a, b)` | No | The two places exchange their contents (section 5) |
 | A fresh value: literal, call result, string concatenation | No | Nothing else refers to it |
 
 A function's tail value follows the same rules as `return`: a body ending in `p` copies, and one ending in `xs` moves. "From a place" looks through `if` and block tails: `let ys = if c { xs } else { [0] };` copies. When the value comes from a local that is never used again, the compiler may move it instead of copying; no program can tell the difference.
@@ -343,7 +346,7 @@ Calling a method that doesn't exist, a `self` method on a type or an associated 
 
 They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (E0501), not inside a string (E0506), and not an array being iterated by `for … of` (E0507). `push` stores its value like an assignment does — copied from a place, moved on last use — and reads it before the array grows, so `xs.push(xs[0])` simply appends a copy of the first element (E0508 doesn't apply). `pop` moves the element out. Indexing is still bounds-checked against the current `.len`, and copying an array copies its current elements.
 
-**Mutability.** Bindings are immutable by default. Assigning to any place requires the variable at its root to be declared `let mut`. That covers the variable itself, a field (`p.x = 1.0`), an element (`xs[0] = 1`) and any chain of these (`shapes[i].pts[j].x = 2.0`). Because every variable owns its data, a variable declared without `mut` never changes after it is initialized.
+**Mutability.** Bindings are immutable by default. Assigning to any place requires the variable at its root to be declared `let mut`. That covers the variable itself, a field (`p.x = 1.0`), an element (`xs[0] = 1`) and any chain of these (`shapes[i].pts[j].x = 2.0`), and both places of a `swap` (section 5). Because every variable owns its data, a variable declared without `mut` never changes after it is initialized.
 
 ## 5. Expressions and statements
 
@@ -399,6 +402,9 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 | `println(x)` | Any primitive or `string`, or nothing | Writes `x` and a newline |
 | `panic(msg)` | `string` | Panics with `msg` |
 | `to_string(x)` | Any primitive | Returns `x` formatted as a `string` |
+| `swap(a, b)` | Two places of the same type | Exchanges their contents |
+
+`swap(a, b)` exchanges what two places hold, like `let t = a; a = b; b = t;` but without copying anything: swapping two arrays exchanges them in constant time, which makes double buffering cheap (`swap(ys, buf)`). Both arguments must be places of the same type (E0502, E0403), each following the assignment rules: the root is `let mut` (E0501), not inside a string (E0506), and not an array being iterated (E0507). The places are evaluated left to right, and elements are bounds-checked, before either is written. A place can't be swapped with a part of itself (E0509): `swap(n, n.kids[0])` would store `n` inside itself. Places that might be the same are fine, since swapping a place with itself changes nothing: `swap(xs[i], xs[j])`, `swap(p.a, p.b)` and `swap(a, a)` are all valid.
 
 Floats print as the shortest decimal that round-trips, in Lugha float-literal syntax: always a `.` with at least one digit on each side, so `2.0` prints as `2.0`, not `2`. Values with magnitude at or above `1e16`, or below `1e-5` and nonzero, use an exponent: `1.0e16`, `2.5e-7`. Infinities and NaN print as `inf`, `-inf` and `NaN`; `-0.0` prints as `-0.0`. `bool` prints as `true` or `false`. `u8` prints as a number, not a character.
 
@@ -627,8 +633,9 @@ Name and type errors, reported by the checker:
 | E0504 | `break` or `continue` outside a loop | |
 | E0505 | Block-like statement with a discarded value | `if big { 100 } else { 1 }` followed by more statements |
 | E0506 | Assignment into a string | `s[0] = 104;`, `s.len = 2;` — strings are immutable (§4) |
-| E0507 | Assignment to the array being iterated | `for x of xs { xs[0] = x; }`, or a `mut self` call on it |
+| E0507 | Assignment to the array being iterated | `for x of xs { xs[0] = x; }`, or a `mut self` call or `swap` on it |
 | E0508 | Argument aliases a `mut self` receiver | `v.add(v)` where `add` takes `mut self` |
+| E0509 | A place swapped with a part of itself | `swap(n, n.kids[0])` |
 | W0101 | Unreachable code (warning) | statements after `return`, `break` or `continue`; reported once per block |
 | W0102 | Unreachable `match` arm (warning) | an arm after `_`, or a variant already covered |
 
@@ -907,6 +914,7 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [x] **Integer overflow.** Decided: always trap, like Swift, rather than wrapping or Rust's debug-only checks. One behavior in every build, at a cost of a few percent. Explicit wrapping operations can come later.
 - [x] **Semicolons.** Required, which keeps the parser simple. TypeScript-style automatic semicolon insertion is possible later but adds edge cases.
 - [ ] **Literal patterns on `f64`.** Excluded from v1: float equality in patterns invites mistakes. Revisit if needed.
+- [x] **Swapping buffers.** Decided (v1.1): the `swap(a, b)` intrinsic. Double buffering with `ys = buf;` copies the whole buffer each time, because `buf` is still in use; copy-on-write and move on last use can't avoid that copy (DECISION-010), but `swap(ys, buf)` exchanges the two arrays without copying.
 - [x] **Array growth factor.** Decided: capacity doubles, starting at 4. It was adequate on the stack program and the DECISION-010 programs; revisit only with measurements.
 - [ ] **`mut` bindings in `match`.** Bindings are borrowed and immutable; no program has needed `mut` ones yet.
 - [x] **Expression-bodied functions.** Decided: adopted (section 6). `fun square(x: i64): i64 = x * x;` drops the braces from one-liners. It is a small parser addition and a second way to write the same function, accepted because one-liners are common and it is pure sugar for `{ e }`.

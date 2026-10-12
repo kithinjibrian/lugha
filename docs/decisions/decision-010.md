@@ -79,3 +79,16 @@ PRP-018 made stores from a `let` local that is never mentioned again move instea
 
 - **`grid = next` and `ps[i] = p`** no longer copy, so `particles` roughly halves its time.
 - **`sort` and `matmul`** are unchanged, as predicted: their copies come from arrays that are still in use.
+
+## After PRP-026 (`swap`)
+
+Lugha v1.1 added `swap(a, b)`. `decision-010/sort_swap.la` is `sort.la` with `ys = buf;` replaced by `swap(ys, buf);`. Both print `2972`.
+
+| Program | Copies | Bytes copied | Time at `-O2` (ms, median of 21 runs) |
+| --- | ---: | ---: | ---: |
+| `sort` | 95 | 152 MB | 154 |
+| `sort_swap` | 5 | 8 MB | 109 |
+
+- **Copies:** the five left are `let mut ys = xs;`, one per call, since the parameter must not be sorted in place. The swap itself is two loads and two stores (checked in the IR); nothing is allocated.
+- **Time:** about 30% faster. The copy counts follow from the program's structure (18 merge passes per sort) and the IR, not from the counting build, which is not committed.
+- **Bound:** the original 45 ms no-copy bound came from that uncommitted build, which also skipped the parameter copies. It was not rebuilt for this comparison.

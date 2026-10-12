@@ -132,13 +132,16 @@ impl<'ctx> Lowerer<'ctx> {
         ptr
     }
 
-    /// `print`, `println`, `to_string` or `panic` (spec §5).
+    /// `print`, `println`, `to_string`, `panic` or `swap` (spec §5).
     pub(super) fn intrinsic(
         &mut self,
         call: &Expr,
         name: &str,
         args: &[Expr],
     ) -> Result<Value<'ctx>, CodegenError> {
+        if name == "swap" {
+            return self.swap(args);
+        }
         let arg = match args.first() {
             Some(arg) => {
                 let ty = self.ty(arg);

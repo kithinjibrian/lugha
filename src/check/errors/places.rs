@@ -2,6 +2,7 @@
 
 use crate::check::Binding;
 use crate::check::Type;
+use crate::check::assign::PlaceUse;
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
 
@@ -113,8 +114,37 @@ pub(in crate::check) fn mut_self_alias(name: &str, span: Span, receiver: Span) -
     .with_help(format!("copy it first: `let w = {name};` and pass `w`"))
 }
 
-/// E0501 reworded for the receiver of a `mut self` call.
-pub(in crate::check) fn for_receiver(mut d: Diagnostic, name: &str, method: &str) -> Diagnostic {
-    d.message = format!("cannot call `mut self` method `{method}` on `{name}`: it is not mutable");
+/// A place diagnostic reworded for what the place was used for; the
+/// builders above use the assignment wording.
+pub(in crate::check) fn for_use(mut d: Diagnostic, name: &str, place_use: PlaceUse) -> Diagnostic {
+    let message = match (place_use, d.code) {
+        (PlaceUse::Receiver(m), "E0501") => {
+            format!("cannot call `mut self` method `{m}` on `{name}`: it is not mutable")
+        }
+        (PlaceUse::Receiver(m), "E0507") => {
+            format!("cannot call `{m}` on `{name}` while iterating over it")
+        }
+        (PlaceUse::Swap, "E0501") => format!("cannot swap `{name}`: it is not mutable"),
+        (PlaceUse::Swap, "E0507") => format!("cannot swap `{name}` while iterating over it"),
+        (PlaceUse::Swap, "E0506") => {
+            "cannot swap inside a string: strings are immutable".to_string()
+        }
+        (PlaceUse::Swap, "E0502") => {
+            d.help = Some("only variables, fields and elements can be swapped".to_string());
+            "cannot swap this expression".to_string()
+        }
+        _ => return d,
+    };
+    d.message = message;
     d
+}
+
+pub(in crate::check) fn swap_with_part(whole: &str, part: Span, container: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0509",
+        format!("cannot swap `{whole}` with a part of itself"),
+        part,
+    )
+    .with_label(container, "this contains the other place")
+    .with_help("a value can't be stored inside itself; copy the part into a new variable first")
 }

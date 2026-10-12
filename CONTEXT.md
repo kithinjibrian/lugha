@@ -1624,7 +1624,64 @@ CLAUDE.md (known issue removed), TODO.md, CHANGELOG.md, MEMORY.md (decisions 26,
 
 ## SESSION 32 — 2026-10-12 — The swap intrinsic, Lugha v1.1 (PRP-026) — open
 
-Branch: prp-026-swap
+Branch: main → prp-026-swap
+
+### WHAT WAS DONE
+
+Discovery (3 questions, each answered with the recommended option):
+- a `swap(a, b)` intrinsic;
+- E0509 only for "a part of itself";
+- Lugha v1.1.
+
+PRP-026 was approved with its spec changes.
+
+Implemented PRP-026:
+- The failing checker tests came first.
+- `check/swap.rs`, with `PlaceUse` generalizing the place checks' wording.
+- `codegen/swap.rs` (two loads, crossed stores).
+- `tests/programs/v1_1/` (also cross-checked at -O2).
+- Spec retitled v1.1 (§4 copy table, §5 intrinsic and rules, §9 E0509, §12).
+- `sort_swap.la` measured: 95 → 5 copies, 154 → 109 ms.
+
+246 tests pass.
+
+Found, not fixed (TODO "Found while working"): an element write is lost when the same statement grows the array (`xs[0] = { xs.push(2); 9 };`). This predates swap.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/swap.rs — new: swap checking, E0509, tests
+src/check/{assign,method_calls}.rs — PlaceUse replaces Option<&str>
+src/check/errors/{places,types}.rs — for_use (replaces for_receiver), swap_with_part, swap_types
+src/check/{array,call,env,mod}.rs — Path::depth/describe, swap dispatch, "swap" reserved
+src/codegen/swap.rs — new: lowering, IR tests
+src/codegen/{mod,runtime}.rs — module, dispatch
+tests/programs/v1_1/ — swap.la, e0509.la, e0501_swap.la (+ expectations)
+tests/codegen.rs — v1_1 in the -O0/-O2 cross-check
+docs/specs/Language v1 Specification.md — v1.1
+docs/decisions/decision-010.md, decision-010/sort_swap.la — "After PRP-026"
+PRPs/prp-026-swap.md — new PRP; implemented; amendments
+README.md, CLAUDE.md (tree), CHANGELOG.md, TODO.md, MEMORY.md (decision 31)
+```
+
+### TESTS WRITTEN
+
+- **Checker (5):**
+  - accepted places;
+  - E0405, E0502, E0403, E0406;
+  - E0501, E0506, E0507 with swap wording;
+  - E0509 (and none for `g[0]`/`g[1]`);
+  - E0302 for `fun swap`.
+- **IR (2):** array swaps are two `ptr` loads and stores with no call; element swaps check both bounds before any store.
+- **Acceptance:** `v1_1/swap.la` (expected output written by hand; arrays, elements, fields through `mut self`, bool/u8, enums, self-swap, merge sort); goldens for `e0509` and `e0501_swap`.
+
+### DECISIONS MADE
+
+- MEMORY 31.
+
+### PENDING DECISIONS OPENED
+
+- None. The lost-write item needs a spec ruling when it is picked up.
 
 ---
 
