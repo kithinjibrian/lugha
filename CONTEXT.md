@@ -1426,7 +1426,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 26)
 
 ## SESSION 28 — 2026-10-12 — Milestone 7 discovery and PRP-022 methods — open
 
-Branch: main
+Branch: main → prp-022-methods
 
 ---
 
