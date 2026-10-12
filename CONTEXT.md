@@ -1424,6 +1424,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 26)
 
 ---
 
+## SESSION 28 — 2026-10-12 — Milestone 7 discovery and PRP-022 methods — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 7: methods (`docs/specs/Language v1 Draft.md` §4 "Methods", §5 method calls, §6 symbols `lugha_fn_<Type>.<name>`, §9 E0310/E0415, §10 methods program). It covers:
