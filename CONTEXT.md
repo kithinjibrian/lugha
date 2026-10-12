@@ -1835,6 +1835,12 @@ CLAUDE.md (tree), CHANGELOG.md, TODO.md, MEMORY.md (state)
 
 ---
 
+## SESSION 36 — 2026-10-12 — v2 direction and spec draft — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Lugha v1.2 is released (tag `v1.2`). Housekeeping is done: every file is within the 300-line rule, with headroom in the checker (PRP-028, PRP-029). No PRP is queued. Candidate, starting with discovery:
