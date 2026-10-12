@@ -1690,6 +1690,12 @@ README.md, CLAUDE.md (tree), CHANGELOG.md, TODO.md, MEMORY.md (decision 31)
 
 ---
 
+## SESSION 33 — 2026-10-12 — Lost element write when an array grows — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Lugha v1.1 is released (tag `v1.1`): v1 plus the `swap(a, b)` intrinsic. No PRP is queued. Candidates, each starting with discovery:
