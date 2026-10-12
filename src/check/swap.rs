@@ -17,6 +17,7 @@ impl Checker {
             }
             return Type::Void;
         };
+        let mark = self.changes_mark();
         // Places, not values: neither is a store site, so nothing moves or copies.
         let (first, second) = (self.expr(a, None), self.expr(b, None));
         let a_ok = self.check_place_for(a, PlaceUse::Swap);
@@ -24,6 +25,7 @@ impl Checker {
         if !(a_ok && b_ok) {
             return Type::Void;
         }
+        self.no_change_inside(&[a, b], PlaceUse::Swap, mark);
         let failed = |t: &Type| matches!(t, Type::Error | Type::Never);
         if first != second {
             if !failed(&first) && !failed(&second) {

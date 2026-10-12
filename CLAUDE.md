@@ -239,7 +239,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (fields, indexing), array.rs (literals, for … of, E0507 guard), structs.rs
 │   │                  (declarations, E0307/E0308, literals), liveness.rs (move on last use), enums.rs
 │   │                  (declarations, construction), matching.rs (match, E0417, W0102), methods.rs (impl,
-│   │                  E0310), method_calls.rs (calls, receivers, E0415, E0508), swap.rs (swap, E0509), errors/ (mod.rs, names.rs E03xx,
+│   │                  E0310), method_calls.rs (calls, receivers, E0415, E0508), swap.rs (swap, E0509), conflicts.rs (E0510), errors/ (mod.rs, names.rs E03xx,
 │   │                  types.rs E04xx, places.rs E05xx/W01xx)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
@@ -263,7 +263,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── codegen.rs   — builds and runs real executables at -O0 and -O2
 │   ├── cli.rs       — the lughac binary: commands, emit, diagnostics, exit codes
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m8/, v1_1/: <name>.la + .stdout/.exit/.stderr expectations
+│   ├── programs/    — m1/ … m8/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/

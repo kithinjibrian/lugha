@@ -1,0 +1,49 @@
+// E0510 (PRP-027, v1.2): changes that leave the written place where it was
+// are still allowed, and do what they say.
+struct P { n: i64, items: i64[] }
+
+fun show(xs: i64[]) {
+    for i in 0..xs.len {
+        if i > 0 { print(","); }
+        print(xs[i]);
+    }
+    println();
+}
+
+fun main() {
+    // A same-depth change runs first; then the write lands.
+    let mut xs = [1, 2];
+    xs[0] = { xs[1] = 5; 9 };
+    show(xs);
+
+    // Reading the array being written is fine.
+    let i = 1;
+    xs[i] = xs[i] + 1;
+    xs.push(xs[0]);
+    show(xs);
+
+    // The variable itself is the place: its slot never moves.
+    xs = { xs.push(4); xs };
+    show(xs);
+
+    // A sibling field.
+    let mut p = P { n: 0, items: [1] };
+    p.items[0] = { p.n += 1; 7 };
+    println(p.n);
+    show(p.items);
+
+    // push re-reads the inner array after its argument.
+    let mut g = [[1], [2]];
+    g[0].push({ g[0] = [7]; 8 });
+    show(g[0]);
+
+    // swap: a same-depth change inside an index.
+    let mut ys = [3, 4];
+    swap(xs[0], ys[{ xs[1] = 0; 1 }]);
+    show(xs);
+    show(ys);
+
+    // A shadowing array inside the value is a different variable.
+    xs[0] = { let mut xs = [4]; xs.push(5); xs[1] };
+    show(xs);
+}

@@ -1692,7 +1692,55 @@ README.md, CLAUDE.md (tree), CHANGELOG.md, TODO.md, MEMORY.md (decision 31)
 
 ## SESSION 33 — 2026-10-12 — E0510: no changing what a statement writes, Lugha v1.2 (PRP-027) — open
 
-Branch: prp-027-place_change_check
+Branch: main → prp-027-place_change_check
+
+### WHAT WAS DONE
+
+Discovery (3 questions, each answered with the recommended option):
+- reject at compile time;
+- only changes to a strict container;
+- Lugha v1.2.
+
+PRP-027 was approved with its spec changes.
+
+Implemented PRP-027:
+- The failing checker tests came first.
+- `check/conflicts.rs`: changes are recorded in `check_place_for`, and assignments, `swap` and `mut self` calls check them (E0510, which suppresses E0508).
+- `tests/programs/v1_2/` (also cross-checked at -O2).
+- Spec retitled v1.2 (changes note, a §5 paragraph, §9 E0510).
+
+250 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/conflicts.rs — new: Change, changed, changes_mark, no_change_inside, tests
+src/check/{assign,swap,method_calls}.rs — marks and E0510 checks; check_place_for records changes
+src/check/{mod,stmt}.rs — Checker.changes, reset per body
+src/check/errors/places.rs — changed_while_writing
+tests/programs/v1_2/ — places.la (+ .stdout/.exit), e0510.la, e0510_swap.la (+ .stderr)
+tests/codegen.rs — v1_2 in the -O0/-O2 cross-check
+docs/specs/Language v1 Specification.md — v1.2
+PRPs/prp-027-place_change_check.md — new PRP; implemented; amendments
+README.md, CLAUDE.md (tree), CHANGELOG.md, TODO.md, MEMORY.md (decision 32)
+```
+
+### TESTS WRITTEN
+
+- **Checker (4):**
+  - rejected assignments: push, clear in an index, an indexed container, replacement, pop in a compound assignment;
+  - allowed: same depth, read, the variable itself, a shadowing variable, a sibling;
+  - swap and receivers, with E0510 and not E0508;
+  - the exact messages per verb and one report for a nested change.
+- **Acceptance:** `v1_2/places.la` (expected output written by hand) and goldens for `e0510` and `e0510_swap`.
+
+### DECISIONS MADE
+
+- MEMORY 32.
+
+### PENDING DECISIONS OPENED
+
+- None.
 
 ---
 

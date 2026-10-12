@@ -139,6 +139,27 @@ pub(in crate::check) fn for_use(mut d: Diagnostic, name: &str, place_use: PlaceU
     d
 }
 
+pub(in crate::check) fn changed_while_writing(
+    changed: &str,
+    span: Span,
+    target: &str,
+    target_span: Span,
+    place_use: PlaceUse,
+) -> Diagnostic {
+    let doing = match place_use {
+        PlaceUse::Assign => "assigning to".to_string(),
+        PlaceUse::Receiver(m) => format!("calling `{m}` on"),
+        PlaceUse::Swap => "swapping".to_string(),
+    };
+    Diagnostic::error(
+        "E0510",
+        format!("cannot change `{changed}` while {doing} `{target}`"),
+        span,
+    )
+    .with_label(target_span, "this place's address was already taken")
+    .with_help("make the change in its own statement, before or after this one")
+}
+
 pub(in crate::check) fn swap_with_part(whole: &str, part: Span, container: Span) -> Diagnostic {
     Diagnostic::error(
         "E0509",

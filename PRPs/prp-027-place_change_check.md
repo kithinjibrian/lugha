@@ -1,6 +1,6 @@
 ## FEATURE: E0510 — a statement may not change what contains the place it writes — as Lugha v1.2.
 
-**Status:** approved 2026-10-12 — session 33
+**Status:** implemented 2026-10-12 — session 33
 **Milestone:** none; Lugha v1.2. Tag `v1.2` after merge.
 **Spec:** `Language v1 Specification.md` §4 (places, mutability), §5 (evaluation order, compound assignment, method calls, `swap`), §9 (codes)
 **Decisions:**
@@ -28,6 +28,11 @@ A write can no longer land in an array that the same statement has already repla
   - `src/check/errors/places.rs`;
   - `src/codegen/growth.rs` (push re-reads the array after its argument, so a same-depth change is safe).
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 33)
+- **One error per change:** `xs[0] = { xs.push(2); xs.push(3); 9 };` reports two E0510s, one per `push`. Each is a separate change, and the "once" rule only drops the same change being reported against two enclosing statements.
+- **Compound assignment:** with bad operands (E0404) it still checks E0510, rather than returning early.
+- **Reset:** `Checker.changes` is cleared in `body()`, next to `scopes`.
 
 ### Discovery answers (session 33)
 1. **Approach:** reject at compile time with a new error, E0510, in the style of E0507/E0508. Not a second lookup at run time, and not documenting the lost write.
@@ -98,29 +103,29 @@ A write can no longer land in an array that the same statement has already repla
 ## TESTS TO WRITE
 
 Unit tests — `check/conflicts.rs`:
-- [ ] **Assignment, rejected:**
+- [x] **Assignment, rejected:**
   - `xs[0] = { xs.push(2); 9 };`
   - `xs[{ xs.clear(); 0 }] = 1;`
   - `g[0][0] = { g[1] = [5]; 1 };`
   - `g[0][0] = { g = [[5]]; 1 };`
   - `xs[0] += { xs.pop(); 1 };`
-- [ ] **Assignment, allowed:**
+- [x] **Assignment, allowed:**
   - `xs[0] = { xs[1] = 5; 9 };`
   - `p.items[0] = { p.n += 1; 7 };`
   - `xs[i] = xs[i] + 1;`
   - `xs = { xs.push(1); xs };`, where the target is the variable itself
   - a shadowing `let mut xs` inside the value
-- [ ] **`swap`:** `swap(xs[0], ys[{ xs.push(1); 0 }])` rejected; `swap(xs[0], ys[{ xs[1] = 2; 0 }])` allowed.
-- [ ] **`mut self`:**
+- [x] **`swap`:** `swap(xs[0], ys[{ xs.push(1); 0 }])` rejected; `swap(xs[0], ys[{ xs[1] = 2; 0 }])` allowed.
+- [x] **`mut self`:**
   - `g[0].push({ g.clear(); 1 })` rejected, and `g[0].push({ g[0] = [7]; 1 })` allowed;
   - `vs[{ vs.push(v); 0 }].bump()` rejected;
   - a user `mut self` call whose argument changes the receiver's root gives E0510 only, not E0508 as well.
-- [ ] **Message and labels:** the exact message for each verb, the label, and one report for a doubly nested change.
+- [x] **Message and labels:** the exact message for each verb, the label, and one report for a doubly nested change.
 
 Acceptance — `tests/programs/v1_2/` (also cross-checked at `-O2`):
-- [ ] **`places.la`:** every allowed case above runs and prints the expected values (expected output written by hand).
-- [ ] **Reject goldens:** `e0510.la` (the TODO example), `e0510_swap.la`. Captured and reviewed.
-- [ ] **Regression:** every earlier test passes, including all spec programs.
+- [x] **`places.la`:** every allowed case above runs and prints the expected values (expected output written by hand).
+- [x] **Reject goldens:** `e0510.la` (the TODO example), `e0510_swap.la`. Captured and reviewed.
+- [x] **Regression:** every earlier test passes, including all spec programs.
 
 ## ROLLBACK PLAN
 
@@ -128,10 +133,10 @@ Acceptance — `tests/programs/v1_2/` (also cross-checked at `-O2`):
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The TODO example is E0510; the allowed cases compile and run correctly.
-- [ ] The spec is v1.2; README, CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The TODO example is E0510; the allowed cases compile and run correctly.
+- [x] The spec is v1.2; README, CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

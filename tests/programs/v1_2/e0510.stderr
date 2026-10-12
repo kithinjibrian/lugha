@@ -1,0 +1,20 @@
+error[E0510]: cannot change `xs` while assigning to `xs[…]`
+  --> tests/programs/v1_2/e0510.la:3:15
+  |
+3 |     xs[0] = { xs.push(2); xs.push(3); 9 };
+  |     -----     ^^
+  |     |
+  |     this place's address was already taken
+  |
+  = help: make the change in its own statement, before or after this one
+
+error[E0510]: cannot change `xs` while assigning to `xs[…]`
+  --> tests/programs/v1_2/e0510.la:3:27
+  |
+3 |     xs[0] = { xs.push(2); xs.push(3); 9 };
+  |     -----                 ^^
+  |     |
+  |     this place's address was already taken
+  |
+  = help: make the change in its own statement, before or after this one
+

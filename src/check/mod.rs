@@ -11,6 +11,7 @@ mod access;
 mod array;
 mod assign;
 mod call;
+mod conflicts;
 mod enums;
 mod env;
 mod errors;
@@ -66,6 +67,7 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagno
         loops: 0,
         dead: false,
         iterating: Vec::new(),
+        changes: Vec::new(),
         mentions: HashMap::new(),
     };
     checker.program(program);
@@ -152,6 +154,8 @@ pub(super) struct Checker {
     dead: bool,
     /// Places being iterated by enclosing `for … of` loops, with the loop's span (E0507).
     iterating: Vec<(array::Path, Span)>,
+    /// Places changed so far in the current body, for E0510.
+    changes: Vec<conflicts::Change>,
     /// The local every `Name` expression resolved to, for move on last use.
     mentions: HashMap<ExprId, liveness::Mention>,
 }

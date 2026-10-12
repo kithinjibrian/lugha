@@ -25,6 +25,7 @@ impl Checker {
     ) {
         self.ret = ret.clone();
         self.scopes.clear();
+        self.changes.clear();
         self.push();
         if let (Some(ty), Some(r)) = (receiver, f.receiver) {
             let binding = if r.mutable {

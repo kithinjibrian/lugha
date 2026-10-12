@@ -16,7 +16,7 @@ $ lughac run fib.la
 832040
 ```
 
-Lugha v1.1 has:
+Lugha v1.2 has:
 - **Basic types:** integers (`i32`, `i64`, `u8`), `f64`, `bool` and immutable strings.
 - **Compound types:** growable arrays (`push`, `pop`, `clear`), structs, and enums with exhaustive `match`, including `Option<T>` and recursive enums.
 - **Behaviour:** methods in `impl` blocks, `if` expressions, loops and `for … of`, and `swap(a, b)` to exchange two places without copying.

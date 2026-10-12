@@ -388,9 +388,28 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 32. E0510: no changing what a statement writes, Lugha v1.2 (PRP-027)
+
+**Decision:**
+- **The rule:** an assignment, `swap` or `mut self` call fixes its place first. The rest of the statement (value, arguments, the place's own indexes) may not change a place that strictly contains it: same root, `Path::overlaps`, smaller depth. That is E0510.
+- **Allowed:** same-depth, sibling and self changes. Their addresses stay valid; push re-reads the array after its argument.
+- **How it works:**
+  - `check_place_for` records every changed place in `Checker.changes`, which is reset per body.
+  - Each statement takes a `changes_mark()` before checking its parts, then calls `no_change_inside`.
+  - Each change is reported once.
+  - E0510 is checked before E0508 and suppresses it.
+- **Code:** no codegen change. The spec is retitled v1.2. Tag `v1.2`.
+
+**Why:** Only the statement itself can change a local (no closures, no globals), so a compile-time check is exact enough and costs nothing at run time. It matches E0507/E0508.
+
+**Rules out:** re-resolving places at run time; rejecting every change to the root.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Lugha v1.2**: PRP-027 E0510 (`check/conflicts.rs`): no lost writes when a statement changes what contains its place
 - **Lugha v1.1**: PRP-026 `swap(a, b)` intrinsic (`check/swap.rs`, `codegen/swap.rs`, E0509)
 - **Milestone 4 complete**: C runtime, intrinsics, `extern fun`, overflow/division panics; `m4/` programs pass
 - **Milestone 3 complete**: type checker (E03xx–E05xx, W0101), real-typed codegen, §4 casts; `m3/` programs pass

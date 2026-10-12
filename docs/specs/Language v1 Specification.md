@@ -1,8 +1,10 @@
-# Lugha v1.1 Specification
+# Lugha v1.2 Specification
 
 Oct 9, 2026 · @kithinji
 
 **v1.** This is v0 plus enums, `match`, `Option`, recursive data, methods and growable arrays (milestones 6–8). Every valid v0 program is a valid v1 program unless it uses one of the new keywords as a name.
+
+**Changes since v1.1:** error E0510 (section 5): a statement may not change what contains the place it writes. Only such statements, which v1.1 compiled into a lost write, stop compiling.
 
 **Changes since v1.0:** the `swap(a, b)` intrinsic (section 5) and error E0509. Every valid v1.0 program is a valid v1.1 program unless it defines something named `swap`.
 
@@ -360,6 +362,8 @@ Evaluation is strictly left to right: operands, call arguments and struct-litera
 
 **Compound assignment.** `x op= e` means `x = x op e`, except that the place `x` is evaluated once. So `xs[next()] += 1` calls `next()` once.
 
+**Changing what a statement writes.** An assignment, a `swap` and a `mut self` call each fix their place before the rest of the statement runs: the value, the arguments, and the place's own indexes. The rest may not change anything that contains that place (E0510), because growing, shrinking or replacing an array would leave the write aimed at an array that is no longer there. `xs[0] = { xs.push(2); 9 };`, `xs[{ xs.clear(); 0 }] = 1;` and `g[0][0] = { g[1] = [5]; 1 };` are rejected (any two indexes might be equal). Changing the place itself, a place at the same depth, or a sibling is fine, and reading is always fine: `xs[0] = { xs[1] = 5; 9 };`, `p.items[0] = { p.n += 1; 7 };`, `xs[i] = xs[i] + 1;` and `xs = { xs.push(1); xs };` are valid. Make the change in its own statement instead.
+
 **Variable declarations.** Every variable must be initialized. A variable is in scope from the end of its declaration to the end of its enclosing block, so `let x = x + 1;` refers to an outer `x`. Shadowing is allowed, both in nested blocks and in the same block.
 
 **if / else.** `if` is an expression. The condition must be `bool`. With an `else`, both branches must have the same type, which becomes the type of the whole `if`. Without an `else`, the type is `void`. An expected type flows into both branches, so `let x: i32 = if c { 1 } else { 2 };` is valid.
@@ -636,6 +640,7 @@ Name and type errors, reported by the checker:
 | E0507 | Assignment to the array being iterated | `for x of xs { xs[0] = x; }`, or a `mut self` call or `swap` on it |
 | E0508 | Argument aliases a `mut self` receiver | `v.add(v)` where `add` takes `mut self` |
 | E0509 | A place swapped with a part of itself | `swap(n, n.kids[0])` |
+| E0510 | A statement changes what contains the place it writes | `xs[0] = { xs.push(2); 9 };` (§5) |
 | W0101 | Unreachable code (warning) | statements after `return`, `break` or `continue`; reported once per block |
 | W0102 | Unreachable `match` arm (warning) | an arm after `_`, or a variant already covered |
 

@@ -1,0 +1,10 @@
+error[E0510]: cannot change `g[…]` while swapping `g[…][…]`
+  --> tests/programs/v1_2/e0510_swap.la:4:24
+  |
+4 |     swap(g[0][0], ys[{ g[1] = [5]; 0 }]);
+  |          -------       ^^^^
+  |          |
+  |          this place's address was already taken
+  |
+  = help: make the change in its own statement, before or after this one
+

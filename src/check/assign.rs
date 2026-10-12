@@ -11,6 +11,7 @@ impl Checker {
     /// whose root is a `let mut` binding, not inside a string, and not part of
     /// an array being iterated.
     pub(super) fn assign(&mut self, op: AssignOp, place: &Expr, value: &Expr) {
+        let mark = self.changes_mark();
         // Typing the place reports E0301/E0406/E0410/E0411 as for any expression.
         let target = self.expr(place, None);
         if !self.check_place(place) {
@@ -21,10 +22,11 @@ impl Checker {
             let span = Span::new(place.span.start, value.span.end);
             self.report(errors::bad_operands(op.symbol(), &[target], span));
             self.expr(value, None);
-            return;
+        } else {
+            let why = format!("`{}` is {target}", root_text(place));
+            self.expect_type(value, &Expect::because(target, place.span, why));
         }
-        let why = format!("`{}` is {target}", root_text(place));
-        self.expect_type(value, &Expect::because(target, place.span, why));
+        self.no_change_inside(&[place], PlaceUse::Assign, mark);
     }
 
     /// Reports why `place` can't be assigned, if it can't; true when the
@@ -65,6 +67,7 @@ impl Checker {
             return true;
         };
         let name = root_name(place).expect("a place path has a root name");
+        self.changed(path.clone(), place.span);
         if let Some(local) = self.local(name)
             && !matches!(
                 local.binding,

@@ -32,9 +32,10 @@ impl Checker {
             self.record(callee, Type::Void);
             return Some(self.associated(call, &ty, name, method, args));
         }
+        let mark = self.changes_mark();
         let receiver = self.value(base, None);
         self.record(callee, Type::Void);
-        Some(self.on_value(call, base, &receiver, name, args))
+        Some(self.on_value(call, base, &receiver, name, args, mark))
     }
 
     fn associated(
@@ -62,6 +63,7 @@ impl Checker {
         receiver: &Type,
         name: &Ident,
         args: &[Expr],
+        mark: usize,
     ) -> Type {
         if matches!(receiver, Type::Error | Type::Never) {
             return self.unchecked(args);
@@ -71,7 +73,9 @@ impl Checker {
             // apply, but the value is read before the array changes, so
             // E0508 doesn't (v1 §4).
             let ret = self.arguments(call, &name.name, &m, args);
-            self.check_place_for(base, PlaceUse::Receiver(&name.name));
+            if self.check_place_for(base, PlaceUse::Receiver(&name.name)) {
+                self.no_change_inside(&[base], PlaceUse::Receiver(&name.name), mark);
+            }
             return ret;
         }
         let Some(m) = self
@@ -85,7 +89,12 @@ impl Checker {
             return self.unchecked(args);
         };
         let ret = self.arguments(call, &name.name, &m, args);
-        if m.receiver == Some(true) && self.check_place_for(base, PlaceUse::Receiver(&name.name)) {
+        let receiver = PlaceUse::Receiver(&name.name);
+        // E0510 explains a change to the root better than E0508's "mentions it".
+        if m.receiver == Some(true)
+            && self.check_place_for(base, receiver)
+            && !self.no_change_inside(&[base], receiver, mark)
+        {
             self.no_alias(base, args);
         }
         ret
