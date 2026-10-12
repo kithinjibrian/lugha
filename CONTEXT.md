@@ -1942,7 +1942,7 @@ CLAUDE.md (tree, known issue), TODO.md, CHANGELOG.md, MEMORY.md (decision 34)
 
 ## SESSION 38 — 2026-10-12 — Deep == and string < (PRP-031) — open
 
-Branch: main
+Branch: prp-031-deep_equality
 
 ---
 
