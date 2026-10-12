@@ -1940,6 +1940,12 @@ CLAUDE.md (tree, known issue), TODO.md, CHANGELOG.md, MEMORY.md (decision 34)
 
 ---
 
+## SESSION 38 — 2026-10-12 — Deep == and string < (PRP-031) — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 9 is in progress. PRP-030 is merged: all v2 syntax parses, and `driver/gate/` stops v2 constructs with exit 2 until their milestone. Next is **PRP-031: deep `==` on every type and string `<`** (v2 draft §4, §5, §9). It needs:
