@@ -1578,7 +1578,7 @@ CLAUDE.md, TODO.md, CHANGELOG.md, MEMORY.md (decision 29)
 
 ## SESSION 31 — 2026-10-12 — PRP-025 stack overflow panic — open
 
-Branch: main
+Branch: main → prp-025-stack_overflow_panic
 
 ---
 
