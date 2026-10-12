@@ -70,7 +70,7 @@ Done when every §10 program passes.
 ### Milestone 6 — Enums
 Done when the shapes and linked-list programs pass and the rejected program reports E0417.
 - [x] PRP-019: v1 syntax (lexer, parser, AST, E0207) and the driver gate
-- [ ] PRP-020: enums, `match`, `Option<T>` (non-recursive) + the v1 spec file (E0309, E0311, E0416, E0417, W0102)
+- [x] PRP-020: enums, `match`, `Option<T>` (non-recursive) + the v1 spec file (E0309, E0311, E0415–E0417, W0102)
 - [ ] PRP-021: recursive enums with indirect slots, enum copies — **milestone 6 done**, tag `m6`
 
 ### Milestone 7 — Methods
@@ -80,6 +80,10 @@ Done when the methods program passes.
 ### Milestone 8 — Growable arrays
 Done when the stack program passes and `lughac spec` prints the full v1 spec.
 - [ ] PRP: `{ len, cap, elems }` layout, `push`/`pop`/`clear`, `lugha_rt_array_grow`
+
+## Found while working — needs a PRP
+
+- [ ] A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.
 
 ## Ideas — noted, not scheduled
 

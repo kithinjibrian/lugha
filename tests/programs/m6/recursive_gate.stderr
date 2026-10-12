@@ -1,0 +1,6 @@
+error: not implemented yet: recursive enums (milestone 6)
+  --> tests/programs/m6/recursive_gate.la:1:1
+  |
+1 | enum List { Nil, Cons(i64, List) }
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+

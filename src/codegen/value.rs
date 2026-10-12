@@ -36,6 +36,11 @@ pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnu
         Type::Bool => context.bool_type().into(),
         // Strings and arrays are pointers to heap objects (spec §7).
         Type::String | Type::Array(_) => context.ptr_type(AddressSpace::default()).into(),
+        // Declared by `declare_enums` before anything is lowered.
+        Type::Enum(_) | Type::Option(_) => context
+            .get_struct_type(&ty.to_string())
+            .expect("enums are declared before lowering")
+            .into(),
         // Declared by `declare_structs` before anything is lowered.
         Type::Struct(name) => context
             .get_struct_type(name)
@@ -55,24 +60,29 @@ pub(super) fn is_signed(ty: &Type) -> bool {
     matches!(ty, Type::I32 | Type::I64)
 }
 
-/// The type an annotation declares; the checker has already resolved its names.
-pub(super) fn annotation_type(ty: &Annotation) -> Type {
-    match ty.kind {
-        TypeKind::I32 => Type::I32,
-        TypeKind::I64 => Type::I64,
-        TypeKind::U8 => Type::U8,
-        TypeKind::F64 => Type::F64,
-        TypeKind::Bool => Type::Bool,
-        TypeKind::String => Type::String,
-        TypeKind::Array(ref element) => Type::Array(Box::new(annotation_type(element))),
-        TypeKind::Named(ref name) => Type::Struct(name.clone()),
-        TypeKind::Option(_) => {
-            unreachable!("v1 constructs are stopped by the driver gate before checking (PRP-019)")
-        }
-    }
+/// True for values held in memory and passed to functions as a pointer to
+/// the caller's storage: structs and enums (spec §7, v1 §7).
+pub(super) fn is_aggregate(ty: &Type) -> bool {
+    matches!(ty, Type::Struct(_) | Type::Enum(_) | Type::Option(_))
 }
 
 impl<'ctx> Lowerer<'ctx> {
+    /// The type an annotation declares; the checker has already resolved its names.
+    pub(super) fn annotation_type(&self, ty: &Annotation) -> Type {
+        match &ty.kind {
+            TypeKind::I32 => Type::I32,
+            TypeKind::I64 => Type::I64,
+            TypeKind::U8 => Type::U8,
+            TypeKind::F64 => Type::F64,
+            TypeKind::Bool => Type::Bool,
+            TypeKind::String => Type::String,
+            TypeKind::Array(element) => Type::Array(Box::new(self.annotation_type(element))),
+            TypeKind::Option(inner) => Type::Option(Box::new(self.annotation_type(inner))),
+            TypeKind::Named(name) if self.enums.contains_key(name) => Type::Enum(name.clone()),
+            TypeKind::Named(name) => Type::Struct(name.clone()),
+        }
+    }
+
     /// The checker's type for `expr`.
     pub(super) fn ty(&self, expr: &Expr) -> Type {
         self.types[expr.id.0 as usize].clone()

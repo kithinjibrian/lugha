@@ -38,6 +38,7 @@ pub(in crate::check) fn not_mutable(
             format!("parameters are immutable; shadow it: `let mut {name} = {name};`")
         }
         Binding::LoopVar => "loop variables are immutable; copy it into a `let mut`".to_string(),
+        Binding::Pattern => "match bindings are immutable; copy it into a `let mut`".to_string(),
         Binding::Let { .. } => format!("make it mutable: `let mut {name}`"),
     };
     Diagnostic::error(
@@ -94,4 +95,9 @@ pub(in crate::check) fn discarded(what: &str, ty: Type, span: Span) -> Diagnosti
 pub(in crate::check) fn unreachable(span: Span, cause: Span) -> Diagnostic {
     Diagnostic::warning("W0101", "unreachable code", span)
         .with_label(cause, "any code after this never runs")
+}
+
+pub(in crate::check) fn unreachable_arm(span: Span, cause: Span) -> Diagnostic {
+    Diagnostic::warning("W0102", "unreachable match arm", span)
+        .with_label(cause, "already covered here")
 }

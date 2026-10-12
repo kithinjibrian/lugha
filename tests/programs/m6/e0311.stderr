@@ -1,0 +1,8 @@
+error[E0311]: `Shape` is the name of a type
+  --> tests/programs/m6/e0311.la:4:9
+  |
+4 |     let Shape = 3;
+  |         ^^^^^
+  |
+  = help: rename the variable
+

@@ -1,0 +1,8 @@
+warning[W0102]: unreachable match arm
+  --> tests/programs/m6/w0102.la:5:9
+  |
+4 |         _ => "any",
+  |         - already covered here
+5 |         1 => "one",
+  |         ^
+

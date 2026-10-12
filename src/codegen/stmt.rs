@@ -3,7 +3,7 @@
 use super::CodegenError;
 use super::lower::{Lowerer, POSITIONED};
 use super::scope::Local;
-use super::value::{Value, annotation_type};
+use super::value::Value;
 use crate::ast::{AssignOp, BinOp, Expr, ForIter, Ident, Stmt, StmtKind, Type as Annotation};
 use crate::check::Type;
 
@@ -52,7 +52,7 @@ impl<'ctx> Lowerer<'ctx> {
         init: &Expr,
     ) -> Result<(), CodegenError> {
         let ty = match (self.ty(init), annotation) {
-            (Type::Never | Type::Error, Some(annotation)) => annotation_type(annotation),
+            (Type::Never | Type::Error, Some(annotation)) => self.annotation_type(annotation),
             // Dead code after a diverging initialiser: any slot type keeps the IR valid.
             (Type::Never | Type::Error, None) => Type::I64,
             (ty, _) => ty,

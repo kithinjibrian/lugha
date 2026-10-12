@@ -1,0 +1,8 @@
+error[E0309]: variant `A` is declared twice in `E`
+  --> tests/programs/m6/e0309.la:1:16
+  |
+1 | enum E { A, B, A }
+  |          -     ^
+  |          |
+  |          first declared here
+

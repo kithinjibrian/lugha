@@ -172,3 +172,69 @@ pub(in crate::check) fn field_given_twice(field: &str, span: Span, first: Span) 
     Diagnostic::error("E0414", format!("field `{field}` is given twice"), span)
         .with_label(first, "first given here")
 }
+
+pub(in crate::check) fn no_variant(variant: &str, ty: &Type, span: Span) -> Diagnostic {
+    Diagnostic::error("E0415", format!("no variant `{variant}` on `{ty}`"), span)
+}
+
+pub(in crate::check) fn payload_count(
+    what: &str,
+    expected: usize,
+    given: usize,
+    span: Span,
+) -> Diagnostic {
+    let s = if expected == 1 { "" } else { "s" };
+    Diagnostic::error(
+        "E0416",
+        format!(
+            "`{what}` has {expected} payload{s}, but {given} {} given",
+            if given == 1 { "was" } else { "were" }
+        ),
+        span,
+    )
+}
+
+pub(in crate::check) fn cannot_infer_none(span: Span) -> Diagnostic {
+    Diagnostic::error("E0412", "cannot infer the type of `None`", span)
+        .with_help("annotate it: `let x: Option<i64> = None;`")
+}
+
+pub(in crate::check) fn non_exhaustive(missing: &[String], span: Span) -> Diagnostic {
+    let list = missing
+        .iter()
+        .map(|m| format!("`{m}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    Diagnostic::error(
+        "E0417",
+        format!("non-exhaustive match: {list} not covered"),
+        span,
+    )
+    .with_help("add the missing arms, or `_ => …`")
+}
+
+pub(in crate::check) fn non_exhaustive_values(ty: &Type, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0417",
+        format!("non-exhaustive match: other values of `{ty}` are not covered"),
+        span,
+    )
+    .with_help("add `_ => …` as the last arm")
+}
+
+pub(in crate::check) fn pattern_mismatch(ty: &Type, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0403",
+        format!("this pattern can't match a value of type `{ty}`"),
+        span,
+    )
+}
+
+pub(in crate::check) fn extern_enum(span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0409",
+        "enums and `Option` can't cross the C boundary",
+        span,
+    )
+    .with_help("pass a number or a string instead")
+}

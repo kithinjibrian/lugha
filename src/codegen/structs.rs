@@ -12,11 +12,11 @@ use super::CodegenError;
 use super::lower::{Lowerer, POSITIONED};
 use super::value::llvm_type;
 use crate::ast::{Expr, Ident};
-use crate::check::{Structs, Type};
+use crate::check::{Enums, Structs, Type};
 
 /// `(size, alignment)` in bytes of a value of type `ty` held in memory: natural
 /// alignment on a 64-bit target, matching LLVM's layout for `%S` there (spec §7).
-pub(super) fn layout(ty: &Type, structs: &Structs) -> (u64, u64) {
+pub(super) fn layout(ty: &Type, structs: &Structs, enums: &Enums) -> (u64, u64) {
     match ty {
         Type::U8 | Type::Bool => (1, 1),
         Type::I32 => (4, 4),
@@ -24,12 +24,13 @@ pub(super) fn layout(ty: &Type, structs: &Structs) -> (u64, u64) {
         Type::Struct(name) => {
             let (mut size, mut align) = (0u64, 1u64);
             for (_, field) in &structs[name] {
-                let (field_size, field_align) = layout(field, structs);
+                let (field_size, field_align) = layout(field, structs, enums);
                 size = size.next_multiple_of(field_align) + field_size;
                 align = align.max(field_align);
             }
             (size.next_multiple_of(align), align)
         }
+        Type::Enum(_) | Type::Option(_) => super::enums::enum_layout(ty, structs, enums),
         _ => unreachable!("checked: {ty} is not stored in memory"),
     }
 }
@@ -54,7 +55,7 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// Bytes per array element of type `ty` (spec §7).
     pub(super) fn element_size(&self, ty: &Type) -> u64 {
-        layout(ty, &self.structs).0
+        layout(ty, &self.structs, &self.enums).0
     }
 
     /// The position and type of `field` in struct type `ty`.
@@ -205,9 +206,9 @@ mod tests {
             ),
         ]
         .into();
-        assert_eq!(layout(&s("A"), &structs), (16, 8));
-        assert_eq!(layout(&s("B"), &structs), (8, 4));
-        assert_eq!(layout(&s("C"), &structs), (12, 4));
+        assert_eq!(layout(&s("A"), &structs, &Default::default()), (16, 8));
+        assert_eq!(layout(&s("B"), &structs, &Default::default()), (8, 4));
+        assert_eq!(layout(&s("C"), &structs, &Default::default()), (12, 4));
     }
 
     #[test]

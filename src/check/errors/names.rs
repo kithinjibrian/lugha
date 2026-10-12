@@ -43,7 +43,13 @@ pub(in crate::check) fn bad_main(span: Span) -> Diagnostic {
 }
 
 pub(in crate::check) fn unknown_type(name: &str, span: Span) -> Diagnostic {
-    Diagnostic::error("E0305", format!("cannot find type `{name}`"), span)
+    let d = Diagnostic::error("E0305", format!("cannot find type `{name}`"), span);
+    // Rust habit: recursion needs no box in Lugha (v1 §4).
+    if name == "Box" {
+        d.with_help("recursive enums need no `Box`; write the type itself")
+    } else {
+        d
+    }
 }
 
 pub(in crate::check) fn recursive_struct(name: &str, path: &str, span: Span) -> Diagnostic {
@@ -66,4 +72,27 @@ pub(in crate::check) fn duplicate_field(
         span,
     )
     .with_label(first, "first declared here")
+}
+
+pub(in crate::check) fn builtin_name(name: &str, span: Span) -> Diagnostic {
+    Diagnostic::error("E0302", format!("`{name}` is a built-in name"), span)
+}
+
+pub(in crate::check) fn duplicate_variant(
+    variant: &str,
+    name: &str,
+    span: Span,
+    first: Span,
+) -> Diagnostic {
+    Diagnostic::error(
+        "E0309",
+        format!("variant `{variant}` is declared twice in `{name}`"),
+        span,
+    )
+    .with_label(first, "first declared here")
+}
+
+pub(in crate::check) fn local_named_like_type(name: &str, span: Span) -> Diagnostic {
+    Diagnostic::error("E0311", format!("`{name}` is the name of a type"), span)
+        .with_help("rename the variable")
 }

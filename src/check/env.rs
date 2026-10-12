@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use super::{Binding, Checker, Local, Signature, Type, errors};
 use crate::ast::{Ident, Item, Program, Type as Annotation, TypeKind};
+use crate::span::Span;
 
 /// Built into the compiler from milestone 4; their names are reserved (spec §6).
 pub(super) const INTRINSICS: [&str; 4] = ["print", "println", "panic", "to_string"];
@@ -12,7 +13,9 @@ impl Checker {
     /// Collects signatures, checks `main`, then every function body (spec §6).
     pub(super) fn program(&mut self, program: &Program) {
         self.collect_structs(program);
+        self.collect_enums(program);
         self.resolve_structs(program);
+        self.resolve_enums(program);
         self.collect(program);
         self.check_main(program);
         for item in &program.items {
@@ -34,8 +37,8 @@ impl Checker {
             let (name, params, ret, is_extern) = match item {
                 Item::Fun(f) => (&f.name, &f.params, f.ret.as_ref(), false),
                 Item::Extern(e) => (&e.name, &e.params, e.ret.as_ref(), true),
-                Item::Struct(_) => continue,
-                Item::Enum(_) | Item::Impl(_) => unreachable!(
+                Item::Struct(_) | Item::Enum(_) => continue,
+                Item::Impl(_) => unreachable!(
                     "v1 constructs are stopped by the driver gate before checking (PRP-019)"
                 ),
             };
@@ -61,6 +64,9 @@ impl Checker {
                     match ty {
                         Type::Array(_) => self.report(errors::extern_array(annotation.span)),
                         Type::Struct(_) => self.report(errors::extern_struct(annotation.span)),
+                        Type::Enum(_) | Type::Option(_) => {
+                            self.report(errors::extern_enum(annotation.span));
+                        }
                         _ => {}
                     }
                 }
@@ -70,11 +76,13 @@ impl Checker {
                 self.report(errors::reserved_extern(text, name.span));
             } else if INTRINSICS.contains(&text.as_str()) {
                 self.report(errors::reserved(text, name.span));
+            } else if super::enums::BUILTIN_NAMES.contains(&text.as_str()) {
+                self.report(errors::builtin_name(text, name.span));
             } else if let Some(first) = self
                 .functions
                 .get(text)
                 .map(|f| f.span)
-                .or_else(|| self.structs.get(text).map(|s| s.span))
+                .or_else(|| self.type_span(text))
             {
                 self.report(errors::duplicate(text, name.span, first));
             } else {
@@ -115,9 +123,8 @@ impl Checker {
             TypeKind::Bool => Type::Bool,
             TypeKind::String => Type::String,
             TypeKind::Array(element) => Type::Array(Box::new(self.resolve(element))),
-            TypeKind::Option(_) => unreachable!(
-                "v1 constructs are stopped by the driver gate before checking (PRP-019)"
-            ),
+            TypeKind::Option(inner) => Type::Option(Box::new(self.resolve(inner))),
+            TypeKind::Named(name) if self.enums.contains_key(name) => Type::Enum(name.clone()),
             TypeKind::Named(name) if self.structs.contains_key(name) => Type::Struct(name.clone()),
             TypeKind::Named(name) => {
                 self.report(errors::unknown_type(name, ty.span));
@@ -136,6 +143,7 @@ impl Checker {
 
     /// Declares a local in the innermost scope, shadowing earlier bindings.
     pub(super) fn declare(&mut self, name: &Ident, ty: Type, binding: Binding) {
+        self.check_local_name(name);
         let scope = self
             .scopes
             .last_mut()
@@ -148,6 +156,24 @@ impl Checker {
                 span: name.span,
             },
         );
+    }
+
+    /// Where a struct or enum named `name` is declared.
+    pub(super) fn type_span(&self, name: &str) -> Option<Span> {
+        let as_struct = self.structs.get(name).map(|s| s.span);
+        as_struct.or_else(|| self.enums.get(name).map(|e| e.span))
+    }
+
+    /// True if `name` names a type, so no local may use it (E0311).
+    pub(super) fn is_type_name(&self, name: &str) -> bool {
+        name == "Option" || self.structs.contains_key(name) || self.enums.contains_key(name)
+    }
+
+    /// Reports E0311 for a local named like a type.
+    pub(super) fn check_local_name(&mut self, name: &Ident) {
+        if self.is_type_name(&name.name) {
+            self.report(errors::local_named_like_type(&name.name, name.span));
+        }
     }
 
     /// The innermost local named `name`.
@@ -224,6 +250,26 @@ mod tests {
         assert_eq!(
             errors("extern fun f(p: Point);\nfun main() {}"),
             [("E0305", "Point")]
+        );
+    }
+
+    #[test]
+    fn locals_may_not_be_named_like_types() {
+        assert_eq!(
+            errors("enum Shape { Circle(f64), Empty }\nfun main() { let Shape = 3; }"),
+            [("E0311", "Shape")]
+        );
+        assert_eq!(
+            errors("enum Shape { Circle(f64), Empty }\nfun f(Shape: i64) {}\nfun main() {}"),
+            [("E0311", "Shape")]
+        );
+        assert_eq!(
+            errors("struct P { x: i64 }\nfun main() { for P in 0..2 { } }"),
+            [("E0311", "P")]
+        );
+        assert_eq!(
+            errors("fun main() { let Option = 1; }"),
+            [("E0311", "Option")]
         );
     }
 }

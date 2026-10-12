@@ -44,11 +44,16 @@ impl<'ctx> Scopes<'ctx> {
 
     /// The innermost binding of `name`; the checker guarantees one exists.
     pub(super) fn lookup(&self, name: &str) -> Local<'ctx> {
+        self.find(name)
+            .unwrap_or_else(|| unreachable!("checked: `{name}` is in scope"))
+    }
+
+    /// The innermost binding of `name`, if there is one.
+    pub(super) fn find(&self, name: &str) -> Option<Local<'ctx>> {
         self.stack
             .iter()
             .rev()
             .find_map(|scope| scope.get(name).cloned())
-            .unwrap_or_else(|| unreachable!("checked: `{name}` is in scope"))
     }
 }
 

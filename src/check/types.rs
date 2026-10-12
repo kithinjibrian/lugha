@@ -6,6 +6,9 @@ use std::fmt;
 /// Every struct's fields in declaration order, by struct name.
 pub type Structs = HashMap<String, Vec<(String, Type)>>;
 
+/// Every enum's variants and their payload types in declaration order, by enum name.
+pub type Enums = HashMap<String, Vec<(String, Vec<Type>)>>;
+
 /// A type in the checker (spec §4).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
@@ -20,6 +23,10 @@ pub enum Type {
     Array(Box<Type>),
     /// A user-declared struct, by name (spec §4).
     Struct(String),
+    /// A user-declared enum, by name (v1 §4).
+    Enum(String),
+    /// The built-in `Option<T>`: `Some(T)` or `None` (v1 §4).
+    Option(Box<Type>),
     /// No value: statements, blocks without a tail, `if` without `else`,
     /// functions without a return type.
     Void,
@@ -58,6 +65,8 @@ impl Type {
 
     /// True for arrays and anything holding one: values that are deep-copied (spec §4).
     /// Terminates for valid programs: only an array can close a struct cycle (E0307).
+    /// Enums and `Option` are false even with array payloads: payloads are
+    /// immutable, so enum values share them and are never deep-copied (PRP-020).
     pub fn contains_array(&self, structs: &Structs) -> bool {
         match self {
             Type::Array(_) => true,
@@ -79,7 +88,8 @@ impl fmt::Display for Type {
             Type::Bool => "bool",
             Type::String => "string",
             Type::Array(element) => return write!(f, "{element}[]"),
-            Type::Struct(name) => name,
+            Type::Struct(name) | Type::Enum(name) => name,
+            Type::Option(inner) => return write!(f, "Option<{inner}>"),
             Type::Void => "void",
             Type::Never => "never",
             Type::Error => "{error}",

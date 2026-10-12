@@ -42,7 +42,10 @@ impl<'ctx> Lowerer<'ctx> {
         ty: &Type,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         let value = self.get(expr, ty)?;
-        let moves = root(expr).is_some_and(|name| !self.scopes.lookup(name).borrowed);
+        let moves = root(expr)
+            // `None` is a constructor, not a local.
+            .and_then(|name| self.scopes.find(name))
+            .is_some_and(|local| !local.borrowed);
         Ok(
             if ty.contains_array(&self.structs) && aliasing(expr) && !moves {
                 self.deep_copy(value, ty)

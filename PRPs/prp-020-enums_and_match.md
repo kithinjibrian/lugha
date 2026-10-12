@@ -1,6 +1,6 @@
 ## FEATURE: Enums, `match` and `Option<T>` — non-recursive enums as values, exhaustive flat matching, and the first v1 specification file.
 
-**Status:** approved 2026-10-12 — session 26
+**Status:** implemented 2026-10-12 — session 26 (branch `prp-020-enums_and_match`, awaiting merge)
 **Milestone:** 6, second of three PRPs (019 syntax ✓, 020 this, 021 recursive enums)
 **Spec:** `docs/specs/Language v1 Draft.md` §2–§10 (enum parts), folded into a new `docs/specs/Language v1 Specification.md`
 **Decisions:**
@@ -35,6 +35,16 @@ Enums are values. Their payloads can never be changed in place, so copies of an 
   - `src/lib.rs`;
   - `tests/common/{spec_programs,v1_programs}.rs`, `tests/spec.rs`.
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 26)
+- **Layout units:** the payload area is an array of integers of the largest alignment (`%Shape = type { i32, [2 x i64] }`), not of `double`s; the layout and access are the same.
+- **`bool` matches** with both `true` and `false` are exhaustive (only integer and string matches need `_`). E0417 for those says "other values of `i64` are not covered", with help "add `_ => …` as the last arm".
+- **Gate:** it also stops a *struct* cycle through an enum or `Option` (`struct N { next: Option<N> }`), since it needs indirect slots too. Plain struct cycles stay E0307.
+- **`Box<T>`:** `Name<T>` types now parse (recording `Name`), so `Box<List>` reaches the checker's E0305 help instead of a parse error.
+- **Approved move:** `type_span`, `is_type_name` and `check_local_name` (E0311), with their test, moved to `check/env.rs`; `enums.rs` was 317 lines.
+- **Bug found and fixed:** a function tail `None` was looked up as a local by the return-move check. `Scopes::find` is the non-panicking lookup.
+- **Tests:** `tests/codegen.rs` cross-checks `m6/`, skipping programs whose expected exit is 2 (gate stops, which happen in the driver). `tests/spec.rs` checks every rejected §10 program; the JSON line stays with the v0 one.
+- **Out of scope, logged in TODO:** a Rust panic in lughac exits 101, not 2 (rule 6).
 
 ### Discovery answers (session 26)
 1. **Recursive enums are gated by name reachability.** The driver gate follows type names from each enum's payloads, through struct fields, enum payloads and `Option<T>` but not arrays. An enum that reaches itself is "not implemented yet: recursive enums (milestone 6)". PRP-021 deletes the check.
@@ -151,7 +161,7 @@ Enums are values. Their payloads can never be changed in place, so copies of an 
 ## TESTS TO WRITE
 
 Unit tests:
-- [ ] **Checker:**
+- [x] **Checker:**
   - enums in any order;
   - E0302, E0309, E0311 (let, param, for, binding);
   - `Box<…>` help;
@@ -164,23 +174,23 @@ Unit tests:
   - bindings: borrowed, immutable (E0501), scoped to their arm;
   - E0505 for a discarded `match` statement;
   - a diverging `match`.
-- [ ] **Codegen IR:**
+- [x] **Codegen IR:**
   - `%Shape = type { i32, [2 x double] }`;
   - a `switch i32` on the tag;
   - a string `match` calls `lugha_rt_str_eq`;
   - an enum argument passed as `ptr`;
   - `let b = a;` on an enum with an array payload emits no copy, while `Job.Batch(xs)` with `xs` used later copies `xs`.
-- [ ] **Layout:** sizes of `{ Circle(f64), Empty }` (16), `{ A(u8), B }` (8), and an enum inside a struct.
-- [ ] **Gate:**
+- [x] **Layout:** sizes of `{ Circle(f64), Empty }` (16), `{ A(u8), B }` (8), and an enum inside a struct.
+- [x] **Gate:**
   - recursive enums (direct, through a struct, through `Option`) are gated;
   - recursion through an array is not;
   - non-recursive enums pass.
 
 Acceptance — `tests/programs/m6/` (also at `-O2`) and the spec:
-- [ ] **Spec §10:**
+- [x] **Spec §10:**
   - the shapes program (`12.56636`, `6.0`, `0.0`);
   - the E0417 rejected program, with exact human output.
-- [ ] **`enum_basics.la`:**
+- [x] **`enum_basics.la`:**
   - payloads of every primitive type, plus string and struct payloads;
   - `Option` from a function, `Some`/`None` in `match`;
   - integer, string and `bool` matches with `_`;
@@ -188,13 +198,13 @@ Acceptance — `tests/programs/m6/` (also at `-O2`) and the spec:
   - enums in arrays and in struct fields.
 
   Expected stdout written by hand.
-- [ ] **`enum_values.la`:**
+- [x] **`enum_values.la`:**
   - `Job.Batch(xs)` then mutating `xs` leaves the payload unchanged;
   - a payload taken out by `match` into `let mut w = v;` and mutated leaves the enum unchanged;
   - two copies of an enum both print the original payload.
-- [ ] **Reject programs:** `e0309.la`, `e0311.la`, `e0415.la`, `e0416.la`, `e0417_literal.la`, and `w0102.la` (warning only: exit 0 with stderr).
-- [ ] **Recursion gate:** `lughac check` on the linked-list program exits 2 with "recursive enums (milestone 6)".
-- [ ] All earlier tests pass; `lughac spec` prints the v1 file.
+- [x] **Reject programs:** `e0309.la`, `e0311.la`, `e0415.la`, `e0416.la`, `e0417_literal.la`, and `w0102.la` (warning only: exit 0 with stderr).
+- [x] **Recursion gate:** `lughac check` on the linked-list program exits 2 with "recursive enums (milestone 6)".
+- [x] All earlier tests pass; `lughac spec` prints the v1 file.
 
 ## ROLLBACK PLAN
 
@@ -202,11 +212,11 @@ Acceptance — `tests/programs/m6/` (also at `-O2`) and the spec:
 - To abandon: delete the branch; the gate keeps enums stopped.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The shapes program prints its three lines; the rejected program reports E0417 exactly as the spec shows.
-- [ ] Every test above passes; recursive enums stop at the gate.
-- [ ] The v1 specification file exists and is what `lughac spec` prints; CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
-- [ ] No file over 300 lines (with the splits); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The shapes program prints its three lines; the rejected program reports E0417 exactly as the spec shows.
+- [x] Every test above passes; recursive enums stop at the gate.
+- [x] The v1 specification file exists and is what `lughac spec` prints; CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
+- [x] No file over 300 lines (with the splits); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

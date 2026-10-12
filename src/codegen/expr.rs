@@ -25,6 +25,10 @@ impl<'ctx> Lowerer<'ctx> {
                 .bool_type()
                 .const_int(u64::from(*value), false)
                 .into(),
+            ExprKind::Name(name) if name == "None" && self.scopes.find(name).is_none() => {
+                let ty = self.ty(expr);
+                self.construct(&ty, "None", &[])?
+            }
             ExprKind::Name(name) => {
                 let local = self.scopes.lookup(name);
                 self.load(&local, name)
@@ -55,16 +59,25 @@ impl<'ctx> Lowerer<'ctx> {
             }
             ExprKind::Binary(op, op_span, lhs, rhs) => self.binary(*op, op_span.start, lhs, rhs)?,
             ExprKind::Cast(inner, _) => self.cast(expr, inner)?,
-            ExprKind::Call(_, args) => return self.call(expr, args),
+            ExprKind::Call(callee, args) => match self.constructed_variant(callee) {
+                Some(variant) => {
+                    let ty = self.ty(expr);
+                    self.construct(&ty, &variant, args)?
+                }
+                None => return self.call(expr, args),
+            },
             ExprKind::If { cond, then, else_ } => {
                 return self.if_expr(expr, cond, then, else_.as_deref());
             }
             ExprKind::Block(block) => return self.block(block),
-            ExprKind::Match(..) => unreachable!(
-                "v1 constructs are stopped by the driver gate before checking (PRP-019)"
-            ),
+            ExprKind::Match(scrutinee, arms) => return self.match_expr(expr, scrutinee, arms),
             ExprKind::Str(text) => self.string_literal(text).into(),
             ExprKind::Index(base, open, index) => self.index(base, open.start, index)?,
+            // The checker gives a type name `void`: `Shape.Empty` is a variant.
+            ExprKind::Field(base, field) if self.ty(base) == Type::Void => {
+                let ty = self.ty(expr);
+                self.construct(&ty, &field.name, &[])?
+            }
             ExprKind::Field(base, field) => self.field(base, field)?,
             ExprKind::StructLit(_, fields) => self.struct_literal(expr, fields)?,
             ExprKind::Array(elements) => self.array_literal(expr, elements)?,

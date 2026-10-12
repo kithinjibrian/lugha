@@ -55,6 +55,8 @@ fn the_extractor_finds_every_section_10_program() {
         "Structs, for-of and casts",
         "Calling C",
         "A rejected program",
+        "Enums and match",
+        "A rejected enum program",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),
@@ -111,20 +113,34 @@ fn every_section_10_program_runs_as_stated() {
 }
 
 #[test]
-fn the_rejected_program_reports_e0401_in_both_formats() {
-    let program = spec_programs::section_10()
+fn every_rejected_program_reports_exactly_its_shown_errors() {
+    let rejected: Vec<_> = spec_programs::section_10()
         .into_iter()
-        .find(|p| p.stderr.is_some())
-        .expect("§10 has a rejected program");
-    // Its expected output names the file `main.la`.
-    let dir = TempDir::with("main.la", &program.source);
-    let human = lughac(&dir, &["check", "main.la"]);
-    assert_eq!(human.status.code(), Some(program.exit));
-    let expected = program.stderr.expect("filtered above");
-    assert_eq!(text(&human.stderr).trim_end(), expected.trim_end());
-    let json = lughac(&dir, &["check", "--diagnostics=json", "main.la"]);
-    assert_eq!(json.status.code(), Some(program.exit));
-    assert_eq!(text(&json.stderr), spec_programs::json_diagnostic());
+        .filter(|p| p.stderr.is_some())
+        .collect();
+    assert!(
+        rejected.len() >= 2,
+        "§10 shows the v0 and the enum rejected programs"
+    );
+    for program in rejected {
+        // Their expected output names the file `main.la`.
+        let dir = TempDir::with("main.la", &program.source);
+        let human = lughac(&dir, &["check", "main.la"]);
+        assert_eq!(human.status.code(), Some(program.exit), "{}", program.title);
+        let expected = program.stderr.as_deref().expect("filtered above");
+        assert_eq!(
+            text(&human.stderr).trim_end(),
+            expected.trim_end(),
+            "{}",
+            program.title
+        );
+        // §9 shows the JSON form of the v0 program's error.
+        if program.title == "A rejected program" {
+            let json = lughac(&dir, &["check", "--diagnostics=json", "main.la"]);
+            assert_eq!(json.status.code(), Some(program.exit));
+            assert_eq!(text(&json.stderr), spec_programs::json_diagnostic());
+        }
+    }
 }
 
 #[test]

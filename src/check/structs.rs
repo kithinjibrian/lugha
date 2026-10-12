@@ -25,6 +25,8 @@ impl Checker {
             let name = &s.name.name;
             if INTRINSICS.contains(&name.as_str()) {
                 self.report(errors::reserved(name, s.name.span));
+            } else if super::enums::BUILTIN_NAMES.contains(&name.as_str()) {
+                self.report(errors::builtin_name(name, s.name.span));
             } else if let Some(first) = self.structs.get(name) {
                 let first = first.span;
                 self.report(errors::duplicate(name, s.name.span, first));

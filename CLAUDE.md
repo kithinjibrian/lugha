@@ -154,13 +154,13 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v0 Specification.md`.
+The language itself is defined by `docs/specs/Language v1 Specification.md` (v0 plus the v1 features built so far; `lughac spec` prints it). The rest of v1 is in `Language v1 Draft.md`; v0's file is frozen.
 
 ---
 
 ## ARCHITECTURE RULES
 
-1. **The spec is the source of truth.** Read the relevant section of `docs/specs/Language v0 Specification.md` before implementing any language feature, and cite the section in the PRP. If code and spec disagree, the code is wrong. If the spec looks wrong, stop and propose a spec change — never edit the spec without explicit approval. *Why:* `lughac spec` ships the spec as the language reference; drift makes it lie.
+1. **The spec is the source of truth.** Read the relevant section of `docs/specs/Language v1 Specification.md` (and, for v1 features not yet folded in, `Language v1 Draft.md`) before implementing any language feature, and cite the section in the PRP. If code and spec disagree, the code is wrong. If the spec looks wrong, stop and propose a spec change — never edit the spec without explicit approval. *Why:* `lughac spec` ships the spec as the language reference; drift makes it lie.
 2. **Stages only depend backwards.** lexer → parser → check → codegen → driver. A stage never imports a later one. *Why:* `lughac check` and `--emit=tokens|ast|ir` must run the pipeline partway.
 3. **Every token and AST node carries a byte-offset `Span`.** *Why:* every diagnostic needs a location, and spans can't be recovered later.
 4. **Codegen never infers types.** It reads the checker's expression → type side table. *Why:* opaque pointers need the element type on every load/store/GEP (spec §9), and two type computations will disagree.
@@ -237,7 +237,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), stmt.rs,
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
 │   │                  (fields, indexing), array.rs (literals, for … of, E0507 guard), structs.rs
-│   │                  (declarations, E0307/E0308, literals), liveness.rs (move on last use), errors/ (mod.rs, names.rs E03xx,
+│   │                  (declarations, E0307/E0308, literals), liveness.rs (move on last use), enums.rs
+│   │                  (declarations, construction), matching.rs (match, E0417, W0102), errors/ (mod.rs, names.rs E03xx,
 │   │                  types.rs E04xx, places.rs E05xx/W01xx)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
@@ -245,7 +246,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  function.rs (signatures, bodies, return, calls), runtime.rs (intrinsics, string
 │   │                  literals, panics), heap.rs (headers, element layout, bounds checks, string ops),
 │   │                  array.rs (allocation, list/repeat literals, for … of), copy.rs (deep copies, copy sites),
-│   │                  structs.rs (named types, layout, literals, fields, place addresses)
+│   │                  structs.rs (named types, layout, literals, fields, place addresses), enums.rs
+│   │                  (enum layout, Option types, construction), matching.rs (match lowering)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_SOURCE, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes), pipeline.rs, gate.rs (v1 feature gate), source.rs (load, E0110, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)
@@ -257,13 +259,14 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── codegen.rs   — builds and runs real executables at -O0 and -O2
 │   ├── cli.rs       — the lughac binary: commands, emit, diagnostics, exit codes
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec;
-│   │                  v1_programs.rs: the v1 draft §10 programs (until PRP-020 folds them in)
-│   ├── programs/    — m1/ … m5/: <name>.la + .stdout/.exit/.stderr expectations
+│   │                  v1_programs.rs: v1 draft §10 programs not yet folded into the v1 spec
+│   ├── programs/    — m1/ … m6/: <name>.la + .stdout/.exit/.stderr expectations
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
-│   └── specs/       — Language v0 Specification.md (the language definition);
-│                      Language v1 Draft.md (approved v1 delta: enums, methods, growable arrays)
+│   └── specs/       — Language v1 Specification.md (the language definition, printed by `lughac spec`);
+│                      Language v1 Draft.md (approved v1 delta, shrinking as milestones fold in);
+│                      Language v0 Specification.md (frozen)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```
 
@@ -292,4 +295,4 @@ These look like bugs but are specified behavior:
 - **Boehm may keep garbage alive** when an integer looks like a pointer. Conservative GC, spec §7.
 - **Extern C code keeping a Lugha pointer is undefined behavior.** Spec §7–8 accept this for v0.
 - **`as` casts truncate/saturate silently.** The only place values wrap (spec §4).
-- **v1 constructs stop with "not implemented yet: … (milestone N)"** (exit 2) until their milestone: `driver/gate.rs`. They parse, and `--emit=tokens|ast` works on them.
+- **Recursive enums and methods stop with "not implemented yet: … (milestone N)"** (exit 2) until their PRPs: `driver/gate.rs`. They parse, and `--emit=tokens|ast` works on them.

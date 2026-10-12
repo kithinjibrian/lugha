@@ -1,26 +1,6 @@
-//! The example programs of `docs/specs/Language v1 Draft.md` §10, as inline
-//! fixtures. PRP-020 moves them into the v1 spec, where `spec_programs.rs`
-//! extracts them like the v0 programs.
-
-pub const SHAPES: &str = r#"enum Shape {
-    Circle(f64),
-    Rect(f64, f64),
-    Empty,
-}
-
-fun area(s: Shape): f64 = match s {
-    Circle(r) => 3.14159 * r * r,
-    Rect(w, h) => w * h,
-    Empty => 0.0,
-};
-
-fun main() {
-    let shapes = [Shape.Circle(2.0), Shape.Rect(2.0, 3.0), Shape.Empty];
-    for s of shapes {
-        println(area(s));
-    }
-}
-"#;
+//! The v1 draft §10 programs not yet folded into the v1 specification, as
+//! inline fixtures. Each moves into the spec (and out of here) with its
+//! milestone; `spec_programs.rs` then extracts it like the others.
 
 pub const LIST: &str = r#"enum List {
     Nil,
@@ -75,20 +55,5 @@ pub const STACK: &str = r#"fun main() {
 }
 "#;
 
-pub const REJECTED: &str = r#"enum Shape { Circle(f64), Empty }
-
-fun area(s: Shape): f64 = match s {
-    Circle(r) => r * r,
-};
-
-fun main() {}
-"#;
-
-/// Every v1 draft program with a short name.
-pub const ALL: [(&str, &str); 5] = [
-    ("shapes", SHAPES),
-    ("list", LIST),
-    ("methods", METHODS),
-    ("stack", STACK),
-    ("rejected", REJECTED),
-];
+/// Every v1 draft program not yet in the v1 specification, with a short name.
+pub const ALL: [(&str, &str); 3] = [("list", LIST), ("methods", METHODS), ("stack", STACK)];

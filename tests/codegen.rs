@@ -126,7 +126,7 @@ fn link_failure_reports_cc_stderr() {
 fn run_programs_agree_at_o0_and_o2() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/programs");
     let mut checked = 0;
-    for dir in ["m2", "m3", "m4", "m5"] {
+    for dir in ["m2", "m3", "m4", "m5", "m6"] {
         for entry in std::fs::read_dir(root.join(dir)).expect("program dir exists") {
             let path = entry.expect("entry").path();
             let exit = path.with_extension("exit");
@@ -137,6 +137,11 @@ fn run_programs_agree_at_o0_and_o2() {
                     .trim()
                     .parse()
                     .expect("integer");
+                // Exit 2 is lughac stopping (the v1 gate), which happens in the
+                // driver; this test drives the library directly.
+                if expected == 2 {
+                    continue;
+                }
                 // `run` asserts -O0 and -O2 agree; a trap shows as 128 + signal, as in `lughac run`.
                 let status = run(&src);
                 let code = status.code().or(status.signal().map(|s| 128 + s));

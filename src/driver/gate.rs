@@ -1,6 +1,8 @@
 //! The v1 feature gate (PRP-019): v1 syntax parses, but each construct is
 //! stopped here, before checking, until the milestone that implements it.
 //! Later PRPs delete entries as they land; the gate goes when v1 is complete.
+//!
+//! Still gated: recursive enums (PRP-021) and methods (milestone 7).
 
 use crate::ast::{
     Block, Expr, ExprKind, ForIter, FunDecl, Item, Program, Stmt, StmtKind, Type, TypeKind,
@@ -15,7 +17,7 @@ pub(super) struct Gated {
     pub span: Span,
 }
 
-const ENUMS: (&str, u8) = ("enums", 6);
+const RECURSIVE: (&str, u8) = ("recursive enums", 6);
 const METHODS: (&str, u8) = ("methods", 7);
 
 /// The first not-yet-implemented v1 construct in `program`, in source order.
@@ -23,17 +25,73 @@ pub(super) fn first(program: &Program) -> Option<Gated> {
     let mut found = Vec::new();
     for item in &program.items {
         match item {
-            Item::Enum(e) => hit(&mut found, ENUMS, e.span),
+            Item::Enum(e) if recursive(program, &e.name.name) => hit(&mut found, RECURSIVE, e.span),
+            Item::Enum(_) => {}
+            // A struct cycle through an enum or `Option` needs indirect slots
+            // too; a plain struct cycle is the checker's E0307.
+            Item::Struct(s) if recursive(program, &s.name.name) => {
+                hit(&mut found, RECURSIVE, s.span)
+            }
             Item::Impl(i) => hit(&mut found, METHODS, i.span),
             Item::Fun(f) => fun(&mut found, f),
             Item::Extern(e) => {
                 e.params.iter().for_each(|p| ty(&mut found, &p.ty));
                 e.ret.iter().for_each(|t| ty(&mut found, t));
             }
-            Item::Struct(s) => s.fields.iter().for_each(|f| ty(&mut found, &f.ty)),
+            Item::Struct(_) => {}
         }
     }
     found.into_iter().min_by_key(|g| g.span.start)
+}
+
+/// True if the struct or enum `name` reaches itself through a path of
+/// inline payloads and fields (not arrays, which are pointers) that passes
+/// through at least one enum or `Option`. Works on names alone.
+fn recursive(program: &Program, name: &str) -> bool {
+    let mut stack: Vec<(String, bool)> = refs(program, name);
+    let mut seen: Vec<(String, bool)> = Vec::new();
+    while let Some((next, via_enum)) = stack.pop() {
+        if next == name && via_enum {
+            return true;
+        }
+        if !seen.contains(&(next.clone(), via_enum)) {
+            let onward = refs(program, &next)
+                .into_iter()
+                .map(|(n, e)| (n, e || via_enum));
+            stack.extend(onward);
+            seen.push((next, via_enum));
+        }
+    }
+    false
+}
+
+/// The type names held inline by the struct or enum called `name`, each
+/// marked true if the link goes through an enum payload or an `Option`.
+fn refs(program: &Program, name: &str) -> Vec<(String, bool)> {
+    let mut out = Vec::new();
+    for item in &program.items {
+        let (types, from_enum): (Vec<&Type>, bool) = match item {
+            Item::Enum(e) if e.name.name == name => {
+                (e.variants.iter().flat_map(|v| &v.payloads).collect(), true)
+            }
+            Item::Struct(s) if s.name.name == name => {
+                (s.fields.iter().map(|f| &f.ty).collect(), false)
+            }
+            _ => continue,
+        };
+        for t in types {
+            inline_names(t, from_enum, &mut out);
+        }
+    }
+    out
+}
+
+fn inline_names(t: &Type, via_enum: bool, out: &mut Vec<(String, bool)>) {
+    match &t.kind {
+        TypeKind::Named(n) => out.push((n.clone(), via_enum)),
+        TypeKind::Option(inner) => inline_names(inner, true, out),
+        _ => {}
+    }
 }
 
 fn hit(found: &mut Vec<Gated>, (what, milestone): (&'static str, u8), span: Span) {
@@ -53,13 +111,7 @@ fn fun(found: &mut Vec<Gated>, f: &FunDecl) {
     block(found, &f.body);
 }
 
-fn ty(found: &mut Vec<Gated>, t: &Type) {
-    match &t.kind {
-        TypeKind::Option(_) => hit(found, ENUMS, t.span),
-        TypeKind::Array(element) => ty(found, element),
-        _ => {}
-    }
-}
+fn ty(_found: &mut [Gated], _t: &Type) {}
 
 fn block(found: &mut Vec<Gated>, b: &Block) {
     b.stmts.iter().for_each(|s| stmt(found, s));
@@ -102,7 +154,10 @@ fn stmt(found: &mut Vec<Gated>, s: &Stmt) {
 
 fn expr(found: &mut Vec<Gated>, e: &Expr) {
     match &e.kind {
-        ExprKind::Match(..) => hit(found, ENUMS, e.span),
+        ExprKind::Match(scrutinee, arms) => {
+            expr(found, scrutinee);
+            arms.iter().for_each(|a| expr(found, &a.body));
+        }
         ExprKind::Name(name) if name == "self" => hit(found, METHODS, e.span),
         ExprKind::Int(_)
         | ExprKind::Float(_)
@@ -144,18 +199,23 @@ mod tests {
     }
 
     #[test]
-    fn each_v1_construct_names_its_milestone() {
+    fn recursive_enums_and_methods_are_still_gated() {
         assert_eq!(
-            gated("enum E { A }\nfun main() {}"),
-            Some(("enums", 6, "enum E { A }"))
+            gated("enum L { N, C(i64, L) }\nfun main() {}"),
+            Some(("recursive enums", 6, "enum L { N, C(i64, L) }"))
         );
+        let via_struct = "enum T { Leaf, Node(P) }\nstruct P { t: T }\nfun main() {}";
+        assert_eq!(gated(via_struct).map(|g| g.0), Some("recursive enums"));
+        let via_option =
+            "struct N { next: Option<N> }\nenum E { A(N) }\nenum F { B(Option<F>) }\nfun main() {}";
         assert_eq!(
-            gated("fun main() { let x = match 1 { _ => 2 }; }"),
-            Some(("enums", 6, "match 1 { _ => 2 }"))
+            gated(via_option).map(|g| g.2),
+            Some("struct N { next: Option<N> }")
         );
+        // A plain struct cycle is left for the checker (E0307).
         assert_eq!(
-            gated("fun f(): Option<i64> = 1;\nfun main() {}"),
-            Some(("enums", 6, "Option<i64>"))
+            gated("struct A { b: B }\nstruct B { a: A }\nfun main() {}"),
+            None
         );
         assert_eq!(
             gated("impl P {}\nfun main() {}"),
@@ -164,15 +224,17 @@ mod tests {
     }
 
     #[test]
-    fn the_first_construct_in_source_order_wins() {
-        let src = "impl P { fun f(self) {} }\nenum E { A }\nfun main() {}";
+    fn plain_enums_match_and_options_pass() {
         assert_eq!(
-            gated(src),
-            Some(("methods", 7, "impl P { fun f(self) {} }"))
+            gated(
+                "enum S { A(f64), B }\nfun main() { let o: Option<i64> = None; let x = match o { _ => 1 }; }"
+            ),
+            None
         );
         assert_eq!(
-            gated("fun main() { let v: Option<i64>[] = []; }"),
-            Some(("enums", 6, "Option<i64>"))
+            gated("enum T { A(T[]) }\nfun main() {}"),
+            None,
+            "arrays break the cycle"
         );
     }
 

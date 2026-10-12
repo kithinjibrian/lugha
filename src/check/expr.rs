@@ -89,6 +89,9 @@ impl Checker {
                 ty
             }
             ExprKind::Bool(_) => Type::Bool,
+            ExprKind::Name(name) if name == "None" && self.local(name).is_none() => {
+                self.none(expr.span, expect)
+            }
             ExprKind::Name(name) => {
                 if let Some(local) = self.local(name) {
                     let mention = liveness::Mention {
@@ -102,18 +105,22 @@ impl Checker {
             }
             ExprKind::Unary(op, operand) => self.unary(*op, operand, expr, expect),
             ExprKind::Binary(op, _, lhs, rhs) => self.binary(expr, *op, lhs, rhs, expect),
-            ExprKind::Call(callee, args) => self.call(expr, callee, args),
+            ExprKind::Call(callee, args) => match self.construction(expr, callee, args, expect) {
+                Some(ty) => ty,
+                None => self.call(expr, callee, args),
+            },
             ExprKind::If { cond, then, else_ } => {
                 self.if_expr(expr, cond, then, else_.as_deref(), expect)
             }
             ExprKind::Block(block) => self.block(block, expect),
-            ExprKind::Match(..) => unreachable!(
-                "v1 constructs are stopped by the driver gate before checking (PRP-019)"
-            ),
+            ExprKind::Match(scrutinee, arms) => self.match_expr(expr, scrutinee, arms, expect),
             ExprKind::Str(_) => Type::String,
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
             ExprKind::Index(base, _, index) => self.index(base, index),
-            ExprKind::Field(base, field) => self.field(base, field),
+            ExprKind::Field(base, field) => match self.variant_value(base, field) {
+                Some(ty) => ty,
+                None => self.field(base, field),
+            },
             ExprKind::StructLit(name, fields) => self.struct_literal(expr, name, fields),
             ExprKind::Array(elements) => self.array_literal(expr, elements, expect),
             ExprKind::Repeat(value, count) => self.repeat(value, count, expect),

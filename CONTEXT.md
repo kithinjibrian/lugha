@@ -1318,6 +1318,55 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 24)
 
 Branch: main → prp-020-enums_and_match
 
+### WHAT WAS DONE
+
+Discovery:
+- Recursive enums are gated by name reachability.
+- Enums holding arrays: the user chose deep copies; while drafting, this was revised to *sharing*, since payloads are immutable, and approved with the PRP.
+
+Implemented PRP-020:
+- **Tests first:** the `m6/` programs.
+- **Checker:** `check/enums.rs`, `check/matching.rs`, E0311 in `declare`.
+- **Codegen:** `codegen/enums.rs`, `codegen/matching.rs`, `is_aggregate` for enum parameters.
+- **Gate:** recursive enums and struct cycles through enums.
+- **Spec:** `Language v1 Specification.md` (v0 plus the M6 sections, §10 shapes and rejected enum programs), and `lugha::SPEC` points at it.
+
+Two bugs were found and fixed along the way: a void-arm typing bug, and the tail `None` lookup.
+
+227 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/{enums,matching}.rs — new + tests
+src/check/{types,mod,env,expr,structs,liveness,flow}.rs, src/check/errors/* — Enum/Option types, Checked.enums, Binding::Pattern, E0309/E0311/E0415–E0417/W0102, E0305 Box help
+src/codegen/{enums,matching}.rs — new + tests
+src/codegen/{structs,value,function,lower,expr,stmt,scope,control,copy,mod}.rs — layout with enums, annotation_type method, is_aggregate, routing, Scopes::find
+src/parser/item.rs — Name<T> types parse
+src/driver/gate.rs — recursive enum / struct-through-enum gate + tests
+src/lib.rs — SPEC = v1 specification
+docs/specs/Language v1 Specification.md — new; Language v1 Draft.md — folding progress
+tests/programs/m6/ — enum_basics, enum_values, w0102, recursive_gate (run); e0309, e0311, e0415, e0416, e0417_literal (reject)
+tests/{spec,codegen,cli}.rs, tests/common/v1_programs.rs — rejected programs, m6 cross-check, gate test, fixtures
+PRPs/prp-020-enums_and_match.md — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md (+ the exit-code finding), MEMORY.md (decision 25)
+```
+
+### TESTS WRITTEN
+
+- **Checker:** declarations, construction, `Option` inference, E0311, `match` typing and bindings, exhaustiveness, W0102, pattern fit, discarded and diverging `match`es.
+- **Codegen:** layout sizes, named types, `switch` on tags and integers, string chains, enums passed as `ptr`, payload sharing vs construction copies.
+- **Gate:** recursion direct, via struct, via `Option`; arrays break cycles; plain struct cycles are left to E0307.
+- **Acceptance:** the `m6/` programs at -O0/-O2; spec §10 shapes and the rejected enum program; the CLI gate test.
+
+### DECISIONS MADE
+
+- MEMORY 25 (enums in the compiler).
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

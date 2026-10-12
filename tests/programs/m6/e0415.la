@@ -1,0 +1,5 @@
+enum Shape { Circle(f64), Empty }
+
+fun main() {
+    let s = Shape.Circel(1.0);
+}

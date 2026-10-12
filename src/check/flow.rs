@@ -44,10 +44,10 @@ impl Checker {
                 .clone()
                 .unwrap_or(Type::Error);
             if !matches!(ty, Type::Void | Type::Never | Type::Error) {
-                let what = if matches!(expr.kind, ExprKind::If { .. }) {
-                    "`if`"
-                } else {
-                    "block"
+                let what = match expr.kind {
+                    ExprKind::If { .. } => "`if`",
+                    ExprKind::Match(..) => "`match`",
+                    _ => "block",
                 };
                 self.report(errors::discarded(what, ty, expr.span));
             }

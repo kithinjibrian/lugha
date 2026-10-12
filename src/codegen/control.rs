@@ -108,7 +108,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Ends an `if` branch: jump to `merge`, or `unreachable` if it never finishes.
-    fn finish_branch(&self, value: Value<'ctx>, merge: BasicBlock<'ctx>) {
+    pub(super) fn finish_branch(&self, value: Value<'ctx>, merge: BasicBlock<'ctx>) {
         if matches!(value, Value::Never) {
             self.builder.build_unreachable().expect(POSITIONED);
         } else {

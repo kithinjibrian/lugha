@@ -11,12 +11,14 @@ mod access;
 mod array;
 mod assign;
 mod call;
+mod enums;
 mod env;
 mod errors;
 mod expr;
 mod flow;
 mod literal;
 mod liveness;
+mod matching;
 mod ops;
 mod stmt;
 mod structs;
@@ -24,7 +26,7 @@ mod types;
 
 use std::collections::{HashMap, HashSet};
 
-pub use types::{Structs, Type};
+pub use types::{Enums, Structs, Type};
 
 use crate::ast::{ExprId, Program};
 use crate::diagnostic::{Diagnostic, Severity};
@@ -37,6 +39,8 @@ pub struct Checked {
     pub types: Vec<Type>,
     /// Every struct's fields in declaration order.
     pub structs: Structs,
+    /// Every enum's variants and payload types in declaration order (v1).
+    pub enums: Enums,
     /// Values read from a place for the last time: stored without a copy (PRP-018).
     pub moves: HashSet<ExprId>,
 }
@@ -52,6 +56,7 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagno
         diagnostics: Vec::new(),
         functions: HashMap::new(),
         structs: HashMap::new(),
+        enums: HashMap::new(),
         scopes: Vec::new(),
         ret: Type::Void,
         loops: 0,
@@ -78,11 +83,17 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagno
         .into_iter()
         .map(|(name, info)| (name, info.fields))
         .collect();
+    let enums = checker
+        .enums
+        .into_iter()
+        .map(|(name, info)| (name, info.variants))
+        .collect();
     let moves = liveness::moves(program, &checker.mentions);
     Ok((
         Checked {
             types,
             structs,
+            enums,
             moves,
         },
         checker.diagnostics,
@@ -108,9 +119,13 @@ pub(super) struct Local {
 /// How a local was bound, which decides whether it may be assigned (spec §4).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Binding {
-    Let { mutable: bool },
+    Let {
+        mutable: bool,
+    },
     Param,
     LoopVar,
+    /// A `match` payload binding: immutable and borrowed (v1 §4).
+    Pattern,
 }
 
 /// Checking state for one program.
@@ -119,6 +134,7 @@ pub(super) struct Checker {
     diagnostics: Vec<Diagnostic>,
     functions: HashMap<String, Signature>,
     structs: HashMap<String, structs::StructInfo>,
+    enums: HashMap<String, enums::EnumInfo>,
     scopes: Vec<HashMap<String, Local>>,
     /// The return type of the function being checked.
     ret: Type,

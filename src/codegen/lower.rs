@@ -13,7 +13,7 @@ use super::runtime::Constants;
 use super::scope::Scopes;
 use super::{CodegenError, SourceInfo};
 use crate::ast::{ExprId, Item, Program};
-use crate::check::{Checked, Structs, Type};
+use crate::check::{Checked, Enums, Structs, Type};
 
 /// Every builder call below happens after `position_at_end`, so a
 /// `BuilderError` can only mean a compiler bug.
@@ -28,6 +28,8 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) types: Vec<Type>,
     /// Every struct's fields in declaration order.
     pub(super) structs: Structs,
+    /// Every enum's variants and payload types in declaration order.
+    pub(super) enums: Enums,
     /// Values read from a place for the last time, stored without a copy.
     pub(super) moves: HashSet<ExprId>,
     /// Every declared function, by Lugha name.
@@ -75,6 +77,7 @@ pub(super) fn lower<'ctx>(
         builder: context.create_builder(),
         types: checked.types.clone(),
         structs: checked.structs.clone(),
+        enums: checked.enums.clone(),
         moves: checked.moves.clone(),
         functions: HashMap::new(),
         function: None,
@@ -87,6 +90,7 @@ pub(super) fn lower<'ctx>(
             text: source.text.to_string(),
         },
     };
+    lowerer.declare_enums(program);
     lowerer.declare_structs();
     lowerer.declare_functions(program)?;
     for item in &program.items {

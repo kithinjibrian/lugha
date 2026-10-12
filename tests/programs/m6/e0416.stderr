@@ -1,0 +1,6 @@
+error[E0416]: `Shape.Rect` has 2 payloads, but 1 was given
+  --> tests/programs/m6/e0416.la:4:13
+  |
+4 |     let s = Shape.Rect(1.0);
+  |             ^^^^^^^^^^^^^^^
+

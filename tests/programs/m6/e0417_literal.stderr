@@ -1,0 +1,8 @@
+error[E0417]: non-exhaustive match: other values of `i64` are not covered
+  --> tests/programs/m6/e0417_literal.la:3:13
+  |
+3 |     let s = match n {
+  |             ^^^^^^^
+  |
+  = help: add `_ => …` as the last arm
+

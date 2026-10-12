@@ -283,6 +283,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 25. Enums in the compiler (PRP-020)
+
+**Decision:**
+- **Checker:** `Type::Enum`/`Type::Option`, and `Checked.enums`. Construction is recognised in the checker (`E.V` with a type-name base is recorded `void`) and in codegen (same shape).
+- **Bindings:** `match` bindings are `Binding::Pattern` (immutable, borrowed). No local may be named like a type (E0311, in `declare`).
+- **Layout:** `%E` / `%"Option<T>"` = `{ i32, [k x iA] }`, with `A` the largest payload alignment (1, 4 or 8). Payloads are accessed with constant GEPs through an anonymous variant struct. Enums are passed like structs (`is_aggregate`).
+- **Sharing:** enum values *share* payloads, never deep-copied (`contains_array` is false for them), because payloads are immutable. Payloads are still copied from places at construction, and bindings are copied when stored.
+- **Spec file:** `Language v1 Specification.md` is the spec `lughac spec` prints; the v0 file is frozen. Each milestone folds its draft sections in.
+- **Gate:** it still stops recursive enums, and struct cycles through an enum or `Option`, by name reachability. Methods stay gated too.
+
+**Why:** It keeps value semantics without copy helpers, and the printed spec always matches the compiler.
+
+**Rules out:** deep-copying enums; mutable payload places.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -292,6 +308,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- PRP-020 enums, `match`, `Option` (non-recursive) and `Language v1 Specification.md`
 - PRP-019 v1 syntax: lexer/parser/AST for all of v1, E0207, `driver/gate.rs`
 - v1 spec draft approved (`docs/specs/Language v1 Draft.md`): milestones 6–8 planned
 - PRP-018 move on last use: `check/liveness.rs`, `Checked.moves`; particles benchmark 2× faster

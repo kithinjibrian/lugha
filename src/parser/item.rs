@@ -112,6 +112,13 @@ impl Parser<'_> {
             TokenKind::Ident(name) => {
                 let kind = TypeKind::Named(name.clone());
                 self.bump();
+                // `Name<T>` is not a Lugha type (only `Option` takes one), but
+                // parse it so the checker can explain, e.g. `Box<List>` (E0305).
+                if self.at(&TokenKind::Lt) {
+                    self.bump();
+                    self.ty()?;
+                    self.expect(&TokenKind::Gt)?;
+                }
                 kind
             }
             _ => return Err(self.expected("type")),
