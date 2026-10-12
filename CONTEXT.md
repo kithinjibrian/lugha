@@ -1794,6 +1794,12 @@ CLAUDE.md (tree, stack, link line), CHANGELOG.md, TODO.md, MEMORY.md (decision 1
 
 ---
 
+## SESSION 35 — 2026-10-12 — Split check/stmt.rs and check/method_calls.rs — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Lugha v1.2 is released (tag `v1.2`). The C runtime is split into fragments (PRP-028), so every file is within the 300-line rule. No PRP is queued. Candidates, each starting with discovery:
