@@ -1534,6 +1534,12 @@ CLAUDE.md, README.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 28)
 
 ---
 
+## SESSION 30 — 2026-10-12 — PRP-024 internal errors exit 2 — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Lugha v1 is complete (tag `m8`). No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
