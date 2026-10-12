@@ -478,7 +478,6 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Lugha v1.2 is released (tag `v1.2`). Housekeeping is done: every file is within the 300-line rule, with headroom in the checker (PRP-028, PRP-029). No PRP is queued. Candidate, starting with discovery:
-- **v2 language work** (spec §11 out-of-scope list): generics, modules, closures, richer patterns, a shared-reference type. Start with a v2 spec draft (architecture rule 1).
+The Lugha v2 draft is approved (`docs/specs/Language v2 Draft.md`, MEMORY 33). v1.2 is still the spec `lughac spec` prints. Next is **milestone 9, patterns and equality**: nested patterns, `if` guards, deep `==` on every type (`lugha_eq_<type>` helpers), and string `<` (`lugha_rt_str_cmp`). Start with discovery for its PRP(s), citing the draft's §3–§5, §9 and §10 (patterns program). The draft's §12 lists open questions to settle along the way (an unused-binding warning for nested slots).
 
 See `TODO.md`.
