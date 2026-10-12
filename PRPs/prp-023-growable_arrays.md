@@ -1,6 +1,6 @@
 ## FEATURE: Growable arrays — `xs.push(v)`, `xs.pop()` and `xs.clear()` on `T[]`, a capacity header, and the complete v1 specification. Completes milestone 8 and v1.
 
-**Status:** implemented 2026-10-12 — session 29 (branch `prp-023-growable_arrays`, awaiting merge)
+**Status:** merged into `main` 2026-10-12 — session 29; tagged `m8`
 **Milestone:** 8 (one PRP), the last of v1. Done-when: the stack program prints `3`, `2`, `empty`; then tag `m8`.
 **Spec:** `docs/specs/Language v1 Draft.md` §4 "Growable arrays", §5, §7 (array layout), §9 (`lugha_rt_array_grow`), §10 (stack program), folded into `Language v1 Specification.md`
 **Decisions:**

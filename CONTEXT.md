@@ -1479,7 +1479,7 @@ CLAUDE.md (tree, rule 7, gate issue removed), CHANGELOG.md, TODO.md, MEMORY.md (
 
 ---
 
-## SESSION 29 — 2026-10-12 — Milestone 8 discovery and PRP-023 growable arrays — open
+## SESSION 29 — 2026-10-12 — Milestone 8 discovery and PRP-023 growable arrays — closed
 
 Branch: main → prp-023-growable_arrays
 
@@ -1528,11 +1528,15 @@ CLAUDE.md, README.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 28)
 
 - None.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-023-growable_arrays` fast-forward merged into `main` and deleted; `m8` tagged on the merged work (v1 complete).
+
 ---
 
 ## NEXT SESSION START POINT
 
-Lugha v1 is complete (tag `m8` after merge). No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
+Lugha v1 is complete (tag `m8`). No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
 - TODO "Found while working": a Rust panic in lughac exits 101, not 2 (rule 6).
 - TODO ideas: a `panic: stack overflow` for deep recursion; a swap/move operation for buffers.
 - v2 language work (spec §11 out-of-scope list): generics, modules, closures, richer patterns, a shared-reference type — starting with a v2 spec draft.
