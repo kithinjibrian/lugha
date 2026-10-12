@@ -7,6 +7,7 @@
 //!
 //! Depends on: lexer, parser, codegen, link, diagnostic.
 
+mod guard;
 mod json;
 mod pipeline;
 mod render;
@@ -28,11 +29,16 @@ use crate::parser::sexp;
 
 /// Runs `lughac` with the process's arguments and standard streams.
 pub fn main() -> ExitCode {
-    let code = run(
-        std::env::args_os(),
-        &mut std::io::stdout(),
-        &mut std::io::stderr(),
-    );
+    guard::install_hook();
+    let args: Vec<OsString> = std::env::args_os().collect();
+    // Where to report a crash: the format and file the command asked for.
+    let (format, file) = match Cli::try_parse_from(&args) {
+        Ok(cli) => (cli.command.format(), cli.command.file()),
+        Err(_) => (Format::Human, None),
+    };
+    let code = guard::guarded(format, file.as_deref(), &mut std::io::stderr(), || {
+        run(args, &mut std::io::stdout(), &mut std::io::stderr())
+    });
     ExitCode::from(code)
 }
 
@@ -155,6 +161,16 @@ impl Command {
             Command::Build { options, .. } | Command::Run { options, .. } => options.diagnostics,
             Command::Check { diagnostics, .. } => *diagnostics,
             Command::Spec => Format::Human,
+        }
+    }
+
+    /// The source file the command reads, as given.
+    fn file(&self) -> Option<String> {
+        match self {
+            Command::Build { file, .. }
+            | Command::Run { file, .. }
+            | Command::Check { file, .. } => Some(file.display().to_string()),
+            Command::Spec => None,
         }
     }
 }

@@ -1538,6 +1538,38 @@ CLAUDE.md, README.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 28)
 
 Branch: main → prp-024-internal_error_exit
 
+### WHAT WAS DONE
+
+Discovery:
+- One internal error in the chosen format.
+- Tested through the guard, with no crash switch.
+
+Implemented PRP-024:
+- `driver/guard.rs` (hook, `guarded`, payload messages) with tests; `driver::main` routes through it.
+- Spec §9 gains one sentence.
+- Verified end to end with a throwaway panicking build.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/driver/guard.rs (new) + tests; src/driver/mod.rs — main uses the hook and guard; Command::file
+docs/specs/Language v1 Specification.md — §9 sentence
+PRPs/prp-024-internal_error_exit.md — new PRP; implemented; amendments
+CLAUDE.md, TODO.md, CHANGELOG.md, MEMORY.md (decision 29)
+```
+
+### TESTS WRITTEN
+
+- Guard: `&str`, `String` and non-string payloads → exit 2 and one human error; JSON → one null-code line; normal codes 0/1/2 pass through silently.
+
+### DECISIONS MADE
+
+- MEMORY 29.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

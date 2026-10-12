@@ -1,6 +1,6 @@
 ## FEATURE: A panic inside lughac is an internal compiler error — one error in the chosen diagnostics format, exit code 2.
 
-**Status:** approved 2026-10-12 — session 30
+**Status:** implemented 2026-10-12 — session 30 (branch `prp-024-internal_error_exit`, awaiting merge)
 **Milestone:** none; a bug fix from TODO ("Found while working"), seen in session 26
 **Spec:** §9 (exit codes 0/1/2: 2 for internal compiler errors; JSON diagnostics: "one JSON object per line … and nothing else"; internal errors have `"code":null`)
 **Decisions:** architecture rule 6 (a Rust panic inside lughac is exit 2, never 1), MEMORY 13 (diagnostics rendering)
@@ -18,6 +18,12 @@ If `lughac` ever panics (a bug in the compiler), it reports one internal error i
   - The guard catches the panic and reports it as an internal error in the requested format, exiting 2.
 - **Related existing code:** `src/main.rs`, `src/driver/{mod,render,json}.rs`, `tests/cli.rs`.
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 30)
+- **Placement:** the guard lives in a new `driver/guard.rs`, since `driver/mod.rs` was at 258 lines. `Command::file()` was added for the report's file name.
+- **The note** uses the report's help line, so it renders as `= help: this is a bug in lughac (src/…:LINE); please report it`.
+- **Stale spec wording:** the same §9 sentence dropped "a construct the compiler doesn't support yet" from its list of internal errors; nothing produces that since the gate was removed (PRP-022).
+- **End-to-end check:** a throwaway build with a `panic!` injected into `check()`, never committed, gave exit 2 with exactly one human error, and a single JSON line.
 
 ### Discovery answers (session 30)
 1. **One internal error in the chosen format:**
@@ -72,13 +78,13 @@ If `lughac` ever panics (a bug in the compiler), it reports one internal error i
 ## TESTS TO WRITE
 
 Unit tests — the guard:
-- [ ] A closure that panics with a `&str` → returns 2. Human stderr starts with `error: internal compiler error: boom` and includes the report note.
-- [ ] A `String` payload (`panic!("{}", x)`) and a non-string payload (`std::panic::panic_any(5)`) → "unknown panic".
-- [ ] JSON format → exactly one line, valid JSON shape, with `"code":null` and `"span":null`.
-- [ ] A closure that returns normally → its own code (0, 1, 2) passes through untouched, and nothing is written.
+- [x] A closure that panics with a `&str` → returns 2. Human stderr starts with `error: internal compiler error: boom` and includes the report note.
+- [x] A `String` payload (`panic!("{}", x)`) and a non-string payload (`std::panic::panic_any(5)`) → "unknown panic".
+- [x] JSON format → exactly one line, valid JSON shape, with `"code":null` and `"span":null`.
+- [x] A closure that returns normally → its own code (0, 1, 2) passes through untouched, and nothing is written.
 
 Integration:
-- [ ] All existing CLI tests pass (normal runs go through the guard).
+- [x] All existing CLI tests pass (normal runs go through the guard).
 
 ## ROLLBACK PLAN
 
@@ -86,10 +92,10 @@ Integration:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] A panic in lughac exits 2 with one internal error in the chosen format.
-- [ ] Every test above passes; spec §9 sentence added; TODO, CHANGELOG, MEMORY updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] A panic in lughac exits 2 with one internal error in the chosen format.
+- [x] Every test above passes; spec §9 sentence added; TODO, CHANGELOG, MEMORY updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

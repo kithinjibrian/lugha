@@ -576,7 +576,7 @@ Exit codes: 0 on success, 1 when the program has errors, 2 for bad command-line 
 
 **Diagnostics.** Errors print the file, line and column, the offending source line, a caret under the span with its label, and any secondary labels, in a rustc-like layout rendered by the `codespan-reporting` crate. Each diagnostic is followed by a blank line, and lines carry no trailing whitespace. The checker reports as many errors as it can find instead of stopping at the first one.
 
-Internal errors — an unreadable file, a construct the compiler doesn't support yet, a failed link — have no code and exit with 2. They print as `error: <message>`, with a source snippet when they have a location.
+Internal errors — an unreadable file, a failed link — have no code and exit with 2. They print as `error: <message>`, with a source snippet when they have a location. A crash inside the compiler itself is reported the same way, as `error: internal compiler error: <message>` with a note asking for a bug report, and also exits with 2.
 
 **Error codes.** Every diagnostic has a stable code, grouped by stage. A code is never reused or renumbered once released; its message wording may improve.
 

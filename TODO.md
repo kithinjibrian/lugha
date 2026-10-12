@@ -83,7 +83,7 @@ Done when the stack program passes and `lughac spec` prints the full v1 spec.
 
 ## Found while working — needs a PRP
 
-- [ ] A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.
+- [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.
 
 ## Ideas — noted, not scheduled
 

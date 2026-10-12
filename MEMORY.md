@@ -347,6 +347,19 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 29. Internal compiler errors (PRP-024)
+
+**Decision:**
+- **Hook:** `driver::main` installs a panic hook that records the location and prints nothing.
+- **Guard:** it runs `run` inside `driver/guard.rs::guarded`, which catches a panic and writes one internal error in the requested format (human `error: internal compiler error: …` with a help note naming the source location, or a `"code":null` JSON line), then exits 2.
+- **Library:** `run` installs no hook, so library users and tests keep Rust's normal panic output.
+
+**Why:** architecture rule 6 and spec §9 (JSON stderr carries nothing else).
+
+**Rules out:** `panic = "abort"`; a crash switch in the binary.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working

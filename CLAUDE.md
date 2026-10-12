@@ -251,7 +251,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (enum layout, Option types, payload addresses), growth.rs (push, pop, clear), construct.rs (building enum values,
 │   │                  indirect slots), matching.rs (match lowering), methods.rs (method symbols, receivers, calls)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_SOURCE, LinkError
-│   └── driver/      — mod.rs (clap CLI, exit codes), pipeline.rs, source.rs (load, E0110, line_col),
+│   └── driver/      — mod.rs (clap CLI, exit codes), guard.rs (panics → internal error, exit 2), pipeline.rs,
+│                      source.rs (load, E0110, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)
 ├── tests/
 │   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
