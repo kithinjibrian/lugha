@@ -182,7 +182,7 @@ Equality is deep and costs time proportional to the values compared. `f64` keeps
 
 **Lowering notes.**
 - **Monomorphization:** it happens after checking, from `main` outward. The checker records each call's type arguments in its side table, so codegen still never infers a type (architecture rule 4).
-- **Nested patterns** lower to a decision tree of tag tests and payload loads. Guards are a branch on the arm's path.
+- **Nested patterns** are lowered arm by arm (PRP-032): each arm tests its pattern outside in, binds, runs its guard, and on any failure branches to the next arm. Flat, unguarded matches keep v1's `switch`.
 
 **New error codes.** The numbers are proposed; each becomes final when its milestone's PRP is approved.
 
@@ -333,7 +333,7 @@ The multi-file example needs the §10 extraction in `tests/common/` to understan
 ## §12 Open questions — additions
 
 - [ ] **Keep `T: Eq` when every type is `Eq`?** Proposed: yes. It documents intent, and it will start to restrict once function types exist in v3.
-- [ ] **A bare name in a nested slot:** it is a variant if the slot's enum has one by that name, and otherwise a binding. This is type-directed, as in Rust, and a typo in a variant name silently becomes a binding. W0102 or an unused-binding warning would catch most cases. Should v2 add an "unused binding" warning?
+- [x] **A bare name in a nested slot:** it is a variant if the slot's enum has one by that name, and otherwise a binding. This is type-directed, as in Rust, and a typo in a variant name silently becomes a binding. W0102 or an unused-binding warning would catch most cases. Should v2 add an "unused binding" warning? Resolved (PRP-032): yes, W0103 "unused binding".
 - [ ] **The instantiation depth limit:** 64. Large enough for real code, small enough to fail fast.
 - [ ] **NaN and `Ord`:** a `largest` over `f64`s that contain `NaN` gives an order-dependent answer, because every comparison with `NaN` is false. Documented rather than prevented.
 - [ ] **Module root:** the main file's directory, with no search path. Shared code outside it needs packages, which are v3.

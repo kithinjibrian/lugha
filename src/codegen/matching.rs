@@ -1,6 +1,7 @@
 //! `match` in codegen (v1 §5, §9): the scrutinee is evaluated once; enums
 //! and integers branch with `switch`, strings with a chain of comparisons.
 //! Each arm stores its value into one result slot, loaded at the join.
+//! Matches with nested patterns or guards go arm by arm (`patterns.rs`).
 
 use inkwell::basic_block::BasicBlock;
 use inkwell::values::{BasicValueEnum, IntValue, PointerValue};
@@ -21,6 +22,9 @@ impl<'ctx> Lowerer<'ctx> {
         arms: &[Arm],
     ) -> Result<Value<'ctx>, CodegenError> {
         let sty = self.ty(scrutinee);
+        if !self.is_flat(&sty, arms) {
+            return self.match_chain(expr, scrutinee, arms);
+        }
         let value = self.get(scrutinee, &sty)?;
         let rty = self.ty(expr);
         let result = (!matches!(rty, Type::Void | Type::Never))
@@ -99,7 +103,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// The `switch` case value a pattern stands for; `None` for `_`.
-    fn case_value(&self, sty: &Type, pattern: &PatternKind) -> Option<IntValue<'ctx>> {
+    pub(super) fn case_value(&self, sty: &Type, pattern: &PatternKind) -> Option<IntValue<'ctx>> {
         match pattern {
             PatternKind::Wildcard | PatternKind::Str(_) => None,
             PatternKind::Variant(name, _) => {
@@ -154,7 +158,8 @@ impl<'ctx> Lowerer<'ctx> {
     ) {
         let (_, payloads) = self.variant(sty, variant);
         for (i, (slot_pattern, ty)) in slots.iter().zip(&payloads).enumerate() {
-            let Some(name) = slot_pattern.slot_binding() else {
+            // A flat match's slots are `_` or bindings (`is_flat`).
+            let PatternKind::Variant(name, None) = &slot_pattern.kind else {
                 continue;
             };
             let index = u32::try_from(i).expect("payload count fits in u32");

@@ -1,0 +1,16 @@
+warning[W0103]: unused binding `Emtpy`
+  --> tests/programs/m9/w0103.la:4:10
+  |
+4 |     Some(Emtpy) => "empty",
+  |          ^^^^^
+  |
+  = help: if you meant a variant, check its spelling; otherwise write `_`
+
+warning[W0102]: unreachable match arm
+  --> tests/programs/m9/w0103.la:5:5
+  |
+4 |     Some(Emtpy) => "empty",
+  |     ----------- already covered here
+5 |     Some(Circle(_)) => "circle",
+  |     ^^^^^^^^^^^^^^^
+

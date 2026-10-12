@@ -1,4 +1,4 @@
-# Lugha v2 Specification (in progress: milestone 9)
+# Lugha v2 Specification (in progress: milestone 10)
 
 Oct 9, 2026 · @kithinji
 
@@ -6,10 +6,12 @@ Oct 9, 2026 · @kithinji
 
 **v1.** This is v0 plus enums, `match`, `Option`, recursive data, methods and growable arrays (milestones 6–8). Every valid v0 program is a valid v1 program unless it uses one of the new keywords as a name.
 
-**Changes since v1.2** (milestone 9 so far):
+**Changes since v1.2** (milestone 9):
 - `==` and `!=` compare any two values of the same type deeply (section 4).
 - Strings are ordered bytewise by `<`, `<=`, `>` and `>=` (section 4).
 - Either operand of a comparison can give the other its type (`None == o`).
+- `match` patterns nest (`Some(Circle(r))`) and arms take `if` guards (sections 3–5).
+- An unused `match` binding is warning W0103.
 
 Every valid v1.2 program is a valid v2 program unless it uses `import` or `pub` as a name. Those are now keywords for v2 features that are still being built: they parse, but `lughac` stops with "not implemented yet (milestone N)", exit 2.
 
@@ -168,12 +170,11 @@ for_head     = IDENT ( "in" cond ".." cond | "of" cond ) ;
 cond         = expr ;            (* parsed in no-struct-literal mode *)
 
 match_expr   = "match" cond "{" [ arm { arm_sep arm } [ "," ] ] "}" ;
-arm          = pattern "=>" expr ;
+arm          = pattern [ "if" cond ] "=>" expr ;
 arm_sep      = "," | (* nothing, after an arm whose expr is a block *) ;
 pattern      = "_"
-             | IDENT [ "(" pat_slot { "," pat_slot } [ "," ] ")" ]
+             | IDENT [ "(" pattern { "," pattern } [ "," ] ")" ]
              | [ "-" ] INT | STRING | "true" | "false" ;
-pat_slot     = IDENT | "_" ;
 
 expr         = prefix { infix } ;            (* Pratt loop, see table *)
 prefix       = ( "-" | "!" ) prefix | postfix ;   (* binds tighter than infix *)
@@ -209,7 +210,7 @@ infix        = binop expr | "as" type ;
 
 **Struct literals in conditions.** Without required parentheses, `if p == Point { x: 0.0, y: 0.0 } { ... }` is ambiguous, because the parser can't tell where the condition ends. So every `cond` is parsed in *no-struct-literal* mode, where `IDENT {` ends the expression instead of starting a literal. The restriction lifts inside every bracket pair — parentheses, brackets, call arguments and blocks — so `if p == (Point { x: 0.0, y: 0.0 }) { ... }` and `if ok { Point { x: 1.0, y: 2.0 } } else { ... }` both work. Rust uses the same rule.
 
-**Enum values and `match`.** `Shape.Circle(2.0)` and `Shape.Empty` need no grammar of their own: they parse as a member access, followed by a call when there are payloads, and the checker decides they name a variant (section 4). A `match` scrutinee is a `cond`, parsed in no-struct-literal mode like an `if` condition. A bare `IDENT` pattern must name a variant; there are no top-level binding patterns, so use `_`.
+**Enum values and `match`.** `Shape.Circle(2.0)` and `Shape.Empty` need no grammar of their own: they parse as a member access, followed by a call when there are payloads, and the checker decides they name a variant (section 4). A `match` scrutinee is a `cond`, parsed in no-struct-literal mode like an `if` condition. At the top level a bare `IDENT` pattern must name a variant; there are no top-level binding patterns, so use `_`. Inside a payload slot, a bare `IDENT` is a variant if the slot's type is an enum with a variant of that name (`Some(Empty)`), and otherwise a new binding (`Some(x)`). A guard after `if` is parsed like a `cond`.
 
 **Block-like statements.** A statement that starts with `if`, `match` or `{` is parsed as `block_like` and needs no trailing `;`. It ends at its closing brace, so `if c { a } - 1` is a statement followed by the expression `-1`, not a subtraction. If a block's final element is an expression with no `;` after it, including a block-like one, that expression is the block's tail value (section 5). A `;` directly after a block-like statement is allowed and makes it an ordinary statement: `if c { f(); };`. A `;` on its own, where a statement should start, is an error.
 
@@ -269,11 +270,11 @@ There is no null. Every string and array variable holds a valid object.
 
 **`Option`.** The built-in `Option<T>` has the variants `Some(T)` and `None`, written without a prefix. `Some(x)` has type `Option<T>` where `x : T`, or the expected `Option` type when there is one. `None` needs an expected type, exactly like `[]`: `let x: Option<i64> = None;` — otherwise it is E0412. `Option` is the only type that takes a type argument.
 
-**`match`.** `match e { pattern => value, … }` is an expression. Patterns are flat: a variant with a name or `_` for each payload (`Circle(r)`, `Rect(w, _)`, `Empty`), an integer, `bool` or string literal, or `_`. Variant patterns need an enum or `Option` scrutinee and are written without the enum's name; literal patterns need a scrutinee of their type (E0403). The arms' values follow the rules of `if`/`else`: they must agree (E0403), and an arm that never finishes fits any type.
+**`match`.** `match e { pattern => value, … }` is an expression. A pattern is `_`, an integer, `bool` or string literal, or a variant written without the enum's name. A variant's payload slots are patterns too, so they nest: `Circle(r)`, `Rect(w, _)`, `Empty`, `Some(Circle(r))`, `Pair(1, Some("a"))`. Variant patterns need an enum or `Option` value and literal patterns a value of their type, at any depth (E0403); a variant needs one slot per payload (E0416). An arm may have a guard, `pattern if cond => value`: the guard runs after the pattern matches, with its bindings in scope, and must be `bool` (E0403); if it is false, matching continues with the next arm. The arms' values follow the rules of `if`/`else`: they must agree (E0403), and an arm that never finishes fits any type.
 
-- **Exhaustiveness.** A `match` must cover every value. On an enum, either every variant has an arm or the last arm is `_`; otherwise it is E0417, listing every missing variant. A `bool` match is complete with both `true` and `false`. Integers and strings always need a final `_`.
-- **Unreachable arms.** An arm after `_`, or for a variant or literal already covered, is warning W0102.
-- **Bindings.** Payload names are immutable and borrowed, like `for … of` variables: storing or returning one copies it. Each is in scope in its own arm only.
+- **Exhaustiveness.** A `match` must cover every value, counting only arms without guards. Otherwise it is E0417, which lists up to three missing cases as patterns (`Some(Rect(_, _))`, `None`) and then "and N more"; a missing variant with any payloads shows as its bare name at the top level (`Rect`). A `bool` is covered by `true` and `false`. Integers and strings, at the top level or inside a variant, always need a `_` or a binding.
+- **Unreachable arms.** An arm that no value can reach past the earlier unguarded arms is warning W0102: after `_`, after the same pattern, or after arms that together cover it (`Some(_)` and `None` before `Some(Empty)`).
+- **Bindings.** Payload names are immutable and borrowed, like `for … of` variables: storing or returning one copies it. Each is in scope in its own arm (guard and value) only. A binding that its arm never uses is warning W0103, which also catches a misspelled variant name that became a binding.
 
 **Arrays.** `T[]` has a length, read with `.len` (type `i64`), that changes only through the built-in methods below. Elements are read and written with `xs[i]`, where `i` must be `i64`. Every index is bounds-checked; an out-of-range index panics. Arrays are created two ways:
 
@@ -372,7 +373,7 @@ Evaluation is strictly left to right: operands, call arguments and struct-litera
 
 **Method calls.** `x.m(a, b)` evaluates `x`, then `a`, then `b`; `xs.push(v)` evaluates the place `xs`, then `v`. For a `mut self` call the place `x` is evaluated once, before the arguments, like an assignment's place.
 
-**`match` evaluation.** A `match` evaluates its scrutinee once, then tests the arms from top to bottom and runs the first that matches. A variant's payloads are evaluated left to right when it is built.
+**`match` evaluation.** A `match` evaluates its scrutinee once, then tests the arms from top to bottom and runs the first that matches, outside in for nested patterns; a guard runs only once its pattern has matched. A variant's payloads are evaluated left to right when it is built.
 
 **Compound assignment.** `x op= e` means `x = x op e`, except that the place `x` is evaluated once. So `xs[next()] += 1` calls `next()` once.
 
@@ -567,7 +568,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 - **Deep equality:** generate one `lugha_eq_<type>(T, T) -> i1` per struct, enum, `Option` or array type compared, with the copy helpers' type names (`lugha_eq_1L_opt` for `Option<L>`). Numbers and `bool` compare inline, and strings through `lugha_rt_str_eq`.
 - **Struct, enum and array arguments:** pass a pointer to the caller's storage rather than the value itself, since the callee can't modify it.
 - **Methods:** ordinary functions whose first parameter is the receiver. A `self` receiver is passed like a struct argument; a `mut self` receiver is the address of the caller's place itself, so the method's writes land there.
-- **`match`:** an LLVM `switch` on the tag for enums and on the value for integers and `bool`s; a chain of `lugha_rt_str_eq` tests for strings. Payload bindings load from the payload area at constant offsets. An exhaustive `match` without `_` ends in `unreachable`.
+- **`match`:** an LLVM `switch` on the tag for enums and on the value for integers and `bool`s; a chain of `lugha_rt_str_eq` tests for strings. Payload bindings load from the payload area at constant offsets. An exhaustive `match` without `_` ends in `unreachable`. A `match` with a nested pattern or a guard is lowered arm by arm instead: each arm tests its pattern outside in (loading indirect payloads through their pointer), binds, runs its guard, and on any failure branches to the next arm.
 
 **Runtime library.** A small C file, `lugha_rt.c`, is compiled once and linked into every program. The compiler calls only these functions:
 
@@ -661,6 +662,7 @@ Name and type errors, reported by the checker:
 | E0510 | A statement changes what contains the place it writes | `xs[0] = { xs.push(2); 9 };` (§5) |
 | W0101 | Unreachable code (warning) | statements after `return`, `break` or `continue`; reported once per block |
 | W0102 | Unreachable `match` arm (warning) | an arm after `_`, or a variant already covered |
+| W0103 | Unused `match` binding (warning) | `Some(Emtpy) => 0`, a misspelled variant that became a binding |
 
 **JSON diagnostics.** With `--diagnostics=json`, the compiler writes one JSON object per line to stderr, one per diagnostic, and nothing else. Lines and columns are 1-based; columns and offsets count UTF-8 bytes. `label` is the text shown under the primary span, or `null`. `labels` holds secondary spans, and `help` is an optional suggestion. Internal errors have `"code":null`, and `"span":null` when they have no location.
 
@@ -886,6 +888,30 @@ error[E0401]: float literal where i32 expected
 
 With `--diagnostics=json`, the same error is the JSON line shown in section 9.
 
+**Patterns and equality** (milestone 9). Prints `big circle` then `square` then `nothing` then `true` then `true` then `true` on six lines, exits with 0.
+
+```
+enum Shape { Circle(f64), Rect(f64, f64), Empty }
+
+fun describe(s: Option<Shape>): string = match s {
+    Some(Circle(r)) if r > 1.0 => "big circle",
+    Some(Circle(_)) => "small circle",
+    Some(Rect(w, h)) if w == h => "square",
+    Some(Rect(_, _)) => "rect",
+    Some(Empty) => "empty",
+    None => "nothing",
+};
+
+fun main() {
+    println(describe(Some(Shape.Circle(2.0))));
+    println(describe(Some(Shape.Rect(3.0, 3.0))));
+    println(describe(None));
+    println([1, 2] == [1, 2]);
+    println(Shape.Rect(1.0, 2.0) == Shape.Rect(1.0, 2.0));
+    println("apple" < "banana");
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -900,7 +926,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 6 | Enums (v1) | `enum`, construction, `match` with flat patterns, exhaustiveness, `Option<T>`, recursive enums | The enum programs in section 10 pass (done) |
 | 7 | Methods (v1) | `impl`, `self`/`mut self`, associated functions, method calls | The methods program in section 10 passes (done) |
 | 8 | Growable arrays (v1) | `push`, `pop`, `clear` on `T[]` | The stack program in section 10 passes (done: v1 complete) |
-| 9 | Patterns and equality (v2) | deep `==` on every type and string order (done); nested patterns and guards (next) | The patterns program in the v2 draft passes (in progress) |
+| 9 | Patterns and equality (v2) | deep `==` on every type, string order, nested patterns, guards, W0103 | The patterns program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

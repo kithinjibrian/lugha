@@ -13,6 +13,7 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- Nested `match` patterns (`Some(Circle(r))`, `Pair(1, Some("a"))`) and `if` guards; E0417 now lists the missing cases as patterns (up to three, then "and N more"), W0102 also catches arms covered by several earlier arms, and new warning W0103 flags unused bindings (such as a misspelled variant) — **milestone 9 complete**
 - `==` and `!=` on every type, compared deeply (structs, enums, `Option`, arrays; `NaN` stays unequal), and bytewise `<`/`<=`/`>`/`>=` on strings; either operand can type the other (`None == o`). `lughac spec` now prints `Language v2 Specification.md` (in progress: milestone 9); v1.2's file is frozen
 - v2 syntax: `import`, `pub`, type parameters with `Eq`/`Ord` bounds, `Stack<T>` and `geometry.Vec2` types, `geometry.Vec2 { … }` literals, nested patterns and `if` guards all parse and show in `--emit=ast` (E0208 for a late `import`); checking stops them with "not implemented yet (milestone N)", exit 2, until their milestone. `import` and `pub` are now keywords
 - Lugha v2 spec draft approved (`docs/specs/Language v2 Draft.md`): nested patterns and guards, deep `==` and string `<` (milestone 9), modules with `import`/`pub` (milestone 10), generics with `Eq`/`Ord` bounds and inference (milestone 11)

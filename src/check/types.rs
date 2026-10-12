@@ -78,6 +78,14 @@ impl Type {
     }
 }
 
+/// Whether a bare name in a pattern's payload slot names a variant (v2 draft
+/// §3): it does when `variants`, the slot type's variants (`None` unless it
+/// is an enum or `Option`), has one by that name; otherwise it binds the
+/// payload. The checker and codegen both decide with this.
+pub fn slot_names_variant(variants: Option<&[(String, Vec<Type>)]>, name: &str) -> bool {
+    variants.is_some_and(|all| all.iter().any(|(v, _)| v == name))
+}
+
 /// True if the payload `slot` of the enum or `Option` type `owner` leads back
 /// to `owner` through values held inline: struct fields, enum payloads and
 /// `Option`'s payload, but not arrays, which are pointers. Such a slot is

@@ -104,6 +104,17 @@ pub(in crate::check) fn unreachable_arm(span: Span, cause: Span) -> Diagnostic {
         .with_label(cause, "already covered here")
 }
 
+/// W0102 when several earlier arms together cover the arm (v2 draft §5).
+pub(in crate::check) fn unreachable_arm_combined(span: Span) -> Diagnostic {
+    Diagnostic::warning("W0102", "unreachable match arm", span)
+        .with_help("the earlier arms together cover every value it matches")
+}
+
+pub(in crate::check) fn unused_binding(name: &str, span: Span) -> Diagnostic {
+    Diagnostic::warning("W0103", format!("unused binding `{name}`"), span)
+        .with_help("if you meant a variant, check its spelling; otherwise write `_`")
+}
+
 pub(in crate::check) fn mut_self_alias(name: &str, span: Span, receiver: Span) -> Diagnostic {
     Diagnostic::error(
         "E0508",

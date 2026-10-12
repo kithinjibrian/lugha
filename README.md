@@ -16,13 +16,13 @@ $ lughac run fib.la
 832040
 ```
 
-Lugha v2 is in progress (milestone 9 of 9–11). Today it has everything in v1.2:
+Lugha v2 is in progress (milestone 9 done; 10–11 to go). Today it has everything in v1.2:
 - **Basic types:** integers (`i32`, `i64`, `u8`), `f64`, `bool` and immutable strings.
 - **Compound types:** growable arrays (`push`, `pop`, `clear`), structs, and enums with exhaustive `match`, including `Option<T>` and recursive enums.
 - **Behaviour:** methods in `impl` blocks, `if` expressions, loops and `for … of`, and `swap(a, b)` to exchange two places without copying.
 - **C interop:** `extern fun` for calling C.
 - **Safety:** checked arithmetic and bounds that panic instead of misbehaving.
-- **New in v2 so far:** `==` on every type (deep, structural) and bytewise string order (`"ab" < "abc"`).
+- **New in v2 so far (milestone 9):** `==` on every type (deep, structural), bytewise string order (`"ab" < "abc"`), and nested `match` patterns with `if` guards (`Some(Circle(r)) if r > 1.0 =>`).
 
 Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v2 Specification.md`](docs/specs/Language%20v2%20Specification.md) (what `lughac spec` prints); the plan for the rest of v2 is [`Language v2 Draft.md`](docs/specs/Language%20v2%20Draft.md).
 

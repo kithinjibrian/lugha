@@ -1,0 +1,7 @@
+fun main() {
+    let n = 1;
+    let s = match n {
+        _ if n => 1,
+        _ => 0,
+    };
+}

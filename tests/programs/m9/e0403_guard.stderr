@@ -1,0 +1,6 @@
+error[E0403]: expected bool, found i64
+  --> tests/programs/m9/e0403_guard.la:4:14
+  |
+4 |         _ if n => 1,
+  |              ^ expected bool
+

@@ -1,0 +1,11 @@
+enum Shape { Circle(f64), Empty }
+
+fun name(s: Option<Shape>): string = match s {
+    Some(Emtpy) => "empty",
+    Some(Circle(_)) => "circle",
+    None => "none",
+};
+
+fun main() {
+    println(name(None));
+}

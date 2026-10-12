@@ -3,10 +3,9 @@
 
 use std::collections::HashSet;
 
-use super::{GENERICS, GUARDS, Gated, MODULES, NESTED, PUB};
+use super::{GENERICS, Gated, MODULES, PUB};
 use crate::ast::{
-    Block, Expr, ExprKind, ForIter, FunDecl, Item, Pattern, PatternKind, Stmt, StmtKind, Type,
-    TypeKind, TypeParam,
+    Block, Expr, ExprKind, ForIter, FunDecl, Item, Stmt, StmtKind, Type, TypeKind, TypeParam,
 };
 use crate::span::Span;
 
@@ -165,28 +164,9 @@ impl Walk<'_> {
             ExprKind::Match(scrutinee, arms) => {
                 self.expr(scrutinee);
                 for arm in arms {
-                    self.pattern(&arm.pattern);
-                    if let Some(guard) = &arm.guard {
-                        self.hit(GUARDS, guard.span);
-                        self.expr(guard);
-                    }
+                    arm.guard.iter().for_each(|g| self.expr(g));
                     self.expr(&arm.body);
                 }
-            }
-        }
-    }
-
-    /// v1 payload slots are a name or `_`; anything else is a nested pattern.
-    fn pattern(&mut self, p: &Pattern) {
-        let PatternKind::Variant(_, Some(slots)) = &p.kind else {
-            return;
-        };
-        for slot in slots {
-            if !matches!(
-                slot.kind,
-                PatternKind::Wildcard | PatternKind::Variant(_, None)
-            ) {
-                self.hit(NESTED, slot.span);
             }
         }
     }

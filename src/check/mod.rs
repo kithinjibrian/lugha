@@ -25,14 +25,16 @@ mod matching;
 mod method_calls;
 mod methods;
 mod ops;
+mod patterns;
 mod stmt;
 mod structs;
 mod swap;
 mod types;
+mod usefulness;
 
 use std::collections::{HashMap, HashSet};
 
-pub use types::{Enums, Structs, Type, indirect_slot};
+pub use types::{Enums, Structs, Type, indirect_slot, slot_names_variant};
 
 use crate::ast::{ExprId, Program};
 use crate::diagnostic::{Diagnostic, Severity};
@@ -188,6 +190,14 @@ pub(crate) mod test_util {
         check(&program(src))
             .unwrap_or_else(|e| panic!("{src:?}: {e:?}"))
             .0
+    }
+
+    /// Every diagnostic for `src`, errors or warnings, in order.
+    pub fn diagnostics_or_warnings(src: &str) -> Vec<crate::diagnostic::Diagnostic> {
+        match check(&program(src)) {
+            Ok((_, warnings)) => warnings,
+            Err(diags) => diags,
+        }
     }
 
     /// `(code, spanned source)` of every diagnostic for `src`.

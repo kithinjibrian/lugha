@@ -21,6 +21,7 @@ mod heap;
 mod lower;
 mod matching;
 mod methods;
+mod patterns;
 mod runtime;
 mod scope;
 mod stmt;

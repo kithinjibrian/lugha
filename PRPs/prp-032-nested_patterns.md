@@ -1,6 +1,6 @@
 ## FEATURE: Nested patterns and `if` guards in `match`, with a usefulness-based exhaustiveness check and W0103 — completes milestone 9.
 
-**Status:** approved 2026-10-13 — session 39
+**Status:** implemented 2026-10-13 — session 39
 **Milestone:** 9 (third of three PRPs: 030 syntax, 031 equality and string order, **032 nested patterns and guards**). Milestone 9 is done when the v2 draft's patterns program passes.
 **Spec:** `Language v2 Draft.md` §3 (pattern grammar, bare names in slots), §5 (`match` with nested patterns and guards), §9 (lowering notes, codes), §10 (patterns program), §12 (unused-binding question). These fold into `Language v2 Specification.md`.
 **Decisions:**
@@ -31,6 +31,17 @@
   - `src/ast/pattern.rs`, `src/driver/gate/`;
   - `tests/programs/m6/` (W0102, E0417 goldens).
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 39)
+- **Failed patterns:**
+  - an arm whose pattern had errors is left out of the analysis, and E0417 is skipped for that match;
+  - treating it as `_`, as first written, would have added W0102 noise to every later arm.
+- **E0417 order:** missing cases are listed in declaration order (`Option` is `None`, then `Some`). At the top level, a variant whose payloads are all `_` prints as its bare name, keeping v1's wording.
+- **W0103 and E0311:** W0103 is skipped for a binding named like a type, which is already E0311.
+- **Shared rule's signature:** `check::slot_names_variant` takes the slot type's variant list (`Option<&[(String, Vec<Type>)]>`). The checker passes `variants_of`; codegen passes `enums::variants`.
+- **Existing tests:** one test's expectation gained a W0103 (an arm binding `r` it never uses).
+- **Test order:** the `matching.rs` guard and W0103 tests were written after the code. The pattern-typing, usefulness and codegen tests were written first and failed first.
+- **A bug caught by clippy:** the new function had been inserted inside `indirect_slot`'s doc comment, and was moved out.
 
 ### Discovery answers (session 39)
 1. **W0103, unused binding:**
@@ -135,48 +146,48 @@
 ## TESTS TO WRITE
 
 Unit tests — `check/patterns.rs`:
-- [ ] **Bindings:** `Some(Circle(r))` binds `r: f64`.
-- [ ] **Bare names:** `Some(Empty)` is the variant, and `Some(x)` binds `x: Shape`.
-- [ ] **Literal slots:** `Pair(1, Some("a"))` checks literal types at depth.
-- [ ] **E0403:** `Some(1)` on `Option<string>`, and `Circle(Rect(_, _))` on an `f64` slot.
-- [ ] **E0416:** `Rect(_)` nested.
-- [ ] **E0415:** a bare top-level name that isn't a variant.
+- [x] **Bindings:** `Some(Circle(r))` binds `r: f64`.
+- [x] **Bare names:** `Some(Empty)` is the variant, and `Some(x)` binds `x: Shape`.
+- [x] **Literal slots:** `Pair(1, Some("a"))` checks literal types at depth.
+- [x] **E0403:** `Some(1)` on `Option<string>`, and `Circle(Rect(_, _))` on an `f64` slot.
+- [x] **E0416:** `Rect(_)` nested.
+- [x] **E0415:** a bare top-level name that isn't a variant.
 
 Unit tests — `check/usefulness.rs`:
-- [ ] **Exhaustive matches:** nested matches over `Option<Shape>`, and a `bool` pair (`Pair(true, _)`, `Pair(false, _)`), are complete.
-- [ ] **E0417 witnesses:** `Some(Rect(_, _))` and `None`; four or more missing gives "and N more".
-- [ ] **Guards:** a guarded arm doesn't count, so E0417 is still reported.
-- [ ] **W0102:**
+- [x] **Exhaustive matches:** nested matches over `Option<Shape>`, and a `bool` pair (`Pair(true, _)`, `Pair(false, _)`), are complete.
+- [x] **E0417 witnesses:** `Some(Rect(_, _))` and `None`; four or more missing gives "and N more".
+- [x] **Guards:** a guarded arm doesn't count, so E0417 is still reported.
+- [x] **W0102:**
   - after `Some(_)` and `None`;
   - for an arm covered only by a combination of earlier arms;
   - not for an arm after a guarded one.
-- [ ] **Literals:** integer and string literals inside variants (`Some(1)`, then `Some(_)`) don't make the match complete without a catch-all slot.
+- [x] **Literals:** integer and string literals inside variants (`Some(1)`, then `Some(_)`) don't make the match complete without a catch-all slot.
 
 Unit tests — `check/matching.rs`:
-- [ ] **Guards:** a guard must be `bool` (E0403), and bindings are visible in it.
-- [ ] **W0103:**
+- [x] **Guards:** a guard must be `bool` (E0403), and bindings are visible in it.
+- [x] **W0103:**
   - reported for an unused binding and for a misspelled variant `Some(Emtpy)`;
   - not reported when the binding is used only in the guard.
 
 Codegen IR — `codegen/patterns.rs`:
-- [ ] **Flat matches** still lower to one `switch` (existing tests stay green).
-- [ ] **Nested matches:** a nested match tests the inner tag after the outer one, and a guard branches to the next arm.
-- [ ] **Indirect payloads:** a recursive enum's indirect payload is loaded through its pointer before the inner test.
+- [x] **Flat matches** still lower to one `switch` (existing tests stay green).
+- [x] **Nested matches:** a nested match tests the inner tag after the outer one, and a guard branches to the next arm.
+- [x] **Indirect payloads:** a recursive enum's indirect payload is loaded through its pointer before the inner test.
 
 Acceptance (all cross-checked at `-O0`/`-O2`):
-- [ ] **`tests/programs/m9/patterns.la`:** the draft's patterns program, printing the six lines, plus:
+- [x] **`tests/programs/m9/patterns.la`:** the draft's patterns program, printing the six lines, plus:
   - a recursive list matched two levels deep;
   - guards falling through to later arms;
   - nested `bool` and integer slots.
 
   The expected output is written by hand.
-- [ ] **Goldens, captured and reviewed:**
+- [x] **Goldens, captured and reviewed:**
   - `e0417_nested.la` (the witness list);
   - `w0103.la` (a misspelled variant: W0103 plus W0102; the program still runs);
   - `e0403_guard.la` (a non-`bool` guard).
-- [ ] **Spec:** `tests/spec.rs` runs the new §10 patterns program from the v2 spec.
-- [ ] **Gate:** the M9 rows are removed from the gate tests; the CLI gate test (generics) stays.
-- [ ] **Regression:** every earlier test passes, including the `m6` W0102 and E0417 goldens, unchanged.
+- [x] **Spec:** `tests/spec.rs` runs the new §10 patterns program from the v2 spec.
+- [x] **Gate:** the M9 rows are removed from the gate tests; the CLI gate test (generics) stays.
+- [x] **Regression:** every earlier test passes, including the `m6` W0102 and E0417 goldens, unchanged.
 
 ## ROLLBACK PLAN
 
@@ -184,11 +195,11 @@ Acceptance (all cross-checked at `-O0`/`-O2`):
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The draft's patterns program passes from the v2 spec's §10; milestone 9 is done.
-- [ ] Nested patterns, guards, E0417 witnesses, W0102 and W0103 behave as above.
-- [ ] The v2 spec and draft are updated; CLAUDE.md, README, TODO, CHANGELOG, MEMORY updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The draft's patterns program passes from the v2 spec's §10; milestone 9 is done.
+- [x] Nested patterns, guards, E0417 witnesses, W0102 and W0103 behave as above.
+- [x] The v2 spec and draft are updated; CLAUDE.md, README, TODO, CHANGELOG, MEMORY updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

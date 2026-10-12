@@ -40,19 +40,3 @@ pub enum PatternKind {
     /// `true` or `false`.
     Bool(bool),
 }
-
-impl Pattern {
-    /// The name a v1 payload slot binds, or `None` for `_`.
-    ///
-    /// # Panics
-    ///
-    /// On any other slot pattern: the driver's gate stops nested patterns
-    /// before checking until milestone 9 (PRP-030).
-    pub fn slot_binding(&self) -> Option<&Ident> {
-        match &self.kind {
-            PatternKind::Wildcard => None,
-            PatternKind::Variant(name, None) => Some(name),
-            _ => unreachable!("the gate stops nested patterns (milestone 9)"),
-        }
-    }
-}

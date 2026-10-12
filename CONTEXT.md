@@ -1996,7 +1996,53 @@ CLAUDE.md (stack, rules 1 and 7, tree), README.md, TODO.md, CHANGELOG.md, MEMORY
 
 ## SESSION 39 — 2026-10-13 — Nested patterns and guards (PRP-032) — open
 
-Branch: prp-032-nested_patterns
+Branch: main → prp-032-nested_patterns
+
+### WHAT WAS DONE
+
+Discovery (3 questions, each answered with the recommended option):
+- W0103 for unused bindings;
+- keep the `switch` for flat matches and go arm by arm for nested or guarded ones;
+- E0417 lists up to three missing cases, then "and N more".
+
+PRP-032 approved.
+
+Implemented PRP-032:
+- **Checker:** `check/patterns.rs` and `check/usefulness.rs` (tests first); `check/matching.rs` rewritten for guards, W0103 and usefulness.
+- **Codegen:** `codegen/patterns.rs` (IR tests first).
+- **Gate:** the M9 entries are removed.
+- **Spec:** the v2 spec folds in the pattern sections plus a §10 patterns program; the draft is updated.
+- **Acceptance:** `m9/patterns.la` (expected output written by hand; matches at -O0 and -O2) and three goldens.
+
+**Milestone 9 complete.** 281 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/patterns.rs, src/check/usefulness.rs (new); src/check/{matching,types,mod}.rs; src/check/errors/{types,places}.rs
+src/codegen/patterns.rs (new); src/codegen/{matching,mod}.rs; src/ast/pattern.rs (slot_binding removed)
+src/driver/gate/{mod,walk}.rs — M9 entries removed
+tests/programs/m9/ (patterns, e0417_nested, e0403_guard, w0103); tests/spec.rs (title list)
+docs/specs/Language v2 Specification.md (patterns, W0103, §10 program, M9 done); Language v2 Draft.md (lowering note, §12)
+PRPs/prp-032-nested_patterns.md — new PRP; implemented; amendments
+CLAUDE.md (tree), README.md, TODO.md, CHANGELOG.md, MEMORY.md (decision 36)
+```
+
+### TESTS WRITTEN
+
+- **Pattern typing:** nested bindings, bare names, E0403/E0416/E0415 at depth.
+- **Usefulness:** complete nested matches, witnesses, "and N more", guards not counting, literals inside variants, combined coverage W0102.
+- **`match`:** guards are `bool` and see bindings; W0103 for a typo and not for a guard-only use.
+- **IR:** nested tests run outside in and a false guard falls through; indirect payloads load before the inner test; flat matches keep the `switch`.
+- **Acceptance:** `m9/patterns.la` (19 lines), the `e0417_nested`, `e0403_guard` and `w0103` goldens, and the §10 program run from the spec.
+
+### DECISIONS MADE
+
+- MEMORY 36.
+
+### PENDING DECISIONS OPENED
+
+- None.
 
 ---
 

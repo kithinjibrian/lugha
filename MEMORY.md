@@ -464,9 +464,31 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 36. Nested patterns, guards, usefulness, W0103 (PRP-032)
+
+**Decision:**
+- **Pattern typing (`check/patterns.rs`):** recursive; it returns bindings and a `Pat` (`Wild` or `Ctor(Variant(i, name) | Bool | Int | Str, args)`).
+  - **Bare names in slots:** decided by `check::slot_names_variant(variants, name)`, which codegen shares. A bare name is a variant if the slot's enum or `Option` has one by that name, else a binding.
+  - **At the top level** a bare name must still be a variant.
+- **Usefulness (`check/usefulness.rs`, Maranget):**
+  - **W0102:** a pattern is unreachable unless it is `useful` against the earlier unguarded rows. The label names a single covering arm, or else says the earlier arms cover it together.
+  - **E0417:** `missing` gives witnesses in declaration order, capped at 100; three are shown, then "and N more". A top-level variant with all-`_` payloads prints bare (the v1 format). Integer and string witnesses at the top level keep the "other values" message.
+  - **Bad patterns:** an arm whose pattern had errors is left out, and E0417 is skipped for that match.
+- **W0103:** a binding with no mention in its arm (guard or body). It is skipped for a binding named like a type (already E0311).
+- **Codegen:** `is_flat` (no guards, slots `_` or bindings) keeps v1's `switch`. Otherwise `match_chain` in `codegen/patterns.rs` goes arm by arm, with a `Subject` that is either a value or a storage-form address (indirect payloads loaded first), and ends in `unreachable`.
+- **Removed:** `Pattern::slot_binding`, and the M9 gate entries.
+- **Spec:** v2 spec "in progress: milestone 10", with the §10 patterns program. The draft's lowering note now says "arm by arm".
+
+**Why:** These are the discovery answers (session 39). The chain is simple and keeps v1's IR. The usefulness algorithm is the standard one, and E0417 and W0102 both come from it.
+
+**Rules out:** a decision tree; or-patterns; top-level binding patterns.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 9 complete**: PRP-032 nested patterns, guards, usefulness-based E0417/W0102, W0103
 - PRP-031: deep `==` on every type, string order; `Language v2 Specification.md` (in progress) printed by `lughac spec`
 - PRP-030: all v2 syntax parses (`--emit=ast`); `driver/gate/` stops v2 constructs until their milestone
 - PRP-029: `check/body.rs` (function bodies) and `check/builtins.rs` (array built-ins) split out of `stmt.rs` and `method_calls.rs`

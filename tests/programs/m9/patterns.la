@@ -1,0 +1,68 @@
+// Nested patterns and guards (PRP-032, v2 milestone 9). The first six lines
+// are the v2 draft's patterns program.
+enum Shape { Circle(f64), Rect(f64, f64), Empty }
+
+enum List { Nil, Cons(i64, List) }
+
+enum Pair { P(bool, i64) }
+
+fun describe(s: Option<Shape>): string = match s {
+    Some(Circle(r)) if r > 1.0 => "big circle",
+    Some(Circle(_)) => "small circle",
+    Some(Rect(w, h)) if w == h => "square",
+    Some(Rect(_, _)) => "rect",
+    Some(Empty) => "empty",
+    None => "nothing",
+};
+
+// Two levels into a recursive list: the second element, if any.
+fun second(l: List): Option<i64> = match l {
+    Cons(_, Cons(x, _)) => Some(x),
+    _ => None,
+};
+
+// Guards fall through to later arms.
+fun classify(n: i64): string = match n {
+    0 => "zero",
+    _ if n < 0 => "negative",
+    _ if n % 2 == 0 => "even",
+    _ => "odd",
+};
+
+// `bool` and integer literals inside a variant.
+fun pair(p: Pair): i64 = match p {
+    P(true, 0) => 1,
+    P(true, n) => n * 10,
+    P(false, -1) => 2,
+    P(false, _) => 3,
+};
+
+fun main() {
+    println(describe(Some(Shape.Circle(2.0))));
+    println(describe(Some(Shape.Rect(3.0, 3.0))));
+    println(describe(None));
+    println([1, 2] == [1, 2]);
+    println(Shape.Rect(1.0, 2.0) == Shape.Rect(1.0, 2.0));
+    println("apple" < "banana");
+
+    println(describe(Some(Shape.Circle(0.5))));
+    println(describe(Some(Shape.Rect(1.0, 2.0))));
+    println(describe(Some(Shape.Empty)));
+    let l = List.Cons(1, List.Cons(2, List.Cons(3, List.Nil)));
+    match second(l) {
+        Some(x) => println(x),
+        None => println("none"),
+    }
+    match second(List.Cons(1, List.Nil)) {
+        Some(x) => println(x),
+        None => println("none"),
+    }
+    println(classify(0));
+    println(classify(-3));
+    println(classify(4));
+    println(classify(7));
+    println(pair(Pair.P(true, 0)));
+    println(pair(Pair.P(true, 4)));
+    println(pair(Pair.P(false, -1)));
+    println(pair(Pair.P(false, 9)));
+}

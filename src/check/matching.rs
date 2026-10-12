@@ -1,21 +1,13 @@
-//! `match` (v1 §4, §5): pattern typing, payload bindings, exhaustiveness
-//! (E0417) and unreachable arms (W0102).
-
-use std::collections::HashMap;
+//! `match` (v1 §4, §5; v2 draft §5): arms, guards and bindings, then
+//! exhaustiveness (E0417), unreachable arms (W0102) and unused bindings
+//! (W0103). Patterns are typed in `patterns.rs`; coverage is `usefulness.rs`.
 
 use super::expr::Expect;
+use super::patterns::Pat;
+use super::usefulness::show;
 use super::{Binding, Checker, Type, errors};
-use crate::ast::{Arm, Expr, Pattern, PatternKind};
+use crate::ast::{Arm, Expr, Ident};
 use crate::span::Span;
-
-/// What an arm's pattern covers, for exhaustiveness and W0102.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum Covers {
-    Variant(String),
-    Int(u64, bool),
-    Str(String),
-    Bool(bool),
-}
 
 impl Checker {
     /// `match scrutinee { arms }`: arms agree like `if`/`else` branches.
@@ -27,55 +19,40 @@ impl Checker {
         expect: Option<&Expect>,
     ) -> Type {
         let sty = self.value(scrutinee, None);
-        let mut seen: HashMap<Covers, Span> = HashMap::new();
-        let mut wildcard: Option<Span> = None;
+        // Unguarded arms that typed cleanly: what coverage is computed from.
+        let mut rows: Vec<(Pat, Span)> = Vec::new();
+        // A pattern with an error can't be reasoned about: skip E0417 then.
+        let mut analysable = !matches!(sty, Type::Error | Type::Never);
         let mut result: Option<(Type, Span)> = None;
         for arm in arms {
-            let (covers, bindings) = self.pattern(&arm.pattern, &sty);
-            let earlier = wildcard.or_else(|| covers.as_ref().and_then(|c| seen.get(c).copied()));
-            if let Some(cause) = earlier {
-                self.report(errors::unreachable_arm(arm.pattern.span, cause));
-            }
-            match covers {
-                Some(c) => {
-                    seen.entry(c).or_insert(arm.pattern.span);
-                }
-                None => {
-                    wildcard.get_or_insert(arm.pattern.span);
+            let mut bindings = Vec::new();
+            let before = self.diagnostics.len();
+            let pat = self.arm_pattern(&arm.pattern, &sty, &mut bindings);
+            if self.diagnostics.len() > before {
+                analysable = false;
+            } else if analysable {
+                self.arm_reachable(&rows, &pat, &sty, arm.pattern.span);
+                if arm.guard.is_none() {
+                    rows.push((pat, arm.pattern.span));
                 }
             }
             self.push();
-            for (name, ty) in bindings {
+            for (name, ty) in &bindings {
                 // `declare` reports E0311 for a binding named like a type.
-                self.declare(&name, ty, Binding::Pattern);
+                self.declare(name, ty.clone(), Binding::Pattern);
             }
-            let ty = match &result {
-                // Arms without a value: the others must have none either.
-                Some((Type::Void, _)) => {
-                    let ty = self.expr(&arm.body, None);
-                    if !matches!(ty, Type::Void | Type::Never | Type::Error) {
-                        self.report(errors::mismatch(
-                            Type::Void,
-                            ty.clone(),
-                            arm.body.span,
-                            None,
-                        ));
-                    }
-                    ty
-                }
-                Some((first, span)) => {
-                    let why = format!("the first arm is {first}");
-                    self.expect_type(&arm.body, &Expect::because(first.clone(), *span, why))
-                }
-                None => self.expr(&arm.body, expect),
-            };
+            if let Some(guard) = &arm.guard {
+                self.expect_type(guard, &Expect::of(Type::Bool));
+            }
+            let ty = self.arm_body(arm, &result, expect);
+            self.unused(&bindings);
             self.pop();
             if result.is_none() && ty != Type::Never {
                 result = Some((ty, arm.body.span));
             }
         }
-        if wildcard.is_none() {
-            self.exhaustive(expr, scrutinee, &sty, &seen);
+        if analysable {
+            self.exhaustive(expr, scrutinee, &sty, &rows);
         }
         match result {
             Some((ty, _)) => ty,
@@ -84,118 +61,80 @@ impl Checker {
         }
     }
 
-    /// Reports E0417 unless `seen` covers every value of `sty`.
-    fn exhaustive(
+    /// An arm's body, agreeing with the first arm that has a value.
+    fn arm_body(
         &mut self,
-        expr: &Expr,
-        scrutinee: &Expr,
-        sty: &Type,
-        seen: &HashMap<Covers, Span>,
-    ) {
-        let missing: Vec<String> = match sty {
-            Type::Error | Type::Never => return,
-            Type::Bool => [true, false]
-                .into_iter()
-                .filter(|b| !seen.contains_key(&Covers::Bool(*b)))
-                .map(|b| b.to_string())
-                .collect(),
-            ty => match self.variants_of(ty) {
-                Some(variants) => variants
-                    .into_iter()
-                    .map(|(v, _)| v)
-                    .filter(|v| !seen.contains_key(&Covers::Variant(v.clone())))
-                    .collect(),
-                // Integers and strings have too many values to list.
-                None => {
-                    let span = Span::new(expr.span.start, scrutinee.span.end);
-                    self.report(errors::non_exhaustive_values(ty, span));
-                    return;
+        arm: &Arm,
+        result: &Option<(Type, Span)>,
+        expect: Option<&Expect>,
+    ) -> Type {
+        match result {
+            // Arms without a value: the others must have none either.
+            Some((Type::Void, _)) => {
+                let ty = self.expr(&arm.body, None);
+                if !matches!(ty, Type::Void | Type::Never | Type::Error) {
+                    self.report(errors::mismatch(
+                        Type::Void,
+                        ty.clone(),
+                        arm.body.span,
+                        None,
+                    ));
                 }
-            },
-        };
-        if !missing.is_empty() {
-            let span = Span::new(expr.span.start, scrutinee.span.end);
-            self.report(errors::non_exhaustive(&missing, span));
+                ty
+            }
+            Some((first, span)) => {
+                let why = format!("the first arm is {first}");
+                self.expect_type(&arm.body, &Expect::because(first.clone(), *span, why))
+            }
+            None => self.expr(&arm.body, expect),
         }
     }
 
-    /// Checks one pattern against the scrutinee type: what it covers (`None`
-    /// for `_`) and the bindings it introduces.
-    fn pattern(
-        &mut self,
-        pattern: &Pattern,
-        sty: &Type,
-    ) -> (Option<Covers>, Vec<(crate::ast::Ident, Type)>) {
-        let fits = |ok: bool| ok || matches!(sty, Type::Error | Type::Never);
-        match &pattern.kind {
-            PatternKind::Wildcard => (None, Vec::new()),
-            PatternKind::Int { value, negative } => {
-                if !fits(sty.is_integer()) {
-                    self.report(errors::pattern_mismatch(sty, pattern.span));
-                } else if sty.is_integer() {
-                    let (max, neg) = sty.literal_range();
-                    if (*negative && *value > neg) || (!*negative && *value > max) {
-                        self.report(errors::out_of_range(sty.clone(), pattern.span));
-                    }
-                }
-                (
-                    Some(Covers::Int(*value, *negative && *value != 0)),
-                    Vec::new(),
-                )
-            }
-            PatternKind::Str(text) => {
-                if !fits(*sty == Type::String) {
-                    self.report(errors::pattern_mismatch(sty, pattern.span));
-                }
-                (Some(Covers::Str(text.clone())), Vec::new())
-            }
-            PatternKind::Bool(value) => {
-                if !fits(*sty == Type::Bool) {
-                    self.report(errors::pattern_mismatch(sty, pattern.span));
-                }
-                (Some(Covers::Bool(*value)), Vec::new())
-            }
-            PatternKind::Variant(name, slots) => {
-                self.variant_pattern(pattern, name, slots.as_deref(), sty)
-            }
+    /// W0102 if no value reaches `pat` past the earlier unguarded arms.
+    fn arm_reachable(&mut self, rows: &[(Pat, Span)], pat: &Pat, sty: &Type, span: Span) {
+        let tys = [sty.clone()];
+        let space = self.space();
+        let earlier: Vec<Vec<Pat>> = rows.iter().map(|(p, _)| vec![p.clone()]).collect();
+        if space.useful(&earlier, std::slice::from_ref(pat), &tys) {
+            return;
         }
-    }
-
-    fn variant_pattern(
-        &mut self,
-        pattern: &Pattern,
-        name: &crate::ast::Ident,
-        slots: Option<&[Pattern]>,
-        sty: &Type,
-    ) -> (Option<Covers>, Vec<(crate::ast::Ident, Type)>) {
-        let covers = Some(Covers::Variant(name.name.clone()));
-        if matches!(sty, Type::Error | Type::Never) {
-            return (covers, Vec::new());
-        }
-        let Some(variants) = self.variants_of(sty) else {
-            self.report(errors::pattern_mismatch(sty, pattern.span));
-            return (covers, Vec::new());
-        };
-        let Some((_, payloads)) = variants.into_iter().find(|(v, _)| *v == name.name) else {
-            self.report(errors::no_variant(&name.name, sty, name.span));
-            return (covers, Vec::new());
-        };
-        let slots = slots.unwrap_or(&[]);
-        if slots.len() != payloads.len() {
-            self.report(errors::payload_count(
-                &name.name,
-                payloads.len(),
-                slots.len(),
-                pattern.span,
-            ));
-            return (covers, Vec::new());
-        }
-        let bindings = slots
+        // Name one arm that covers it alone, when there is one.
+        let cause = rows
             .iter()
-            .zip(payloads)
-            .filter_map(|(slot, ty)| slot.slot_binding().map(|ident| (ident.clone(), ty)))
-            .collect();
-        (covers, bindings)
+            .find(|(p, _)| !space.useful(&[vec![p.clone()]], std::slice::from_ref(pat), &tys))
+            .map(|(_, s)| *s);
+        self.report(match cause {
+            Some(cause) => errors::unreachable_arm(span, cause),
+            None => errors::unreachable_arm_combined(span),
+        });
+    }
+
+    /// W0103 for each binding that nothing in its arm mentions.
+    fn unused(&mut self, bindings: &[(Ident, Type)]) {
+        for (name, _) in bindings {
+            // A binding named like a type is already E0311.
+            let named_like_type = self.type_span(&name.name).is_some();
+            if !named_like_type && !self.mentions.values().any(|m| m.decl == name.span) {
+                self.report(errors::unused_binding(&name.name, name.span));
+            }
+        }
+    }
+
+    /// E0417 unless the unguarded `rows` cover every value of `sty`.
+    fn exhaustive(&mut self, expr: &Expr, scrutinee: &Expr, sty: &Type, rows: &[(Pat, Span)]) {
+        let matrix: Vec<Vec<Pat>> = rows.iter().map(|(p, _)| vec![p.clone()]).collect();
+        let missing = self.space().missing(&matrix, std::slice::from_ref(sty));
+        if missing.is_empty() {
+            return;
+        }
+        let span = Span::new(expr.span.start, scrutinee.span.end);
+        // Integers and strings have too many values to list.
+        if missing.iter().all(|w| w[0] == Pat::Wild) && (sty.is_integer() || *sty == Type::String) {
+            self.report(errors::non_exhaustive_values(sty, span));
+            return;
+        }
+        let shown: Vec<String> = missing.iter().map(|w| show(&w[0], true)).collect();
+        self.report(errors::non_exhaustive(&shown, span));
     }
 }
 
@@ -223,7 +162,7 @@ mod tests {
         let scoped = format!(
             "{SHAPE}fun main() {{ let s = Shape.Empty; match s {{ Circle(r) => {{}} _ => {{ let x = r; }} }} }}"
         );
-        assert_eq!(errors(&scoped), [("E0301", "r")]);
+        assert_eq!(errors(&scoped), [("W0103", "r"), ("E0301", "r")]);
     }
 
     #[test]
@@ -281,6 +220,35 @@ mod tests {
             "{SHAPE}fun main() {{ let s = Shape.Empty; match s {{ Circle(Shape) => {{}} _ => {{}} }} }}"
         );
         assert_eq!(errors(&shadow), [("E0311", "Shape")]);
+    }
+
+    #[test]
+    fn guards_are_bool_and_see_the_bindings() {
+        let src = format!(
+            "{SHAPE}fun main() {{ let s = Shape.Empty; let a = match s {{ Circle(r) if r > 1.0 => 1, _ => 2 }}; }}"
+        );
+        assert_eq!(let_type(&src, "a"), Type::I64);
+        let bad = format!(
+            "{SHAPE}fun main() {{ let s = Shape.Empty; let a = match s {{ Circle(r) if r => 1, _ => 2 }}; }}"
+        );
+        assert_eq!(errors(&bad), [("E0403", "r")]);
+    }
+
+    #[test]
+    fn unused_bindings_are_w0103() {
+        let typo = format!(
+            "{SHAPE}fun main() {{ let o: Option<Shape> = None; let a = match o {{ Some(Emtpy) => 1, None => 2 }}; }}"
+        );
+        let d = crate::check::test_util::diagnostics_or_warnings(&typo);
+        assert_eq!(
+            (d[0].code, d[0].message.as_str()),
+            ("W0103", "unused binding `Emtpy`")
+        );
+        assert!(d[0].help.as_deref().unwrap().contains("check its spelling"));
+        // Used only in the guard is used.
+        ok(&format!(
+            "{SHAPE}fun main() {{ let s = Shape.Empty; let a = match s {{ Circle(r) if r > 1.0 => 1, _ => 2 }}; }}"
+        ));
     }
 
     #[test]

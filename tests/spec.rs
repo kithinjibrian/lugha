@@ -60,6 +60,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Methods",
         "A stack",
         "A rejected enum program",
+        "Patterns and equality",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

@@ -208,12 +208,17 @@ pub(in crate::check) fn cannot_infer_none(span: Span) -> Diagnostic {
         .with_help("annotate it: `let x: Option<i64> = None;`")
 }
 
+/// E0417 listing at most three missing cases, then "and N more" (v2 draft §5).
 pub(in crate::check) fn non_exhaustive(missing: &[String], span: Span) -> Diagnostic {
-    let list = missing
+    let mut list = missing
         .iter()
+        .take(3)
         .map(|m| format!("`{m}`"))
         .collect::<Vec<_>>()
         .join(", ");
+    if missing.len() > 3 {
+        list += &format!(" and {} more", missing.len() - 3);
+    }
     Diagnostic::error(
         "E0417",
         format!("non-exhaustive match: {list} not covered"),

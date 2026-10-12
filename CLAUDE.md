@@ -242,7 +242,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
 │   │                  (fields, indexing), array.rs (literals, for … of, E0507 guard), structs.rs
 │   │                  (declarations, E0307/E0308, literals), liveness.rs (move on last use), enums.rs
-│   │                  (declarations, construction), matching.rs (match, E0417, W0102), methods.rs (impl,
+│   │                  (declarations, construction), matching.rs (match, guards, W0103), patterns.rs (pattern typing),
+│   │                  usefulness.rs (E0417 witnesses, W0102), methods.rs (impl,
 │   │                  E0310), method_calls.rs (calls, receivers, E0415, E0508), builtins.rs (push, pop, clear), swap.rs (swap, E0509), conflicts.rs (E0510), errors/ (mod.rs, names.rs E03xx,
 │   │                  types.rs E04xx, places.rs E05xx/W01xx)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
@@ -253,11 +254,12 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  array.rs (allocation, list/repeat literals, for … of), copy.rs (deep copies, copy sites, mangle), equality.rs (deep ==, lugha_eq_*),
 │   │                  structs.rs (named types, layout, literals, fields, place addresses), enums.rs
 │   │                  (enum layout, Option types, payload addresses), growth.rs (push, pop, clear), construct.rs (building enum values,
-│   │                  indirect slots), matching.rs (match lowering), methods.rs (method symbols, receivers, calls),
+│   │                  indirect slots), matching.rs (match lowering, switch), patterns.rs (nested/guarded arms),
+│   │                  methods.rs (method symbols, receivers, calls),
 │   │                  swap.rs (swap: loads and crossed stores)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_PARTS, RUNTIME_SOURCE, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes), guard.rs (panics → internal error, exit 2), pipeline.rs,
-│                      gate/ (mod.rs, walk.rs: stops v2 constructs until their milestone, PRP-030),
+│                      gate/ (mod.rs, walk.rs: stops M10/M11 constructs until their milestone, PRP-030),
 │                      source.rs (load, E0110, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)
 ├── tests/

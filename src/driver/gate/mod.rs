@@ -1,4 +1,4 @@
-//! The v2 feature gate (PRP-030): all of the v2 draft's syntax parses, but
+//! The v2 feature gate (PRP-030; milestone 9's entries went with PRP-032): all of the v2 draft's syntax parses, but
 //! each construct is stopped here, before checking, until the milestone that
 //! implements it. Later PRPs delete entries as they land; the gate goes when
 //! v2 is complete (milestone 11). v1's gate worked the same way (MEMORY 24).
@@ -18,8 +18,6 @@ pub(super) struct Gated {
     pub span: Span,
 }
 
-const NESTED: (&str, u8) = ("nested patterns", 9);
-const GUARDS: (&str, u8) = ("match guards", 9);
 const MODULES: (&str, u8) = ("modules", 10);
 const PUB: (&str, u8) = ("pub", 10);
 const GENERICS: (&str, u8) = ("generics", 11);
@@ -70,18 +68,6 @@ mod tests {
         assert_eq!(gated(src), None);
         // An unknown generic name is left to the checker's E0305 help.
         assert_eq!(gated("enum L { N, C(Box<L>) }\nfun main() {}"), None);
-    }
-
-    #[test]
-    fn milestone_9_constructs() {
-        assert_eq!(
-            gated("fun f(o: Option<Option<i64>>) { match o { Some(Some(x)) => 1, _ => 2 }; }"),
-            Some(("nested patterns", 9, "Some(x)"))
-        );
-        assert_eq!(
-            gated("fun f(n: i64) { match n { x if n > 1 => 1, _ => 2 }; }"),
-            Some(("match guards", 9, "n > 1"))
-        );
     }
 
     #[test]

@@ -81,11 +81,11 @@ Done when the methods program passes.
 Done when the stack program passes and `lughac spec` prints the full v1 spec.
 - [x] PRP-023: `{ len, cap, elems }` layout, `push`/`pop`/`clear`, `lugha_rt_array_grow`; v1 spec complete, draft retired — **milestone 8 done: v1 complete**
 
-### Milestone 9 — Patterns and equality
+### Milestone 9 — Patterns and equality ✅
 Done when the v2 draft's patterns program passes.
 - [x] PRP-030: all of v2's syntax (`import`, `pub`, type parameters, `m.T` / `T<args>`, nested patterns, guards, E0208) and the driver gate
 - [x] PRP-031: deep `==` on every type (`lugha_eq_*`), string `<` (`lugha_rt_str_cmp`); `Language v2 Specification.md` started (printed by `lughac spec`)
-- [ ] PRP-032: nested patterns and guards, exhaustiveness — **milestone 9 done**
+- [x] PRP-032: nested patterns and guards, usefulness-based E0417/W0102, W0103 — **milestone 9 done**, tag `m9`
 
 ### Milestone 10 — Modules
 Done when the two-module program passes.
