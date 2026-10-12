@@ -499,6 +499,12 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-The Lugha v2 draft is approved (`docs/specs/Language v2 Draft.md`, MEMORY 33). v1.2 is still the spec `lughac spec` prints. Next is **milestone 9, patterns and equality**: nested patterns, `if` guards, deep `==` on every type (`lugha_eq_<type>` helpers), and string `<` (`lugha_rt_str_cmp`). Start with discovery for its PRP(s), citing the draft's §3–§5, §9 and §10 (patterns program). The draft's §12 lists open questions to settle along the way (an unused-binding warning for nested slots).
+Milestone 9 is in progress. PRP-030 is merged: all v2 syntax parses, and `driver/gate/` stops v2 constructs with exit 2 until their milestone. Next is **PRP-031: deep `==` on every type and string `<`** (v2 draft §4, §5, §9). It needs:
+- `lugha_eq_<type>` helpers, emitted like the copy helpers;
+- `lugha_rt_str_cmp` in `runtime/lugha_rt.c` (the core part);
+- operator typing changes in `check/ops.rs`;
+- the removal of v1.2's "no `==` on structs/enums/arrays" E0404 cases.
+
+It needs no gate change, since there is no new syntax. Then PRP-032 covers nested patterns and guards. Start with discovery.
 
 See `TODO.md`.

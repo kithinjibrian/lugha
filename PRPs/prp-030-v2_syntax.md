@@ -1,6 +1,6 @@
 ## FEATURE: v2 syntax — lex and parse all of the v2 draft's grammar, with a driver gate for constructs not yet built.
 
-**Status:** implemented 2026-10-12 — session 37
+**Status:** merged into `main` 2026-10-12 — session 37
 **Milestone:** 9 (first of three PRPs: 030 syntax, 031 deep `==` and string `<`, 032 nested patterns and guards)
 **Spec:** `Language v2 Draft.md` §2 (keywords), §3 (grammar, E0208), §10 (example programs). v1.2 stays authoritative for everything the gate doesn't stop.
 **Decisions:**
