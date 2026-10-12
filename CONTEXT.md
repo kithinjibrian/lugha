@@ -1316,7 +1316,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 24)
 
 ## SESSION 26 — 2026-10-12 — PRP-020 enums, match and Option — open
 
-Branch: main
+Branch: main → prp-020-enums_and_match
 
 ---
 
