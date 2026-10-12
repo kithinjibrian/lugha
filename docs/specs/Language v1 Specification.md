@@ -1,8 +1,8 @@
-# Lugha v1 Specification (in progress)
+# Lugha v1 Specification
 
 Oct 9, 2026 · @kithinji
 
-**v1 status.** This document is v0 plus everything v1 has implemented so far: enums, `match`, `Option` and recursive data (milestone 6), and methods (milestone 7). The rest of v1 — growable arrays — is specified in `Language v1 Draft.md` and joins this document as its milestones land. Every valid v0 program is a valid v1 program unless it uses one of the new keywords as a name.
+**v1.** This is v0 plus enums, `match`, `Option`, recursive data, methods and growable arrays (milestones 6–8). Every valid v0 program is a valid v1 program unless it uses one of the new keywords as a name.
 
 ## 1. Overview
 
@@ -266,7 +266,7 @@ There is no null. Every string and array variable holds a valid object.
 - **Unreachable arms.** An arm after `_`, or for a variant or literal already covered, is warning W0102.
 - **Bindings.** Payload names are immutable and borrowed, like `for … of` variables: storing or returning one copies it. Each is in scope in its own arm only.
 
-**Arrays.** `T[]` has a length fixed at creation, read with `.len` (type `i64`). Elements are read and written with `xs[i]`, where `i` must be `i64`. Every index is bounds-checked; an out-of-range index panics. Arrays are created two ways:
+**Arrays.** `T[]` has a length, read with `.len` (type `i64`), that changes only through the built-in methods below. Elements are read and written with `xs[i]`, where `i` must be `i64`. Every index is bounds-checked; an out-of-range index panics. Arrays are created two ways:
 
 - List literal `[a, b, c]`. All elements must have the same type. An empty literal `[]` needs an expected type from context, such as `let xs: i64[] = [];`.
 - Repeat literal `[value; count]`, where `count` is a runtime `i64`. Every element is a copy of `value`. `value` is evaluated once, before `count`. A negative `count` panics with `negative array length`; a `count` of 0 gives an empty array.
@@ -331,7 +331,17 @@ Structs and arrays have no `==` in v0. Compare their fields or elements instead.
 - **Associated functions.** A function in an `impl` without `self` is called on the type: `Vec2.new(1.0, 2.0)`.
 - **No aliasing.** An argument of a `mut self` call may not mention the receiver's root variable (E0508): in `v.add(v)` the method would see its own edits through `o`. Copy first: `let w = v; v.add(w);`.
 
-Calling a method that doesn't exist, a `self` method on a type or an associated function on a value is E0415. Arrays, strings and `Option` have no methods.
+Calling a method that doesn't exist, a `self` method on a type or an associated function on a value is E0415. Strings and `Option` have no methods; arrays have only the built-ins below.
+
+**Growable arrays.** Every array has three built-in methods:
+
+| Method | Effect |
+| --- | --- |
+| `xs.push(v)` | Appends `v`; `xs.len` grows by one |
+| `xs.pop()` | Removes and returns the last element as `Some(x)`, or `None` if `xs` is empty |
+| `xs.clear()` | Removes every element; `xs.len` becomes 0 |
+
+They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (E0501), not inside a string (E0506), and not an array being iterated by `for … of` (E0507). `push` stores its value like an assignment does — copied from a place, moved on last use — and reads it before the array grows, so `xs.push(xs[0])` simply appends a copy of the first element (E0508 doesn't apply). `pop` moves the element out. Indexing is still bounds-checked against the current `.len`, and copying an array copies its current elements.
 
 **Mutability.** Bindings are immutable by default. Assigning to any place requires the variable at its root to be declared `let mut`. That covers the variable itself, a field (`p.x = 1.0`), an element (`xs[0] = 1`) and any chain of these (`shapes[i].pts[j].x = 2.0`). Because every variable owns its data, a variable declared without `mut` never changes after it is initialized.
 
@@ -341,7 +351,7 @@ Evaluation is strictly left to right: operands, call arguments and struct-litera
 
 **Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way. Float arithmetic follows IEEE 754: overflow gives an infinity and division by zero gives an infinity or NaN, never a panic. Explicit casts are the one place values wrap: narrowing with `as` truncates (section 4).
 
-**Method calls.** `x.m(a, b)` evaluates `x`, then `a`, then `b`. For a `mut self` call the place `x` is evaluated once, before the arguments, like an assignment's place.
+**Method calls.** `x.m(a, b)` evaluates `x`, then `a`, then `b`; `xs.push(v)` evaluates the place `xs`, then `v`. For a `mut self` call the place `x` is evaluated once, before the arguments, like an assignment's place.
 
 **`match` evaluation.** A `match` evaluates its scrutinee once, then tests the arms from top to bottom and runs the first that matches. A variant's payloads are evaluated left to right when it is built.
 
@@ -453,14 +463,14 @@ Value types live on the stack; strings and arrays live on a garbage-collected he
 
 **Recursion depth.** Function calls use the native stack, which is finite. A recursion that goes too deep — for example walking a list of a million nodes recursively — crashes the program with a signal (exit code 139) instead of panicking. Walk very long lists with a loop.
 
-**Heap objects.** All heap memory comes from one runtime function, `lugha_rt_alloc(size)`, which calls `GC_malloc`. Memory from `GC_malloc` is zeroed. Every heap object starts with an 8-byte length header:
+**Heap objects.** All heap memory comes from one runtime function, `lugha_rt_alloc(size)`, which calls `GC_malloc`. Memory from `GC_malloc` is zeroed. Every heap object starts with a length header:
 
 | Object | Layout | Pointer held by Lugha code |
 | --- | --- | --- |
 | `string` | `{ i64 len; u8 bytes[len]; u8 nul }` | Points at `len` |
-| `T[]` | `{ i64 len; T elems[len] }` | Points at `len` |
+| `T[]` | `{ i64 len; i64 cap; T elems[cap] }` | Points at `len` |
 
-Elements are laid out with LLVM's natural alignment for `T`. String data is always followed by a NUL byte, so it can be passed to C without copying. String literals are emitted as private constant globals with the same layout, and are never freed.
+Elements are laid out with LLVM's natural alignment for `T`. An array's capacity is never visible to programs: literals, repeat literals and copies are full (`cap == len`), and `push` on a full array allocates a new one with double the capacity (at least 4), copies the elements, and stores the new pointer in the array's place — its only owner, so no other pointer sees the old object. String data is always followed by a NUL byte, so it can be passed to C without copying. String literals are emitted as private constant globals with the same layout, and are never freed.
 
 Because of value semantics (section 4), every array is owned by exactly one variable, field or element, except while it is lent to a function call. Only strings are shared, and they are immutable.
 
@@ -542,6 +552,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_str_concat(a, b)` | Implement string `+` |
 | `lugha_rt_panic_bounds(len, index, file, line, col)` | The out-of-bounds panic, with the length and index |
 | `lugha_rt_str_eq(a, b)` | Implement string `==` and `!=`; returns 1 or 0 as `i32` |
+| `lugha_rt_array_grow(array, elem_size)` | A copy of a full array with double the capacity (at least 4), for `push` |
 | `lugha_rt_print_*` / `lugha_rt_to_string_*` | One per primitive type (plus `lugha_rt_print_str`), for the intrinsics; `bool` and `u8` arguments are passed zero-extended to 32 bits |
 | `lugha_rt_print_newline()` | The newline `println` adds |
 
@@ -781,6 +792,27 @@ fun main() {
 }
 ```
 
+**A stack** (milestone 8). Prints `3` then `2` then `empty` on three lines, exits with 0.
+
+```
+fun main() {
+    let mut stack: i64[] = [];
+    stack.push(1);
+    stack.push(2);
+    stack.push(3);
+    match stack.pop() {
+        Some(x) => println(x),
+        None => println("empty"),
+    }
+    println(stack.len);
+    stack.clear();
+    match stack.pop() {
+        Some(x) => println(x),
+        None => println("empty"),
+    }
+}
+```
+
 **A rejected enum program** (milestone 6). The checker reports the missing variant, and `lughac` exits with 1:
 
 ```
@@ -837,7 +869,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 5 | Heap data | Boehm GC, strings, arrays, structs, array copies, `for`-`of`, bounds checks, panics; `lughac spec` | Every program in section 10 passes |
 | 6 | Enums (v1) | `enum`, construction, `match` with flat patterns, exhaustiveness, `Option<T>`, recursive enums | The enum programs in section 10 pass (done) |
 | 7 | Methods (v1) | `impl`, `self`/`mut self`, associated functions, method calls | The methods program in section 10 passes (done) |
-| 8 | Growable arrays (v1) | `push`, `pop`, `clear` on `T[]` | Specified in `Language v1 Draft.md`; then this document is the full v1 specification |
+| 8 | Growable arrays (v1) | `push`, `pop`, `clear` on `T[]` | The stack program in section 10 passes (done: v1 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -875,5 +907,6 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [x] **Integer overflow.** Decided: always trap, like Swift, rather than wrapping or Rust's debug-only checks. One behavior in every build, at a cost of a few percent. Explicit wrapping operations can come later.
 - [x] **Semicolons.** Required, which keeps the parser simple. TypeScript-style automatic semicolon insertion is possible later but adds edge cases.
 - [ ] **Literal patterns on `f64`.** Excluded from v1: float equality in patterns invites mistakes. Revisit if needed.
+- [x] **Array growth factor.** Decided: capacity doubles, starting at 4. It was adequate on the stack program and the DECISION-010 programs; revisit only with measurements.
 - [ ] **`mut` bindings in `match`.** Bindings are borrowed and immutable; no program has needed `mut` ones yet.
 - [x] **Expression-bodied functions.** Decided: adopted (section 6). `fun square(x: i64): i64 = x * x;` drops the braces from one-liners. It is a small parser addition and a second way to write the same function, accepted because one-liners are common and it is pure sugar for `{ e }`.

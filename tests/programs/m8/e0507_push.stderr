@@ -1,0 +1,8 @@
+error[E0507]: cannot call `push` on `xs` while iterating over it
+  --> tests/programs/m8/e0507_push.la:4:9
+  |
+3 |     for x of xs {
+  |              -- iterated here
+4 |         xs.push(x);
+  |         ^^
+

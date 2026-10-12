@@ -84,7 +84,11 @@ impl Checker {
             .find(|(iterated, _)| iterated.overlaps(&path))
         {
             let for_span = *for_span;
-            self.report(errors::assign_while_iterating(name, place.span, for_span));
+            let mut d = errors::assign_while_iterating(name, place.span, for_span);
+            if let Some(m) = method {
+                d.message = format!("cannot call `{m}` on `{name}` while iterating over it");
+            }
+            self.report(d);
         }
         true
     }

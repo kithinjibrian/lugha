@@ -1,6 +1,6 @@
 ## FEATURE: Growable arrays — `xs.push(v)`, `xs.pop()` and `xs.clear()` on `T[]`, a capacity header, and the complete v1 specification. Completes milestone 8 and v1.
 
-**Status:** approved 2026-10-12 — session 29
+**Status:** implemented 2026-10-12 — session 29 (branch `prp-023-growable_arrays`, awaiting merge)
 **Milestone:** 8 (one PRP), the last of v1. Done-when: the stack program prints `3`, `2`, `empty`; then tag `m8`.
 **Spec:** `docs/specs/Language v1 Draft.md` §4 "Growable arrays", §5, §7 (array layout), §9 (`lugha_rt_array_grow`), §10 (stack program), folded into `Language v1 Specification.md`
 **Decisions:**
@@ -34,6 +34,14 @@ Each needs a `let mut` array, and none may run on an array being walked by `for 
   - `runtime/lugha_rt.c`, `src/codegen/runtime.rs` (`RUNTIME_SYMBOLS`);
   - `tests/common/v1_programs.rs`, `tests/parser.rs`.
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 29)
+- **Element addresses:** `heap::element_address` stays the array form (header 16), with a private `address_after(object, header, index, size)` shared by strings (8) and a `capacity_address` helper. No call sites changed.
+- **`construct_values`:** split from `construct` so `pop` builds `Some(x)` from a loaded value.
+- **E0507 wording:** for a built-in or method receiver it reads "cannot call `push` on `xs` while iterating over it".
+- **Updated test:** the milestone-7 test asserting `xs.push(2)` is E0415 now uses `xs.sort()`.
+- **Regression:** the DECISION-010 benchmarks printed exactly their recorded outputs under the new layout.
+- **Liveness:** `check/liveness.rs` reached 305 lines with the `push` store site, and was tightened back to 300 (a comment and the new test shortened) instead of split.
 
 ### Discovery answers (session 29)
 1. **`xs.push(xs[0])` is allowed.** The place `xs` is evaluated first, then the value, which is copied from a place like an assignment's. Only then does the array grow, so no half-done edit can be observed and E0508 doesn't apply to the built-ins.
@@ -133,7 +141,7 @@ Each needs a `let mut` array, and none may run on an array being walked by `for 
 ## TESTS TO WRITE
 
 Unit tests:
-- [ ] **Checker:**
+- [x] **Checker:**
   - `push` expects the element type (E0401/E0403);
   - `pop` is `Option<T>`;
   - `clear`;
@@ -143,16 +151,16 @@ Unit tests:
   - E0507 during `for … of`;
   - `xs.push(xs[0])` is accepted;
   - `push`'s argument moves on last use.
-- [ ] **Codegen IR:**
+- [x] **Codegen IR:**
   - literals store `cap`;
   - element addresses add 16;
   - `push` calls `lugha_rt_array_grow` only on the full path;
   - `pop` builds `Option` with tags 0/1.
-- [ ] **Runtime:** `lugha_rt_array_grow` is in `RUNTIME_SYMBOLS`; `lugha_rt.c` still compiles with `-Werror`.
+- [x] **Runtime:** `lugha_rt_array_grow` is in `RUNTIME_SYMBOLS`; `lugha_rt.c` still compiles with `-Werror`.
 
 Acceptance:
-- [ ] **Spec §10:** the stack program prints `3`, `2`, `empty` (from the spec, at `-O0`/`-O2`).
-- [ ] **`m8/growth.la`:**
+- [x] **Spec §10:** the stack program prints `3`, `2`, `empty` (from the spec, at `-O0`/`-O2`).
+- [x] **`m8/growth.la`:**
   - 100 000 pushes, then summed;
   - `pop` until `None`;
   - `clear`, then reuse;
@@ -162,8 +170,8 @@ Acceptance:
   - an array grown inside a struct field (`s.items.push(…)`).
 
   Expected stdout written by hand.
-- [ ] **Reject programs:** `e0501_push.la`, `e0507_push.la`, `e0415_string_push.la`. Goldens captured and reviewed.
-- [ ] **Regression:** every earlier test still passes after the layout change, in particular every `m5`–`m7` program and DECISION-010's benchmark programs, which are built and run.
+- [x] **Reject programs:** `e0501_push.la`, `e0507_push.la`, `e0415_string_push.la`. Goldens captured and reviewed.
+- [x] **Regression:** every earlier test still passes after the layout change, in particular every `m5`–`m7` program and DECISION-010's benchmark programs, which are built and run.
 
 ## ROLLBACK PLAN
 
@@ -171,10 +179,10 @@ Acceptance:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The stack program prints `3`, `2`, `empty`; every test above passes.
-- [ ] The v1 spec is complete and the draft deleted; CLAUDE.md, README, MEMORY.md, TODO.md, CHANGELOG.md updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The stack program prints `3`, `2`, `empty`; every test above passes.
+- [x] The v1 spec is complete and the draft deleted; CLAUDE.md, README, MEMORY.md, TODO.md, CHANGELOG.md updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

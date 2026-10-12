@@ -101,6 +101,9 @@ impl<'ctx> Lowerer<'ctx> {
             return Ok(None);
         };
         let base_type = self.ty(base);
+        if let Type::Array(_) = base_type {
+            return self.array_builtin(base, &name.name, args).map(Some);
+        }
         // The checker gives a type name `void` (associated calls and variants).
         let (owner, receiver) = match (&base_type, &base.kind) {
             (Type::Void, ExprKind::Name(owner)) => (owner.clone(), None),

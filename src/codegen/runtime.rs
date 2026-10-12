@@ -17,13 +17,14 @@ use crate::ast::Expr;
 use crate::check::Type;
 
 /// Every runtime function codegen may call; `lugha_rt.c` defines them all.
-pub const RUNTIME_SYMBOLS: [&str; 18] = [
+pub const RUNTIME_SYMBOLS: [&str; 19] = [
     "lugha_rt_init",
     "lugha_rt_alloc",
     "lugha_rt_panic",
     "lugha_rt_panic_bounds",
     "lugha_rt_str_concat",
     "lugha_rt_str_eq",
+    "lugha_rt_array_grow",
     "lugha_rt_print_i32",
     "lugha_rt_print_i64",
     "lugha_rt_print_u8",

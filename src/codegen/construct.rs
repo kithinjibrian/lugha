@@ -32,11 +32,22 @@ impl<'ctx> Lowerer<'ctx> {
         variant: &str,
         args: &[Expr],
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
-        let (tag, payloads) = self.variant(ty, variant);
+        let (_, payloads) = self.variant(ty, variant);
         let mut values = Vec::with_capacity(args.len());
         for (arg, payload) in args.iter().zip(&payloads) {
             values.push(self.value_for_store(arg, payload)?);
         }
+        Ok(self.construct_values(ty, variant, values))
+    }
+
+    /// Builds `variant` of enum `ty` from payload values already lowered.
+    pub(super) fn construct_values(
+        &mut self,
+        ty: &Type,
+        variant: &str,
+        values: Vec<BasicValueEnum<'ctx>>,
+    ) -> BasicValueEnum<'ctx> {
+        let (tag, payloads) = self.variant(ty, variant);
         let slot = self.entry_alloca(ty, "enum");
         let named = self
             .context
@@ -72,10 +83,9 @@ impl<'ctx> Lowerer<'ctx> {
                 self.store_element(address, payload, value);
             }
         }
-        Ok(self
-            .builder
+        self.builder
             .build_load(named, slot, "enum.value")
-            .expect(POSITIONED))
+            .expect(POSITIONED)
     }
 }
 

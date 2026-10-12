@@ -16,8 +16,11 @@ use super::value::llvm_type;
 use crate::ast::{BinOp, Expr, Ident};
 use crate::check::Type;
 
-/// Bytes before the data: the `i64` length (spec §7).
-const HEADER: u64 = 8;
+/// Bytes before a string's data: the `i64` length (spec §7).
+const STRING_HEADER: u64 = 8;
+
+/// Bytes before an array's elements: the `i64` length and capacity (v1 §7).
+pub(super) const ARRAY_HEADER: u64 = 16;
 
 /// The element type of an array type.
 pub(super) fn element_of(ty: &Type) -> Type {
@@ -70,10 +73,27 @@ impl<'ctx> Lowerer<'ctx> {
             .into_int_value()
     }
 
-    /// The address of element `index` (each `size` bytes) of `object`.
+    /// The address of element `index` (each `size` bytes) of the array `object`.
     pub(super) fn element_address(
         &self,
         object: PointerValue<'ctx>,
+        index: IntValue<'ctx>,
+        size: u64,
+    ) -> PointerValue<'ctx> {
+        self.address_after(object, ARRAY_HEADER, index, size)
+    }
+
+    /// Where an array's capacity is stored: the second `i64` of its header.
+    pub(super) fn capacity_address(&self, array: PointerValue<'ctx>) -> PointerValue<'ctx> {
+        let zero = self.context.i64_type().const_zero();
+        self.address_after(array, 8, zero, 0)
+    }
+
+    /// The address `header + index * size` bytes into `object`.
+    fn address_after(
+        &self,
+        object: PointerValue<'ctx>,
+        header: u64,
         index: IntValue<'ctx>,
         size: u64,
     ) -> PointerValue<'ctx> {
@@ -86,7 +106,7 @@ impl<'ctx> Lowerer<'ctx> {
             .build_int_mul(index, i64_type.const_int(size, false), "scaled")
             .expect(POSITIONED);
         let offset = b
-            .build_int_add(scaled, i64_type.const_int(HEADER, false), "offset")
+            .build_int_add(scaled, i64_type.const_int(header, false), "offset")
             .expect(POSITIONED);
         let address = b.build_int_add(base, offset, "address").expect(POSITIONED);
         b.build_int_to_ptr(
@@ -207,10 +227,13 @@ impl<'ctx> Lowerer<'ctx> {
         let i = self.get(index, &Type::I64)?.into_int_value();
         let len = self.length(object);
         self.bounds_check(len, i, at);
-        Ok((
-            self.element_address(object, i, self.element_size(&element)),
-            element,
-        ))
+        let header = if base_type == Type::String {
+            STRING_HEADER
+        } else {
+            ARRAY_HEADER
+        };
+        let size = self.element_size(&element);
+        Ok((self.address_after(object, header, i, size), element))
     }
 }
 

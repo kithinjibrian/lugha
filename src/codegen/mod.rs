@@ -15,6 +15,7 @@ mod copy;
 mod enums;
 mod expr;
 mod function;
+mod growth;
 mod heap;
 mod lower;
 mod matching;

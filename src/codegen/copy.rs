@@ -87,20 +87,19 @@ impl<'ctx> Lowerer<'ctx> {
         let len = self.length(source);
         let copy = self.new_array(len, element);
         let i64_type = self.context.i64_type();
-        let data = self
-            .builder
-            .build_int_mul(
-                len,
-                i64_type.const_int(self.element_size(element), false),
-                "bytes",
-            )
-            .expect(POSITIONED);
+        let size = self.element_size(element);
         let bytes = self
             .builder
-            .build_int_add(data, i64_type.const_int(8, false), "bytes")
+            .build_int_mul(len, i64_type.const_int(size, false), "bytes")
             .expect(POSITIONED);
+        // Only the `len` elements: the copy is full (`cap == len`), and spare
+        // capacity in the source is never read.
+        let (to, from) = (
+            self.element_address(copy, i64_type.const_zero(), size),
+            self.element_address(source, i64_type.const_zero(), size),
+        );
         self.builder
-            .build_memcpy(copy, 8, source, 8, bytes)
+            .build_memcpy(to, 8, from, 8, bytes)
             .expect("memcpy of a fresh, aligned allocation");
         copy
     }

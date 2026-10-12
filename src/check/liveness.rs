@@ -137,7 +137,11 @@ impl Walk<'_> {
             }
             ExprKind::Call(callee, args) => {
                 self.expr(callee);
-                args.iter().for_each(|a| self.expr(a));
+                // `xs.push(v)` stores `v` (v1 §4); for a user `push` the mark is unused.
+                let push = matches!(&callee.kind, ExprKind::Field(_, m) if m.name == "push");
+                for a in args {
+                    if push { self.store(a) } else { self.expr(a) }
+                }
             }
             ExprKind::If { cond, then, else_ } => {
                 self.expr(cond);
@@ -222,6 +226,10 @@ mod tests {
                     expr(b, f);
                 }
                 Field(a, _) => expr(a, f),
+                Call(callee, args) => {
+                    expr(callee, f);
+                    args.iter().for_each(|x| expr(x, f));
+                }
                 _ => {}
             }
         }
@@ -279,5 +287,14 @@ mod tests {
         assert_eq!(moved_at, [src.rfind('a').unwrap()]);
         let src = "struct W { data: i64[] }\nfun main() { let xs = [1]; let w = W { data: xs }; }";
         assert_eq!(moved(src), ["xs"]);
+    }
+
+    #[test]
+    fn push_moves_a_dead_local_into_the_array() {
+        let src = "fun main() { let mut g = [[1]]; let r = [2]; g.push(r); }";
+        assert_eq!(moved(src), ["r"]);
+        assert!(
+            moved("fun main() { let mut g = [[1]]; let r = [2]; g.push(r); g[0] = r; }").len() == 1
+        );
     }
 }

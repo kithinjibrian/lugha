@@ -16,7 +16,14 @@ $ lughac run fib.la
 832040
 ```
 
-v0 has integers (`i32`, `i64`, `u8`), `f64`, `bool`, immutable strings, fixed-length arrays, structs, `if` expressions, loops, `for … of`, `extern fun` for calling C, and checked arithmetic and bounds that panic instead of misbehaving. Everything is a value: assigning an array or struct copies it. The full definition is [`docs/specs/Language v0 Specification.md`](docs/specs/Language%20v0%20Specification.md).
+Lugha v1 has:
+- **Basic types:** integers (`i32`, `i64`, `u8`), `f64`, `bool` and immutable strings.
+- **Compound types:** growable arrays (`push`, `pop`, `clear`), structs, and enums with exhaustive `match`, including `Option<T>` and recursive enums.
+- **Behaviour:** methods in `impl` blocks, `if` expressions, loops and `for … of`.
+- **C interop:** `extern fun` for calling C.
+- **Safety:** checked arithmetic and bounds that panic instead of misbehaving.
+
+Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v1 Specification.md`](docs/specs/Language%20v1%20Specification.md).
 
 ## Prerequisites
 

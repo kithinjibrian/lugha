@@ -9,7 +9,7 @@ use inkwell::values::{BasicValueEnum, IntValue, PointerValue, ValueKind};
 
 use super::CodegenError;
 use super::control::Loop;
-use super::heap::element_of;
+use super::heap::{ARRAY_HEADER, element_of};
 use super::lower::{Lowerer, POSITIONED};
 use super::scope::Local;
 use crate::ast::{Block, Expr, Ident};
@@ -26,7 +26,7 @@ impl<'ctx> Lowerer<'ctx> {
             .expect(POSITIONED);
         let bytes = self
             .builder
-            .build_int_add(data, i64_type.const_int(8, false), "bytes")
+            .build_int_add(data, i64_type.const_int(ARRAY_HEADER, false), "bytes")
             .expect(POSITIONED);
         // The runtime returns a pointer; `string` is codegen's pointer-typed stand-in here.
         let alloc = self.runtime("lugha_rt_alloc", &[Type::I64], Some(Type::String));
@@ -39,6 +39,9 @@ impl<'ctx> Lowerer<'ctx> {
         };
         let array = array.into_pointer_value();
         self.builder.build_store(array, len).expect(POSITIONED);
+        // A new array is full: `cap == len` (v1 §7).
+        let cap = self.capacity_address(array);
+        self.builder.build_store(cap, len).expect(POSITIONED);
         array
     }
 
@@ -228,12 +231,13 @@ mod tests {
             "fun f(t: bool) { let xs: i32[] = [1, 2, 3]; let b = [t]; let x = b[0]; }\nfun main() {}",
         );
         assert!(
-            ir.contains("@lugha_rt_alloc(i64 20)"),
-            "8 + 3 * 4 bytes: {ir}"
+            ir.contains("@lugha_rt_alloc(i64 28)"),
+            "16 + 3 * 4 bytes: {ir}"
         );
-        assert!(
-            ir.contains("store i64 3, ptr %array"),
-            "length header: {ir}"
+        assert_eq!(
+            ir.matches("store i64 3, ptr").count(),
+            2,
+            "length and capacity: {ir}"
         );
         assert!(
             ir.contains("zext i1") && ir.contains("trunc i8"),

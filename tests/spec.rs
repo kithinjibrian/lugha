@@ -58,6 +58,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Enums and match",
         "A linked list",
         "Methods",
+        "A stack",
         "A rejected enum program",
     ] {
         assert!(

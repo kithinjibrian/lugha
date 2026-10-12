@@ -1,0 +1,72 @@
+// Growable arrays (PRP-023): push, pop and clear.
+struct P { x: i64 }
+struct Bag { items: i64[] }
+
+fun main() {
+    let mut xs: i64[] = [];
+    for i in 0..100000 {
+        xs.push(i);
+    }
+    println(xs.len);
+    let mut total = 0;
+    for x of xs {
+        total += x;
+    }
+    println(total);
+
+    let mut small = [1, 2, 3];
+    let mut popped = 0;
+    let mut more = true;
+    while more {
+        match small.pop() {
+            Some(v) => {
+                popped += v;
+            }
+            None => {
+                more = false;
+            }
+        }
+    }
+    println(popped);
+    println(small.len);
+
+    small.push(7);
+    small.clear();
+    println(small.len);
+    small.push(8);
+    println(small[0]);
+
+    let mut flags: bool[] = [];
+    flags.push(true);
+    flags.push(false);
+    println(flags[0]);
+    println(flags[1]);
+
+    let mut words = ["a"];
+    words.push("b");
+    println(words[0] + words[1]);
+
+    let mut ps = [P { x: 1 }];
+    ps.push(P { x: 2 });
+    println(ps[0].x + ps[1].x);
+
+    let mut grid = [[1], [2]];
+    grid.push(grid[0]);
+    grid[2][0] = 9;
+    println(grid[0][0]);
+    println(grid.len);
+
+    let mut d = [4, 5];
+    d.push(d[0]);
+    println(d[2]);
+
+    let before = d;
+    d.push(6);
+    println(before.len);
+    println(d.len);
+
+    let mut bag = Bag { items: [] };
+    bag.items.push(10);
+    bag.items.push(20);
+    println(bag.items[1]);
+}

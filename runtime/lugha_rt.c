@@ -25,11 +25,19 @@ typedef struct {
     char bytes[];
 } LughaString;
 
+/* A Lugha array: length, capacity, then `cap` elements (v1 §7). */
+typedef struct {
+    int64_t len;
+    int64_t cap;
+    unsigned char elems[];
+} LughaArray;
+
 void lugha_rt_init(void);
 void *lugha_rt_alloc(int64_t size);
 void lugha_rt_panic(const LughaString *msg, const char *file, int64_t line, int64_t col);
 void lugha_rt_panic_bounds(int64_t len, int64_t index, const char *file, int64_t line, int64_t col);
 LughaString *lugha_rt_str_concat(const LughaString *a, const LughaString *b);
+LughaArray *lugha_rt_array_grow(const LughaArray *array, int64_t elem_size);
 int32_t lugha_rt_str_eq(const LughaString *a, const LughaString *b);
 void lugha_rt_print_i32(int32_t value);
 void lugha_rt_print_i64(int64_t value);
@@ -65,6 +73,21 @@ void *lugha_rt_alloc(int64_t size) {
         die("panic: out of memory\n");
     }
     return memory;
+}
+
+/* A copy of `array` with room for at least one more element: capacity
+ * doubles, starting at 4. The old object is left to the GC; its single
+ * owner switches to the copy (v1 §7). */
+LughaArray *lugha_rt_array_grow(const LughaArray *array, int64_t elem_size) {
+    int64_t cap = array->cap < 2 ? 4 : array->cap * 2;
+    if (cap > (INT64_MAX - (int64_t)sizeof(LughaArray)) / elem_size) {
+        die("panic: out of memory\n");
+    }
+    LughaArray *grown = lugha_rt_alloc((int64_t)sizeof(LughaArray) + cap * elem_size);
+    grown->len = array->len;
+    grown->cap = cap;
+    memcpy(grown->elems, array->elems, (size_t)(array->len * elem_size));
+    return grown;
 }
 
 void lugha_rt_panic(const LughaString *msg, const char *file, int64_t line, int64_t col) {

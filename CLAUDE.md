@@ -154,13 +154,13 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v1 Specification.md` (v0 plus the v1 features built so far; `lughac spec` prints it). The rest of v1 is in `Language v1 Draft.md`; v0's file is frozen.
+The language itself is defined by `docs/specs/Language v1 Specification.md` (`lughac spec` prints it); v0's file is frozen.
 
 ---
 
 ## ARCHITECTURE RULES
 
-1. **The spec is the source of truth.** Read the relevant section of `docs/specs/Language v1 Specification.md` (and, for v1 features not yet folded in, `Language v1 Draft.md`) before implementing any language feature, and cite the section in the PRP. If code and spec disagree, the code is wrong. If the spec looks wrong, stop and propose a spec change — never edit the spec without explicit approval. *Why:* `lughac spec` ships the spec as the language reference; drift makes it lie.
+1. **The spec is the source of truth.** Read the relevant section of `docs/specs/Language v1 Specification.md` before implementing any language feature, and cite the section in the PRP. If code and spec disagree, the code is wrong. If the spec looks wrong, stop and propose a spec change — never edit the spec without explicit approval. *Why:* `lughac spec` ships the spec as the language reference; drift makes it lie.
 2. **Stages only depend backwards.** lexer → parser → check → codegen → driver. A stage never imports a later one. *Why:* `lughac check` and `--emit=tokens|ast|ir` must run the pipeline partway.
 3. **Every token and AST node carries a byte-offset `Span`.** *Why:* every diagnostic needs a location, and spans can't be recovered later.
 4. **Codegen never infers types.** It reads the checker's expression → type side table. *Why:* opaque pointers need the element type on every load/store/GEP (spec §9), and two type computations will disagree.
@@ -248,7 +248,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  literals, panics), heap.rs (headers, element layout, bounds checks, string ops),
 │   │                  array.rs (allocation, list/repeat literals, for … of), copy.rs (deep copies, copy sites),
 │   │                  structs.rs (named types, layout, literals, fields, place addresses), enums.rs
-│   │                  (enum layout, Option types, payload addresses), construct.rs (building enum values,
+│   │                  (enum layout, Option types, payload addresses), growth.rs (push, pop, clear), construct.rs (building enum values,
 │   │                  indirect slots), matching.rs (match lowering), methods.rs (method symbols, receivers, calls)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_SOURCE, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes), pipeline.rs, source.rs (load, E0110, line_col),
@@ -260,14 +260,12 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── parser.rs    — parser public-API tests (every spec program parses)
 │   ├── codegen.rs   — builds and runs real executables at -O0 and -O2
 │   ├── cli.rs       — the lughac binary: commands, emit, diagnostics, exit codes
-│   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec;
-│   │                  v1_programs.rs: v1 draft §10 programs not yet folded into the v1 spec
-│   ├── programs/    — m1/ … m6/: <name>.la + .stdout/.exit/.stderr expectations
+│   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
+│   ├── programs/    — m1/ … m8/: <name>.la + .stdout/.exit/.stderr expectations
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
 │   └── specs/       — Language v1 Specification.md (the language definition, printed by `lughac spec`);
-│                      Language v1 Draft.md (approved v1 delta, shrinking as milestones fold in);
 │                      Language v0 Specification.md (frozen)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```
@@ -282,7 +280,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them; every one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (enums, generics, closures, methods, modules…) even partially. v1 features (enums, methods, growable arrays) come only through their milestone PRPs (6–8), which fold the approved `Language v1 Draft.md` sections into the spec first. Everything else stays v2 and needs a spec change first.
+5. **Never implement a §11 "out of scope" feature** (generics, closures, modules, nested patterns…) even partially. v1 is complete; anything else is v2 and needs a spec change first.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

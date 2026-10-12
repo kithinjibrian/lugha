@@ -1483,22 +1483,58 @@ CLAUDE.md (tree, rule 7, gate issue removed), CHANGELOG.md, TODO.md, MEMORY.md (
 
 Branch: main → prp-023-growable_arrays
 
+### WHAT WAS DONE
+
+Discovery:
+- `xs.push(xs[0])` is allowed (no E0508 for built-ins).
+- The draft is retired once v1 is complete.
+
+Implemented PRP-023:
+- **Tests first:** the `m8/` programs.
+- **Runtime:** `lugha_rt_array_grow`.
+- **Layout:** the 16-byte array header (`ARRAY_HEADER`, `capacity_address`; `new_array` stores the capacity, `copy_flat` copies elements only).
+- **Checker:** built-ins in `method_calls.rs`, with the E0501/E0507 receiver wording.
+- **Codegen:** `codegen/growth.rs`, `construct_values`, and `push` as a liveness store site.
+- **Spec:** the v1 spec is complete (title, layout, runtime table, §10 stack program, §11, §12 growth factor); the draft and `v1_programs.rs` were deleted.
+
+236 tests pass, and the DECISION-010 benchmarks are unchanged. **Milestone 8 complete — v1 complete.**
+
+### FILES CREATED OR MODIFIED
+
+```
+runtime/lugha_rt.c, src/codegen/runtime.rs — LughaArray, lugha_rt_array_grow, RUNTIME_SYMBOLS
+src/codegen/{heap,array,copy}.rs — 16-byte header, cap, element-only copies
+src/codegen/growth.rs (new) + tests; src/codegen/{construct,methods,mod}.rs
+src/check/{method_calls,assign,liveness}.rs — built-ins, receiver wording, push store site + tests
+docs/specs/Language v1 Specification.md — complete; Language v1 Draft.md deleted
+tests/programs/m8/ — growth (run); e0501_push, e0507_push, e0415_string_push (reject)
+tests/{parser,spec,codegen}.rs; tests/common/v1_programs.rs deleted
+PRPs/prp-023-growable_arrays.md — new PRP; implemented; amendments
+CLAUDE.md, README.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 28)
+```
+
+### TESTS WRITTEN
+
+- **Checker:** `push`/`pop`/`clear` types, `xs.push(xs[0])`, E0401/E0405/E0415 (including strings), the receiver E0501 message, E0507.
+- **Liveness:** `push` moves a dead local.
+- **Codegen:** literals store `cap`; growth only on the full path; `pop` builds an `Option`.
+- **Acceptance:** `m8/growth.la` at -O0/-O2; the spec §10 stack program; three reject goldens; the DECISION-010 programs rerun.
+
+### DECISIONS MADE
+
+- MEMORY 28 (growable arrays; v1 complete).
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 8, the last v1 milestone: growable arrays (`docs/specs/Language v1 Draft.md` §4 "Growable arrays", §5, §7 array layout, §9 `lugha_rt_array_grow`, §10 stack program). It covers:
-- `xs.push(v)`, `xs.pop()` (returns `Option<T>`), `xs.clear()` on `T[]`, as built-in `mut self`-style methods: a `let mut` root (E0501), E0506 through strings, E0507 during `for … of`, and E0508-style aliasing (`xs.push(xs[0])`?).
-- **Layout:** `{ i64 len; i64 cap; T elems[cap] }`; literals and copies have `cap == len`; growth doubles (minimum 4) via `lugha_rt_array_grow` and stores the new pointer in the array's place.
-- **Offsets:** every array access shifts from 8 to 16 bytes (header); `copy_flat`, repeat and `for … of` follow.
-- **Spec:** fold the arrays section and the stack program; `lughac spec` then prints the full v1 specification (drop "in progress"; the draft is retired).
-
-Done-when: the stack program prints `3`, `2`, `empty`; then tag `m8` (v1 complete).
-
-Discovery questions to expect:
-- whether `xs.push(xs[0])` is E0508 or fine (the value is read before growth);
-- the growth factor;
-- `pop` on arrays of structs/enums (moves out);
-- retiring the draft file.
+Lugha v1 is complete (tag `m8` after merge). No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
+- TODO "Found while working": a Rust panic in lughac exits 101, not 2 (rule 6).
+- TODO ideas: a `panic: stack overflow` for deep recursion; a swap/move operation for buffers.
+- v2 language work (spec §11 out-of-scope list): generics, modules, closures, richer patterns, a shared-reference type — starting with a v2 spec draft.
 
 See `TODO.md`.

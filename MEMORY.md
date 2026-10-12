@@ -331,6 +331,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 28. Growable arrays and v1 complete (PRP-023)
+
+**Decision:**
+- **Layout:** arrays are `{ i64 len; i64 cap; T elems[cap] }`, with elements at byte 16 (`heap::ARRAY_HEADER`); strings keep their 8-byte header. Literals and copies are full (`cap == len`), and copies copy only `len` elements.
+- **Built-ins:** `push`/`pop`/`clear` are array built-ins checked like `mut self` methods (E0501/E0502/E0506/E0507, with the method named), but not E0508: `xs.push(xs[0])` is fine because the value is read before growth.
+- **Growth:** `lugha_rt_array_grow` doubles the capacity (at least 4), and the grown array replaces the old one in its single owning place.
+- **`pop`** moves the element out into an `Option`.
+- **Moves:** `push`'s argument is a move-on-last-use store site.
+- **Spec:** the v1 spec is complete and `Language v1 Draft.md` was deleted.
+
+**Why:** one sequence type; value semantics kept by single ownership; the spec is the only definition.
+
+**Rules out:** other array methods (`insert`, slicing, `.cap`), string methods — v2.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -340,6 +356,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- **Milestone 8 complete — Lugha v1 complete**: PRP-023 growable arrays (`codegen/growth.rs`, `lugha_rt_array_grow`); the v1 spec is complete
 - **Milestone 7 complete** — PRP-022 methods: `check/{methods,method_calls}.rs`, `codegen/methods.rs`; driver gate removed
 - **Milestone 6 complete** — PRP-021 recursive enums: `indirect_slot`, `codegen/construct.rs`; the gate stops only methods
 - PRP-020 enums, `match`, `Option` (non-recursive) and `Language v1 Specification.md`
@@ -379,16 +396,9 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Milestone 8, the last v1 milestone: growable arrays (`docs/specs/Language v1 Draft.md` §4 "Growable arrays", §5, §7 array layout, §9 `lugha_rt_array_grow`, §10 stack program). It covers:
-- `xs.push(v)`, `xs.pop()` (returns `Option<T>`), `xs.clear()` on `T[]`, as built-in `mut self`-style methods: a `let mut` root (E0501), E0506 through strings, E0507 during `for … of`, and E0508-style aliasing (`xs.push(xs[0])`?).
-- **Layout:** `{ i64 len; i64 cap; T elems[cap] }`; literals and copies have `cap == len`; growth doubles (minimum 4) via `lugha_rt_array_grow` and stores the new pointer in the array's place.
-- **Offsets:** every array access shifts from 8 to 16 bytes (header); `copy_flat`, repeat and `for … of` follow.
-- **Spec:** fold the arrays section and the stack program; `lughac spec` then prints the full v1 specification (drop "in progress"; the draft is retired).
+Lugha v1 is complete (tag `m8` after merge). No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
+- TODO "Found while working": a Rust panic in lughac exits 101, not 2 (rule 6).
+- TODO ideas: a `panic: stack overflow` for deep recursion; a swap/move operation for buffers.
+- v2 language work (spec §11 out-of-scope list): generics, modules, closures, richer patterns, a shared-reference type — starting with a v2 spec draft.
 
-Done-when: the stack program prints `3`, `2`, `empty`; then tag `m8` (v1 complete).
-
-Discovery questions to expect:
-- whether `xs.push(xs[0])` is E0508 or fine (the value is read before growth);
-- the growth factor;
-- `pop` on arrays of structs/enums (moves out);
-- retiring the draft file.
+See `TODO.md`.

@@ -1,0 +1,6 @@
+error[E0415]: no method `push` on `string`
+  --> tests/programs/m8/e0415_string_push.la:3:7
+  |
+3 |     s.push(1);
+  |       ^^^^
+
