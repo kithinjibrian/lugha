@@ -1,6 +1,6 @@
 ## FEATURE: The `swap(a, b)` intrinsic — exchange the contents of two places without copying — as Lugha v1.1.
 
-**Status:** implemented 2026-10-12 — session 32
+**Status:** merged into `main` 2026-10-12 — session 32 (tag `v1.1`)
 **Milestone:** none; Lugha v1.1 (a small compatible amendment to v1). Tag `v1.1` after merge.
 **Spec:** `Language v1 Specification.md` §4 (copy table, places, mutability), §5 (intrinsics), §9 (codes)
 **Decisions:**

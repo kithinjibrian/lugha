@@ -1622,7 +1622,7 @@ CLAUDE.md (known issue removed), TODO.md, CHANGELOG.md, MEMORY.md (decisions 26,
 
 ---
 
-## SESSION 32 — 2026-10-12 — The swap intrinsic, Lugha v1.1 (PRP-026) — open
+## SESSION 32 — 2026-10-12 — The swap intrinsic, Lugha v1.1 (PRP-026) — closed
 
 Branch: main → prp-026-swap
 
@@ -1683,12 +1683,18 @@ README.md, CLAUDE.md (tree), CHANGELOG.md, TODO.md, MEMORY.md (decision 31)
 
 - None. The lost-write item needs a spec ruling when it is picked up.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-026-swap` fast-forward merged into `main` and deleted; `main` tagged `v1.1`.
+- Not from this session: the lost-write TODO and the oversized `runtime/lugha_rt.c` (see NEXT SESSION START POINT).
+
 ---
 
 ## NEXT SESSION START POINT
 
-Lugha v1 is complete (tag `m8`); the exit-code bug and the stack-overflow panic are done. No PRP is queued. Candidates, each starting with discovery (language changes need a spec draft first, rule 1):
-- TODO idea: a swap/move operation for buffers (a language change; DECISION-010).
-- v2 language work (spec §11 out-of-scope list): generics, modules, closures, richer patterns, a shared-reference type — starting with a v2 spec draft.
+Lugha v1.1 is released (tag `v1.1`): v1 plus the `swap(a, b)` intrinsic. No PRP is queued. Candidates, each starting with discovery:
+- **Found while working (TODO):** an element write is lost when the same statement grows the array (`xs[0] = { xs.push(2); 9 };`). It needs a spec ruling first: re-resolve the place, or reject the growth.
+- **Housekeeping:** `runtime/lugha_rt.c` is 358 lines, over the 300-line rule since PRP-025. It needs an approved split.
+- **v2 language work** (spec §11 out-of-scope list): generics, modules, closures, richer patterns, a shared-reference type. Start with a v2 spec draft.
 
 See `TODO.md`.
