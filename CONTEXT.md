@@ -1373,7 +1373,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md (+ the exit-code finding), MEMORY.md (decision 
 
 ---
 
-## SESSION 27 — 2026-10-12 — PRP-021 recursive enums — open
+## SESSION 27 — 2026-10-12 — PRP-021 recursive enums — closed
 
 Branch: main → prp-021-recursive_enums
 
@@ -1418,22 +1418,29 @@ CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 26)
 
 - None.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-021-recursive_enums` fast-forward merged into `main` and deleted; `m6` tagged on the merged work.
+
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 6, PRP-021: recursive enums (`docs/specs/Language v1 Draft.md` §4 "Recursion", §6 pass 2, §7 indirect slots). It covers:
-- **Indirect slots:** a payload slot whose type leads back to the enum is stored on the GC heap behind a pointer. This also covers structs that reach themselves through an enum or `Option`.
-- **Construction:** allocating the slot; reading it in `match` bindings.
-- **Copies:** with sharing (MEMORY 25), copies stay O(1).
-- **Gate:** drop the recursive-enum entry (methods stay gated).
-- **Spec:** fold the recursion text and the linked-list program into the v1 spec §10. The linked-list program prints `6`.
+Milestone 7: methods (`docs/specs/Language v1 Draft.md` §4 "Methods", §5 method calls, §6 symbols `lugha_fn_<Type>.<name>`, §9 E0310/E0415, §10 methods program). It covers:
+- `impl` blocks for structs and enums;
+- `self` / `mut self` receivers; `mut self` calls need a `let mut` place and edit it in place;
+- associated functions `T.f()`;
+- method calls `x.m(args)` (receiver first, then arguments);
+- E0310 (a duplicate method, or one named like a field) and E0415 (no such method);
+- removing the methods entry from the gate (the gate can then be deleted unless M8 needs it);
+- folding the methods sections and the methods program into the v1 spec.
 
-Done-when: the linked-list program passes; milestone 6 is complete; tag `m6`.
+Done-when: the methods program prints `5.0` then `6.0`.
 
 Discovery questions to expect:
-- whether E0307 is relaxed in the checker, or the checker gains a cycle-through-enum analysis matching the gate;
-- the layout of an indirect slot (always 8 bytes; `lugha_rt_alloc` per construction);
-- tests for deep recursion (a 100 000-node list built in a loop).
+- how `mut self` is passed (a pointer to the caller's place);
+- whether one PRP covers it all;
+- whether `self` may be reassigned whole;
+- method calls on rvalues (`f().len_sq()`).
 
 See `TODO.md`.

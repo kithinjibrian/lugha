@@ -1,6 +1,6 @@
 ## FEATURE: Recursive enums — an enum (or a struct, through an enum or `Option`) may contain itself; only the slots that lead back are stored on the heap. Completes milestone 6.
 
-**Status:** implemented 2026-10-12 — session 27 (branch `prp-021-recursive_enums`, awaiting merge)
+**Status:** merged into `main` 2026-10-12 — session 27; tagged `m6`
 **Milestone:** 6, last of three PRPs (019 syntax ✓, 020 enums ✓, 021 this). Done-when: the linked-list program prints `6`, then tag `m6`.
 **Spec:** `docs/specs/Language v1 Draft.md` §4 ("Recursion"), §6 (pass 2), §7 (indirect slots), §10 (linked list), folded into `Language v1 Specification.md`
 **Decisions:**
