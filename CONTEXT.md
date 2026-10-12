@@ -1481,7 +1481,7 @@ CLAUDE.md (tree, rule 7, gate issue removed), CHANGELOG.md, TODO.md, MEMORY.md (
 
 ## SESSION 29 — 2026-10-12 — Milestone 8 discovery and PRP-023 growable arrays — open
 
-Branch: main
+Branch: main → prp-023-growable_arrays
 
 ---
 
