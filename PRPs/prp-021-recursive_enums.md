@@ -1,6 +1,6 @@
 ## FEATURE: Recursive enums — an enum (or a struct, through an enum or `Option`) may contain itself; only the slots that lead back are stored on the heap. Completes milestone 6.
 
-**Status:** approved 2026-10-12 — session 27
+**Status:** implemented 2026-10-12 — session 27 (branch `prp-021-recursive_enums`, awaiting merge)
 **Milestone:** 6, last of three PRPs (019 syntax ✓, 020 enums ✓, 021 this). Done-when: the linked-list program prints `6`, then tag `m6`.
 **Spec:** `docs/specs/Language v1 Draft.md` §4 ("Recursion"), §6 (pass 2), §7 (indirect slots), §10 (linked list), folded into `Language v1 Specification.md`
 **Decisions:**
@@ -29,6 +29,12 @@
   - `docs/specs/Language v1 {Specification,Draft}.md`;
   - `tests/programs/m6/`, `tests/common/v1_programs.rs`, `tests/cli.rs`.
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 27)
+- **Approved split:** `codegen/enums.rs` reached 326 lines, so construction (`constructed_variant`, `construct`, with its IR test) moved to a new `codegen/construct.rs`.
+- **Gate:** with recursion gone, it no longer walks types at all; it only looks for `impl` and `self`.
+- **Allocation size:** a heap copy is the payload type's whole layout size, e.g. 24 bytes for a `List` value (tag, padding, head, pointer). The IR test checks `lugha_rt_alloc(i64 24)`.
+- **Spec:** the §4 Structs paragraph now points recursive structs at enums and `Option`. §6 pass 2 marks indirect slots. §7 gains "Indirect slots" and "Recursion depth".
 
 ### Discovery answers (session 27)
 1. **Deep recursion is documented, not handled.**
@@ -107,30 +113,30 @@
 ## TESTS TO WRITE
 
 Unit tests:
-- [ ] **`indirect_slot`:**
+- [x] **`indirect_slot`:**
   - `List`'s `List` slot yes, `i64` no;
   - `Tree`'s two `Tree` slots;
   - `Node`'s `Option<Node>` slot via `Some`;
   - mutual recursion `A { B(B) }` / `B { A(A), End }`;
   - an array of the enum (`kids: List[]`) is not a cycle;
   - non-recursive enums have no indirect slot.
-- [ ] **Codegen IR:**
+- [x] **Codegen IR:**
   - `%List = type { i32, [2 x i64] }`;
   - building `List.Cons(1, List.Nil)` calls `lugha_rt_alloc`;
   - building `List.Nil` doesn't.
-- [ ] **Gate:** recursive enums now pass; `impl` is still gated.
+- [x] **Gate:** recursive enums now pass; `impl` is still gated.
 
 Acceptance:
-- [ ] **Spec §10:** the linked-list program prints `6` (from the spec, at `-O0`/`-O2`).
-- [ ] **`m6/recursive.la`:**
+- [x] **Spec §10:** the linked-list program prints `6` (from the spec, at `-O0`/`-O2`).
+- [x] **`m6/recursive.la`:**
   - a 1 000 000-node list built and summed with loops;
   - a binary search tree with recursive insert and an in-order sum;
   - `struct Node { value, next: Option<Node> }` chained three deep and walked;
   - a copy of a list, with a new head consed onto the copy, leaving the original's length unchanged.
 
   Expected stdout written by hand.
-- [ ] `m6/recursive_gate.*` is removed. The CLI gate test uses an `impl` program (methods, milestone 7).
-- [ ] All earlier tests pass.
+- [x] `m6/recursive_gate.*` is removed. The CLI gate test uses an `impl` program (methods, milestone 7).
+- [x] All earlier tests pass.
 
 ## ROLLBACK PLAN
 
@@ -138,10 +144,10 @@ Acceptance:
 - To abandon: delete the branch; the gate keeps recursive enums stopped.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The linked-list program prints `6`; every test above passes.
-- [ ] The v1 spec covers recursion; the draft is updated; CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The linked-list program prints `6`; every test above passes.
+- [x] The v1 spec covers recursion; the draft is updated; CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

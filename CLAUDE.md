@@ -247,7 +247,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  literals, panics), heap.rs (headers, element layout, bounds checks, string ops),
 │   │                  array.rs (allocation, list/repeat literals, for … of), copy.rs (deep copies, copy sites),
 │   │                  structs.rs (named types, layout, literals, fields, place addresses), enums.rs
-│   │                  (enum layout, Option types, construction), matching.rs (match lowering)
+│   │                  (enum layout, Option types, payload addresses), construct.rs (building enum values,
+│   │                  indirect slots), matching.rs (match lowering)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_SOURCE, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes), pipeline.rs, gate.rs (v1 feature gate), source.rs (load, E0110, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)
@@ -295,4 +296,5 @@ These look like bugs but are specified behavior:
 - **Boehm may keep garbage alive** when an integer looks like a pointer. Conservative GC, spec §7.
 - **Extern C code keeping a Lugha pointer is undefined behavior.** Spec §7–8 accept this for v0.
 - **`as` casts truncate/saturate silently.** The only place values wrap (spec §4).
-- **Recursive enums and methods stop with "not implemented yet: … (milestone N)"** (exit 2) until their PRPs: `driver/gate.rs`. They parse, and `--emit=tokens|ast` works on them.
+- **Too-deep recursion crashes with a signal (exit 139)**, not a panic: the native stack is finite (v1 spec §7). Walk very long lists with loops.
+- **Methods stop with "not implemented yet: methods (milestone 7)"** (exit 2) until milestone 7: `driver/gate.rs`. They parse, and `--emit=tokens|ast` works on them.

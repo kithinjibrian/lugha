@@ -67,11 +67,11 @@ Done when every §10 program passes.
 
 ## v1 milestones (`docs/specs/Language v1 Draft.md`) — build strictly in order
 
-### Milestone 6 — Enums
+### Milestone 6 — Enums ✅
 Done when the shapes and linked-list programs pass and the rejected program reports E0417.
 - [x] PRP-019: v1 syntax (lexer, parser, AST, E0207) and the driver gate
 - [x] PRP-020: enums, `match`, `Option<T>` (non-recursive) + the v1 spec file (E0309, E0311, E0415–E0417, W0102)
-- [ ] PRP-021: recursive enums with indirect slots, enum copies — **milestone 6 done**, tag `m6`
+- [x] PRP-021: recursive enums with indirect slots — **milestone 6 done**, tag `m6`
 
 ### Milestone 7 — Methods
 Done when the methods program passes.
@@ -88,4 +88,5 @@ Done when the stack program passes and `lughac spec` prints the full v1 spec.
 ## Ideas — noted, not scheduled
 
 - [x] Move on last use: store a dead local's array without copying it (`grid = next`, `ps[i] = p`) — PRP-018.
+- [ ] A `panic: stack overflow` instead of a raw signal (exit 139) for too-deep recursion: an alternate signal stack and a SIGSEGV handler in the runtime (PRP-021 discovery).
 - [ ] v1 language question: a swap or move operation for buffers (`ys = buf` while `buf` stays in use is a full copy). See DECISION-010.

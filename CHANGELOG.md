@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- Recursive enums and structs: `enum List { Nil, Cons(i64, List) }`, trees, `struct Item { next: Option<Item> }`, with no `Box`; only the slots that lead back live on the heap — **milestone 6 complete**
 - Enums, `match` and `Option<T>`: declarations, `Shape.Circle(2.0)`, `Some`/`None`, exhaustive flat `match` on enums, integers, `bool`s and strings (E0309, E0311, E0415–E0417, W0102); `lughac spec` now prints the v1 specification (in progress)
 - v1 syntax: `enum`, `match`, `impl`, `self`, `Option<T>` and `=>` lex and parse (`--emit=ast` shows them); `Shape::Circle` is E0207 with help; v1 constructs stop with "not implemented yet" until their milestone
 - Lugha v1 spec draft approved: enums and `match`, `Option<T>`, recursive enums, methods, growable arrays (milestones 6–8)

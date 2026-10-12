@@ -26,7 +26,7 @@ mod types;
 
 use std::collections::{HashMap, HashSet};
 
-pub use types::{Enums, Structs, Type};
+pub use types::{Enums, Structs, Type, indirect_slot};
 
 use crate::ast::{ExprId, Program};
 use crate::diagnostic::{Diagnostic, Severity};

@@ -2,7 +2,7 @@
 
 Oct 9, 2026 · @kithinji
 
-**v1 status.** This document is v0 plus everything v1 has implemented so far: enums, `match` and `Option` (milestone 6). The rest of v1 — recursive enums, methods and growable arrays — is specified in `Language v1 Draft.md` and joins this document as its milestones land. Every valid v0 program is a valid v1 program unless it uses one of the new keywords as a name.
+**v1 status.** This document is v0 plus everything v1 has implemented so far: enums, `match`, `Option` and recursive data (milestone 6). The rest of v1 — methods and growable arrays — is specified in `Language v1 Draft.md` and joins this document as its milestones land. Every valid v0 program is a valid v1 program unless it uses one of the new keywords as a name.
 
 ## 1. Overview
 
@@ -248,9 +248,11 @@ There is no null. Every string and array variable holds a valid object.
 
 **void is not a value.** `void` can't be written as a type, and no variable, parameter, field or array element can hold one. `let x = println(1);` is a type error. A `void` expression can only be used as a statement, as the tail of a `void` block or function, or as a branch of an `if` whose type is `void`.
 
-**Structs.** Declared at top level with named, typed fields. A struct literal must initialize every field exactly once, in any order. Structs may contain other structs and arrays, but a struct may not contain itself directly or through other structs (it would have infinite size). Containing itself through an array is fine, because an array is a pointer: `struct Node { value: i64, kids: Node[] }` builds trees. Other recursive data, such as linked lists, needs a boxed or optional type, planned for v1.
+**Structs.** Declared at top level with named, typed fields. A struct literal must initialize every field exactly once, in any order. Structs may contain other structs and arrays, but a struct may not contain itself directly or through other structs (it would have infinite size). Containing itself through an array is fine, because an array is a pointer: `struct Node { value: i64, kids: Node[] }` builds trees. Other recursive data, such as linked lists, uses an enum or `Option`: a struct may contain itself through either, as in `struct Item { value: i64, next: Option<Item> }`. Only a cycle through structs alone is an error (E0307).
 
-**Enums.** Declared at top level, in any order, as a list of variants that each carry zero or more positional payloads: `enum Shape { Circle(f64), Rect(f64, f64), Empty }`. A variant name is unique within its enum (E0309). A value is built through the enum's name with `.`: `Shape.Circle(2.0)`, or `Shape.Empty` for a variant without payloads. Each payload expects its declared type, and the count must match (E0416); an unknown variant is E0415. There is no `==` or other operator on enums (E0404): compare with `match`. A payload can never be changed in place — there is no syntax for it, and `match` bindings are immutable — so copying an enum shares its payloads, and the copies that matter happen when a payload is stored: building a variant from a place copies it (`Job.Batch(xs)`), and storing a `match` binding copies it (section 4, Array copies). An enum may not contain itself yet; recursive enums arrive with the rest of milestone 6.
+**Enums.** Declared at top level, in any order, as a list of variants that each carry zero or more positional payloads: `enum Shape { Circle(f64), Rect(f64, f64), Empty }`. A variant name is unique within its enum (E0309). A value is built through the enum's name with `.`: `Shape.Circle(2.0)`, or `Shape.Empty` for a variant without payloads. Each payload expects its declared type, and the count must match (E0416); an unknown variant is E0415. There is no `==` or other operator on enums (E0404): compare with `match`. A payload can never be changed in place — there is no syntax for it, and `match` bindings are immutable — so copying an enum shares its payloads, and the copies that matter happen when a payload is stored: building a variant from a place copies it (`Job.Batch(xs)`), and storing a `match` binding copies it (section 4, Array copies). 
+
+**Recursive data.** An enum may contain itself, directly or through structs, other enums or `Option`: `enum List { Nil, Cons(i64, List) }` builds a linked list, and `enum Tree { Leaf, Node(Tree, i64, Tree) }` a binary tree. Nothing has to be annotated and there is no `Box` (writing `Box<List>` is E0305 with a hint). The compiler stores each payload slot that leads back to its enum behind a hidden pointer (section 7), so the type has a finite size, values like `List.Nil` cost nothing, and — since payloads are shared — copying a list of any length takes constant time. A program can't observe the pointer: in `Cons(x, rest)`, `rest` is an ordinary `List` value.
 
 **`Option`.** The built-in `Option<T>` has the variants `Some(T)` and `None`, written without a prefix. `Some(x)` has type `Option<T>` where `x : T`, or the expected `Option` type when there is one. `None` needs an expected type, exactly like `[]`: `let x: Option<i64> = None;` — otherwise it is E0412. `Option` is the only type that takes a type argument.
 
@@ -381,7 +383,7 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 **Item order doesn't matter.** A function can call a function declared later in the file, and a struct or enum can use a struct or enum declared later. The type checker runs in two passes to support this:
 
 1. Collect every struct name and function signature into a global table.
-2. Resolve struct field types and check for structs that contain themselves, directly or through other structs.
+2. Resolve struct field and enum payload types, check for structs that contain themselves through structs alone (E0307), and mark the enum payload slots that lead back to their enum (indirect slots, section 7).
 3. Check each function body against the global table.
 
 **Names.** Functions, structs, enums, intrinsics and the built-in names `Option`, `Some` and `None` share one global namespace, and duplicates are a compile error. No local may be named like a type (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then globals.
@@ -430,6 +432,10 @@ Value types live on the stack; strings and arrays live on a garbage-collected he
 **Stack.** Every local variable and parameter gets an `alloca` in its function's entry block, including struct values. LLVM's `mem2reg` pass promotes these to registers. Struct parameters are passed as a pointer to the caller's storage (section 9); struct return values are returned by value in LLVM IR, and LLVM handles the platform calling convention.
 
 **Enums.** An enum value is a stack value `{ i32 tag; payload area }`. Variants are numbered in declaration order (`None` is 0 and `Some` is 1). The payload area has room for the largest variant's payloads laid out as a struct with natural alignment, and the whole value is aligned to the larger of 4 and that alignment. Enum parameters are passed like structs: as a pointer to the caller's storage. Copying an enum copies its tag and payload bytes; arrays in its payloads are shared, never mutated.
+
+**Indirect slots.** A payload slot whose type leads back to its enum through values held inline — struct fields, enum payloads or `Option`'s payload, but not arrays — is an 8-byte pointer to a copy of the value on the GC heap, allocated with `lugha_rt_alloc` when the variant is built and never mutated afterwards. Every other slot, and the enum value itself, stays inline. `List` is therefore `{ i32 tag; i64 head; ptr rest }`.
+
+**Recursion depth.** Function calls use the native stack, which is finite. A recursion that goes too deep — for example walking a list of a million nodes recursively — crashes the program with a signal (exit code 139) instead of panicking. Walk very long lists with a loop.
 
 **Heap objects.** All heap memory comes from one runtime function, `lugha_rt_alloc(size)`, which calls `GC_malloc`. Memory from `GC_malloc` is zeroed. Every heap object starts with an 8-byte length header:
 
@@ -715,6 +721,25 @@ fun main() {
 }
 ```
 
+**A linked list** (milestone 6). Prints `6`, exits with 0.
+
+```
+enum List {
+    Nil,
+    Cons(i64, List),
+}
+
+fun sum(l: List): i64 = match l {
+    Nil => 0,
+    Cons(x, rest) => x + sum(rest),
+};
+
+fun main() {
+    let l = List.Cons(1, List.Cons(2, List.Cons(3, List.Nil)));
+    println(sum(l));
+}
+```
+
 **A rejected enum program** (milestone 6). The checker reports the missing variant, and `lughac` exits with 1:
 
 ```
@@ -769,7 +794,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 3 | Type checker and diagnostics | All primitive types, literal inference, casts, mutability checks, return checking; error codes, `--diagnostics=json`, `lughac check`, "remove this semicolon" | The rejected program in section 10 reports E0401 in both formats |
 | 4 | Runtime and C | `lugha_rt.c`, intrinsics, `extern fun`, string literals, integer overflow and division checks (panics) | Hello world and the libc example run |
 | 5 | Heap data | Boehm GC, strings, arrays, structs, array copies, `for`-`of`, bounds checks, panics; `lughac spec` | Every program in section 10 passes |
-| 6 | Enums (v1) | `enum`, construction, `match` with flat patterns, exhaustiveness, `Option<T>`, recursive enums | The enum programs in section 10 pass |
+| 6 | Enums (v1) | `enum`, construction, `match` with flat patterns, exhaustiveness, `Option<T>`, recursive enums | The enum programs in section 10 pass (done) |
 | 7 | Methods (v1) | `impl`, `self`/`mut self`, associated functions, method calls | Specified in `Language v1 Draft.md` |
 | 8 | Growable arrays (v1) | `push`, `pop`, `clear` on `T[]` | Specified in `Language v1 Draft.md`; then this document is the full v1 specification |
 

@@ -2,11 +2,9 @@
 //! stopped here, before checking, until the milestone that implements it.
 //! Later PRPs delete entries as they land; the gate goes when v1 is complete.
 //!
-//! Still gated: recursive enums (PRP-021) and methods (milestone 7).
+//! Still gated: methods (milestone 7).
 
-use crate::ast::{
-    Block, Expr, ExprKind, ForIter, FunDecl, Item, Program, Stmt, StmtKind, Type, TypeKind,
-};
+use crate::ast::{Block, Expr, ExprKind, ForIter, FunDecl, Item, Program, Stmt, StmtKind};
 use crate::span::Span;
 
 /// A construct the checker can't handle yet.
@@ -17,7 +15,6 @@ pub(super) struct Gated {
     pub span: Span,
 }
 
-const RECURSIVE: (&str, u8) = ("recursive enums", 6);
 const METHODS: (&str, u8) = ("methods", 7);
 
 /// The first not-yet-implemented v1 construct in `program`, in source order.
@@ -25,73 +22,12 @@ pub(super) fn first(program: &Program) -> Option<Gated> {
     let mut found = Vec::new();
     for item in &program.items {
         match item {
-            Item::Enum(e) if recursive(program, &e.name.name) => hit(&mut found, RECURSIVE, e.span),
-            Item::Enum(_) => {}
-            // A struct cycle through an enum or `Option` needs indirect slots
-            // too; a plain struct cycle is the checker's E0307.
-            Item::Struct(s) if recursive(program, &s.name.name) => {
-                hit(&mut found, RECURSIVE, s.span)
-            }
             Item::Impl(i) => hit(&mut found, METHODS, i.span),
             Item::Fun(f) => fun(&mut found, f),
-            Item::Extern(e) => {
-                e.params.iter().for_each(|p| ty(&mut found, &p.ty));
-                e.ret.iter().for_each(|t| ty(&mut found, t));
-            }
-            Item::Struct(_) => {}
+            Item::Enum(_) | Item::Struct(_) | Item::Extern(_) => {}
         }
     }
     found.into_iter().min_by_key(|g| g.span.start)
-}
-
-/// True if the struct or enum `name` reaches itself through a path of
-/// inline payloads and fields (not arrays, which are pointers) that passes
-/// through at least one enum or `Option`. Works on names alone.
-fn recursive(program: &Program, name: &str) -> bool {
-    let mut stack: Vec<(String, bool)> = refs(program, name);
-    let mut seen: Vec<(String, bool)> = Vec::new();
-    while let Some((next, via_enum)) = stack.pop() {
-        if next == name && via_enum {
-            return true;
-        }
-        if !seen.contains(&(next.clone(), via_enum)) {
-            let onward = refs(program, &next)
-                .into_iter()
-                .map(|(n, e)| (n, e || via_enum));
-            stack.extend(onward);
-            seen.push((next, via_enum));
-        }
-    }
-    false
-}
-
-/// The type names held inline by the struct or enum called `name`, each
-/// marked true if the link goes through an enum payload or an `Option`.
-fn refs(program: &Program, name: &str) -> Vec<(String, bool)> {
-    let mut out = Vec::new();
-    for item in &program.items {
-        let (types, from_enum): (Vec<&Type>, bool) = match item {
-            Item::Enum(e) if e.name.name == name => {
-                (e.variants.iter().flat_map(|v| &v.payloads).collect(), true)
-            }
-            Item::Struct(s) if s.name.name == name => {
-                (s.fields.iter().map(|f| &f.ty).collect(), false)
-            }
-            _ => continue,
-        };
-        for t in types {
-            inline_names(t, from_enum, &mut out);
-        }
-    }
-    out
-}
-
-fn inline_names(t: &Type, via_enum: bool, out: &mut Vec<(String, bool)>) {
-    match &t.kind {
-        TypeKind::Named(n) => out.push((n.clone(), via_enum)),
-        TypeKind::Option(inner) => inline_names(inner, true, out),
-        _ => {}
-    }
 }
 
 fn hit(found: &mut Vec<Gated>, (what, milestone): (&'static str, u8), span: Span) {
@@ -106,12 +42,8 @@ fn fun(found: &mut Vec<Gated>, f: &FunDecl) {
     if let Some(receiver) = f.receiver {
         hit(found, METHODS, receiver.span);
     }
-    f.params.iter().for_each(|p| ty(found, &p.ty));
-    f.ret.iter().for_each(|t| ty(found, t));
     block(found, &f.body);
 }
-
-fn ty(_found: &mut [Gated], _t: &Type) {}
 
 fn block(found: &mut Vec<Gated>, b: &Block) {
     b.stmts.iter().for_each(|s| stmt(found, s));
@@ -120,14 +52,7 @@ fn block(found: &mut Vec<Gated>, b: &Block) {
 
 fn stmt(found: &mut Vec<Gated>, s: &Stmt) {
     match &s.kind {
-        StmtKind::Let {
-            ty: annotation,
-            init,
-            ..
-        } => {
-            annotation.iter().for_each(|t| ty(found, t));
-            expr(found, init);
-        }
+        StmtKind::Let { init, .. } => expr(found, init),
         StmtKind::Assign { place, value, .. } => {
             expr(found, place);
             expr(found, value);
@@ -165,10 +90,7 @@ fn expr(found: &mut Vec<Gated>, e: &Expr) {
         | ExprKind::Bool(_)
         | ExprKind::Name(_) => {}
         ExprKind::Unary(_, a) | ExprKind::Field(a, _) => expr(found, a),
-        ExprKind::Cast(a, t) => {
-            expr(found, a);
-            ty(found, t);
-        }
+        ExprKind::Cast(a, _) => expr(found, a),
         ExprKind::Binary(_, _, a, b) | ExprKind::Index(a, _, b) | ExprKind::Repeat(a, b) => {
             expr(found, a);
             expr(found, b);
@@ -199,28 +121,13 @@ mod tests {
     }
 
     #[test]
-    fn recursive_enums_and_methods_are_still_gated() {
-        assert_eq!(
-            gated("enum L { N, C(i64, L) }\nfun main() {}"),
-            Some(("recursive enums", 6, "enum L { N, C(i64, L) }"))
-        );
-        let via_struct = "enum T { Leaf, Node(P) }\nstruct P { t: T }\nfun main() {}";
-        assert_eq!(gated(via_struct).map(|g| g.0), Some("recursive enums"));
-        let via_option =
-            "struct N { next: Option<N> }\nenum E { A(N) }\nenum F { B(Option<F>) }\nfun main() {}";
-        assert_eq!(
-            gated(via_option).map(|g| g.2),
-            Some("struct N { next: Option<N> }")
-        );
-        // A plain struct cycle is left for the checker (E0307).
-        assert_eq!(
-            gated("struct A { b: B }\nstruct B { a: A }\nfun main() {}"),
-            None
-        );
+    fn methods_are_still_gated() {
         assert_eq!(
             gated("impl P {}\nfun main() {}"),
             Some(("methods", 7, "impl P {}"))
         );
+        let receiver = "struct P { x: i64 }\nfun main() { let s = self; }";
+        assert_eq!(gated(receiver), Some(("methods", 7, "self")));
     }
 
     #[test]

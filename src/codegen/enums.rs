@@ -1,5 +1,6 @@
 //! Enums and `Option` in codegen (v1 §7): `{ i32 tag, [k x iA] payload }`
-//! values, their layout, and construction.
+//! values, their layout, named types and payload addresses (construction
+//! is in `construct.rs`).
 //!
 //! Variants are numbered in declaration order; `Option` is `None` = 0,
 //! `Some` = 1. A variant's payloads are laid out as an anonymous struct at
@@ -8,13 +9,12 @@
 use std::collections::BTreeSet;
 
 use inkwell::types::{BasicTypeEnum, StructType};
-use inkwell::values::{BasicValueEnum, PointerValue};
+use inkwell::values::PointerValue;
 
-use super::CodegenError;
 use super::lower::{Lowerer, POSITIONED};
 use super::structs::layout;
-use crate::ast::{Expr, Item, Program};
-use crate::check::{Enums, Structs, Type};
+use crate::ast::{Item, Program};
+use crate::check::{Enums, Structs, Type, indirect_slot};
 
 /// The variants of an enum or `Option` type, in tag order.
 pub(super) fn variants(ty: &Type, enums: &Enums) -> Vec<(String, Vec<Type>)> {
@@ -35,7 +35,12 @@ pub(super) fn payload_area(ty: &Type, structs: &Structs, enums: &Enums) -> (u64,
     for (_, payloads) in variants(ty, enums) {
         let (mut s, mut a) = (0u64, 1u64);
         for p in &payloads {
-            let (ps, pa) = layout(p, structs, enums);
+            // A slot leading back to `ty` is a pointer to a heap copy (v1 §7).
+            let (ps, pa) = if indirect_slot(ty, p, structs, enums) {
+                (8, 8)
+            } else {
+                layout(p, structs, enums)
+            };
             s = s.next_multiple_of(pa) + ps;
             a = a.max(pa);
         }
@@ -105,10 +110,24 @@ impl<'ctx> Lowerer<'ctx> {
         }
     }
 
-    /// The anonymous struct a variant's payloads are stored as.
-    pub(super) fn variant_struct(&self, payloads: &[Type]) -> StructType<'ctx> {
-        let fields: Vec<BasicTypeEnum> = payloads.iter().map(|p| self.storage_type(p)).collect();
+    /// The anonymous struct a variant's payloads of enum `ty` are stored as.
+    pub(super) fn variant_struct(&self, ty: &Type, payloads: &[Type]) -> StructType<'ctx> {
+        let fields: Vec<BasicTypeEnum> = payloads
+            .iter()
+            .map(|p| {
+                if self.indirect(ty, p) {
+                    self.context.ptr_type(Default::default()).into()
+                } else {
+                    self.storage_type(p)
+                }
+            })
+            .collect();
         self.context.struct_type(&fields, false)
+    }
+
+    /// True if payload `slot` of enum `ty` is stored behind a pointer.
+    pub(super) fn indirect(&self, ty: &Type, slot: &Type) -> bool {
+        indirect_slot(ty, slot, &self.structs, &self.enums)
     }
 
     /// The tag and payload types of `variant` in enum type `ty`.
@@ -141,7 +160,7 @@ impl<'ctx> Lowerer<'ctx> {
             .builder
             .build_struct_gep(named, slot, 1, "payload")
             .expect("enums have two fields");
-        let variant = self.variant_struct(payloads);
+        let variant = self.variant_struct(ty, payloads);
         self.builder
             .build_struct_gep(variant, area, index, "field")
             .expect("checked payload index")
@@ -165,56 +184,6 @@ impl<'ctx> Lowerer<'ctx> {
             .build_load(self.context.i32_type(), at, "tag")
             .expect(POSITIONED)
             .into_int_value()
-    }
-
-    /// The variant a call's callee constructs (`E.V(..)` or `Some(..)`), if it is one.
-    pub(super) fn constructed_variant(&self, callee: &Expr) -> Option<String> {
-        match &callee.kind {
-            crate::ast::ExprKind::Name(name)
-                if name == "Some" && !self.functions.contains_key(name) =>
-            {
-                Some(name.clone())
-            }
-            crate::ast::ExprKind::Field(base, variant) if self.ty(base) == Type::Void => {
-                Some(variant.name.clone())
-            }
-            _ => None,
-        }
-    }
-
-    /// `E.V(args)`, `E.V`, `Some(x)` or `None` of enum type `ty`: payloads
-    /// are evaluated left to right and stored like any value (v1 §5).
-    pub(super) fn construct(
-        &mut self,
-        ty: &Type,
-        variant: &str,
-        args: &[Expr],
-    ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
-        let (tag, payloads) = self.variant(ty, variant);
-        let mut values = Vec::with_capacity(args.len());
-        for (arg, payload) in args.iter().zip(&payloads) {
-            values.push(self.value_for_store(arg, payload)?);
-        }
-        let slot = self.entry_alloca(ty, "enum");
-        let named = self
-            .context
-            .get_struct_type(&ty.to_string())
-            .expect("declared before lowering");
-        let at = self
-            .builder
-            .build_struct_gep(named, slot, 0, "tag.at")
-            .expect("enums have two fields");
-        let tag = self.context.i32_type().const_int(u64::from(tag), false);
-        self.builder.build_store(at, tag).expect(POSITIONED);
-        for (i, (value, payload)) in values.into_iter().zip(&payloads).enumerate() {
-            let index = u32::try_from(i).expect("payload count fits in u32");
-            let address = self.payload_address(ty, slot, &payloads, index);
-            self.store_element(address, payload, value);
-        }
-        Ok(self
-            .builder
-            .build_load(named, slot, "enum.value")
-            .expect(POSITIONED))
     }
 }
 

@@ -299,6 +299,21 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 26. Recursive data (PRP-021)
+
+**Decision:**
+- **One rule:** `check::indirect_slot(owner, slot, structs, enums)` decides which enum payload slots lead back to their enum: inline through struct fields, enum payloads and `Option`'s payload, not arrays. Codegen uses it for layout, construction and `match` reads.
+- **Layout:** an indirect slot is an 8-byte pointer to a `lugha_rt_alloc` copy, made at construction and never mutated. Everything else stays inline, so `Nil` allocates nothing.
+- **Copies:** sharing (MEMORY 25) makes copies O(1).
+- **E0307** stays for struct-only cycles.
+- **Deep recursion:** documented as a crash (exit 139); a stack-overflow panic is a TODO idea.
+
+**Why:** It is the approved v1 direction (no `Box`), with the heap used only where needed.
+
+**Rules out:** `Box`/`indirect` annotations; reference counting.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -308,6 +323,7 @@ Open questions live in `DECISIONS.md`, not here.
 - **Milestone 1 complete**: `lughac build|run|check`, `--emit`, `-O`, human/JSON diagnostics; `m1/` acceptance programs pass
 - Toolchain installed and verified: Rust 1.99.0, LLVM 21.1.8, libgc, cc
 - Crate initialised: package `lugha`, binary `lughac`; builds, fmt/clippy/test pass
+- **Milestone 6 complete** — PRP-021 recursive enums: `indirect_slot`, `codegen/construct.rs`; the gate stops only methods
 - PRP-020 enums, `match`, `Option` (non-recursive) and `Language v1 Specification.md`
 - PRP-019 v1 syntax: lexer/parser/AST for all of v1, E0207, `driver/gate.rs`
 - v1 spec draft approved (`docs/specs/Language v1 Draft.md`): milestones 6–8 planned

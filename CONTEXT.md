@@ -1377,6 +1377,47 @@ CLAUDE.md, CHANGELOG.md, TODO.md (+ the exit-code finding), MEMORY.md (decision 
 
 Branch: main → prp-021-recursive_enums
 
+### WHAT WAS DONE
+
+Discovery: deep recursion is documented, not handled (TODO idea for a stack-overflow panic).
+
+Implemented PRP-021:
+- **Tests first:** `m6/recursive.la` (a million-node list walked with loops, a BST, an `Option` chain, copy then extend). The old gate test was removed.
+- **`check::indirect_slot`** with tests.
+- **Codegen:** indirect slots in layout, construction (heap copy) and `match` binding reads.
+- **Gate:** reduced to methods.
+- **Spec:** the v1 spec gains recursive data, indirect slots, recursion depth and the linked-list program (prints 6). The draft's folding progress is updated.
+- **Approved split:** `codegen/construct.rs`.
+
+229 tests pass. **Milestone 6 complete.**
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/{types,mod}.rs — indirect_slot + test; re-export
+src/codegen/{enums,matching,mod}.rs, src/codegen/construct.rs (new) — indirect layout, heap slots, binding reads, split
+src/driver/gate.rs — methods only
+docs/specs/Language v1 Specification.md, Language v1 Draft.md — recursion folded in
+tests/programs/m6/recursive.* (new), recursive_gate.* (removed); tests/{cli,spec}.rs; tests/common/v1_programs.rs
+PRPs/prp-021-recursive_enums.md — new PRP; implemented; amendments
+CLAUDE.md, CHANGELOG.md, TODO.md, MEMORY.md (decision 26)
+```
+
+### TESTS WRITTEN
+
+- `indirect_slot`: lists, trees, an `Option` chain through a struct, mutual recursion; arrays break cycles; plain enums.
+- IR: the `%List` layout; `List.Cons` allocates 24 bytes; `List.Nil` doesn't.
+- Gate: methods are still stopped; recursion passes.
+- Acceptance: `m6/recursive.la` at -O0/-O2; spec §10 linked list prints 6.
+
+### DECISIONS MADE
+
+- MEMORY 26 (recursive data).
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

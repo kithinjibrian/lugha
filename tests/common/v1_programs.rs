@@ -2,22 +2,6 @@
 //! inline fixtures. Each moves into the spec (and out of here) with its
 //! milestone; `spec_programs.rs` then extracts it like the others.
 
-pub const LIST: &str = r#"enum List {
-    Nil,
-    Cons(i64, List),
-}
-
-fun sum(l: List): i64 = match l {
-    Nil => 0,
-    Cons(x, rest) => x + sum(rest),
-};
-
-fun main() {
-    let l = List.Cons(1, List.Cons(2, List.Cons(3, List.Nil)));
-    println(sum(l));
-}
-"#;
-
 pub const METHODS: &str = r#"struct Vec2 { x: f64, y: f64 }
 
 impl Vec2 {
@@ -56,4 +40,4 @@ pub const STACK: &str = r#"fun main() {
 "#;
 
 /// Every v1 draft program not yet in the v1 specification, with a short name.
-pub const ALL: [(&str, &str); 3] = [("list", LIST), ("methods", METHODS), ("stack", STACK)];
+pub const ALL: [(&str, &str); 2] = [("methods", METHODS), ("stack", STACK)];

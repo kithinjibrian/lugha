@@ -158,7 +158,15 @@ impl<'ctx> Lowerer<'ctx> {
                 continue;
             };
             let index = u32::try_from(i).expect("payload count fits in u32");
-            let address = self.payload_address(sty, slot, &payloads, index);
+            let mut address = self.payload_address(sty, slot, &payloads, index);
+            if self.indirect(sty, ty) {
+                let ptr = self.context.ptr_type(Default::default());
+                address = self
+                    .builder
+                    .build_load(ptr, address, "boxed")
+                    .expect(POSITIONED)
+                    .into_pointer_value();
+            }
             let value = self.load_element(address, ty);
             let local = self.entry_alloca(ty, &name.name);
             self.builder.build_store(local, value).expect(POSITIONED);

@@ -12,7 +12,8 @@ This draft lists only what changes, in the order of the v0 sections. Everything 
   - E0207, E0309, E0311, E0415, E0416, E0417;
   - the enum layout (§7), no enums across C (§8), the shapes program and a rejected enum program (§10).
   - **One refinement:** enum payloads are immutable, so enum values *share* payload arrays rather than deep-copying them. This replaces this draft's "copying an enum deep-copies its payloads" (§4, §7).
-- **Still only here:** recursive enums and indirect slots (PRP-021), methods (milestone 7), growable arrays (milestone 8).
+- **PRP-021 (milestone 6 done), folded in:** recursive enums and structs (through enums or `Option`), indirect slots (§4, §6, §7), the stack-depth note, and the linked-list program (§10).
+- **Still only here:** methods (milestone 7), growable arrays (milestone 8).
 
 ## Decisions behind this draft (discovery, session 24)
 

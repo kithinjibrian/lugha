@@ -1,0 +1,113 @@
+// Recursive enums and structs (PRP-021): only the slots that lead back are
+// on the heap, and copies share their payloads.
+enum List {
+    Nil,
+    Cons(i64, List),
+}
+
+enum Tree {
+    Leaf,
+    Node(Tree, i64, Tree),
+}
+
+struct Item { value: i64, next: Option<Item> }
+
+fun insert(t: Tree, v: i64): Tree = match t {
+    Leaf => Tree.Node(Tree.Leaf, v, Tree.Leaf),
+    Node(l, x, r) => if v < x {
+        Tree.Node(insert(l, v), x, r)
+    } else {
+        Tree.Node(l, x, insert(r, v))
+    },
+};
+
+fun sum_tree(t: Tree): i64 = match t {
+    Leaf => 0,
+    Node(l, x, r) => sum_tree(l) + x + sum_tree(r),
+};
+
+fun in_order(t: Tree) {
+    match t {
+        Leaf => {}
+        Node(l, x, r) => {
+            in_order(l);
+            print(x);
+            print(" ");
+            in_order(r);
+        }
+    }
+}
+
+fun length(l: List): i64 {
+    let mut n = 0;
+    let mut cur = l;
+    let mut more = true;
+    while more {
+        match cur {
+            Cons(_, rest) => {
+                n += 1;
+                cur = rest;
+            }
+            Nil => {
+                more = false;
+            }
+        }
+    }
+    n
+}
+
+fun main() {
+    // A million nodes, built and walked with loops.
+    let mut big = List.Nil;
+    for i in 0..1000000 {
+        big = List.Cons(i, big);
+    }
+    let mut total = 0;
+    let mut cur = big;
+    let mut more = true;
+    while more {
+        match cur {
+            Cons(x, rest) => {
+                total += x;
+                cur = rest;
+            }
+            Nil => {
+                more = false;
+            }
+        }
+    }
+    println(total);
+
+    // A binary search tree.
+    let mut t = Tree.Leaf;
+    for v of [5, 3, 8, 1, 4, 9] {
+        t = insert(t, v);
+    }
+    in_order(t);
+    println();
+    println(sum_tree(t));
+
+    // A struct chained through Option.
+    let chain = Item { value: 1, next: Some(Item { value: 2, next: Some(Item { value: 3, next: None }) }) };
+    let mut sum = 0;
+    let mut node = Some(chain);
+    let mut going = true;
+    while going {
+        match node {
+            Some(it) => {
+                sum += it.value;
+                node = it.next;
+            }
+            None => {
+                going = false;
+            }
+        }
+    }
+    println(sum);
+
+    // A copy grows independently.
+    let short = List.Cons(1, List.Cons(2, List.Nil));
+    let longer = List.Cons(0, short);
+    println(length(short));
+    println(length(longer));
+}

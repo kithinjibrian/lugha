@@ -1,3 +1,0 @@
-enum List { Nil, Cons(i64, List) }
-
-fun main() {}

@@ -56,6 +56,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Calling C",
         "A rejected program",
         "Enums and match",
+        "A linked list",
         "A rejected enum program",
     ] {
         assert!(
