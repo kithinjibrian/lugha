@@ -1622,9 +1622,9 @@ CLAUDE.md (known issue removed), TODO.md, CHANGELOG.md, MEMORY.md (decisions 26,
 
 ---
 
-## SESSION 32 — 2026-10-12 — swap discovery and PRP-026 — open
+## SESSION 32 — 2026-10-12 — The swap intrinsic, Lugha v1.1 (PRP-026) — open
 
-Branch: main
+Branch: prp-026-swap
 
 ---
 
