@@ -1690,9 +1690,9 @@ README.md, CLAUDE.md (tree), CHANGELOG.md, TODO.md, MEMORY.md (decision 31)
 
 ---
 
-## SESSION 33 — 2026-10-12 — Lost element write when an array grows — open
+## SESSION 33 — 2026-10-12 — E0510: no changing what a statement writes, Lugha v1.2 (PRP-027) — open
 
-Branch: main
+Branch: prp-027-place_change_check
 
 ---
 
