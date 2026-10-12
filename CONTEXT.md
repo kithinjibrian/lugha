@@ -1881,9 +1881,9 @@ CHANGELOG.md — entry
 
 ---
 
-## SESSION 37 — 2026-10-12 — Milestone 9 discovery — open
+## SESSION 37 — 2026-10-12 — v2 syntax and the gate (PRP-030) — open
 
-Branch: main
+Branch: prp-030-v2_syntax
 
 ---
 
