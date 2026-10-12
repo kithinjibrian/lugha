@@ -1,6 +1,6 @@
 ## FEATURE: Split the C runtime into three source fragments, joined into one `lugha_rt.c` when lughac is built.
 
-**Status:** approved 2026-10-12 — session 34
+**Status:** implemented 2026-10-12 — session 34
 **Milestone:** none; housekeeping (CLAUDE.md file size rule: `runtime/lugha_rt.c` is 358 lines)
 **Spec:** §9 ("Link", "Runtime library"). No spec change: programs are still linked against one embedded `lugha_rt.c`.
 **Decisions:** DECISION-009 / MEMORY 15 (runtime embedded as source, compiled in the single `cc` link call); MEMORY 30 (stack overflow handler).
@@ -20,6 +20,10 @@ No runtime source file exceeds 300 lines. What lughac embeds, writes and compile
   - `tests/codegen.rs` (`runtime_compiles_without_warnings`, `-Werror`);
   - `src/codegen/runtime.rs` (`RUNTIME_SYMBOLS`).
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 34)
+- **Sizes:** the core is 143 lines, `stack.c` 72 and `print.c` 163, all smaller than estimated because the core no longer holds the handler.
+- **Check:** a diff of the old file, with the handler block moved after the core, against the joined parts shows only the three added comments.
 
 ### Discovery answers (session 34)
 1. **Split as fragments joined at build:** not separate C modules with a header (that would need a temp directory and a spec change), and not an exemption from the rule.
@@ -71,14 +75,14 @@ No runtime source file exceeds 300 lines. What lughac embeds, writes and compile
 ## TESTS TO WRITE
 
 Unit tests — `link.rs` (written first; they fail until `RUNTIME_PARTS` exists):
-- [ ] **Order and joining:** `RUNTIME_SOURCE` is exactly the parts joined in order. The core comes first, and `#define _GNU_SOURCE` appears before its first `#include`.
-- [ ] **Includes:** only the core has `#include` lines, since the fragments rely on its includes.
-- [ ] **Size:** every part is non-empty and at most 300 lines.
-- [ ] **Existing:** every `RUNTIME_SYMBOLS` entry is still defined.
+- [x] **Order and joining:** `RUNTIME_SOURCE` is exactly the parts joined in order. The core comes first, and `#define _GNU_SOURCE` appears before its first `#include`.
+- [x] **Includes:** only the core has `#include` lines, since the fragments rely on its includes.
+- [x] **Size:** every part is non-empty and at most 300 lines.
+- [x] **Existing:** every `RUNTIME_SYMBOLS` entry is still defined.
 
 Existing integration tests (the safety net for a verbatim move):
-- [ ] **`runtime_compiles_without_warnings`:** the joined source compiles with `-std=c11 -Wall -Wextra -Werror`.
-- [ ] **End to end:** every program under `tests/programs/` (printing, floats, panics, stack overflow, growth) and every spec §10 program pass at `-O0` and `-O2`.
+- [x] **`runtime_compiles_without_warnings`:** the joined source compiles with `-std=c11 -Wall -Wextra -Werror`.
+- [x] **End to end:** every program under `tests/programs/` (printing, floats, panics, stack overflow, growth) and every spec §10 program pass at `-O0` and `-O2`.
 
 ## ROLLBACK PLAN
 
@@ -86,10 +90,10 @@ Existing integration tests (the safety net for a verbatim move):
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] No file in `runtime/` exceeds 300 lines; the joined source is the old file's code in the same order.
-- [ ] CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] No file in `runtime/` exceeds 300 lines; the joined source is the old file's code in the same order.
+- [x] CLAUDE.md, MEMORY.md, TODO.md, CHANGELOG.md updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

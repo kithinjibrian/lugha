@@ -4,15 +4,29 @@
 //!
 //! Runs `cc <objects> <tmp>/lugha_rt.c -lgc -lm -o <output>` directly, never
 //! through a shell. The runtime source is embedded in lughac, so linking
-//! works from any directory with no install layout.
+//! works from any directory with no install layout. It is kept as three
+//! files under `runtime/` and joined here into that one `lugha_rt.c`.
 
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-/// The C runtime linked into every program (`runtime/lugha_rt.c`).
-pub const RUNTIME_SOURCE: &str = include_str!("../runtime/lugha_rt.c");
+/// The runtime's source files, in the order they are joined: the core first,
+/// since it holds every `#include`, then the fragments that rely on it.
+pub const RUNTIME_PARTS: [(&str, &str); 3] = [
+    ("lugha_rt.c", include_str!("../runtime/lugha_rt.c")),
+    ("stack.c", include_str!("../runtime/stack.c")),
+    ("print.c", include_str!("../runtime/print.c")),
+];
+
+/// The C runtime linked into every program: [`RUNTIME_PARTS`] joined in order,
+/// compiled as one `lugha_rt.c`.
+pub const RUNTIME_SOURCE: &str = concat!(
+    include_str!("../runtime/lugha_rt.c"),
+    include_str!("../runtime/stack.c"),
+    include_str!("../runtime/print.c"),
+);
 
 /// Why linking failed.
 #[derive(Debug, thiserror::Error)]
@@ -93,7 +107,33 @@ impl Drop for RuntimeFile {
 
 #[cfg(test)]
 mod tests {
-    use super::RUNTIME_SOURCE;
+    use super::{RUNTIME_PARTS, RUNTIME_SOURCE};
+
+    #[test]
+    fn runtime_parts_join_in_order_core_first() {
+        let joined: String = RUNTIME_PARTS.iter().map(|(_, src)| *src).collect();
+        assert_eq!(joined, RUNTIME_SOURCE);
+        let (name, core) = RUNTIME_PARTS[0];
+        assert_eq!(name, "lugha_rt.c");
+        let feature = core
+            .find("#define _GNU_SOURCE")
+            .expect("the core enables GNU extensions");
+        let first_include = core.find("#include").expect("the core has the includes");
+        assert!(
+            feature < first_include,
+            "_GNU_SOURCE must precede every #include"
+        );
+    }
+
+    #[test]
+    fn fragments_rely_on_the_core_and_stay_small() {
+        for (i, (name, src)) in RUNTIME_PARTS.iter().enumerate() {
+            assert!(!src.trim().is_empty(), "{name} is empty");
+            assert!(src.lines().count() <= 300, "{name} is over 300 lines");
+            let includes = src.lines().any(|l| l.starts_with("#include"));
+            assert_eq!(includes, i == 0, "{name}: only the core has #include lines");
+        }
+    }
 
     #[test]
     fn runtime_defines_every_symbol_codegen_calls() {

@@ -86,6 +86,8 @@ Done when the stack program passes and `lughac spec` prints the full v1 spec.
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.
 - [x] (PRP-027, E0510) An element write is lost when evaluating the right-hand side grows the same array: `xs[0] = { xs.push(2); xs.push(3); 9 };` leaves `xs[0]` as 1. The place's address is computed first (spec §5), then growth moves the elements to a new array. `swap(xs[0], ys[{ xs.push(1); 0 }])` behaves the same way. Seen in session 32; needs a spec ruling (re-resolve the place, or reject growth inside a place's own statement).
 
+- [x] (PRP-028) `runtime/lugha_rt.c` grew to 358 lines (PRP-025), over the 300-line rule. Split into fragments joined at build.
+
 ## Ideas — noted, not scheduled
 
 - [x] Move on last use: store a dead local's array without copying it (`grid = next`, `ps[i] = p`) — PRP-018.

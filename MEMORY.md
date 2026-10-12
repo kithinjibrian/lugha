@@ -162,6 +162,8 @@ Open questions live in `DECISIONS.md`, not here.
 
 **Rules out:** precompiled runtime objects; `build.rs`.
 
+**Note (PRP-028):** the source is kept as three fragments: `runtime/lugha_rt.c` (core, first), `stack.c` and `print.c`. `link::RUNTIME_SOURCE` joins them with `concat!`, so lughac still writes and compiles one `lugha_rt.c`.
+
 ---
 
 ### 16. Array value semantics (PRP-014)
@@ -409,6 +411,7 @@ Open questions live in `DECISIONS.md`, not here.
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- PRP-028: the C runtime split into three fragments (`runtime/{lugha_rt,stack,print}.c`), joined into one `lugha_rt.c`
 - **Lugha v1.2**: PRP-027 E0510 (`check/conflicts.rs`): no lost writes when a statement changes what contains its place
 - **Lugha v1.1**: PRP-026 `swap(a, b)` intrinsic (`check/swap.rs`, `codegen/swap.rs`, E0509)
 - **Milestone 4 complete**: C runtime, intrinsics, `extern fun`, overflow/division panics; `m4/` programs pass

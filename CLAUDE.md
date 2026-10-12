@@ -149,7 +149,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 
 - Rust 1.99.0 (pinned in `rust-toolchain.toml`), edition 2024 — package `lugha`, binary `lughac`.
 - `inkwell` 0.10, feature `llvm21-1-prefer-dynamic` + LLVM 21 (`llvm-21-dev`) — codegen. Never use another LLVM major; never switch to static LLVM linking (fails on Ubuntu, see DECISION-005).
-- C (`lugha_rt.c`) — the runtime linked into every compiled program.
+- C (`lugha_rt.c`, kept as three fragments in `runtime/`) — the runtime linked into every compiled program.
 - Boehm GC (`libgc`), `libc`, `libm` — linked into every compiled program via the system `cc`.
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
@@ -221,7 +221,9 @@ pub fn parse_number(src: &str) -> i64 {
 ├── .github/         — workflows/ci.yml: fmt, clippy, test in ubuntu:26.04 (LLVM 21, libgc)
 ├── README.md        — overview, prerequisites, usage, tests
 ├── Cargo.toml       — package `lugha`, binary `lughac`
-├── runtime/         — lugha_rt.c: the C runtime, embedded in lughac (DECISION-009)
+├── runtime/         — the C runtime, embedded in lughac (DECISION-009): lugha_rt.c (core: includes, types,
+│                      init, alloc, panics, strings), stack.c (overflow handler), print.c (formatting);
+│                      fragments joined in that order into one lugha_rt.c (PRP-028)
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
 │   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints)
@@ -251,7 +253,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (enum layout, Option types, payload addresses), growth.rs (push, pop, clear), construct.rs (building enum values,
 │   │                  indirect slots), matching.rs (match lowering), methods.rs (method symbols, receivers, calls),
 │   │                  swap.rs (swap: loads and crossed stores)
-│   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_SOURCE, LinkError
+│   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_PARTS, RUNTIME_SOURCE, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes), guard.rs (panics → internal error, exit 2), pipeline.rs,
 │                      source.rs (load, E0110, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)

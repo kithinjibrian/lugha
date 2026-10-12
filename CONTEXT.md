@@ -1751,7 +1751,42 @@ README.md, CLAUDE.md (tree), CHANGELOG.md, TODO.md, MEMORY.md (decision 32)
 
 ## SESSION 34 — 2026-10-12 — Split the C runtime into fragments (PRP-028) — open
 
-Branch: prp-028-runtime_split
+Branch: main → prp-028-runtime_split
+
+### WHAT WAS DONE
+
+Discovery (1 question, answered with the recommended option): fragments joined at build, not separate C modules and not an exemption. PRP-028 approved.
+
+Implemented PRP-028:
+- The failing `link.rs` tests came first.
+- `runtime/lugha_rt.c` split verbatim into the core (143 lines), `stack.c` (72) and `print.c` (163). A diff confirms only comments were added.
+- `link::RUNTIME_PARTS`; `RUNTIME_SOURCE` is `concat!` of the parts.
+
+252 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+runtime/lugha_rt.c — now the core only; layout comment
+runtime/stack.c, runtime/print.c — new fragments (moved code)
+src/link.rs — RUNTIME_PARTS, concat! RUNTIME_SOURCE, two tests
+PRPs/prp-028-runtime_split.md — new PRP; implemented; amendments
+CLAUDE.md (tree, stack, link line), CHANGELOG.md, TODO.md, MEMORY.md (decision 15 note)
+```
+
+### TESTS WRITTEN
+
+- **The parts join in order:** they join to exactly `RUNTIME_SOURCE`, with the core first and `_GNU_SOURCE` before the first `#include`.
+- **Fragment rules:** only the core has `#include`s, and each part is non-empty and at most 300 lines.
+- **Existing safety net:** the `-Werror` runtime compile and every end-to-end program at `-O0` and `-O2`.
+
+### DECISIONS MADE
+
+- MEMORY 15 note.
+
+### PENDING DECISIONS OPENED
+
+- None.
 
 ---
 
