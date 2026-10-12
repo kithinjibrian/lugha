@@ -1373,6 +1373,12 @@ CLAUDE.md, CHANGELOG.md, TODO.md (+ the exit-code finding), MEMORY.md (decision 
 
 ---
 
+## SESSION 27 — 2026-10-12 — PRP-021 recursive enums — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 6, PRP-021: recursive enums (`docs/specs/Language v1 Draft.md` §4 "Recursion", §6 pass 2, §7 indirect slots). It covers:
