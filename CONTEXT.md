@@ -1375,7 +1375,7 @@ CLAUDE.md, CHANGELOG.md, TODO.md (+ the exit-code finding), MEMORY.md (decision 
 
 ## SESSION 27 — 2026-10-12 — PRP-021 recursive enums — open
 
-Branch: main
+Branch: main → prp-021-recursive_enums
 
 ---
 
