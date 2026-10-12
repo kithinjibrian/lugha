@@ -1258,6 +1258,12 @@ CHANGELOG.md   — entry
 
 ---
 
+## SESSION 25 — 2026-10-12 — Milestone 6 discovery and PRP-019 enums — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 6, the first v1 PRP: enums (`docs/specs/Language v1 Draft.md` §2–§4, §7, §9–§11). It covers:
