@@ -541,12 +541,10 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-Milestone 9 is in progress. PRP-030 (v2 syntax and the gate) and PRP-031 (deep `==`, string order, and `Language v2 Specification.md` as `lughac spec`) are merged. Next is **PRP-032: nested patterns and `if` guards** (v2 draft §3, §5; the draft's patterns program is milestone 9's acceptance test). It covers:
-- **Checker:** nested slot resolution, where a bare name is a variant if the slot's enum has one, else a binding; guards are `bool`. It needs a real exhaustiveness and usefulness check: guarded arms don't count, E0417 lists nested missing patterns, and W0102 applies. `check/matching.rs` is at 292 lines, so plan new files.
-- **Codegen:** a decision tree for nested tests, and guards.
-- **Gate:** delete the M9 entries.
-- **Spec:** fold the draft's pattern sections into the v2 spec, and mark milestone 9 done.
+**Milestone 9 is complete** (tag `m9`): deep `==`, string order, nested patterns, guards and W0103. `lughac spec` prints `Language v2 Specification.md` ("in progress: milestone 10").
 
-The draft's §12 question (an unused-binding warning for nested slots) is for discovery.
+Next is **milestone 10, modules** (v2 draft §6, §8, §9; the two-module program in the draft's §10). It covers `import`, `pub`, multi-file loading from the main file's directory, cycles, per-module namespaces, E0312–E0314, E0313 for private items, module-qualified symbols (`lugha_fn_a.b.f`), per-file diagnostics with a `"file"` field, and `--emit` across modules. The gate still stops `import`, `pub` and qualified names.
+
+Start with discovery: it likely needs a split into several PRPs, as M9 had (for example driver loading and spans, then name resolution, then symbols). The spec-extraction test must also learn to handle the multi-file example.
 
 See `TODO.md`.

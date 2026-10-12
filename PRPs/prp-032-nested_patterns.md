@@ -1,6 +1,6 @@
 ## FEATURE: Nested patterns and `if` guards in `match`, with a usefulness-based exhaustiveness check and W0103 — completes milestone 9.
 
-**Status:** implemented 2026-10-13 — session 39
+**Status:** merged into `main` 2026-10-13 — session 39 (tag `m9`)
 **Milestone:** 9 (third of three PRPs: 030 syntax, 031 equality and string order, **032 nested patterns and guards**). Milestone 9 is done when the v2 draft's patterns program passes.
 **Spec:** `Language v2 Draft.md` §3 (pattern grammar, bare names in slots), §5 (`match` with nested patterns and guards), §9 (lowering notes, codes), §10 (patterns program), §12 (unused-binding question). These fold into `Language v2 Specification.md`.
 **Decisions:**
