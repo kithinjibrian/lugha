@@ -2924,7 +2924,7 @@ Branch: prp-046-interface_value_checking
 
 ## SESSION 59 — 2026-10-13 — Compiling interface values (milestone 20, part 2) — open
 
-Branch: main
+Branch: prp-047-interface_value_compiling
 
 ---
 
