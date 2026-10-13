@@ -3167,6 +3167,11 @@ Branch: prp-052-iterators (merged into main)
 
 ---
 
+## SESSION 67 — 2026-10-13 — Self in interfaces (milestone 25) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 24 complete** (PRP-052, MEMORY 62): iterators — `Iter<T>` in the prelude, `for x of e` over anything with `fun next(mut self): Option<T>`, on a copy. Tagged `m24`. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
