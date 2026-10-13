@@ -2144,6 +2144,12 @@ CLAUDE.md (stages, tree, known issue), TODO.md, CHANGELOG.md, MEMORY.md (decisio
 
 ---
 
+## SESSION 42 — 2026-10-13 — Names across modules (PRP-034) discovery — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 Milestone 10 is in progress. PRP-033 (modules front end) is merged:
