@@ -2485,7 +2485,7 @@ Branch: prp-038-input_and_interpolation
 
 ---
 
-## SESSION 49 — 2026-10-13 — Functions as values (milestone 14) — open
+## SESSION 49 — 2026-10-13 — Functions as values (milestone 14) — closed
 
 Branch: prp-039-function_values
 
@@ -2532,20 +2532,22 @@ Branch: prp-039-function_values
 
 - None.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-039-function_values` fast-forward merged into `main` and deleted; tag `m14`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 13 is complete** (tag `m13`; MEMORY 45). `lughac spec` prints `Language v3 Specification.md` (in progress: milestone 13).
+**Milestone 14 is complete** (tag `m14`; MEMORY 46). `lughac spec` prints `Language v3 Specification.md` (in progress: milestone 14).
 
-Next is **milestone 14, functions as values** (`Language v3 Draft.md`: decision 3, §3 `fun(…)` types, §4 "Function types" and "Functions as values", §7 value layout, §9 `lugha_ref_*`, the §10 functions-as-values program). It covers:
-- `fun(A, B): R` types;
-- named and associated functions as values;
-- calling any expression of function type;
-- no `==` on functions (so `T: Eq` restricts);
-- E0406/E0409/E0412 extensions;
-- the `{ code, env }` layout with a null environment.
+Next is **milestone 15, closures** (`Language v3 Draft.md`: decisions 2–3, §3 `closure`, §4 "Closures", §5 evaluation order, §7 environments, §9 `lugha_closure_*`, E0209, E0511, the §10 closures program). It covers:
+- `fun(x) = e` and `fun(x: T): R { … }` literals, with parameter types inferred from an expected function type (E0412 otherwise) and the return type from the body;
+- capture by copy, read-only (E0511), copied when the closure is created (moved on last use);
+- one GC environment per closure;
+- closures inside generic code.
 
-Closures (milestone 15) come after. Start with discovery for PRP-039.
+Values already use `{ code, env }` with the environment passed first, so closures only add environments and literals. Start with discovery for PRP-040.
 
 See `TODO.md`.

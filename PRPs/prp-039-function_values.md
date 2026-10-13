@@ -1,6 +1,6 @@
 ## FEATURE: Functions as values — `fun(A): R` types, named functions as values, calling values.
 
-**Status:** approved 2026-10-13 — session 49
+**Status:** merged 2026-10-13 — session 49
 **Milestone:** 14 (one PRP)
 **Spec:** `Language v3 Draft.md`:
 - decision 3;
