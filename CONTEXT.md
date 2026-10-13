@@ -3286,7 +3286,7 @@ Branch: prp-055-more_numbers (merged into main)
 ---
 
 ## SESSION 71 — 2026-10-13 — Bits (milestone 28) — open
-Branch: main
+Branch: prp-056-bits
 
 ---
 
