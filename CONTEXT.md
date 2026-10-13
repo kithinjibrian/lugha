@@ -3257,7 +3257,7 @@ Branch: main
 ---
 
 ## SESSION 70 — 2026-10-13 — More numbers (milestone 27) — open
-Branch: main
+Branch: prp-055-more_numbers
 
 ---
 
