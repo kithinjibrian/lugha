@@ -2954,6 +2954,12 @@ Branch: prp-047-interface_value_compiling
 
 ---
 
+## SESSION 60 — 2026-10-13 — Type patterns (milestone 21) — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 20 complete** (tag `m20`; PRP-046 and PRP-047, MEMORY 55–56): interface values check, compile and run. `Language v5 Specification.md` is in progress (milestone 20) and is what `lughac spec` prints; v4 (with v4.1) is frozen.
