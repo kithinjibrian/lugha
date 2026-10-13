@@ -110,8 +110,8 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — `modules/manifest.rs`:
-- [ ] Comments, blank lines and `geo = "libs/geo"` lines parse into entries with spans.
-- [ ] **E0321:**
+- [x] Comments, blank lines and `geo = "libs/geo"` lines parse into entries with spans.
+- [x] **E0321:**
   - a line before `[packages]`;
   - `[deps]`;
   - `geo = libs` (no quotes);
@@ -121,28 +121,28 @@ Unit tests — `modules/manifest.rs`:
   - trailing junk.
 
 Unit tests — `modules/tests.rs` (in-memory files and folders):
-- [ ] **Loading:**
+- [x] **Loading:**
   - `import geo.shapes;` loads `libs/geo/shapes.la` with path `[geo, shapes]` and package `geo`;
   - a package's own `import util.x;` resolves to `[geo, util, x]` in the package's folder;
   - a package's manifest lists `mathx`, which the package can import but the root can't (E0312).
-- [ ] **Errors:**
+- [x] **Errors:**
   - E0320 for a root folder `geo/` next to package `geo`, both at the import and for a nested manifest's name;
   - E0322 for a missing folder;
   - E0323 for two folders under one name;
   - E0312 for `import geo;` and for a missing module inside the package.
-- [ ] **Cycles:** packages importing each other load each file once.
+- [x] **Cycles:** packages importing each other load each file once.
 
 Integration — `tests/modules.rs` (the real binary, temp directories):
-- [ ] A program with `lugha.toml` and a package runs.
-- [ ] A bad manifest reports E0321 at `lugha.toml:2:…` in human and JSON output.
-- [ ] Symbols are `lugha_fn_geo/shapes/…` in `--emit=ir`.
+- [x] A program with `lugha.toml` and a package runs.
+- [x] A bad manifest reports E0321 at `lugha.toml:2:…` in human and JSON output.
+- [x] Symbols are `lugha_fn_geo/shapes/…` in `--emit=ir`.
 
 Acceptance — `tests/programs/m30/` (directory cases with `lugha.toml`):
-- [ ] `packages/`: a program using two packages, one of them through another's manifest.
-- [ ] `e0320/` and `e0321/`: reject goldens.
+- [x] `packages/`: a program using two packages, one of them through another's manifest.
+- [x] `e0320/` and `e0321/`: reject goldens.
 
 Regression:
-- [ ] Every earlier test passes, and programs without a manifest give byte-identical IR.
+- [x] Every earlier test passes, and programs without a manifest give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -150,10 +150,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The `m30/` programs and the new loader and manifest tests pass.
-- [ ] `Language v8 Specification.md` begins; docs updated.
-- [ ] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The `m30/` programs and the new loader and manifest tests pass.
+- [x] `Language v8 Specification.md` begins; docs updated.
+- [x] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -162,3 +162,11 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m30/packages/main.la
 ```
+
+## AMENDMENTS (during build, session 74)
+
+- **The root-folder clash is reported at the manifest entry**, and the entry stays registered, so the program's imports of that package don't also fail as missing modules. A package's own clash is still reported at its import.
+- **Manifests are read after their package's first module**, so the main file keeps offset 0 and stays first in the source map.
+- **`load` takes `&mut Read<'_>`** (a type alias for the same callback), and the tests model folders by failing a directory read with `IsADirectory`.
+- **The `m30` acceptance cases** are a program using `geo`, where geo uses `mathx` through its own manifest, and a local `util.names` beside geo's `util.names`; plus E0320 and E0321 goldens. The PRP's "two packages" is covered by `mathx`.
+- **No file splits.**

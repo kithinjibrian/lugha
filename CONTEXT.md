@@ -3375,20 +3375,47 @@ Branch: main
 
 ---
 
-## SESSION 74 — 2026-10-14 — Loading packages (milestone 30, part 1) — open
+## SESSION 74 — 2026-10-14 — Loading packages (milestone 30, part 1) — closed
 Branch: prp-058-package_loading
+
+### WHAT WAS DONE
+- The user asked for milestone 30 "in one go": PRP-058 written as approved within the v8 draft, built, merged on green CI (no tag until PRP-059).
+- `modules/manifest.rs` (TOML subset, E0321) and `modules/packages.rs` (manifests of a build, package imports, E0320/E0322/E0323, `import geo;` E0312).
+- `Module.package`/`imports`, `Loaded.manifests`, `Unit.imports`; manifests in the source map.
+- `Language v8 Specification.md` begins (packages section, symbols, E0320–E0323).
+- A first commit went out unformatted with half-updated docs (a docs script stopped on a stale `CLAUDE.md` line while the commit ran anyway); CI failed on `cargo fmt --check`, and a follow-up commit fixed both.
+
+### FILES CREATED OR MODIFIED
+- New: `src/modules/manifest.rs`, `src/modules/packages.rs`, `tests/programs/m30/` (`packages/`, `e0320/`, `e0321/`), `docs/specs/Language v8 Specification.md`.
+- Modified: `src/modules/{mod,resolve,tests}.rs`, `src/check/modules/mod.rs`, `src/check/{mod,test_util}.rs`, `src/codegen/mod.rs`, `src/driver/{pipeline,source}.rs`, `src/lib.rs`, `tests/{modules,cli}.rs`.
+- Docs: PRP-058, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 70, CONTEXT.
+
+### TESTS WRITTEN
+- `manifest.rs`: entries with comments and spans; E0321 cases; messages.
+- `modules/tests.rs`: package imports and paths, a package's own modules, non-transitive manifests, E0320/E0322/E0323/E0312/E0321, packages importing each other.
+- `tests/modules.rs`: a package builds and runs with `lugha_fn_geo/shapes/…`; E0321 at `lugha.toml:2:1` in human and JSON output.
+- `tests/programs/m30/`. Earlier programs' IR byte-identical with `main`.
+
+### DECISIONS MADE
+- MEMORY 70.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged (no tag until PRP-059).
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v8 draft approved** (`docs/specs/Language v8 Draft.md`, MEMORY 69): packages — milestone 30. `main` has v7 complete (tags `m29`, `v7`); `Language v7 Specification.md` is what `lughac spec` prints until milestone 30 starts `Language v8 Specification.md`.
+**Milestone 30, part 1 done** (PRP-058, MEMORY 70): `lugha.toml`, package imports, per-package manifests, E0320–E0323. `Language v8 Specification.md` (in progress) is what `lughac spec` prints; v7 is frozen.
 
-Next: **milestone 30, packages** — discovery and PRP-058. Likely two PRPs (as milestones 20 and 23):
-1. **Loading and resolution:** `lugha.toml` parsing (E0321, E0322), package imports in `modules/resolve.rs` (E0320, E0323, `import geo;` → E0312), per-package manifests, module keys/symbols starting with the package name, diagnostics in `lugha.toml`; every non-`private` item visible across packages for now.
-2. **Visibility:** `public` allowed (retire E0317), package-level default visibility (E0313 across packages), E0318 for non-`public` types in `public` signatures; the §10 packages programs (the spec extractor must handle `# lugha.toml` and subfolder files).
-
-Relevant code: `src/modules/` (load, resolve), `src/check/visibility.rs` (E0313/E0317/E0318), `src/driver/source.rs` (source map), `tests/common/spec_programs.rs`.
+Next: **PRP-059, `public` and package visibility** (completes milestone 30 and v8; tags `m30`, `v8`; part of the user's "in one go"). Scope (v8 draft decision 3, §3, §6 "Visibility", E0313/E0318 changes, E0317 retired, §10 "Packages" and "A rejected package program"):
+- `public` allowed on items, methods, fields (`check/visibility.rs` E0317 goes); `Unit` needs the module's package (`Module.package`);
+- no keyword = visible within the package: E0313 from another package, message naming the package; `private` unchanged; interface satisfaction respects it;
+- E0318: a `public` declaration mentioning a non-`public` type;
+- spec §10: the packages programs need the extractor (`tests/common/spec_programs.rs`) to accept `# lugha.toml` and files in subfolders (`// libs/geo/shapes.la`).
 
 Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/array.rs` (295), `check/env.rs` (295), `check/visibility.rs` (294), `check/generics.rs` (294), `check/satisfy.rs` (294).
 

@@ -1087,9 +1087,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 70. Loading packages (PRP-058)
+
+**Decision:** milestone 30 part 1, built under the user's "in one go".
+- **Manifest** (`modules/manifest.rs`): hand-written TOML subset parser → `Entry { name, path, span }` + E0321 diagnostics; `#` comments after the last quote.
+- **Loader** (`modules/packages.rs`, `Packages`): `folders` (name → normalised folder, lexical `.`/`..`), `listed` (per package, `None` = root). A package's manifest is read after its first module is parsed (so the main file keeps offset 0) and joins the offset space (`Loaded.manifests`, `ManifestFile`; `Source::of` merges and sorts by base). Folder existence is probed through the `read` callback (reading a directory fails with a non-`NotFound` error; tests model folders). E0322 missing folder; E0323 one name two folders; E0320 a name also in the root folder (at the entry; still registered, so imports don't cascade) or in a package's own folder (at the import); `import geo;` E0312.
+- **Paths:** listed package → module path = import names, file in the package folder, package = first name; else P's prefix (`[P]` or none) + names in P's folder. `Module.package`, `Module.imports` (resolved paths); `Unit.imports` feeds the checker's `enter` (empty = as written). `load` now takes `&mut Read<'_>`.
+- **Visibility unchanged** until PRP-059 (`public` still E0317).
+
+**Why:** resolved paths in the loader keep the checker and codegen unchanged; root-folder clashes are checked globally because root modules have no prefix.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 30, part 1**: PRP-058 loading packages; v8 spec begins
 - **Milestone 29 complete — Lugha v7 complete**: PRP-057 integer methods
 - **Milestone 28 complete**: PRP-056 bit operators
 - **Milestone 27 complete**: PRP-055 `u32`, `u64`, `f32`; v7 spec begins
@@ -1157,22 +1170,22 @@ Open questions live in `DECISIONS.md`, not here.
 - v0 language spec reviewed and fixed
 
 ### In Progress
-- Nothing
+- Milestone 30: PRP-059 visibility next
 
 ### Not Started
-- Lugha v8: draft approved (MEMORY 69), milestone 30 not started
+- Milestone 30 part 2 (PRP-059)
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v8 draft approved** (`docs/specs/Language v8 Draft.md`, MEMORY 69): packages — milestone 30. `main` has v7 complete (tags `m29`, `v7`); `Language v7 Specification.md` is what `lughac spec` prints until milestone 30 starts `Language v8 Specification.md`.
+**Milestone 30, part 1 done** (PRP-058, MEMORY 70): `lugha.toml`, package imports, per-package manifests, E0320–E0323. `Language v8 Specification.md` (in progress) is what `lughac spec` prints; v7 is frozen.
 
-Next: **milestone 30, packages** — discovery and PRP-058. Likely two PRPs (as milestones 20 and 23):
-1. **Loading and resolution:** `lugha.toml` parsing (E0321, E0322), package imports in `modules/resolve.rs` (E0320, E0323, `import geo;` → E0312), per-package manifests, module keys/symbols starting with the package name, diagnostics in `lugha.toml`; every non-`private` item visible across packages for now.
-2. **Visibility:** `public` allowed (retire E0317), package-level default visibility (E0313 across packages), E0318 for non-`public` types in `public` signatures; the §10 packages programs (the spec extractor must handle `# lugha.toml` and subfolder files).
-
-Relevant code: `src/modules/` (load, resolve), `src/check/visibility.rs` (E0313/E0317/E0318), `src/driver/source.rs` (source map), `tests/common/spec_programs.rs`.
+Next: **PRP-059, `public` and package visibility** (completes milestone 30 and v8; tags `m30`, `v8`; part of the user's "in one go"). Scope (v8 draft decision 3, §3, §6 "Visibility", E0313/E0318 changes, E0317 retired, §10 "Packages" and "A rejected package program"):
+- `public` allowed on items, methods, fields (`check/visibility.rs` E0317 goes); `Unit` needs the module's package (`Module.package`);
+- no keyword = visible within the package: E0313 from another package, message naming the package; `private` unchanged; interface satisfaction respects it;
+- E0318: a `public` declaration mentioning a non-`public` type;
+- spec §10: the packages programs need the extractor (`tests/common/spec_programs.rs`) to accept `# lugha.toml` and files in subfolders (`// libs/geo/shapes.la`).
 
 Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/array.rs` (295), `check/env.rs` (295), `check/visibility.rs` (294), `check/generics.rs` (294), `check/satisfy.rs` (294).
 

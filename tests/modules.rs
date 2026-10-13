@@ -228,7 +228,10 @@ fn with_package(manifest: &str) -> Fixture {
             "main.la",
             "import geo.shapes;\n\nfun main() {\n    println(shapes.area(2.0));\n}\n",
         )
-        .file("libs/geo/shapes.la", "fun area(r: f64): f64 = 3.0 * r * r;\n");
+        .file(
+            "libs/geo/shapes.la",
+            "fun area(r: f64): f64 = 3.0 * r * r;\n",
+        );
     f
 }
 
@@ -251,7 +254,10 @@ fn manifest_mistakes_point_into_lugha_toml() {
     let out = lughac(f.path(), &["check", "main.la"]);
     assert_eq!(out.status.code(), Some(1));
     let human = text(&out.stderr);
-    assert!(human.contains("E0321") && human.contains("lugha.toml:2:1"), "{human}");
+    assert!(
+        human.contains("E0321") && human.contains("lugha.toml:2:1"),
+        "{human}"
+    );
     let out = lughac(f.path(), &["check", "main.la", "--diagnostics=json"]);
     let json = text(&out.stderr);
     assert!(
