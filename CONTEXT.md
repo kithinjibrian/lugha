@@ -2485,6 +2485,12 @@ Branch: prp-038-input_and_interpolation
 
 ---
 
+## SESSION 49 — 2026-10-13 — Functions as values (milestone 14) — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 13 is complete** (tag `m13`; MEMORY 45). `lughac spec` prints `Language v3 Specification.md` (in progress: milestone 13).
