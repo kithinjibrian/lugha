@@ -1,0 +1,6 @@
+error[E0404]: cannot apply `==` to fun(i64): i64
+  --> tests/programs/m14/e0404.la:5:13
+  |
+5 |     println(f == double);
+  |             ^^^^^^^^^^^
+

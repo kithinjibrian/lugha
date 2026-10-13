@@ -34,7 +34,7 @@ impl<'ctx> Lowerer<'ctx> {
             };
             joined = Some(match joined {
                 None => piece,
-                Some(left) => self.call_value(
+                Some(left) => self.call_runtime_value(
                     "lugha_rt_str_concat",
                     &[Type::String, Type::String],
                     &[left, piece],
@@ -67,7 +67,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Calls runtime function `name`, which returns a string-like pointer.
-    fn call_value(
+    fn call_runtime_value(
         &mut self,
         name: &str,
         params: &[Type],
@@ -92,7 +92,11 @@ impl<'ctx> Lowerer<'ctx> {
         args: &[Expr],
     ) -> Result<Value<'ctx>, CodegenError> {
         if name == "args" {
-            return Ok(Value::Val(self.call_value("lugha_rt_args", &[], &[])));
+            return Ok(Value::Val(self.call_runtime_value(
+                "lugha_rt_args",
+                &[],
+                &[],
+            )));
         }
         let text = self.get(&args[0], &Type::String)?;
         let ty = if name == "parse_i64" {

@@ -188,6 +188,10 @@ impl Checker {
                 .is_some_and(|(_, private)| *private)
                 .then(|| k.clone()),
             Type::Array(inner) | Type::Option(inner) => self.private_inside(inner),
+            Type::Fun(params, ret) => params
+                .iter()
+                .chain([&**ret])
+                .find_map(|t| self.private_inside(t)),
             _ => None,
         }
     }

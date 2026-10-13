@@ -54,6 +54,10 @@ impl Checker {
     fn visit(&mut self, ty: &Type, found: &mut Vec<Type>, seen: &mut HashSet<Type>) -> bool {
         let (key, args) = match ty {
             Type::Array(inner) | Type::Option(inner) => return self.visit(inner, found, seen),
+            Type::Fun(params, ret) => {
+                let parts: Vec<Type> = params.iter().chain([&**ret]).cloned().collect();
+                return parts.iter().all(|t| self.visit(t, found, seen));
+            }
             Type::Struct(key, args) | Type::Enum(key, args) if !args.is_empty() => (key, args),
             _ => return true,
         };
@@ -133,6 +137,7 @@ impl Checker {
 fn depth(ty: &Type) -> usize {
     match ty {
         Type::Array(inner) | Type::Option(inner) => 1 + depth(inner),
+        Type::Fun(params, ret) => 1 + params.iter().chain([&**ret]).map(depth).max().unwrap_or(0),
         Type::Struct(_, args) | Type::Enum(_, args) => {
             args.iter().map(depth).max().map_or(0, |d| d + 1)
         }

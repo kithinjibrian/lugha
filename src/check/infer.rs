@@ -106,6 +106,9 @@ fn unbound(ty: &Type, names: &[&str], bound: &Bound) -> bool {
         Type::Struct(_, args) | Type::Enum(_, args) => {
             args.iter().any(|a| unbound(a, names, bound))
         }
+        Type::Fun(params, ret) => {
+            params.iter().any(|p| unbound(p, names, bound)) || unbound(ret, names, bound)
+        }
         _ => false,
     }
 }
@@ -120,6 +123,12 @@ fn unify(declared: &Type, actual: &Type, names: &[&str], bound: &mut Bound) {
         }
         (Type::Array(d), Type::Array(a)) | (Type::Option(d), Type::Option(a)) => {
             unify(d, a, names, bound);
+        }
+        (Type::Fun(dp, dr), Type::Fun(ap, ar)) => {
+            for (d, a) in dp.iter().zip(ap) {
+                unify(d, a, names, bound);
+            }
+            unify(dr, ar, names, bound);
         }
         (Type::Struct(k, ds), Type::Struct(l, as_)) | (Type::Enum(k, ds), Type::Enum(l, as_))
             if k == l =>

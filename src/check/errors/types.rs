@@ -136,12 +136,8 @@ pub(in crate::check) fn not_callable(span: Span) -> Diagnostic {
     Diagnostic::error("E0406", "this expression is not a function", span)
 }
 
-pub(in crate::check) fn not_value(name: &str, span: Span) -> Diagnostic {
-    Diagnostic::error(
-        "E0406",
-        format!("`{name}` is a function, not a value"),
-        span,
-    )
+pub(in crate::check) fn not_value(name: &str, span: Span, help: &str) -> Diagnostic {
+    Diagnostic::error("E0406", format!("`{name}` can't be used as a value"), span).with_help(help)
 }
 
 pub(in crate::check) fn no_value(span: Span) -> Diagnostic {
@@ -270,4 +266,10 @@ pub(in crate::check) fn no_method(
 pub(in crate::check) fn not_interpolable(ty: &Type, span: Span) -> Diagnostic {
     Diagnostic::error("E0403", format!("can't interpolate a `{ty}`"), span)
         .with_help("only numbers, `bool` and strings interpolate; convert it first")
+}
+
+/// E0409: a function type in an extern signature (v3): C can't call Lugha functions.
+pub(in crate::check) fn extern_fun(span: Span) -> Diagnostic {
+    Diagnostic::error("E0409", "function values can't cross the C boundary", span)
+        .with_help("C can't call a Lugha function; pass the data it needs instead")
 }

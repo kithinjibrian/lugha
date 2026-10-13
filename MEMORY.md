@@ -699,9 +699,38 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 46. Functions as values (PRP-039)
+
+**Decision:**
+- **Syntax:** `TypeKind::Fun(params, Option<ret>)`. Types may be parenthesized. A return type takes any `[]`, so an array of functions is `(fun(i64): i64)[]` (a discovery answer).
+- **Checker:**
+  - `Type::Fun(params, Box<ret>)`, with `Void` for no result. It prints with parentheses inside arrays.
+  - **Values** (`check/fun_values.rs`):
+    - `function_value` handles a function name used without a call;
+    - `function_field` handles `m.f`, `T.f` and `m.T.f`;
+    - the key goes in `Checked.callees`, and a generic one's arguments come from the expected type through `infer` (recorded with `used` for the instance pass).
+  - **Not values** (E0406 with help): methods with `self`, externs (`Signature.is_extern`) and intrinsics.
+  - **Calls:**
+    - `call_expr` and `call_value` handle any callee of function type;
+    - `fun_field` handles `s.f(x)` on a field of function type when there's no method `f` (a discovery answer; E0310 keeps the names apart).
+  - **Equality:** `holds_fun` (in `bounds.rs`) makes `eq_ok` false for anything holding a function.
+  - **Externs:** E0409 for function types in extern signatures.
+- **Codegen** (`codegen/fun_values.rs`):
+  - a value is an anonymous `{ ptr, ptr }`, 16 bytes with alignment 8;
+  - a named function becomes `{ lugha_ref_<symbol>, null }`, with internal wrappers emitted on first use and named from the target's LLVM name;
+  - a value is called indirectly, with the environment first;
+  - `arguments()` now takes `(params, is_extern)`.
+
+**Why:** These follow the session 49 discovery answers. Wrapping every function the same way gives closures (milestone 15) one calling convention: their code takes the environment first too.
+
+**Rules out (M14):** closure literals, method values, externs as values, `==` on functions.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 14 complete**: PRP-039 functions as values
 - **Milestone 13 complete**: PRP-038 args, parsing, interpolation; the v3 spec begins
 - **Milestone 12 complete — Lugha v2 complete**: PRP-037 interfaces (E0421, E0422, E0423)
 - **Milestone 11 complete**: PRP-036 compiles generics (instances, E0420, gate removed, spec folded)

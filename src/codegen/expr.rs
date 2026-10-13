@@ -29,6 +29,10 @@ impl<'ctx> Lowerer<'ctx> {
                 let ty = self.ty(expr);
                 self.construct(&ty, "None", &[])?
             }
+            // A function used as a value (v3): the checker recorded which.
+            ExprKind::Name(_) | ExprKind::Field(..) if self.callees.contains_key(&expr.id) => {
+                self.function_value(expr)
+            }
             ExprKind::Name(name) => {
                 let local = self.scopes.lookup(name);
                 self.load(&local, name)
@@ -59,6 +63,9 @@ impl<'ctx> Lowerer<'ctx> {
             }
             ExprKind::Binary(op, op_span, lhs, rhs) => self.binary(*op, op_span.start, lhs, rhs)?,
             ExprKind::Cast(inner, _) => self.cast(expr, inner)?,
+            ExprKind::Call(callee, args) if matches!(self.ty(callee), Type::Fun(..)) => {
+                return self.call_value(callee, args);
+            }
             ExprKind::Call(callee, args) => {
                 // `f(…)` and `m.f(…)`: the checker named the function (PRP-034).
                 if self

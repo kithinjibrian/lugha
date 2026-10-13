@@ -43,7 +43,11 @@ impl Checker {
         match ty {
             Type::Param(n) => self.bounds(n).eq,
             Type::Array(inner) | Type::Option(inner) => self.eq_ok(inner),
-            Type::Struct(_, args) | Type::Enum(_, args) => args.iter().all(|a| self.eq_ok(a)),
+            // A function anywhere inside has no `==` (v3 draft §4).
+            Type::Struct(_, args) | Type::Enum(_, args) => {
+                !self.holds_fun(ty) && args.iter().all(|a| self.eq_ok(a))
+            }
+            Type::Fun(..) => false,
             _ => true,
         }
     }
@@ -69,6 +73,39 @@ impl Checker {
             }
             _ => None,
         }
+    }
+
+    /// True if a value of `ty` holds a function somewhere: in a field, a
+    /// payload or an element, through any depth of structs and enums.
+    pub(super) fn holds_fun(&self, ty: &Type) -> bool {
+        self.holds_fun_in(ty, &mut Vec::new())
+    }
+
+    fn holds_fun_in(&self, ty: &Type, seen: &mut Vec<Type>) -> bool {
+        let inner: Vec<Type> = match ty {
+            Type::Fun(..) => return true,
+            Type::Array(inner) | Type::Option(inner) => return self.holds_fun_in(inner, seen),
+            // Recursive types meet themselves again: one look is enough.
+            Type::Struct(..) | Type::Enum(..) if seen.contains(ty) => return false,
+            Type::Struct(key, args) => {
+                let fields = self
+                    .structs
+                    .get(key)
+                    .map(|s| s.fields.clone())
+                    .unwrap_or_default();
+                fields
+                    .iter()
+                    .filter_map(|(f, _)| self.field_type(key, args, f))
+                    .collect()
+            }
+            Type::Enum(key, args) => {
+                let variants = self.enum_variants(key, args).unwrap_or_default();
+                variants.into_iter().flat_map(|(_, ps)| ps).collect()
+            }
+            _ => return false,
+        };
+        seen.push(ty.clone());
+        inner.iter().any(|t| self.holds_fun_in(t, seen))
     }
 }
 

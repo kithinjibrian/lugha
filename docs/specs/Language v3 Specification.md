@@ -1,4 +1,4 @@
-# Lugha v3 Specification (in progress: milestone 13)
+# Lugha v3 Specification (in progress: milestone 14)
 
 Oct 13, 2026 · @kithinji
 
@@ -6,9 +6,10 @@ Oct 13, 2026 · @kithinji
 
 **v2.** This is v1.2 plus deep `==` and string order, nested patterns and guards, modules with `private`, generics with `Eq`/`Ord` bounds, and interfaces as bounds (milestones 9–12).
 
-**Changes since v2** (milestone 13):
+**Changes since v2** (milestones 13–14):
 - `args()` returns the program's command-line arguments, and `parse_i64`/`parse_f64` turn text into numbers, returning an `Option` (section 5).
 - String literals interpolate: `"{name} is {age}"`, with `{{` and `}}` for literal braces (sections 2, 3, 5).
+- Functions are values: `fun(i64): i64` is a type, a named function can be stored, passed and returned, and any value of function type can be called (sections 3, 4).
 
 Every valid v2 program is a valid v3 program unless it has a `{` or `}` in a string literal (write `{{` or `}}`; E0111 points at each one), or defines a function named `args`, `parse_i64` or `parse_f64`.
 
@@ -158,7 +159,9 @@ param        = IDENT ":" type ;
 
 type         = base_type { "[" "]" } ;
 base_type    = "i32" | "i64" | "u8" | "f64" | "bool" | "string"
-             | IDENT [ "." IDENT ] [ "<" type { "," type } [ "," ] ">" ] ;
+             | IDENT [ "." IDENT ] [ "<" type { "," type } [ "," ] ">" ]
+             | "fun" "(" [ type { "," type } [ "," ] ] ")" [ ":" type ]   (* a function type (v3) *)
+             | "(" type ")" ;                  (* `(fun(i64): i64)[]` is an array of functions *)
                                            (* `m.T`, `Stack<i64>`; `Option<T>` is one such *)
 
 block        = "{" { stmt } [ expr ] "}" ;   (* trailing expr = tail value *)
@@ -396,6 +399,20 @@ They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (
 - **Not a type:** an interface is never the type of a value; `let s: Shape = …` is E0305, with help to use it as a bound.
 - **Names and visibility:** interfaces share their module's item namespace (E0302) and follow the visibility rules of section 6. Each instance calls the concrete type's own method, so there is no dispatch at run time.
 
+**Function types** (v3). `fun(A, B): R` is the type of a function value taking `A` and `B` and returning `R`; `fun(A)` returns nothing. Two function types are the same when their parameter and return types are. A return type takes any `[]` after it, so `fun(i64): i64[]` returns an array, and an array of functions is written `(fun(i64): i64)[]`; messages print types the same way.
+- **Equality:** function values have no `==` (E0404), and neither does a struct, enum, array or `Option` that holds one anywhere. So a function type, or a type holding one, doesn't satisfy `Eq` (E0419).
+- **Order, printing and casts:** function values have no `<`, can't be printed or interpolated (E0403), and can't be cast (E0408).
+- **Copying:** a function value is immutable, so a copy is the same value.
+- **Generics and interfaces:** a function type can be a type argument (`apply<T>(f: fun(T): T, x: T)`), a field, an element or a payload. It has no methods, so it satisfies only an interface with no items.
+
+**Functions as values** (v3).
+- **Named functions:** a function used without a call is a value of its function type: `let f = double;`, `apply(double, 3)`, `m.f` from an imported module (visibility applies, E0313).
+- **Associated functions** are values too: `let make = Point.at;`, `Circle.make`.
+- **Generic functions** need an expected function type to fix their type arguments: `let m: fun(i64, i64): i64 = max;`. Otherwise it is E0412.
+- **Not values:** methods with a receiver (call them on a value), externs and the intrinsics. Using one as a value is E0406, with help.
+
+**Calls** (v3). `e(args)` calls any expression `e` of function type: a local, a parameter, an element (`fs[0](3)`), a call's result (`make()(3)`). `s.f(x)` calls method `f` if the type has one, otherwise field `f` if it holds a function; a method and a field never share a name (E0310), so this is never ambiguous. Arity (E0405) and argument types (E0403) are checked against the function type. Calling a value that isn't a function is E0406. A local of function type shadows a function of the same name, as any local does.
+
 **Generic recursion.** A generic struct or enum may contain itself only with its own parameters unchanged: `enum List<T> { Nil, Cons(T, List<T>) }` is fine, and the indirect-slot rule (section 7) applies to each instance. Instantiation must end: a program whose instances nest more than 64 deep, such as `f<T>` calling `f<T[]>` or a `struct S<T>` holding `S<T[]>`, is E0420. Recursion at the same arguments (`count<T>` calling `count<T>`) never counts. Generic code copies exactly where concrete code would, because each instance is concrete (Array copies, above).
 
 **Mutability.** Bindings are immutable by default. Assigning to any place requires the variable at its root to be declared `let mut`. That covers the variable itself, a field (`p.x = 1.0`), an element (`xs[0] = 1`) and any chain of these (`shapes[i].pts[j].x = 2.0`), and both places of a `swap` (section 5). Because every variable owns its data, a variable declared without `mut` never changes after it is initialized.
@@ -550,6 +567,8 @@ Value types live on the stack; strings and arrays live on a garbage-collected he
 
 **Indirect slots.** A payload slot whose type leads back to its enum through values held inline — struct fields, enum payloads or `Option`'s payload, but not arrays — is an 8-byte pointer to a copy of the value on the GC heap, allocated with `lugha_rt_alloc` when the variant is built and never mutated afterwards. Every other slot, and the enum value itself, stays inline. `List` is therefore `{ i32 tag; i64 head; ptr rest }`.
 
+**Function values** (v3) are a pair `{ ptr code, ptr env }`, 16 bytes with alignment 8, passed and stored by value. A named function's value has a null environment, and its code is the function's `lugha_ref_` wrapper (section 9).
+
 **Generic instances** lay out exactly like the concrete types they stand for: `Stack<i64>` is laid out like a struct with one `i64[]` field, and `List<bool>` gets its own indirect slots.
 
 **Recursion depth.** Function calls use the native stack, which is finite. A recursion that goes too deep — for example walking a list of a million nodes recursively — panics with `stack overflow` (exit 101). The runtime detects it when the stack's guard area is hit, so ordinary calls cost nothing. Walk very long lists with a loop.
@@ -584,7 +603,7 @@ extern fun abs(x: i32): i32;
 extern fun sqrt(x: f64): f64;
 ```
 
-**Allowed types.** Extern signatures may use only the types below. Structs, arrays, enums and `Option`, generic or not, cannot cross the boundary.
+**Allowed types.** Extern signatures may use only the types below. Structs, arrays, enums, `Option` and function values, generic or not, cannot cross the boundary: C can't call a Lugha function.
 
 | Lugha type | C type | Passed as |
 | --- | --- | --- |
@@ -605,6 +624,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - The extern name is used as the C symbol name unchanged. Lugha functions themselves are emitted with a `lugha_fn_` prefix, so they never collide with C symbols. Methods and associated functions are `lugha_fn_<Type>.<name>` (for example `lugha_fn_Point.dist`); `.` can't appear in a Lugha name, so these can't collide either.
 - Items of a module other than the main file put the module's path before their name, joined with `/`: function `area` of module `shapes.circle` is `lugha_fn_shapes/circle/area`, and its method `Circle.area` is `lugha_fn_shapes/circle/Circle.area`. A name contains neither `/` nor `.`, so a module function (`lugha_fn_a/b/c`) can't collide with a method (`lugha_fn_a/b.c`, method `c` of type `b` in module `a`).
 - A generic instance adds its type arguments as they print, with module paths joined by `/`: `lugha_fn_max<i64>`, `lugha_fn_a/b/max<a/b/Point>`. A method's go on its type, then its own: `lugha_fn_Stack<string>.push`, `lugha_fn_Stack<string>.tag<f64>`. `<` can't appear in a Lugha name, so instances can't collide with anything else.
+- A function used as a value (v3) is called through `lugha_ref_<symbol>`, a wrapper that takes an environment pointer first and calls `lugha_fn_<symbol>`: `lugha_ref_double`, `lugha_ref_max<i64>`, `lugha_ref_Point.at`. It is emitted once, when first needed.
 - An extern follows the visibility rules of section 6, and the same C function may be declared in several modules only with identical signatures (E0306); it is one symbol.
 - Runtime library functions use the `lugha_rt_` prefix. Neither prefix is a prefix of the other, so a Lugha function can never collide with a runtime function, whatever its name.
 - Extern names starting with `lugha_` are reserved and rejected with an E03xx error, so an extern declaration can't collide with either.
@@ -634,6 +654,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 - **Array copies:** generate one deep-copy function per type that contains arrays (for example `lugha_copy_i64_arr_arr`, or `lugha_copy_5Point_arr` — struct names are length-prefixed so they can't be confused with `_arr` or primitive names; the `lugha_copy_` prefix is disjoint from `lugha_fn_` and `lugha_rt_`), and call it at each copy site listed in section 4. For arrays of plain values, the copy is one `lugha_rt_alloc` plus `llvm.memcpy`.
 - **Deep equality:** generate one `lugha_eq_<type>(T, T) -> i1` per struct, enum, `Option` or array type compared, with the copy helpers' type names (`lugha_eq_1L_opt` for `Option<L>`). Numbers and `bool` compare inline, and strings through `lugha_rt_str_eq`.
 - **Struct, enum and array arguments:** pass a pointer to the caller's storage rather than the value itself, since the callee can't modify it.
+- **Calling a function value** (v3): extract its code and environment, and call the code indirectly with the environment as a hidden first argument, then the arguments as for any call (aggregates by pointer).
 - **Monomorphization:** after checking, the checker lists every generic function and method instance reachable from the non-generic code, at concrete type arguments, and every concrete type those instances use (E0420 when they nest too deep). Codegen compiles each instance from its one body by substituting the type arguments into the types the checker recorded; it still never infers a type. Generic structs and enums get one LLVM type per instance, named as they print (`%"Stack<i64>"`), and their own copy and equality helpers (`lugha_copy_10Stack<i64>`).
 - **Methods:** ordinary functions whose first parameter is the receiver. A `self` receiver is passed like a struct argument; a `mut self` receiver is the address of the caller's place itself, so the method's writes land there.
 - **`match`:** an LLVM `switch` on the tag for enums and on the value for integers and `bool`s; a chain of `lugha_rt_str_eq` tests for strings. Payload bindings load from the payload area at constant offsets. An exhaustive `match` without `_` ends in `unreachable`. A `match` with a nested pattern or a guard is lowered arm by arm instead: each arm tests its pattern outside in (loading indirect payloads through their pointer), binds, runs its guard, and on any failure branches to the next arm.
@@ -716,11 +737,11 @@ Name and type errors, reported by the checker:
 | E0403 | Type mismatch | `let n: i32 = ok;` where `ok` is `bool`; `if`/`else` of different types |
 | E0404 | Operator applied to invalid operand types | `true + 1`, `-u` where `u` is `u8`; `a == b` on a `T` without `Eq` (with help to declare it) |
 | E0405 | Wrong number of arguments | `add(1)` for `fun add(a: i64, b: i64)` |
-| E0406 | Not a function, or a function used as a value | `let step = 2; step(1);`, `let f = fib;` |
+| E0406 | Not a function, or something that can't be a value | `let step = 2; step(1);`; `let a = Circle.area;` (a method), `let p = println;`, an extern (v3) |
 | E0407 | `void` used as a value | `let x = log();` where `log` returns nothing |
 | E0410 | No such field | `s.size` on a `string`; `(5).len`; `p.z` or `Point { z: 1.0 }` on a `Point` without `z` |
 | E0411 | Not indexable or not iterable | `n[0]` where `n` is an `i64`; `for c of "abc"` |
-| E0412 | Cannot infer an array's element type, `None`'s type, or a type argument | `let xs = [];`, `let x = None;`, `let s = Stack.new();` — annotate it: `let xs: i64[] = [];` |
+| E0412 | Cannot infer an array's element type, `None`'s type, or a type argument | `let xs = [];`, `let x = None;`, `let s = Stack.new();`, `let m = max;` — annotate it: `let xs: i64[] = [];` |
 | E0413 | Struct literal missing fields | `Point { x: 1.0 }` |
 | E0414 | Struct literal field given twice | `Point { x: 1.0, x: 2.0, y: 0.0 }` |
 | E0415 | No such variant or method | `Shape.Circel(1.0)`, a `Square` pattern on a `Shape`, `p.size()`, `xs.push(1)` |
@@ -732,7 +753,7 @@ Name and type errors, reported by the checker:
 | E0421 | A method no bound declares | `s.perimeter()` in `fun f<T: Shape>(s: T)` (v2) |
 | E0422 | A type argument doesn't satisfy an interface | `total_area([1, 2])`: `i64` has no method `area` (v2) |
 | E0423 | Two bounds declare one item differently | `T: Sized + Measured` where both declare `size` with different types (v2) |
-| E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum or `Option` parameters or returns (§8) |
+| E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum, `Option` or function parameters or returns (§8) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut` |
 | E0502 | Assignment to something that isn't a place | `(a + b) = 3;` |
@@ -1118,6 +1139,21 @@ fun main() {
 }
 ```
 
+**Functions as values** (milestone 14). Prints `6` then `9` on two lines, exits with 0.
+
+```
+fun double(x: i64): i64 = x * 2;
+fun triple(x: i64): i64 = x * 3;
+
+fun apply(f: fun(i64): i64, x: i64): i64 = f(x);
+
+fun main() {
+    let fs = [double, triple];
+    println(apply(fs[0], 3));
+    println(apply(fs[1], 3));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1137,6 +1173,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 11 | Generics (v2) | type parameters, `Eq`/`Ord` bounds, inference, monomorphization, instance symbols, E0420; `Option<T>` as a predeclared generic enum | The generics program in section 10 passes (done) |
 | 12 | Interfaces (v2) | `interface` declarations, interfaces as bounds, structural satisfaction (E0421, E0422, E0423) | The interfaces program in section 10 passes (done: v2 complete) |
 | 13 | Input and interpolation (v3) | `args()`, `parse_i64`, `parse_f64`, string interpolation (E0111), `lughac run … -- args` | The arguments program in section 10 passes (done) |
+| 14 | Functions as values (v3) | function types, named and associated functions as values, calling values, no `==` on functions, `lugha_ref_*` | The functions-as-values program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

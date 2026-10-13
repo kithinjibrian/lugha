@@ -63,6 +63,7 @@ impl Checker {
                     match ty {
                         Type::Array(_) => self.report(errors::extern_array(annotation.span)),
                         Type::Struct(_, _) => self.report(errors::extern_struct(annotation.span)),
+                        Type::Fun(..) => self.report(errors::extern_fun(annotation.span)),
                         Type::Enum(_, _) | Type::Option(_) => {
                             self.report(errors::extern_enum(annotation.span));
                         }
@@ -96,6 +97,7 @@ impl Checker {
                     params,
                     ret: ret_type,
                     span: name.span,
+                    is_extern,
                 };
                 self.functions.insert(key, signature);
             }
@@ -142,6 +144,7 @@ impl Checker {
             TypeKind::Named(name) => self.resolve_named(name, ty.span),
             // `m.T`, `T<args>`, `m.T<args>` (PRP-034, PRP-035).
             TypeKind::Applied(applied) => self.resolve_applied(applied, ty.span),
+            TypeKind::Fun(params, ret) => self.resolve_fun(params, ret.as_deref()),
         }
     }
 

@@ -149,7 +149,10 @@ impl Parser<'_> {
     /// Parses `base_type { "[" "]" }`.
     pub(super) fn ty(&mut self) -> PResult<Type> {
         let start = self.span().start;
+        // `fun(…): R` and `(T)` are read whole by `compound_type` (v3).
+        let compound = matches!(self.peek(), TokenKind::Fun | TokenKind::LParen);
         let kind = match self.peek() {
+            TokenKind::Fun | TokenKind::LParen => self.compound_type()?,
             TokenKind::TyI32 => TypeKind::I32,
             TokenKind::TyI64 => TypeKind::I64,
             TokenKind::TyU8 => TypeKind::U8,
@@ -170,10 +173,12 @@ impl Parser<'_> {
             }
             _ => return Err(self.expected("type")),
         };
-        if !matches!(
-            kind,
-            TypeKind::Option(_) | TypeKind::Named(_) | TypeKind::Applied(_)
-        ) {
+        if !compound
+            && !matches!(
+                kind,
+                TypeKind::Option(_) | TypeKind::Named(_) | TypeKind::Applied(_)
+            )
+        {
             self.bump();
         }
         let mut ty = Type {

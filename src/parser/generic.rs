@@ -30,6 +30,26 @@ impl Parser<'_> {
         })
     }
 
+    /// `fun(A, B): R` or `(T)` (v3 draft §3). A return type takes any `[]`
+    /// after it, so `(fun(i64): i64)[]` is how an array of functions is written.
+    pub(super) fn compound_type(&mut self) -> PResult<TypeKind> {
+        if self.at(&TokenKind::LParen) {
+            let open = self.bump();
+            let inner = self.nested(|p| p.ty())?;
+            self.close(open, &TokenKind::RParen)?;
+            return Ok(inner.kind);
+        }
+        self.bump();
+        let paren = self.expect(&TokenKind::LParen)?;
+        let params = self.nested(|p| p.comma_list(paren, TokenKind::RParen, |p| p.ty()))?;
+        let ret = if self.eat(&TokenKind::Colon) {
+            Some(Box::new(self.nested(|p| p.ty())?))
+        } else {
+            None
+        };
+        Ok(TypeKind::Fun(params, ret))
+    }
+
     /// The type's parameters in an `impl` header, `<T, U>`, without bounds:
     /// those come from the type's declaration (v2 draft §3).
     pub(super) fn impl_params(&mut self) -> PResult<Vec<Ident>> {
@@ -72,6 +92,33 @@ impl Parser<'_> {
 #[cfg(test)]
 mod tests {
     use crate::parser::test_util::{body, errors, expr, program};
+
+    #[test]
+    fn function_types_and_parenthesized_types() {
+        let sig = |ty: &str| program(&format!("fun f(x: {ty}) {{}}"));
+        assert_eq!(
+            sig("fun(i64, i64): bool"),
+            "(fun f ((x (fun-type (i64 i64) bool))) void (block))"
+        );
+        assert_eq!(
+            sig("fun(i64)"),
+            "(fun f ((x (fun-type (i64) void))) void (block))"
+        );
+        assert_eq!(
+            sig("fun(): fun(i64): i64"),
+            "(fun f ((x (fun-type () (fun-type (i64) i64)))) void (block))"
+        );
+        // `[]` belongs to the return type; parentheses make an array of functions.
+        assert_eq!(
+            sig("fun(i64): i64[]"),
+            "(fun f ((x (fun-type (i64) i64[]))) void (block))"
+        );
+        assert_eq!(
+            sig("(fun(i64): i64)[]"),
+            "(fun f ((x (fun-type (i64) i64)[])) void (block))"
+        );
+        assert_eq!(sig("(i64)"), "(fun f ((x i64)) void (block))");
+    }
 
     #[test]
     fn declarations_take_type_parameters_and_bounds() {

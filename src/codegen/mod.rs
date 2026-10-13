@@ -16,6 +16,7 @@ mod declare;
 mod enums;
 mod equality;
 mod expr;
+mod fun_values;
 mod function;
 mod growth;
 mod heap;

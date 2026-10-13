@@ -46,6 +46,11 @@ pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnu
             .get_struct_type(&ty.to_string())
             .expect("structs are declared before lowering")
             .into(),
+        // `{ code, env }`: the function, then its environment (v3 draft §7).
+        Type::Fun(..) => {
+            let ptr = context.ptr_type(AddressSpace::default());
+            context.struct_type(&[ptr.into(), ptr.into()], false).into()
+        }
         Type::Void | Type::Never | Type::Error => unreachable!("checked: {ty} is not a value type"),
         // The gate stops generic programs before codegen (PRP-035).
         Type::Param(_) => unreachable!("codegen never sees a type parameter"),

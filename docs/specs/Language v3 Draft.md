@@ -47,7 +47,7 @@ postfix      = primary { call | index | member } ;   (* unchanged: a call may fo
 ```
 
 - **Closure bodies:** `fun(x) = e` takes the longest expression, so `sort_by(xs, fun(a, b) = a > b)` ends at the `)`. A closure in statement position needs `;` like any expression.
-- **Calling a field:** `s.f(x)` is always a method call. To call a field of function type, write `(s.f)(x)`.
+- **Calling a field:** `s.f(x)` calls method `f` if the type has one, otherwise field `f` if it holds a function; E0310 keeps the two names apart. `(s.f)(x)` also works. (Amended by PRP-039; the draft first required `(s.f)(x)`.)
 - **New parse error E0209:** a closure parameter list that isn't plain names with optional types (for example `fun(self) = …`, or a pattern).
 
 ## §4 Type system — changes

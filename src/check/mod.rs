@@ -21,6 +21,7 @@ mod env;
 mod errors;
 mod expr;
 mod flow;
+mod fun_values;
 mod generics;
 mod infer;
 mod input;
@@ -133,6 +134,8 @@ pub(super) struct Signature {
     pub params: Vec<Type>,
     pub ret: Type,
     pub span: Span,
+    /// An `extern fun`: never a value (v3).
+    pub is_extern: bool,
 }
 
 /// A local variable or parameter.

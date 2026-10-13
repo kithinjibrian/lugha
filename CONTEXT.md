@@ -2489,6 +2489,49 @@ Branch: prp-038-input_and_interpolation
 
 Branch: prp-039-function_values
 
+### WHAT WAS DONE
+
+- Discovery:
+  - arrays of functions need parentheses, `(fun(i64): i64)[]`;
+  - `s.f(x)` calls a field when there's no method `f`.
+
+  PRP-039 written and approved.
+- Syntax: function types and parenthesized types.
+- Checker:
+  - `Type::Fun`;
+  - `check/fun_values.rs`: function values, calls of values, field functions;
+  - `holds_fun` makes functions not `Eq`;
+  - E0409 for externs;
+  - generic function values feed the instance pass.
+- Codegen: `codegen/fun_values.rs` (`{ code, env }` pairs, `lugha_ref_` wrappers, indirect calls).
+- Spec: v3 spec folded to milestone 14; the draft's §3 note amended.
+
+### FILES CREATED OR MODIFIED
+
+- New: `src/check/fun_values.rs`, `src/codegen/fun_values.rs`, `tests/programs/m14/`, the PRP.
+- Modified:
+  - the parser (`item.rs`, `generic.rs`, `sexp/item.rs`) and the AST;
+  - the checker (`types.rs`, `call.rs`, `expr.rs`, `env.rs`, `mod.rs`, `method_calls.rs`, `bounds.rs`, `generics.rs`, `infer.rs`, `layouts.rs`, `visibility.rs`, `errors/types.rs`);
+  - codegen (`value.rs`, `expr.rs`, `function.rs`, `methods.rs`, `structs.rs`, `input.rs`, `mod.rs`);
+  - tests (`tests/spec.rs`);
+  - docs: the specs, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (decision 46).
+
+### TESTS WRITTEN
+
+- Parser: function types.
+- Checker (7 tests): values, non-values, calls, equality, printing, modules.
+- Codegen: wrappers in IR.
+- `m14/`: values, generic, modules, and the e0406/e0404 goldens.
+- The §10 program.
+
+### DECISIONS MADE
+
+- MEMORY 46; PRP amendments.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

@@ -31,6 +31,8 @@ pub enum Type {
     Param(String),
     /// The built-in `Option<T>`: `Some(T)` or `None` (v1 §4).
     Option(Box<Type>),
+    /// A function value, `fun(A, B): R`; `R` is `Void` for no result (v3).
+    Fun(Vec<Type>, Box<Type>),
     /// No value: statements, blocks without a tail, `if` without `else`,
     /// functions without a return type.
     Void,
@@ -62,6 +64,7 @@ impl Type {
             Type::Array(inner) => Type::Array(Box::new(inner.substitute(map))),
             Type::Option(inner) => Type::Option(Box::new(inner.substitute(map))),
             Type::Struct(key, args) => Type::Struct(key.clone(), all(args)),
+            Type::Fun(params, ret) => Type::Fun(all(params), Box::new(ret.substitute(map))),
             Type::Enum(key, args) => Type::Enum(key.clone(), all(args)),
             other => other.clone(),
         }
@@ -165,7 +168,19 @@ impl fmt::Display for Type {
             Type::F64 => "f64",
             Type::Bool => "bool",
             Type::String => "string",
+            // `(fun(i64): i64)[]`: without parentheses `[]` would be the return type's.
+            Type::Array(element) if matches!(**element, Type::Fun(..)) => {
+                return write!(f, "({element})[]");
+            }
             Type::Array(element) => return write!(f, "{element}[]"),
+            Type::Fun(params, ret) => {
+                let params: Vec<String> = params.iter().map(ToString::to_string).collect();
+                write!(f, "fun({})", params.join(", "))?;
+                return match **ret {
+                    Type::Void => Ok(()),
+                    ref ret => write!(f, ": {ret}"),
+                };
+            }
             Type::Struct(name, args) | Type::Enum(name, args) if !args.is_empty() => {
                 let args: Vec<String> = args.iter().map(ToString::to_string).collect();
                 return write!(f, "{name}<{}>", args.join(", "));

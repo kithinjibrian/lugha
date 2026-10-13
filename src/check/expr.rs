@@ -101,7 +101,7 @@ impl Checker {
                     };
                     self.mentions.insert(expr.id, mention);
                 }
-                self.name(name, expr.span)
+                self.name(expr, name, expect)
             }
             ExprKind::Unary(op, operand) => self.unary(*op, operand, expr, expect),
             ExprKind::Binary(op, _, lhs, rhs) => self.binary(expr, *op, lhs, rhs, expect),
@@ -127,7 +127,10 @@ impl Checker {
             ExprKind::Index(base, _, index) => self.index(base, index),
             ExprKind::Field(base, field) => match self.variant_value(expr, (base, field), expect) {
                 Some(ty) => ty,
-                None => self.field(base, field),
+                None => match self.function_field(expr, (base, field), expect) {
+                    Some(ty) => ty,
+                    None => self.field(base, field),
+                },
             },
             ExprKind::StructLit(lit) => self.struct_literal(expr, lit, expect),
             ExprKind::Array(elements) => self.array_literal(expr, elements, expect),

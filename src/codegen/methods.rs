@@ -149,7 +149,7 @@ impl<'ctx> Lowerer<'ctx> {
                     .into(),
             );
         }
-        values.extend(self.arguments(args, &method.signature)?);
+        values.extend(self.arguments(args, &method.signature.params, false)?);
         let site = self
             .builder
             .build_call(method.signature.function, &values, "method")

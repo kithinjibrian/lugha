@@ -33,6 +33,7 @@ pub(super) fn has_param(ty: &Type) -> bool {
         Type::Param(_) => true,
         Type::Array(inner) | Type::Option(inner) => has_param(inner),
         Type::Struct(_, args) | Type::Enum(_, args) => args.iter().any(has_param),
+        Type::Fun(params, ret) => params.iter().any(has_param) || has_param(ret),
         _ => false,
     }
 }
@@ -75,6 +76,10 @@ pub(super) fn replace(ty: &Type, map: &HashMap<&str, &Type>) -> Type {
             .map_or_else(|| ty.clone(), |t| (*t).clone()),
         Type::Array(inner) => Type::Array(Box::new(replace(inner, map))),
         Type::Option(inner) => Type::Option(Box::new(replace(inner, map))),
+        Type::Fun(params, ret) => Type::Fun(
+            params.iter().map(|p| replace(p, map)).collect(),
+            Box::new(replace(ret, map)),
+        ),
         Type::Struct(k, args) => {
             Type::Struct(k.clone(), args.iter().map(|a| replace(a, map)).collect())
         }

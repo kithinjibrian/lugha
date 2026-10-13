@@ -193,6 +193,8 @@ pub enum TypeKind {
     /// `m.T`, `T<args>` or `m.T<args>` (v2 draft §3). Boxed to keep `Type`,
     /// and so `Expr` (through casts), small for the parser's recursion.
     Applied(Box<AppliedType>),
+    /// `fun(A, B): R`; no return type means `void` (v3 draft §3).
+    Fun(Vec<Type>, Option<Box<Type>>),
 }
 
 /// A module-qualified type name, type arguments, or both (v2 draft §3).

@@ -46,6 +46,11 @@ impl Checker {
         }
         let mark = self.changes_mark();
         let receiver = self.value(base, None);
+        // `b.on_click(2)`: a field holding a function, when no method has that name (v3).
+        if let Some(field) = self.fun_field(&receiver, name) {
+            self.record(callee, field.clone());
+            return Some(self.call_value(call, &name.name, &field, args));
+        }
         self.record(callee, Type::Void);
         Some(self.on_value(call, (base, &receiver), name, args, (mark, expect)))
     }

@@ -1,0 +1,7 @@
+struct Counter { n: i64 }
+
+impl Counter {
+    fun start(n: i64): Counter = Counter { n: n };
+}
+
+fun mul(a: i64, b: i64): i64 = a * b;

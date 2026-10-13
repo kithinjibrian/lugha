@@ -153,7 +153,7 @@ impl<'ctx> Lowerer<'ctx> {
             }
             return self.intrinsic(call, name, args);
         };
-        let values = self.arguments(args, &signature)?;
+        let values = self.arguments(args, &signature.params, signature.is_extern)?;
         let site = self
             .builder
             .build_call(signature.function, &values, "call")
@@ -169,12 +169,13 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn arguments(
         &mut self,
         args: &[Expr],
-        signature: &Signature<'ctx>,
+        params: &[Type],
+        is_extern: bool,
     ) -> Result<Vec<BasicMetadataValueEnum<'ctx>>, CodegenError> {
         let mut values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len());
-        for (arg, ty) in args.iter().zip(&signature.params) {
+        for (arg, ty) in args.iter().zip(params) {
             let value = self.get(arg, ty)?;
-            let value = if signature.is_extern && *ty == Type::String {
+            let value = if is_extern && *ty == Type::String {
                 self.c_string(value)
             } else if is_aggregate(ty) {
                 // Passed as a pointer to caller storage, never copied (spec §4, §9).

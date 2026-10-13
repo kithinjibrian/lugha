@@ -107,9 +107,9 @@ Done when the interfaces program passes and the v2 spec is complete.
 Done when the arguments program passes.
 - [x] PRP-038: `args()`, `parse_i64`, `parse_f64`, string interpolation (E0111), `lughac run … -- args`; `Language v3 Specification.md` begins
 
-### Milestone 14 — Functions as values
+### Milestone 14 — Functions as values ✅
 Done when the functions-as-values program passes.
-- [ ] Function types, named functions as values, calling values, no `==` on functions, `lugha_ref_*`
+- [x] PRP-039: function types (`(fun(i64): i64)[]` for arrays), named and associated functions as values, calling values (`b.on_click(2)` for fields), no `==` on functions, `lugha_ref_*`
 
 ### Milestone 15 — Closures
 Done when the closures program passes.

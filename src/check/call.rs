@@ -7,18 +7,23 @@ use super::expr::Expect;
 use super::generics::subst;
 use super::{Checker, Type, errors};
 use crate::ast::{Expr, ExprKind};
-use crate::span::Span;
 
 impl Checker {
-    /// A name used as a value: locals first, then globals (spec §6).
-    pub(super) fn name(&mut self, name: &str, span: Span) -> Type {
+    /// A name used as a value: locals first, then functions, which are
+    /// values from v3 (spec §6; v3 draft §4).
+    pub(super) fn name(&mut self, expr: &Expr, name: &str, expect: Option<&Expect>) -> Type {
         if let Some(local) = self.local(name) {
             return local.ty;
         }
-        if self.functions.contains_key(&self.key(name)) || is_intrinsic(name) {
-            self.report(errors::not_value(name, span));
+        let key = self.key(name);
+        if self.functions.contains_key(&key) {
+            return self.function_value(expr, &key, expect);
+        }
+        if is_intrinsic(name) {
+            let help = "intrinsics aren't values: call it inside a function, and use that function";
+            self.report(errors::not_value(name, expr.span, help));
         } else {
-            self.report(errors::undefined(name, span));
+            self.report(errors::undefined(name, expr.span));
         }
         Type::Error
     }
@@ -31,17 +36,15 @@ impl Checker {
         args: &[Expr],
         expect: Option<&Expect>,
     ) -> Type {
+        // A local or any other expression is called as a function value (v3).
         let ExprKind::Name(name) = &callee.kind else {
-            self.expr(callee, None);
-            self.report(errors::not_callable(callee.span));
-            return self.unchecked_args(args);
+            return self.call_expr(call, callee, args);
         };
-        // A function name is not a value; `void` marks it in the table.
-        self.record(callee, Type::Void);
         if self.local(name).is_some() {
-            self.report(errors::not_function(name, callee.span));
-            return self.unchecked_args(args);
+            return self.call_expr(call, callee, args);
         }
+        // A function called by name is not a value here; `void` marks it.
+        self.record(callee, Type::Void);
         let key = self.key(name);
         if !self.functions.contains_key(&key) {
             if is_intrinsic(name) {
@@ -180,9 +183,10 @@ mod tests {
             Type::I32
         );
         assert_eq!(errors("fun main() { let f = 1; f(); }"), [("E0406", "f")]);
+        // v3: a function is a value (PRP-039).
         assert_eq!(
-            errors("fun g() {}\nfun main() { let h = g; }"),
-            [("E0406", "g")]
+            let_type("fun g() {}\nfun main() { let h = g; }", "h"),
+            Type::Fun(Vec::new(), Box::new(Type::Void))
         );
     }
 

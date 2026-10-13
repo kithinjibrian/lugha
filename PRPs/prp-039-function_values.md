@@ -134,35 +134,35 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — parser:
-- [ ] `fun(i64, i64): bool`, `fun(i64)`, `fun(): fun(i64): i64` (a function returning a function), `fun(i64): i64[]` (returning an array) and `(fun(i64): i64)[]` (an array of functions) parse and print.
+- [x] `fun(i64, i64): bool`, `fun(i64)`, `fun(): fun(i64): i64` (a function returning a function), `fun(i64): i64[]` (returning an array) and `(fun(i64): i64)[]` (an array of functions) parse and print.
 
 Unit tests — checker (a new `check/fun_values.rs`):
-- [ ] `let f = double;` is `fun(i64): i64`; `f(3)` is `i64`; `apply(double, 3)` type-checks.
-- [ ] Values from elsewhere: `Circle.make` is a value; `m.f` from an import is a value; a `private` one from another module is E0313.
-- [ ] Generic: `let m: fun(i64, i64): i64 = max;` works; `let m = max;` is E0412.
-- [ ] E0406 with help for a method with `self` (`Circle.area`), an extern, `println`, and for calling an `i64`.
-- [ ] Calls of values:
+- [x] `let f = double;` is `fun(i64): i64`; `f(3)` is `i64`; `apply(double, 3)` type-checks.
+- [x] Values from elsewhere: `Circle.make` is a value; `m.f` from an import is a value; a `private` one from another module is E0313.
+- [x] Generic: `let m: fun(i64, i64): i64 = max;` works; `let m = max;` is E0412.
+- [x] E0406 with help for a method with `self` (`Circle.area`), an extern, `println`, and for calling an `i64`.
+- [x] Calls of values:
   - `fs[0](3)` and `make()(3)` work;
   - `b.on_click(2)` calls a field when no method has that name;
   - wrong arity is E0405 and wrong argument types are E0403.
-- [ ] A local of function type shadows a function of the same name.
-- [ ] No `==` (E0404) on functions, on a struct with a function field, or on `(fun(i64): i64)[]`; `contains(fs, double)` with `T: Eq` is E0419.
-- [ ] `println(f)` and `"{f}"` are E0403; `f as i64` is E0408; `extern fun g(f: fun(i64))` is E0409.
-- [ ] Messages show `fun(i64): i64` and `(fun(i64): i64)[]`.
+- [x] A local of function type shadows a function of the same name.
+- [x] No `==` (E0404) on functions, on a struct with a function field, or on `(fun(i64): i64)[]`; `contains(fs, double)` with `T: Eq` is E0419.
+- [x] `println(f)` and `"{f}"` are E0403; `f as i64` is E0408; `extern fun g(f: fun(i64))` is E0409.
+- [x] Messages show `fun(i64): i64` and `(fun(i64): i64)[]`.
 
 Codegen / IR (`tests/codegen.rs` or unit):
-- [ ] `lugha_ref_double` is defined once, and a value is `{ ptr @lugha_ref_double, ptr null }`.
-- [ ] A generic instance used as a value gets `lugha_ref_max<i64>`.
+- [x] `lugha_ref_double` is defined once, and a value is `{ ptr @lugha_ref_double, ptr null }`.
+- [x] A generic instance used as a value gets `lugha_ref_max<i64>`.
 
 Acceptance — `tests/programs/m14/` (run at `-O0` and `-O2`):
-- [ ] `values.la`: functions in locals, arrays, struct fields (`b.on_click(2)`), `Option` and parameters; returning a function; `make()(3)`.
-- [ ] `generic.la`: `let m: fun(i64, i64): i64 = max;` and a generic `apply<T>(f: fun(T): T, x: T)` at two types.
-- [ ] `modules/`: a function of another module and an associated function passed as values.
-- [ ] `e0406.la`, `e0404.la`: reject goldens.
-- [ ] The §10 functions-as-values program runs from the spec.
+- [x] `values.la`: functions in locals, arrays, struct fields (`b.on_click(2)`), `Option` and parameters; returning a function; `make()(3)`.
+- [x] `generic.la`: `let m: fun(i64, i64): i64 = max;` and a generic `apply<T>(f: fun(T): T, x: T)` at two types.
+- [x] `modules/`: a function of another module and an associated function passed as values.
+- [x] `e0406.la`, `e0404.la`: reject goldens.
+- [x] The §10 functions-as-values program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes; programs without function values give byte-identical IR.
+- [x] Every earlier test passes; programs without function values give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -170,11 +170,11 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 functions-as-values program and the `m14/` programs pass.
-- [ ] Every listed error is reported as specified.
-- [ ] The spec is folded (in progress: milestone 14); CLAUDE.md, README, TODO, CHANGELOG and MEMORY are updated; tag `m14`.
-- [ ] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The §10 functions-as-values program and the `m14/` programs pass.
+- [x] Every listed error is reported as specified.
+- [x] The spec is folded (in progress: milestone 14); CLAUDE.md, README, TODO, CHANGELOG and MEMORY are updated; tag `m14`.
+- [x] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -183,3 +183,13 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m14/values.la
 ```
+
+## AMENDMENTS (during build, session 49)
+
+- **A v2 test changed:** `let h = g;` (a function name as a value) was asserted to be E0406 in `check/call.rs`. It now asserts the new `fun(): …` type, as this PRP intends.
+- **E0406 wording:** "`x` can't be used as a value", with a help for each case (method, extern, intrinsic).
+- **No new file splits:**
+  - `holds_fun` lives in `check/bounds.rs`, beside `eq_ok` (it is new code);
+  - `env.rs` gained one line (the extern arm);
+  - `copy.rs` is unchanged: a function type's copy-helper name uses its printed form.
+- **Signatures:** `Signature` gained `is_extern`. Codegen's `arguments()` takes `(params, is_extern)`, so value calls can use it.
