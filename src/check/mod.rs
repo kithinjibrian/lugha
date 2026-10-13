@@ -8,6 +8,7 @@
 //! Depends on: ast, diagnostic, span.
 
 mod access;
+mod arguments;
 mod array;
 mod assign;
 mod body;
