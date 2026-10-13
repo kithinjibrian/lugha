@@ -2086,7 +2086,7 @@ TODO.md (milestone 10), CHANGELOG.md, MEMORY.md (decision 37)
 
 ---
 
-## SESSION 41 — 2026-10-13 — Modules front end (PRP-033) — open
+## SESSION 41 — 2026-10-13 — Modules front end (PRP-033) — closed
 
 Branch: main → prp-033-module_loading
 
@@ -2138,23 +2138,28 @@ CLAUDE.md (stages, tree, known issue), TODO.md, CHANGELOG.md, MEMORY.md (decisio
 
 - None.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-033-module_loading` fast-forward merged into `main` and deleted.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 9 is complete** (tag `m9`). The v2 draft's visibility rules were amended in session 40 (MEMORY 37, `docs/decisions/visibility.md`):
-- no keyword means visible to the whole program;
-- `private` limits items, methods and fields to their module;
-- `public` is reserved for v3 (E0317);
-- E0318 forbids leaking a private type.
+Milestone 10 is in progress. PRP-033 (modules front end) is merged:
+- `src/modules/` loads every imported file into one offset space (E0312, E0314, E0319);
+- diagnostics and `--emit` are file-aware;
+- `private`/`public` parse, and programs that import or use them stop at the M10 gate.
 
-Next is **milestone 10, modules** (v2 draft §2, §3, §5, §6, §8, §9; the two-module program in §10). It covers:
-- the lexer: `pub` becomes `private`/`public`, plus field and method visibility in the parser;
-- `import`, multi-file loading from the main file's directory, and cycles;
-- per-module namespaces, E0312–E0314, E0313 for private items and fields, E0317, E0318;
-- module-qualified symbols (`lugha_fn_a.b.f`), per-file diagnostics with a `"file"` field, and `--emit` across modules;
-- teaching the spec extraction about the multi-file example.
+Next is **PRP-034: names across modules** (v2 draft decision 9, §5, §6, §8, §9; `docs/decisions/visibility.md`). It covers:
+- **Checker:** per-module namespaces, and `m.f`, `m.T`, `m.T.f()`, `m.T.V(…)` and `m.T { … }` resolution (the checker currently gets only the root `Program`, so ExprIds per module need a plan).
+- **Visibility:** `private` items, methods and fields (E0313), `public` (E0317), and no leaking (E0318).
+- **Codegen:** module-qualified symbols (`lugha_fn_a.b.f`, `lugha_fn_a.b.T.m`), one LLVM module, and the same C function declared in two modules with identical signatures (E0306).
+- **Spec and tests:**
+  - remove the gate entries for modules and visibility;
+  - fold the draft's module sections into the v2 spec, with the two-module §10 program, so the spec extraction learns multi-file examples;
+  - mark milestone 10 done (tag `m10`).
 
-Start with discovery; it likely splits into several PRPs, as M9 did.
+Start with discovery.
 
 See `TODO.md`.

@@ -1,6 +1,6 @@
 ## FEATURE: Modules front end — `private`/`public` syntax, loading every imported file, and diagnostics that name their file.
 
-**Status:** implemented 2026-10-13 — session 41
+**Status:** merged into `main` 2026-10-13 — session 41
 **Milestone:** 10 (first of two PRPs: **033 front end**, 034 names, visibility and symbols)
 **Spec:** `Language v2 Draft.md`:
 - decision 9 (visibility);
