@@ -142,4 +142,45 @@ impl<'ctx> Lowerer<'ctx> {
             .expect(POSITIONED);
         Ok(Value::Val(value))
     }
+
+    /// `s.slice(from, to)` (v4): a new string through `lugha_rt_str_slice`,
+    /// which panics at `at` unless `0 <= from <= to <= s.len`.
+    pub(super) fn string_slice(
+        &mut self,
+        base: &Expr,
+        args: &[Expr],
+        at: usize,
+    ) -> Result<Value<'ctx>, CodegenError> {
+        let text = self.get(base, &Type::String)?;
+        let from = self.get(&args[0], &Type::I64)?;
+        let to = self.get(&args[1], &Type::I64)?;
+        let file = self.file_name(at);
+        let (line, col) = self.source.line_col(at);
+        let i64_type = self.context.i64_type();
+        let params = [
+            Type::String,
+            Type::I64,
+            Type::I64,
+            Type::String,
+            Type::I64,
+            Type::I64,
+        ];
+        let slice = self.runtime("lugha_rt_str_slice", &params, Some(Type::String));
+        let args = [
+            text.into(),
+            from.into(),
+            to.into(),
+            file.into(),
+            i64_type.const_int(line as u64, false).into(),
+            i64_type.const_int(col as u64, false).into(),
+        ];
+        let call = self
+            .builder
+            .build_call(slice, &args, "slice")
+            .expect(POSITIONED);
+        match call.try_as_basic_value() {
+            ValueKind::Basic(value) => Ok(Value::Val(value)),
+            ValueKind::Instruction(_) => unreachable!("lugha_rt_str_slice returns a string"),
+        }
+    }
 }

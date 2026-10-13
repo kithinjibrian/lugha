@@ -105,7 +105,7 @@ postfix      = primary { call | index | member | "?" } ;   (* `read_file(p)?` *)
 ## §9 Compilation model — changes
 
 - **`?`** lowers to a branch on the tag. The `Err`/`None` path builds the enclosing function's return value and returns. The value it would have produced is only computed on the `Ok`/`Some` path.
-- **The prelude** gains the §4 helpers. Some need byte-level work that Lugha can't express, such as making a string from a slice of another. The prelude calls compiler-internal intrinsics for these (`lugha_rt_str_slice`), which programs can't name.
+- **The prelude** gains the §4 helpers. Making a string from a slice of another is the one thing Lugha can't express, and `slice` is a built-in method lowered to `lugha_rt_str_slice` (amended by PRP-043: a built-in method rather than a hidden intrinsic, so its panic points at the caller); the other helpers are prelude code using it.
 - **Runtime:** it gains `lugha_rt_read_line`, `lugha_rt_read_file`, `lugha_rt_write_file` (with an append flag), `lugha_rt_eprint_*`, `lugha_rt_exit` and `lugha_rt_str_slice`. Failures return the C library's `strerror` text.
 - **Tests:**
   - the runner gains an optional `<name>.stdin` beside a run case, fed to the program;
@@ -213,6 +213,6 @@ fun main() {
 ## §12 Open questions — additions
 
 - [x] **Error conversion with `?`:** v4 requires the same `E`. Resolved (PRP-042): kept until interfaces can describe conversions.
-- [ ] **`lines()` and `\r`:** a trailing `\r` is stripped from each line, so Windows files read naturally. Proposed: yes.
+- [x] **`lines()` and `\r`:** a trailing `\r` is stripped from each line, so Windows files read naturally. Resolved (PRP-043): yes.
 - [ ] **Very large files:** `read_file` reads the whole file into memory. Proposed: fine for v4; streaming waits.
 - [ ] **`exit` and buffered output:** stdout is flushed, and stderr is unbuffered. Proposed: yes.

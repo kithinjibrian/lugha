@@ -122,35 +122,35 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (`check/helpers.rs`):
-- [ ] **Types:**
+- [x] **Types:**
   - each string helper's type, including `s.slice(0, 2)`;
   - `xs.join("-")` on `string[]` is `string`;
   - `[1].join("-")` is E0415 (only `string[]` has `join`).
-- [ ] **`Option`:** `o.unwrap_or(0)`, `o.ok_or("none")` (`Result<i64, string>`), `o.map(fun(x) = "{x}")` (`Option<string>`), `o.is_some()`.
-- [ ] **`Result`:** `r.unwrap_or(0)`, `r.ok()`, `r.map(fun(x) = x + 1)`, `r.map_err(fun(e) = e.len)` (`Result<i64, i64>`), `r.is_err()`.
-- [ ] **`?` composes:** `parse_i64(s).ok_or("bad")?` in a `Result<i64, string>` function.
-- [ ] **Errors:** `s.trim(1)` is E0405; `s.split(1)` is E0403; `s.upper()` is E0415.
+- [x] **`Option`:** `o.unwrap_or(0)`, `o.ok_or("none")` (`Result<i64, string>`), `o.map(fun(x) = "{x}")` (`Option<string>`), `o.is_some()`.
+- [x] **`Result`:** `r.unwrap_or(0)`, `r.ok()`, `r.map(fun(x) = x + 1)`, `r.map_err(fun(e) = e.len)` (`Result<i64, i64>`), `r.is_err()`.
+- [x] **`?` composes:** `parse_i64(s).ok_or("bad")?` in a `Result<i64, string>` function.
+- [x] **Errors:** `s.trim(1)` is E0405; `s.split(1)` is E0403; `s.upper()` is E0415.
 
 Acceptance — `tests/programs/m18/` (run at `-O0` and `-O2`):
-- [ ] `strings.la`:
+- [x] `strings.la`:
   - `lines` (with `\r\n`, an empty middle line, a trailing newline, the empty string);
   - `split` (empty parts, no separator present, a multi-byte separator);
   - `trim`;
   - the predicates, including empty arguments;
   - `slice`;
   - `join` (including `[]`).
-- [ ] `options.la`: every `Option` and `Result` helper, chained with `?` and with closures capturing locals.
-- [ ] `slice_panic.la`: out-of-range `slice` panics at the caller's line (exit 101, `.stderr`).
-- [ ] `split_panic.la`: `split("")` panics (exit 101, the message checked with `.stderr`).
-- [ ] `e0415.la`: reject golden (`[1, 2].join("-")`).
-- [ ] The §10 text-helpers program runs from the spec.
+- [x] `options.la`: every `Option` and `Result` helper, chained with `?` and with closures capturing locals.
+- [x] `slice_panic.la`: out-of-range `slice` panics at the caller's line (exit 101, `.stderr`).
+- [x] `split_panic.la`: `split("")` panics (exit 101, the message checked with `.stderr`).
+- [x] `e0415.la`: reject golden (`[1, 2].join("-")`).
+- [x] The §10 text-helpers program runs from the spec.
 
 Driver / IR:
-- [ ] A program using no helpers gives no `$prelude` functions in its IR.
-- [ ] One using `s.trim()` defines `lugha_fn_$prelude/str_trim` and not `str_lines`.
+- [x] A program using no helpers gives no `$prelude` functions in its IR.
+- [x] One using `s.trim()` defines `lugha_fn_$prelude/str_trim` and not `str_lines`.
 
 Regression:
-- [ ] Every earlier test passes.
+- [x] Every earlier test passes.
 
 ## ROLLBACK PLAN
 
@@ -158,10 +158,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 text-helpers program and the `m18/` programs pass.
-- [ ] The spec is folded (in progress: milestone 18); docs updated; tag `m18`.
-- [ ] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The §10 text-helpers program and the `m18/` programs pass.
+- [x] The spec is folded (in progress: milestone 18); docs updated; tag `m18`.
+- [x] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -170,3 +170,13 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m18/strings.la
 ```
+
+## AMENDMENTS (during build, session 54)
+
+- **Reachability is decided in the checker's instance pass,** not by codegen scanning callees.
+  - Prelude calls are recorded even without type arguments, and prelude bodies are never roots.
+  - So `str_at` compiles only when `str_split` is reached from user code.
+- **Codegen helper dispatch** is restricted to `$prelude.` keys, so a generic function of an imported module (`b.max(…)`) keeps the module-call path.
+- **Split (approved):** `RUNTIME_SYMBOLS` moved verbatim from `codegen/runtime.rs` (at 300 lines) to `link.rs`.
+- **The draft's §9** note on internal intrinsics was amended: `slice` is a built-in method.
+- **Test programs:** three lines in `strings.la` had string literals inside `{…}` (E0111) and were rewritten with `+`.

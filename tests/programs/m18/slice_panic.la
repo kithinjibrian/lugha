@@ -1,0 +1,5 @@
+fun main() {
+    let word = "hello";
+    println(word.slice(1, 3));
+    println(word.slice(3, 1));
+}

@@ -69,6 +69,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Closures",
         "Array helpers",
         "Results and `?`",
+        "Text helpers",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

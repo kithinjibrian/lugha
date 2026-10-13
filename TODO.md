@@ -125,9 +125,9 @@ Done when the array-helpers program passes and the v3 spec is complete.
 Done when the results program passes.
 - [x] PRP-042: `Result<T, E>` in the prelude, `Ok`/`Err`, the `?` operator (E0424); `Language v4 Specification.md` begins
 
-### Milestone 18 — Text and option helpers
+### Milestone 18 — Text and option helpers ✅
 Done when the text-helpers program passes.
-- [ ] String helpers, `join`, `Option`/`Result` helpers, internal intrinsics for the prelude
+- [x] PRP-043: string helpers, `join`, `Option`/`Result` helpers (prelude), built-in `slice`; prelude functions compile only when reached
 
 ### Milestone 19 — Input and output
 Done when the reading-input program passes and the v4 spec is complete.

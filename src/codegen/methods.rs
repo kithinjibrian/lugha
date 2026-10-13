@@ -112,21 +112,26 @@ impl<'ctx> Lowerer<'ctx> {
             return Ok(None);
         };
         let base_type = self.ty(base);
+        // `xs.map(f)`, `s.trim()`, `o.unwrap_or(d)`: helpers call the prelude
+        // with the receiver first (v3 PRP-041, v4 PRP-043).
+        let callee = self.callees.get(&call.id).cloned();
+        let helper = callee.filter(|k| k.starts_with("$prelude."));
+        if let Some(helper) = helper.and_then(|k| self.prelude_target(call, &k)) {
+            let params = &helper.signature.params;
+            let mut values = self.arguments(std::slice::from_ref(base), &params[..1], false)?;
+            values.extend(self.arguments(args, &params[1..], false)?);
+            let site = self
+                .builder
+                .build_call(helper.signature.function, &values, "helper");
+            return Ok(Some(match site.expect(POSITIONED).try_as_basic_value() {
+                ValueKind::Basic(result) => Value::Val(result),
+                ValueKind::Instruction(_) => Value::Void,
+            }));
+        }
+        if base_type == Type::String && name.name == "slice" {
+            return self.string_slice(base, args, name.span.start).map(Some);
+        }
         if let Type::Array(_) = base_type {
-            // `xs.map(f)` and the other helpers call the prelude (v3, PRP-041).
-            let key = self.callees.get(&call.id).cloned();
-            if let Some(helper) = key.and_then(|k| self.instance_of(call, &k)) {
-                let mut values: Vec<BasicMetadataValueEnum> =
-                    vec![self.get(base, &base_type)?.into()];
-                values.extend(self.arguments(args, &helper.signature.params[1..], false)?);
-                let site = self
-                    .builder
-                    .build_call(helper.signature.function, &values, "helper");
-                return Ok(Some(match site.expect(POSITIONED).try_as_basic_value() {
-                    ValueKind::Basic(result) => Value::Val(result),
-                    ValueKind::Instruction(_) => Value::Void,
-                }));
-            }
             return self.array_builtin(base, &name.name, args).map(Some);
         }
         // The checker gives a type name `void` (associated calls and variants).

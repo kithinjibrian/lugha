@@ -1,0 +1,6 @@
+error[E0415]: no method `join` on `i64[]`
+  --> tests/programs/m18/e0415.la:2:25
+  |
+2 |     let joined = [1, 2].join("-");
+  |                         ^^^^
+

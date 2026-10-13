@@ -21,6 +21,34 @@ pub const RUNTIME_PARTS: [(&str, &str); 4] = [
     ("input.c", include_str!("../runtime/input.c")),
 ];
 
+/// Every runtime function codegen may call; `lugha_rt.c` defines them all.
+pub const RUNTIME_SYMBOLS: [&str; 24] = [
+    "lugha_rt_init",
+    "lugha_rt_str_slice",
+    "lugha_rt_args",
+    "lugha_rt_parse_i64",
+    "lugha_rt_parse_f64",
+    "lugha_rt_alloc",
+    "lugha_rt_panic",
+    "lugha_rt_panic_bounds",
+    "lugha_rt_str_concat",
+    "lugha_rt_str_eq",
+    "lugha_rt_str_cmp",
+    "lugha_rt_array_grow",
+    "lugha_rt_print_i32",
+    "lugha_rt_print_i64",
+    "lugha_rt_print_u8",
+    "lugha_rt_print_f64",
+    "lugha_rt_print_bool",
+    "lugha_rt_print_str",
+    "lugha_rt_print_newline",
+    "lugha_rt_to_string_i32",
+    "lugha_rt_to_string_i64",
+    "lugha_rt_to_string_u8",
+    "lugha_rt_to_string_f64",
+    "lugha_rt_to_string_bool",
+];
+
 /// The C runtime linked into every program: [`RUNTIME_PARTS`] joined in order,
 /// compiled as one `lugha_rt.c`.
 pub const RUNTIME_SOURCE: &str = concat!(
@@ -139,7 +167,7 @@ mod tests {
 
     #[test]
     fn runtime_defines_every_symbol_codegen_calls() {
-        for name in crate::codegen::RUNTIME_SYMBOLS {
+        for name in super::RUNTIME_SYMBOLS {
             assert!(
                 RUNTIME_SOURCE.contains(&format!("{name}(")),
                 "lugha_rt.c lacks {name}"

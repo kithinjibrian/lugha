@@ -6,6 +6,9 @@ use crate::ast::Expr;
 use crate::diagnostic::Severity;
 use crate::span::Span;
 
+/// The start of every prelude item's key.
+const PRELUDE_KEY: &str = "$prelude.";
+
 /// How deep instances may nest before it is E0420 (v2 draft §4, §12).
 pub(super) const MAX_DEPTH: usize = 64;
 
@@ -33,8 +36,10 @@ pub(super) struct Use {
 
 impl Checker {
     /// Records that the body being checked calls generic `key` at `args`.
+    /// A prelude function is recorded even when it isn't generic, so it is
+    /// compiled only if user code reaches it (PRP-043).
     pub(super) fn used(&mut self, call: &Expr, key: &str, args: &[Type]) {
-        if args.is_empty() {
+        if args.is_empty() && !key.starts_with(PRELUDE_KEY) {
             return;
         }
         let callee = Instance {
@@ -97,7 +102,11 @@ impl Checker {
         }
         let mut roots: Vec<&str> = Vec::new();
         for u in &self.uses {
-            if !roots.contains(&u.owner.as_str()) && self.params_of(&u.owner).is_empty() {
+            // Prelude bodies are reached from user code, never roots themselves.
+            if !roots.contains(&u.owner.as_str())
+                && self.params_of(&u.owner).is_empty()
+                && !u.owner.starts_with(PRELUDE_KEY)
+            {
                 roots.push(&u.owner);
             }
         }

@@ -227,7 +227,7 @@ pub fn parse_number(src: &str) -> i64 {
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
 │   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints), PRELUDE
-│   ├── prelude.la   — Result<T, E> and the array helpers (map, filter, fold, sort_by, any, all) in Lugha, module `$prelude`
+│   ├── prelude.la   — Result<T, E>, the array helpers, and the string/Option/Result helpers in Lugha, module `$prelude`
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
@@ -277,7 +277,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  swap.rs (swap: loads and crossed stores)
 │   ├── modules/     — mod.rs (load: the main file and every import, one offset space; with_prelude), resolve.rs
 │   │                  (import paths, E0312/E0314/E0319), tests.rs (in-memory loading)
-│   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_PARTS, RUNTIME_SOURCE, LinkError
+│   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_PARTS, RUNTIME_SOURCE, RUNTIME_SYMBOLS, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes, Output), build.rs (build, --emit per module), guard.rs
 │                      (panics → internal error, exit 2), pipeline.rs (load all modules + the prelude, check, codegen),
 │                      source.rs (source map of all files, line_col),
@@ -291,7 +291,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── cli.rs       — the lughac binary: commands, emit, diagnostics, exit codes
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m17/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations (+ .args);
+│   ├── programs/    — m1/ … m18/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations (+ .args);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args files),
 │                      execute, report)

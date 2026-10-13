@@ -98,3 +98,159 @@ fun sort_by<T>(xs: T[], less: fun(T, T): bool): T[] {
     }
     src
 }
+
+// ---- Strings (v4 draft §4) ----
+// Strings are bytes: these helpers compare and cut bytes, and `slice` (built
+// into the compiler) makes each new string. ASCII codes: `\n` 10, `\r` 13,
+// `\t` 9, space 32.
+
+// The lines of `s`: split at `\n`, one trailing `\r` dropped from each, and
+// no empty last line after a final `\n`.
+fun str_lines(s: string): string[] {
+    let mut out: string[] = [];
+    let mut start = 0;
+    for i in 0..s.len {
+        if s[i] == 10 {
+            out.push(str_line(s, start, i));
+            start = i + 1;
+        }
+    }
+    if start < s.len {
+        out.push(str_line(s, start, s.len));
+    }
+    out
+}
+
+// The bytes `from..to` of `s` without a final `\r`.
+fun str_line(s: string, from: i64, to: i64): string {
+    if to > from && s[to - 1] == 13 {
+        return s.slice(from, to - 1);
+    }
+    s.slice(from, to)
+}
+
+// The parts of `s` between occurrences of `sep`, empty parts kept.
+fun str_split(s: string, sep: string): string[] {
+    if sep.len == 0 {
+        panic("split with an empty separator");
+    }
+    let mut out: string[] = [];
+    let mut start = 0;
+    let mut i = 0;
+    while i + sep.len <= s.len {
+        if str_at(s, i, sep) {
+            out.push(s.slice(start, i));
+            i += sep.len;
+            start = i;
+        } else {
+            i += 1;
+        }
+    }
+    out.push(s.slice(start, s.len));
+    out
+}
+
+// True if `p` occurs in `s` starting at byte `at`.
+fun str_at(s: string, at: i64, p: string): bool {
+    if at + p.len > s.len {
+        return false;
+    }
+    for k in 0..p.len {
+        if s[at + k] != p[k] {
+            return false;
+        }
+    }
+    true
+}
+
+// ASCII whitespace: space, `\t`, `\n`, `\r`.
+fun str_is_space(b: u8): bool = b == 32 || b == 9 || b == 10 || b == 13;
+
+// `s` without leading and trailing ASCII whitespace.
+fun str_trim(s: string): string {
+    let mut from = 0;
+    let mut to = s.len;
+    while from < to && str_is_space(s[from]) {
+        from += 1;
+    }
+    while to > from && str_is_space(s[to - 1]) {
+        to -= 1;
+    }
+    s.slice(from, to)
+}
+
+fun str_contains(s: string, sub: string): bool {
+    for i in 0..s.len - sub.len + 1 {
+        if str_at(s, i, sub) {
+            return true;
+        }
+    }
+    false
+}
+
+fun str_starts_with(s: string, p: string): bool = str_at(s, 0, p);
+
+fun str_ends_with(s: string, p: string): bool = p.len <= s.len && str_at(s, s.len - p.len, p);
+
+// The strings of `xs` with `sep` between them.
+fun str_join(xs: string[], sep: string): string {
+    let mut out = "";
+    for i in 0..xs.len {
+        if i > 0 {
+            out = out + sep;
+        }
+        out = out + xs[i];
+    }
+    out
+}
+
+// ---- Option and Result (v4 draft §4) ----
+
+fun option_unwrap_or<T>(o: Option<T>, default: T): T = match o {
+    Some(x) => x,
+    None => default,
+};
+
+fun option_ok_or<T, E>(o: Option<T>, error: E): Result<T, E> = match o {
+    Some(x) => Ok(x),
+    None => Err(error),
+};
+
+fun option_map<T, U>(o: Option<T>, f: fun(T): U): Option<U> = match o {
+    Some(x) => Some(f(x)),
+    None => None,
+};
+
+fun option_is_some<T>(o: Option<T>): bool = match o {
+    Some(_) => true,
+    None => false,
+};
+
+fun option_is_none<T>(o: Option<T>): bool = !option_is_some(o);
+
+fun result_unwrap_or<T, E>(r: Result<T, E>, default: T): T = match r {
+    Ok(x) => x,
+    Err(_) => default,
+};
+
+fun result_ok<T, E>(r: Result<T, E>): Option<T> = match r {
+    Ok(x) => Some(x),
+    Err(_) => None,
+};
+
+fun result_map<T, E, U>(r: Result<T, E>, f: fun(T): U): Result<U, E> = match r {
+    Ok(x) => Ok(f(x)),
+    Err(e) => Err(e),
+};
+
+fun result_map_err<T, E, F>(r: Result<T, E>, f: fun(E): F): Result<T, F> = match r {
+    Ok(x) => Ok(x),
+    Err(e) => Err(f(e)),
+};
+
+fun result_is_ok<T, E>(r: Result<T, E>): bool = match r {
+    Ok(_) => true,
+    Err(_) => false,
+};
+
+fun result_is_err<T, E>(r: Result<T, E>): bool = !result_is_ok(r);

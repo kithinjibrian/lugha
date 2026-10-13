@@ -139,7 +139,7 @@ impl<'ctx> Lowerer<'ctx> {
         // The checker resolved the callee (PRP-034): `f` here or `m.f`.
         // A generic callee calls its instance at this call's arguments (PRP-036).
         let key = self.callees.get(&call.id).cloned();
-        let signature = key.and_then(|key| match self.instance_of(call, &key) {
+        let signature = key.and_then(|key| match self.prelude_target(call, &key) {
             Some(instance) => Some(instance.signature),
             None => self.functions.get(&key).cloned(),
         });

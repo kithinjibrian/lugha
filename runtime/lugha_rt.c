@@ -53,6 +53,8 @@ void *lugha_rt_alloc(int64_t size);
 void lugha_rt_panic(const LughaString *msg, const char *file, int64_t line, int64_t col);
 void lugha_rt_panic_bounds(int64_t len, int64_t index, const char *file, int64_t line, int64_t col);
 LughaString *lugha_rt_str_concat(const LughaString *a, const LughaString *b);
+LughaString *lugha_rt_str_slice(const LughaString *s, int64_t from, int64_t to, const char *file,
+                                int64_t line, int64_t col);
 LughaArray *lugha_rt_array_grow(const LughaArray *array, int64_t elem_size);
 int32_t lugha_rt_str_eq(const LughaString *a, const LughaString *b);
 int32_t lugha_rt_str_cmp(const LughaString *a, const LughaString *b);
@@ -146,6 +148,27 @@ LughaString *lugha_rt_str_concat(const LughaString *a, const LughaString *b) {
     memcpy(s->bytes + a->len, b->bytes, (size_t)b->len);
     s->bytes[len] = '\0';
     return s;
+}
+
+/* `s.slice(from, to)` (v4): a new string of the bytes `from..to`. Panics at
+ * the caller's location unless 0 <= from <= to <= len, so no byte outside
+ * `s` is ever read. */
+LughaString *lugha_rt_str_slice(const LughaString *s, int64_t from, int64_t to, const char *file,
+                                int64_t line, int64_t col) {
+    if (from < 0 || from > to || to > s->len) {
+        fflush(stdout);
+        fprintf(stderr,
+                "panic: slice out of bounds: from %" PRId64 " to %" PRId64
+                " of a string of length %" PRId64 " at %s:%" PRId64 ":%" PRId64 "\n",
+                from, to, s->len, file, line, col);
+        exit(101);
+    }
+    int64_t len = to - from;
+    LughaString *out = lugha_rt_alloc((int64_t)sizeof(LughaString) + len + 1);
+    out->len = len;
+    memcpy(out->bytes, s->bytes + from, (size_t)len);
+    out->bytes[len] = '\0';
+    return out;
 }
 
 /* `a == b` for strings compares contents (spec §4); 1 or 0. */

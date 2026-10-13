@@ -14,6 +14,11 @@ use super::value::{is_aggregate, llvm_type};
 use crate::ast::Item;
 use crate::check::{Type, Unit, qualify, symbol};
 
+/// True for the prelude module.
+pub(super) fn is_prelude(unit: &Unit) -> bool {
+    unit.path.len() == 1 && unit.path[0] == crate::modules::PRELUDE_PATH
+}
+
 impl<'ctx> Lowerer<'ctx> {
     /// Declares every function of `unit` as `lugha_fn_<symbol>` (spec §8;
     /// `lugha_fn_geometry/origin` in a module, PRP-034), in source order.
@@ -22,6 +27,8 @@ impl<'ctx> Lowerer<'ctx> {
             let (name, params, ret, is_extern) = match item {
                 // Generic functions are declared per instance (`instances.rs`).
                 Item::Fun(f) if !f.type_params.is_empty() => continue,
+                // The prelude's functions are compiled only when reached (`monos`, PRP-043).
+                Item::Fun(_) if is_prelude(unit) => continue,
                 Item::Fun(f) => (&f.name.name, &f.params, f.ret.as_ref(), false),
                 Item::Extern(e) => (&e.name.name, &e.params, e.ret.as_ref(), true),
                 // Methods are declared by `declare_methods`.

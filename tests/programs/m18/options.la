@@ -1,0 +1,41 @@
+fun port(arg: string): Result<i64, string> {
+    let n = parse_i64(arg).ok_or("not a number: " + arg)?;
+    if n < 1 || n > 65535 {
+        return Err("out of range: " + arg);
+    }
+    Ok(n)
+}
+
+fun show(r: Result<i64, string>): string = match r {
+    Ok(n) => "ok {n}",
+    Err(e) => "err " + e,
+};
+
+fun main() {
+    let some: Option<i64> = Some(4);
+    let none: Option<i64> = None;
+    println(some.unwrap_or(0));
+    println(none.unwrap_or(-1));
+    println(show(some.ok_or("missing")));
+    println(show(none.ok_or("missing")));
+    let label = "n=";
+    println(some.map(fun(x) = label + "{x * 10}").unwrap_or("none"));
+    println(none.map(fun(x) = x + 1).is_none());
+    println(some.is_some());
+    println(show(port("8080")));
+    println(show(port("http")));
+    println(show(port("70000")));
+    let good = port("443");
+    let bad = port("x");
+    println(good.unwrap_or(80));
+    println(bad.unwrap_or(80));
+    println(good.ok().is_some());
+    println(bad.ok().is_none());
+    println(show(good.map(fun(p) = p + 1)));
+    match bad.map_err(fun(e) = e.len) {
+        Ok(n) => println(n),
+        Err(len) => println("error of {len} bytes"),
+    }
+    println(good.is_ok());
+    println(bad.is_err());
+}

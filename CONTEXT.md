@@ -2727,6 +2727,47 @@ Branch: prp-042-results
 
 Branch: prp-043-text_helpers
 
+### WHAT WAS DONE
+
+- Discovery: exactly the draft's set. PRP-043 written and approved.
+- Prelude: the string helpers (`str_*`), `str_join`, and the `option_*` and `result_*` helpers.
+- Checker:
+  - dispatch by receiver (`helper_function`);
+  - `slice` built in;
+  - prelude calls recorded for the instance pass, with prelude bodies not roots.
+- Codegen:
+  - helper calls with the receiver first, for every receiver;
+  - `lugha_rt_str_slice`;
+  - prelude functions compile only when reached.
+- Runtime: `lugha_rt_str_slice`. `RUNTIME_SYMBOLS` moved to `link.rs` (approved).
+- Spec: folded to milestone 18; the draft's §9 note amended and §12 `\r` question resolved.
+
+### FILES CREATED OR MODIFIED
+
+- New: `tests/programs/m18/`, the PRP.
+- Modified:
+  - `src/prelude.la`;
+  - the checker (`helpers.rs`, `builtins.rs`, `method_calls.rs`, `instances.rs`);
+  - codegen (`methods.rs`, `function.rs`, `instances.rs`, `input.rs`, `declare.rs`, `lower.rs`, `runtime.rs`, `mod.rs`);
+  - `src/link.rs`, `runtime/lugha_rt.c`;
+  - tests (`tests/modules.rs`, `tests/spec.rs`);
+  - docs: the specs, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (decision 51).
+
+### TESTS WRITTEN
+
+- Checker (2 new): string types and errors; `Option`/`Result` types and `?` with `ok_or`.
+- Modules: only reached prelude functions compile.
+- `m18/`: strings, options, `slice_panic`, `split_panic`, the e0415 golden.
+- The §10 text-helpers program.
+
+### DECISIONS MADE
+
+- MEMORY 51; PRP amendments.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

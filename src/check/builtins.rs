@@ -1,22 +1,22 @@
-//! The array built-in methods `push`, `pop` and `clear` (v1 §4, milestone 8).
+//! The built-in methods: `push`, `pop` and `clear` on arrays (v1 §4,
+//! milestone 8), and `slice` on strings (v4).
 
 use super::Type;
 use super::methods::Method;
 use crate::span::Span;
 
-/// `push`, `pop` and `clear` on an array (v1 §4, milestone 8).
+/// `push`, `pop` and `clear` on an array (v1 §4, milestone 8), with a
+/// `mut self` receiver; `slice(from, to)` on a string (v4), with `self`.
 pub(super) fn builtin(receiver: &Type, name: &str) -> Option<Method> {
-    let Type::Array(element) = receiver else {
-        return None;
-    };
-    let (params, ret) = match name {
-        "push" => (vec![(**element).clone()], Type::Void),
-        "pop" => (Vec::new(), Type::Option(element.clone())),
-        "clear" => (Vec::new(), Type::Void),
+    let (params, ret, mutable) = match (receiver, name) {
+        (Type::Array(element), "push") => (vec![(**element).clone()], Type::Void, true),
+        (Type::Array(element), "pop") => (Vec::new(), Type::Option(element.clone()), true),
+        (Type::Array(_), "clear") => (Vec::new(), Type::Void, true),
+        (Type::String, "slice") => (vec![Type::I64, Type::I64], Type::String, false),
         _ => return None,
     };
     Some(Method {
-        receiver: Some(true),
+        receiver: Some(mutable),
         params,
         ret,
         span: Span::new(0, 0),

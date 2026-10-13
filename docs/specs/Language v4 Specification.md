@@ -1,4 +1,4 @@
-# Lugha v4 Specification (in progress: milestone 17)
+# Lugha v4 Specification (in progress: milestone 18)
 
 Oct 13, 2026 · @kithinji
 
@@ -6,9 +6,10 @@ Oct 13, 2026 · @kithinji
 
 **v3.** This is v2 plus command-line arguments and number parsing, string interpolation, functions as values, closures, and array helpers (milestones 13–16).
 
-**Changes since v3** (milestone 17):
+**Changes since v3** (milestones 17–18):
 - `Result<T, E>` is predeclared, with `Ok(x)` and `Err(e)` written without a prefix (section 4).
 - The postfix `?` gives a `Result`'s `Ok` value or an `Option`'s `Some` value, or returns the failure from the function at once (sections 2–4).
+- Strings have `lines`, `split`, `trim`, `contains`, `starts_with`, `ends_with` and `slice`, `string[]` has `join`, and `Option` and `Result` have `unwrap_or`, `ok_or`, `ok`, `map`, `map_err` and `is_*` (section 4).
 
 Every valid v3 program is a valid v4 program unless it defines something named `Result`, `Ok` or `Err`.
 
@@ -392,6 +393,27 @@ They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (
 - **Misuse is E0424**, with help: `?` on any other type, in `main`, in a function returning something else, on an `Option` in a function returning `Result`, or with different error types.
 - **Early return:** on failure nothing after the `?` runs, and a value it was part of is never stored, exactly as for `return`.
 
+**String, `Option` and `Result` helpers** (v4). These methods each take `self`, never change it, and return a new value.
+
+| Receiver | Method | Result |
+| --- | --- | --- |
+| `string` | `s.lines()` | `string[]`: split at `\n`, one trailing `\r` removed from each line, and no empty last line after a final `\n` (`"a\nb\n"` gives `["a", "b"]`, `""` gives `[]`) |
+| `string` | `s.split(sep)` | `string[]`: the parts between occurrences of `sep`, empty parts kept (`"a,,b"` gives `["a", "", "b"]`); an empty `sep` panics with `split with an empty separator` |
+| `string` | `s.trim()` | `string`: without leading and trailing ASCII whitespace (space, `\t`, `\n`, `\r`) |
+| `string` | `s.contains(sub)`, `s.starts_with(p)`, `s.ends_with(p)` | `bool`; true for an empty argument |
+| `string` | `s.slice(from, to)` | `string`: the bytes `from..to`; panics (at the call) unless `0 <= from <= to <= s.len` |
+| `string[]` | `xs.join(sep)` | `string`: the elements with `sep` between them; `""` for `[]` |
+| `Option<T>` | `o.unwrap_or(d)` | `T`: the value, or `d` |
+| `Option<T>` | `o.ok_or(e)` | `Result<T, E>`: `Ok` with the value, or `Err(e)` |
+| `Option<T>` | `o.map(f)` | `Option<U>` |
+| `Option<T>` | `o.is_some()`, `o.is_none()` | `bool` |
+| `Result<T, E>` | `r.unwrap_or(d)` | `T`: the `Ok` value, or `d` |
+| `Result<T, E>` | `r.ok()` | `Option<T>` |
+| `Result<T, E>` | `r.map(f)`, `r.map_err(f)` | `Result<U, E>`, `Result<T, F>` |
+| `Result<T, E>` | `r.is_ok()`, `r.is_err()` | `bool` |
+
+Strings are bytes: every position is a byte offset, and `slice` can cut a multi-byte character, giving a string of exactly those bytes. A closure argument is typed as for the array helpers (`o.map(fun(x) = "{x}")` is an `Option<string>`). `map` means the array, `Option` or `Result` helper according to the receiver. `parse_i64(s).ok_or("bad number")?` turns a missing value into an error and returns it. There is no `unwrap()`: handle a failure with `match`, `?` or `unwrap_or`.
+
 **Array helpers** (v3). Every array `xs: T[]` also has these methods. Each takes `self`: the receiver never changes, and every array it returns is new.
 
 | Method | Arguments | Result |
@@ -503,7 +525,7 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 
 **Expression statements.** Any expression followed by `;` is a statement, and its value is discarded. Discarding the result of a non-`void` call is allowed. Adding `;` after a would-be tail expression turns it into a statement, so `{ x * x; }` is a `void` block. When a value was expected, the checker reports this as "remove this semicolon" and points at it.
 
-**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), a negative repeat-literal count, too-deep recursion (`stack overflow`), and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. A stack overflow is the one panic without a location — it prints just `panic: stack overflow` — because the runtime can't tell which call went too deep. They cannot be caught.
+**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), an out-of-range `slice` (`slice out of bounds: from F to T of a string of length L`, at the method name; v4), `split` with an empty separator (located in the prelude, `<prelude>:…`; v4), a negative repeat-literal count, too-deep recursion (`stack overflow`), and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. A stack overflow is the one panic without a location — it prints just `panic: stack overflow` — because the runtime can't tell which call went too deep. They cannot be caught.
 
 **Intrinsics.** These names are built into the compiler, not declared in source. They accept arguments that ordinary functions can't, which is why they are special.
 
@@ -697,6 +719,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 - **Deep equality:** generate one `lugha_eq_<type>(T, T) -> i1` per struct, enum, `Option` or array type compared, with the copy helpers' type names (`lugha_eq_1L_opt` for `Option<L>`). Numbers and `bool` compare inline, and strings through `lugha_rt_str_eq`.
 - **Struct, enum and array arguments:** pass a pointer to the caller's storage rather than the value itself, since the callee can't modify it.
 - **`?`** (v4): the operand goes in a slot and its tag picks the branch. The failing branch builds the function's own `Err(e)` (or `None`) from the payload and returns it; the passing branch loads the `Ok`/`Some` payload.
+- **Text and option helpers** (v4) are prelude functions (`str_trim`, `option_map`, `result_map_err`, …) chosen by the receiver's type; `slice` is built in and calls `lugha_rt_str_slice`. A prelude function without type parameters is compiled only when user code reaches it, as generic helpers are.
 - **`Result`** (v4) is declared in the prelude, so it is the generic-enum machinery throughout; its LLVM type and helpers are named as it prints (`%"Result<i64, string>"`).
 - **Array helpers** (v3): `xs.map(f)` calls the prelude's `map` instance with `xs` first. The prelude is Lugha source like any other (`sort_by` is a bottom-up merge sort between two buffers), so it needs no special lowering; `--emit=tokens|ast` leaves it out, and an error inside it is reported as an internal compiler error.
 - **Calling a function value** (v3): extract its code and environment, and call the code indirectly with the environment as a hidden first argument, then the arguments as for any call (aggregates by pointer).
@@ -720,6 +743,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_print_newline()` | The newline `println` adds |
 | `lugha_rt_args()` | A new `string[]` of the program's arguments (v3) |
 | `lugha_rt_parse_i64(s, out)` / `lugha_rt_parse_f64(s, out)` | Parse `s` into `*out`; return 1, or 0 for `None` (v3) |
+| `lugha_rt_str_slice(s, from, to, file, line, col)` | `s.slice(from, to)`: a new string of those bytes, or the bounds panic (v4) |
 
 The runtime writes through C's `stdout` stream, so output from `print`/`println` and from libc functions such as `puts` appears in program order.
 
@@ -1255,6 +1279,25 @@ fun main() {
 }
 ```
 
+**Text helpers** (milestone 18). Prints `42` then `a-b-c` then `2` on three lines, exits with 0.
+
+```
+fun main() {
+    let text = "name, age\nann, 30\n\nbo, 12\n";
+    let mut total = 0;
+    for line of text.lines() {
+        let parts = line.split(",").map(fun(p) = p.trim());
+        if parts.len < 2 || parts[0] == "name" {
+            continue;
+        }
+        total += parse_i64(parts[1]).unwrap_or(0);
+    }
+    println(total);
+    println(["a", "b", "c"].join("-"));
+    println("  hi  ".trim().len);
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1278,6 +1321,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 15 | Closures (v3) | closure literals, capture by copy (E0511), parameter inference, `lugha_closure_*`, closures in generic code (E0209) | The closures program in section 10 passes (done) |
 | 16 | Array helpers (v3) | `map`, `filter`, `fold`, `sort_by`, `any`, `all`, from a Lugha prelude | The array-helpers program in section 10 passes (done: v3 complete) |
 | 17 | Results and `?` (v4) | `Result<T, E>` (in the prelude), `Ok`/`Err`, the `?` operator (E0424) | The results program in section 10 passes (done) |
+| 18 | Text and option helpers (v4) | string helpers, `join`, `Option`/`Result` helpers, built-in `slice` | The text-helpers program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

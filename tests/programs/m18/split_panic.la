@@ -1,0 +1,4 @@
+fun main() {
+    println("a,b".split(",").len);
+    println("a,b".split("").len);
+}

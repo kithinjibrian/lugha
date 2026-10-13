@@ -16,33 +16,6 @@ use super::value::Value;
 use crate::ast::Expr;
 use crate::check::Type;
 
-/// Every runtime function codegen may call; `lugha_rt.c` defines them all.
-pub const RUNTIME_SYMBOLS: [&str; 23] = [
-    "lugha_rt_init",
-    "lugha_rt_args",
-    "lugha_rt_parse_i64",
-    "lugha_rt_parse_f64",
-    "lugha_rt_alloc",
-    "lugha_rt_panic",
-    "lugha_rt_panic_bounds",
-    "lugha_rt_str_concat",
-    "lugha_rt_str_eq",
-    "lugha_rt_str_cmp",
-    "lugha_rt_array_grow",
-    "lugha_rt_print_i32",
-    "lugha_rt_print_i64",
-    "lugha_rt_print_u8",
-    "lugha_rt_print_f64",
-    "lugha_rt_print_bool",
-    "lugha_rt_print_str",
-    "lugha_rt_print_newline",
-    "lugha_rt_to_string_i32",
-    "lugha_rt_to_string_i64",
-    "lugha_rt_to_string_u8",
-    "lugha_rt_to_string_f64",
-    "lugha_rt_to_string_bool",
-];
-
 /// Interned string-literal globals and the source file name, per module.
 #[derive(Default)]
 pub(super) struct Constants<'ctx> {

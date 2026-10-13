@@ -16,7 +16,7 @@ $ lughac run fib.la
 832040
 ```
 
-Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is in progress (milestone 17 done). Today it has everything in v1.2:
+Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is in progress (milestones 17–18 done). Today it has everything in v1.2:
 - **Basic types:** integers (`i32`, `i64`, `u8`), `f64`, `bool` and immutable strings.
 - **Compound types:** growable arrays (`push`, `pop`, `clear`), structs, and enums with exhaustive `match`, including `Option<T>` and recursive enums.
 - **Behaviour:** methods in `impl` blocks, `if` expressions, loops and `for … of`, and `swap(a, b)` to exchange two places without copying.
@@ -31,6 +31,7 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is i
 - **Closures (v3, milestone 15):** `let add = fun(x) = x + k;` captures `k` by copy; parameter types come from the expected function type, and `fun adder(k: i64): fun(i64): i64 = fun(x) = x + k;` returns one.
 - **Array helpers (v3, milestone 16):** `map`, `filter`, `fold`, `sort_by` (stable), `any` and `all`, each returning a new value: `people.filter(fun(p) = p.age >= 18).map(fun(p) = p.name)`.
 - **Results (v4, milestone 17):** `Result<T, E>` with `Ok`/`Err`, and `?` to return a failure early: `let h = half(n)?;`.
+- **Text helpers (v4, milestone 18):** `s.lines()`, `s.split(",")`, `s.trim()`, `s.contains(x)`, `s.slice(a, b)`, `parts.join("-")`, and `unwrap_or`, `ok_or`, `map` on `Option`/`Result`.
 
 Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v4 Specification.md`](docs/specs/Language%20v4%20Specification.md) (what `lughac spec` prints); the plan for the rest of v4 is [`Language v4 Draft.md`](docs/specs/Language%20v4%20Draft.md).
 

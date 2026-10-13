@@ -96,11 +96,13 @@ impl Checker {
             return ty;
         }
         if let Some(m) = builtin(receiver, &name.name) {
-            // Built-ins grow the array in place: the `mut self` place rules
-            // apply, but the value is read before the array changes, so
-            // E0508 doesn't (v1 §4).
+            // Array built-ins grow the array in place: the `mut self` place rules
+            // apply, but the value is read before it changes, so E0508 doesn't
+            // (v1 §4). `s.slice(…)` only reads (v4).
             let ret = self.arguments(call, &name.name, &m, args, (&[], expect));
-            if self.check_place_for(base, PlaceUse::Receiver(&name.name)) {
+            if m.receiver == Some(true)
+                && self.check_place_for(base, PlaceUse::Receiver(&name.name))
+            {
                 self.no_change_inside(&[base], PlaceUse::Receiver(&name.name), mark);
             }
             return ret;

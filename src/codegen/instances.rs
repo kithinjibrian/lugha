@@ -26,6 +26,10 @@ struct Source<'a> {
 
 /// `key<args>`: how an instance is named in `Lowerer::monos`.
 pub(super) fn instance_name(key: &str, args: &[Type]) -> String {
+    // A prelude function without type parameters is listed with no arguments (PRP-043).
+    if args.is_empty() {
+        return key.to_string();
+    }
     format!("{key}<{}>", spelled(args))
 }
 
@@ -59,6 +63,13 @@ impl<'ctx> Lowerer<'ctx> {
                 .unwrap_or_else(|| panic!("checked: `{name}` is listed"))
                 .clone(),
         )
+    }
+
+    /// What a call of `key` calls when it is an instance: a generic
+    /// instance, or a prelude function compiled because something reaches it.
+    pub(super) fn prelude_target(&self, call: &Expr, key: &str) -> Option<Method<'ctx>> {
+        self.instance_of(call, key)
+            .or_else(|| self.monos.get(key).cloned())
     }
 
     /// Declares every instance: `lugha_fn_max<i64>`, `lugha_fn_Stack<string>.push`.

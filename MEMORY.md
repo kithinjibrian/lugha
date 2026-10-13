@@ -821,9 +821,32 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 51. Text and option helpers (PRP-043)
+
+**Decision:**
+- **Dispatch:** `check/helpers.rs::helper_function` maps a receiver and method to a prelude function:
+  - arrays keep their names;
+  - `string[]` `join` goes to `str_join`;
+  - `string` goes to `str_*`, `Option` to `option_*`, and `Result` to `result_*`.
+
+  `map` is chosen by the receiver. The draft's set only (a discovery answer).
+- **`slice`** is a built-in string method (`builtins.rs`, receiver `Some(false)`, so no place rules apply). It lowers to `lugha_rt_str_slice(s, from, to, file, line, col)`, which panics at the method name. The prelude's string helpers use it. (The draft's "internal intrinsic" was amended.)
+- **Reached prelude functions only:**
+  - `used()` records prelude calls even without type arguments, and prelude bodies aren't instance roots;
+  - so non-generic prelude functions compile only when user code reaches them, appearing in `monos` with no arguments;
+  - `instance_name` with no arguments is the bare key, `prelude_target` finds them, and `declare_functions` and `define` skip prelude functions.
+- **Codegen dispatch:** a call whose callee key starts with `$prelude.` calls the helper with the receiver lowered through `arguments` (aggregates by pointer).
+- **Panics:** `split("")` panics inside the prelude, so its location is `<prelude>:L:C`.
+- **Split (approved):** `RUNTIME_SYMBOLS` moved verbatim from `codegen/runtime.rs` to `link.rs`, its only user.
+
+**Why:** These follow the session 54 discovery answer and the approved design. Making `slice` built in kept its panic at the caller. Compiling only reached prelude code kept every helper-free program's IR unchanged.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 18 complete**: PRP-043 text and option helpers
 - **Milestone 17 complete**: PRP-042 `Result` and `?`; the v4 spec begins
 - **Milestone 16 complete — Lugha v3 complete**: PRP-041 array helpers in a Lugha prelude
 - **Milestone 15 complete**: PRP-040 closures

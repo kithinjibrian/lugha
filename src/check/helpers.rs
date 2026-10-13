@@ -1,12 +1,36 @@
 use super::expr::Expect;
 use super::generics::subst;
 use super::infer::bind;
+use super::results::RESULT;
 use super::{Checker, Type, errors, qualify};
 use crate::ast::{Expr, Ident};
 use crate::modules::PRELUDE_PATH;
 
-/// The helpers, by method name; each is a generic function of the prelude.
-const HELPERS: [&str; 6] = ["map", "filter", "fold", "sort_by", "any", "all"];
+/// The prelude function behind method `method` on `receiver`, if it is a
+/// helper: the array helpers keep their names, the others are prefixed by
+/// the receiver's kind (`str_trim`, `option_map`, `result_map_err`).
+fn helper_function(receiver: &Type, method: &str) -> Option<String> {
+    const ARRAY: [&str; 6] = ["map", "filter", "fold", "sort_by", "any", "all"];
+    const STRING: [&str; 6] = [
+        "lines",
+        "split",
+        "trim",
+        "contains",
+        "starts_with",
+        "ends_with",
+    ];
+    const OPTION: [&str; 5] = ["unwrap_or", "ok_or", "map", "is_some", "is_none"];
+    const RESULTS: [&str; 6] = ["unwrap_or", "ok", "map", "map_err", "is_ok", "is_err"];
+    let name = match receiver {
+        Type::Array(e) if method == "join" && **e == Type::String => "str_join".to_string(),
+        Type::Array(_) if ARRAY.contains(&method) => method.to_string(),
+        Type::String if STRING.contains(&method) => format!("str_{method}"),
+        Type::Option(_) if OPTION.contains(&method) => format!("option_{method}"),
+        Type::Enum(k, _) if k == RESULT && RESULTS.contains(&method) => format!("result_{method}"),
+        _ => return None,
+    };
+    Some(name)
+}
 
 impl Checker {
     /// `xs.m(args)` where `xs` is an array and `m` a helper: a call of the
@@ -20,10 +44,8 @@ impl Checker {
         args: &[Expr],
         expect: Option<&Expect>,
     ) -> Option<Type> {
-        if !matches!(receiver, Type::Array(_)) || !HELPERS.contains(&name.name.as_str()) {
-            return None;
-        }
-        let key = qualify(&[PRELUDE_PATH.to_string()], &name.name);
+        let function = helper_function(receiver, &name.name)?;
+        let key = qualify(&[PRELUDE_PATH.to_string()], &function);
         let sig = self.functions.get(&key)?;
         let (generics, params, ret) = (sig.generics.clone(), sig.params.clone(), sig.ret.clone());
         if args.len() + 1 != params.len() {
@@ -117,6 +139,63 @@ mod tests {
         assert_eq!(
             errors(&main("let a = xs.map(fun(x: string) = x);"))[0].0,
             "E0403"
+        );
+    }
+
+    #[test]
+    fn string_helpers_have_their_types() {
+        let s = |body: &str, name: &str| {
+            let_type(&format!("fun main() {{ let s = \" a,b \"; {body} }}"), name)
+        };
+        assert_eq!(s("let v = s.lines();", "v"), arr(Type::String));
+        assert_eq!(s("let v = s.split(\",\");", "v"), arr(Type::String));
+        assert_eq!(s("let v = s.trim();", "v"), Type::String);
+        assert_eq!(s("let v = s.contains(\"a\");", "v"), Type::Bool);
+        assert_eq!(s("let v = s.starts_with(\" \");", "v"), Type::Bool);
+        assert_eq!(s("let v = s.ends_with(\" \");", "v"), Type::Bool);
+        assert_eq!(s("let v = s.slice(0, 2);", "v"), Type::String);
+        assert_eq!(s("let v = [\"a\", \"b\"].join(\"-\");", "v"), Type::String);
+        let main = |body: &str| format!("fun main() {{ let s = \"x\"; {body} }}");
+        assert_eq!(errors(&main("let v = [1].join(\"-\");"))[0].0, "E0415");
+        assert_eq!(errors(&main("let v = s.trim(1);"))[0].0, "E0405");
+        assert_eq!(errors(&main("let v = s.split(true);"))[0].0, "E0403");
+        assert_eq!(errors(&main("let v = s.upper();"))[0].0, "E0415");
+    }
+
+    #[test]
+    fn option_and_result_helpers_have_their_types() {
+        let src = |body: &str| {
+            format!(
+                "fun main() {{ let o: Option<i64> = Some(1); let r: Result<i64, string> = Ok(2); {body} }}"
+            )
+        };
+        let t = |body: &str, name: &str| let_type(&src(body), name);
+        let result = |a: Type, b: Type| Type::Enum("$prelude.Result".into(), vec![a, b]);
+        assert_eq!(t("let v = o.unwrap_or(0);", "v"), Type::I64);
+        assert_eq!(
+            t("let v = o.ok_or(\"none\");", "v"),
+            result(Type::I64, Type::String)
+        );
+        assert_eq!(
+            t("let v = o.map(fun(x) = \"{x}\");", "v"),
+            Type::Option(Box::new(Type::String))
+        );
+        assert_eq!(t("let v = o.is_some();", "v"), Type::Bool);
+        assert_eq!(t("let v = o.is_none();", "v"), Type::Bool);
+        assert_eq!(t("let v = r.unwrap_or(0);", "v"), Type::I64);
+        assert_eq!(t("let v = r.ok();", "v"), Type::Option(Box::new(Type::I64)));
+        assert_eq!(
+            t("let v = r.map(fun(x) = x + 1);", "v"),
+            result(Type::I64, Type::String)
+        );
+        assert_eq!(
+            t("let v = r.map_err(fun(e) = e.len);", "v"),
+            result(Type::I64, Type::I64)
+        );
+        assert_eq!(t("let v = r.is_ok();", "v"), Type::Bool);
+        assert_eq!(t("let v = r.is_err();", "v"), Type::Bool);
+        ok(
+            "fun num(s: string): Result<i64, string> { let n = parse_i64(s).ok_or(\"bad\")?; Ok(n) }\nfun main() {}",
         );
     }
 

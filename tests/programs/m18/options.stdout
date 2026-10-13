@@ -1,0 +1,18 @@
+4
+-1
+ok 4
+err missing
+n=40
+true
+true
+ok 8080
+err not a number: http
+err out of range: 70000
+443
+80
+true
+true
+ok 444
+error of 15 bytes
+true
+true

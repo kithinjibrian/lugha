@@ -47,8 +47,6 @@ use inkwell::targets::{
 use crate::ast::Program;
 use crate::check::{Checked, Unit};
 
-pub use runtime::RUNTIME_SYMBOLS;
-
 /// The source file being compiled, for panic locations (spec §5).
 #[derive(Debug, Clone, Copy)]
 pub struct SourceInfo<'a> {
