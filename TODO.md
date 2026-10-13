@@ -180,7 +180,7 @@ Done when the more-numbers program passes.
 
 ### Milestone 28 — Bits ✅
 Done when the bits program passes.
-- [x] PRP-056: `& | ^ ~ << >>`, compound forms, `0b` literals, the shift panic; tagged `m28` at merge
+- [x] PRP-056: `& | ^ ~ << >>`, compound forms, `0b` literals, the shift panic; tagged `m28`
 
 ### Milestone 29 — Integer methods
 Done when the hashing program passes and the v7 spec is complete.

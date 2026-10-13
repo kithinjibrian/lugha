@@ -3286,7 +3286,7 @@ Branch: prp-055-more_numbers (merged into main)
 ---
 
 ## SESSION 71 — 2026-10-13 — Bits (milestone 28) — closed
-Branch: prp-056-bits
+Branch: prp-056-bits (merged into main)
 
 ### WHAT WAS DONE
 - The user asked for milestones 28 and 29 "in one go": PRP-056 written as approved within the v7 draft, built, merged on green CI.
@@ -3312,13 +3312,13 @@ Branch: prp-056-bits
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m28`.
+- Nothing. PRP-056 merged into `main`, tagged `m28`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 28 complete** (PRP-056, MEMORY 67): bit operators, compound forms, `0b` literals, the shift panic. Tag `m28` goes on the merge of PRP-056. `Language v7 Specification.md` (in progress) is what `lughac spec` prints.
+**Milestone 28 complete** (PRP-056, MEMORY 67): bit operators, compound forms, `0b` literals, the shift panic. Tagged `m28`. `Language v7 Specification.md` (in progress) is what `lughac spec` prints.
 
 Next: **milestone 29, integer methods** — PRP-057, completing v7 (tags `m29`, `v7`); the user asked for milestones 28–29 in one go. Scope (v7 draft decisions 2 and 4, §4 "Methods on integers", §9, §10 "Hashing"):
 - `a.wrapping_add(b)`, `wrapping_sub`, `wrapping_mul` (same type, `b` typed by `a`); `count_ones()`, `leading_zeros()`, `trailing_zeros()` → `i64`; other names on integers E0415; `(5).count_ones()` works (literal receiver `i64`);

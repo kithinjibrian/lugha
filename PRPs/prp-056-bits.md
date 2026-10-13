@@ -1,6 +1,6 @@
 ## FEATURE: Bits — `& | ^ ~ << >>`, their compound assignments, binary literals, and the out-of-range shift panic; milestone 28.
 
-**Status:** approved 2026-10-13 — session 71. The user asked for milestones 28 and 29 "in one go": build both within the approved v7 draft, merging each once CI is green.
+**Status:** merged 2026-10-13 — session 71. The user asked for milestones 28 and 29 "in one go": build both within the approved v7 draft, merging each once CI is green.
 **Milestone:** 28 (one PRP; tag `m28` at merge)
 **Spec:** `Language v7 Draft.md`:
 - decisions 3 and 5, and the choices "Both operands … one integer type", "Bit operators work on integers only" and "Compound assignment";
