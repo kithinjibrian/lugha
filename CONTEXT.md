@@ -3072,8 +3072,8 @@ Branch: main
 
 ---
 
-## SESSION 64 — 2026-10-13 — Generic interfaces (milestone 23) — open
-Branch: main
+## SESSION 64 — 2026-10-13 — Generic interfaces as bounds (milestone 23, part 1) — open
+Branch: prp-050-generic_interface_bounds
 
 ---
 
