@@ -2246,6 +2246,12 @@ TODO.md (milestone 12), CHANGELOG.md, MEMORY.md (decision 40)
 
 ---
 
+## SESSION 44 — 2026-10-13 — Milestone 11 (generics) discovery — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 10 is complete** (tag `m10`). The v2 draft was amended in session 43 (MEMORY 40, `docs/decisions/generics.md`): generics stay **milestone 11**, and structural **interfaces** are a new **milestone 12**, after which the v2 spec is complete.
