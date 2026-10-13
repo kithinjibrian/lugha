@@ -3316,6 +3316,11 @@ Branch: prp-056-bits (merged into main)
 
 ---
 
+## SESSION 72 — 2026-10-13 — Integer methods (milestone 29) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 28 complete** (PRP-056, MEMORY 67): bit operators, compound forms, `0b` literals, the shift panic. Tagged `m28`. `Language v7 Specification.md` (in progress) is what `lughac spec` prints.
