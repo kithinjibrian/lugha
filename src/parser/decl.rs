@@ -80,18 +80,7 @@ impl Parser<'_> {
         let type_params = self.type_params()?;
         let (receiver, params) = self.receiver_params(in_impl)?;
         let ret = self.return_type()?;
-        let body = if self.eat(&TokenKind::Eq) {
-            // `= e;` means exactly `{ e }` (spec §6).
-            let tail = self.expr()?;
-            self.expect(&TokenKind::Semi)?;
-            Block {
-                stmts: Vec::new(),
-                span: tail.span,
-                tail: Some(Box::new(tail)),
-            }
-        } else {
-            self.block()?
-        };
+        let body = self.fun_body()?;
         Ok(FunDecl {
             visibility: None,
             name,
@@ -101,6 +90,21 @@ impl Parser<'_> {
             ret,
             body,
             span: Span::new(start, self.prev_end()),
+        })
+    }
+
+    /// A function's body: a block, or `= e;`, which means exactly `{ e }`
+    /// (spec §6).
+    pub(super) fn fun_body(&mut self) -> PResult<Block> {
+        if !self.eat(&TokenKind::Eq) {
+            return self.block();
+        }
+        let tail = self.expr()?;
+        self.expect(&TokenKind::Semi)?;
+        Ok(Block {
+            stmts: Vec::new(),
+            span: tail.span,
+            tail: Some(Box::new(tail)),
         })
     }
 

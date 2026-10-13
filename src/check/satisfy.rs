@@ -50,6 +50,7 @@ impl Checker {
             return None;
         }
         self.bound_used(call, param, &name.name);
+        self.default_callee(call, &req);
         Some(Method {
             receiver: req.receiver,
             params: req.params,
@@ -80,6 +81,7 @@ impl Checker {
         for req in &self.interfaces[key].items {
             match self.offer(arg, req) {
                 Offer::Matches => {}
+                Offer::Missing if req.default.is_some() => {}
                 Offer::Missing => problems.push(format!("no method `{}`", req.name)),
                 Offer::Mismatched => {
                     problems.push(format!("`{}` should be `{}`", req.name, shown(req)));
@@ -134,6 +136,7 @@ impl Checker {
             params: m.params.iter().map(|t| subst(t, outer, args)).collect(),
             ret: subst(&m.ret, outer, args),
             span: m.span,
+            default: None,
         };
         if offered.same(req) {
             Offer::Matches

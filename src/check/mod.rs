@@ -18,6 +18,7 @@ mod call;
 mod closures;
 mod conflicts;
 mod construct;
+mod defaults;
 mod enums;
 mod env;
 mod errors;
@@ -55,6 +56,7 @@ mod visibility;
 
 use std::collections::{HashMap, HashSet};
 
+pub use defaults::SELF;
 pub use iface_tables::InterfaceMethod;
 pub use instances::Instance;
 pub use modules::{Unit, check_modules, qualify, symbol};
@@ -99,6 +101,9 @@ pub struct Checked {
     /// Every interface's methods in declaration order, by key (v5): the
     /// slots of its dispatch tables.
     pub interfaces: HashMap<String, Vec<InterfaceMethod>>,
+    /// The operands of `?` whose error converts to an interface error, with
+    /// that interface type (v5).
+    pub try_conversions: HashMap<ExprId, Type>,
 }
 
 /// Type-checks `program`, a program of one file, returning the type table
@@ -140,6 +145,7 @@ impl Checker {
             closures: Vec::new(),
             captures: HashMap::new(),
             conversions: HashMap::new(),
+            try_conversions: HashMap::new(),
             owner: String::new(),
             uses: Vec::new(),
             body_types: HashMap::new(),
@@ -227,6 +233,8 @@ pub(super) struct Checker {
     captures: HashMap<ExprId, Vec<String>>,
     /// See `Checked::conversions`.
     conversions: HashMap<ExprId, Type>,
+    /// See `Checked::try_conversions`.
+    try_conversions: HashMap<ExprId, Type>,
     /// The key of the function or method whose body is being checked.
     owner: String,
     /// Every generic call, with the body it is in (PRP-036).

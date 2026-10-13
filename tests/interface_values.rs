@@ -46,14 +46,24 @@ fun main() {
 }
 ";
 
-/// A temporary directory holding `shapes.la`, removed on drop.
+/// A temporary directory holding `shapes.la` and `errors.la`, removed on drop.
 struct Dir(PathBuf);
 
+/// `?` converting a `Bad` into an `Error` (v5 milestone 22).
+const ERRORS: &str = "interface Error { fun message(self): string; }
+struct Bad { t: string }
+impl Bad { fun message(self): string = self.t; }
+fun get(): Result<i64, Bad> = Err(Bad { t: \"no\" });
+fun read(): Result<i64, Error> { let n = get()?; Ok(n) }
+fun main() { match read() { Ok(n) => println(n), Err(e) => println(e.message()), } }
+";
+
 impl Dir {
-    fn new() -> Self {
-        let dir = std::env::temp_dir().join(format!("lugha-iface-{}", std::process::id()));
+    fn new(name: &str) -> Self {
+        let dir = std::env::temp_dir().join(format!("lugha-{name}-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("temp dir is writable");
         std::fs::write(dir.join("shapes.la"), SHAPES).expect("temp dir is writable");
+        std::fs::write(dir.join("errors.la"), ERRORS).expect("temp dir is writable");
         Dir(dir)
     }
 }
@@ -75,7 +85,7 @@ fn lughac(dir: &Dir, args: &[&str]) -> Output {
 
 #[test]
 fn interface_values_check_and_run() {
-    let dir = Dir::new();
+    let dir = Dir::new("iface");
     let check = lughac(&dir, &["check", "shapes.la"]);
     let stderr = String::from_utf8_lossy(&check.stderr);
     assert_eq!(check.status.code(), Some(0), "{stderr}");
@@ -86,4 +96,22 @@ fn interface_values_check_and_run() {
     let ir = lughac(&dir, &["build", "--emit=ir", "shapes.la"]);
     let ir = String::from_utf8_lossy(&ir.stdout);
     assert!(ir.contains("@lugha_vt_Circle.Shape = "), "{ir}");
+}
+
+#[test]
+fn question_mark_boxes_a_converted_error_on_the_failure_path() {
+    let dir = Dir::new("try");
+    let run = lughac(&dir, &["run", "errors.la"]);
+    let stderr = String::from_utf8_lossy(&run.stderr);
+    assert_eq!(run.status.code(), Some(0), "{stderr}");
+    assert_eq!(String::from_utf8_lossy(&run.stdout), "no\n");
+    let ir = lughac(&dir, &["build", "--emit=ir", "errors.la"]);
+    let ir = String::from_utf8_lossy(&ir.stdout);
+    let read = &ir[ir.find("@lugha_fn_read(").expect("read is defined")..];
+    let fail = &read[read.find("try.fail:").expect("a failure branch")..];
+    let fail = &fail[..fail.find("\n}").unwrap_or(fail.len())];
+    assert!(
+        fail.contains("@lugha_rt_alloc") && fail.contains("@lugha_vt_Bad.Error"),
+        "{fail}"
+    );
 }

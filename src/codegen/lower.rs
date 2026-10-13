@@ -53,6 +53,8 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) captures: HashMap<ExprId, Vec<String>>,
     /// Expressions converted to an interface value (`Checked::conversions`).
     pub(super) conversions: HashMap<ExprId, Type>,
+    /// `?` operands whose error converts (`Checked::try_conversions`).
+    pub(super) try_conversions: HashMap<ExprId, Type>,
     /// Every interface's methods in order (`Checked::interfaces`).
     pub(super) interfaces: HashMap<String, Vec<InterfaceMethod>>,
     /// Closures emitted so far per enclosing symbol, for `lugha_closure_<f>.<n>`.
@@ -131,6 +133,7 @@ pub(super) fn lower<'ctx>(
         captures: checked.captures.clone(),
         conversions: checked.conversions.clone(),
         interfaces: checked.interfaces.clone(),
+        try_conversions: checked.try_conversions.clone(),
         closure_counts: HashMap::new(),
         function: None,
         ret: None,

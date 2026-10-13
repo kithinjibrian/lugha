@@ -1,0 +1,8 @@
+error[E0415]: no method `describe` on `Sq`
+   --> tests/programs/m22/e0415.la:14:15
+   |
+14 |     println(q.describe());
+   |               ^^^^^^^^
+   |
+   = help: `describe` is a default method of `Shape`: call it through a `Shape` value or a bound `T: Shape`
+

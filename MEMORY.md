@@ -936,11 +936,25 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 58. Default methods and `?` conversion — v5 complete (PRP-049)
+
+**Decision:** built in session 61 while the user was away (pre-approved; merge held; stacked on PRP-048).
+- **Syntax:** `InterfaceItem.default: Option<FunDecl>`; `fun_body` (decl.rs) shared by functions and defaults; an associated function with a body is E0201.
+- **Checker** (`check/defaults.rs`): `Requirement.default` = the interface key; defaults are registered in `methods[<interface key>]` as generic methods with one hidden parameter `SELF` (`"Self"`, bounded by the interface, `outer` 1, key `<I>.<m>`), and their bodies are checked from `method_bodies`. `resolve_named` ignores a written `Self` (E0305). `unmet` forgives a missing defaulted item. A bound call of a defaulted item records the callee `<I>.<m>`; `bound_target` → `default_target` reaches `<I>.<m><T>` for a `T` without its own method; `conversion_uses` does the same for tables. E0415's help names the interface (`default_help`).
+- **`?`:** `results.rs` accepts `Result<_, E>` → `Result<_, F>` when `F` is an interface a concrete `E` satisfies (`iface_tables.rs::try_converts`), recorded in `Checked.try_conversions` (keyed by the operand); codegen boxes the error with `box_as` on the failure branch.
+- **Codegen:** `instances.rs` finds default bodies in interfaces (`Source.interface`; subst `Self`; receiver = the type argument; symbol `lugha_fn_<I>.<m><T>`); `interfaces.rs::method_of` and `methods.rs` (any receiver type, via `default_method`) fall back to the default's instance; new `codegen/defaults.rs` (`default_method`, `box_as`).
+- **Spec:** `Language v5 Specification.md` complete; §12 gains the boxing and concrete-default questions.
+
+**Why:** treating a default as a generic method of the interface reuses checking-once, monomorphization and instance symbols unchanged.
+
+---
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 22 complete — Lugha v5 complete (branch, merge held)**: PRP-049 default methods and `?` conversion
 - **Milestone 21 complete (branch, merge held)**: PRP-048 type patterns
 - **Milestone 20 complete**: PRP-046 checking and PRP-047 compiling interface values; v5 spec begins
 - **Lugha v4.1**: PRP-045 string literals inside interpolations

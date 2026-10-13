@@ -15,13 +15,16 @@ use super::lower::Lowerer;
 use super::methods::Method;
 use super::value::llvm_type;
 use crate::ast::{Expr, FunDecl, ImplDecl, Item};
-use crate::check::{Instance, Type, Unit, qualify, symbol};
+use crate::check::{Instance, SELF, Type, Unit, qualify, symbol};
 
 /// Where an instance's code comes from.
 struct Source<'a> {
     f: &'a FunDecl,
     /// The `impl` of a method, `None` for a function.
     owner: Option<(&'a ImplDecl, String)>,
+    /// The interface of a default method (v5), whose one type argument is
+    /// the receiver's type.
+    interface: Option<String>,
 }
 
 /// `key<args>`: how an instance is named in `Lowerer::monos`.
@@ -128,6 +131,7 @@ impl<'ctx> Lowerer<'ctx> {
                     let args = mono.args[..i.params.len()].to_vec();
                     Some(owner_type(units, owner, args))
                 }
+                _ if source.interface.is_some() => mono.args.first().cloned(),
                 _ => None,
             };
             self.define_with(source.f, &method.signature, receiver)?;
@@ -140,8 +144,10 @@ impl<'ctx> Lowerer<'ctx> {
     fn enter(&mut self, source: &Source, args: &[Type]) {
         let outer = source.owner.iter().flat_map(|(i, _)| i.params.iter());
         let names = outer.chain(source.f.type_params.iter().map(|p| &p.name));
-        self.subst = names
-            .map(|n| n.name.clone())
+        let hidden = source.interface.as_ref().map(|_| SELF.to_string());
+        self.subst = hidden
+            .into_iter()
+            .chain(names.map(|n| n.name.clone()))
             .zip(args.iter().cloned())
             .collect::<HashMap<_, _>>();
     }
@@ -153,7 +159,25 @@ fn find<'a>(units: &[Unit<'a>], key: &str) -> Source<'a> {
         for item in &unit.program.items {
             match item {
                 Item::Fun(f) if qualify(unit.path, &f.name.name) == key => {
-                    return Source { f, owner: None };
+                    return Source {
+                        f,
+                        owner: None,
+                        interface: None,
+                    };
+                }
+                Item::Interface(i) => {
+                    let owner = qualify(unit.path, &i.name.name);
+                    let defaults = i.items.iter().filter_map(|it| it.default.as_ref());
+                    if let Some(f) = defaults
+                        .into_iter()
+                        .find(|f| format!("{owner}.{}", f.name.name) == key)
+                    {
+                        return Source {
+                            f,
+                            owner: None,
+                            interface: Some(owner),
+                        };
+                    }
                 }
                 Item::Impl(i) => {
                     let owner = qualify(unit.path, &i.ty.name);
@@ -165,6 +189,7 @@ fn find<'a>(units: &[Unit<'a>], key: &str) -> Source<'a> {
                         return Source {
                             f,
                             owner: Some((i, owner)),
+                            interface: None,
                         };
                     }
                 }
@@ -179,6 +204,13 @@ fn find<'a>(units: &[Unit<'a>], key: &str) -> Source<'a> {
 /// method on its type and then its own (`lugha_fn_Stack<string>.tag<f64>`).
 fn symbol_of(source: &Source, mono: &Instance) -> String {
     match &source.owner {
+        // `lugha_fn_Error.report<ParseError>` (v5 draft §9).
+        None if let Some(interface) = &source.interface => format!(
+            "lugha_fn_{}.{}<{}>",
+            symbol(interface),
+            source.f.name.name,
+            symbol(&spelled(&mono.args))
+        ),
         None => format!("lugha_fn_{}", symbol(&instance_name(&mono.key, &mono.args))),
         Some((i, owner)) => {
             let (outer, own) = mono.args.split_at(i.params.len());

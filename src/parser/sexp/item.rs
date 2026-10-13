@@ -120,7 +120,7 @@ fn item(item: &Item) -> String {
             let items: String = i
                 .items
                 .iter()
-                .map(|m| format!(" {}", signature(m)))
+                .map(|m| format!(" {}", m.default.as_ref().map_or_else(|| signature(m), fun)))
                 .collect();
             format!(
                 "({}interface {}{items})",

@@ -52,7 +52,7 @@ impl Checker {
         let is_result = |t: &Type| matches!(t, Type::Enum(k, _) if k == RESULT);
         let help = match (&ty, &ret) {
             (Type::Enum(_, a), Type::Enum(_, b)) if is_result(&ty) && is_result(&ret) => {
-                if a[1] == b[1] || b[1] == Type::Error {
+                if a[1] == b[1] || b[1] == Type::Error || self.try_converts(inner, &a[1], &b[1]) {
                     return a[0].clone();
                 }
                 format!("the error types must match: `{}` and `{}`", a[1], b[1])
@@ -180,5 +180,25 @@ mod tests {
             )),
             ["E0412"]
         );
+    }
+
+    #[test]
+    fn question_mark_converts_into_an_interface_error() {
+        let base = "interface Error { fun message(self): string; }\n\
+            struct ParseError { text: string }\n\
+            impl ParseError { fun message(self): string = self.text; }\n\
+            interface Other { fun message(self): string; }\n\
+            fun parse(s: string): Result<i64, ParseError> = Err(ParseError { text: s });\n";
+        ok(&format!(
+            "{base}fun read(s: string): Result<i64, Error> {{ let n = parse(s)?; Ok(n) }}\nfun main() {{}}"
+        ));
+        let plain = format!(
+            "{base}fun half(n: i64): Result<i64, string> = Ok(n);\nfun read(): Result<i64, Error> {{ let n = half(1)?; Ok(n) }}\nfun main() {{}}"
+        );
+        assert_eq!(codes(&plain), ["E0424"]);
+        let other = format!(
+            "{base}fun get(o: Other): Result<i64, Other> = Err(o);\nfun read(o: Other): Result<i64, Error> {{ let n = get(o)?; Ok(n) }}\nfun main() {{}}"
+        );
+        assert_eq!(codes(&other), ["E0424"]);
     }
 }

@@ -124,7 +124,8 @@ impl Checker {
         let Some(m) = found else {
             let help = self
                 .method(receiver, &name.name)
-                .map(|_| format!("call it on the type: `{receiver}.{}(…)`", name.name));
+                .map(|_| format!("call it on the type: `{receiver}.{}(…)`", name.name))
+                .or_else(|| self.default_help(&name.name));
             self.report(errors::no_method(&name.name, receiver, name.span, help));
             return self.unchecked(args);
         };

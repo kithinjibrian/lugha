@@ -80,6 +80,9 @@ impl Checker {
         name: &str,
     ) -> Option<Instance> {
         let concrete = subst(&Type::Param(param.to_string()), generics, args);
+        if let Some(default) = self.default_target(generics, param, name, &concrete) {
+            return Some(default);
+        }
         let (Type::Struct(owner, targs) | Type::Enum(owner, targs)) = &concrete else {
             return None;
         };

@@ -105,6 +105,7 @@ impl Checker {
                 self.body(f, params, ret, Some(receiver));
             }
         }
+        self.default_bodies(program);
         self.type_params.clear();
         self.owner.clear();
     }

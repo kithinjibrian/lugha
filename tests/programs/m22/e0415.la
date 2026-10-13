@@ -1,0 +1,15 @@
+interface Shape {
+    fun area(self): f64;
+    fun describe(self): string = "area {self.area()}";
+}
+
+struct Sq { side: f64 }
+
+impl Sq {
+    fun area(self): f64 = self.side * self.side;
+}
+
+fun main() {
+    let q = Sq { side: 2.0 };
+    println(q.describe());
+}

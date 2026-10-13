@@ -115,39 +115,39 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — parser (`parser/interface.rs`):
-- [ ] `fun describe(self): string = "x";` and a block body parse, and print with their bodies.
-- [ ] `fun make(): i64 = 1;` in an interface is E0201.
+- [x] `fun describe(self): string = "x";` and a block body parse, and print with their bodies.
+- [x] `fun make(): i64 = 1;` in an interface is E0201.
 
 Unit tests — checker (`check/defaults.rs`):
-- [ ] **Satisfaction:** a type without the defaulted method satisfies the interface; one with a conflicting signature is E0422.
-- [ ] **Body:**
+- [x] **Satisfaction:** a type without the defaulted method satisfies the interface; one with a conflicting signature is E0422.
+- [x] **Body:**
   - the body can call the interface's other methods on `self`;
   - a field of `self` is E0410;
   - an unknown method is E0421;
   - a written `Self` is E0305.
-- [ ] **Concrete calls:** `c.report()` without its own method is E0415, with help naming the interface.
-- [ ] **Reachability:** converting a type that lacks the method makes `Error.report<T>` an instance, and a type with its own doesn't. A bound call does the same.
+- [x] **Concrete calls:** `c.report()` without its own method is E0415, with help naming the interface.
+- [x] **Reachability:** converting a type that lacks the method makes `Error.report<T>` an instance, and a type with its own doesn't. A bound call does the same.
 
 Unit tests — checker (`check/results.rs`):
-- [ ] **Conversion:** `?` on `Result<i64, ParseError>` in a function returning `Result<i64, Error>` checks.
-- [ ] **E0424:** an `E` that doesn't satisfy `F`; an `E` of another interface type.
+- [x] **Conversion:** `?` on `Result<i64, ParseError>` in a function returning `Result<i64, Error>` checks.
+- [x] **E0424:** an `E` that doesn't satisfy `F`; an `E` of another interface type.
 
 Unit tests — codegen:
-- [ ] A table's slot for a defaulted method points at `lugha_fn_Error.report<ParseError>`.
-- [ ] `?` with conversion calls `lugha_rt_alloc` and stores `lugha_vt_ParseError.Error` on the failure path.
+- [x] A table's slot for a defaulted method points at `lugha_fn_Error.report<ParseError>`.
+- [x] `?` with conversion calls `lugha_rt_alloc` and stores `lugha_vt_ParseError.Error` on the failure path.
 
 Acceptance — `tests/programs/m22/` (`-O0`; `-O2` by hand):
-- [ ] `errors.la`: the §10 program.
-- [ ] `defaults.la`:
+- [x] `errors.la`: the §10 program.
+- [x] `defaults.la`:
   - a default through a value, through a bound, and overridden;
   - a default calling another default;
   - a generic type using a default;
   - an interface of only defaults satisfied by an `i64`.
-- [ ] `e0415.la`: reject golden (a default called on a concrete type).
-- [ ] The §10 errors-as-interfaces program runs from the spec.
+- [x] `e0415.la`: reject golden (a default called on a concrete type).
+- [x] The §10 errors-as-interfaces program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes; programs without defaults or conversions give byte-identical IR.
+- [x] Every earlier test passes; programs without defaults or conversions give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -155,10 +155,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 errors-as-interfaces program and the `m22/` programs pass.
-- [ ] The v5 spec is complete; docs updated.
-- [ ] No file over 300 lines (an existing file needing a split: stop and leave it for the user); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The §10 errors-as-interfaces program and the `m22/` programs pass.
+- [x] The v5 spec is complete; docs updated.
+- [x] No file over 300 lines (an existing file needing a split: stop and leave it for the user); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -167,3 +167,11 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m22/errors.la
 ```
+
+## AMENDMENTS (during build, session 61)
+
+- **The `?` IR test** lives in `tests/interface_values.rs`, which runs the binary: the codegen unit-test helper doesn't load the prelude, so it has no `Result`. That test also runs the program.
+- **`codegen/interfaces.rs`** (an existing file) reached 310 lines. It was not split, since that needs approval. Instead the code this PRP added there (`default_method`, `box_as` and the default-slot test) moved to a new `codegen/defaults.rs`; `new_box` and `table` became `pub(super)`.
+- **`SELF`** is a public constant of `check` (`check::SELF`), so codegen names the hidden parameter the same way.
+- **A default body may reach `bound_target` for a type parameter's own default calls;** `default_target` handles every concrete receiver except interface values, which dispatch at run time.
+- **`-O2`** was checked by hand for the `m22` programs.

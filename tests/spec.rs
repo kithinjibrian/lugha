@@ -89,6 +89,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Reading input",
         "Interface values",
         "Type patterns",
+        "Errors as interfaces",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),
@@ -109,6 +110,10 @@ fn the_extractor_finds_every_section_10_program() {
     assert_eq!(
         find("Type patterns").stdout,
         "big circle\ncircle of radius 1.5\na square\n"
+    );
+    assert_eq!(
+        find("Errors as interfaces").stdout,
+        "42\nerror: not a number: x\nrange error: 500 is out of range\n"
     );
     assert_eq!(
         find("Calling C").stdout,

@@ -1,0 +1,43 @@
+// Default methods (v5 milestone 22): through values and bounds, overridden,
+// calling each other, on generic types and on primitives.
+interface Shape {
+    fun area(self): f64;
+    fun name(self): string = "shape";
+    fun describe(self): string = "{self.name()} of area {self.area()}";
+}
+
+struct Circle { r: f64 }
+
+impl Circle {
+    fun area(self): f64 = 3.0 * self.r * self.r;
+    fun name(self): string = "circle";
+}
+
+struct Sq { side: f64 }
+
+impl Sq {
+    fun area(self): f64 = self.side * self.side;
+}
+
+struct Many<T> { items: T[] }
+
+impl Many<T> {
+    fun area(self): f64 = self.items.len as f64;
+}
+
+fun tell<T: Shape>(x: T): string = x.describe();
+
+interface Named {
+    fun label(self): string = "a value";
+}
+
+fun main() {
+    let shapes: Shape[] = [Circle { r: 1.0 }, Sq { side: 2.0 }, Many { items: [1, 2, 3] }];
+    for s of shapes {
+        println(s.describe());
+    }
+    println(tell(Sq { side: 3.0 }));
+    println(tell(Circle { r: 2.0 }));
+    let n: Named = 7;
+    println(n.label());
+}

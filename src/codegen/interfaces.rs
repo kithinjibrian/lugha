@@ -55,12 +55,7 @@ impl<'ctx> Lowerer<'ctx> {
         } else {
             value
         };
-        let boxed = self.new_box(&ty, value);
-        let Type::Interface(interface) = to else {
-            unreachable!("checked: conversions are to interfaces")
-        };
-        let table = self.table(&ty, interface);
-        Ok(Value::Val(self.pair(table, boxed).into()))
+        Ok(Value::Val(self.box_as(value, &ty, to)))
     }
 
     /// True if `expr`'s value may come from an existing place, so a copy
@@ -88,7 +83,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// A new GC allocation holding `value` of type `ty`.
-    fn new_box(&self, ty: &Type, value: BasicValueEnum<'ctx>) -> PointerValue<'ctx> {
+    pub(super) fn new_box(&self, ty: &Type, value: BasicValueEnum<'ctx>) -> PointerValue<'ctx> {
         let size = self
             .context
             .i64_type()
@@ -114,7 +109,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// `lugha_vt_<Type>.<Interface>`, emitted once per pair.
-    fn table(&mut self, ty: &Type, interface: &str) -> PointerValue<'ctx> {
+    pub(super) fn table(&mut self, ty: &Type, interface: &str) -> PointerValue<'ctx> {
         let name = format!("lugha_vt_{}.{}", symbol(&ty.to_string()), symbol(interface));
         if let Some(global) = self.module.get_global(&name) {
             return global.as_pointer_value();
@@ -127,7 +122,7 @@ impl<'ctx> Lowerer<'ctx> {
                 .into(),
         ];
         for m in self.interfaces[interface].clone() {
-            let method = self.method_of(ty, &m.name);
+            let method = self.method_of(ty, interface, &m.name);
             slots.push(method.as_global_value().as_pointer_value().into());
         }
         let table_type = self.table_type(interface);
@@ -138,17 +133,24 @@ impl<'ctx> Lowerer<'ctx> {
         global.as_pointer_value()
     }
 
-    /// The function of `ty`'s method `name`: an instance for a generic type.
-    fn method_of(&self, ty: &Type, name: &str) -> FunctionValue<'ctx> {
-        let (Type::Struct(owner, args) | Type::Enum(owner, args)) = ty else {
-            unreachable!("checked: only structs and enums have methods, {ty} has `{name}`")
+    /// The type's own method when it has one, else the instance of
+    /// `interface`'s default for `ty` (v5).
+    fn method_of(&self, ty: &Type, interface: &str, name: &str) -> FunctionValue<'ctx> {
+        let own = match ty {
+            Type::Struct(owner, args) | Type::Enum(owner, args) => {
+                let k = key(owner, name);
+                match args.is_empty() {
+                    true => self.methods.get(&k),
+                    false => self.monos.get(&instance_name(&k, args)),
+                }
+            }
+            _ => None,
         };
-        let k = key(owner, name);
-        let method = match args.is_empty() {
-            true => self.methods.get(&k),
-            false => self.monos.get(&instance_name(&k, args)),
+        let default = || {
+            let k = format!("{interface}.{name}");
+            self.monos.get(&instance_name(&k, std::slice::from_ref(ty)))
         };
-        method
+        own.or_else(default)
             .expect("checked: a satisfied interface's methods are compiled")
             .signature
             .function

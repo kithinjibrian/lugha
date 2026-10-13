@@ -18,6 +18,8 @@ pub(super) struct Requirement {
     pub ret: Type,
     /// The item's name in its interface.
     pub span: Span,
+    /// The interface's key if the item has a default body (v5).
+    pub default: Option<String>,
 }
 
 impl Requirement {
@@ -96,8 +98,10 @@ impl Checker {
                     params,
                     ret,
                     span: it.name.span,
+                    default: it.default.as_ref().map(|_| key.clone()),
                 });
             }
+            self.register_defaults(&key, &items);
             let info = self.interfaces.get_mut(&key).expect("collected in pass 1");
             info.items = items;
         }

@@ -1,0 +1,37 @@
+interface Error {
+    fun message(self): string;
+    fun report(self): string = "error: {self.message()}";
+}
+
+struct ParseError { text: string }
+
+impl ParseError {
+    fun message(self): string = "not a number: {self.text}";
+}
+
+struct RangeError { n: i64 }
+
+impl RangeError {
+    fun message(self): string = "{self.n} is out of range";
+    fun report(self): string = "range error: {self.message()}";
+}
+
+fun parse(s: string): Result<i64, ParseError> = parse_i64(s).ok_or(ParseError { text: s });
+
+fun check(n: i64): Result<i64, RangeError> =
+    if n < 100 { Ok(n) } else { Err(RangeError { n: n }) };
+
+fun read(s: string): Result<i64, Error> {
+    let n = parse(s)?;
+    let m = check(n)?;
+    Ok(m * 2)
+}
+
+fun main() {
+    for s of ["21", "x", "500"] {
+        match read(s) {
+            Ok(n) => println(n),
+            Err(e) => println(e.report()),
+        }
+    }
+}

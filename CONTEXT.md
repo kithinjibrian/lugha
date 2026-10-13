@@ -2985,18 +2985,53 @@ Branch: prp-048-type_patterns
 
 ---
 
-## SESSION 61 — 2026-10-13 — Default methods and error conversion (milestone 22) — open
+## SESSION 61 — 2026-10-13 — Default methods and error conversion (milestone 22) — closed
 
 Branch: prp-049-default_methods
+
+### WHAT WAS DONE
+- PRP-049 written as pre-approved (the user away, "build m21 and m22, hold merges"), on a branch stacked on `prp-048-type_patterns`.
+- Default methods: parsed (`InterfaceItem.default`), checked once as generic methods of the interface with a hidden `Self`, compiled per type that uses them (`lugha_fn_<I>.<m><T>`), through tables and bounds.
+- `?` converts an error into an interface error (`Checked.try_conversions`; boxed on the failure branch).
+- Spec: `Language v5 Specification.md` complete.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/defaults.rs`, `src/codegen/defaults.rs`, `tests/programs/m22/` (`errors`, `defaults`, `e0415`).
+- Modified: `src/ast/header.rs`, `src/parser/{interface,decl}.rs`, `src/parser/sexp/item.rs`, `src/check/{interfaces,satisfy,instances,methods,method_calls,generics,iface_tables,results,mod}.rs`, `src/check/modules/mod.rs`, `src/codegen/{instances,interfaces,methods,results,lower,mod}.rs`, `tests/{interface_values,spec}.rs`, the v5 spec.
+- Docs: PRP-049, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 58, CONTEXT.
+
+### TESTS WRITTEN
+- Parser: default bodies (`=` and block); a default without `self` is E0201.
+- Checker (`defaults.rs`): satisfaction with a missing defaulted item, E0422 for a clash, the body's limits (E0421, E0410, E0305, E0403), E0415 with help, only used defaults instantiated; `results.rs`: `?` conversion and two E0424 cases.
+- Codegen: a table slot pointing at the default's instance; `?` boxing on the failure path (binary test).
+- `tests/programs/m22/`; the §10 errors-as-interfaces program from the spec.
+
+### DECISIONS MADE
+- MEMORY 58 (pre-approved decisions 1–5 in PRP-049, for the user's review).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- **PRP-049 is not merged:** the branch `prp-049-default_methods` (on top of `prp-048-type_patterns`) waits for the user's review; then tags `m22` and `v5`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 21 built on branch `prp-048-type_patterns`, not merged** (the user is away; they chose "build m21 and m22, hold merges"). `main` is at milestone 20 (tag `m20`).
+**Lugha v5 is built, not merged.** The user was away and chose "build m21 and m22, hold merges":
+- `prp-048-type_patterns`: milestone 21, type patterns (PRP-048, MEMORY 57), CI green;
+- `prp-049-default_methods`: milestone 22, default methods and `?` conversion (PRP-049, MEMORY 58), stacked on it, CI green.
 
-Next: **milestone 22, default methods and `?` error conversion** — PRP-049, pre-approved the same way, on a branch stacked on `prp-048-type_patterns`. Scope (v5 draft §3 `iface_item` bodies, §4 "Default methods" and "The `?` operator", §9, §10 "Errors as interfaces", §11): completes v5.
+`main` is at milestone 20 (tag `m20`).
 
-On the user's return: review PRP-048 (and PRP-049) "Decisions taken while away", then merge in order and tag `m21`, `m22`, `v5`.
+**On the user's return:**
+1. Review "Decisions taken while away" in PRP-048 (5 items) and PRP-049 (5 items), and the amendments (notably the `match` scrutinee parsing change in PRP-048).
+2. If approved:
+   - fast-forward `main` to `prp-048-type_patterns` and tag `m21`;
+   - then to `prp-049-default_methods` and tag `m22` and `v5`;
+   - mark both PRPs merged; delete both branches.
+
+Then: v6 direction (discovery). Candidates are in the v5 spec's §11 out-of-scope list: `Self` and generic interfaces, packages, bitwise operators and more integer types, `match` additions and `unwrap()`, binary I/O.
 
 See `TODO.md`.

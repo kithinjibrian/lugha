@@ -148,9 +148,9 @@ Done when the interface-values program passes.
 Done when the type-patterns program passes.
 - [x] PRP-048: `name: T` and `_: T` in `match`, exhaustiveness with `_` (E0426) — built while the user was away; merge held for review
 
-### Milestone 22 — Default methods and error conversion
+### Milestone 22 — Default methods and error conversion ✅
 Done when the errors-as-interfaces program passes and the v5 spec is complete.
-- [ ] interface methods with bodies; `?` converting into an interface error
+- [x] PRP-049: interface methods with bodies; `?` converting into an interface error — v5 complete; built while the user was away, merge held for review
 
 ## Found while working — needs a PRP
 

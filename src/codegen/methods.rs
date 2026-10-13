@@ -147,6 +147,8 @@ impl<'ctx> Lowerer<'ctx> {
             Type::Struct(owner, _) | Type::Enum(owner, _) => {
                 (Some(key(owner, &name.name)), Some(base))
             }
+            // Any other receiver through a bound: a default method (v5).
+            _ if self.default_method(call, &base_type).is_some() => (None, Some(base)),
             _ => return Ok(None),
         };
         // Through a bound (milestone 12) the checker recorded no instance:
@@ -163,6 +165,7 @@ impl<'ctx> Lowerer<'ctx> {
                 .or_else(by_type)
                 .or_else(|| self.methods.get(&k).cloned())
         });
+        let found = found.or_else(|| self.default_method(call, &base_type));
         let Some(method) = found else {
             return Ok(None); // a variant constructor, or a function of a module
         };

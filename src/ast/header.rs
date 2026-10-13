@@ -52,7 +52,10 @@ pub struct InterfaceItem {
     pub receiver: Option<Receiver>,
     pub params: Vec<Param>,
     pub ret: Option<Type>,
-    /// From `fun` to the `;`.
+    /// A default body (v5): the whole item as a method, which a type gets
+    /// unless it has its own.
+    pub default: Option<super::FunDecl>,
+    /// From `fun` to the `;` or the end of the body.
     pub span: Span,
 }
 

@@ -1,14 +1,16 @@
-# Lugha v5 Specification (in progress: milestone 21)
+# Lugha v5 Specification
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 20–21 of 20–22). It is built from the approved plan, `Language v5 Draft.md`, one milestone at a time. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v4 Specification.md` keeps v4 (with v4.1) frozen.
+**Status:** complete (milestones 20–22). It is built from the approved plan, `Language v5 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v4 Specification.md` keeps v4 (with v4.1) frozen.
 
 **v4.** This is v3 plus `Result` and `?`, string and `Option`/`Result` helpers, and input and output (milestones 17–19); v4.1 allows string literals inside interpolations.
 
-**Changes since v4** (milestones 20–21):
+**Changes since v4** (milestones 20–22):
 - An interface whose items are all methods is a type: `let shapes: Shape[] = [c, sq];`. A value converts to it where an interface is expected, and a call on it runs the concrete type's method (sections 4, 7, 9).
 - A type pattern, `c: Circle => …` in a `match` on an interface value, matches when the value holds that type and binds it (sections 3–4).
+- An interface method may have a default body, which a type gets unless it has the method itself (sections 3–4, 9).
+- `?` converts an error into an interface error: in a function returning `Result<U, Error>`, `?` on a `Result<T, ParseError>` wraps the `ParseError` as an `Error` (section 4).
 
 Every valid v4 program is a valid v5 program.
 
@@ -160,7 +162,8 @@ type_params  = "<" type_param { "," type_param } [ "," ] ">" ;
 type_param   = IDENT [ ":" bound { "+" bound } ] ;
 bound        = "Eq" | "Ord" | IDENT [ "." IDENT ] ;   (* an interface, `m.Shape` from module `m` *)
 interface_decl = "interface" IDENT "{" { iface_item } "}" ;
-iface_item   = "fun" IDENT "(" [ receiver [ "," params ] | params ] ")" [ ":" type ] ";" ;
+iface_item   = "fun" IDENT "(" [ receiver [ "," params ] | params ] ")" [ ":" type ]
+               ( ";" | "=" expr ";" | block ) ;      (* a default body (v5): methods only *)
 receiver     = [ "mut" ] "self" ;
 variant      = IDENT [ "(" type { "," type } [ "," ] ")" ] ;
 params       = param { "," param } [ "," ] ;
@@ -398,10 +401,10 @@ They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (
 - **Names:** `Result`, `Ok` and `Err` are built-in names: declaring one is E0302, and a local named `Result` is E0311. A local named `Ok` or `Err` shadows the constructor, as one named `Some` does. Messages print the type as `Result<i64, string>`.
 
 **The `?` operator** (v4). `e?` evaluates `e` once.
-- **On `Result<T, E>`:** its type is `T`. If `e` is `Err(x)`, the enclosing function returns `Err(x)` at once. The function must return `Result<U, E>` with the same `E`; there are no conversions.
+- **On `Result<T, E>`:** its type is `T`. If `e` is `Err(x)`, the enclosing function returns `Err(x)` at once. The function must return `Result<U, E>` with the same `E`, or `Result<U, F>` where `F` is an interface that `E`, a concrete type, satisfies: then the error is converted into an `F` (v5).
 - **On `Option<T>`:** its type is `T`. If `e` is `None`, the function returns `None`. The function must return an `Option`.
 - **In a closure**, it returns from the closure, whose return type must be written or expected (E0412 otherwise, as for `return`).
-- **Misuse is E0424**, with help: `?` on any other type, in `main`, in a function returning something else, on an `Option` in a function returning `Result`, or with different error types.
+- **Misuse is E0424**, with help: `?` on any other type, in `main`, in a function returning something else, on an `Option` in a function returning `Result`, or with error types that neither match nor convert.
 - **Early return:** on failure nothing after the `?` runs, and a value it was part of is never stored, exactly as for `return`.
 
 **String, `Option` and `Result` helpers** (v4). These methods each take `self`, never change it, and return a new value.
@@ -452,6 +455,7 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 
 **Interfaces.**
 - **Declaring one:** `interface Shape { fun area(self): f64; fun name(self): string; }` lists methods (with a `self` or `mut self` receiver) and associated functions (without one), each ending in `;`. Their signatures use concrete types only: no type parameters and no `Self`. An item name appears once (E0310).
+- **Default methods** (v5): a method may end in `= expr;` or a block instead of `;`. Its body is checked once, with `self` of a hidden type that has only the interface's items, so it can call them on `self` and nothing else (no fields, E0410; a written `Self` is an unknown type, E0305). A type satisfies the interface without the defaulted method; a method of its own by that name must match the signature (E0422), and is used instead of the default. A default is called through an interface value or a bound; on a concrete type without its own method it doesn't exist (E0415, with help naming the interface). Only methods take a default body; an associated function with one is E0201.
 - **Satisfying one:** a type satisfies `Shape` if, for every item, it has a method or associated function with the same name, the same receiver kind, and the same parameter and return types, visible where the bound is checked. No declaration is needed. A generic type's methods count with its type arguments substituted (`Stack<i64>` meets `fun size(self): i64` through `impl Stack<T>`); a method with type parameters of its own never matches. A type parameter satisfies an interface when its own bounds declare every item the same way. Primitives, strings, arrays and `Option` have no methods of their own, so they satisfy only an interface with no items.
 - **Using one as a bound:** `fun total<T: Shape>(xs: T[]): f64`, combined freely with `Eq`, `Ord` and other interfaces (`T: Shape + Eq`), or from another module (`T: shapes.Shape`). In the body, `x.area()` and, for an associated item, `T.make(…)` are allowed when some bound declares them, and are checked against its signature. Calling something no bound declares is E0421, with help suggesting a bound. Two bounds of one parameter may declare the same name only with the same signature; otherwise the bound list is E0423.
 - **At a use:** a type argument that doesn't satisfy an interface bound is E0422, which names each missing or mismatched item.
@@ -719,7 +723,8 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - Items of a module other than the main file put the module's path before their name, joined with `/`: function `area` of module `shapes.circle` is `lugha_fn_shapes/circle/area`, and its method `Circle.area` is `lugha_fn_shapes/circle/Circle.area`. A name contains neither `/` nor `.`, so a module function (`lugha_fn_a/b/c`) can't collide with a method (`lugha_fn_a/b.c`, method `c` of type `b` in module `a`).
 - A generic instance adds its type arguments as they print, with module paths joined by `/`: `lugha_fn_max<i64>`, `lugha_fn_a/b/max<a/b/Point>`. A method's go on its type, then its own: `lugha_fn_Stack<string>.push`, `lugha_fn_Stack<string>.tag<f64>`. `<` can't appear in a Lugha name, so instances can't collide with anything else.
 - A function used as a value (v3) is called through `lugha_ref_<symbol>`, a wrapper that takes an environment pointer first and calls `lugha_fn_<symbol>`: `lugha_ref_double`, `lugha_ref_max<i64>`, `lugha_ref_Point.at`. It is emitted once, when first needed.
-- An interface value's table (v5) is `lugha_vt_<Type>.<Interface>`, with names printed as in other symbols (`lugha_vt_Circle.Shape`, `lugha_vt_Stack<i64>.geo/Sized`), emitted once per pair a program converts. Its identity slot points at `lugha_type_<Type>`, its copy slot at `lugha_copy_<mangled type>_box` (`lugha_copy_6Circle_box`), and each method slot at the method itself: methods take their receiver as a pointer, so a call passes the box. Copying an interface value goes through `lugha_copy_<mangled interface>` (`lugha_copy_5Shape`). A type pattern compares the table's identity slot with `lugha_type_<T>`. A program without interface values has none of these.
+- An interface value's table (v5) is `lugha_vt_<Type>.<Interface>`, with names printed as in other symbols (`lugha_vt_Circle.Shape`, `lugha_vt_Stack<i64>.geo/Sized`), emitted once per pair a program converts. Its identity slot points at `lugha_type_<Type>`, its copy slot at `lugha_copy_<mangled type>_box` (`lugha_copy_6Circle_box`), and each method slot at the method itself: methods take their receiver as a pointer, so a call passes the box. Copying an interface value goes through `lugha_copy_<mangled interface>` (`lugha_copy_5Shape`). A type pattern compares the table's identity slot with `lugha_type_<T>`.
+- A default method (v5) compiles once per type that uses it, through a table or a bound: `lugha_fn_<Interface>.<method><Type>` (`lugha_fn_Error.report<ParseError>`); that type's table slot and bound calls use it. A converted `?` error is boxed on the failure branch, like any conversion. A program without interface values has none of these.
 - A closure's body (v3) is `lugha_closure_<enclosing>.<n>`: the enclosing function's symbol without its prefix, then the closure's number in that function from 0 (`lugha_closure_main.0`, `lugha_closure_main.0.0` for a closure inside it, `lugha_closure_max<i64>.0` in an instance). Its environment comes first, as for every function value's code.
 - The array helpers (v3) are generic functions of a prelude written in Lugha, bundled with the compiler and checked with every program, under the module path `$prelude`, which no program can name: `lugha_fn_$prelude/map<Person, string>`. Each is compiled only at the types a program uses.
 - An extern follows the visibility rules of section 6, and the same C function may be declared in several modules only with identical signatures (E0306); it is one symbol.
@@ -858,7 +863,7 @@ Name and type errors, reported by the checker:
 | E0421 | A method no bound declares | `s.perimeter()` in `fun f<T: Shape>(s: T)` (v2) |
 | E0422 | A type argument, or a converted value, doesn't satisfy an interface | `total_area([1, 2])`: `i64` has no method `area` (v2); `let s: Shape = 1;` (v5) |
 | E0423 | Two bounds declare one item differently | `T: Sized + Measured` where both declare `size` with different types (v2) |
-| E0424 | `?` where it can't return | `?` on an `i64`; in `main`; on an `Option` in a function returning `Result`; different error types (v4) |
+| E0424 | `?` where it can't return | `?` on an `i64`; in `main`; on an `Option` in a function returning `Result`; error types that neither match nor convert (v4, v5) |
 | E0425 | An interface with an associated function used as a type | `fun f(x: Factory)` where `Factory` declares `fun make(): Factory;` (v5) |
 | E0426 | A type pattern that can't apply | `c: Circle` on an `i64`; `s: Shape` (an interface); `d: Dot` when `Dot` doesn't satisfy the interface (v5) |
 | E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum, `Option`, function or interface parameters or returns (§8) |
@@ -1434,6 +1439,48 @@ fun main() {
 }
 ```
 
+**Errors as interfaces** (milestone 22). Prints `42` then `error: not a number: x` then `range error: 500 is out of range` on three lines, exits with 0.
+
+```
+interface Error {
+    fun message(self): string;
+    fun report(self): string = "error: {self.message()}";
+}
+
+struct ParseError { text: string }
+
+impl ParseError {
+    fun message(self): string = "not a number: {self.text}";
+}
+
+struct RangeError { n: i64 }
+
+impl RangeError {
+    fun message(self): string = "{self.n} is out of range";
+    fun report(self): string = "range error: {self.message()}";
+}
+
+fun parse(s: string): Result<i64, ParseError> = parse_i64(s).ok_or(ParseError { text: s });
+
+fun check(n: i64): Result<i64, RangeError> =
+    if n < 100 { Ok(n) } else { Err(RangeError { n: n }) };
+
+fun read(s: string): Result<i64, Error> {
+    let n = parse(s)?;
+    let m = check(n)?;
+    Ok(m * 2)
+}
+
+fun main() {
+    for s of ["21", "x", "500"] {
+        match read(s) {
+            Ok(n) => println(n),
+            Err(e) => println(e.report()),
+        }
+    }
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1461,7 +1508,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 19 | Input and output (v4) | `read_line`, `read_file`, `write_file`, `append_file`, `eprint`/`eprintln`, `exit` | The reading-input program in section 10 passes (done: v4 complete) |
 | 20 | Interface values (v5) | interfaces as types, conversion, dynamic calls, copies, `lugha_vt_*` (E0425) | The interface-values program in section 10 passes (done) |
 | 21 | Type patterns (v5) | `name: T` and `_: T` in `match`, E0426 | The type-patterns program in section 10 passes (done) |
-| 22 | Default methods and error conversion (v5) | interface methods with bodies; `?` converting into an interface error | The errors-as-interfaces program passes |
+| 22 | Default methods and error conversion (v5) | interface methods with bodies, `lugha_fn_<I>.<m><T>`; `?` converting into an interface error | The errors-as-interfaces program in section 10 passes (done: v5 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -1504,3 +1551,5 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [x] **Instantiation depth.** Decided (v2): 64, large enough for real code and small enough to fail fast (E0420).
 - [ ] **`mut` bindings in `match`.** Bindings are borrowed and immutable; no program has needed `mut` ones yet.
 - [x] **Expression-bodied functions.** Decided: adopted (section 6). `fun square(x: i64): i64 = x * x;` drops the braces from one-liners. It is a small parser addition and a second way to write the same function, accepted because one-liners are common and it is pure sugar for `{ e }`.
+- [ ] **Boxing primitives** (v5). An `i64` inside an interface value is boxed like a struct, so every interface value has one layout. Small values could be stored inline later, an optimisation that changes nothing visible.
+- [ ] **Default methods on concrete types** (v5). `c.describe()` is E0415 because a type never names its interfaces. A later version could allow it when exactly one visible interface supplies the default.
