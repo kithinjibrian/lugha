@@ -131,6 +131,12 @@ impl<'ctx> Lowerer<'ctx> {
         if base_type == Type::String && name.name == "slice" {
             return self.string_slice(base, args, name.span.start).map(Some);
         }
+        // `x.wrapping_add(y)`, `x.count_ones()` and the rest (v7).
+        if base_type.is_integer() {
+            return self
+                .integer_method(base, &base_type, &name.name, args)
+                .map(Some);
+        }
         if let Type::Array(_) = base_type {
             return self.array_builtin(base, &name.name, args).map(Some);
         }

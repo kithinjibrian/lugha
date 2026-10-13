@@ -1,0 +1,20 @@
+// The v7 draft's §10 hashing program (milestone 29).
+
+fun hash(s: string): u64 {
+    let mut h: u64 = 14695981039346656037;
+    for i in 0..s.len {
+        h = (h ^ (s[i] as u64)).wrapping_mul(1099511628211);
+    }
+    h
+}
+
+fun main() {
+    println(hash("a"));
+    println(hash(""));
+    let x: u32 = 0b1011000;
+    println(x.count_ones());
+    println(x.trailing_zeros());
+    println(x.leading_zeros());
+    let m: u8 = 255;
+    println(m.wrapping_add(1));
+}

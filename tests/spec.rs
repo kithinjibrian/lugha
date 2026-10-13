@@ -96,6 +96,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Converting between interfaces",
         "More numbers",
         "Bits",
+        "Hashing",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

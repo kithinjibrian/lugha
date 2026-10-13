@@ -80,31 +80,31 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (`check/builtins.rs`):
-- [ ] **Types:**
+- [x] **Types:**
   - `a.wrapping_add(1)` has `a`'s type at every width;
   - `count_ones` and the other counting methods are `i64`;
   - `(5).count_ones()` checks.
-- [ ] **Errors:**
+- [x] **Errors:**
   - E0415 for `x.rotate_left(1)`, for `f.count_ones()` on an `f64`, and for `b.wrapping_add(…)` on a `bool`;
   - E0405 for `a.wrapping_add()`;
   - E0403 for `u32.wrapping_add(u64)`.
 
 Unit tests — codegen (`codegen/int_methods.rs`):
-- [ ] `wrapping_mul` is a plain `mul i64` with no overflow intrinsic.
-- [ ] The counting methods call `llvm.ctpop.i32`, `llvm.ctlz.i32` and `llvm.cttz.i32` and widen to `i64`.
+- [x] `wrapping_mul` is a plain `mul i64` with no overflow intrinsic.
+- [x] The counting methods call `llvm.ctpop.i32`, `llvm.ctlz.i32` and `llvm.cttz.i32` and widen to `i64`.
 
 Acceptance — `tests/programs/m29/`:
-- [ ] `hashing.la`: the §10 program.
-- [ ] `methods.la`:
+- [x] `hashing.la`: the §10 program.
+- [x] `methods.la`:
   - each method at `u8`, `i32`, `u32`, `i64` and `u64`;
   - wrapping across the limit in both directions (`i64` minimum minus one);
   - the counts of 0 and of all-ones;
   - a negative signed value's counts.
-- [ ] `e0415.la`: reject golden.
-- [ ] The §10 program runs from the spec.
+- [x] `e0415.la`: reject golden.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -112,10 +112,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m29/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The v7 spec is complete; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m29/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The v7 spec is complete; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -124,3 +124,8 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m29/hashing.la
 ```
+
+## AMENDMENTS (during build, session 72)
+
+- **No deviations from the design.** `-O2` was checked by hand for `m29/hashing` and `m29/methods`, and every earlier program gives byte-identical IR.
+- **No file splits.**

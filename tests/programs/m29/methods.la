@@ -1,0 +1,26 @@
+// Methods on integers (milestone 29): wrapping arithmetic and bit counts.
+
+fun main() {
+    let a: u8 = 250;
+    println(a.wrapping_add(10));
+    println(a.wrapping_mul(2));
+    let zero: u8 = 0;
+    println(zero.wrapping_sub(1));
+
+    let b: i32 = 2147483647;
+    println(b.wrapping_add(1));
+    let lo: i64 = -9223372036854775807 - 1;
+    println(lo.wrapping_sub(1));
+
+    let c: u32 = 0;
+    println("{c.count_ones()} {c.leading_zeros()} {c.trailing_zeros()}");
+    let d: u64 = 18446744073709551615;
+    println("{d.count_ones()} {d.leading_zeros()} {d.trailing_zeros()}");
+    let e: i64 = -1;
+    println("{e.count_ones()} {e.leading_zeros()}");
+    let f: i32 = 1 << 20;
+    println("{f.trailing_zeros()} {f.leading_zeros()}");
+    println((5).count_ones());
+    let g: u64 = 3;
+    println(g.wrapping_mul(6148914691236517206));
+}

@@ -26,6 +26,7 @@ mod growth;
 mod heap;
 mod input;
 mod instances;
+mod int_methods;
 mod interfaces;
 mod io;
 mod iterators;

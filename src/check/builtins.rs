@@ -1,5 +1,6 @@
 //! The built-in methods: `push`, `pop` and `clear` on arrays (v1 §4,
-//! milestone 8), and `slice` on strings (v4).
+//! milestone 8), `slice` on strings (v4), and the wrapping and counting
+//! methods on integers (v7).
 
 use super::Type;
 use super::methods::Method;
@@ -13,6 +14,12 @@ pub(super) fn builtin(receiver: &Type, name: &str) -> Option<Method> {
         (Type::Array(element), "pop") => (Vec::new(), Type::Option(element.clone()), true),
         (Type::Array(_), "clear") => (Vec::new(), Type::Void, true),
         (Type::String, "slice") => (vec![Type::I64, Type::I64], Type::String, false),
+        (int, "wrapping_add" | "wrapping_sub" | "wrapping_mul") if int.is_integer() => {
+            (vec![int.clone()], int.clone(), false)
+        }
+        (int, "count_ones" | "leading_zeros" | "trailing_zeros") if int.is_integer() => {
+            (Vec::new(), Type::I64, false)
+        }
         _ => return None,
     };
     Some(Method {
@@ -64,6 +71,46 @@ mod tests {
         assert_eq!(
             errors("fun main() { let mut xs = [1]; for x of xs { xs.push(x); } }"),
             [("E0507", "xs")]
+        );
+    }
+
+    #[test]
+    fn integers_have_wrapping_and_counting_methods() {
+        use crate::check::Type;
+        use crate::check::test_util::let_type;
+        let at = |body: &str| let_type(&format!("fun main() {{ {body} }}"), "r");
+        for (ty, expected) in [("u8", Type::U8), ("i32", Type::I32), ("u64", Type::U64)] {
+            assert_eq!(
+                at(&format!("let a: {ty} = 1; let r = a.wrapping_add(1);")),
+                expected
+            );
+        }
+        assert_eq!(at("let a: u32 = 1; let r = a.count_ones();"), Type::I64);
+        assert_eq!(at("let a: i64 = 1; let r = a.leading_zeros();"), Type::I64);
+        assert_eq!(at("let r = (5).trailing_zeros();"), Type::I64);
+        let codes = |body: &str| {
+            let src = format!("fun main() {{ {body} }}");
+            errors(&src).into_iter().map(|(c, _)| c).collect::<Vec<_>>()
+        };
+        assert_eq!(
+            codes("let x: u32 = 1; let r = x.rotate_left(1);"),
+            ["E0415"]
+        );
+        assert_eq!(
+            codes("let f: f64 = 1.0; let r = f.count_ones();"),
+            ["E0415"]
+        );
+        assert_eq!(
+            codes("let b = true; let r = b.wrapping_add(true);"),
+            ["E0415"]
+        );
+        assert_eq!(
+            codes("let a: i64 = 1; let r = a.wrapping_add();"),
+            ["E0405"]
+        );
+        assert_eq!(
+            codes("let a: u32 = 1; let b: u64 = 2; let r = a.wrapping_add(b);"),
+            ["E0403"]
         );
     }
 }

@@ -1,14 +1,15 @@
-# Lugha v7 Specification (in progress: milestones 27–28)
+# Lugha v7 Specification
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 27–28, more numbers and bits, are done; milestone 29 is next). It is built from the approved plan, `Language v7 Draft.md`, milestone by milestone. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v6 Specification.md` keeps v6 frozen.
+**Status:** complete (milestones 27–29). It is built from the approved plan, `Language v7 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v6 Specification.md` keeps v6 frozen.
 
 **v6.** This is v5 plus generic interfaces, iterators, `Self` in interfaces and converting between interfaces (milestones 23–26).
 
-**Changes since v6** (milestones 27–28):
+**Changes since v6** (milestones 27–29):
 - `u32`, `u64` and `f32` are numeric types: literals take them from context, arithmetic and overflow panics work at their widths, every numeric type casts to every other, and they print, interpolate and cross the C boundary (sections 2, 4, 5, 7–9).
 - Bit operators `&`, `|`, `^`, `~`, `<<` and `>>` on integers, with Rust's precedence (`flags & MASK == 0` is `(flags & MASK) == 0`), the compound forms `&=` `|=` `^=` `<<=` `>>=`, binary literals (`0b1010`), and a panic for a shift that is negative or at least the type's width (sections 2–5, 9).
+- Every integer type has `wrapping_add`, `wrapping_sub` and `wrapping_mul`, which never panic, and `count_ones`, `leading_zeros` and `trailing_zeros`, which give an `i64` (sections 4, 9).
 
 A valid v6 program is a valid v7 program unless it uses `u32`, `u64` or `f32` as a name: they are type keywords now, like `i32`.
 
@@ -545,7 +546,20 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 
 Evaluation is strictly left to right: operands, call arguments and struct-literal fields are evaluated in source order. The only exceptions are `&&` and `||`, which skip their right operand when the left decides the result.
 
-**Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way. Shifts (v7) lose the bits shifted out and never panic for overflow; `>>` copies the sign bit for `i32` and `i64` and fills with zeros for the unsigned types; a shift amount that is negative, or at least the type's width (8, 32 or 64), panics with `shift out of range` at the operator. `&=`, `|=`, `^=`, `<<=` and `>>=` mean `x = x op y` with the place evaluated once, as `+=` does, and need an integer. Float arithmetic follows IEEE 754: overflow gives an infinity and division by zero gives an infinity or NaN, never a panic. Explicit casts are the one place values wrap: narrowing with `as` truncates (section 4).
+**Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way. Shifts (v7) lose the bits shifted out and never panic for overflow; `>>` copies the sign bit for `i32` and `i64` and fills with zeros for the unsigned types; a shift amount that is negative, or at least the type's width (8, 32 or 64), panics with `shift out of range` at the operator. `&=`, `|=`, `^=`, `<<=` and `>>=` mean `x = x op y` with the place evaluated once, as `+=` does, and need an integer.
+
+**Methods on integers** (v7). Every integer type (`i32`, `i64`, `u8`, `u32`, `u64`) has six built-in methods:
+
+| Method | Gives | Meaning |
+| --- | --- | --- |
+| `a.wrapping_add(b)`, `a.wrapping_sub(b)`, `a.wrapping_mul(b)` | `a`'s type | the result modulo 2^width; never panics |
+| `a.count_ones()` | `i64` | how many bits are 1 |
+| `a.leading_zeros()` | `i64` | zero bits above the highest 1 (the width for 0) |
+| `a.trailing_zeros()` | `i64` | zero bits below the lowest 1 (the width for 0) |
+
+`b` has `a`'s type, and a literal `b` takes it (E0403 for another type, E0405 for the wrong count). Any other method on an integer, and these names on a float or `bool`, is E0415. A literal receiver with no expected type is `i64`: `(5).count_ones()` is `2`. The wrapping methods are the explicit way to wrap; `+`, `-` and `*` still panic on overflow.
+
+Float arithmetic follows IEEE 754: overflow gives an infinity and division by zero gives an infinity or NaN, never a panic. Explicit casts are the one place values wrap: narrowing with `as` truncates (section 4).
 
 **Method calls.** `x.m(a, b)` evaluates `x`, then `a`, then `b`; `xs.push(v)` evaluates the place `xs`, then `v`. For a `mut self` call the place `x` is evaluated once, before the arguments, like an assignment's place.
 
@@ -781,6 +795,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - An interface value's table (v5) is `lugha_vt_<Type>.<Interface>`, with names printed as in other symbols (`lugha_vt_Circle.Shape`, `lugha_vt_Stack<i64>.geo/Sized`), emitted once per pair a program converts. Its identity slot points at `lugha_type_<Type>`, its copy slot at `lugha_copy_<mangled type>_box` (`lugha_copy_6Circle_box`), and each method slot at the method itself: methods take their receiver as a pointer, so a call passes the box. Copying an interface value goes through `lugha_copy_<mangled interface>` (`lugha_copy_5Shape`). A generic interface (v6) prints with its arguments: `lugha_vt_Count.Source<i64>`, `lugha_copy_11Source<i64>`. A type pattern compares the table's identity slot with `lugha_type_<T>`.
 - A default method (v5) compiles once per type that uses it, through a table or a bound: `lugha_fn_<Interface>.<method><Type>` (`lugha_fn_Error.report<ParseError>`); that type's table slot and bound calls use it. A generic interface's default (v6) compiles once per type and interface arguments, the arguments printed on the interface: `lugha_fn_Source<i64>.skip<Count>`. A converted `?` error is boxed on the failure branch, like any conversion. A program without interface values has none of these.
 - Converting a `J` value to `I` (v6) calls `lugha_up_<J>.<I>(table) -> table`, which compares the value's table with each `J` table the program has and returns the matching `I` table; its body is built after everything else, when every table is known. That `I` table is derived from the table the value was built with: `lugha_vt_<C>.<J>.<I>` has `C`'s identity and copy and, for each `I` item, the function `C`'s `J` table has, so methods behave as through `J`; derived tables keep the original interface (`<C>.<J>.<K>` for a chain) and converting back to it gives the original table. A program that never converts between interfaces has no `lugha_up_` functions and no derived tables. (The approved draft put one slot per target interface in each table instead; tables are emitted while lowering, before every conversion is known, so PRP-054 uses lookup functions.)
+- The v7 operators and methods: `& | ^` are `and`/`or`/`xor`; `<<` is `shl` and `>>` is `ashr` for `i32`/`i64` and `lshr` for the unsigned types, each after an `icmp uge` of the amount against the width that panics (`shift out of range`); `~x` is `xor x, -1`; the wrapping methods are plain `add`/`sub`/`mul`; the counting methods are `llvm.ctpop`, `llvm.ctlz` and `llvm.cttz` (zero not poison), widened to `i64`. A program that uses none of them has none of this code.
 - An iterator loop (v6) stores the iterator in a hidden local and calls its `next` with that local's address: directly for a struct or enum (its own method, or a bound default's instance in a generic instance), and through the table for an interface value.
 - A closure's body (v3) is `lugha_closure_<enclosing>.<n>`: the enclosing function's symbol without its prefix, then the closure's number in that function from 0 (`lugha_closure_main.0`, `lugha_closure_main.0.0` for a closure inside it, `lugha_closure_max<i64>.0` in an instance). Its environment comes first, as for every function value's code.
 - The array helpers (v3) are generic functions of a prelude written in Lugha, bundled with the compiler and checked with every program, under the module path `$prelude`, which no program can name: `lugha_fn_$prelude/map<Person, string>`. Each is compiled only at the types a program uses.
@@ -1747,6 +1762,29 @@ fun main() {
 }
 ```
 
+**Hashing** (milestone 29). Prints `12638187200555641996`, `14695981039346656037`, `3`, `3`, `25`, `0` on six lines, exits with 0.
+
+```
+fun hash(s: string): u64 {
+    let mut h: u64 = 14695981039346656037;
+    for i in 0..s.len {
+        h = (h ^ (s[i] as u64)).wrapping_mul(1099511628211);
+    }
+    h
+}
+
+fun main() {
+    println(hash("a"));
+    println(hash(""));
+    let x: u32 = 0b1011000;
+    println(x.count_ones());
+    println(x.trailing_zeros());
+    println(x.leading_zeros());
+    let m: u8 = 255;
+    println(m.wrapping_add(1));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1781,7 +1819,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 26 | Converting between interfaces (v6) | one interface value to another, and through `?` | The converting-between-interfaces program in section 10 passes (done: v6 complete) |
 | 27 | More numbers (v7) | `u32`, `u64`, `f32`: literals, arithmetic, casts, printing, externs | The more-numbers program in section 10 passes (done) |
 | 28 | Bits (v7) | `& \| ^ ~ << >>`, the compound forms, `0b` literals, the shift panic | The bits program in section 10 passes (done) |
-| 29 | Integer methods (v7, planned) | `wrapping_add`/`sub`/`mul`, `count_ones`, `leading_zeros`, `trailing_zeros` | The hashing program passes |
+| 29 | Integer methods (v7) | `wrapping_add`/`sub`/`mul`, `count_ones`, `leading_zeros`, `trailing_zeros` | The hashing program in section 10 passes (done: v7 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -1829,3 +1867,5 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [ ] **Default methods on concrete types** (v5). `c.describe()` is E0415 because a type never names its interfaces. A later version could allow it when exactly one visible interface supplies the default.
 - [ ] **Iterating a copy** (v6). `for n of c` leaves `c` unchanged, which suits values but means a half-used iterator can't be resumed after a `break`. A later version could add `for n of mut c`.
 - [ ] **One argument per type** (v6). A type satisfies `Source<X>` for at most one `X`, since it has one `next`. That suits iterators but rules out an interface such as `From<T>` implemented once per `T`, which would need methods overloaded by type.
+- [ ] **`%=`** (v7). The compound assignments still lack `%=`, which v0 left out. Adding it is one line of grammar if programs want it.
+- [ ] **Unsigned indexes** (v7). `xs[i]` needs an `i64`, so a `u32` index needs a cast. Accepting any integer index would remove the cast, but it needs a rule for negative values.

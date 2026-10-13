@@ -3316,19 +3316,47 @@ Branch: prp-056-bits (merged into main)
 
 ---
 
-## SESSION 72 — 2026-10-13 — Integer methods (milestone 29) — open
+## SESSION 72 — 2026-10-13 — Integer methods (milestone 29) — closed
 Branch: prp-057-integer_methods
+
+### WHAT WAS DONE
+- Second half of the user's "in one go": PRP-057 written as approved within the v7 draft, built, merged on green CI.
+- Checker: six built-in integer methods (`builtins.rs`); codegen `codegen/int_methods.rs`.
+- Spec complete: §4 methods on integers, §9 lowering of the v7 operators and methods, the §10 hashing program, §11 milestone 29, §12 v7 questions; title and status.
+
+### FILES CREATED OR MODIFIED
+- New: `src/codegen/int_methods.rs`, `tests/programs/m29/` (`hashing`, `methods`, `e0415`).
+- Modified: `src/check/builtins.rs`, `src/codegen/{methods,mod}.rs`, `tests/spec.rs`, the v7 spec.
+- Docs: PRP-057, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 68, CONTEXT.
+
+### TESTS WRITTEN
+- Checker (`builtins.rs`): types at several widths, `i64` counts, literal receiver; E0415 (unknown name, float, `bool`), E0405, E0403.
+- Codegen (`int_methods.rs`): plain `mul`, the three intrinsics and the widening.
+- `tests/programs/m29/`; the §10 program from the spec. Earlier programs' IR byte-identical with `main`; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 68.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tags `m29` and `v7`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 28 complete** (PRP-056, MEMORY 67): bit operators, compound forms, `0b` literals, the shift panic. Tagged `m28`. `Language v7 Specification.md` (in progress) is what `lughac spec` prints.
+**Lugha v7 is complete** (milestones 27–29; PRP-055–057; MEMORY 65–68): `u32`, `u64`, `f32`; bit operators; integer methods. Tags `m29` and `v7` go on the merge of PRP-057. `Language v7 Specification.md` is what `lughac spec` prints; v0–v6 are frozen.
 
-Next: **milestone 29, integer methods** — PRP-057, completing v7 (tags `m29`, `v7`); the user asked for milestones 28–29 in one go. Scope (v7 draft decisions 2 and 4, §4 "Methods on integers", §9, §10 "Hashing"):
-- `a.wrapping_add(b)`, `wrapping_sub`, `wrapping_mul` (same type, `b` typed by `a`); `count_ones()`, `leading_zeros()`, `trailing_zeros()` → `i64`; other names on integers E0415; `(5).count_ones()` works (literal receiver `i64`);
-- codegen: plain `add/sub/mul`; `llvm.ctpop`/`ctlz`/`cttz` (`is_zero_poison` false) then `zext`/`trunc` to `i64`.
+Next: **v8 direction — discovery** (one question at a time, recommended option first). Candidates are in the v7 spec's §11 out-of-scope list and §12 open questions:
+- packages with `public`;
+- or-patterns and `mut` bindings in `match`, `unwrap()`;
+- iterator helpers (`map`, `filter`, `collect` on `Iter<T>`), strings as iterators, `for n of mut c`;
+- `Self` outside interfaces, default methods on concrete types;
+- `i8`/`i16`/`u16`, rotations, checked/saturating methods, `parse_u64`; `%=`; unsigned indexes;
+- binary I/O, directories, streams and processes.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `parser/expr.rs` (~290), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/ops.rs` (~289), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292), `check/ops.rs` (~289), `parser/expr.rs` (~290).
 
 See `TODO.md`.

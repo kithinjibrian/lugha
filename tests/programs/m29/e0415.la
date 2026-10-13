@@ -1,0 +1,8 @@
+// Integers have exactly six methods; floats have none of them.
+
+fun main() {
+    let x: u32 = 1;
+    let r = x.rotate_left(1);
+    let f: f64 = 2.0;
+    let n = f.count_ones();
+}

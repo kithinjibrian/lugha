@@ -1,0 +1,12 @@
+error[E0415]: no method `rotate_left` on `u32`
+  --> tests/programs/m29/e0415.la:5:15
+  |
+5 |     let r = x.rotate_left(1);
+  |               ^^^^^^^^^^^
+
+error[E0415]: no method `count_ones` on `f64`
+  --> tests/programs/m29/e0415.la:7:15
+  |
+7 |     let n = f.count_ones();
+  |               ^^^^^^^^^^
+
