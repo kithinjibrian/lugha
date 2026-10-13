@@ -3043,6 +3043,11 @@ Branch: main
 
 ---
 
+## SESSION 63 — 2026-10-13 — v6 direction — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v5 is complete and merged** (tags `m21`, `m22`, `v5`; PRP-048 and PRP-049, MEMORY 57–58, approved by the user as built, including the decisions taken while away). `Language v5 Specification.md` is what `lughac spec` prints.
