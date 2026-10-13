@@ -69,6 +69,7 @@ impl Checker {
             }
             _ if self.satisfies(&ty, key, expr.span) => {
                 self.conversions.insert(expr.id, wanted.clone());
+                self.conversion_uses(expr, &ty, key);
                 wanted.clone()
             }
             _ => Type::Error,
@@ -228,6 +229,12 @@ mod tests {
             ),
         ]);
         assert_eq!(found.iter().map(|(c, _)| *c).collect::<Vec<_>>(), ["E0422"]);
+    }
+
+    #[test]
+    fn literals_take_their_default_type_and_convert() {
+        ok("interface Any {}\nfun main() { let x: Any = 1; let xs: Any[] = [1, 4.5, -2]; }");
+        assert_eq!(e("fun f() { let s: Shape = 1; }"), [("E0422", "1".into())]);
     }
 
     #[test]

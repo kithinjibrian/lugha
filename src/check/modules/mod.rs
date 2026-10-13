@@ -42,6 +42,7 @@ pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<D
         return Err(checker.diagnostics);
     }
     let (structs, enums) = checker.tables(&layouts);
+    let interfaces = checker.interface_methods();
     // Every expression of a valid program has been visited; `Error` is a safe filler.
     let types = checker
         .types
@@ -60,6 +61,7 @@ pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<D
             moves,
             callees: checker.callees,
             conversions: checker.conversions,
+            interfaces,
             annotations: checker.annotations,
             instances: checker.instances,
             monos,

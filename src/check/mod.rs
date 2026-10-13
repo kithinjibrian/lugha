@@ -27,6 +27,7 @@ mod fun_values;
 mod generics;
 mod helpers;
 mod iface_calls;
+mod iface_tables;
 mod iface_values;
 mod infer;
 mod input;
@@ -53,6 +54,7 @@ mod visibility;
 
 use std::collections::{HashMap, HashSet};
 
+pub use iface_tables::InterfaceMethod;
 pub use instances::Instance;
 pub use modules::{Unit, check_modules, qualify, symbol};
 pub use types::{Enums, Structs, Type, indirect_slot, slot_names_variant};
@@ -93,6 +95,9 @@ pub struct Checked {
     /// Expressions converted to an interface value, with the interface type
     /// (v5); the expression's own type stays in `types`.
     pub conversions: HashMap<ExprId, Type>,
+    /// Every interface's methods in declaration order, by key (v5): the
+    /// slots of its dispatch tables.
+    pub interfaces: HashMap<String, Vec<InterfaceMethod>>,
 }
 
 /// Type-checks `program`, a program of one file, returning the type table

@@ -87,6 +87,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Results and `?`",
         "Text helpers",
         "Reading input",
+        "Interface values",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),
@@ -103,6 +104,7 @@ fn the_extractor_finds_every_section_10_program() {
     assert_eq!(find("Hello world").stdout, "Hello, world!\n");
     assert_eq!(find("Arguments and interpolation").args, ["21"]);
     assert_eq!(find("Reading input").stdin, "5\n7\nx\n");
+    assert_eq!(find("Interface values").stdout, "16.0\n1.0\ncircle\n");
     assert_eq!(
         find("Calling C").stdout,
         "hello from libc\n1.4142135623730951\n"

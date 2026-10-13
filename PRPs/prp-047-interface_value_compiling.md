@@ -108,36 +108,36 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — codegen IR (`codegen/interfaces.rs`):
-- [ ] **One table per converted pair:** converting two `Circle`s and a `Square` to `Shape` gives one `lugha_vt_Circle.Shape` and one `lugha_vt_Square.Shape`, each pointing at the methods in declaration order.
-- [ ] **Dynamic calls:** `s.area()` is an indirect call through a loaded slot, with the box first.
-- [ ] **Boxes:** conversion calls `lugha_rt_alloc` and never `malloc`.
-- [ ] **Copies:** copying a `Shape` calls `lugha_copy_5Shape`, which calls the table's copy slot.
-- [ ] **No conversion, no tables:** a program without interface values has no `lugha_vt_`, `lugha_type_` or `_box` symbols.
+- [x] **One table per converted pair:** converting two `Circle`s and a `Square` to `Shape` gives one `lugha_vt_Circle.Shape` and one `lugha_vt_Square.Shape`, each pointing at the methods in declaration order.
+- [x] **Dynamic calls:** `s.area()` is an indirect call through a loaded slot, with the box first.
+- [x] **Boxes:** conversion calls `lugha_rt_alloc` and never `malloc`.
+- [x] **Copies:** copying a `Shape` calls `lugha_copy_5Shape`, which calls the table's copy slot.
+- [x] **No conversion, no tables:** a program without interface values has no `lugha_vt_`, `lugha_type_` or `_box` symbols.
 
 Unit tests — checker (`check/iface_values.rs`):
-- [ ] **Reachability:** converting a `Stack<i64>` to `Sized` makes `Stack.size<i64>` an instance; converting a `T: Sized` inside a generic function does so for each instance.
+- [x] **Reachability:** converting a `Stack<i64>` to `Sized` makes `Stack.size<i64>` an instance; converting a `T: Sized` inside a generic function does so for each instance.
 
 Acceptance — `tests/programs/m20/` (run at `-O0` and `-O2`):
-- [ ] `shapes.la`: the §10 program.
-- [ ] `copies.la`:
+- [x] `shapes.la`: the §10 program.
+- [x] `copies.la`:
   - a `mut self` call on a copy doesn't change the original;
   - a struct holding an array, converted and then changed through the interface value, leaves the original intact;
   - an interface value in a struct field, an array and an `Option`, copied and changed;
   - move on last use.
-- [ ] `generic.la`:
+- [x] `generic.la`:
   - a generic struct (`Stack<i64>`) as an interface value;
   - `total_area<T: Shape>` called with a `Shape[]`;
   - a `T: Shape` converted inside a generic function;
   - an interface from another module.
-- [ ] `any.la`: an interface with no methods holding an `i64`, a `string` and a struct (boxed primitives).
-- [ ] The §10 interface-values program runs from the spec (`tests/spec.rs`).
+- [x] `any.la`: an interface with no methods holding an `i64`, a `string` and a struct (boxed primitives).
+- [x] The §10 interface-values program runs from the spec (`tests/spec.rs`).
 
 Driver / CLI:
-- [ ] `tests/interface_values.rs` becomes a run test: `run` prints the three lines, and `--emit=ir` contains `@lugha_vt_Circle.Shape`.
-- [ ] `lughac spec` starts with `# Lugha v5 Specification` (`tests/cli.rs`).
+- [x] `tests/interface_values.rs` becomes a run test: `run` prints the three lines, and `--emit=ir` contains `@lugha_vt_Circle.Shape`.
+- [x] `lughac spec` starts with `# Lugha v5 Specification` (`tests/cli.rs`).
 
 Regression:
-- [ ] Every earlier test passes; programs without interface values give byte-identical IR.
+- [x] Every earlier test passes; programs without interface values give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -145,10 +145,10 @@ Regression:
 - To abandon: delete the branch; the gate stays.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 interface-values program and the `m20/` programs pass at `-O0` and `-O2`.
-- [ ] The gate is gone; the v5 spec begins (in progress: milestone 20); docs updated; tag `m20`.
-- [ ] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The §10 interface-values program and the `m20/` programs pass at `-O0` and `-O2`.
+- [x] The gate is gone; the v5 spec begins (in progress: milestone 20); docs updated; tag `m20` at merge.
+- [x] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -157,3 +157,19 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m20/shapes.la
 ```
+
+## AMENDMENTS (during build, session 59)
+
+- **Number literals convert (approved mid-build):** `let xs: Any[] = [1, 4.5]` was E0401. A literal facing an interface now takes its default type and converts (`check/literal.rs`, one line). Tested in `check/iface_values.rs`.
+- **`ty(expr)` is the produced type:** `Lowerer::ty` returns the interface for a converted expression. `converted` lifts the conversion entry while it lowers the value itself, so code like struct literals still sees the concrete type.
+- **Table slots** are reached with `build_struct_gep` on a struct of `index + 1` pointers: an array GEP would need `unsafe`.
+- **`copy.rs` stays at 300 lines:**
+  - `mangle` calls `length_prefixed` (in `interfaces.rs`);
+  - `value_for_store` asks `aliased` (in `interfaces.rs`), which treats a converted expression as fresh;
+  - `value_for_return` is unchanged, so returning a converted place may copy its box once more than needed. This is correct, just slightly wasteful.
+- **`-O2`:** the program runner uses the default level. The four `m20` programs were also built at `-O2` by hand, and their output matched.
+- **`generic`** is a directory case (`main.la` + `geo.la`), for the interface from another module.
+- **Splits:**
+  - `check/iface_values.rs` (an existing file at 342 lines) was split with approval: `InterfaceMethod`, `conversion_uses`, `interface_methods` and their tests moved verbatim to `check/iface_tables.rs`;
+  - `codegen/interfaces.rs` (new, 367 lines) keeps building (conversion, boxes, tables), and `codegen/dispatch.rs` takes using (dynamic calls, interface copies) with their tests.
+- **The spec's §11** now lists milestones 21–22 as planned, and the v1 out-of-scope list is replaced (draft §12).

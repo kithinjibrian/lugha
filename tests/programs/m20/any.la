@@ -1,0 +1,12 @@
+// An interface with no methods holds anything; primitives are boxed too.
+interface Any {}
+
+struct P { x: i64 }
+
+fun count(xs: Any[]): i64 = xs.len;
+
+fun main() {
+    let xs: Any[] = [1, "two", P { x: 3 }, 4.5];
+    let ys = xs;
+    println(count(ys) + count(xs));
+}

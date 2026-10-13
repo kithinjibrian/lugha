@@ -76,7 +76,7 @@ pattern      = … | ( IDENT | "_" ) ":" type ;          (* `c: Circle`, `_: Squ
 
 ## §9 Compilation model — changes
 
-- **Symbols** (amends §8's naming): a dispatch table is `lugha_vt_<Type>.<Interface>`, with types and interfaces printed as in other symbols (`lugha_vt_Circle.Shape`, `lugha_vt_shapes/Circle.shapes/Shape`). Each method entry is a wrapper `lugha_dyn_<Type>.<method>` that takes the boxed pointer and calls the method. A default method compiles once per type that uses it, like a generic method: `lugha_fn_<Interface>.<method><Type>`.
+- **Symbols** (amends §8's naming): a dispatch table is `lugha_vt_<Type>.<Interface>`, with types and interfaces printed as in other symbols (`lugha_vt_Circle.Shape`, `lugha_vt_shapes/Circle.shapes/Shape`). Each method entry is a wrapper `lugha_dyn_<Type>.<method>` that takes the boxed pointer and calls the method. (Amended by PRP-047: no wrappers. Methods already take their receiver as a pointer, so each entry is the method itself, called with the box; the identity slot points at `lugha_type_<Type>` and the copy slot at `lugha_copy_<mangled>_box`.) A default method compiles once per type that uses it, like a generic method: `lugha_fn_<Interface>.<method><Type>`.
 - **Conversion** copies the value into a new box and pairs it with the table; a value about to be moved isn't copied first.
 - **Calls** load the entry from the table and call it indirectly, as function values do.
 - **Type patterns** compare the table's identity with the pattern type's.

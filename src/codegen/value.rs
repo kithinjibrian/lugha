@@ -46,16 +46,15 @@ pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnu
             .get_struct_type(&ty.to_string())
             .expect("structs are declared before lowering")
             .into(),
-        // `{ code, env }`: the function, then its environment (v3 draft §7).
-        Type::Fun(..) => {
+        // `{ code, env }`: the function, then its environment (v3 draft §7);
+        // `{ table, box }` for an interface value (v5 draft §7).
+        Type::Fun(..) | Type::Interface(_) => {
             let ptr = context.ptr_type(AddressSpace::default());
             context.struct_type(&[ptr.into(), ptr.into()], false).into()
         }
         Type::Void | Type::Never | Type::Error => unreachable!("checked: {ty} is not a value type"),
         // The gate stops generic programs before codegen (PRP-035).
         Type::Param(_) => unreachable!("codegen never sees a type parameter"),
-        // The gate stops programs with interface values before codegen (PRP-046).
-        Type::Interface(_) => unreachable!("codegen never sees an interface value yet"),
     }
 }
 
@@ -83,9 +82,15 @@ impl<'ctx> Lowerer<'ctx> {
         self.concrete(ty.expect("checked: every written type is resolved"))
     }
 
-    /// The checker's type for `expr`.
+    /// The type of the value `expr` produces: the checker's type for it, or
+    /// the interface it is converted to (v5).
     pub(super) fn ty(&self, expr: &Expr) -> Type {
-        self.concrete(&self.types[expr.id.0 as usize])
+        let id = expr.id;
+        let ty = self
+            .conversions
+            .get(&id)
+            .unwrap_or(&self.types[id.0 as usize]);
+        self.concrete(ty)
     }
 
     /// Lowers `expr` where a value of type `ty` is needed. In code that never

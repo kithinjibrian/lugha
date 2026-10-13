@@ -12,6 +12,7 @@ use inkwell::values::{BasicValueEnum, FunctionValue, PointerValue, StructValue, 
 
 use super::CodegenError;
 use super::heap::element_of;
+use super::interfaces::length_prefixed;
 use super::lower::{Lowerer, POSITIONED};
 use super::value::llvm_type;
 use crate::ast::{Expr, ExprKind};
@@ -26,7 +27,7 @@ impl<'ctx> Lowerer<'ctx> {
         ty: &Type,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         let value = self.get(expr, ty)?;
-        let copies = aliasing(expr) && !self.moves.contains(&expr.id);
+        let copies = self.aliased(expr) && !self.moves.contains(&expr.id);
         Ok(if ty.is_deep(&self.structs) && copies {
             self.deep_copy(value, ty)
         } else {
@@ -124,6 +125,7 @@ impl<'ctx> Lowerer<'ctx> {
         let source = function.get_nth_param(0).expect("one parameter");
         let copy = match ty {
             Type::Struct(..) => self.copy_fields(source.into_struct_value(), &ty.to_string()),
+            Type::Interface(_) => self.copy_interface(source.into_struct_value()),
             _ => self.copy_elements(source.into_pointer_value(), ty).into(),
         };
         self.builder.build_return(Some(&copy)).expect(POSITIONED);
@@ -176,7 +178,7 @@ impl<'ctx> Lowerer<'ctx> {
 
 /// True if `expr`'s value may come from an existing place, looking through
 /// `if` and block tails.
-fn aliasing(expr: &Expr) -> bool {
+pub(super) fn aliasing(expr: &Expr) -> bool {
     match &expr.kind {
         ExprKind::Name(_) | ExprKind::Field(..) | ExprKind::Index(..) => true,
         ExprKind::If { then, else_, .. } => {
@@ -202,7 +204,7 @@ fn root(expr: &Expr) -> Option<&str> {
 pub(super) fn mangle(ty: &Type) -> String {
     match ty {
         Type::Array(element) => format!("{}_arr", mangle(element)),
-        Type::Struct(..) | Type::Enum(..) => format!("{}{ty}", ty.to_string().len()),
+        Type::Struct(..) | Type::Enum(..) | Type::Interface(_) => length_prefixed(ty),
         Type::Option(inner) => format!("{}_opt", mangle(inner)),
         Type::String => "str".to_string(),
         other => other.to_string(),

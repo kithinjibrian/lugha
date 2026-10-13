@@ -14,7 +14,13 @@ impl Checker {
         };
         let expected = expect
             .map(|e| e.ty.clone())
-            .filter(|t| !matches!(t, Type::Void | Type::Never | Type::Error));
+            // Facing an interface, a literal takes its default type and converts (v5).
+            .filter(|t| {
+                !matches!(
+                    t,
+                    Type::Void | Type::Never | Type::Error | Type::Interface(_)
+                )
+            });
         let reason = expect.and_then(|e| e.reason.as_ref());
         match (kind, expected) {
             (ExprKind::Float(_), None | Some(Type::F64)) => Type::F64,

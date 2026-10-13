@@ -909,12 +909,28 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 56. Compiling interface values (PRP-047)
+
+**Decision:**
+- **Layout:** `{ ptr table, ptr box }` like a function value (`llvm_type`, `layout` 16/8), passed by value. The box is `lugha_rt_alloc`ed, primitives included.
+- **Tables:** `lugha_vt_<Type>.<Interface>` (internal constant struct of pointers), emitted once per converted pair: slot 0 `lugha_type_<Type>` (an i8 constant whose address is the identity, for milestone 21), slot 1 `lugha_copy_<mangled>_box`, then the methods themselves in declaration order — **no `lugha_dyn_` wrappers** (draft amended): methods take their receiver as a pointer, so a call passes the box. Slots are reached with `build_struct_gep` on a view of `index + 1` pointers (no `unsafe` array GEP).
+- **Conversion:** `Lowerer::expr` checks `conversions`; `converted` lowers the value with the conversion entry lifted (so `ty(expr)` is the concrete type inside and the interface outside), deep-copies it if `aliasing` and not moved, boxes it and pairs it with its table. In an instance where the type is already the interface it passes through.
+- **Copies:** `lugha_copy_<mangled interface>` calls the table's copy slot; `mangle` length-prefixes interfaces (`length_prefixed`). `value_for_store` skips converted expressions (`aliased`); `value_for_return` doesn't (an extra box copy at worst, kept for `copy.rs`'s size).
+- **Checker:** `Checked.interfaces` (methods in order); `convert` records `used`/`bound_used` for each interface method so generic types' methods are instantiated (`conversion_uses`); a numeric literal facing an interface takes its default type and converts (amendment, approved).
+- **Spec:** `Language v5 Specification.md` begins (in progress: milestone 20), v4 frozen; §11's stale v1 out-of-scope list replaced by v5's.
+
+- **Files:** `codegen/interfaces.rs` (building) and `codegen/dispatch.rs` (calls, copies); `check/iface_tables.rs` (split from `iface_values.rs`, approved).
+
+**Why:** reusing the function-value pair, the receiver-pointer convention and the copy-helper scheme keeps interface values within the existing ABI; the gate (MEMORY 55) is gone.
+
+---
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
-- **Milestone 20, first half**: PRP-046 interface values type-checked (build gated)
+- **Milestone 20 complete**: PRP-046 checking and PRP-047 compiling interface values; v5 spec begins
 - **Lugha v4.1**: PRP-045 string literals inside interpolations
 - **Milestone 19 complete — Lugha v4 complete**: PRP-044 input and output
 - **Milestone 18 complete**: PRP-043 text and option helpers

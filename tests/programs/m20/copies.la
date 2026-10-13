@@ -1,0 +1,65 @@
+// Interface values are values (v5 draft §4): every copy is its own.
+interface Shape {
+    fun area(self): f64;
+    fun grow(mut self, k: f64);
+}
+
+struct Poly { sides: f64[] }
+
+impl Poly {
+    fun area(self): f64 {
+        let mut t = 0.0;
+        for s of self.sides {
+            t += s;
+        }
+        t
+    }
+    fun grow(mut self, k: f64) {
+        self.sides[0] *= k;
+        self.sides.push(k);
+    }
+}
+
+struct Circle { r: f64 }
+
+impl Circle {
+    fun area(self): f64 = self.r;
+    fun grow(mut self, k: f64) { self.r *= k; }
+}
+
+struct Scene { main: Shape, all: Shape[], spare: Option<Shape> }
+
+fun area_of(o: Option<Shape>): f64 = match o {
+    Some(s) => s.area(),
+    None => 0.0,
+};
+
+fun main() {
+    // A copy of an interface value is its own.
+    let a: Shape = Circle { r: 2.0 };
+    let mut b = a;
+    b.grow(10.0);
+    println(a.area());
+    println(b.area());
+    // Converting copies a value still in use, arrays included.
+    let p = Poly { sides: [1.0, 2.0] };
+    let mut q: Shape = p;
+    q.grow(3.0);
+    println(p.sides.len);
+    println(p.sides[0]);
+    println(q.area());
+    // Inside a struct, an array and an `Option`.
+    let scene = Scene { main: q, all: [a, q], spare: Some(a) };
+    let mut copy = scene;
+    copy.main.grow(2.0);
+    copy.all[1].grow(2.0);
+    println(scene.main.area());
+    println(copy.main.area());
+    println(scene.all[1].area());
+    println(copy.all[1].area());
+    println(area_of(copy.spare));
+    // A last use moves.
+    let last: Shape = Circle { r: 5.0 };
+    let moved = last;
+    println(moved.area());
+}

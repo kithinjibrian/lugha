@@ -13,7 +13,7 @@ use super::runtime::Constants;
 use super::scope::Scopes;
 use super::{CodegenError, ModuleSource, SourceInfo};
 use crate::ast::{ExprId, Item};
-use crate::check::{Checked, Enums, Structs, Type, Unit};
+use crate::check::{Checked, Enums, InterfaceMethod, Structs, Type, Unit};
 use crate::span::Span;
 
 /// Every builder call below happens after `position_at_end`, so a
@@ -51,6 +51,10 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) subst: HashMap<String, Type>,
     /// What each closure literal captures (`Checked::captures`).
     pub(super) captures: HashMap<ExprId, Vec<String>>,
+    /// Expressions converted to an interface value (`Checked::conversions`).
+    pub(super) conversions: HashMap<ExprId, Type>,
+    /// Every interface's methods in order (`Checked::interfaces`).
+    pub(super) interfaces: HashMap<String, Vec<InterfaceMethod>>,
     /// Closures emitted so far per enclosing symbol, for `lugha_closure_<f>.<n>`.
     pub(super) closure_counts: HashMap<String, usize>,
     /// The function being emitted, for appending basic blocks.
@@ -125,6 +129,8 @@ pub(super) fn lower<'ctx>(
         monos: HashMap::new(),
         subst: HashMap::new(),
         captures: checked.captures.clone(),
+        conversions: checked.conversions.clone(),
+        interfaces: checked.interfaces.clone(),
         closure_counts: HashMap::new(),
         function: None,
         ret: None,

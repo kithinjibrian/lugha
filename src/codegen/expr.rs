@@ -10,8 +10,17 @@ use crate::ast::{BinOp, Expr, ExprKind, UnOp};
 use crate::check::Type;
 
 impl<'ctx> Lowerer<'ctx> {
-    /// Lowers an expression.
+    /// Lowers an expression, converting it to an interface value where the
+    /// checker recorded a conversion (v5).
     pub(super) fn expr(&mut self, expr: &Expr) -> Result<Value<'ctx>, CodegenError> {
+        match self.conversions.get(&expr.id).cloned() {
+            Some(to) => self.converted(expr, &to),
+            None => self.unconverted(expr),
+        }
+    }
+
+    /// Lowers an expression at its own type.
+    pub(super) fn unconverted(&mut self, expr: &Expr) -> Result<Value<'ctx>, CodegenError> {
         let value: BasicValueEnum<'ctx> = match &expr.kind {
             ExprKind::Int(_) | ExprKind::Float(_) => self.literal(expr, false),
             // `-` directly on a literal is part of it (spec §4 rule 6): `-2147483648` is one i32.

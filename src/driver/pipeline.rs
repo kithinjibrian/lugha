@@ -105,25 +105,8 @@ fn prelude_failure(source: &Source, errors: &[Diagnostic]) -> Failure {
     internal(source, format!("the prelude doesn't check: {first}"))
 }
 
-/// Stops at interface values, which codegen can't compile until PRP-047
-/// (exit 2). Every interface type is written somewhere, so the recorded
-/// annotations find them all (PRP-046).
-fn stop_gated(front: &Front) -> Result<(), Failure> {
-    let annotations = &checked(front).annotations;
-    let first = annotations
-        .iter()
-        .filter(|(_, ty)| ty.mentions_interface())
-        .map(|(span, _)| *span)
-        .min_by_key(|span| span.start);
-    let Some(span) = first else { return Ok(()) };
-    let message = "not implemented yet: interface values (milestone 20)";
-    let report = Report::internal(message, Some(span));
-    Err(Failure::Internal(front.source.clone(), Box::new(report)))
-}
-
 /// The program's LLVM IR, for `--emit=ir`.
 pub(super) fn ir(front: &Front) -> Result<String, Failure> {
-    stop_gated(front)?;
     let units = units(&front.modules);
     codegen::emit_ir_modules(&units, checked(front), &sources(front))
         .map_err(|e| codegen_failure(&front.source, e))
@@ -131,7 +114,6 @@ pub(super) fn ir(front: &Front) -> Result<String, Failure> {
 
 /// Compiles and links `front` into the executable `exe`.
 pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Failure> {
-    stop_gated(front)?;
     let temp = TempDir::new().map_err(|e| internal(&front.source, temp_error(e)))?;
     let object = temp.path.join("prog.o");
     codegen::emit_object_modules(

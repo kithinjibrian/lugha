@@ -2926,6 +2926,29 @@ Branch: prp-046-interface_value_checking
 
 Branch: prp-047-interface_value_compiling
 
+### WHAT WAS DONE
+- PRP-047 written and approved; no new discovery questions (semantics settled in sessions 57–58).
+- Checker: `Checked.interfaces`; conversions record their methods as used (generic types' methods instantiated); number literals convert (approved mid-build).
+- Codegen: `codegen/interfaces.rs` — `{ table, box }` values, `lugha_vt_` tables (identity, box copy, methods), conversion, dynamic calls, interface copies. Gate removed.
+- Spec: `Language v5 Specification.md` begins (in progress: milestone 20) and `lughac spec` prints it; v4 frozen; draft §9 amended (no `lugha_dyn_` wrappers).
+
+### FILES CREATED OR MODIFIED
+- New: `src/codegen/{interfaces,dispatch}.rs`, `src/check/iface_tables.rs` (approved split of `iface_values.rs`), `docs/specs/Language v5 Specification.md`, `tests/programs/m20/{shapes,copies,any}.*`, `tests/programs/m20/generic/` + `generic.*`.
+- Modified: `src/check/{iface_values,literal,mod}.rs`, `src/check/modules/mod.rs`, `src/codegen/{mod,lower,value,structs,expr,methods,copy}.rs`, `src/driver/pipeline.rs` (gate removed), `src/lib.rs`, `tests/{interface_values,cli,spec}.rs`.
+- Docs: PRP-047, the v5 draft, CLAUDE.md (STACK, rule 7, anti-patterns 4–5, tree), README, CHANGELOG, TODO, MEMORY 56, CONTEXT.
+
+### TESTS WRITTEN
+- `codegen/interfaces.rs`: one table per pair, methods in order, boxes through `lugha_rt_alloc`, indirect calls, copies through the copy slot, no tables without interface values.
+- `check/iface_values.rs`: literals convert; converted generic types' methods are instances; `Checked.interfaces` order.
+- `tests/programs/m20/`: `shapes`, `copies`, `any`, `generic/` (run cases).
+- `tests/interface_values.rs` runs the §10 program; `tests/spec.rs` requires it; `tests/cli.rs` checks the v5 title.
+
+### DECISIONS MADE
+- MEMORY 56.
+
+### PENDING DECISIONS OPENED
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

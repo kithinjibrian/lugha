@@ -1,6 +1,5 @@
-//! Interface values through the `lughac` binary (PRP-046): `check` accepts
-//! them, and `build`, `run` and `--emit=ir` stop at the milestone 20 gate
-//! until PRP-047 compiles them.
+//! Interface values through the `lughac` binary: `check` accepts them
+//! (PRP-046), and `run` and `--emit=ir` compile them (PRP-047).
 
 use std::path::PathBuf;
 use std::process::{Command, Output};
@@ -75,23 +74,16 @@ fn lughac(dir: &Dir, args: &[&str]) -> Output {
 }
 
 #[test]
-fn interface_values_check_and_stop_at_the_gate() {
+fn interface_values_check_and_run() {
     let dir = Dir::new();
     let check = lughac(&dir, &["check", "shapes.la"]);
     let stderr = String::from_utf8_lossy(&check.stderr);
     assert_eq!(check.status.code(), Some(0), "{stderr}");
-    for args in [
-        &["build", "shapes.la"][..],
-        &["run", "shapes.la"],
-        &["build", "--emit=ir", "shapes.la"],
-    ] {
-        let out = lughac(&dir, args);
-        let stderr = String::from_utf8_lossy(&out.stderr);
-        assert_eq!(out.status.code(), Some(2), "{args:?}: {stderr}");
-        assert!(
-            stderr.contains("not implemented yet: interface values (milestone 20)"),
-            "{args:?}: {stderr}"
-        );
-    }
-    assert!(!dir.0.join("shapes").exists(), "nothing is built");
+    let run = lughac(&dir, &["run", "shapes.la"]);
+    let stderr = String::from_utf8_lossy(&run.stderr);
+    assert_eq!(run.status.code(), Some(0), "{stderr}");
+    assert_eq!(String::from_utf8_lossy(&run.stdout), "16.0\n1.0\ncircle\n");
+    let ir = lughac(&dir, &["build", "--emit=ir", "shapes.la"]);
+    let ir = String::from_utf8_lossy(&ir.stdout);
+    assert!(ir.contains("@lugha_vt_Circle.Shape = "), "{ir}");
 }
