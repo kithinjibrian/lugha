@@ -1,6 +1,6 @@
 ## FEATURE: Input and interpolation — `args()`, `parse_i64`/`parse_f64`, `"{x}"` strings; the v3 spec begins.
 
-**Status:** approved 2026-10-13 — session 48
+**Status:** merged 2026-10-13 — session 48
 **Milestone:** 13 (one PRP; first v3 milestone)
 **Spec:** `Language v3 Draft.md`:
 - decision 4;

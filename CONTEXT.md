@@ -2434,7 +2434,7 @@ Branch: main
 
 ---
 
-## SESSION 48 — 2026-10-13 — Input and interpolation (milestone 13) — open
+## SESSION 48 — 2026-10-13 — Input and interpolation (milestone 13) — closed
 
 Branch: prp-038-input_and_interpolation
 
@@ -2479,18 +2479,24 @@ Branch: prp-038-input_and_interpolation
 
 - None.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-038-input_and_interpolation` fast-forward merged into `main` and deleted; tag `m13`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v2 is complete** (tag `v2`). **The v3 draft is approved** (session 47, MEMORY 44, `docs/specs/Language v3 Draft.md`).
+**Milestone 13 is complete** (tag `m13`; MEMORY 45). `lughac spec` prints `Language v3 Specification.md` (in progress: milestone 13).
 
-Next is **milestone 13, input and interpolation**:
-- `args(): string[]`;
-- `parse_i64`/`parse_f64` returning `Option`;
-- string interpolation `"{x}"` in every string literal, with `{{`/`}}` for braces and E0111 for mistakes;
-- the "Arguments and interpolation" program in the draft's §10.
+Next is **milestone 14, functions as values** (`Language v3 Draft.md`: decision 3, §3 `fun(…)` types, §4 "Function types" and "Functions as values", §7 value layout, §9 `lugha_ref_*`, the §10 functions-as-values program). It covers:
+- `fun(A, B): R` types;
+- named and associated functions as values;
+- calling any expression of function type;
+- no `==` on functions (so `T: Eq` restricts);
+- E0406/E0409/E0412 extensions;
+- the `{ code, env }` layout with a null environment.
 
-Start with discovery for its PRP (PRP-038). It likely needs a decision on how the lexer represents interpolated strings, and on whether `Language v3 Specification.md` starts now (as v2's did at M9).
+Closures (milestone 15) come after. Start with discovery for PRP-039.
 
 See `TODO.md`.
