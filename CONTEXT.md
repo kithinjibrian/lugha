@@ -3168,7 +3168,7 @@ Branch: prp-052-iterators (merged into main)
 ---
 
 ## SESSION 67 — 2026-10-13 — Self in interfaces (milestone 25) — open
-Branch: main
+Branch: prp-053-self_in_interfaces
 
 ---
 
