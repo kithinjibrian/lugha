@@ -203,6 +203,11 @@ mod tests {
             r#"(interp "" (. p name) ": " (call f 2) "!")"#
         );
         assert_eq!(expr(r#""plain""#), r#""plain""#);
+        // String literals and interpolations nest inside `{…}` (v4.1).
+        assert_eq!(
+            expr(r#""<{xs.join("-")}>""#),
+            r#"(interp "<" (call (. xs join) "-") ">")"#
+        );
     }
 
     #[test]

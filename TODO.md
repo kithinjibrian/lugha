@@ -134,6 +134,9 @@ Done when the reading-input program passes and the v4 spec is complete.
 - [x] PRP-044: `read_line`, `read_file`, `write_file`, `append_file`, `eprint`/`eprintln`, `exit`; `.stdin` and `.scratch` in the runner — v4 complete
 - [x] Fix the draft's §10 reading-input program: `Some(n) => total += n,` isn't valid Lugha (assignment is a statement; it needs `{ total += n; }`). Found in session 53.
 
+### v4.1 — Nested strings ✅
+- [x] PRP-045: string literals and nested interpolations inside `{…}`; E0111 keeps only real mistakes
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.

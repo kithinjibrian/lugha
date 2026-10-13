@@ -1,0 +1,17 @@
+// Lugha v4.1 (PRP-045): string literals and interpolations inside `{…}`.
+
+fun label(ok: bool): string = "{if ok { "yes" } else { "no" }}";
+
+fun main() {
+    let parts = ["a", "b", "c"];
+    println("<{parts.join("-")}>");
+    println("{label(true)} / {label(false)}");
+    let name = "ratio";
+    let a = 3;
+    let b = 4;
+    println("{name}: {"{a}/{b}"}");
+    // Two levels deep, with escapes and doubled braces in the nested parts.
+    println("[{"({"\"{a + b}\""})"}]");
+    println("{"{{literal}}"} {"tab\tend"}");
+    println("{parts.join(", ")}");
+}

@@ -1,0 +1,8 @@
+error[E0111]: `{` in a string is never closed
+  --> tests/programs/v4_1/e0111.la:3:22
+  |
+3 |     println("joined: {parts.join("-")");
+  |                      ^
+  |
+  = help: close it with `}`, or write `{{` for a literal brace
+

@@ -2823,6 +2823,28 @@ Branch: prp-044-input_output
 
 Branch: prp-045-nested_strings
 
+### WHAT WAS DONE
+- Discovery: v4.1 point release (string literals inside `{…}`) chosen over starting v5. PRP-045 written and approved.
+- Lexer: open interpolations form a stack; `"` inside `{…}` lexes a nested string; the `quote_in_interpolation` heuristic is gone. A string running past its line inside an interpolation is E0111 at that `{`.
+- Spec: v4 §2 "String interpolation", the E0111 row, the status line (v4.1).
+- Docs: CHANGELOG, MEMORY 53, TODO, README, CLAUDE.md (STACK, tree).
+
+### FILES CREATED OR MODIFIED
+- `src/lexer/interp.rs`, `src/lexer/mod.rs`, `src/parser/primary.rs` (test)
+- `tests/programs/v4_1/` (`nested.la`/`.stdout`/`.exit`, `e0111.la`/`.stderr`)
+- `docs/specs/Language v4 Specification.md`, `PRPs/prp-045-nested_strings.md`, CHANGELOG.md, MEMORY.md, TODO.md, README.md, CLAUDE.md
+
+### TESTS WRITTEN
+- Lexer: `string_literals_and_interpolations_nest`; `mistakes_are_e0111` rewritten with spans (lone `}`, `"{x"`, `{}`, `{ }`, `"{ "a" "`, a line break in a nested string).
+- Parser: `"<{xs.join("-")}>"` parses to `(interp "<" (call (. xs join) "-") ">")`.
+- Acceptance: `v4_1/nested.la` (run), `v4_1/e0111.la` (reject golden). `m13/e0111` unchanged.
+
+### DECISIONS MADE
+- MEMORY 53: nested strings in interpolations (v4.1).
+
+### PENDING DECISIONS OPENED
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

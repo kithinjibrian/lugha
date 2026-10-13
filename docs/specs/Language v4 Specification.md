@@ -2,7 +2,7 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** complete (milestones 17–19). It is built from the approved plan, `Language v4 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v3 Specification.md` keeps v3 frozen.
+**Status:** complete (milestones 17–19). It is built from the approved plan, `Language v4 Draft.md`. v4.1 allows string literals inside interpolations. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v3 Specification.md` keeps v3 frozen.
 
 **v3.** This is v2 plus command-line arguments and number parsing, string interpolation, functions as values, closures, and array helpers (milestones 13–16).
 
@@ -102,7 +102,7 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 
 **String details.** A string may not contain a raw line break: write `\n`. An unclosed string is reported at the end of its line, and lexing continues on the next one. Any other UTF-8 may appear inside strings and comments. Outside them, only ASCII is allowed.
 
-**String interpolation** (v3). Inside a string literal, `{` starts an interpolation that runs to its matching `}`: `"{name} is {age * 2}"`. Braces inside the expression nest, so `"{if c { 1 } else { 2 }}"` works. `{{` and `}}` are literal braces. The lexer emits such a string as its literal parts (`STRING_START`, `STRING_MID`, `STRING_END`) with the expression's tokens between them; escapes apply in every part. Errors (E0111): a lone `}`, a `{` never closed, an empty `{}`, or a string literal inside an interpolation (build that string in a variable first). A line break inside an interpolation ends the string (E0102).
+**String interpolation** (v3). Inside a string literal, `{` starts an interpolation that runs to its matching `}`: `"{name} is {age * 2}"`. Braces inside the expression nest, so `"{if c { 1 } else { 2 }}"` works. The expression may contain string literals, which may interpolate in turn (v4.1): `"<{parts.join("-")}>"`, `"{if ok { "yes" } else { "no" }}"`, `"{name}: {"{a}/{b}"}"`. `{{` and `}}` are literal braces. The lexer emits such a string as its literal parts (`STRING_START`, `STRING_MID`, `STRING_END`) with the expression's tokens between them, a nested string's tokens among them; escapes apply in every part. Errors (E0111): a lone `}`, a `{` never closed, or an empty `{}`. Strings stay on one line: a line break ends a string that began inside an interpolation with E0111 at that interpolation's `{`, and otherwise ends the string (E0102).
 
 **Lexical errors.** The lexer reports every error it finds, not just the first.
 
@@ -118,7 +118,7 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 | E0108 | Invalid character in a number | `123abc`, `0XFF`, `0xFG` |
 | E0109 | Float literal out of range | `1.0e999` |
 | E0110 | Source is not valid UTF-8 | A Latin-1 `é` byte; reported at the first bad byte |
-| E0111 | Bad interpolation in a string (v3) | `"a } b"`, `"{x"`, `"{}"`, `"{f("s")}"` — write `{{`/`}}` for literal braces |
+| E0111 | Bad interpolation in a string (v3) | `"a } b"`, `"{x"`, `"{}"` — write `{{`/`}}` for literal braces |
 
 **Operators and punctuation.** The lexer uses longest match, so `<=` is one token, not `<` then `=`.
 

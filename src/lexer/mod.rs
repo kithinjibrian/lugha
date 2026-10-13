@@ -39,7 +39,7 @@ pub fn lex(source: &str) -> Result<(Vec<Token>, Vec<Diagnostic>), Vec<Diagnostic
         pos: 0,
         tokens: Vec::new(),
         diagnostics: Vec::new(),
-        interp: None,
+        interp: Vec::new(),
     };
     lexer.run();
     if lexer
@@ -60,8 +60,8 @@ struct Lexer<'a> {
     pos: usize,
     tokens: Vec<Token>,
     diagnostics: Vec<Diagnostic>,
-    /// The interpolation being lexed, if any (v3).
-    interp: Option<interp::Interp>,
+    /// The interpolations being lexed, innermost last (v3, nested in v4.1).
+    interp: Vec<interp::Interp>,
 }
 
 impl Lexer<'_> {

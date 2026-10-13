@@ -70,21 +70,21 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — lexer (`interp.rs`):
-- [ ] **A string literal inside:** `"a{f("s")}b"` gives `StrStart("a")`, `Ident(f)`, `LParen`, `Str("s")`, `RParen`, `StrEnd("b")`.
-- [ ] **A nested interpolation:** `"{"{x}"}"` gives `StrStart("")`, `StrStart("")`, `Ident(x)`, `StrEnd("")`, `StrEnd("")`.
-- [ ] **Braces inside a nested string's expression:** `"{if c { "y" } else { "n" }}"` lexes completely.
-- [ ] **E0111** still for `"a } b"`, `"{x"` (at the `{`) and `"{}"`; `"{ "a" "` (unclosed, at the `{`).
-- [ ] **A line break inside a nested string** is E0111 at the outer `{`.
+- [x] **A string literal inside:** `"a{f("s")}b"` gives `StrStart("a")`, `Ident(f)`, `LParen`, `Str("s")`, `RParen`, `StrEnd("b")`.
+- [x] **A nested interpolation:** `"{"{x}"}"` gives `StrStart("")`, `StrStart("")`, `Ident(x)`, `StrEnd("")`, `StrEnd("")`.
+- [x] **Braces inside a nested string's expression:** `"{if c { "y" } else { "n" }}"` lexes completely.
+- [x] **E0111** still for `"a } b"`, `"{x"` (at the `{`) and `"{}"`; `"{ "a" "` (unclosed, at the `{`).
+- [x] **A line break inside a nested string** is E0111 at the outer `{`.
 
 Unit tests — parser:
-- [ ] `"<{xs.join("-")}>"` parses to `(interp "<" (call (. xs join) "-") ">")`.
+- [x] `"<{xs.join("-")}>"` parses to `(interp "<" (call (. xs join) "-") ">")`.
 
 Acceptance — `tests/programs/v4_1/`:
-- [ ] `nested.la`: the three examples above, plus a nested interpolation two levels deep. Run at `-O0` and `-O2`.
-- [ ] `e0111.la`: reject golden (a `{` never closed).
+- [x] `nested.la`: the three examples above, plus a nested interpolation two levels deep. Run at `-O0` and `-O2`.
+- [x] `e0111.la`: reject golden (a `{` never closed).
 
 Regression:
-- [ ] Every earlier test passes. The `m13/e0111` golden (a lone `}`) is unchanged.
+- [x] Every earlier test passes. The `m13/e0111` golden (a lone `}`) is unchanged.
 
 ## ROLLBACK PLAN
 
@@ -92,11 +92,11 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The examples above compile and run.
-- [ ] Only the three real E0111 cases remain.
-- [ ] Spec and docs updated; tag `v4.1`.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The examples above compile and run.
+- [x] Only the three real E0111 cases remain.
+- [x] Spec and docs updated; tag `v4.1` at merge.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -105,3 +105,10 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/v4_1/nested.la
 ```
+
+## AMENDMENTS (during build, session 56)
+
+- **Where E0111 points:** a string that runs past its line while an interpolation is open is reported at the innermost open `{` (the one containing that string), and every open interpolation ends there.
+- **A line break in interpolation code** (`"{x` then a newline) pops that interpolation first, so it stays E0102 at top level, as before; it is E0111 only when an outer interpolation is still open.
+- **`nested.la`** also covers escapes and `{{…}}` inside a nested string, and a nested `", "` separator.
+- **No file splits;** `interp.rs` stays under 300 lines.

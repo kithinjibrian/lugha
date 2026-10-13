@@ -868,11 +868,23 @@ Open questions live in `DECISIONS.md`, not here.
 
 **Why:** These follow the session 55 discovery answer. I/O failures as values fit `Result` and `?`, and only scratch cases change the runner's working directory.
 
+### 53. Nested strings in interpolations — Lugha v4.1 (PRP-045)
+
+**Decision:**
+- **Lexer:** `Lexer.interp` is a stack (`Vec<Interp>`), innermost last. Inside an interpolation, `"` lexes an ordinary string (`self.string`), whose own `{` pushes; `{`/`}` count the innermost's braces, and its closing `}` pops and resumes the enclosing string's text.
+- **Line breaks:** strings stay single-line. A string that runs past its line while an interpolation is open (`string_unclosed`) is E0111 "`{` in a string is never closed" at the innermost open `{`, and clears the stack; otherwise E0102. A line break or EOF in interpolation code pops the top first, so `"{x` + newline is E0102 as before.
+- **Removed:** the `quote_in_interpolation` heuristic and its "string literal can't appear inside `{…}`" E0111.
+- **No parser, checker or codegen change:** a nested string is just tokens among the interpolation's.
+- **Spec:** v4 spec §2 "String interpolation", the E0111 row and the status line (v4.1); tag `v4.1`.
+
+**Why:** E0111 tripped real programs (sessions 48, 54, 55); the session 56 discovery chose a point release over starting v5.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Lugha v4.1**: PRP-045 string literals inside interpolations
 - **Milestone 19 complete — Lugha v4 complete**: PRP-044 input and output
 - **Milestone 18 complete**: PRP-043 text and option helpers
 - **Milestone 17 complete**: PRP-042 `Result` and `?`; the v4 spec begins
