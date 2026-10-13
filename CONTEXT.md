@@ -3196,20 +3196,47 @@ Branch: prp-053-self_in_interfaces (merged into main)
 
 ---
 
-## SESSION 68 — 2026-10-13 — Converting between interfaces (milestone 26) — open
+## SESSION 68 — 2026-10-13 — Converting between interfaces (milestone 26) — closed
 Branch: prp-054-interface_conversion
+
+### WHAT WAS DONE
+- No interview: the draft settles the behaviour. PRP-054 approved with one amendment to draft §9: lookup functions instead of per-table slots.
+- Checker: `J` → `I` when `J` declares every item of `I` (E0422 otherwise); `?` converts interface errors the same way.
+- Codegen: table registry, derived tables, `lugha_up_<J>.<I>` built at the end of lowering (fixpoint for chains); `box_as` routes interface sources.
+- Spec complete: §4, §7, §9, E0422 row, the §10 program, §11 milestone 26, §12 v6 questions; draft §9 note.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/upcast.rs`, `src/codegen/upcast.rs`, `tests/programs/m26/` (`pets`, `chains`, `e0422`).
+- Modified: `src/check/{iface_values,iface_tables,results,mod}.rs`, `src/check/errors/v6.rs`, `src/codegen/{interfaces,defaults,lower,mod}.rs`, `tests/spec.rs`, the v6 spec and draft.
+- Docs: PRP-054, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 64, CONTEXT.
+
+### TESTS WRITTEN
+- Checker (`upcast.rs`): conversions in every position, E0422 (missing, mismatched, defaulted), E0403 kept (other arguments, arrays), `?` with interface errors (E0424 when not). Two v5 tests updated to the v6 rule.
+- Codegen (`upcast.rs`): the up-function and derived table; none without such conversions.
+- `tests/programs/m26/`; the §10 program from the spec. Earlier programs' IR byte-identical with `main` (no exceptions); `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 64.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-054 waits for the user's merge OK; then tags `m26` and `v6`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 25 complete** (PRP-053, MEMORY 63): `Self` in interfaces, bounds-only interfaces (E0427). Tagged `m25`. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
+**Lugha v6 is complete** (milestones 23–26; PRP-050–054; MEMORY 59–64): generic interfaces, iterators, `Self` in interfaces, converting between interfaces. Tags `m26` and `v6` go on the merge of PRP-054. `Language v6 Specification.md` is what `lughac spec` prints; v0–v5 are frozen.
 
-Next: **milestone 26, converting between interfaces** — discovery and PRP-054; it completes v6 (tags `m26`, `v6`). Scope (v6 draft decision 4, §4 "Converting between interfaces", §9, §10):
-- where `I` is expected, a value of interface type `J` converts when `J` declares every item of `I` (defaulted ones included) the same way after substituting arguments; else E0422 naming what `J` lacks (today: E0403 via `errors::interface_to_interface` in `iface_values.rs::convert`);
-- the box keeps its concrete type (type patterns still see it), and each method behaves as through `J`;
-- `?` converts an interface error `J` into `F` the same way (`iface_tables.rs::try_converts` rejects `from` interfaces today);
-- codegen: each table of `J` gains a slot per interface `J` values convert to, pointing at the derived table (`I`'s slots taken from `C`'s `J` table); chains close over the slots; no symbols when unused.
+Next: **v7 direction — discovery** (one question at a time, recommended option first). Candidates are in the v6 spec's §11 out-of-scope list and §12 open questions:
+- `Self` outside interfaces (in `impl`), default methods called on concrete types;
+- packages with `public`;
+- bitwise operators, `u32`/`u64`/`f32`, wrapping arithmetic;
+- or-patterns and `mut` bindings in `match`, `unwrap()`;
+- iterator helpers (`map`, `filter`, `collect` on `Iter<T>`), strings as iterators, `for n of mut c`;
+- binary I/O, directories, streams and processes.
 
 Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
 

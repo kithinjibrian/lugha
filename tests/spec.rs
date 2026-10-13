@@ -93,6 +93,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Generic interfaces",
         "Iterators",
         "`Self`",
+        "Converting between interfaces",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

@@ -1,0 +1,8 @@
+error[E0422]: `Named` doesn't declare everything `Pet` needs
+   --> tests/programs/m26/e0422.la:14:36
+   |
+14 | fun hello(n: Named): string = talk(n);
+   |                                    ^
+   |
+   = help: no `sound`
+

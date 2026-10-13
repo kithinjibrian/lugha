@@ -113,38 +113,38 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (new `check/upcast.rs`, which holds `declares_all`):
-- [ ] **Allowed:**
+- [x] **Allowed:**
   - `Pet` to `Named` in `let`, arguments, array elements, fields, `Option` payloads and returns;
   - a generic `Source<i64>` to `Sized`, when `Source` declares `size`.
-- [ ] **E0422:**
+- [x] **E0422:**
   - a missing item;
   - a mismatched item;
   - a defaulted item `J` lacks (defaults count).
-- [ ] **E0403:**
+- [x] **E0403:**
   - `Source<i64>` to `Source<string>` (unchanged);
   - `Pet[]` to `Named[]`.
-- [ ] **`?`:** `Result<i64, ParseProblem>` into `Result<i64, Problem>` checks; with a `J` that lacks an item, E0424.
+- [x] **`?`:** `Result<i64, ParseProblem>` into `Result<i64, Problem>` checks; with a `J` that lacks an item, E0424.
 
 Unit tests — codegen (`codegen/upcast.rs`):
-- [ ] Converting a `Pet` to `Named` calls `@"lugha_up_Pet.Named"`. Its body compares with `@lugha_vt_Dog.Pet` and returns `@lugha_vt_Dog.Pet.Named`.
-- [ ] The derived table's slots are `@lugha_vt_Dog.Pet`'s identity, copy and `name` entries.
-- [ ] A program without such conversions has no `lugha_up_` symbol.
+- [x] Converting a `Pet` to `Named` calls `@"lugha_up_Pet.Named"`. Its body compares with `@lugha_vt_Dog.Pet` and returns `@lugha_vt_Dog.Pet.Named`.
+- [x] The derived table's slots are `@lugha_vt_Dog.Pet`'s identity, copy and `name` entries.
+- [x] A program without such conversions has no `lugha_up_` symbol.
 
 Acceptance — `tests/programs/m26/`:
-- [ ] `pets.la`: the §10 program.
-- [ ] `chains.la`:
+- [x] `pets.la`: the §10 program.
+- [x] `chains.la`:
   - a chain `J` to `I` to `K`, and back to `J`;
   - a default kept from `J`;
   - copies are independent (`mut self` through the new value);
   - type patterns after conversion;
   - a generic function converting `T = Pet` to `Named`;
   - `?` with interface errors.
-- [ ] `e0422.la`: reject golden.
-- [ ] The §10 program runs from the spec.
+- [x] `e0422.la`: reject golden.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes.
-- [ ] Earlier programs give byte-identical IR, except programs that convert an interface-valued type argument, whose output is unchanged.
+- [x] Every earlier test passes.
+- [x] Earlier programs give byte-identical IR, except programs that convert an interface-valued type argument, whose output is unchanged.
 
 ## ROLLBACK PLAN
 
@@ -152,10 +152,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m26/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The v6 spec is complete; docs updated.
-- [ ] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m26/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The v6 spec is complete; docs updated.
+- [x] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -164,3 +164,11 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m26/pets.la
 ```
+
+## AMENDMENTS (during build, session 68)
+
+- **No exceptions to byte-identical IR:** no earlier test program converted an interface-valued type argument, so every earlier program's IR is unchanged.
+- **Two v5 unit tests updated** to the v6 rule: `iface_values::nothing_converts_without_an_interface_expected` (another interface now converts, or is E0422) and `results::question_mark_converts_into_an_interface_error` (an interface error now converts).
+- **`interfaces.rs`:** `table_type`, `method_of` and `box_copy` became `pub(super)`, and `table` registers each table it builds (one line).
+- **`-O2`** was checked by hand for `m26/pets` and `m26/chains`.
+- **No file splits.**

@@ -116,6 +116,7 @@ None. Generic interface values are the same two words. Converting between interf
   - **How a conversion finds it:** each table for `J` gains one slot per interface that `J` values are converted to, pointing at that table. A conversion loads that slot and pairs it with a copy of the box, so it costs one load at run time.
   - **Chains** (`J` to `I` to `K`) close over these slots.
   - **No extra symbols** when nothing is converted between interfaces.
+- **Amended by PRP-054:** the conversion slots became lookup functions, `lugha_up_<J>.<I>`, built after lowering, when every table is known; growing an already emitted table would need `unsafe`. Derived tables are `lugha_vt_<C>.<J>.<I>`.
 - **Iterator loops** lower as the desugaring in §5: a direct call when `e`'s type is concrete, and a dynamic call when `e` is an `Iter<T>` value.
 - **The runtime** needs nothing new.
 

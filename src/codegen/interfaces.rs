@@ -103,7 +103,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// The LLVM type of a table of interface `key`: one pointer per slot.
-    fn table_type(&self, key: &str) -> StructType<'ctx> {
+    pub(super) fn table_type(&self, key: &str) -> StructType<'ctx> {
         let ptr = self.context.ptr_type(Default::default());
         let count = SLOTS as usize + self.interfaces[key].methods.len();
         self.context.struct_type(&vec![ptr.into(); count], false)
@@ -139,12 +139,20 @@ impl<'ctx> Lowerer<'ctx> {
         global.set_initializer(&table_type.const_named_struct(&slots));
         global.set_constant(true);
         global.set_linkage(Linkage::Internal);
+        self.upcasts
+            .add(ty, interface, interface, global.as_pointer_value());
         global.as_pointer_value()
     }
 
     /// The type's own method when it has one, else the instance of
     /// interface `key`'s default for `ty` and the interface's `args` (v5, v6).
-    fn method_of(&self, ty: &Type, key: &str, args: &[Type], name: &str) -> FunctionValue<'ctx> {
+    pub(super) fn method_of(
+        &self,
+        ty: &Type,
+        key: &str,
+        args: &[Type],
+        name: &str,
+    ) -> FunctionValue<'ctx> {
         let own = match ty {
             Type::Struct(owner, targs) | Type::Enum(owner, targs) => {
                 let k = method_key(owner, name);
@@ -182,7 +190,7 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// `lugha_copy_<mangled>_box(ptr) -> ptr`: a new box holding a deep copy
     /// of the old box's value.
-    fn box_copy(&mut self, ty: &Type) -> FunctionValue<'ctx> {
+    pub(super) fn box_copy(&mut self, ty: &Type) -> FunctionValue<'ctx> {
         let name = format!("lugha_copy_{}_box", mangle(ty));
         if let Some(function) = self.module.get_function(&name) {
             return function;

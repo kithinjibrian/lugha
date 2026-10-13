@@ -56,6 +56,7 @@ mod structs;
 mod swap;
 mod type_patterns;
 mod types;
+mod upcast;
 mod usefulness;
 mod visibility;
 

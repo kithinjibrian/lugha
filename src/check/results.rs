@@ -196,9 +196,10 @@ mod tests {
             "{base}fun half(n: i64): Result<i64, string> = Ok(n);\nfun read(): Result<i64, Error> {{ let n = half(1)?; Ok(n) }}\nfun main() {{}}"
         );
         assert_eq!(codes(&plain), ["E0424"]);
+        // v6: an interface error converts when it declares every item.
         let other = format!(
             "{base}fun get(o: Other): Result<i64, Other> = Err(o);\nfun read(o: Other): Result<i64, Error> {{ let n = get(o)?; Ok(n) }}\nfun main() {{}}"
         );
-        assert_eq!(codes(&other), ["E0424"]);
+        ok(&other);
     }
 }

@@ -80,11 +80,18 @@ impl Checker {
         let Some(interface) = Applied::of(to) else {
             return false;
         };
-        if matches!(from, Type::Interface(..)) || !self.unmet(from, &interface).is_empty() {
+        // An interface error converts when it declares every item (v6).
+        let converts = match Applied::of(from) {
+            Some(j) => j.key != interface.key && self.undeclared(&j, &interface).is_empty(),
+            None => self.unmet(from, &interface).is_empty(),
+        };
+        if !converts {
             return false;
         }
         self.try_conversions.insert(inner.id, to.clone());
-        self.conversion_uses(inner, from, &interface);
+        if !matches!(from, Type::Interface(..)) {
+            self.conversion_uses(inner, from, &interface);
+        }
         true
     }
 

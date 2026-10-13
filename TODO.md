@@ -168,9 +168,9 @@ Done when the iterators program passes.
 Done when the `Self` program passes.
 - [x] PRP-053: `Self` in interface signatures and default bodies; bounds-only interfaces (E0427); tagged `m25`
 
-### Milestone 26 — Converting between interfaces
+### Milestone 26 — Converting between interfaces ✅
 Done when the converting-between-interfaces program passes and the v6 spec is complete.
-- [ ] `J` to `I` where `J` declares `I`'s items; through `?`
+- [x] PRP-054: `J` to `I` where `J` declares `I`'s items; through `?`; v6 complete; tagged `m26` and `v6` at merge
 
 ## Found while working — needs a PRP
 

@@ -31,6 +31,10 @@ impl<'ctx> Lowerer<'ctx> {
         ty: &Type,
         to: &Type,
     ) -> BasicValueEnum<'ctx> {
+        // Another interface's value keeps its box and finds its table (v6).
+        if let Type::Interface(..) = ty {
+            return self.upcast(value.into_struct_value(), ty, to).into();
+        }
         let boxed = self.new_box(ty, value);
         let table = self.table(ty, to);
         self.pair(table, boxed).into()

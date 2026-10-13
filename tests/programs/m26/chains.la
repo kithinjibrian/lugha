@@ -1,0 +1,91 @@
+// Converting between interfaces (milestone 26): chains, defaults kept from
+// the source interface, independent copies, type patterns, generic code, `?`.
+
+interface Named {
+    fun name(self): string;
+}
+
+interface Pet {
+    fun name(self): string;
+    fun sound(self): string;
+    fun intro(self): string = "{self.name()} says {self.sound()}";
+}
+
+// Declares the same items as `Pet`, with another default.
+interface Pet2 {
+    fun name(self): string;
+    fun sound(self): string;
+    fun intro(self): string = "pet2";
+}
+
+interface Animal {
+    fun name(self): string;
+    fun sound(self): string;
+    fun intro(self): string = "an animal";
+    fun rename(mut self, to: string);
+}
+
+struct Dog { called: string }
+
+impl Dog {
+    fun name(self): string = self.called;
+    fun sound(self): string = "woof";
+    fun rename(mut self, to: string) { self.called = to; }
+}
+
+fun greet(n: Named): string = match n {
+    d: Dog => "dog {d.called}",
+    _ => "someone",
+};
+
+fun as_named<T: Named>(x: T): Named = x;
+
+interface Problem {
+    fun text(self): string;
+}
+
+interface ParseProblem {
+    fun text(self): string;
+    fun at(self): i64;
+}
+
+struct BadChar { pos: i64 }
+
+impl BadChar {
+    fun text(self): string = "bad char at {self.pos}";
+    fun at(self): i64 = self.pos;
+}
+
+fun parse(s: string): Result<i64, ParseProblem> =
+    if s == "ok" { Ok(1) } else { Err(BadChar { pos: 3 }) };
+
+fun run(s: string): Result<i64, Problem> {
+    let n = parse(s)?;
+    Ok(n + 1)
+}
+
+fun main() {
+    let a: Animal = Dog { called: "rex" };
+    let p: Pet = a;
+    println(p.intro());
+    let n: Named = p;
+    println(greet(n));
+    let p2: Pet2 = p;
+    let back: Pet = p2;
+    println(back.intro());
+
+    let mut m: Animal = Dog { called: "max" };
+    let before: Named = m;
+    m.rename("bo");
+    println("{before.name()} {m.name()}");
+
+    let pet: Pet = Dog { called: "fido" };
+    println(greet(as_named(pet)));
+
+    for s of ["ok", "no"] {
+        match run(s) {
+            Ok(v) => println(v),
+            Err(e) => println(e.text()),
+        }
+    }
+}

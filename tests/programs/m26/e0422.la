@@ -1,0 +1,16 @@
+// A `Named` value doesn't declare `sound`, so it can't become a `Pet`.
+
+interface Named {
+    fun name(self): string;
+}
+
+interface Pet {
+    fun name(self): string;
+    fun sound(self): string;
+}
+
+fun talk(p: Pet): string = p.sound();
+
+fun hello(n: Named): string = talk(n);
+
+fun main() {}

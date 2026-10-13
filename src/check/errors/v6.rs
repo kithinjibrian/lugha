@@ -14,3 +14,19 @@ pub(in crate::check) fn interface_uses_self(name: &str, item: &str, span: Span) 
         "two `{name}` values could hold different types; use it as a bound: `<T: {name}>`"
     ))
 }
+
+/// E0422 for a value of one interface type that doesn't declare every item
+/// of the interface it should convert to (v6).
+pub(in crate::check) fn undeclared(
+    from: &crate::check::Type,
+    to: &str,
+    problems: &[String],
+    span: Span,
+) -> Diagnostic {
+    Diagnostic::error(
+        "E0422",
+        format!("`{from}` doesn't declare everything `{to}` needs"),
+        span,
+    )
+    .with_help(problems.join("; "))
+}

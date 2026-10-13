@@ -80,6 +80,14 @@ impl Checker {
             // Already reported, never produced, already converted, or E0407 to come.
             Type::Error | Type::Never | Type::Void => ty,
             Type::Interface(..) if ty.fits(wanted) => ty,
+            // Another interface converts when it declares every item (v6).
+            Type::Interface(key, _) if *key != interface.key => {
+                if !self.upcasts(&ty, &interface, expr.span) {
+                    return Type::Error;
+                }
+                self.conversions.insert(expr.id, wanted.clone());
+                wanted.clone()
+            }
             Type::Interface(..) => {
                 let d =
                     errors::interface_to_interface(wanted.clone(), ty, expr.span, reason.as_ref());
@@ -206,15 +214,20 @@ mod tests {
             e("fun f() { let cs = [Circle { r: 1.0 }]; let xs: Shape[] = cs; }"),
             [("E0403", "cs".into())]
         );
+        // v6: another interface converts when it declares every item, and
+        // is E0422 when it doesn't (`check/upcast.rs`).
         let named = "interface Named { fun area(self): f64; fun grow(mut self, k: f64); }\n";
+        ok(&format!(
+            "{SHAPES}{named}fun f(n: Named) {{ let s: Shape = n; }}\nfun main() {{}}"
+        ));
+        let less = "interface Less { fun area(self): f64; }\n";
         assert_eq!(
-            e(&format!("{named}fun f(n: Named) {{ let s: Shape = n; }}")),
-            [("E0403", "n".into())]
+            e(&format!("{less}fun f(n: Less) {{ let s: Shape = n; }}")),
+            [("E0422", "n".into())]
         );
-        let src =
-            format!("{SHAPES}{named}fun f(n: Named) {{ let s: Shape = n; }}\nfun main() {{}}");
+        let src = format!("{SHAPES}{less}fun f(n: Less) {{ let s: Shape = n; }}\nfun main() {{}}");
         let help = diagnostics(&src)[0].help.clone().expect("a help");
-        assert!(help.contains("another interface"), "{help}");
+        assert!(help.contains("no `grow`"), "{help}");
     }
 
     #[test]

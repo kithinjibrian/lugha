@@ -1,0 +1,37 @@
+// The v6 draft's §10 converting-between-interfaces program (milestone 26).
+
+interface Named {
+    fun name(self): string;
+}
+
+interface Pet {
+    fun name(self): string;
+    fun sound(self): string;
+}
+
+struct Dog { called: string }
+
+impl Dog {
+    fun name(self): string = self.called;
+    fun sound(self): string = "woof";
+}
+
+struct Cat { called: string }
+
+impl Cat {
+    fun name(self): string = self.called;
+    fun sound(self): string = "meow";
+}
+
+fun greet(n: Named): string = match n {
+    d: Dog => "good dog, {d.called}",
+    _ => "hello, {n.name()}",
+};
+
+fun main() {
+    let pets: Pet[] = [Dog { called: "rex" }, Cat { called: "tom" }];
+    for p of pets {
+        println(greet(p));
+        println(p.sound());
+    }
+}

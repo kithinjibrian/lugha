@@ -1018,9 +1018,20 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 64. Converting between interfaces — v6 complete (PRP-054)
+
+**Decision:** `J` converts to `I` (different keys) when `J` declares every item of `I`, defaults included (`check/upcast.rs::undeclared`, E0422 "`J` doesn't declare everything `I` needs"); same key, other arguments stays E0403. `?` accepts an interface error by the same rule (`try_converts`).
+- **Codegen** (`codegen/upcast.rs`), amending draft §9 (approved): conversions call `lugha_up_<J>.<I>(table) -> table`, whose body (built in `finish_upcasts` after all lowering) compares with every `J` table and returns the matching `I` table. Tables are registered as `(concrete, root, interface)` (`interfaces.rs::table` adds direct ones); derived tables `lugha_vt_<C>.<root>.<I>` take `C`'s identity/copy and the root table's functions (`method_of` on the root), so methods behave as through `J`; derived-of-derived keep the root, so the fixpoint is finite and converting back finds the root table. `box_as` routes an interface source to `upcast` (covers generic `T = J` instances and `?`).
+- **Why not slots:** tables are emitted lazily; growing a global would need replacing it, and deleting globals needs `unsafe` in inkwell.
+
+**Why:** behaviour exactly as the draft; the lookup keeps codegen safe and adds nothing to programs that don't convert between interfaces.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 26 complete — Lugha v6 complete**: PRP-054 converting between interfaces
 - **Milestone 25 complete**: PRP-053 `Self` in interfaces
 - **Milestone 24 complete**: PRP-052 iterators
 - **Milestone 23 complete**: PRP-050 generic interfaces as bounds, PRP-051 generic interface values
@@ -1084,22 +1095,24 @@ Open questions live in `DECISIONS.md`, not here.
 - v0 language spec reviewed and fixed
 
 ### In Progress
-- Nothing (milestone 26, converting between interfaces, is next)
+- Nothing
 
 ### Not Started
-- Milestone 26 (v6 draft, MEMORY 59)
+- Lugha v7 (nothing planned; see the v6 spec's §11 out-of-scope list)
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 25 complete** (PRP-053, MEMORY 63): `Self` in interfaces, bounds-only interfaces (E0427). Tagged `m25`. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
+**Lugha v6 is complete** (milestones 23–26; PRP-050–054; MEMORY 59–64): generic interfaces, iterators, `Self` in interfaces, converting between interfaces. Tags `m26` and `v6` go on the merge of PRP-054. `Language v6 Specification.md` is what `lughac spec` prints; v0–v5 are frozen.
 
-Next: **milestone 26, converting between interfaces** — discovery and PRP-054; it completes v6 (tags `m26`, `v6`). Scope (v6 draft decision 4, §4 "Converting between interfaces", §9, §10):
-- where `I` is expected, a value of interface type `J` converts when `J` declares every item of `I` (defaulted ones included) the same way after substituting arguments; else E0422 naming what `J` lacks (today: E0403 via `errors::interface_to_interface` in `iface_values.rs::convert`);
-- the box keeps its concrete type (type patterns still see it), and each method behaves as through `J`;
-- `?` converts an interface error `J` into `F` the same way (`iface_tables.rs::try_converts` rejects `from` interfaces today);
-- codegen: each table of `J` gains a slot per interface `J` values convert to, pointing at the derived table (`I`'s slots taken from `C`'s `J` table); chains close over the slots; no symbols when unused.
+Next: **v7 direction — discovery** (one question at a time, recommended option first). Candidates are in the v6 spec's §11 out-of-scope list and §12 open questions:
+- `Self` outside interfaces (in `impl`), default methods called on concrete types;
+- packages with `public`;
+- bitwise operators, `u32`/`u64`/`f32`, wrapping arithmetic;
+- or-patterns and `mut` bindings in `match`, `unwrap()`;
+- iterator helpers (`map`, `filter`, `collect` on `Iter<T>`), strings as iterators, `for n of mut c`;
+- binary I/O, directories, streams and processes.
 
 Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
 

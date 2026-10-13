@@ -1,15 +1,16 @@
-# Lugha v6 Specification (in progress: milestones 23–25 done)
+# Lugha v6 Specification
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 23–25, generic interfaces, iterators and `Self`, are done; milestone 26 is next). It is built from the approved plan, `Language v6 Draft.md`, milestone by milestone. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v5 Specification.md` keeps v5 frozen.
+**Status:** complete (milestones 23–26). It is built from the approved plan, `Language v6 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v5 Specification.md` keeps v5 frozen.
 
 **v5.** This is v4 plus interface values, type patterns, default methods and `?` converting into an interface error (milestones 20–22).
 
-**Changes since v5** (milestones 23–25):
+**Changes since v5** (milestones 23–26):
 - An interface may take type parameters, and a bound passes it arguments: `interface Source<T> { fun next(mut self): Option<T>; }`, `fun collect<T, S: Source<T>>(src: S): T[]`. A parameter that appears only in a bound's arguments is read off the concrete type's methods. A generic interface is a type too: `let s: Source<i64> = Count { n: 0, end: 3 };` (sections 3–4, 9).
 - The prelude declares `interface Iter<T> { fun next(mut self): Option<T>; }`, and `for x of e` loops over anything with that `next`, working on a copy of `e` (sections 4–5, 9).
 - Inside an interface, `Self` is the type that satisfies it: `fun less(self, other: Self): bool`. Such an interface is a bound only; as a type it is E0427 (sections 4, 9).
+- A value of one interface type converts to another where that one is expected, when its interface declares every item of the other: a `Pet` becomes a `Named`, and `?` converts interface errors the same way (sections 4, 7, 9).
 
 Every valid v5 program is a valid v6 program.
 
@@ -411,7 +412,7 @@ They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (
 - **Names:** `Result`, `Ok` and `Err` are built-in names: declaring one is E0302, and a local named `Result` is E0311. A local named `Ok` or `Err` shadows the constructor, as one named `Some` does. Messages print the type as `Result<i64, string>`.
 
 **The `?` operator** (v4). `e?` evaluates `e` once.
-- **On `Result<T, E>`:** its type is `T`. If `e` is `Err(x)`, the enclosing function returns `Err(x)` at once. The function must return `Result<U, E>` with the same `E`, or `Result<U, F>` where `F` is an interface that `E`, a concrete type, satisfies: then the error is converted into an `F` (v5).
+- **On `Result<T, E>`:** its type is `T`. If `e` is `Err(x)`, the enclosing function returns `Err(x)` at once. The function must return `Result<U, E>` with the same `E`, or `Result<U, F>` where `F` is an interface that `E`, a concrete type, satisfies, or an interface that `E`, an interface type, converts to (v6, section 4): then the error is converted into an `F` (v5).
 - **On `Option<T>`:** its type is `T`. If `e` is `None`, the function returns `None`. The function must return an `Option`.
 - **In a closure**, it returns from the closure, whose return type must be written or expected (E0412 otherwise, as for `return`).
 - **Misuse is E0424**, with help: `?` on any other type, in `main`, in a function returning something else, on an `Option` in a function returning `Result`, or with error types that neither match nor convert.
@@ -479,7 +480,7 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 - **The type:** an interface whose items are all methods is a type, written by its name (`Shape`, `shapes.Shape`) wherever a type can be: `Shape[]`, `Option<Shape>`, fields, payloads, parameters, return types, function types and type arguments. A generic interface takes its arguments (v6, above); a plain one takes none (E0418). An interface with an associated function can still be a bound, but used as a type it is E0425, naming the associated function.
 - **Conversion,** the one implicit conversion: where the expected type is exactly an interface `I`, a value of a type that satisfies `I` (checked where the conversion happens, with that place's visibility) becomes an `I`; a type that doesn't is E0422, naming each missing or mismatched item. An expected type reaches a value through `let` annotations, arguments, struct-literal fields, array elements, payloads (`Some(c)`, `Ok(c)`), assignments, `return` and tail values, and the branches of `if` and `match`. A numeric literal takes its default type (`i64`, `f64`) and converts.
   - **Not inside other types:** a `Circle[]` is not a `Shape[]`, and an `Option<Circle>` is not an `Option<Shape>` (E0403).
-  - **Not between interfaces:** a value of interface type `J` doesn't convert to another interface `I` (E0403), even if `J` declares the same items.
+  - **Between interfaces** (v6): a value of interface type `J` converts to another interface `I` when `J` declares every item of `I`, defaulted ones included, with the same name, receiver and signature (each at its arguments): a `Pet` becomes a `Named`. Otherwise it is E0422, naming what `J` lacks. The value inside keeps its concrete type, so a type pattern on the `I` still matches it (`d: Dog`), and each method behaves as it did through `J`, including a default `J` supplied. The same interface at other arguments doesn't convert (`Source<i64>` to `Source<string>`, E0403). In a generic instance whose type argument is an interface value, converting that `T` to `I` works the same way.
   - **Type parameters:** `T` converts to `I` when its bounds satisfy `I`; each instance converts its concrete type.
   - **No expected type, no conversion:** `let s = c;` keeps `c`'s type, and `[c, sq]` with no expected type is E0403.
 - **Calls:** `s.area()` calls the concrete type's method, checked against the interface's signature. A `mut self` method needs a mutable place (E0501, E0502, E0508). The value inside has no reachable fields (E0410).
@@ -691,7 +692,7 @@ Value types live on the stack; strings and arrays live on a garbage-collected he
 
 **Function values** (v3) are a pair `{ ptr code, ptr env }`, 16 bytes with alignment 8, passed and stored by value. A named function's value has a null environment, and its code is the function's `lugha_ref_` wrapper (section 9).
 
-**Interface values** (v5) are a pair `{ ptr table, ptr box }`, 16 bytes with alignment 8, passed and stored by value. The box is a GC object allocated with `lugha_rt_alloc` that holds one value of the concrete type, primitives included. The table is a constant per (concrete type, interface) pair: the type's identity, a function copying a box, then one pointer per method in the interface's declaration order. Copying an interface value calls the table's copy function, which allocates a new box holding a deep copy.
+**Interface values** (v5) are a pair `{ ptr table, ptr box }`, 16 bytes with alignment 8, passed and stored by value. The box is a GC object allocated with `lugha_rt_alloc` that holds one value of the concrete type, primitives included. The table is a constant per (concrete type, interface) pair: the type's identity, a function copying a box, then one pointer per method in the interface's declaration order. Copying an interface value calls the table's copy function, which allocates a new box holding a deep copy. Converting one interface value to another (v6) copies the box as any conversion does and pairs it with the other interface's table for the same concrete type.
 
 **Closure environments** (v3). A closure's environment is one GC object, allocated with `lugha_rt_alloc` when the closure is created and laid out as a struct of its captures. It is never written afterwards, so copies of the closure share it safely. A closure that captures nothing has a null environment.
 
@@ -753,6 +754,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - A function used as a value (v3) is called through `lugha_ref_<symbol>`, a wrapper that takes an environment pointer first and calls `lugha_fn_<symbol>`: `lugha_ref_double`, `lugha_ref_max<i64>`, `lugha_ref_Point.at`. It is emitted once, when first needed.
 - An interface value's table (v5) is `lugha_vt_<Type>.<Interface>`, with names printed as in other symbols (`lugha_vt_Circle.Shape`, `lugha_vt_Stack<i64>.geo/Sized`), emitted once per pair a program converts. Its identity slot points at `lugha_type_<Type>`, its copy slot at `lugha_copy_<mangled type>_box` (`lugha_copy_6Circle_box`), and each method slot at the method itself: methods take their receiver as a pointer, so a call passes the box. Copying an interface value goes through `lugha_copy_<mangled interface>` (`lugha_copy_5Shape`). A generic interface (v6) prints with its arguments: `lugha_vt_Count.Source<i64>`, `lugha_copy_11Source<i64>`. A type pattern compares the table's identity slot with `lugha_type_<T>`.
 - A default method (v5) compiles once per type that uses it, through a table or a bound: `lugha_fn_<Interface>.<method><Type>` (`lugha_fn_Error.report<ParseError>`); that type's table slot and bound calls use it. A generic interface's default (v6) compiles once per type and interface arguments, the arguments printed on the interface: `lugha_fn_Source<i64>.skip<Count>`. A converted `?` error is boxed on the failure branch, like any conversion. A program without interface values has none of these.
+- Converting a `J` value to `I` (v6) calls `lugha_up_<J>.<I>(table) -> table`, which compares the value's table with each `J` table the program has and returns the matching `I` table; its body is built after everything else, when every table is known. That `I` table is derived from the table the value was built with: `lugha_vt_<C>.<J>.<I>` has `C`'s identity and copy and, for each `I` item, the function `C`'s `J` table has, so methods behave as through `J`; derived tables keep the original interface (`<C>.<J>.<K>` for a chain) and converting back to it gives the original table. A program that never converts between interfaces has no `lugha_up_` functions and no derived tables. (The approved draft put one slot per target interface in each table instead; tables are emitted while lowering, before every conversion is known, so PRP-054 uses lookup functions.)
 - An iterator loop (v6) stores the iterator in a hidden local and calls its `next` with that local's address: directly for a struct or enum (its own method, or a bound default's instance in a generic instance), and through the table for an interface value.
 - A closure's body (v3) is `lugha_closure_<enclosing>.<n>`: the enclosing function's symbol without its prefix, then the closure's number in that function from 0 (`lugha_closure_main.0`, `lugha_closure_main.0.0` for a closure inside it, `lugha_closure_max<i64>.0` in an instance). Its environment comes first, as for every function value's code.
 - The array helpers (v3) are generic functions of a prelude written in Lugha, bundled with the compiler and checked with every program, under the module path `$prelude`, which no program can name: `lugha_fn_$prelude/map<Person, string>`. Each is compiled only at the types a program uses.
@@ -890,7 +892,7 @@ Name and type errors, reported by the checker:
 | E0419 | Type argument doesn't satisfy its bound | `largest([[1]])`: `i64[]` is not `Ord` (v2) |
 | E0420 | Generic instantiation too deep | `fun f<T>(x: T) { f([x]); }`; `struct S<T> { xs: S<T[]>[] }` (v2) |
 | E0421 | A method no bound declares | `s.perimeter()` in `fun f<T: Shape>(s: T)` (v2) |
-| E0422 | A type argument, or a converted value, doesn't satisfy an interface | `total_area([1, 2])`: `i64` has no method `area` (v2); `let s: Shape = 1;` (v5) |
+| E0422 | A type argument, or a converted value, doesn't satisfy an interface | `total_area([1, 2])`: `i64` has no method `area` (v2); `let s: Shape = 1;` (v5); a `Named` value where a `Pet` is expected, without `sound` (v6) |
 | E0423 | Two bounds declare one item differently | `T: Sized + Measured` where both declare `size` with different types (v2) |
 | E0424 | `?` where it can't return | `?` on an `i64`; in `main`; on an `Option` in a function returning `Result`; error types that neither match nor convert (v4, v5) |
 | E0425 | An interface with an associated function used as a type | `fun f(x: Factory)` where `Factory` declares `fun make(): Factory;` (v5) |
@@ -1647,6 +1649,46 @@ fun main() {
 }
 ```
 
+**Converting between interfaces** (milestone 26). Prints `good dog, rex` then `woof` then `hello, tom` then `meow` on four lines, exits with 0.
+
+```
+interface Named {
+    fun name(self): string;
+}
+
+interface Pet {
+    fun name(self): string;
+    fun sound(self): string;
+}
+
+struct Dog { called: string }
+
+impl Dog {
+    fun name(self): string = self.called;
+    fun sound(self): string = "woof";
+}
+
+struct Cat { called: string }
+
+impl Cat {
+    fun name(self): string = self.called;
+    fun sound(self): string = "meow";
+}
+
+fun greet(n: Named): string = match n {
+    d: Dog => "good dog, {d.called}",
+    _ => "hello, {n.name()}",
+};
+
+fun main() {
+    let pets: Pet[] = [Dog { called: "rex" }, Cat { called: "tom" }];
+    for p of pets {
+        println(greet(p));
+        println(p.sound());
+    }
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1678,7 +1720,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 23 | Generic interfaces (v6) | `interface I<T>`, bounds with arguments, inference through bounds, generic interface values | The generic-interfaces program in section 10 passes (done) |
 | 24 | Iterators (v6) | `Iter<T>` in the prelude, `for … of` over iterators | The iterators program in section 10 passes (done) |
 | 25 | `Self` (v6) | `Self` in interfaces, bounds-only interfaces (E0427) | The `Self` program in section 10 passes (done) |
-| 26 | Converting between interfaces (v6, planned) | one interface value to another, and through `?` | The converting-between-interfaces program passes |
+| 26 | Converting between interfaces (v6) | one interface value to another, and through `?` | The converting-between-interfaces program in section 10 passes (done: v6 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -1724,3 +1766,5 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [x] **Expression-bodied functions.** Decided: adopted (section 6). `fun square(x: i64): i64 = x * x;` drops the braces from one-liners. It is a small parser addition and a second way to write the same function, accepted because one-liners are common and it is pure sugar for `{ e }`.
 - [ ] **Boxing primitives** (v5). An `i64` inside an interface value is boxed like a struct, so every interface value has one layout. Small values could be stored inline later, an optimisation that changes nothing visible.
 - [ ] **Default methods on concrete types** (v5). `c.describe()` is E0415 because a type never names its interfaces. A later version could allow it when exactly one visible interface supplies the default.
+- [ ] **Iterating a copy** (v6). `for n of c` leaves `c` unchanged, which suits values but means a half-used iterator can't be resumed after a `break`. A later version could add `for n of mut c`.
+- [ ] **One argument per type** (v6). A type satisfies `Source<X>` for at most one `X`, since it has one `next`. That suits iterators but rules out an interface such as `From<T>` implemented once per `T`, which would need methods overloaded by type.

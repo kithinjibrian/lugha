@@ -38,6 +38,7 @@ mod scope;
 mod stmt;
 mod structs;
 mod swap;
+mod upcast;
 mod value;
 
 use std::path::Path;

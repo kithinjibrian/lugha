@@ -60,6 +60,8 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) default_args: HashMap<ExprId, Vec<Type>>,
     /// Iterator loops (`Checked::iterations`, v6).
     pub(super) iterations: HashMap<ExprId, Iteration>,
+    /// Dispatch tables and conversions between interfaces (v6).
+    pub(super) upcasts: super::upcast::Upcasts<'ctx>,
     /// Every interface's methods in order (`Checked::interfaces`).
     pub(super) interfaces: HashMap<String, InterfaceShape>,
     /// Closures emitted so far per enclosing symbol, for `lugha_closure_<f>.<n>`.
@@ -141,6 +143,7 @@ pub(super) fn lower<'ctx>(
         try_conversions: checked.try_conversions.clone(),
         default_args: checked.default_args.clone(),
         iterations: checked.iterations.clone(),
+        upcasts: Default::default(),
         closure_counts: HashMap::new(),
         function: None,
         ret: None,
@@ -181,6 +184,7 @@ pub(super) fn lower<'ctx>(
         lowerer.define_methods(unit)?;
     }
     lowerer.define_instances(units, &checked.monos)?;
+    lowerer.finish_upcasts();
     let user_main = lowerer
         .functions
         .get("main")
