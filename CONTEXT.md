@@ -3017,6 +3017,11 @@ Branch: prp-049-default_methods
 
 ---
 
+## SESSION 62 — 2026-10-13 — Merge milestones 21 and 22; v5 — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v5 is built, not merged.** The user was away and chose "build m21 and m22, hold merges":
