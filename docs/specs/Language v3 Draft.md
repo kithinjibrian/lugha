@@ -11,7 +11,7 @@ This draft lists only what changes, in the order of the v2 sections. Everything 
 
 1. **Headline:** closures. v3 adds function types, functions as values, and closures that capture variables. Packages, interface values, `Self`, bitwise operators, more integer types and the `match` additions wait for a later version.
 2. **Capture by copy, read-only:**
-   - A closure copies each outer variable it mentions when it is created, by the copy rules of §4 (arrays deep-copied, or moved on last use).
+   - A closure copies each outer variable it mentions when it is created, by the copy rules of §4 (arrays always deep-copied; PRP-040 amended "or moved on last use").
    - It can read its copies but never assign them (E0511).
    - The caller's variables never change through a closure.
 
@@ -69,7 +69,7 @@ postfix      = primary { call | index | member } ;   (* unchanged: a call may fo
   - Its return type is written, or the expected one, or the body's type.
 - **Captures:**
   - A closure captures every local, parameter or `self` of an enclosing function that its body mentions.
-  - Each capture is copied when the closure is created, following the §4 copy table (moved on last use).
+  - Each capture is copied when the closure is created, following the §4 copy table; arrays are always deep-copied, never moved (amended by PRP-040: a capture may be used on every call).
   - Assigning a captured variable, or one of its fields or elements, is **E0511** "can't assign `count`: closures capture by copy", with help to return a value instead.
   - A closure may declare and change its own `let mut` locals as usual.
 - **No recursion:** a closure has no name, so it can't call itself. Use a named function.
@@ -245,4 +245,4 @@ fun main() {
 - [ ] **Printing function values:** proposed, never (E0403). There's nothing useful to show.
 - [ ] **Closures in interpolations:** `"{f(x)}"` is allowed (a call is an expression). A closure literal inside `{…}` would need braces inside braces; proposed, allowed only if the lexer can match nesting simply, else E0111.
 - [ ] **`sort_by` with an inconsistent `less`:** the result is some order of the elements, never a crash or lost element; documented rather than checked.
-- [ ] **Environment layout for empty captures:** a closure capturing nothing could reuse the null environment. Proposed: yes, as an optimization with no visible effect.
+- [x] **Environment layout for empty captures:** a closure capturing nothing could reuse the null environment. Resolved (PRP-040): yes, as an optimization with no visible effect.

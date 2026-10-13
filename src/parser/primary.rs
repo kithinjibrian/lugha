@@ -14,6 +14,10 @@ impl Parser<'_> {
             TokenKind::Int(value) => ExprKind::Int(value),
             TokenKind::Float(value) => ExprKind::Float(value),
             TokenKind::Str(value) => ExprKind::Str(value),
+            TokenKind::Fun => {
+                self.bump();
+                return self.closure(start);
+            }
             TokenKind::StrStart(text) => {
                 self.bump();
                 return self.interpolated(start, text);

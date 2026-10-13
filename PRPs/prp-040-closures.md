@@ -120,46 +120,46 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — parser:
-- [ ] `fun(x) = x + 1`, `fun(x: i64, y): i64 { x }`, `fun() {}` and `fun(f: fun(i64): i64) = f(1)` parse and print.
-- [ ] `sort(xs, fun(a, b) = a > b)` ends the body at the `)`.
-- [ ] E0209 for `fun(self) = 1` and `fun(mut x) = x`.
+- [x] `fun(x) = x + 1`, `fun(x: i64, y): i64 { x }`, `fun() {}` and `fun(f: fun(i64): i64) = f(1)` parse and print.
+- [x] `sort(xs, fun(a, b) = a > b)` ends the body at the `)`.
+- [x] E0209 for `fun(self) = 1` and `fun(mut x) = x`.
 
 Unit tests — checker (`check/closures.rs`):
-- [ ] **Types:**
+- [x] **Types:**
   - `let f = fun(x: i64): i64 = x * 2;` is `fun(i64): i64`;
   - `let g: fun(i64): i64 = fun(x) = x + 1;` infers `x`;
   - `fun(x: i64) = x > 1` is `fun(i64): bool`;
   - `fun() {}` is `fun()`.
-- [ ] **E0412** for `let h = fun(x) = x;`, and for a closure using `return` without a known return type.
-- [ ] **Return and loops:**
+- [x] **E0412** for `let h = fun(x) = x;`, and for a closure using `return` without a known return type.
+- [x] **Return and loops:**
   - `return` inside a closure is checked against the closure's return type (E0403);
   - `break` inside a closure inside a loop is E0504.
-- [ ] **Captures:**
+- [x] **Captures:**
   - `count` captured and read is fine;
   - E0511 for `count += 1`, `p.x = 1`, `xs[0] = 1`, `xs.push(1)` and `swap(a, b)` on captures;
   - a closure's own `let mut` local is assignable.
-- [ ] **Recorded captures:**
+- [x] **Recorded captures:**
   - `captures` records names in order of first mention;
   - a nested closure's captures are recorded on the outer one too;
   - a closure's own parameters and locals aren't captures.
-- [ ] **Generic calls:** `apply(fun(x) = x + 1, 41)` with `apply<T>(f: fun(T): T, x: T)` infers `T = i64`.
-- [ ] **Closures in generic bodies** check once, and their instances compile.
+- [x] **Generic calls:** `apply(fun(x) = x + 1, 41)` with `apply<T>(f: fun(T): T, x: T)` infers `T = i64`.
+- [x] **Closures in generic bodies** check once, and their instances compile.
 
 Codegen / IR:
-- [ ] `lugha_closure_main.0` is defined with a `ptr` first parameter.
-- [ ] A capturing closure allocates its environment with `lugha_rt_alloc`.
-- [ ] A non-capturing one passes `ptr null`.
+- [x] `lugha_closure_main.0` is defined with a `ptr` first parameter.
+- [x] A capturing closure allocates its environment with `lugha_rt_alloc`.
+- [x] A non-capturing one passes `ptr null`.
 
 Acceptance — `tests/programs/m15/` (run at `-O0` and `-O2`):
-- [ ] `adder.la`: `adder(k)` returning a closure, called repeatedly; closures in arrays and fields.
-- [ ] `capture.la`: copy semantics, i.e. changing the outer variable after creation leaves the closure's copy unchanged, including for an array (deep copy).
-- [ ] `nested.la`: a closure returning a closure that captures through both; `return` inside a closure; closures in a loop each keeping their own iteration's value.
-- [ ] `generic.la`: closures passed to generic functions and created inside generic functions at two types.
-- [ ] `e0511.la`, `e0209.la`: reject goldens.
-- [ ] The §10 closures program runs from the spec.
+- [x] `adder.la`: `adder(k)` returning a closure, called repeatedly; closures in arrays and fields.
+- [x] `capture.la`: copy semantics, i.e. changing the outer variable after creation leaves the closure's copy unchanged, including for an array (deep copy).
+- [x] `nested.la`: a closure returning a closure that captures through both; `return` inside a closure; closures in a loop each keeping their own iteration's value.
+- [x] `generic.la`: closures passed to generic functions and created inside generic functions at two types.
+- [x] `e0511.la`, `e0209.la`: reject goldens.
+- [x] The §10 closures program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes; programs without closures give byte-identical IR.
+- [x] Every earlier test passes; programs without closures give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -167,11 +167,11 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 closures program and the `m15/` programs pass.
-- [ ] E0209, E0511 and the E0412 cases are reported as specified.
-- [ ] The spec is folded (in progress: milestone 15); CLAUDE.md, README, TODO, CHANGELOG and MEMORY are updated; tag `m15`.
-- [ ] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The §10 closures program and the `m15/` programs pass.
+- [x] E0209, E0511 and the E0412 cases are reported as specified.
+- [x] The spec is folded (in progress: milestone 15); CLAUDE.md, README, TODO, CHANGELOG and MEMORY are updated; tag `m15`.
+- [x] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -180,3 +180,10 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m15/adder.la
 ```
+
+## AMENDMENTS (during build, session 50)
+
+- **Inference order:** closures are checked after every other waiting argument, not just after the arguments typed alone. In `apply(fun(x) = x + 1, 41)` both the closure and `41` wait, and `41` must fix `T` first.
+- **The draft is amended** to "always deep-copied" (decision 2 and §4, as approved), and its §12 empty-capture question is resolved yes.
+- **Return type for a diverging body:** a closure whose body never finishes, with no written or expected return type, returns nothing (`Void`).
+- **No file splits were needed.**

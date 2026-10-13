@@ -273,3 +273,25 @@ pub(in crate::check) fn extern_fun(span: Span) -> Diagnostic {
     Diagnostic::error("E0409", "function values can't cross the C boundary", span)
         .with_help("C can't call a Lugha function; pass the data it needs instead")
 }
+
+/// E0412: a closure parameter whose type nothing gives (v3).
+pub(in crate::check) fn cannot_infer_param(name: &str, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0412",
+        format!("can't infer the type of parameter `{name}`"),
+        span,
+    )
+    .with_help(format!(
+        "write it: `{name}: i64`, or pass the closure where a function type is expected"
+    ))
+}
+
+/// E0412: `return` in a closure whose return type isn't known yet (v3).
+pub(in crate::check) fn cannot_infer_return(span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0412",
+        "can't infer the return type of a closure that uses `return`",
+        span,
+    )
+    .with_help("write the return type: `fun(x: i64): i64 { … }`")
+}

@@ -166,7 +166,7 @@ The language itself is defined by `docs/specs/Language v3 Specification.md` (`lu
 4. **Codegen never infers types.** It reads the checker's expression → type side table. *Why:* opaque pointers need the element type on every load/store/GEP (spec §9), and two type computations will disagree.
 5. **User-program errors are `Diagnostic` records, never panics or strings.** Each has a stable code from its stage's range (E01xx lex … E05xx, W01xx). New codes take the next unused number; a code is never reused or renumbered. Human and JSON output render from the same record. *Why:* spec §9; codes are a public contract.
 6. **Exit codes are 0 / 1 / 2.** 1 = the user's program has errors; 2 = bad CLI usage or internal compiler error. A `module.verify()` failure or a Rust panic inside lughac is exit 2, never 1. *Why:* spec §9; tools tell "your bug" from "our bug" by it.
-7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, items of a module other than the main file → the module path joined with `/` first (`lugha_fn_shapes/circle/area`, `lugha_fn_shapes/circle/Circle.area`), generic instances → the type arguments as they print, module paths with `/` (`lugha_fn_max<i64>`, `lugha_fn_Stack<string>.push`, `lugha_fn_a/b/max<a/b/Point>`), functions used as values → wrappers `lugha_ref_<symbol>` (v3), runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, equality helpers → `lugha_eq_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
+7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, items of a module other than the main file → the module path joined with `/` first (`lugha_fn_shapes/circle/area`, `lugha_fn_shapes/circle/Circle.area`), generic instances → the type arguments as they print, module paths with `/` (`lugha_fn_max<i64>`, `lugha_fn_Stack<string>.push`, `lugha_fn_a/b/max<a/b/Point>`), functions used as values → wrappers `lugha_ref_<symbol>` (v3), closure bodies → `lugha_closure_<enclosing>.<n>` (v3), runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, equality helpers → `lugha_eq_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
 8. **Generated code allocates only through `lugha_rt_alloc`.** Never emit calls to `malloc`. *Why:* Boehm can't see `malloc` memory and will free live objects.
 9. **Follow the milestone order (spec §11).** The lexer and parser cover the full §2–§3 syntax. The checker and codegen implement only the current milestone's subset; in milestones 1–2 treat every value as `i64`. *Why:* each milestone must end in a running program, while syntax is cheap to do once and fully specified.
 10. **The §10 programs are the acceptance tests.** Their stdout and exit codes must match exactly. *Why:* they define "conforming compiler".
@@ -238,7 +238,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── parser/      — mod.rs (parse, cursor, errors), recover.rs, describe.rs,
 │   │                  expr.rs (Pratt), primary.rs, stmt.rs, item.rs, decl.rs (enum, impl, receivers),
 │   │                  pattern.rs (match, patterns, guards), generic.rs (type params, m.T / T<args>),
-│   │                  import.rs (import, pub), interface.rs (interfaces, bounds), sexp/ (mod.rs exprs,
+│   │                  import.rs (import, pub), interface.rs (interfaces, bounds), closure.rs (closure
+│   │                  literals, E0209), sexp/ (mod.rs exprs,
 │   │                  item.rs items and types), test_util.rs
 │   ├── check/       — mod.rs (check, Checked), test_util.rs, types.rs, env.rs (globals, main, scopes),
 │   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), body.rs (function bodies), stmt.rs,
@@ -255,7 +256,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (concrete generic types, substituted tables, Checked.used), interfaces.rs (declarations,
 │   │                  interface bounds, E0315, E0423), satisfy.rs (calls through bounds E0421, satisfaction
 │   │                  E0422), input.rs (args, parse_i64/f64, interpolation), fun_values.rs (function types
-│   │                  and values, calls of values), errors/ (mod.rs, names.rs E03xx, types.rs E04xx, places.rs E05xx/W01xx,
+│   │                  and values, calls of values), closures.rs (closure types, captures, E0511), errors/ (mod.rs, names.rs E03xx, types.rs E04xx, places.rs E05xx/W01xx,
 │   │                  generics.rs milestone 11–12 codes)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
@@ -267,7 +268,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (enum layout, Option types, payload addresses), growth.rs (push, pop, clear), construct.rs (building enum values,
 │   │                  indirect slots), matching.rs (match lowering, switch), patterns.rs (nested/guarded arms),
 │   │                  methods.rs (method symbols, receivers, calls), input.rs (interpolation, args, parsing),
-│   │                  fun_values.rs ({ code, env } values, lugha_ref_ wrappers, indirect calls),
+│   │                  fun_values.rs ({ code, env } values, lugha_ref_ wrappers, indirect calls), closures.rs
+│   │                  (environments, lugha_closure_ bodies),
 │   │                  instances.rs (generic instances:
 │   │                  substitution, instance symbols),
 │   │                  swap.rs (swap: loads and crossed stores)
@@ -287,7 +289,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── cli.rs       — the lughac binary: commands, emit, diagnostics, exit codes
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m14/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations (+ .args);
+│   ├── programs/    — m1/ … m15/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations (+ .args);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args files),
 │                      execute, report)

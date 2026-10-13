@@ -97,6 +97,15 @@ pub fn expr(expr: &Expr) -> String {
             list("call", &items)
         }
         ExprKind::Index(base, _, index) => list("index", &[base, index]),
+        ExprKind::Closure(c) => {
+            let params: Vec<String> = c
+                .params
+                .iter()
+                .map(|(n, t)| format!("({} {})", n.name, t.as_ref().map_or("_".into(), ty)))
+                .collect();
+            let ret = c.ret.as_ref().map_or("_".into(), ty);
+            format!("(closure ({}) {ret} {})", params.join(" "), block(&c.body))
+        }
         ExprKind::Field(base, field) => format!("(. {} {})", self::expr(base), field.name),
         ExprKind::StructLit(lit) => {
             let fields: String = lit

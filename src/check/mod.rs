@@ -14,6 +14,7 @@ mod body;
 mod bounds;
 mod builtins;
 mod call;
+mod closures;
 mod conflicts;
 mod construct;
 mod enums;
@@ -82,6 +83,8 @@ pub struct Checked {
     /// Every concrete type the compiled code uses, instances' bodies
     /// included, so codegen can declare each layout once (PRP-036).
     pub used: Vec<Type>,
+    /// The names each closure literal captures, in order of first mention (v3).
+    pub captures: HashMap<ExprId, Vec<String>>,
 }
 
 /// Type-checks `program`, a program of one file, returning the type table
@@ -120,6 +123,8 @@ impl Checker {
             type_params: Vec::new(),
             instances: HashMap::new(),
             interfaces: HashMap::new(),
+            closures: Vec::new(),
+            captures: HashMap::new(),
             owner: String::new(),
             uses: Vec::new(),
             body_types: HashMap::new(),
@@ -201,6 +206,10 @@ pub(super) struct Checker {
     instances: HashMap<ExprId, Vec<Type>>,
     /// Every interface, by key (milestone 12).
     interfaces: HashMap<String, interfaces::InterfaceInfo>,
+    /// The closures whose bodies are being checked, innermost last (v3).
+    closures: Vec<closures::Frame>,
+    /// See `Checked::captures`.
+    captures: HashMap<ExprId, Vec<String>>,
     /// The key of the function or method whose body is being checked.
     owner: String,
     /// Every generic call, with the body it is in (PRP-036).

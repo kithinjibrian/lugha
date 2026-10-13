@@ -8,7 +8,7 @@ use super::expr::Expect;
 use super::generics::{Generic, replace};
 use super::ops::defers;
 use super::{Checker, Type, errors};
-use crate::ast::Expr;
+use crate::ast::{Expr, ExprKind};
 
 /// Type arguments bound so far, by parameter name.
 type Bound = HashMap<String, Type>;
@@ -44,7 +44,10 @@ impl Checker {
         }
         // What can be typed alone goes first, so `max(x, 3)` makes `3` a `u8`.
         let (now, later): (Vec<_>, Vec<_>) = inputs.iter().partition(|(e, _)| !defers(e));
-        for (e, want) in now.into_iter().chain(later) {
+        // Closures last: their parameter types need what literals decide (v3).
+        let is_closure = |(e, _): &&(&Expr, Expect)| matches!(e.kind, ExprKind::Closure(_));
+        let (closures, later): (Vec<_>, Vec<_>) = later.into_iter().partition(is_closure);
+        for (e, want) in now.into_iter().chain(later).chain(closures) {
             failed |= self.input(e, want, &names, &mut bound);
         }
         let mut args = Vec::new();

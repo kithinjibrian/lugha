@@ -1,0 +1,35 @@
+fun make_counter_from(start: i64): fun(i64): fun(): i64 = fun(step) {
+    let begin = start;
+    fun(): i64 = begin + step
+};
+
+fun sign(x: i64): string {
+    let classify = fun(v: i64): string {
+        if v < 0 { return "negative"; }
+        if v == 0 { return "zero"; }
+        "positive"
+    };
+    classify(x)
+}
+
+fun main() {
+    let from10 = make_counter_from(10);
+    let next = from10(5);
+    println(next());
+    println(sign(-3));
+    println(sign(0));
+    println(sign(8));
+    let mut fs: (fun(): i64)[] = [];
+    for i in 0..3 {
+        fs.push(fun(): i64 = i * 10);
+    }
+    for f of fs {
+        println(f());
+    }
+    let outer = 7;
+    let deep = fun(): i64 {
+        let inner = fun(): i64 = outer * 2;
+        inner() + 1
+    };
+    println(deep());
+}

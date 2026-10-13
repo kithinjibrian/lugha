@@ -1,4 +1,4 @@
-# Lugha v3 Specification (in progress: milestone 14)
+# Lugha v3 Specification (in progress: milestone 15)
 
 Oct 13, 2026 · @kithinji
 
@@ -6,10 +6,11 @@ Oct 13, 2026 · @kithinji
 
 **v2.** This is v1.2 plus deep `==` and string order, nested patterns and guards, modules with `private`, generics with `Eq`/`Ord` bounds, and interfaces as bounds (milestones 9–12).
 
-**Changes since v2** (milestones 13–14):
+**Changes since v2** (milestones 13–15):
 - `args()` returns the program's command-line arguments, and `parse_i64`/`parse_f64` turn text into numbers, returning an `Option` (section 5).
 - String literals interpolate: `"{name} is {age}"`, with `{{` and `}}` for literal braces (sections 2, 3, 5).
 - Functions are values: `fun(i64): i64` is a type, a named function can be stored, passed and returned, and any value of function type can be called (sections 3, 4).
+- Closures: `fun(x) = x + k` and `fun(x: i64): i64 { … }` are function values that capture the variables they mention, by copy and read-only (sections 3, 4, 7).
 
 Every valid v2 program is a valid v3 program unless it has a `{` or `}` in a string literal (write `{{` or `}}`; E0111 points at each one), or defines a function named `args`, `parse_i64` or `parse_f64`.
 
@@ -193,13 +194,15 @@ postfix      = primary { call | index | member } ;
 call         = "(" [ expr { "," expr } [ "," ] ] ")" ;
 index        = "[" expr "]" ;
 member       = "." IDENT ;
-primary      = INT | FLOAT | STRING | interpolated | "true" | "false"
+primary      = INT | FLOAT | STRING | interpolated | closure | "true" | "false"
              | IDENT [ "." IDENT ] [ struct_init ]  (* `m.T { … }` *)
              | "self"
              | "(" expr ")"
              | "[" [ expr ( ";" expr | { "," expr } [ "," ] ) ] "]"
              | block_like ;
 interpolated = STRING_START expr { STRING_MID expr } STRING_END ;   (* "a {x} b {y} c" *)
+closure      = "fun" "(" [ cparam { "," cparam } [ "," ] ] ")" [ ":" type ] ( block | "=" expr ) ;   (* v3 *)
+cparam       = IDENT [ ":" type ] ;
 struct_init  = "{" [ IDENT ":" expr { "," IDENT ":" expr } [ "," ] ] "}" ;
 infix        = binop expr | "as" type ;
 ```
@@ -239,6 +242,7 @@ infix        = binop expr | "as" type ;
 | E0205 | Struct literal in a condition without parentheses | `if p == Point { x: 0.0 } { }` |
 | E0206 | Nesting too deep | More than 256 levels of nested expressions and blocks |
 | E0208 | `import` after an item | `fun f() {}` then `import geometry;` (v2) |
+| E0209 | A closure parameter that isn't a plain name | `fun(self) = 1`, `fun(mut x) = x` (v3) |
 | E0207 | `::` used as a path separator | `Shape::Circle(1.0)` — help: write `Shape.Circle`; parsing continues as if `.` were written |
 
 ## 4. Type system
@@ -413,6 +417,18 @@ They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (
 
 **Calls** (v3). `e(args)` calls any expression `e` of function type: a local, a parameter, an element (`fs[0](3)`), a call's result (`make()(3)`). `s.f(x)` calls method `f` if the type has one, otherwise field `f` if it holds a function; a method and a field never share a name (E0310), so this is never ambiguous. Arity (E0405) and argument types (E0403) are checked against the function type. Calling a value that isn't a function is E0406. A local of function type shadows a function of the same name, as any local does.
 
+**Closures** (v3). `fun(x) = x + k` and `fun(x: i64): i64 { … }` are function values written inline: a function without a name. An `= e` body takes the longest expression, so `sort(xs, fun(a, b) = a > b)` ends at the `)`.
+- **Parameter types** are written, or come from an expected function type in the same position (`let g: fun(i64): i64 = fun(x) = x + 1;`, or a parameter of a called function). Otherwise it is E0412, with help to write the type. In a generic call, a closure whose parameter types aren't written is typed last, so `apply(fun(x) = x + 1, 41)` makes `T` an `i64` first.
+- **The return type** is written, or the expected one, or the body's type. A closure that uses `return` needs its return type written or expected (E0412).
+- **Its own function:** `return` leaves the closure, and `break` and `continue` reach only loops inside it (E0504 otherwise).
+- **Captures:**
+  - A closure captures every local, parameter or `self` of an enclosing function that its body mentions.
+  - Each is copied when the closure is created, in order of first mention, by the copy rules above; arrays are always deep-copied.
+  - The closure reads its copies and never changes them: assigning a captured variable, one of its fields or elements, calling a `mut self` method or `push`/`pop`/`clear` on it, or `swap`ping it is E0511, with help to return a value instead.
+  - So changing the outer variable later doesn't change the closure, and calling the closure never changes the caller's variables.
+  - A closure's own `let mut` locals are ordinary.
+- **No recursion:** a closure has no name, so it can't call itself; use a named function.
+
 **Generic recursion.** A generic struct or enum may contain itself only with its own parameters unchanged: `enum List<T> { Nil, Cons(T, List<T>) }` is fine, and the indirect-slot rule (section 7) applies to each instance. Instantiation must end: a program whose instances nest more than 64 deep, such as `f<T>` calling `f<T[]>` or a `struct S<T>` holding `S<T[]>`, is E0420. Recursion at the same arguments (`count<T>` calling `count<T>`) never counts. Generic code copies exactly where concrete code would, because each instance is concrete (Array copies, above).
 
 **Mutability.** Bindings are immutable by default. Assigning to any place requires the variable at its root to be declared `let mut`. That covers the variable itself, a field (`p.x = 1.0`), an element (`xs[0] = 1`) and any chain of these (`shapes[i].pts[j].x = 2.0`), and both places of a `swap` (section 5). Because every variable owns its data, a variable declared without `mut` never changes after it is initialized.
@@ -569,6 +585,8 @@ Value types live on the stack; strings and arrays live on a garbage-collected he
 
 **Function values** (v3) are a pair `{ ptr code, ptr env }`, 16 bytes with alignment 8, passed and stored by value. A named function's value has a null environment, and its code is the function's `lugha_ref_` wrapper (section 9).
 
+**Closure environments** (v3). A closure's environment is one GC object, allocated with `lugha_rt_alloc` when the closure is created and laid out as a struct of its captures. It is never written afterwards, so copies of the closure share it safely. A closure that captures nothing has a null environment.
+
 **Generic instances** lay out exactly like the concrete types they stand for: `Stack<i64>` is laid out like a struct with one `i64[]` field, and `List<bool>` gets its own indirect slots.
 
 **Recursion depth.** Function calls use the native stack, which is finite. A recursion that goes too deep — for example walking a list of a million nodes recursively — panics with `stack overflow` (exit 101). The runtime detects it when the stack's guard area is hit, so ordinary calls cost nothing. Walk very long lists with a loop.
@@ -625,6 +643,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - Items of a module other than the main file put the module's path before their name, joined with `/`: function `area` of module `shapes.circle` is `lugha_fn_shapes/circle/area`, and its method `Circle.area` is `lugha_fn_shapes/circle/Circle.area`. A name contains neither `/` nor `.`, so a module function (`lugha_fn_a/b/c`) can't collide with a method (`lugha_fn_a/b.c`, method `c` of type `b` in module `a`).
 - A generic instance adds its type arguments as they print, with module paths joined by `/`: `lugha_fn_max<i64>`, `lugha_fn_a/b/max<a/b/Point>`. A method's go on its type, then its own: `lugha_fn_Stack<string>.push`, `lugha_fn_Stack<string>.tag<f64>`. `<` can't appear in a Lugha name, so instances can't collide with anything else.
 - A function used as a value (v3) is called through `lugha_ref_<symbol>`, a wrapper that takes an environment pointer first and calls `lugha_fn_<symbol>`: `lugha_ref_double`, `lugha_ref_max<i64>`, `lugha_ref_Point.at`. It is emitted once, when first needed.
+- A closure's body (v3) is `lugha_closure_<enclosing>.<n>`: the enclosing function's symbol without its prefix, then the closure's number in that function from 0 (`lugha_closure_main.0`, `lugha_closure_main.0.0` for a closure inside it, `lugha_closure_max<i64>.0` in an instance). Its environment comes first, as for every function value's code.
 - An extern follows the visibility rules of section 6, and the same C function may be declared in several modules only with identical signatures (E0306); it is one symbol.
 - Runtime library functions use the `lugha_rt_` prefix. Neither prefix is a prefix of the other, so a Lugha function can never collide with a runtime function, whatever its name.
 - Extern names starting with `lugha_` are reserved and rejected with an E03xx error, so an extern declaration can't collide with either.
@@ -765,6 +784,7 @@ Name and type errors, reported by the checker:
 | E0508 | Argument aliases a `mut self` receiver | `v.add(v)` where `add` takes `mut self` |
 | E0509 | A place swapped with a part of itself | `swap(n, n.kids[0])` |
 | E0510 | A statement changes what contains the place it writes | `xs[0] = { xs.push(2); 9 };` (§5) |
+| E0511 | Changing a variable a closure captured | `let inc = fun() { count += 1; };` (v3) |
 | W0101 | Unreachable code (warning) | statements after `return`, `break` or `continue`; reported once per block |
 | W0102 | Unreachable `match` arm (warning) | an arm after `_`, or a variant already covered |
 | W0103 | Unused `match` binding (warning) | `Some(Emtpy) => 0`, a misspelled variant that became a binding |
@@ -1154,6 +1174,23 @@ fun main() {
 }
 ```
 
+**Closures** (milestone 15). Prints `13` then `1` then `20` on three lines, exits with 0.
+
+```
+fun adder(k: i64): fun(i64): i64 = fun(x) = x + k;
+
+fun main() {
+    let add10 = adder(10);
+    println(add10(3));
+    let mut count = 0;
+    let show = fun(): i64 = count + 1;
+    count = 5;
+    println(show());
+    let twice = fun(f: fun(i64): i64, x: i64): i64 = f(f(x));
+    println(twice(fun(y) = y + 5, 10));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1174,6 +1211,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 12 | Interfaces (v2) | `interface` declarations, interfaces as bounds, structural satisfaction (E0421, E0422, E0423) | The interfaces program in section 10 passes (done: v2 complete) |
 | 13 | Input and interpolation (v3) | `args()`, `parse_i64`, `parse_f64`, string interpolation (E0111), `lughac run … -- args` | The arguments program in section 10 passes (done) |
 | 14 | Functions as values (v3) | function types, named and associated functions as values, calling values, no `==` on functions, `lugha_ref_*` | The functions-as-values program in section 10 passes (done) |
+| 15 | Closures (v3) | closure literals, capture by copy (E0511), parameter inference, `lugha_closure_*`, closures in generic code (E0209) | The closures program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

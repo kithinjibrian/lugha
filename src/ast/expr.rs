@@ -26,6 +26,8 @@ pub enum ExprKind {
     Str(String),
     /// `"a {x} b"`: literal text and interpolated expressions in order (v3).
     Interp(Vec<Part>),
+    /// `fun(x) = e` or `fun(x: T): R { … }` (v3). Boxed: it is large and rare.
+    Closure(Box<Closure>),
     Bool(bool),
     /// A variable, function or intrinsic name.
     Name(String),
@@ -120,6 +122,17 @@ impl BinOp {
             Mul | Div | Rem => 6,
         }
     }
+}
+
+/// A closure literal (v3 draft §3).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Closure {
+    /// Parameter names and their types, if written.
+    pub params: Vec<(super::Ident, Option<super::Type>)>,
+    /// The return type, if written.
+    pub ret: Option<super::Type>,
+    /// The body; `= e` is a block with tail `e`, as for functions.
+    pub body: super::Block,
 }
 
 /// The contents of a struct literal.

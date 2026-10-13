@@ -1,0 +1,29 @@
+fun apply<T>(f: fun(T): T, x: T): T = f(x);
+
+fun repeat<T>(x: T, n: i64): fun(): T[] = fun(): T[] {
+    let mut out: T[] = [];
+    for i in 0..n {
+        out.push(x);
+    }
+    out
+};
+
+fun keep<T: Ord>(xs: T[], limit: T): T[] {
+    let small = fun(v: T): bool = v < limit;
+    let mut out: T[] = [];
+    for x of xs {
+        if small(x) { out.push(x); }
+    }
+    out
+}
+
+fun main() {
+    println(apply(fun(x) = x + 1, 41));
+    println(apply(fun(s) = s + "!", "hey"));
+    let threes = repeat(3, 4);
+    println(threes().len);
+    let words = repeat("ab", 2)();
+    println(words[0] + words[1]);
+    println(keep([5, 1, 7, 2], 4).len);
+    println(keep(["pear", "apple", "fig"], "g")[1]);
+}

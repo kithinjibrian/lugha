@@ -727,9 +727,33 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 47. Closures (PRP-040)
+
+**Decision:**
+- **Syntax** (`parser/closure.rs`):
+  - `ExprKind::Closure(Box<Closure { params: (Ident, Option<Type>), ret, body }>)`, where `= e` becomes a block with a tail;
+  - E0209 for `self`/`mut` parameters.
+- **Checker** (`check/closures.rs`):
+  - **Typing:** parameter types are written, or come from an expected `Fun` with the same count (E0412 otherwise). The return type is written, or expected, or the body's (a `Never` body counts as `Void`). E0412 covers `return` when the return type is still unknown.
+  - **Own function:** the body saves and restores `ret`, `loops`, `dead`, `changes` and `iterating`, so `return` leaves the closure and outer loops are out of reach (a discovery answer).
+  - **Captures:** a `closures: Vec<Frame { base, captures, infer_ret }>` stack records them. `note_capture` (in the `Name` arm) adds a name to every frame whose `base` is above the local's scope depth, and records the mention as `Binding::Param`, so a capture never moves. The result is `Checked.captures: ExprId → names` in order.
+  - **E0511:** `check_place_for` reports it when the root is a capture of the innermost closure.
+  - **Inference:** `defers()` is true for a closure with an unwritten parameter, and `infer` checks closures after every other waiting argument.
+- **Codegen** (`codegen/closures.rs`):
+  - captures are copied (deep for arrays) into one `lugha_rt_alloc` environment laid out as an LLVM struct, or a null environment for none;
+  - the body becomes an internal `lugha_closure_<enclosing>.<n>` (`Lowerer.closure_counts`), lowered with the builder, function, return type, scopes and loops saved and restored;
+  - captures are read in place from the environment as borrowed locals.
+
+**Why:** These follow the session 50 discovery answer and the approved design choices (always copy, E0412 for an inferred return with `return`, closures last in inference). Function values already took the environment first, so closures needed only literals and environments.
+
+**Rules out (M15):** changing captures, recursive closures, closures with type parameters, moving captures.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 15 complete**: PRP-040 closures
 - **Milestone 14 complete**: PRP-039 functions as values
 - **Milestone 13 complete**: PRP-038 args, parsing, interpolation; the v3 spec begins
 - **Milestone 12 complete — Lugha v2 complete**: PRP-037 interfaces (E0421, E0422, E0423)

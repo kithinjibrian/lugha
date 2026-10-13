@@ -3,7 +3,7 @@
 //! Checking is bidirectional: the context may pass an `Expect` (a type and
 //! the reason for it), which numeric literals adopt (spec §4 rules 3–6).
 
-use super::{Checker, Type, errors, liveness};
+use super::{Binding, Checker, Type, errors, liveness};
 use crate::ast::{Block, Expr, ExprKind, UnOp};
 use crate::diagnostic::Label;
 use crate::span::Span;
@@ -94,9 +94,15 @@ impl Checker {
             }
             ExprKind::Name(name) => {
                 if let Some(local) = self.local(name) {
+                    // A capture is never moved from: the closure may run again (v3).
+                    let captured = self.note_capture(name);
                     let mention = liveness::Mention {
                         decl: local.span,
-                        binding: local.binding,
+                        binding: if captured {
+                            Binding::Param
+                        } else {
+                            local.binding
+                        },
                         at: expr.span.start,
                     };
                     self.mentions.insert(expr.id, mention);
@@ -123,6 +129,7 @@ impl Checker {
             ExprKind::Match(scrutinee, arms) => self.match_expr(expr, scrutinee, arms, expect),
             ExprKind::Str(_) => Type::String,
             ExprKind::Interp(parts) => self.interpolation(parts),
+            ExprKind::Closure(c) => self.closure(expr, c, expect),
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
             ExprKind::Index(base, _, index) => self.index(base, index),
             ExprKind::Field(base, field) => match self.variant_value(expr, (base, field), expect) {

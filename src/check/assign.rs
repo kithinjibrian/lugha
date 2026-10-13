@@ -68,7 +68,9 @@ impl Checker {
         };
         let name = root_name(place).expect("a place path has a root name");
         self.changed(path.clone(), place.span);
-        if let Some(local) = self.local(name)
+        if self.captured(name) {
+            self.report(errors::assign_captured(name, place.span));
+        } else if let Some(local) = self.local(name)
             && !matches!(
                 local.binding,
                 Binding::Let { mutable: true } | Binding::SelfMut

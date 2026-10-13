@@ -1,0 +1,8 @@
+error[E0511]: can't change `total`: closures capture by copy
+  --> tests/programs/m15/e0511.la:3:29
+  |
+3 |     let add = fun(x: i64) { total += x; };
+  |                             ^^^^^
+  |
+  = help: the closure has its own copy; return a new value instead
+

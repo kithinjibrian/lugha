@@ -126,6 +126,10 @@ impl Checker {
 
     /// `return [value];` must match the function's return type (spec §6).
     fn return_stmt(&mut self, value: Option<&Expr>, span: Span) {
+        if self.closure_return_unknown(span) {
+            value.iter().for_each(|v| _ = self.expr(v, None));
+            return;
+        }
         match (self.ret.clone(), value) {
             (Type::Void, None) => {}
             (Type::Void, Some(value)) => {

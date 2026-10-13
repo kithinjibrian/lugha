@@ -49,6 +49,10 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) monos: HashMap<String, super::methods::Method<'ctx>>,
     /// The type parameters of the instance being lowered, and their types.
     pub(super) subst: HashMap<String, Type>,
+    /// What each closure literal captures (`Checked::captures`).
+    pub(super) captures: HashMap<ExprId, Vec<String>>,
+    /// Closures emitted so far per enclosing symbol, for `lugha_closure_<f>.<n>`.
+    pub(super) closure_counts: HashMap<String, usize>,
     /// The function being emitted, for appending basic blocks.
     pub(super) function: Option<FunctionValue<'ctx>>,
     /// Its return type; `None` for a void function.
@@ -120,6 +124,8 @@ pub(super) fn lower<'ctx>(
         instances: checked.instances.clone(),
         monos: HashMap::new(),
         subst: HashMap::new(),
+        captures: checked.captures.clone(),
+        closure_counts: HashMap::new(),
         function: None,
         ret: None,
         scopes: Scopes::default(),

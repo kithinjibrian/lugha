@@ -123,6 +123,8 @@ pub(super) fn defers(e: &Expr) -> bool {
         ExprKind::Name(name) => name == "None",
         ExprKind::Array(elements) => elements.first().is_none_or(defers),
         ExprKind::Repeat(value, _) => defers(value),
+        // A closure waits for its parameter types (v3).
+        ExprKind::Closure(c) => c.params.iter().any(|(_, t)| t.is_none()),
         ExprKind::Call(callee, args) => {
             matches!(&callee.kind, ExprKind::Name(n) if n == "Some")
                 && args.first().is_some_and(defers)

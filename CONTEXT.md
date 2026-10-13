@@ -2542,6 +2542,43 @@ Branch: prp-039-function_values
 
 Branch: prp-040-closures
 
+### WHAT WAS DONE
+
+- Discovery: a closure body is its own function (`return` leaves it; E0504 for outer loops). PRP-040 written and approved.
+- Parser: `parser/closure.rs` (closure literals, E0209).
+- Checker:
+  - `check/closures.rs`: types, parameter inference, captures recorded through nested closures, E0511, E0412 for an unknown return type with `return`;
+  - closures last in generic inference;
+  - liveness enters closure bodies; captures never move.
+- Codegen: `codegen/closures.rs` (environments, `lugha_closure_*` bodies, state saved and restored).
+- Spec: v3 spec folded to milestone 15; draft amended (always copy, empty captures resolved).
+
+### FILES CREATED OR MODIFIED
+
+- New: `src/parser/closure.rs`, `src/check/closures.rs`, `src/codegen/closures.rs`, `tests/programs/m15/`, the PRP.
+- Modified:
+  - the parser (`primary.rs`, `mod.rs`, `sexp/mod.rs`) and the AST;
+  - the checker (`mod.rs`, `expr.rs`, `assign.rs`, `stmt.rs`, `ops.rs`, `infer.rs`, `liveness/walk.rs`, `modules/mod.rs`, `errors/`);
+  - codegen (`expr.rs`, `lower.rs`, `mod.rs`);
+  - tests (`tests/spec.rs`);
+  - docs: the specs, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (decision 47).
+
+### TESTS WRITTEN
+
+- Parser (3).
+- Checker (6): types, E0412, own function, E0511, captures, generics.
+- Codegen IR (1).
+- `m15/`: adder, capture, nested, generic, and the e0511/e0209 goldens.
+- The §10 closures program.
+
+### DECISIONS MADE
+
+- MEMORY 47; PRP amendments.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

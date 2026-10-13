@@ -9,6 +9,7 @@
 mod arith;
 mod array;
 mod cast;
+mod closures;
 mod construct;
 mod control;
 mod copy;

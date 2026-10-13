@@ -93,6 +93,7 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Match(scrutinee, arms) => return self.match_expr(expr, scrutinee, arms),
             ExprKind::Str(text) => self.string_literal(text).into(),
             ExprKind::Interp(parts) => self.interpolation(parts)?,
+            ExprKind::Closure(c) => self.closure_value(expr, c)?,
             ExprKind::Index(base, open, index) => self.index(base, open.start, index)?,
             // The checker gives a type name `void`: `Shape.Empty` is a variant.
             ExprKind::Field(base, field) if self.ty(base) == Type::Void => {

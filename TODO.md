@@ -111,9 +111,9 @@ Done when the arguments program passes.
 Done when the functions-as-values program passes.
 - [x] PRP-039: function types (`(fun(i64): i64)[]` for arrays), named and associated functions as values, calling values (`b.on_click(2)` for fields), no `==` on functions, `lugha_ref_*`
 
-### Milestone 15 — Closures
+### Milestone 15 — Closures ✅
 Done when the closures program passes.
-- [ ] Closure literals, capture by copy (E0511), parameter inference, `lugha_closure_*`, closures in generic code
+- [x] PRP-040: closure literals, capture by copy (E0511), parameter inference, `lugha_closure_*`, closures in generic code (E0209)
 
 ### Milestone 16 — Array helpers
 Done when the array-helpers program passes and the v3 spec is complete.

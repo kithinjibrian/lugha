@@ -180,3 +180,13 @@ pub(in crate::check) fn swap_with_part(whole: &str, part: Span, container: Span)
     .with_label(container, "this contains the other place")
     .with_help("a value can't be stored inside itself; copy the part into a new variable first")
 }
+
+/// E0511: changing a variable a closure captured (v3).
+pub(in crate::check) fn assign_captured(name: &str, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0511",
+        format!("can't change `{name}`: closures capture by copy"),
+        span,
+    )
+    .with_help("the closure has its own copy; return a new value instead")
+}
