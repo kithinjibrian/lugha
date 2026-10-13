@@ -3376,7 +3376,7 @@ Branch: main
 ---
 
 ## SESSION 74 — 2026-10-14 — Loading packages (milestone 30, part 1) — open
-Branch: main
+Branch: prp-058-package_loading
 
 ---
 
