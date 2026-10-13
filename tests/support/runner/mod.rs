@@ -7,6 +7,7 @@
 //! `discover` reads the folder, `execute` runs processes, `report` compares
 //! and formats.
 
+mod args;
 mod dirs;
 mod discover;
 mod execute;
@@ -45,6 +46,8 @@ pub struct Case {
     pub path: PathBuf,
     /// What the program must do.
     pub mode: Mode,
+    /// Arguments for the program, from `<name>.args` (PRP-038).
+    pub args: Vec<String>,
 }
 
 /// A file layout under the root that can't be turned into a [`Case`].

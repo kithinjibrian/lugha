@@ -62,6 +62,9 @@ fn the_extractor_finds_every_section_10_program() {
         "A rejected enum program",
         "Patterns and equality",
         "Two modules",
+        "Generics",
+        "Interfaces",
+        "Arguments and interpolation",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),
@@ -76,6 +79,7 @@ fn the_extractor_finds_every_section_10_program() {
             .expect("found above")
     };
     assert_eq!(find("Hello world").stdout, "Hello, world!\n");
+    assert_eq!(find("Arguments and interpolation").args, ["21"]);
     assert_eq!(
         find("Calling C").stdout,
         "hello from libc\n1.4142135623730951\n"
@@ -108,7 +112,12 @@ fn every_section_10_program_runs_as_stated() {
             std::fs::write(dir.0.join(name), src).expect("temp dir is writable");
         }
         for opt in ["-O0", "-O2"] {
-            let out = lughac(&dir, &["run", opt, main]);
+            let mut command = vec!["run", opt, main];
+            if !program.args.is_empty() {
+                command.push("--");
+                command.extend(program.args.iter().map(String::as_str));
+            }
+            let out = lughac(&dir, &command);
             assert_eq!(
                 text(&out.stdout),
                 program.stdout,

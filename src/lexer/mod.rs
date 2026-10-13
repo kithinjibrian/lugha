@@ -7,6 +7,7 @@
 //!
 //! Depends on: span, diagnostic.
 
+mod interp;
 mod number;
 mod punct;
 mod string;
@@ -38,6 +39,7 @@ pub fn lex(source: &str) -> Result<(Vec<Token>, Vec<Diagnostic>), Vec<Diagnostic
         pos: 0,
         tokens: Vec::new(),
         diagnostics: Vec::new(),
+        interp: None,
     };
     lexer.run();
     if lexer
@@ -58,12 +60,17 @@ struct Lexer<'a> {
     pos: usize,
     tokens: Vec<Token>,
     diagnostics: Vec<Diagnostic>,
+    /// The interpolation being lexed, if any (v3).
+    interp: Option<interp::Interp>,
 }
 
 impl Lexer<'_> {
     fn run(&mut self) {
         while let Some(c) = self.peek_char() {
             let start = self.pos;
+            if self.in_interpolation(c) {
+                continue;
+            }
             match c {
                 ' ' | '\t' | '\r' | '\n' => self.pos += 1,
                 '/' if self.byte_at(1) == Some(b'/') => self.skip_comment(),
@@ -73,6 +80,7 @@ impl Lexer<'_> {
                 _ => self.punctuation(start, c),
             }
         }
+        self.finish_interpolation();
         let end = self.src.len();
         self.tokens.push(Token {
             kind: TokenKind::Eof,

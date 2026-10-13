@@ -2,7 +2,7 @@
 //! intrinsics `print`, `println`, `panic`, `to_string` and `swap` are built
 //! in (spec §5, §6).
 
-use super::env::INTRINSICS;
+use super::env::is_intrinsic;
 use super::expr::Expect;
 use super::generics::subst;
 use super::{Checker, Type, errors};
@@ -15,7 +15,7 @@ impl Checker {
         if let Some(local) = self.local(name) {
             return local.ty;
         }
-        if self.functions.contains_key(&self.key(name)) || INTRINSICS.contains(&name) {
+        if self.functions.contains_key(&self.key(name)) || is_intrinsic(name) {
             self.report(errors::not_value(name, span));
         } else {
             self.report(errors::undefined(name, span));
@@ -44,7 +44,7 @@ impl Checker {
         }
         let key = self.key(name);
         if !self.functions.contains_key(&key) {
-            if INTRINSICS.contains(&name.as_str()) {
+            if is_intrinsic(name) {
                 return self.intrinsic(call, name, args);
             }
             self.report(errors::undefined(name, callee.span));
@@ -102,6 +102,9 @@ impl Checker {
     fn intrinsic(&mut self, call: &Expr, name: &str, args: &[Expr]) -> Type {
         if name == "swap" {
             return self.swap(call, args);
+        }
+        if super::input::INPUT.contains(&name) {
+            return self.input_intrinsic(call, name, args);
         }
         let result = match name {
             "print" | "println" => Type::Void,

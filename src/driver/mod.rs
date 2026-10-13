@@ -74,9 +74,13 @@ where
             emit,
             options,
         } => build::build(&mut out, file, output.as_deref(), *emit, options.opt),
-        Command::Run { file, options } => pipeline::front(file).and_then(|front| {
+        Command::Run {
+            file,
+            options,
+            args,
+        } => pipeline::front(file).and_then(|front| {
             out.diagnostics(&front.source, &front.warnings);
-            pipeline::run(&front, options.opt)
+            pipeline::run(&front, options.opt, args)
         }),
         Command::Check { file, .. } => pipeline::front(file).map(|front| {
             out.diagnostics(&front.source, &front.warnings);
@@ -125,6 +129,9 @@ enum Command {
         file: PathBuf,
         #[command(flatten)]
         options: Options,
+        /// Arguments for the program, after `--` (v3: read with `args()`)
+        #[arg(last = true)]
+        args: Vec<String>,
     },
     /// Lex, parse and type-check only, reporting errors
     Check {

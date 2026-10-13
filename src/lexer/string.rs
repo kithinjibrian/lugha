@@ -3,36 +3,19 @@
 //! A string may not contain a raw line break: an unclosed string ends at the
 //! end of its line, so one missing `"` can't swallow the rest of the file.
 
-use super::{Lexer, TokenKind};
+use super::Lexer;
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
 
 impl Lexer<'_> {
     /// Lexes a string literal starting at `start`, which holds `"`.
+    /// Interpolations are in `interp.rs` (v3).
     pub(super) fn string(&mut self, start: usize) {
         self.pos += 1;
-        let mut value = String::new();
-        loop {
-            let Some(c) = self.peek_char() else {
-                return self.unterminated(start);
-            };
-            match c {
-                '\n' => return self.unterminated(start),
-                '\r' if self.byte_at(1) == Some(b'\n') => return self.unterminated(start),
-                '"' => {
-                    self.pos += 1;
-                    return self.push(TokenKind::Str(value), start);
-                }
-                '\\' => self.escape(&mut value),
-                _ => {
-                    value.push(c);
-                    self.pos += c.len_utf8();
-                }
-            }
-        }
+        self.string_text(start, start, true);
     }
 
-    fn escape(&mut self, value: &mut String) {
+    pub(super) fn escape(&mut self, value: &mut String) {
         let at = self.pos;
         let decoded = match self.src[at + 1..].chars().next() {
             Some('n') => '\n',
@@ -58,7 +41,7 @@ impl Lexer<'_> {
         self.pos += 2;
     }
 
-    fn unterminated(&mut self, start: usize) {
+    pub(super) fn unterminated(&mut self, start: usize) {
         let span = Span::new(start, self.pos);
         let help = "strings end on the line they start; write `\\n` for a line break";
         self.error(Diagnostic::error("E0102", "unterminated string", span).with_help(help));

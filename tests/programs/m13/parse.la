@@ -1,0 +1,22 @@
+fun show_i(s: string) {
+    match parse_i64(s) {
+        Some(n) => println("i64 {s} -> {n}"),
+        None => println("i64 {s} -> none"),
+    }
+}
+
+fun show_f(s: string) {
+    match parse_f64(s) {
+        Some(x) => println("f64 {s} -> {x}"),
+        None => println("f64 {s} -> none"),
+    }
+}
+
+fun main() {
+    for s of ["42", "-7", "9223372036854775807", "-9223372036854775808", "", "+1", "1_0", "0x1", "9223372036854775808", " 1", "-"] {
+        show_i(s);
+    }
+    for s of ["2.5", "-1e3", "3", "1.5E-2", ".5", "5.", "nan", "1e", "inf", " 2"] {
+        show_f(s);
+    }
+}

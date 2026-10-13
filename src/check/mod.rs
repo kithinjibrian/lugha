@@ -23,6 +23,7 @@ mod expr;
 mod flow;
 mod generics;
 mod infer;
+mod input;
 mod instances;
 mod interfaces;
 mod layouts;

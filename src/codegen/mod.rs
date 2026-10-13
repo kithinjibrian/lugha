@@ -19,6 +19,7 @@ mod expr;
 mod function;
 mod growth;
 mod heap;
+mod input;
 mod instances;
 mod lower;
 mod matching;

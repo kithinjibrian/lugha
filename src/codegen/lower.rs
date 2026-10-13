@@ -176,12 +176,19 @@ impl<'ctx> Lowerer<'ctx> {
     /// void `main` (spec §6).
     fn c_main(&mut self, user_main: FunctionValue<'ctx>) {
         let i32_type = self.context.i32_type();
-        let main = self
-            .module
-            .add_function("main", i32_type.fn_type(&[], false), None);
+        // `main(int argc, char **argv)`: the runtime keeps both for `args()` (v3).
+        let ptr = self.context.ptr_type(Default::default());
+        let main_type = i32_type.fn_type(&[i32_type.into(), ptr.into()], false);
+        let main = self.module.add_function("main", main_type, None);
         self.builder
             .position_at_end(self.context.append_basic_block(main, "entry"));
-        self.call_runtime_init();
+        let argc = main.get_nth_param(0).expect("main takes argc");
+        let argv = main.get_nth_param(1).expect("main takes argv");
+        let init = self.runtime("lugha_rt_init", &[Type::I32, Type::String], None);
+        let init_args = [argc.into(), argv.into()];
+        self.builder
+            .build_call(init, &init_args, "")
+            .expect(POSITIONED);
         let call = self
             .builder
             .build_call(user_main, &[], "result")
@@ -202,7 +209,7 @@ mod tests {
     fn main_returns_a_real_i32() {
         let ir = ir("fun main(): i32 { 2 + 3 * 4 }");
         assert!(ir.contains("define i32 @lugha_fn_main()"), "{ir}");
-        assert!(ir.contains("define i32 @main()"), "{ir}");
+        assert!(ir.contains("define i32 @main(i32 %0, ptr %1)"), "{ir}");
         assert!(ir.contains("call i32 @lugha_fn_main()"), "{ir}");
         assert!(!ir.contains("trunc"), "no truncation in the C main: {ir}");
     }

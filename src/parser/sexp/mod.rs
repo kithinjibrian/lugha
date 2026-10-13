@@ -9,7 +9,9 @@ pub use item::program;
 
 use item::{qualified, ty};
 
-use crate::ast::{Block, Expr, ExprKind, ForIter, Pattern, PatternKind, Stmt, StmtKind, UnOp};
+use crate::ast::{
+    Block, Expr, ExprKind, ForIter, Part, Pattern, PatternKind, Stmt, StmtKind, UnOp,
+};
 
 /// Prints one block: `(block stmt… tail)`.
 pub fn block(block: &Block) -> String {
@@ -73,6 +75,16 @@ pub fn expr(expr: &Expr) -> String {
         ExprKind::Int(value) => value.to_string(),
         ExprKind::Float(value) => format!("{value:?}"),
         ExprKind::Str(value) => format!("{value:?}"),
+        ExprKind::Interp(parts) => {
+            let shown: Vec<String> = parts
+                .iter()
+                .map(|p| match p {
+                    Part::Text(t) => format!("{t:?}"),
+                    Part::Expr(e) => self::expr(e),
+                })
+                .collect();
+            format!("(interp {})", shown.join(" "))
+        }
         ExprKind::Bool(value) => value.to_string(),
         ExprKind::Name(name) => name.clone(),
         ExprKind::Unary(UnOp::Neg, e) => list("neg", &[e]),

@@ -122,7 +122,7 @@ fn emit_prints_a_stage_and_writes_nothing() {
     let ast = text(&lughac(&dir.0, &["build", "--emit=ast", "arith.la"]).stdout);
     assert_eq!(ast, "(fun main () i32 (block (+ 2 (* 3 4))))\n");
     let ir = text(&lughac(&dir.0, &["build", "--emit=ir", "arith.la"]).stdout);
-    assert!(ir.contains("define i32 @main()"), "{ir}");
+    assert!(ir.contains("define i32 @main(i32 %0, ptr %1)"), "{ir}");
     assert_eq!(dir.entries(), ["arith.la"]);
 }
 
@@ -255,8 +255,8 @@ fn spec_prints_the_bundled_specification() {
     let out = lughac(&dir.0, &["spec"]);
     assert_eq!(out.status.code(), Some(0));
     assert_eq!(text(&out.stdout), lugha::SPEC);
-    // v2 is printed while it's being built (PRP-031); v1.2's file is frozen.
-    assert!(lugha::SPEC.starts_with("# Lugha v2 Specification"));
+    // v3 is printed while it's being built (PRP-038); v2's file is frozen.
+    assert!(lugha::SPEC.starts_with("# Lugha v3 Specification"));
     assert!(out.stderr.is_empty(), "{}", text(&out.stderr));
     assert_eq!(lughac(&dir.0, &["spec", "extra"]).status.code(), Some(2));
 }

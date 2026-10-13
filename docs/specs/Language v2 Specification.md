@@ -2,7 +2,7 @@
 
 Oct 9, 2026 · @kithinji
 
-**Status:** complete (milestones 9–12). It is built from the approved plan, `Language v2 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v1 Specification.md` keeps v1.2 frozen.
+**Status:** complete and frozen (milestones 9–12). It was built from the approved plan, `Language v2 Draft.md`. `Language v3 Specification.md` continues from it and is what `lughac spec` prints.
 
 **v1.** This is v0 plus enums, `match`, `Option`, recursive data, methods and growable arrays (milestones 6–8). Every valid v0 program is a valid v1 program unless it uses one of the new keywords as a name.
 

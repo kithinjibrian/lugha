@@ -14,10 +14,11 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// The runtime's source files, in the order they are joined: the core first,
 /// since it holds every `#include`, then the fragments that rely on it.
-pub const RUNTIME_PARTS: [(&str, &str); 3] = [
+pub const RUNTIME_PARTS: [(&str, &str); 4] = [
     ("lugha_rt.c", include_str!("../runtime/lugha_rt.c")),
     ("stack.c", include_str!("../runtime/stack.c")),
     ("print.c", include_str!("../runtime/print.c")),
+    ("input.c", include_str!("../runtime/input.c")),
 ];
 
 /// The C runtime linked into every program: [`RUNTIME_PARTS`] joined in order,
@@ -26,6 +27,7 @@ pub const RUNTIME_SOURCE: &str = concat!(
     include_str!("../runtime/lugha_rt.c"),
     include_str!("../runtime/stack.c"),
     include_str!("../runtime/print.c"),
+    include_str!("../runtime/input.c"),
 );
 
 /// Why linking failed.

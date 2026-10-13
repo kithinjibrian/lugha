@@ -103,9 +103,9 @@ Done when the interfaces program passes and the v2 spec is complete.
 
 ## v3 (draft approved, session 47 — `docs/specs/Language v3 Draft.md`)
 
-### Milestone 13 — Input and interpolation
+### Milestone 13 — Input and interpolation ✅
 Done when the arguments program passes.
-- [ ] `args()`, `parse_i64`, `parse_f64`, string interpolation (E0111)
+- [x] PRP-038: `args()`, `parse_i64`, `parse_f64`, string interpolation (E0111), `lughac run … -- args`; `Language v3 Specification.md` begins
 
 ### Milestone 14 — Functions as values
 Done when the functions-as-values program passes.

@@ -9,6 +9,11 @@ use crate::span::Span;
 /// Built into the compiler from milestone 4; their names are reserved (spec §6).
 pub(super) const INTRINSICS: [&str; 5] = ["print", "println", "panic", "to_string", "swap"];
 
+/// True for every intrinsic name, the v3 input intrinsics (`input.rs`) included.
+pub(super) fn is_intrinsic(name: &str) -> bool {
+    INTRINSICS.contains(&name) || super::input::INPUT.contains(&name)
+}
+
 impl Checker {
     /// Every function and method body of the current module, once the
     /// passes of spec §6 have run over every module (`modules.rs`).
@@ -70,7 +75,7 @@ impl Checker {
             let key = self.key(text);
             if is_extern && text.starts_with("lugha_") {
                 self.report(errors::reserved_extern(text, name.span));
-            } else if INTRINSICS.contains(&text.as_str()) {
+            } else if is_intrinsic(text) {
                 self.report(errors::reserved(text, name.span));
             } else if super::enums::BUILTIN_NAMES.contains(&text.as_str()) {
                 self.report(errors::builtin_name(text, name.span));

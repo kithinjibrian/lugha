@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v2 Specification.md` (`lughac spec` prints it): Lugha v2, complete (milestones 9–12). `Language v2 Draft.md` is the approved plan it was built from. The v0 and v1 files are frozen.
+The language itself is defined by `docs/specs/Language v3 Specification.md` (`lughac spec` prints it): v2 plus the v3 features landed so far, marked "in progress". `Language v3 Draft.md` is the approved v3 plan, folded in milestone by milestone (13–16). The v0, v1 and v2 files are frozen.
 
 ---
 
@@ -222,16 +222,17 @@ pub fn parse_number(src: &str) -> i64 {
 ├── README.md        — overview, prerequisites, usage, tests
 ├── Cargo.toml       — package `lugha`, binary `lughac`
 ├── runtime/         — the C runtime, embedded in lughac (DECISION-009): lugha_rt.c (core: includes, types,
-│                      init, alloc, panics, strings), stack.c (overflow handler), print.c (formatting);
-│                      fragments joined in that order into one lugha_rt.c (PRP-028)
+│                      init, alloc, panics, strings), stack.c (overflow handler), print.c (formatting),
+│                      input.c (args, parse_i64/f64); fragments joined in that order into one lugha_rt.c (PRP-028)
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
 │   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints)
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
-│   ├── lexer/       — mod.rs (lex, main loop), token.rs, punct.rs (operators), number.rs, string.rs
-│   ├── ast/         — mod.rs (items, types, statements), expr.rs (expressions, ExprId, StructLiteral),
+│   ├── lexer/       — mod.rs (lex, main loop), token.rs, punct.rs (operators), number.rs, string.rs,
+│   │                  interp.rs (string interpolation, E0111)
+│   ├── ast/         — mod.rs (items, types, statements), expr.rs (expressions, ExprId, StructLiteral, Part),
 │   │                  pattern.rs (arms, nested patterns, guards), header.rs (imports, type parameters, bounds,
 │   │                  interfaces)
 │   ├── parser/      — mod.rs (parse, cursor, errors), recover.rs, describe.rs,
@@ -243,7 +244,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), body.rs (function bodies), stmt.rs,
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
 │   │                  (fields, indexing), array.rs (literals, for … of, E0507 guard), structs.rs
-│   │                  (declarations, E0307/E0308, literals), liveness.rs (move on last use), enums.rs
+│   │                  (declarations, E0307/E0308, literals), liveness/ (mod.rs move on last use; walk.rs the walk), enums.rs
 │   │                  (declarations), construct.rs (E.V, Some, None), matching.rs (match, guards, W0103), patterns.rs (pattern typing),
 │   │                  usefulness.rs (E0417 witnesses, W0102), methods.rs (impl,
 │   │                  E0310), method_calls.rs (calls, receivers, E0415, E0508), builtins.rs (push, pop, clear), swap.rs (swap, E0509), conflicts.rs (E0510), modules/ (mod.rs check_modules,
@@ -253,7 +254,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  Checked.instances), instances.rs (instance list, E0420, Checked.monos), layouts.rs
 │   │                  (concrete generic types, substituted tables, Checked.used), interfaces.rs (declarations,
 │   │                  interface bounds, E0315, E0423), satisfy.rs (calls through bounds E0421, satisfaction
-│   │                  E0422), errors/ (mod.rs, names.rs E03xx, types.rs E04xx, places.rs E05xx/W01xx,
+│   │                  E0422), input.rs (args, parse_i64/f64, interpolation), errors/ (mod.rs, names.rs E03xx, types.rs E04xx, places.rs E05xx/W01xx,
 │   │                  generics.rs milestone 11–12 codes)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
@@ -264,7 +265,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  structs.rs (named types, layout, literals, fields, place addresses), enums.rs
 │   │                  (enum layout, Option types, payload addresses), growth.rs (push, pop, clear), construct.rs (building enum values,
 │   │                  indirect slots), matching.rs (match lowering, switch), patterns.rs (nested/guarded arms),
-│   │                  methods.rs (method symbols, receivers, calls), instances.rs (generic instances:
+│   │                  methods.rs (method symbols, receivers, calls), input.rs (interpolation, args, parsing),
+│   │                  instances.rs (generic instances:
 │   │                  substitution, instance symbols),
 │   │                  swap.rs (swap: loads and crossed stores)
 │   ├── modules/     — mod.rs (load: the main file and every import, one offset space), resolve.rs
@@ -283,13 +285,15 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── cli.rs       — the lughac binary: commands, emit, diagnostics, exit codes
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m12/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations;
+│   ├── programs/    — m1/ … m13/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations (+ .args);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
-│   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), execute, report)
+│   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args files),
+│                      execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
-│   └── specs/       — Language v2 Specification.md (the language definition, complete, printed by `lughac spec`);
-│                      Language v2 Draft.md (approved v2 plan, milestones 9–12); Language v1 (v1.2) and v0 Specification.md (frozen)
+│   └── specs/       — Language v3 Specification.md (the language definition, in progress, printed by `lughac spec`);
+│                      Language v3 Draft.md (approved v3 plan, milestones 13–16); Language v2 Draft.md (v2 plan);
+│                      Language v2, v1 (v1.2) and v0 Specification.md (frozen)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```
 
@@ -303,7 +307,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them; every one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (closures, shared references, interface values…) even partially. v2 is complete (milestones 9–12); any further language feature is v3 and needs an approved spec change first.
+5. **Never implement a §11 "out of scope" feature** (shared references, interface values, packages…) even partially. v3's features (input, interpolation, function values, closures, array helpers) are built only through milestone PRPs 13–16 against the approved `Language v3 Draft.md`; anything beyond it needs a spec change first.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

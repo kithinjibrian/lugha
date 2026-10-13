@@ -670,9 +670,39 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 45. Input and interpolation (PRP-038)
+
+**Decision:**
+- **Lexer** (`lexer/interp.rs`):
+  - a string with `{…}` lexes as `StrStart`, the expression's tokens, `StrMid`…, `StrEnd`, with the part texts already decoded;
+  - `Lexer.interp` tracks the open interpolation and its brace depth;
+  - E0111 covers a lone `}`, an unclosed `{`, an empty `{}`, and a string literal inside `{…}`. A `"` inside an interpolation is taken as a nested literal if the line has another `"`, else as an unclosed `{`.
+- **AST:** `ExprKind::Interp(Vec<Part>)`, where `Part` is `Text` or `Expr`, plus `Part::expr`.
+- **Checker** (`check/input.rs`):
+  - interpolated values must be numbers, `bool` or `string` (E0403 "can't interpolate");
+  - the input intrinsics are `INPUT`, and `env::is_intrinsic` covers both lists.
+- **Liveness:** interpolated values are mentions. `check/liveness/` was split (approved) into `mod.rs` (the rule) and `walk.rs` (the walk).
+- **Codegen** (`codegen/input.rs`):
+  - interpolation is a chain of `lugha_rt_str_concat` over `lugha_rt_to_string_*`;
+  - `parse_*` writes into an alloca, and the flag selects `Some`/`None`.
+- **Runtime** (`runtime/input.c`, the fourth fragment): `lugha_rt_init(argc, argv)`, `lugha_rt_args`, `lugha_rt_parse_i64`/`_f64`. The C `main` is `main(argc, argv)`.
+- **Driver:** `lughac run file [opts] [-- args…]`.
+- **Tests:** the runner reads `<name>.args` (`runner/args.rs`), which is malformed beside a reject case. The spec extractor reads "Run as `prog a b`.".
+- **Spec:**
+  - `Language v3 Specification.md` starts (in progress: milestone 13) and is `lughac spec`;
+  - v2 is frozen;
+  - the draft's §10 sentence became one run.
+
+**Why:** These follow the session 48 discovery answers: start the v3 spec now, and add `.args` support. Interpolation reuses `to_string`, so it prints exactly like `print`.
+
+**Rules out:** format specifiers, stdin or file input, and string literals inside interpolations.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 13 complete**: PRP-038 args, parsing, interpolation; the v3 spec begins
 - **Milestone 12 complete — Lugha v2 complete**: PRP-037 interfaces (E0421, E0422, E0423)
 - **Milestone 11 complete**: PRP-036 compiles generics (instances, E0420, gate removed, spec folded)
 - PRP-035: generics are type-checked (`lughac check`); the gate stops them before codegen

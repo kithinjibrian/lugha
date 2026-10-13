@@ -21,6 +21,9 @@ pub fn run_case(lughac: &Path, workdir: &Path, case: &Case, timeout: Duration) -
     let arg = case.path.strip_prefix(workdir).unwrap_or(&case.path);
     let mut cmd = Command::new(lughac);
     cmd.arg(subcommand).arg(arg).current_dir(workdir);
+    if !case.args.is_empty() {
+        cmd.arg("--").args(&case.args);
+    }
     run_command(cmd, timeout)
 }
 

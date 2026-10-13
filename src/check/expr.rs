@@ -122,6 +122,7 @@ impl Checker {
             ExprKind::Block(block) => self.block(block, expect),
             ExprKind::Match(scrutinee, arms) => self.match_expr(expr, scrutinee, arms, expect),
             ExprKind::Str(_) => Type::String,
+            ExprKind::Interp(parts) => self.interpolation(parts),
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
             ExprKind::Index(base, _, index) => self.index(base, index),
             ExprKind::Field(base, field) => match self.variant_value(expr, (base, field), expect) {

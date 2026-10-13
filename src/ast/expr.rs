@@ -24,6 +24,8 @@ pub enum ExprKind {
     Int(u64),
     Float(f64),
     Str(String),
+    /// `"a {x} b"`: literal text and interpolated expressions in order (v3).
+    Interp(Vec<Part>),
     Bool(bool),
     /// A variable, function or intrinsic name.
     Name(String),
@@ -129,4 +131,23 @@ pub struct StructLiteral {
     pub name: Ident,
     /// `field: value` pairs in source order.
     pub fields: Vec<(Ident, Expr)>,
+}
+
+/// One piece of an interpolated string (v3 draft §2).
+#[derive(Debug, Clone, PartialEq)]
+pub enum Part {
+    /// Literal text, escapes and `{{`/`}}` already decoded.
+    Text(String),
+    /// A `{expr}`.
+    Expr(Expr),
+}
+
+impl Part {
+    /// The interpolated expression, or `None` for literal text.
+    pub fn expr(&self) -> Option<&Expr> {
+        match self {
+            Part::Expr(e) => Some(e),
+            Part::Text(_) => None,
+        }
+    }
 }

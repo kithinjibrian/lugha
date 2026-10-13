@@ -155,7 +155,7 @@ A closure that panics stops the program as usual.
 
 ## §10 Example programs — additions (v3 acceptance tests)
 
-**Arguments and interpolation** (milestone 13). Run as `prog 21`, prints `21 doubled is 42`; run with no number, prints `usage: prog <n>`; exits with 0.
+**Arguments and interpolation** (milestone 13). Run as `prog 21`. Prints `21 doubled is 42`, exits with 0. (Amended by PRP-038: one run per example, so the tests can run it; the no-number case is `tests/programs/m13/usage`.)
 
 ```
 fun main() {

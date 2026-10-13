@@ -3,7 +3,7 @@
 
 use std::collections::HashSet;
 
-use super::env::INTRINSICS;
+use super::env::is_intrinsic;
 use super::generics::Generic;
 use super::{Checker, Type, errors};
 use crate::ast::{Item, Program};
@@ -26,7 +26,7 @@ impl Checker {
             let Item::Struct(s) = item else { continue };
             let name = &s.name.name;
             let key = self.key(name);
-            if INTRINSICS.contains(&name.as_str()) {
+            if is_intrinsic(name) {
                 self.report(errors::reserved(name, s.name.span));
             } else if super::enums::BUILTIN_NAMES.contains(&name.as_str()) {
                 self.report(errors::builtin_name(name, s.name.span));

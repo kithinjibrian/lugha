@@ -13,8 +13,9 @@
  *
  * Source layout: this core comes first (it enables GNU extensions and holds
  * every include, type and declaration), then stack.c (the stack overflow
- * handler), then print.c (formatting and printing). lughac joins the three,
- * in that order, into the single lugha_rt.c it compiles with each program.
+ * handler), then print.c (formatting and printing), then input.c (arguments
+ * and parsing, v3). lughac joins the four, in that order, into the single
+ * lugha_rt.c it compiles with each program.
  */
 
 #define _GNU_SOURCE
@@ -44,7 +45,10 @@ typedef struct {
     unsigned char elems[];
 } LughaArray;
 
-void lugha_rt_init(void);
+void lugha_rt_init(int32_t argc, char **argv);
+LughaArray *lugha_rt_args(void);
+int32_t lugha_rt_parse_i64(const LughaString *s, int64_t *out);
+int32_t lugha_rt_parse_f64(const LughaString *s, double *out);
 void *lugha_rt_alloc(int64_t size);
 void lugha_rt_panic(const LughaString *msg, const char *file, int64_t line, int64_t col);
 void lugha_rt_panic_bounds(int64_t len, int64_t index, const char *file, int64_t line, int64_t col);
@@ -72,7 +76,13 @@ enum { FORMAT_CAP = 64 };
 /* Called by the C `main` before the program starts (spec §6). */
 static void install_stack_overflow_handler(void);
 
-void lugha_rt_init(void) {
+/* The C `main`'s arguments, for `args()` (v3). */
+static int32_t program_argc;
+static char **program_argv;
+
+void lugha_rt_init(int32_t argc, char **argv) {
+    program_argc = argc;
+    program_argv = argv;
     GC_INIT();
     /* After GC_INIT: Boehm may use signals while it starts up. */
     install_stack_overflow_handler();

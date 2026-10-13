@@ -18,6 +18,8 @@ pub struct SpecProgram {
     pub exit: i32,
     /// The expected diagnostics of a rejected program.
     pub stderr: Option<String>,
+    /// Command-line arguments, from "Run as `prog a b`." (PRP-038).
+    pub args: Vec<String>,
 }
 
 /// The text between the heading starting `start` and the next `## ` heading.
@@ -53,6 +55,20 @@ fn exit_code(sentence: &str) -> i32 {
     let rest = &sentence[sentence.find("exits with ").expect("states an exit code") + 11..];
     let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
     digits.parse().expect("the exit code is a number")
+}
+
+/// "Run as `prog 21 x`." → ["21", "x"]; empty when the sentence has no run.
+fn run_args(sentence: &str) -> Vec<String> {
+    let Some(start) = sentence.find("Run as `prog") else {
+        return Vec::new();
+    };
+    let rest = &sentence[start + "Run as `".len()..];
+    let command = &rest[..rest.find('`').expect("the run is in backticks")];
+    command
+        .split_whitespace()
+        .skip(1)
+        .map(str::to_string)
+        .collect()
 }
 
 /// "Prints `a` then `b` on two lines, exits with 0." → "a\nb\n".
@@ -98,6 +114,7 @@ pub fn section_10() -> Vec<SpecProgram> {
             stdout,
             exit: exit_code(sentence),
             stderr,
+            args: run_args(sentence),
         });
     }
     programs
@@ -141,6 +158,7 @@ pub fn milestone_2() -> SpecProgram {
         stdout: String::new(),
         exit: exit_code(row),
         stderr: None,
+        args: Vec::new(),
     }
 }
 

@@ -3,7 +3,7 @@
 //! Satisfaction and calls through bounds are in `satisfy.rs`.
 
 use super::enums::BUILTIN_NAMES;
-use super::env::INTRINSICS;
+use super::env::is_intrinsic;
 use super::generics::Bounds;
 use super::{Checker, Type, errors, qualify};
 use crate::ast::{Bound, Item, Program, TypeParam};
@@ -44,7 +44,7 @@ impl Checker {
             let Item::Interface(i) = item else { continue };
             let (name, span) = (&i.name.name, i.name.span);
             let key = self.key(name);
-            if INTRINSICS.contains(&name.as_str()) {
+            if is_intrinsic(name) {
                 self.report(errors::reserved(name, span));
             } else if BUILTIN_NAMES.contains(&name.as_str()) {
                 self.report(errors::builtin_name(name, span));

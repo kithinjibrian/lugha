@@ -2438,6 +2438,47 @@ Branch: main
 
 Branch: prp-038-input_and_interpolation
 
+### WHAT WAS DONE
+
+- Discovery: the v3 spec starts now; tests pass arguments through `.args`. PRP-038 written and approved.
+- Lexer:
+  - interpolation (`lexer/interp.rs`): `StrStart`/`StrMid`/`StrEnd` and E0111;
+  - parser: `ExprKind::Interp`.
+- Checker: `check/input.rs` (interpolation, `args`, `parse_i64`/`parse_f64`), `env::is_intrinsic`; liveness split into `check/liveness/{mod,walk}.rs` (approved).
+- Codegen: `codegen/input.rs`; runtime `runtime/input.c`; the C `main(argc, argv)`.
+- Driver: `lughac run … -- args`.
+- Tests: the runner reads `.args`; the spec extractor reads "Run as `prog …`.".
+- Spec: `Language v3 Specification.md` created (in progress: milestone 13), printed by `lughac spec`; v2 frozen; the draft's §10 sentence amended.
+
+### FILES CREATED OR MODIFIED
+
+- New:
+  - `src/lexer/interp.rs`, `src/check/input.rs`, `src/check/liveness/{mod,walk}.rs` (from `liveness.rs`), `src/codegen/input.rs`, `runtime/input.c`;
+  - `tests/support/runner/args.rs`, `tests/programs/m13/`;
+  - `docs/specs/Language v3 Specification.md`, the PRP.
+- Modified:
+  - lexer, parser, AST, sexp;
+  - the checker (`call.rs`, `env.rs`, `expr.rs`, `mod.rs`, `structs.rs`, `enums.rs`, `interfaces.rs`, `errors/types.rs`);
+  - codegen (`expr.rs`, `function.rs`, `lower.rs`, `runtime.rs`, `mod.rs`);
+  - `link.rs`, the driver;
+  - tests (`cli.rs`, `spec.rs`, `common/spec_programs.rs`, the runner);
+  - the specs, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (decision 45).
+
+### TESTS WRITTEN
+
+- Lexer interpolation (5), parser (1), checker input (3), runner `.args` (2).
+- `m13/`: double (+ `.args`), usage, args (an argument containing a space), parse (21 cases), interp, e0111.
+- The §10 arguments program, from the spec, with `21`.
+- 347 tests pass.
+
+### DECISIONS MADE
+
+- MEMORY 45; PRP amendments.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

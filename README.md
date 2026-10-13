@@ -16,7 +16,7 @@ $ lughac run fib.la
 832040
 ```
 
-Lugha v2 is complete (milestones 9–12). Today it has everything in v1.2:
+Lugha v2 is complete (milestones 9–12), and v3 is in progress (milestone 13 done; closures to come). Today it has everything in v1.2:
 - **Basic types:** integers (`i32`, `i64`, `u8`), `f64`, `bool` and immutable strings.
 - **Compound types:** growable arrays (`push`, `pop`, `clear`), structs, and enums with exhaustive `match`, including `Option<T>` and recursive enums.
 - **Behaviour:** methods in `impl` blocks, `if` expressions, loops and `for … of`, and `swap(a, b)` to exchange two places without copying.
@@ -26,8 +26,9 @@ Lugha v2 is complete (milestones 9–12). Today it has everything in v1.2:
 - **Modules (milestone 10):** a program can span several files: `import geometry;`, then `geometry.origin()`, `geometry.Vec2 { … }`. Everything is visible to the whole program unless marked `private`, which keeps an item, method or field inside its file.
 - **Generics (milestone 11):** generic functions, structs, enums and methods (`fun max<T: Ord>(a: T, b: T): T`, `struct Stack<T>`), with `Eq`/`Ord` bounds and type arguments that are always inferred; each instance is compiled separately.
 - **Interfaces (milestone 12):** `interface Shape { fun area(self): f64; }` as a bound (`fun total<T: Shape>(xs: T[])`); any type with matching methods satisfies it, with no declaration, and each call compiles to the concrete method.
+- **Input and interpolation (v3, milestone 13):** `args()` and `parse_i64`/`parse_f64` read the command line, and strings interpolate: `"{name} is {age}"`. Pass arguments with `lughac run prog.la -- 21`.
 
-Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v2 Specification.md`](docs/specs/Language%20v2%20Specification.md) (what `lughac spec` prints); the approved plan it was built from is [`Language v2 Draft.md`](docs/specs/Language%20v2%20Draft.md).
+Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v3 Specification.md`](docs/specs/Language%20v3%20Specification.md) (what `lughac spec` prints); the plan for the rest of v3 is [`Language v3 Draft.md`](docs/specs/Language%20v3%20Draft.md).
 
 ## Prerequisites
 
@@ -53,7 +54,7 @@ cargo install --path .         # or put lughac on your PATH
 | Command | Effect |
 | --- | --- |
 | `lughac build prog.la [-o prog]` | Compile and link an executable |
-| `lughac run prog.la` | Build to a temporary file and run it; the exit code is the program's |
+| `lughac run prog.la [-- args…]` | Build to a temporary file and run it, passing `args` to it; the exit code is the program's |
 | `lughac check prog.la` | Lex, parse and type-check only |
 | `lughac spec` | Print the language spec bundled with this compiler |
 | `lughac build --emit=tokens\|ast\|ir prog.la` | Print an intermediate stage and stop |

@@ -20,6 +20,12 @@ pub enum TokenKind {
     Float(f64),
     /// String literal with escapes decoded.
     Str(String),
+    /// A string's text before its first `{` (v3 interpolation).
+    StrStart(String),
+    /// Text between an interpolation's `}` and the next `{`.
+    StrMid(String),
+    /// Text after the last interpolation's `}`, up to the closing `"`.
+    StrEnd(String),
     /// Identifier that is not a keyword.
     Ident(String),
 

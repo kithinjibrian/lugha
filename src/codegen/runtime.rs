@@ -17,8 +17,11 @@ use crate::ast::Expr;
 use crate::check::Type;
 
 /// Every runtime function codegen may call; `lugha_rt.c` defines them all.
-pub const RUNTIME_SYMBOLS: [&str; 20] = [
+pub const RUNTIME_SYMBOLS: [&str; 23] = [
     "lugha_rt_init",
+    "lugha_rt_args",
+    "lugha_rt_parse_i64",
+    "lugha_rt_parse_f64",
     "lugha_rt_alloc",
     "lugha_rt_panic",
     "lugha_rt_panic_bounds",
@@ -94,13 +97,12 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Calls `lugha_rt_init` (it runs `GC_INIT()`), first thing in the C `main`.
-    pub(super) fn call_runtime_init(&self) {
-        let init = self.runtime("lugha_rt_init", &[], None);
-        self.builder.build_call(init, &[], "").expect(POSITIONED);
-    }
-
     /// Widens `bool`/`u8` to the runtime's `i32` parameters.
-    fn abi_value(&self, ty: &Type, value: BasicValueEnum<'ctx>) -> BasicMetadataValueEnum<'ctx> {
+    pub(super) fn abi_value(
+        &self,
+        ty: &Type,
+        value: BasicValueEnum<'ctx>,
+    ) -> BasicMetadataValueEnum<'ctx> {
         match ty {
             Type::Bool | Type::U8 => {
                 let i32_type = self.context.i32_type();
@@ -285,8 +287,11 @@ mod tests {
             ir.contains("@lugha_rt_panic(ptr @str, ptr @file, i64 2, i64 5)"),
             "{ir}"
         );
-        let main = &ir[ir.find("define i32 @main()").unwrap()..];
-        let init = main.find("call void @lugha_rt_init()").expect("init");
+        let main = &ir[ir.find("define i32 @main(i32 %0, ptr %1)").unwrap()..];
+        // The runtime keeps `argc`/`argv` for `args()` (v3).
+        let init = main
+            .find("call void @lugha_rt_init(i32 %0, ptr %1)")
+            .expect("init");
         assert!(
             init < main.find("call void @lugha_fn_main()").unwrap(),
             "{main}"

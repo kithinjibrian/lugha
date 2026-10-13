@@ -265,3 +265,9 @@ pub(in crate::check) fn no_method(
         None => d,
     }
 }
+
+/// E0403: a value in `"{…}"` that can't be printed (v3).
+pub(in crate::check) fn not_interpolable(ty: &Type, span: Span) -> Diagnostic {
+    Diagnostic::error("E0403", format!("can't interpolate a `{ty}`"), span)
+        .with_help("only numbers, `bool` and strings interpolate; convert it first")
+}

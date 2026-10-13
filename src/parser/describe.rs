@@ -12,7 +12,8 @@ pub(super) fn found(kind: &TokenKind) -> String {
     match kind {
         TokenKind::Int(value) => format!("integer `{value}`"),
         TokenKind::Float(value) => format!("float `{value:?}`"),
-        TokenKind::Str(_) => "string literal".to_string(),
+        TokenKind::Str(_) | TokenKind::StrStart(_) => "string literal".to_string(),
+        TokenKind::StrMid(_) | TokenKind::StrEnd(_) => "`}` of an interpolation".to_string(),
         TokenKind::Ident(name) => format!("identifier `{name}`"),
         TokenKind::Eof => "end of file".to_string(),
         other => text(other),
@@ -46,7 +47,8 @@ fn symbol(kind: &TokenKind) -> &'static str {
     match kind {
         Int(_) => "integer",
         Float(_) => "float",
-        Str(_) => "string",
+        Str(_) | StrStart(_) => "string",
+        StrMid(_) | StrEnd(_) => "}",
         Ident(_) => "identifier",
         Fun => "fun",
         Extern => "extern",

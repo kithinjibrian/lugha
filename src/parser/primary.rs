@@ -2,7 +2,7 @@
 //! block-like `if` and `{ }` expressions (spec §3).
 
 use super::{PResult, Parser};
-use crate::ast::{Expr, ExprKind, Ident, StructLiteral};
+use crate::ast::{Expr, ExprKind, Ident, Part, StructLiteral};
 use crate::diagnostic::Diagnostic;
 use crate::lexer::TokenKind;
 use crate::span::Span;
@@ -14,6 +14,10 @@ impl Parser<'_> {
             TokenKind::Int(value) => ExprKind::Int(value),
             TokenKind::Float(value) => ExprKind::Float(value),
             TokenKind::Str(value) => ExprKind::Str(value),
+            TokenKind::StrStart(text) => {
+                self.bump();
+                return self.interpolated(start, text);
+            }
             TokenKind::True => ExprKind::Bool(true),
             TokenKind::False => ExprKind::Bool(false),
             TokenKind::Ident(name) => {
@@ -159,9 +163,43 @@ impl Parser<'_> {
     }
 }
 
+impl Parser<'_> {
+    /// `"a {x} b"` after its `StrStart`: an expression, then `StrMid` and
+    /// another expression, until `StrEnd` (v3 draft §3).
+    fn interpolated(&mut self, start: usize, first: String) -> PResult<Expr> {
+        let mut parts = vec![Part::Text(first)];
+        loop {
+            // Inside `{…}` a struct literal is fine: the braces delimit it.
+            parts.push(Part::Expr(self.with_struct_literals(true, |p| p.expr())?));
+            match self.peek().clone() {
+                TokenKind::StrMid(text) => {
+                    self.bump();
+                    parts.push(Part::Text(text));
+                }
+                TokenKind::StrEnd(text) => {
+                    self.bump();
+                    parts.push(Part::Text(text));
+                    return Ok(self.mk(start, ExprKind::Interp(parts)));
+                }
+                _ => return Err(self.expected("`}`")),
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::parser::test_util::{body, errors, expr};
+
+    #[test]
+    fn interpolated_strings_hold_expressions() {
+        assert_eq!(expr(r#""a {x + 1} b""#), r#"(interp "a " (+ x 1) " b")"#);
+        assert_eq!(
+            expr(r#""{p.name}: {f(2)}!""#),
+            r#"(interp "" (. p name) ": " (call f 2) "!")"#
+        );
+        assert_eq!(expr(r#""plain""#), r#""plain""#);
+    }
 
     #[test]
     fn literal_forms() {

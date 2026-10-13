@@ -12,8 +12,12 @@
 
 use std::collections::{HashMap, HashSet};
 
+mod walk;
+
+use walk::Walk;
+
 use super::Binding;
-use crate::ast::{Block, Expr, ExprId, ExprKind, ForIter, Item, Program, Stmt, StmtKind};
+use crate::ast::{Expr, ExprId, ExprKind, Item, Program};
 use crate::span::Span;
 
 /// A `Name` expression that resolved to a local.
@@ -47,69 +51,10 @@ pub(super) fn moves(program: &Program, mentions: &HashMap<ExprId, Mention>) -> H
     walk.moves
 }
 
-struct Walk<'a> {
-    mentions: &'a HashMap<ExprId, Mention>,
-    /// The latest mention of each binding.
-    last: HashMap<Span, usize>,
-    /// The loops enclosing the current point.
-    loops: Vec<Span>,
-    moves: HashSet<ExprId>,
-}
-
 impl Walk<'_> {
-    fn block(&mut self, block: &Block) {
-        for stmt in &block.stmts {
-            self.stmt(stmt);
-        }
-        if let Some(tail) = &block.tail {
-            self.expr(tail);
-        }
-    }
-
-    fn stmt(&mut self, stmt: &Stmt) {
-        match &stmt.kind {
-            StmtKind::Let { init, .. } => self.store(init),
-            StmtKind::Assign { place, value, .. } => {
-                self.expr(place);
-                self.store(value);
-            }
-            StmtKind::Expr { expr, .. } => self.expr(expr),
-            StmtKind::Return(value) => value.iter().for_each(|v| self.expr(v)),
-            StmtKind::While { cond, body } => {
-                self.loops.push(stmt.span);
-                self.expr(cond);
-                self.block(body);
-                self.loops.pop();
-            }
-            StmtKind::For { iter, body, .. } => {
-                // The bounds and the iterated array are evaluated once, but
-                // counting them as inside the loop only errs towards copying.
-                self.loops.push(stmt.span);
-                match iter {
-                    ForIter::Range(start, end) => {
-                        self.expr(start);
-                        self.expr(end);
-                    }
-                    ForIter::Array(xs) => self.expr(xs),
-                }
-                self.block(body);
-                self.loops.pop();
-            }
-            StmtKind::Break | StmtKind::Continue => {}
-        }
-    }
-
-    /// A value stored into a new place: a move if it can be (spec §4 copy sites).
-    fn store(&mut self, value: &Expr) {
-        if self.dead_after(value) {
-            self.moves.insert(value.id);
-        }
-        self.expr(value);
-    }
-
     /// True if `value` is a place rooted in a `let` local that nothing can
     /// reach once `value` has been read.
-    fn dead_after(&self, value: &Expr) -> bool {
+    pub(super) fn dead_after(&self, value: &Expr) -> bool {
         let Some(root) = root(value) else {
             return false;
         };
@@ -124,41 +69,6 @@ impl Walk<'_> {
             .iter()
             .all(|l| l.start <= mention.decl.start && mention.decl.end <= l.end);
         in_every_loop && self.last[&mention.decl] < value.span.end
-    }
-
-    fn expr(&mut self, expr: &Expr) {
-        match &expr.kind {
-            ExprKind::Array(elements) => elements.iter().for_each(|e| self.store(e)),
-            ExprKind::StructLit(lit) => lit.fields.iter().for_each(|(_, e)| self.store(e)),
-            ExprKind::Unary(_, e) | ExprKind::Cast(e, _) | ExprKind::Field(e, _) => self.expr(e),
-            ExprKind::Binary(_, _, a, b) | ExprKind::Index(a, _, b) | ExprKind::Repeat(a, b) => {
-                self.expr(a);
-                self.expr(b);
-            }
-            ExprKind::Call(callee, args) => {
-                self.expr(callee);
-                // `xs.push(v)` stores `v` (v1 §4); for a user `push` the mark is unused.
-                let push = matches!(&callee.kind, ExprKind::Field(_, m) if m.name == "push");
-                for a in args {
-                    if push { self.store(a) } else { self.expr(a) }
-                }
-            }
-            ExprKind::If { cond, then, else_ } => {
-                self.expr(cond);
-                self.block(then);
-                else_.iter().for_each(|e| self.expr(e));
-            }
-            ExprKind::Block(block) => self.block(block),
-            ExprKind::Match(scrutinee, arms) => {
-                self.expr(scrutinee);
-                arms.iter().for_each(|arm| self.expr(&arm.body));
-            }
-            ExprKind::Int(_)
-            | ExprKind::Float(_)
-            | ExprKind::Str(_)
-            | ExprKind::Bool(_)
-            | ExprKind::Name(_) => {}
-        }
     }
 }
 

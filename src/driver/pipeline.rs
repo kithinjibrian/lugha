@@ -110,14 +110,15 @@ pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Fail
     link::link(&[&object], exe).map_err(|e| internal(&front.source, e.to_string()))
 }
 
-/// Builds `front` into a temp dir and runs it with inherited standard streams.
+/// Builds `front` into a temp dir and runs it with inherited standard
+/// streams, passing `args` to the program.
 ///
 /// Returns the program's exit code, or 128 + N if signal N killed it, as a shell reports it.
-pub(super) fn run(front: &Front, opt: OptLevel) -> Result<u8, Failure> {
+pub(super) fn run(front: &Front, opt: OptLevel, args: &[String]) -> Result<u8, Failure> {
     let temp = TempDir::new().map_err(|e| internal(&front.source, temp_error(e)))?;
     let exe = temp.path.join("prog");
     build(front, opt, &exe)?;
-    let status = Command::new(&exe).status().map_err(|e| {
+    let status = Command::new(&exe).args(args).status().map_err(|e| {
         internal(
             &front.source,
             format!("cannot run the compiled program: {e}"),

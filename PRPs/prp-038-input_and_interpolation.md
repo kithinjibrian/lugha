@@ -140,43 +140,43 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — lexer (`string.rs`):
-- [ ] `"a {x} b {y}"` gives `StrStart`, tokens, `StrMid`, tokens, `StrEnd`.
-- [ ] `"{{x}}"` is one `Str("{x}")`.
-- [ ] Nested braces `"{if c { 1 } else { 2 }}"` end at the right `}`.
-- [ ] Escapes inside the parts are applied.
-- [ ] E0111 for `"a } b"`, `"{x"`, `"{}"` and `"{f(\"s\")}"`.
+- [x] `"a {x} b {y}"` gives `StrStart`, tokens, `StrMid`, tokens, `StrEnd`.
+- [x] `"{{x}}"` is one `Str("{x}")`.
+- [x] Nested braces `"{if c { 1 } else { 2 }}"` end at the right `}`.
+- [x] Escapes inside the parts are applied.
+- [x] E0111 for `"a } b"`, `"{x"`, `"{}"` and `"{f(\"s\")}"`.
 
 Unit tests — parser:
-- [ ] `"a {x + 1} b"` parses to `(interp "a " (+ x 1) " b")`.
-- [ ] An interpolation of a call or a field works.
+- [x] `"a {x + 1} b"` parses to `(interp "a " (+ x 1) " b")`.
+- [x] An interpolation of a call or a field works.
 
 Unit tests — checker:
-- [ ] Interpolating `i64`, `f64`, `bool` and `string` gives a `string`.
-- [ ] A struct is E0403 with the help.
-- [ ] `args()` is `string[]`.
-- [ ] `parse_i64("1")` is `Option<i64>`.
-- [ ] `parse_i64(1)` is E0403; `args(1)` is E0405.
-- [ ] `fun args() {}` is E0302.
+- [x] Interpolating `i64`, `f64`, `bool` and `string` gives a `string`.
+- [x] A struct is E0403 with the help.
+- [x] `args()` is `string[]`.
+- [x] `parse_i64("1")` is `Option<i64>`.
+- [x] `parse_i64(1)` is E0403; `args(1)` is E0405.
+- [x] `fun args() {}` is E0302.
 
 Runtime / codegen (`tests/codegen.rs` or programs):
-- [ ] `parse_i64`: `"42"`, `"-7"`, `"9223372036854775807"`; and `None` for `""`, `"+1"`, `"1_0"`, `"0x1"`, `"9223372036854775808"`, `" 1"`.
-- [ ] `parse_f64`: `"2.5"`, `"-1e3"`, `"3"`; and `None` for `".5"`, `"5."`, `"nan"`, `"1e"`.
-- [ ] Interpolation prints `f64` as `print` does (`2.0`).
+- [x] `parse_i64`: `"42"`, `"-7"`, `"9223372036854775807"`; and `None` for `""`, `"+1"`, `"1_0"`, `"0x1"`, `"9223372036854775808"`, `" 1"`.
+- [x] `parse_f64`: `"2.5"`, `"-1e3"`, `"3"`; and `None` for `".5"`, `"5."`, `"nan"`, `"1e"`.
+- [x] Interpolation prints `f64` as `print` does (`2.0`).
 
 Acceptance — `tests/programs/m13/` (run at `-O0` and `-O2`):
-- [ ] `double.la` + `double.args` (`21`) prints `21 doubled is 42`; `usage.la` with no args prints the usage line.
-- [ ] `args.la` with `.args` `a`, `b c` (a space inside one argument) prints the count and each argument.
-- [ ] `parse.la`: the parse cases above.
-- [ ] `interp.la`: numbers, `bool`, strings, expressions, nested braces and `{{ }}`.
-- [ ] `e0111.la`: reject golden.
-- [ ] The §10 arguments program runs from the spec with `prog 21`.
+- [x] `double.la` + `double.args` (`21`) prints `21 doubled is 42`; `usage.la` with no args prints the usage line.
+- [x] `args.la` with `.args` `a`, `b c` (a space inside one argument) prints the count and each argument.
+- [x] `parse.la`: the parse cases above.
+- [x] `interp.la`: numbers, `bool`, strings, expressions, nested braces and `{{ }}`.
+- [x] `e0111.la`: reject golden.
+- [x] The §10 arguments program runs from the spec with `prog 21`.
 
 Infrastructure:
-- [ ] The runner's own tests cover `.args` discovery and a malformed orphan `.args`.
-- [ ] `tests/cli.rs`: `lughac run p.la -- x y` passes both.
+- [x] The runner's own tests cover `.args` discovery and a malformed orphan `.args`.
+- [x] `tests/cli.rs`: `lughac run p.la -- x y` passes both.
 
 Regression:
-- [ ] Every earlier test passes. No existing test program has a brace inside a string (checked in discovery).
+- [x] Every earlier test passes. No existing test program has a brace inside a string (checked in discovery).
 
 ## ROLLBACK PLAN
 
@@ -184,12 +184,12 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 arguments program and the `m13/` programs pass.
-- [ ] E0111 and the checker errors are reported as specified.
-- [ ] `lughac spec` prints `Language v3 Specification.md` (in progress: milestone 13); v2 is frozen.
-- [ ] CLAUDE.md, README, TODO, CHANGELOG and MEMORY are updated; tag `m13`.
-- [ ] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The §10 arguments program and the `m13/` programs pass.
+- [x] E0111 and the checker errors are reported as specified.
+- [x] `lughac spec` prints `Language v3 Specification.md` (in progress: milestone 13); v2 is frozen.
+- [x] CLAUDE.md, README, TODO, CHANGELOG and MEMORY are updated; tag `m13`.
+- [x] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -198,3 +198,14 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m13/double.la -- 21
 ```
+
+## AMENDMENTS (during build, session 48)
+
+- **CLI test:** `tests/cli.rs` is at its line limit. `lughac run file -- a "b c"` is covered by `tests/programs/m13/args` (the runner passes `.args` after `--`), not by a separate CLI test.
+- **Argument errors:** `parse_i64(1)` is E0401, the existing literal-of-the-wrong-kind error. The checker test uses `parse_i64(true)` for E0403.
+- **Splits (approved):** `check/liveness.rs` became `check/liveness/{mod,walk}.rs`, moved verbatim apart from `pub(super)` on the shared items.
+- **No splits needed:**
+  - `codegen/runtime.rs` stays under the limit by inlining its one-use `call_runtime_init` into the C `main` (`lower.rs`);
+  - `check/env.rs` stays under it by adding `is_intrinsic`, so the core list stays on one line;
+  - `.args` reading lives in a new `runner/args.rs`.
+- **Lexer recovery:** a `"` inside `{…}` is read as a nested string literal when the line has another `"`, else as the end of a string whose `{` never closed. Both are E0111.

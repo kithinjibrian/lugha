@@ -1,4 +1,4 @@
-//! Turns the files under a root folder into test cases.
+//! Turns the files under a root folder into test cases (`.args` files: `args.rs`).
 
 use std::collections::BTreeMap;
 use std::io;
@@ -12,6 +12,7 @@ struct Group {
     stdout: Option<PathBuf>,
     stderr: Option<PathBuf>,
     exit: Option<PathBuf>,
+    args: Option<PathBuf>,
 }
 
 /// Finds every `.la` program under `root` and loads its expectations. A
@@ -47,6 +48,7 @@ pub fn discover(root: &Path) -> Result<Vec<Case>, Vec<Malformed>> {
             Some("stdout") => group.stdout = Some(rel),
             Some("stderr") => group.stderr = Some(rel),
             Some("exit") => group.exit = Some(rel),
+            Some("args") => group.args = Some(rel),
             // Other files (notes, READMEs) are not part of any case.
             _ => {}
         }
@@ -65,7 +67,7 @@ pub fn discover(root: &Path) -> Result<Vec<Case>, Vec<Malformed>> {
             }
         }
         let Some(la) = &group.la else {
-            for orphan in [&group.stdout, &group.stderr, &group.exit]
+            for orphan in [&group.stdout, &group.stderr, &group.exit, &group.args]
                 .into_iter()
                 .flatten()
             {
@@ -79,10 +81,11 @@ pub fn discover(root: &Path) -> Result<Vec<Case>, Vec<Malformed>> {
         };
         let name = rel_name(la);
         match load_mode(root, &group) {
-            Ok(mode) => cases.push(Case {
+            Ok((mode, args)) => cases.push(Case {
                 name,
                 path: root.join(la),
                 mode,
+                args,
             }),
             Err(reason) => malformed.push(Malformed { name, reason }),
         }
@@ -117,11 +120,11 @@ fn walk(root: &Path, dir: &Path, out: &mut Vec<PathBuf>) -> io::Result<()> {
     Ok(())
 }
 
-fn load_mode(root: &Path, group: &Group) -> Result<Mode, String> {
+fn load_mode(root: &Path, group: &Group) -> Result<(Mode, Vec<String>), String> {
     let read = |rel: &PathBuf| {
         std::fs::read(root.join(rel)).map_err(|e| format!("cannot read {}: {e}", rel.display()))
     };
-    match (&group.exit, &group.stdout, &group.stderr) {
+    let mode: Result<Mode, String> = match (&group.exit, &group.stdout, &group.stderr) {
         (Some(exit), Some(stdout), stderr) => Ok(Mode::Run {
             stdout: read(stdout)?,
             stderr: stderr.as_ref().map(read).transpose()?,
@@ -133,7 +136,8 @@ fn load_mode(root: &Path, group: &Group) -> Result<Mode, String> {
             stderr: read(stderr)?,
         }),
         (None, None, None) => Err("no .exit or .stderr file".into()),
-    }
+    };
+    super::args::with_args(mode?, group.args.as_ref().map(read).transpose()?)
 }
 
 fn parse_exit(bytes: &[u8]) -> Result<i32, String> {

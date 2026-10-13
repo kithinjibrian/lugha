@@ -1,7 +1,7 @@
 //! Enums (v1 §4, §6): declarations, their variants (construction is in
 //! `construct.rs`) and the names a program can't define.
 
-use super::env::INTRINSICS;
+use super::env::is_intrinsic;
 use super::generics::Generic;
 use super::{Checker, Type, errors};
 use crate::ast::{Item, Program};
@@ -27,7 +27,7 @@ impl Checker {
             let Item::Enum(e) = item else { continue };
             let name = &e.name.name;
             let key = self.key(name);
-            if INTRINSICS.contains(&name.as_str()) {
+            if is_intrinsic(name) {
                 self.report(errors::reserved(name, e.name.span));
             } else if BUILTIN_NAMES.contains(&name.as_str()) {
                 self.report(errors::builtin_name(name, e.name.span));
