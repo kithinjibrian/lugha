@@ -3407,6 +3407,11 @@ Branch: prp-058-package_loading (merged into main)
 
 ---
 
+## SESSION 75 — 2026-10-14 — Package visibility (milestone 30, part 2) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 30, part 1 done** (PRP-058, MEMORY 70): `lugha.toml`, package imports, per-package manifests, E0320–E0323. `Language v8 Specification.md` (in progress) is what `lughac spec` prints; v7 is frozen.
