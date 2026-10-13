@@ -2487,7 +2487,7 @@ Branch: prp-038-input_and_interpolation
 
 ## SESSION 49 — 2026-10-13 — Functions as values (milestone 14) — open
 
-Branch: main
+Branch: prp-039-function_values
 
 ---
 
