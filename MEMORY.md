@@ -1131,7 +1131,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 27 complete** (PRP-055, MEMORY 66): `u32`, `u64`, `f32` as keyword types. Tag `m27` goes on the merge of PRP-055. `Language v7 Specification.md` (in progress) is what `lughac spec` prints; v6 is frozen.
+**Milestone 27 complete** (PRP-055, MEMORY 66): `u32`, `u64`, `f32` as keyword types. Tagged `m27`. `Language v7 Specification.md` (in progress) is what `lughac spec` prints; v6 is frozen.
 
 Next: **milestone 28, bits** — discovery and PRP-056. Scope (v7 draft decisions 3 and 5, §2 operators and `0b` literals, §3 precedence and `assign_op`, §4 "Bit operators", §5 compound forms, §9, §10 "Bits"):
 - lexer: `& | ^ ~ << >>` and `&= |= ^= <<= >>=` (a lone `&`/`|` is E0101 today), `0b` literals (E0105/E0106/E0108);

@@ -1,6 +1,6 @@
 ## FEATURE: More numbers — `u32`, `u64` and `f32`; milestone 27.
 
-**Status:** approved 2026-10-13 — session 70
+**Status:** merged 2026-10-13 — session 70
 **Milestone:** 27 (one PRP; tag `m27` at merge; `Language v7 Specification.md` begins)
 **Spec:** `Language v7 Draft.md`:
 - decision 1, and the choices "`f32` prints as the shortest decimal…" and "`parse_i64` and `parse_f64` stay";
