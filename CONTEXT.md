@@ -2212,7 +2212,33 @@ CLAUDE.md (rule 7, tree, known issue), README.md, TODO.md, CHANGELOG.md, MEMORY.
 
 ## SESSION 43 — 2026-10-13 — v2 interfaces amendment (milestone 12) — open
 
-Branch: main
+Branch: main → v2-interfaces
+
+### WHAT WAS DONE
+
+The owner shared a generics and interfaces design note. I recommended keeping generics as M11 and adding structural interfaces as M12, keeping deep `==` (no overloading), and leaving explicit type arguments, `.len()` and `Self` out of v2. The owner chose that and approved the draft amendment.
+
+### FILES CREATED OR MODIFIED
+
+```
+docs/specs/Language v2 Draft.md — decision 10; §1, §2 (interface keyword), §3 (interface_decl, bounds);
+                                  §4 interfaces; §9 E0421/E0422; §10 interfaces program; §11 M12, v3 list; §12
+docs/decisions/generics.md — new: the owner's note plus its v2 adaptations
+tests/parser.rs — draft examples parse, except the M12 program (until M12)
+TODO.md (milestone 12), CHANGELOG.md, MEMORY.md (decision 40)
+```
+
+### TESTS WRITTEN
+
+- None new. The draft-examples parse test now expects 5 programs, with only the interfaces one waiting for M12.
+
+### DECISIONS MADE
+
+- MEMORY 40.
+
+### PENDING DECISIONS OPENED
+
+- None (`Self` and printing generic values are open questions in the draft's §12).
 
 ---
 

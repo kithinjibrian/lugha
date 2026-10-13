@@ -96,6 +96,10 @@ Done when the two-module program passes.
 Done when the generics program passes and the full v2 spec replaces v1 in `lughac spec`.
 - [ ] Type parameters, `Eq`/`Ord` bounds, inference, monomorphization; `Option<T>` as a generic enum (E0315, E0316, E0418–E0420)
 
+### Milestone 12 — Interfaces
+Done when the interfaces program passes and the v2 spec is complete.
+- [ ] `interface` declarations, interfaces as bounds (`T: Shape`), structural satisfaction (E0421, E0422); rationale in `docs/decisions/generics.md`
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.

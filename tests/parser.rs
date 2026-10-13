@@ -60,7 +60,20 @@ fn every_v2_draft_program_parses() {
     let draft = std::fs::read_to_string(path).expect("the v2 draft exists");
     let examples = &draft[draft.find("## §10").expect("§10")..draft.find("## §11").expect("§11")];
     let blocks: Vec<&str> = examples.split("```").skip(1).step_by(2).collect();
-    assert_eq!(blocks.len(), 4, "patterns, geometry.la, main.la, generics");
+    assert_eq!(
+        blocks.len(),
+        5,
+        "patterns, geometry.la, main.la, generics, interfaces"
+    );
+    // Milestone 12's `interface` syntax is parsed once that milestone lands.
+    let (pending, blocks): (Vec<&str>, Vec<&str>) = blocks
+        .into_iter()
+        .partition(|src| src.contains("\ninterface "));
+    assert_eq!(
+        pending.len(),
+        1,
+        "only the interfaces program waits for M12"
+    );
     for src in blocks {
         let (_, warnings) = parse(&tokens(src)).unwrap_or_else(|d| panic!("{src}\n{d:?}"));
         assert!(warnings.is_empty(), "{warnings:?}");

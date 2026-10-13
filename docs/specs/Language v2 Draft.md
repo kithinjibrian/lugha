@@ -34,15 +34,20 @@ This draft lists only what changes, in the order of the v1 sections. Everything 
      - A struct with any `private` field can't be built with a literal outside its module, so a type can protect its invariants (`Range.new` keeps `lo <= hi`).
      - Variants share their enum's visibility.
    - **`public`:** reserved for packages (v3), where it will mean "visible to other packages". In v2 it is an error.
+10. **Interfaces (amendment, session 43;** a new milestone 12 after generics; rationale in `docs/decisions/generics.md`**):**
+    - **What:** an `interface` lists method signatures. It is used only as a bound, `T: Shape`, so generic code can call those methods on a `T`.
+    - **Structural:** any type whose visible methods match satisfies the interface; there is no `impl Shape for`.
+    - **Unchanged:** `Eq` and `Ord` stay built-in bounds, and `==` stays deep for every type. There is no operator overloading.
+    - **Not in v2:** interface-typed values, `Self` in signatures, generic interfaces, explicit type arguments, and `.len()` as a method.
 
 ## §1 Overview — changes
 
-- **Non-goals for v2:** closures and function values, shared or reference types, user-defined interfaces, packages and search paths. See §11.
+- **Non-goals for v2:** closures and function values, shared or reference types, interface values and dynamic dispatch, packages and search paths. See §11.
 - **Design principles:** unchanged. Generics are inferred and checked once. Modules use the same `.` as fields and variants, so there is still one way to write each thing.
 
 ## §2 Lexical structure — changes
 
-- **New keywords:** `import`, `private`, `public` (`public` is reserved for v3 packages; see §6).
+- **New keywords:** `import`, `private`, `public` (`public` is reserved for v3 packages; see §6), `interface` (milestone 12).
 - **Built-in names:** `Eq` and `Ord` join `Option`, `Some` and `None` as built-in names. They are reserved like the intrinsics and can't be redefined (E0302).
 - **`<` and `>`:** no lexer change. In type positions they also bracket type arguments, which is unambiguous because Lugha has no `>>` operator.
 
@@ -51,7 +56,9 @@ This draft lists only what changes, in the order of the v1 sections. Everything 
 ```ebnf
 program      = { import } { item } EOF ;
 import       = "import" IDENT { "." IDENT } ";" ;
-item         = [ visibility ] ( fun_decl | extern_decl | struct_decl | enum_decl ) | impl_decl ;
+item         = [ visibility ] ( fun_decl | extern_decl | struct_decl | enum_decl | interface_decl ) | impl_decl ;
+interface_decl = "interface" IDENT "{" { iface_item } "}" ;        (* milestone 12 *)
+iface_item   = "fun" IDENT "(" [ receiver [ "," params ] | params ] ")" [ ":" type ] ";" ;
 visibility   = "private" | "public" ;                  (* `public`: an error until v3 *)
 
 fun_decl     = "fun" IDENT [ type_params ] "(" [ params ] ")" [ ":" type ] fun_body ;
@@ -62,7 +69,7 @@ impl_decl    = "impl" type_name [ "<" IDENT { "," IDENT } ">" ] "{" { [ visibili
 method       = "fun" IDENT [ type_params ] "(" … ")" [ ":" type ] fun_body ;
 type_params  = "<" type_param { "," type_param } [ "," ] ">" ;
 type_param   = IDENT [ ":" bound { "+" bound } ] ;
-bound        = "Eq" | "Ord" ;
+bound        = "Eq" | "Ord" | type_name ;         (* an interface, `m.Shape` from another module *)
 
 type_name    = IDENT [ "." IDENT ] ;                (* module.Type *)
 base_type    = "i32" | "i64" | "u8" | "f64" | "bool" | "string"
@@ -100,6 +107,14 @@ Equality is deep and costs time proportional to the values compared. `f64` keeps
 - **Bounds:** `T: Eq`, `T: Ord`, or both (`T: Eq + Ord`). An unknown bound is E0315. `Ord` doesn't imply `Eq`; write both if both are used.
 - **What a bare `T` allows:** being stored, moved, copied, passed, returned and put in arrays, structs and enums. `==` needs `T: Eq`, and `<` needs `T: Ord`. Using either without the bound is E0404, with help suggesting the bound.
 - **What `T` never allows:** arithmetic, casts, printing, `.len`, or indexing. Those need a concrete type.
+
+**Interfaces** (milestone 12).
+- **Declaring one:** `interface Shape { fun area(self): f64; fun name(self): string; }` lists methods (with a `self` or `mut self` receiver) and associated functions (without one), each ending in `;`. Their signatures use concrete types only: no type parameters and no `Self`.
+- **Satisfying one:** a type satisfies `Shape` if, for every item, it has a method or associated function with the same name, the same receiver kind, and the same parameter and return types, visible where the bound is checked. No declaration is needed. Primitives, strings and arrays have no methods of their own, so they satisfy only an empty interface.
+- **Using one as a bound:** `fun total<T: Shape>(xs: T[]): f64`, combined freely with `Eq` and `Ord` (`T: Shape + Eq`). In the body, `x.area()` and, for an associated item, `T.make(…)` are allowed when some bound declares them. Calling a method no bound declares is E0421, with help suggesting the bound.
+- **At a use:** a type argument that doesn't satisfy an interface bound is E0422, which names each missing or mismatched method.
+- **Not a type:** an interface is never the type of a value; `let s: Shape = …` is E0305, with help to use it as a bound.
+- **Names and visibility:** interfaces share their module's item namespace (E0302) and follow the visibility rules of §6.
 
 **Using a generic.**
 - **Type arguments:** a generic type is written with all its arguments in type positions: `Stack<i64>`, `Option<Vec2>`, `Pair<string, f64>`. A wrong count, or a bare `Stack` in a type position, is E0418.
@@ -212,6 +227,8 @@ Equality is deep and costs time proportional to the values compared. `f64` keeps
 | E0418 | Wrong number of type arguments | `Stack<i64, i64>`, a bare `Stack` as a parameter type |
 | E0419 | Type argument doesn't satisfy its bound | `largest([[1]])`: `i64[]` is not `Ord` |
 | E0420 | Generic instantiation too deep | `fun f<T>(x: T) { f([x]); }` |
+| E0421 | A method no bound provides (milestone 12) | `s.perimeter()` in `fun f<T: Shape>(s: T)` |
+| E0422 | A type argument doesn't satisfy an interface (milestone 12) | `total_area([1, 2])`: `i64` has no method `area` |
 
 **Reused codes:**
 - E0302: built-in names, imports.
@@ -319,26 +336,69 @@ fun main() {
 }
 ```
 
+**Interfaces** (milestone 12). Prints `15.0`, `9.0`, `square` on three lines; exits with 0.
+
+```
+interface Shape {
+    fun area(self): f64;
+    fun name(self): string;
+}
+
+struct Circle { r: f64 }
+
+impl Circle {
+    fun area(self): f64 = 3.0 * self.r * self.r;
+    fun name(self): string = "circle";
+}
+
+struct Square { side: f64 }
+
+impl Square {
+    fun area(self): f64 = self.side * self.side;
+    fun name(self): string = "square";
+}
+
+fun total_area<T: Shape>(shapes: T[]): f64 {
+    let mut sum = 0.0;
+    for s of shapes {
+        sum += s.area();
+    }
+    sum
+}
+
+fun describe<T: Shape>(s: T): string = s.name();
+
+fun main() {
+    println(total_area([Circle { r: 1.0 }, Circle { r: 2.0 }]));
+    println(total_area([Square { side: 3.0 }]));
+    println(describe(Square { side: 1.0 }));
+}
+```
+
 ## §11 Milestones — additions
 
 | # | Milestone | Adds | Done when |
 | --- | --- | --- | --- |
 | 9 | Patterns and equality | nested patterns, guards, deep `==` on every type, string `<` (`lugha_rt_str_cmp`, `lugha_eq_*`) | The patterns program passes |
 | 10 | Modules | `import`, `private` (items, methods, fields), `public` reserved (E0317), no-leak rule (E0318), multi-file loading, per-file diagnostics, module-qualified symbols | The two-module program passes |
-| 11 | Generics | type parameters, `Eq`/`Ord` bounds, inference, monomorphization; `Option<T>` as an ordinary generic enum | The generics program passes, and the full v2 spec replaces v1 in `lughac spec` |
+| 11 | Generics | type parameters, `Eq`/`Ord` bounds, inference, monomorphization; `Option<T>` as an ordinary generic enum | The generics program passes |
+| 12 | Interfaces | `interface` declarations, interfaces as bounds, structural satisfaction (E0421, E0422) | The interfaces program passes, and the v2 spec is complete (no longer "in progress") |
 
 **Order:**
 - **M9 first:** deep `==` and string order are what `T: Eq` and `T: Ord` rely on.
 - **M10 next:** modules touch the driver, name resolution and symbols but not the type system.
-- **M11 last:** generics, the largest milestone, land on a stable base.
+- **M11 next:** generics, the largest milestone, land on a stable base.
+- **M12 last:** interfaces are bounds, so they need generics first.
 
 The multi-file example needs the §10 extraction in `tests/common/` to understand several files; M10's PRP decides how.
 
 **Out of scope for v2** (for v3, roughly in order):
 - closures and function types;
 - a shared reference type;
-- user-defined interfaces as bounds;
-- explicit type arguments at a use;
+- interface values and dynamic dispatch, generic interfaces, `Self` in interface signatures, and default methods;
+- operator overloading through interfaces;
+- explicit type arguments at a use (`parse<i64>(s)`);
+- `.len()` as a method, so built-in types can satisfy interfaces;
 - packages (a manifest, dependencies, search paths) with `public` for their API, re-exports, API-change checking;
 - selective imports;
 - or-patterns;
@@ -355,3 +415,5 @@ The multi-file example needs the §10 extraction in `tests/common/` to understan
 - [ ] **Module root:** the main file's directory, with no search path. Shared code outside it needs packages, which are v3.
 - [x] **Meaning of `private`:** decided (session 40): private to its module, not to a type's `impl` blocks. An `impl` must live in its type's module anyway.
 - [ ] **From the visibility note, for v3:** re-exports, API-change checking (`lughac api-diff`), and methods on built-in types across packages all wait for packages.
+- [ ] **`Self` in interfaces:** without it, an interface can't say "the same type as the receiver", as in `fun add(self, o: Self): Self` or `fun zero(): Self`. Left for v3, with generic interfaces.
+- [ ] **Printing generic values:** a built-in `Show`-style interface would let generic code print a `T`. Open; the intrinsics accept only primitives and strings today.

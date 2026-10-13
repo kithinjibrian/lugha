@@ -552,6 +552,25 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 40. v2 interfaces amendment (session 43)
+
+**Decision:** the owner's generics and interfaces note (`docs/decisions/generics.md`) is adopted for v2 as two milestones.
+- **M11, generics:** as approved in decision 33: `Eq`/`Ord` bounds, inference only, checked once, monomorphized. Bounds stay on the declaration (`struct Set<T: Eq>`, `impl Set<T>`), not on `impl`.
+- **M12, interfaces (new):**
+  - `interface Shape { fun area(self): f64; }` is used only as a bound (`T: Shape`), combined with `Eq`/`Ord`.
+  - Satisfaction is structural: same name, receiver kind and types, and the method must be visible.
+  - Errors: E0421 for a method no bound provides (in a body), E0422 for a type that doesn't satisfy (at a use), E0305 for an interface used as a type.
+  - Signatures use concrete types only (no `Self`).
+  - The v2 spec becomes complete at M12.
+- **Kept:** deep `==` on every type and built-in `Eq`/`Ord`; no operator overloading.
+- **v3:** interface values and dynamic dispatch, `Self`, generic interfaces, default methods, explicit type arguments, `.len()`.
+
+**Why:** Interfaces are what make generic code useful beyond comparing. Keeping them as a separate milestone keeps M11's size reasonable.
+
+**Rules out (v2):** `eq`/`lt` methods driving operators; `parse<i64>(s)`.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
