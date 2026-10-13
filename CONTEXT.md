@@ -3197,7 +3197,7 @@ Branch: prp-053-self_in_interfaces (merged into main)
 ---
 
 ## SESSION 68 — 2026-10-13 — Converting between interfaces (milestone 26) — open
-Branch: main
+Branch: prp-054-interface_conversion
 
 ---
 
