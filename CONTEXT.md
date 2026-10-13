@@ -2819,7 +2819,7 @@ Branch: prp-044-input_output
 
 ---
 
-## SESSION 56 — 2026-10-13 — String literals inside interpolations — open
+## SESSION 56 — 2026-10-13 — String literals inside interpolations — closed
 
 Branch: prp-045-nested_strings
 
@@ -2845,20 +2845,21 @@ Branch: prp-045-nested_strings
 ### PENDING DECISIONS OPENED
 - None.
 
+### STILL OPEN AT CLOSE
+- Nothing. PRP-045 merged to `main` (fast-forward), tagged `v4.1`, branch deleted.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v4 is complete** (tags `m19` and `v4`). Milestones 17–19 are done:
-- `Result` and `?`;
-- text and option helpers;
-- input and output (MEMORY 50–52).
+**Lugha v4.1 is released** (tag `v4.1`, on top of `m19` and `v4`):
+- v4 (milestones 17–19): `Result` and `?`, text and option helpers, input and output (MEMORY 50–52);
+- v4.1: string literals and nested interpolations inside `{…}` (MEMORY 53).
 
-`Language v4 Specification.md` is final and is what `lughac spec` prints.
+`Language v4 Specification.md` is what `lughac spec` prints.
 
 There is no planned work. Possible next directions, each needing discovery, a v5 spec change and a PRP:
 - the v4 spec's §11 out-of-scope list: interface values and dynamic dispatch, packages with `public`, bitwise operators and more integer types, or-patterns and `mut` match bindings, binary and directory I/O, error conversion in `?`;
-- a recurring friction point: E0111 forbids string literals inside `{…}`, which tripped test writing in three milestones;
 - open questions such as printing generic values.
 
 Housekeeping is also possible.

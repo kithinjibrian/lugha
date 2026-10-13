@@ -1,6 +1,6 @@
 ## FEATURE: String literals inside interpolations — Lugha v4.1.
 
-**Status:** approved 2026-10-13 — session 56
+**Status:** merged 2026-10-13 — session 56
 **Milestone:** none (a point release, like v1.1 `swap` and v1.2 E0510); tag `v4.1`
 **Spec:** `Language v4 Specification.md` §2 "String interpolation" and the E0111 row (amended below).
 **Decisions:** MEMORY 45 (interpolation lexing), MEMORY 52 (v4 complete). The friction was found in sessions 48, 54 and 55: test programs hit E0111 three times.
