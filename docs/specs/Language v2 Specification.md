@@ -1,12 +1,12 @@
-# Lugha v2 Specification (in progress: milestone 11)
+# Lugha v2 Specification (in progress: milestone 12)
 
 Oct 9, 2026 · @kithinji
 
-**Status:** v2 is being built milestone by milestone (9–11). The plan is `Language v2 Draft.md`. This file describes exactly what `lughac` implements now, and is what `lughac spec` prints. `Language v1 Specification.md` keeps v1.2 frozen.
+**Status:** v2 is being built milestone by milestone (9–12). The plan is `Language v2 Draft.md`. This file describes exactly what `lughac` implements now, and is what `lughac spec` prints. `Language v1 Specification.md` keeps v1.2 frozen.
 
 **v1.** This is v0 plus enums, `match`, `Option`, recursive data, methods and growable arrays (milestones 6–8). Every valid v0 program is a valid v1 program unless it uses one of the new keywords as a name.
 
-**Changes since v1.2** (milestones 9 and 10):
+**Changes since v1.2** (milestones 9–11):
 - `==` and `!=` compare any two values of the same type deeply (section 4).
 - Strings are ordered bytewise by `<`, `<=`, `>` and `>=` (section 4).
 - Either operand of a comparison can give the other its type (`None == o`).
@@ -14,8 +14,9 @@ Oct 9, 2026 · @kithinji
 - An unused `match` binding is warning W0103.
 - A program can span several files: `import` loads a module, and its items are used as `m.f`, `m.T` (section 6).
 - Everything is visible to the whole program unless it is `private`, which limits it to its module; `public` is reserved for packages (section 6).
+- Functions, structs, enums and methods can be generic (`fun max<T: Ord>`, `struct Stack<T>`), with `Eq` and `Ord` bounds and type arguments that are always inferred; each instance compiles separately (sections 4, 6, 9).
 
-Every valid v1.2 program is a valid v2 program unless it uses `import`, `private` or `public` as a name. Generics (milestone 11) parse and are checked by `lughac check`; `build` and `run` stop at them with "not implemented yet (milestone 11)", exit 2.
+Every valid v1.2 program is a valid v2 program unless it uses `import`, `private` or `public` as a name, or names a type `Eq` or `Ord`.
 
 ## 1. Overview
 
@@ -140,14 +141,17 @@ import       = "import" IDENT { "." IDENT } ";" ;
 item         = [ visibility ] ( fun_decl | extern_decl | struct_decl | enum_decl ) | impl_decl ;
 visibility   = "private" | "public" ;                (* `public`: E0317 until packages *)
 
-fun_decl     = "fun" IDENT "(" [ params ] ")" [ ":" type ] fun_body ;
+fun_decl     = "fun" IDENT [ type_params ] "(" [ params ] ")" [ ":" type ] fun_body ;
 fun_body     = block | "=" expr ";" ;          (* "= e;" means "{ e }" *)
 extern_decl  = "extern" "fun" IDENT "(" [ params ] ")" [ ":" type ] ";" ;
-struct_decl  = "struct" IDENT "{" [ field { "," field } [ "," ] ] "}" ;
+struct_decl  = "struct" IDENT [ type_params ] "{" [ field { "," field } [ "," ] ] "}" ;
 field        = [ visibility ] IDENT ":" type ;
-enum_decl    = "enum" IDENT "{" [ variant { "," variant } [ "," ] ] "}" ;
-impl_decl    = "impl" IDENT "{" { [ visibility ] method } "}" ;
-method       = "fun" IDENT "(" [ receiver [ "," params ] | params ] ")" [ ":" type ] fun_body ;
+enum_decl    = "enum" IDENT [ type_params ] "{" [ variant { "," variant } [ "," ] ] "}" ;
+impl_decl    = "impl" IDENT [ "<" IDENT { "," IDENT } ">" ] "{" { [ visibility ] method } "}" ;
+method       = "fun" IDENT [ type_params ] "(" [ receiver [ "," params ] | params ] ")" [ ":" type ] fun_body ;
+type_params  = "<" type_param { "," type_param } [ "," ] ">" ;
+type_param   = IDENT [ ":" bound { "+" bound } ] ;
+bound        = "Eq" | "Ord" ;
 receiver     = [ "mut" ] "self" ;
 variant      = IDENT [ "(" type { "," type } [ "," ] ")" ] ;
 params       = param { "," param } [ "," ] ;
@@ -155,8 +159,8 @@ param        = IDENT ":" type ;
 
 type         = base_type { "[" "]" } ;
 base_type    = "i32" | "i64" | "u8" | "f64" | "bool" | "string"
-             | "Option" "<" type ">"
-             | IDENT [ "." IDENT ] ;               (* `m.T`: a type of module `m` *)
+             | IDENT [ "." IDENT ] [ "<" type { "," type } [ "," ] ">" ] ;
+                                           (* `m.T`, `Stack<i64>`; `Option<T>` is one such *)
 
 block        = "{" { stmt } [ expr ] "}" ;   (* trailing expr = tail value *)
 stmt         = var_decl | while_stmt | for_stmt
@@ -217,6 +221,8 @@ infix        = binop expr | "as" type ;
 
 **Enum values and `match`.** `Shape.Circle(2.0)` and `Shape.Empty` need no grammar of their own: they parse as a member access, followed by a call when there are payloads, and the checker decides they name a variant (section 4). A `match` scrutinee is a `cond`, parsed in no-struct-literal mode like an `if` condition. At the top level a bare `IDENT` pattern must name a variant; there are no top-level binding patterns, so use `_`. Inside a payload slot, a bare `IDENT` is a variant if the slot's type is an enum with a variant of that name (`Some(Empty)`), and otherwise a new binding (`Some(x)`). A guard after `if` is parsed like a `cond`.
 
+**Generic headers.** Type parameters follow the name, like Rust and TypeScript: `fun max<T: Ord>(a: T, b: T): T`. An `impl` names its type's parameters without bounds, `impl Stack<T> { … }`; the bounds come from the type's declaration. Type arguments are never written at a use (section 4), so `<` after a name in an expression is always a comparison; `Stack::<i64>` is E0207.
+
 **Block-like statements.** A statement that starts with `if`, `match` or `{` is parsed as `block_like` and needs no trailing `;`. It ends at its closing brace, so `if c { a } - 1` is a statement followed by the expression `-1`, not a subtraction. If a block's final element is an expression with no `;` after it, including a block-like one, that expression is the block's tail value (section 5). A `;` directly after a block-like statement is allowed and makes it an ordinary statement: `if c { f(); };`. A `;` on its own, where a statement should start, is an error.
 
 **Parse errors.** The parser reports as many syntax errors as it can, skipping to the next statement, or to the next item at top level, after each one.
@@ -274,7 +280,7 @@ There is no null. Every string and array variable holds a valid object.
 
 **Recursive data.** An enum may contain itself, directly or through structs, other enums or `Option`: `enum List { Nil, Cons(i64, List) }` builds a linked list, and `enum Tree { Leaf, Node(Tree, i64, Tree) }` a binary tree. Nothing has to be annotated and there is no `Box` (writing `Box<List>` is E0305 with a hint). The compiler stores each payload slot that leads back to its enum behind a hidden pointer (section 7), so the type has a finite size, values like `List.Nil` cost nothing, and — since payloads are shared — copying a list of any length takes constant time. A program can't observe the pointer: in `Cons(x, rest)`, `rest` is an ordinary `List` value.
 
-**`Option`.** The built-in `Option<T>` has the variants `Some(T)` and `None`, written without a prefix. `Some(x)` has type `Option<T>` where `x : T`, or the expected `Option` type when there is one. `None` needs an expected type, exactly like `[]`: `let x: Option<i64> = None;` — otherwise it is E0412. `Option` is the only type that takes a type argument.
+**`Option`.** `Option<T>` is a generic enum predeclared in every module as `enum Option<T> { Some(T), None }`. Its variants are written without a prefix. `Some(x)` has type `Option<T>` where `x : T`, or the expected `Option` type when there is one. `None` needs an expected type, exactly like `[]`: `let x: Option<i64> = None;` — otherwise it is E0412.
 
 **`match`.** `match e { pattern => value, … }` is an expression. A pattern is `_`, an integer, `bool` or string literal, or a variant written without the enum's name. A variant's payload slots are patterns too, so they nest: `Circle(r)`, `Rect(w, _)`, `Empty`, `Some(Circle(r))`, `Pair(1, Some("a"))`. Variant patterns need an enum or `Option` value and literal patterns a value of their type, at any depth (E0403); a variant needs one slot per payload (E0416). An arm may have a guard, `pattern if cond => value`: the guard runs after the pattern matches, with its bindings in scope, and must be `bool` (E0403); if it is false, matching continues with the next arm. The arms' values follow the rules of `if`/`else`: they must agree (E0403), and an arm that never finishes fits any type.
 
@@ -369,6 +375,21 @@ Calling a method that doesn't exist, a `self` method on a type or an associated 
 
 They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (E0501), not inside a string (E0506), and not an array being iterated by `for … of` (E0507). `push` stores its value like an assignment does — copied from a place, moved on last use — and reads it before the array grows, so `xs.push(xs[0])` simply appends a copy of the first element (E0508 doesn't apply). `pop` moves the element out. Indexing is still bounds-checked against the current `.len`, and copying an array copies its current elements.
 
+**Generic declarations.** `fun`, `struct`, `enum` and methods can take type parameters.
+- **Scope:** a type parameter is a type inside its declaration (fields, payloads, signature and body), and a method also sees its `impl`'s parameters. It may not be named like a type, a module or another parameter of the same declaration, nor a method's like its `impl`'s (E0316).
+- **Bounds:** `T: Eq`, `T: Ord`, or both (`T: Eq + Ord`). Any other bound is E0315. `Ord` doesn't imply `Eq`; write both if both are used.
+- **What a bare `T` allows:** being stored, moved, copied, passed, returned and put in arrays, structs and enums. `==` needs `T: Eq`, and `<` needs `T: Ord`. Using either without the bound is E0404, with help suggesting the bound.
+- **What `T` never allows:** arithmetic, casts, printing, `.len`, or indexing. Those need a concrete type.
+- **Checked once:** a generic body is checked once, with its parameters abstract, so every instance compiles.
+
+**Using a generic.**
+- **Type arguments:** a generic type is written with all its arguments in type positions: `Stack<i64>`, `Option<Vec2>`, `Pair<string, f64>`. A wrong count, or a bare `Stack` in a type position, is E0418.
+- **Inference:** at a call, a struct literal, a variant or an associated function, the type arguments are inferred, never written. They come first from the expected type, then from the arguments that can be typed alone, then from the ones that can't (number literals, `None`, `[]`), so `max(x, 3)` with `x: u8` makes `3` a `u8`. A method's `impl` parameters come from its receiver: `s.push(1)` on a `Stack<string>` is E0401.
+- **Can't infer:** a parameter still undecided is E0412, with help to annotate: `let s: Stack<i64> = Stack.new();`.
+- **Bounds at a use:** a type argument that doesn't satisfy its bound is E0419. For example, `largest([[1]])` fails because `i64[]` is not `Ord`. Every type is `Eq`, so only `Ord` can fail: it holds for the numbers, `string`, and type parameters declared `Ord`.
+
+**Generic recursion.** A generic struct or enum may contain itself only with its own parameters unchanged: `enum List<T> { Nil, Cons(T, List<T>) }` is fine, and the indirect-slot rule (section 7) applies to each instance. Instantiation must end: a program whose instances nest more than 64 deep, such as `f<T>` calling `f<T[]>` or a `struct S<T>` holding `S<T[]>`, is E0420. Recursion at the same arguments (`count<T>` calling `count<T>`) never counts. Generic code copies exactly where concrete code would, because each instance is concrete (Array copies, above).
+
 **Mutability.** Bindings are immutable by default. Assigning to any place requires the variable at its root to be declared `let mut`. That covers the variable itself, a field (`p.x = 1.0`), an element (`xs[0] = 1`) and any chain of these (`shapes[i].pts[j].x = 2.0`), and both places of a `swap` (section 5). Because every variable owns its data, a variable declared without `mut` never changes after it is initialized.
 
 ## 5. Expressions and statements
@@ -458,7 +479,7 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 - **Methods:** a method call on a value from another module (`c.area()`) works like any method call.
 - **Errors:** an unknown module name is E0301; an unknown function or type in a known module is E0301 or E0305.
 
-**Names.** Each module has its own namespace for functions, structs, enums and externs, so two modules may each declare `Point`; duplicates within a module are a compile error. Intrinsics and the built-in names `Option`, `Some` and `None` are visible in every module. Methods live in their type's namespace, so a function `dist` and a method `Point.dist` can coexist. No local may be named like a type or an imported module (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then the module's own items, then imported module names. In messages a type from another module is shown with its full module path (`shapes.circle.Circle`); a main-file type keeps its bare name. `main` belongs in the main file (E0304 elsewhere).
+**Names.** Each module has its own namespace for functions, structs, enums and externs, so two modules may each declare `Point`; duplicates within a module are a compile error. Intrinsics and the built-in names `Option`, `Some`, `None`, `Eq` and `Ord` are visible in every module, and no program may declare them (E0302). Methods live in their type's namespace, so a function `dist` and a method `Point.dist` can coexist. No local may be named like a type or an imported module (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then the module's own items, then imported module names. In messages a type from another module is shown with its full module path (`shapes.circle.Circle`); a main-file type keeps its bare name. `main` belongs in the main file (E0304 elsewhere).
 
 **Visibility.** Everything is visible to every module of the program unless it is marked `private`, which limits it to its own module. That covers functions, externs, structs, enums, methods, associated functions and struct fields.
 - **Private items** (E0313): naming another module's `private` item, calling its `private` method, or reading or assigning its `private` field (including through `swap` and `mut self`) is an error.
@@ -468,6 +489,8 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 - **No leaking** (E0318): a declaration that isn't `private` may not mention a `private` type in its signature (parameters, return type, a field's type, a variant's payloads), looking inside arrays and `Option`, since other modules couldn't name that type.
 
 **Functions.** Declared with `fun`, typed parameters, and an optional `: type` return annotation. Omitting the annotation means `void`.
+
+**Generic functions.** A generic function is declared once and compiled once for each distinct list of type arguments the program uses (section 9). One that nothing calls is checked but not compiled. An `extern fun` can't be generic, which the grammar enforces.
 
 **Expression bodies.** A function whose body is a single expression can be written Kotlin-style, with `=` and a semicolon instead of braces. `fun f(...): T = e;` means exactly `fun f(...): T { e }`, so every rule for blocks and tail values applies. The return type follows the same rule as block bodies: it must be written, and omitting it means `void`. This keeps signatures readable without looking at the body, and lets the checker collect every signature before it checks any body.
 
@@ -502,7 +525,7 @@ A `panic(...);` statement also counts as definitely returning, because it never 
 
 This rejects a few correct programs, such as a function whose only exit is a `return` inside `while true`. Add a final `panic("unreachable");` in that case. `return` stays available for early exits. In a `void` function, `return;` is allowed and falling off the end is an implicit return.
 
-**Entry point.** Every program must define `main` as either `fun main()` or `fun main(): i32`. The process exit code is 0 for the first form and `main`'s return value for the second. The user's `main` is emitted as `lugha_fn_main`, like every Lugha function, and the compiler emits a real C `main` that initializes the runtime and calls it (see section 9). Command-line arguments are not accessible in v0.
+**Entry point.** Every program must define `main` as either `fun main()` or `fun main(): i32`, without type parameters (E0304). The process exit code is 0 for the first form and `main`'s return value for the second. The user's `main` is emitted as `lugha_fn_main`, like every Lugha function, and the compiler emits a real C `main` that initializes the runtime and calls it (see section 9). Command-line arguments are not accessible in v0.
 
 ## 7. Memory model
 
@@ -513,6 +536,8 @@ Value types live on the stack; strings and arrays live on a garbage-collected he
 **Enums.** An enum value is a stack value `{ i32 tag; payload area }`. Variants are numbered in declaration order (`None` is 0 and `Some` is 1). The payload area has room for the largest variant's payloads laid out as a struct with natural alignment, and the whole value is aligned to the larger of 4 and that alignment. Enum parameters are passed like structs: as a pointer to the caller's storage. Copying an enum copies its tag and payload bytes; arrays in its payloads are shared, never mutated.
 
 **Indirect slots.** A payload slot whose type leads back to its enum through values held inline — struct fields, enum payloads or `Option`'s payload, but not arrays — is an 8-byte pointer to a copy of the value on the GC heap, allocated with `lugha_rt_alloc` when the variant is built and never mutated afterwards. Every other slot, and the enum value itself, stays inline. `List` is therefore `{ i32 tag; i64 head; ptr rest }`.
+
+**Generic instances** lay out exactly like the concrete types they stand for: `Stack<i64>` is laid out like a struct with one `i64[]` field, and `List<bool>` gets its own indirect slots.
 
 **Recursion depth.** Function calls use the native stack, which is finite. A recursion that goes too deep — for example walking a list of a million nodes recursively — panics with `stack overflow` (exit 101). The runtime detects it when the stack's guard area is hit, so ordinary calls cost nothing. Walk very long lists with a loop.
 
@@ -546,7 +571,7 @@ extern fun abs(x: i32): i32;
 extern fun sqrt(x: f64): f64;
 ```
 
-**Allowed types.** Extern signatures may use only the types below. Structs, arrays, enums and `Option` cannot cross the boundary.
+**Allowed types.** Extern signatures may use only the types below. Structs, arrays, enums and `Option`, generic or not, cannot cross the boundary.
 
 | Lugha type | C type | Passed as |
 | --- | --- | --- |
@@ -566,6 +591,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - Variadic C functions such as `printf` cannot be declared in v0. Use the `print` and `println` intrinsics instead.
 - The extern name is used as the C symbol name unchanged. Lugha functions themselves are emitted with a `lugha_fn_` prefix, so they never collide with C symbols. Methods and associated functions are `lugha_fn_<Type>.<name>` (for example `lugha_fn_Point.dist`); `.` can't appear in a Lugha name, so these can't collide either.
 - Items of a module other than the main file put the module's path before their name, joined with `/`: function `area` of module `shapes.circle` is `lugha_fn_shapes/circle/area`, and its method `Circle.area` is `lugha_fn_shapes/circle/Circle.area`. A name contains neither `/` nor `.`, so a module function (`lugha_fn_a/b/c`) can't collide with a method (`lugha_fn_a/b.c`, method `c` of type `b` in module `a`).
+- A generic instance adds its type arguments as they print, with module paths joined by `/`: `lugha_fn_max<i64>`, `lugha_fn_a/b/max<a/b/Point>`. A method's go on its type, then its own: `lugha_fn_Stack<string>.push`, `lugha_fn_Stack<string>.tag<f64>`. `<` can't appear in a Lugha name, so instances can't collide with anything else.
 - An extern follows the visibility rules of section 6, and the same C function may be declared in several modules only with identical signatures (E0306); it is one symbol.
 - Runtime library functions use the `lugha_rt_` prefix. Neither prefix is a prefix of the other, so a Lugha function can never collide with a runtime function, whatever its name.
 - Extern names starting with `lugha_` are reserved and rejected with an E03xx error, so an extern declaration can't collide with either.
@@ -595,6 +621,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 - **Array copies:** generate one deep-copy function per type that contains arrays (for example `lugha_copy_i64_arr_arr`, or `lugha_copy_5Point_arr` — struct names are length-prefixed so they can't be confused with `_arr` or primitive names; the `lugha_copy_` prefix is disjoint from `lugha_fn_` and `lugha_rt_`), and call it at each copy site listed in section 4. For arrays of plain values, the copy is one `lugha_rt_alloc` plus `llvm.memcpy`.
 - **Deep equality:** generate one `lugha_eq_<type>(T, T) -> i1` per struct, enum, `Option` or array type compared, with the copy helpers' type names (`lugha_eq_1L_opt` for `Option<L>`). Numbers and `bool` compare inline, and strings through `lugha_rt_str_eq`.
 - **Struct, enum and array arguments:** pass a pointer to the caller's storage rather than the value itself, since the callee can't modify it.
+- **Monomorphization:** after checking, the checker lists every generic function and method instance reachable from the non-generic code, at concrete type arguments, and every concrete type those instances use (E0420 when they nest too deep). Codegen compiles each instance from its one body by substituting the type arguments into the types the checker recorded; it still never infers a type. Generic structs and enums get one LLVM type per instance, named as they print (`%"Stack<i64>"`), and their own copy and equality helpers (`lugha_copy_10Stack<i64>`).
 - **Methods:** ordinary functions whose first parameter is the receiver. A `self` receiver is passed like a struct argument; a `mut self` receiver is the address of the caller's place itself, so the method's writes land there.
 - **`match`:** an LLVM `switch` on the tag for enums and on the value for integers and `bool`s; a chain of `lugha_rt_str_eq` tests for strings. Payload bindings load from the payload area at constant offsets. An exhaustive `match` without `_` ends in `unreachable`. A `match` with a nested pattern or a guard is lowered arm by arm instead: each arm tests its pattern outside in (loading indirect payloads through their pointer), binds, runs its guard, and on any failure branches to the next arm.
 
@@ -653,7 +680,7 @@ Name and type errors, reported by the checker:
 | E0301 | Undefined name | `count + 1` with no `count` in scope; a call to an undefined function |
 | E0302 | Name defined more than once, or a function named like an intrinsic | two `fun area`; `fun println()` |
 | E0303 | No `main` function | |
-| E0304 | `main` with the wrong signature, or outside the main file | `fun main(argc: i32): i32`; a `main` in a module (v2) |
+| E0304 | `main` with the wrong signature, generic, or outside the main file | `fun main(argc: i32): i32`; `fun main<T>()`; a `main` in a module (v2) |
 | E0305 | Unknown type name | `let p: Point = 1;` with no `Point` |
 | E0306 | Reserved extern name, or one C function declared with two signatures | `extern fun lugha_rt_alloc(size: i64): i64;` (§8) |
 | E0307 | Struct contains itself | `struct A { b: B }` with `struct B { a: A }` — hold it in an array instead (`A[]`) |
@@ -664,28 +691,29 @@ Name and type errors, reported by the checker:
 | E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` (v2) |
 | E0313 | Another module's `private` item, method or field | `range.helper()`; `r.lo`; `range.Range { lo: 1, hi: 5 }` (v2) |
 | E0314 | Import clash | `import a.util;` and `import b.util;` in one file; an import named like an item (v2) |
-| E0315 | Unknown bound | `fun f<T: Hash>(x: T)` (v2, milestone 11) |
-| E0316 | Bad type parameter name | `fun f<T, T>()`, a parameter named like a struct (v2, milestone 11) |
+| E0315 | Unknown bound | `fun f<T: Hash>(x: T)` (v2) |
+| E0316 | Bad type parameter name | `fun f<T, T>()`, a parameter named like a struct (v2) |
 | E0317 | `public` before packages exist | `public fun f() {}` (v2) |
 | E0318 | A `private` type in a non-`private` signature | `private struct S {}` then `fun make(): S` (v2) |
 | E0319 | The main file imported | a module writing `import main;` (v2) |
 | E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
 | E0402 | Integer literal out of range for its type | `let b: u8 = 256;` |
 | E0403 | Type mismatch | `let n: i32 = ok;` where `ok` is `bool`; `if`/`else` of different types |
-| E0404 | Operator applied to invalid operand types | `true + 1`, `-u` where `u` is `u8` |
+| E0404 | Operator applied to invalid operand types | `true + 1`, `-u` where `u` is `u8`; `a == b` on a `T` without `Eq` (with help to declare it) |
 | E0405 | Wrong number of arguments | `add(1)` for `fun add(a: i64, b: i64)` |
 | E0406 | Not a function, or a function used as a value | `let step = 2; step(1);`, `let f = fib;` |
 | E0407 | `void` used as a value | `let x = log();` where `log` returns nothing |
 | E0410 | No such field | `s.size` on a `string`; `(5).len`; `p.z` or `Point { z: 1.0 }` on a `Point` without `z` |
 | E0411 | Not indexable or not iterable | `n[0]` where `n` is an `i64`; `for c of "abc"` |
-| E0412 | Cannot infer an array's element type, or `None`'s type | `let xs = [];`, `let x = None;` — annotate it: `let xs: i64[] = [];` |
+| E0412 | Cannot infer an array's element type, `None`'s type, or a type argument | `let xs = [];`, `let x = None;`, `let s = Stack.new();` — annotate it: `let xs: i64[] = [];` |
 | E0413 | Struct literal missing fields | `Point { x: 1.0 }` |
 | E0414 | Struct literal field given twice | `Point { x: 1.0, x: 2.0, y: 0.0 }` |
 | E0415 | No such variant or method | `Shape.Circel(1.0)`, a `Square` pattern on a `Shape`, `p.size()`, `xs.push(1)` |
 | E0416 | Wrong number of payloads | `Shape.Rect(1.0)`, `Rect(w) => …` |
 | E0417 | Non-exhaustive `match` | `match s { Circle(r) => r }` with more variants; an integer `match` without `_` |
-| E0418 | Wrong number of type arguments | `Stack<i64, i64>`, a bare `Stack` as a parameter type (v2, milestone 11) |
-| E0419 | Type argument doesn't satisfy its bound | `largest([[1]])`: `i64[]` is not `Ord` (v2, milestone 11) |
+| E0418 | Wrong number of type arguments | `Stack<i64, i64>`, a bare `Stack` as a parameter type (v2) |
+| E0419 | Type argument doesn't satisfy its bound | `largest([[1]])`: `i64[]` is not `Ord` (v2) |
+| E0420 | Generic instantiation too deep | `fun f<T>(x: T) { f([x]); }`; `struct S<T> { xs: S<T[]>[] }` (v2) |
 | E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum or `Option` parameters or returns (§8) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut` |
@@ -974,6 +1002,49 @@ fun main() {
 }
 ```
 
+**Generics** (milestone 11). Prints `b` then `true` then `plum` on three lines, exits with 0.
+
+```
+struct Stack<T> { items: T[] }
+
+impl Stack<T> {
+    fun new(): Stack<T> = Stack { items: [] };
+    fun push(mut self, x: T) { self.items.push(x); }
+    fun pop(mut self): Option<T> = self.items.pop();
+}
+
+fun contains<T: Eq>(xs: T[], x: T): bool {
+    for y of xs {
+        if y == x { return true; }
+    }
+    false
+}
+
+fun largest<T: Ord>(xs: T[]): Option<T> {
+    if xs.len == 0 { return None; }
+    let mut best = xs[0];
+    for x of xs {
+        if x > best { best = x; }
+    }
+    Some(best)
+}
+
+fun main() {
+    let mut s: Stack<string> = Stack.new();
+    s.push("a");
+    s.push("b");
+    match s.pop() {
+        Some(x) => println(x),
+        None => println("empty"),
+    }
+    println(contains([1, 2, 3], 2));
+    match largest(["pear", "apple", "plum"]) {
+        Some(w) => println(w),
+        None => println("none"),
+    }
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -990,6 +1061,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 8 | Growable arrays (v1) | `push`, `pop`, `clear` on `T[]` | The stack program in section 10 passes (done: v1 complete) |
 | 9 | Patterns and equality (v2) | deep `==` on every type, string order, nested patterns, guards, W0103 | The patterns program in section 10 passes (done) |
 | 10 | Modules (v2) | `import`, per-module names, `m.f`/`m.T`, `private` (E0313), `public` reserved (E0317), no leaking (E0318), module symbols | The two-module program in section 10 passes (done) |
+| 11 | Generics (v2) | type parameters, `Eq`/`Ord` bounds, inference, monomorphization, instance symbols, E0420; `Option<T>` as a predeclared generic enum | The generics program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -1029,5 +1101,6 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [ ] **Literal patterns on `f64`.** Excluded from v1: float equality in patterns invites mistakes. Revisit if needed.
 - [x] **Swapping buffers.** Decided (v1.1): the `swap(a, b)` intrinsic. Double buffering with `ys = buf;` copies the whole buffer each time, because `buf` is still in use; copy-on-write and move on last use can't avoid that copy (DECISION-010), but `swap(ys, buf)` exchanges the two arrays without copying.
 - [x] **Array growth factor.** Decided: capacity doubles, starting at 4. It was adequate on the stack program and the DECISION-010 programs; revisit only with measurements.
+- [x] **Instantiation depth.** Decided (v2): 64, large enough for real code and small enough to fail fast (E0420).
 - [ ] **`mut` bindings in `match`.** Bindings are borrowed and immutable; no program has needed `mut` ones yet.
 - [x] **Expression-bodied functions.** Decided: adopted (section 6). `fun square(x: i64): i64 = x * x;` drops the braces from one-liners. It is a small parser addition and a second way to write the same function, accepted because one-liners are common and it is pure sugar for `{ e }`.

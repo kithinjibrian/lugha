@@ -63,7 +63,7 @@ impl<'ctx> Lowerer<'ctx> {
         let (a, b) = (param(0), param(1));
         let unequal = self.append("unequal");
         match ty {
-            Type::Struct(name, _) => self.eq_fields(a, b, name, unequal),
+            Type::Struct(..) => self.eq_fields(a, b, &ty.to_string(), unequal),
             Type::Array(_) => self.eq_elements(a, b, ty, unequal),
             _ => self.eq_variants(a, b, ty, unequal),
         }

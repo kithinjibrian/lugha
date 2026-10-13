@@ -410,7 +410,7 @@ The multi-file example needs the §10 extraction in `tests/common/` to understan
 
 - [ ] **Keep `T: Eq` when every type is `Eq`?** Proposed: yes. It documents intent, and it will start to restrict once function types exist in v3.
 - [x] **A bare name in a nested slot:** it is a variant if the slot's enum has one by that name, and otherwise a binding. This is type-directed, as in Rust, and a typo in a variant name silently becomes a binding. W0102 or an unused-binding warning would catch most cases. Should v2 add an "unused binding" warning? Resolved (PRP-032): yes, W0103 "unused binding".
-- [ ] **The instantiation depth limit:** 64. Large enough for real code, small enough to fail fast.
+- [x] **The instantiation depth limit:** 64. Large enough for real code, small enough to fail fast. Resolved (PRP-036): 64, for instances and for generic types alike (E0420).
 - [ ] **NaN and `Ord`:** a `largest` over `f64`s that contain `NaN` gives an order-dependent answer, because every comparison with `NaN` is false. Documented rather than prevented.
 - [ ] **Module root:** the main file's directory, with no search path. Shared code outside it needs packages, which are v3.
 - [x] **Meaning of `private`:** decided (session 40): private to its module, not to a type's `impl` blocks. An `impl` must live in its type's module anyway.

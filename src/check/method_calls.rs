@@ -166,7 +166,10 @@ impl Checker {
             .zip(outer.iter().cloned())
             .collect();
         match self.infer(call, &m.generics, bound, Some((&m.ret, expect)), &inputs) {
-            Some(targs) => subst(&m.ret, &m.generics, &targs),
+            Some(targs) => {
+                self.used(call, &m.key, &targs);
+                subst(&m.ret, &m.generics, &targs)
+            }
             None => Type::Error,
         }
     }

@@ -73,3 +73,15 @@ pub(in crate::check) fn cannot_infer(param: &str, span: Span) -> Diagnostic {
     )
     .with_help("annotate the variable, e.g. `let s: Stack<i64> = …;`")
 }
+
+/// E0420: generic instances nested too deep.
+pub(in crate::check) fn too_deep(chain: &str, span: Span) -> Diagnostic {
+    Diagnostic::error("E0420", "generic instantiation too deep", span)
+        .with_help(format!("{chain}: each call needs a deeper instance"))
+}
+
+/// E0420: a generic type whose instances keep growing.
+pub(in crate::check) fn type_too_deep(ty: &Type, span: Span) -> Diagnostic {
+    Diagnostic::error("E0420", format!("generic type `{ty}` nests too deep"), span)
+        .with_help("a generic type may contain itself only with its own parameters unchanged")
+}

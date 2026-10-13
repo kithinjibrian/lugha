@@ -22,6 +22,7 @@ pub(super) fn builtin(receiver: &Type, name: &str) -> Option<Method> {
         span: Span::new(0, 0),
         generics: Vec::new(),
         outer: 0,
+        key: String::new(),
     })
 }
 

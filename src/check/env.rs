@@ -107,7 +107,8 @@ impl Checker {
             None => self.report(errors::missing_main()),
             Some(f) => {
                 let bad_return = f.ret.as_ref().is_some_and(|ty| ty.kind != TypeKind::I32);
-                if !f.params.is_empty() || bad_return {
+                // A generic `main` has no one instance to call (v2 draft §9).
+                if !f.params.is_empty() || !f.type_params.is_empty() || bad_return {
                     self.report(errors::bad_main(f.name.span));
                 }
             }
@@ -119,6 +120,7 @@ impl Checker {
     pub(super) fn resolve(&mut self, ty: &Annotation) -> Type {
         let resolved = self.resolve_here(ty);
         self.annotations.insert(ty.span, resolved.clone());
+        self.body_type(&resolved);
         resolved
     }
 

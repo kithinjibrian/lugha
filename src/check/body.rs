@@ -11,8 +11,10 @@ impl Checker {
         let signature = &self.functions[&self.key(&f.name.name)];
         let (params, ret) = (signature.params.clone(), signature.ret.clone());
         self.type_params = signature.generics.clone();
+        self.owner = self.key(&f.name.name);
         self.body(f, params, ret, None);
         self.type_params.clear();
+        self.owner.clear();
     }
 
     /// Checks a function or method body. A method's receiver is bound as

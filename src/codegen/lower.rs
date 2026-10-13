@@ -41,6 +41,14 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) annotations: HashMap<Span, Type>,
     /// Every method and associated function, by `Type.name` (v1).
     pub(super) methods: HashMap<String, super::methods::Method<'ctx>>,
+    /// Every concrete type the program uses (`Checked::used`).
+    pub(super) used: Vec<Type>,
+    /// The type arguments of each generic use (`Checked::instances`).
+    pub(super) instances: HashMap<ExprId, Vec<Type>>,
+    /// Every generic function and method instance, by `key<args>` (PRP-036).
+    pub(super) monos: HashMap<String, super::methods::Method<'ctx>>,
+    /// The type parameters of the instance being lowered, and their types.
+    pub(super) subst: HashMap<String, Type>,
     /// The function being emitted, for appending basic blocks.
     pub(super) function: Option<FunctionValue<'ctx>>,
     /// Its return type; `None` for a void function.
@@ -108,6 +116,10 @@ pub(super) fn lower<'ctx>(
         callees: checked.callees.clone(),
         annotations: checked.annotations.clone(),
         methods: HashMap::new(),
+        used: checked.used.clone(),
+        instances: checked.instances.clone(),
+        monos: HashMap::new(),
+        subst: HashMap::new(),
         function: None,
         ret: None,
         scopes: Scopes::default(),
@@ -132,9 +144,12 @@ pub(super) fn lower<'ctx>(
     for unit in units {
         lowerer.declare_methods(unit);
     }
+    lowerer.declare_instances(units, &checked.monos);
     for unit in units {
         for item in &unit.program.items {
-            if let Item::Fun(f) = item {
+            if let Item::Fun(f) = item
+                && f.type_params.is_empty()
+            {
                 lowerer.define(unit.path, f)?;
             }
         }
@@ -142,6 +157,7 @@ pub(super) fn lower<'ctx>(
     for unit in units {
         lowerer.define_methods(unit)?;
     }
+    lowerer.define_instances(units, &checked.monos)?;
     let user_main = lowerer
         .functions
         .get("main")

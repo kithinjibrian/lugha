@@ -137,12 +137,13 @@ impl<'ctx> Lowerer<'ctx> {
             unreachable!("called with a call expression")
         };
         // The checker resolved the callee (PRP-034): `f` here or `m.f`.
-        let Some(signature) = self
-            .callees
-            .get(&call.id)
-            .and_then(|key| self.functions.get(key))
-            .cloned()
-        else {
+        // A generic callee calls its instance at this call's arguments (PRP-036).
+        let key = self.callees.get(&call.id).cloned();
+        let signature = key.and_then(|key| match self.instance_of(call, &key) {
+            Some(instance) => Some(instance.signature),
+            None => self.functions.get(&key).cloned(),
+        });
+        let Some(signature) = signature else {
             // Not a declared function, so one of the intrinsics (checked: E0301 otherwise).
             let ExprKind::Name(name) = &callee.kind else {
                 unreachable!("checked: E0406 rejects non-name callees")

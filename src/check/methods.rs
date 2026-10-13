@@ -21,6 +21,9 @@ pub(super) struct Method {
     pub generics: Vec<Generic>,
     /// How many of `generics` are the `impl`'s, bound by the receiver's type.
     pub outer: usize,
+    /// `Type.name` (`Stack.push`; empty for array built-ins), the body's key
+    /// in the instance list (PRP-036).
+    pub key: String,
 }
 
 /// Methods by type name, then method name.
@@ -68,6 +71,7 @@ impl Checker {
                     span: f.name.span,
                     generics: self.type_params.clone(),
                     outer: outer.len(),
+                    key: format!("{owner}.{name}"),
                 };
                 self.methods
                     .entry(owner.clone())
@@ -96,11 +100,13 @@ impl Checker {
                 let (params, ret) = (m.params.clone(), m.ret.clone());
                 let receiver = with_args(&ty, params_of_impl(m));
                 let generics = m.generics.clone();
+                self.owner = m.key.clone();
                 self.type_params = generics;
                 self.body(f, params, ret, Some(receiver));
             }
         }
         self.type_params.clear();
+        self.owner.clear();
     }
 
     /// The struct or enum type with key `name`, without type arguments.

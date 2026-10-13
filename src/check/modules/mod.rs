@@ -32,6 +32,8 @@ pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<D
         .unwrap_or(0);
     let mut checker = Checker::new(count as usize);
     checker.modules(units);
+    let monos = checker.monomorphize();
+    let (layouts, used) = checker.type_instances(&monos);
     if checker
         .diagnostics
         .iter()
@@ -39,21 +41,12 @@ pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<D
     {
         return Err(checker.diagnostics);
     }
+    let (structs, enums) = checker.tables(&layouts);
     // Every expression of a valid program has been visited; `Error` is a safe filler.
     let types = checker
         .types
         .into_iter()
         .map(|t| t.unwrap_or(Type::Error))
-        .collect();
-    let structs = checker
-        .structs
-        .into_iter()
-        .map(|(name, info)| (name, info.fields))
-        .collect();
-    let enums = checker
-        .enums
-        .into_iter()
-        .map(|(name, info)| (name, info.variants))
         .collect();
     let moves = units
         .iter()
@@ -68,6 +61,8 @@ pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<D
             callees: checker.callees,
             annotations: checker.annotations,
             instances: checker.instances,
+            monos,
+            used,
         },
         checker.diagnostics,
     ))

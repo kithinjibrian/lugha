@@ -128,33 +128,33 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — `check/instances.rs`:
-- [ ] **One per argument set:** `max(3, 7)` and `max("a", "b")` give `max<i64>` and `max<string>`; a second `max(1, 2)` adds nothing.
-- [ ] **Through generic bodies:** `largest(["a"])`, whose body calls `first(xs)`, gives `largest<string>` and `first<string>`.
-- [ ] **Methods:** `s.push("a")` on `Stack<string>` and `Stack.new()` give `Stack.push<string>` and `Stack.new<string>`; a method's own parameter is appended after the `impl`'s.
-- [ ] **Unused generics** produce nothing.
-- [ ] **Recursion at the same arguments** (`fun count<T>(l: List<T>): i64`, recursive) terminates with one instance.
-- [ ] **E0420** for `fun f<T>(x: T) { f([x]); }` called with `f(1)`, at `f([x])`, with the chain in the note.
-- [ ] **E0304** for `fun main<T>() {}`.
+- [x] **One per argument set:** `max(3, 7)` and `max("a", "b")` give `max<i64>` and `max<string>`; a second `max(1, 2)` adds nothing.
+- [x] **Through generic bodies:** `largest(["a"])`, whose body calls `first(xs)`, gives `largest<string>` and `first<string>`.
+- [x] **Methods:** `s.push("a")` on `Stack<string>` and `Stack.new()` give `Stack.push<string>` and `Stack.new<string>`; a method's own parameter is appended after the `impl`'s.
+- [x] **Unused generics** produce nothing.
+- [x] **Recursion at the same arguments** (`fun count<T>(l: List<T>): i64`, recursive) terminates with one instance.
+- [x] **E0420** for `fun f<T>(x: T) { f([x]); }` called with `f(1)`, at `f([x])`, with the chain in the note.
+- [x] **E0304** for `fun main<T>() {}`.
 
 Integration — `tests/codegen.rs` / `tests/modules.rs` (IR):
-- [ ] `--emit=ir` defines `@"lugha_fn_max<i64>"` and `@"lugha_fn_Stack<string>.push"` and calls them.
-- [ ] A generic function of module `a.b` at its own struct is `@"lugha_fn_a/b/max<a/b/Point>"`.
-- [ ] A non-generic program's IR is byte-for-byte unchanged (an existing IR test is kept).
+- [x] `--emit=ir` defines `@"lugha_fn_max<i64>"` and `@"lugha_fn_Stack<string>.push"` and calls them.
+- [x] A generic function of module `a.b` at its own struct is `@"lugha_fn_a/b/max<a/b/Point>"`.
+- [x] A non-generic program's IR is byte-for-byte unchanged (an existing IR test is kept).
 
 Acceptance — `tests/programs/m11/` (run, `.stdout`/`.exit`), built at `-O0` and `-O2` by the runner:
-- [ ] `stack.la`: a generic `Stack<T>` at `i64` and at `string`, with `push`/`pop` and `Option<T>`.
-- [ ] `list.la`: a recursive `enum List<T> { Nil, Cons(T, List<T>) }` with a generic `count`, at two types (indirect slots per instance).
-- [ ] `copies.la`: a generic struct holding an array, copied and mutated, so the copies stay independent (deep copy helpers per instance).
-- [ ] `equality.la`: `contains<T: Eq>` over structs and over arrays (deep `==` helpers per instance), and `largest<T: Ord>` over `f64` and `string`.
-- [ ] `modules/`: a generic function and a generic struct in an imported module, used at a type of the main file.
-- [ ] `e0420.la`: reject golden.
-- [ ] The §10 generics program runs from the spec (`tests/spec.rs`), printing `b`, `true`, `plum`.
+- [x] `stack.la`: a generic `Stack<T>` at `i64` and at `string`, with `push`/`pop` and `Option<T>`.
+- [x] `list.la`: a recursive `enum List<T> { Nil, Cons(T, List<T>) }` with a generic `count`, at two types (indirect slots per instance).
+- [x] `copies.la`: a generic struct holding an array, copied and mutated, so the copies stay independent (deep copy helpers per instance).
+- [x] `equality.la`: `contains<T: Eq>` over structs and over arrays (deep `==` helpers per instance), and `largest<T: Ord>` over `f64` and `string`.
+- [x] `modules/`: a generic function and a generic struct in an imported module, used at a type of the main file.
+- [x] `e0420.la`: reject golden.
+- [x] The §10 generics program runs from the spec (`tests/spec.rs`), printing `b`, `true`, `plum`.
 
 CLI — `tests/cli.rs`:
-- [ ] The gate test becomes "generics run": `run` exits 0 with the expected output. The gate's unit tests go with `driver/gate/`.
+- [x] The gate test becomes "generics run": `run` exits 0 with the expected output. The gate's unit tests go with `driver/gate/`.
 
 Regression:
-- [ ] Every earlier test passes; every non-generic program's IR, output and diagnostics are unchanged.
+- [x] Every earlier test passes; every non-generic program's IR, output and diagnostics are unchanged.
 
 ## ROLLBACK PLAN
 
@@ -162,12 +162,12 @@ Regression:
 - To abandon: delete the branch. PRP-035's gate is still in `main` until the merge.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 generics program passes, and the `m11/` programs pass at `-O0` and `-O2`.
-- [ ] E0420 is reported by `lughac check`; a generic `main` is E0304.
-- [ ] The gate is gone; `driver/gate/` is deleted.
-- [ ] The spec has the generics rules; CLAUDE.md, README, TODO, CHANGELOG, MEMORY are updated; tag `m11`.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The §10 generics program passes, and the `m11/` programs pass at `-O0` and `-O2`.
+- [x] E0420 is reported by `lughac check`; a generic `main` is E0304.
+- [x] The gate is gone; `driver/gate/` is deleted.
+- [x] The spec has the generics rules; CLAUDE.md, README, TODO, CHANGELOG, MEMORY are updated; tag `m11`.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -176,3 +176,11 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m11/stack.la
 ```
+
+## AMENDMENTS (during build, session 45)
+
+- **Concrete types in the checker too:** `check/layouts.rs` lists every concrete generic struct and enum instance, and every concrete type the compiled code uses (`Checked.used`). `Checked.structs`/`enums` then hold the instances, keyed by the type as it prints (`Stack<i64>`), instead of the generic declarations. So codegen lays them out like any other type and never learns about type parameters.
+- **E0420 also covers types:** a generic type that keeps growing (`struct S<T> { xs: S<T[]>[] }`) is E0420 at its declaration. Without this, codegen would have to generate copy helpers without end.
+- **Helper names:** they keep the existing length prefix: `lugha_copy_10Stack<i64>`, not `lugha_copy_Stack<i64>`. The spec says so.
+- **Instance names in tests:** methods are listed as `Stack.tag<string, f64>` (the `impl`'s arguments, then the method's own). Their symbol is `lugha_fn_Stack<string>.tag<f64>`.
+- **No split needed:** `copy.rs` stayed at 300 lines by tightening `mangle`.

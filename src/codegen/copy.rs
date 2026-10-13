@@ -125,7 +125,7 @@ impl<'ctx> Lowerer<'ctx> {
             .position_at_end(self.context.append_basic_block(function, "entry"));
         let source = function.get_nth_param(0).expect("one parameter");
         let copy = match ty {
-            Type::Struct(name, _) => self.copy_fields(source.into_struct_value(), name),
+            Type::Struct(..) => self.copy_fields(source.into_struct_value(), &ty.to_string()),
             _ => self.copy_elements(source.into_pointer_value(), ty).into(),
         };
         self.builder.build_return(Some(&copy)).expect(POSITIONED);
@@ -199,12 +199,12 @@ fn root(expr: &Expr) -> Option<&str> {
 }
 
 /// A type in a `lugha_copy_`/`lugha_eq_` symbol: `i64[][]` → `i64_arr_arr`,
-/// `Point[]` → `5Point_arr`, `Option<L>` → `1L_opt`. Length-prefixed names
-/// can't be confused with the suffixes or primitive names (PRP-015, PRP-031).
+/// `Point[]` → `5Point_arr`, `Stack<i64>` → `10Stack<i64>`. Length-prefixed names
+/// can't be confused with the suffixes or primitive names (PRP-015, PRP-031, PRP-036).
 pub(super) fn mangle(ty: &Type) -> String {
     match ty {
         Type::Array(element) => format!("{}_arr", mangle(element)),
-        Type::Struct(name, _) | Type::Enum(name, _) => format!("{}{name}", name.len()),
+        Type::Struct(..) | Type::Enum(..) => format!("{}{ty}", ty.to_string().len()),
         Type::Option(inner) => format!("{}_opt", mangle(inner)),
         Type::String => "str".to_string(),
         other => other.to_string(),

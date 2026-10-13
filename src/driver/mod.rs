@@ -8,7 +8,6 @@
 //! Depends on: lexer, parser, codegen, link, diagnostic.
 
 mod build;
-mod gate;
 mod guard;
 mod json;
 mod pipeline;

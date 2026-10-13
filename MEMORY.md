@@ -590,9 +590,30 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 42. Compiling generics (PRP-036)
+
+**Decision:**
+- **Instance list in the checker** (`check/instances.rs`): each generic call is recorded with the body it is in. From the non-generic bodies, a worklist substitutes each instance's arguments into its body's calls and gives `Checked.monos` in discovery order. E0420 is reported past depth 64.
+- **Concrete types in the checker** (`check/layouts.rs`):
+  - each generic body's parameter-mentioning types are recorded, so each instance's types are those, substituted;
+  - `Checked.used` lists every concrete type for codegen to declare;
+  - `Checked.structs`/`enums` drop generic declarations and add each instance, keyed by the type as it prints (`Stack<i64>`), with fields and payloads substituted;
+  - a type that keeps growing (`S<T>` holding `S<T[]>`) is E0420 at its declaration.
+- **Codegen** (`codegen/instances.rs`): `Lowerer.subst` maps the current instance's parameters to types. `ty()` and `annotation_type()` apply it, so nothing is inferred. Generic calls find their instance through `Checked.instances`. Every table lookup and helper mangle uses the printed type (`10Stack<i64>`).
+- **Symbols:** arguments as they print, the whole name through `check::symbol` (`lugha_fn_a/b/max<a/b/Point>`). A method's go on its type, then its own (`lugha_fn_Stack<string>.tag<f64>`).
+- **`Option`:** described in the spec as a predeclared generic enum; the compiler keeps `Type::Option` (a discovery answer).
+- **Gate:** deleted (`driver/gate/`). A generic `main` is E0304.
+
+**Why:** Listing instances and concrete types in the checker makes E0420 a user error that `lughac check` finds. Keying tables by the printed type let codegen lay out instances without learning about type parameters.
+
+**Rules out:** interfaces (milestone 12), explicit type arguments.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 11 complete**: PRP-036 compiles generics (instances, E0420, gate removed, spec folded)
 - PRP-035: generics are type-checked (`lughac check`); the gate stops them before codegen
 - **Milestone 10 complete**: PRP-034 names across modules, visibility (E0313/E0317/E0318), module symbols
 - PRP-033: modules front end — loading, E0312/E0314/E0319, file-aware diagnostics and `--emit`, `private`/`public` syntax
@@ -643,7 +664,7 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- v2 milestones 9–11 (draft approved, session 36)
+- Milestone 12, interfaces (MEMORY 40)
 
 ---
 

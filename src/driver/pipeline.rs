@@ -10,7 +10,6 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use super::gate;
 use super::render::Report;
 use super::source::Source;
 use crate::check::{self, Checked};
@@ -89,26 +88,8 @@ pub(super) fn front(path: &Path) -> Result<Front, Failure> {
     }
 }
 
-/// Stops at v2 constructs codegen can't compile until their milestone
-/// lands (exit 2). The checker knows them already (PRP-035).
-fn stop_gated(front: &Front) -> Result<(), Failure> {
-    let gated = front
-        .modules
-        .iter()
-        .filter_map(|m| m.program.as_ref().and_then(gate::first))
-        .next();
-    let Some(gated) = gated else { return Ok(()) };
-    let message = format!(
-        "not implemented yet: {} (milestone {})",
-        gated.what, gated.milestone
-    );
-    let report = Report::internal(message, Some(gated.span));
-    Err(Failure::Internal(front.source.clone(), Box::new(report)))
-}
-
 /// The program's LLVM IR, for `--emit=ir`.
 pub(super) fn ir(front: &Front) -> Result<String, Failure> {
-    stop_gated(front)?;
     let units = units(&front.modules);
     codegen::emit_ir_modules(&units, checked(front), &sources(front))
         .map_err(|e| codegen_failure(&front.source, e))
@@ -116,7 +97,6 @@ pub(super) fn ir(front: &Front) -> Result<String, Failure> {
 
 /// Compiles and links `front` into the executable `exe`.
 pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Failure> {
-    stop_gated(front)?;
     let temp = TempDir::new().map_err(|e| internal(&front.source, temp_error(e)))?;
     let object = temp.path.join("prog.o");
     codegen::emit_object_modules(

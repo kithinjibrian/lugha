@@ -166,7 +166,7 @@ The language itself is defined by `docs/specs/Language v2 Specification.md` (`lu
 4. **Codegen never infers types.** It reads the checker's expression → type side table. *Why:* opaque pointers need the element type on every load/store/GEP (spec §9), and two type computations will disagree.
 5. **User-program errors are `Diagnostic` records, never panics or strings.** Each has a stable code from its stage's range (E01xx lex … E05xx, W01xx). New codes take the next unused number; a code is never reused or renumbered. Human and JSON output render from the same record. *Why:* spec §9; codes are a public contract.
 6. **Exit codes are 0 / 1 / 2.** 1 = the user's program has errors; 2 = bad CLI usage or internal compiler error. A `module.verify()` failure or a Rust panic inside lughac is exit 2, never 1. *Why:* spec §9; tools tell "your bug" from "our bug" by it.
-7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, items of a module other than the main file → the module path joined with `/` first (`lugha_fn_shapes/circle/area`, `lugha_fn_shapes/circle/Circle.area`), runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, equality helpers → `lugha_eq_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
+7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, items of a module other than the main file → the module path joined with `/` first (`lugha_fn_shapes/circle/area`, `lugha_fn_shapes/circle/Circle.area`), generic instances → the type arguments as they print, module paths with `/` (`lugha_fn_max<i64>`, `lugha_fn_Stack<string>.push`, `lugha_fn_a/b/max<a/b/Point>`), runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, equality helpers → `lugha_eq_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
 8. **Generated code allocates only through `lugha_rt_alloc`.** Never emit calls to `malloc`. *Why:* Boehm can't see `malloc` memory and will free live objects.
 9. **Follow the milestone order (spec §11).** The lexer and parser cover the full §2–§3 syntax. The checker and codegen implement only the current milestone's subset; in milestones 1–2 treat every value as `i64`. *Why:* each milestone must end in a running program, while syntax is cheap to do once and fully specified.
 10. **The §10 programs are the acceptance tests.** Their stdout and exit codes must match exactly. *Why:* they define "conforming compiler".
@@ -248,7 +248,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  keys, passes; lookup.rs m.f / m.T, externs, main), visibility.rs (E0313/E0317/E0318),
 │   │                  struct_literal.rs (S { … }, m.S { … }), generics.rs (type parameters, E0315/E0316,
 │   │                  E0418, substitution), bounds.rs (Eq/Ord, E0419), infer.rs (type arguments, E0412,
-│   │                  Checked.instances), errors/ (mod.rs, names.rs E03xx, types.rs E04xx,
+│   │                  Checked.instances), instances.rs (instance list, E0420, Checked.monos), layouts.rs
+│   │                  (concrete generic types, substituted tables, Checked.used), errors/ (mod.rs, names.rs E03xx, types.rs E04xx,
 │   │                  places.rs E05xx/W01xx, generics.rs milestone 11 codes)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
@@ -259,14 +260,14 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  structs.rs (named types, layout, literals, fields, place addresses), enums.rs
 │   │                  (enum layout, Option types, payload addresses), growth.rs (push, pop, clear), construct.rs (building enum values,
 │   │                  indirect slots), matching.rs (match lowering, switch), patterns.rs (nested/guarded arms),
-│   │                  methods.rs (method symbols, receivers, calls),
+│   │                  methods.rs (method symbols, receivers, calls), instances.rs (generic instances:
+│   │                  substitution, instance symbols),
 │   │                  swap.rs (swap: loads and crossed stores)
 │   ├── modules/     — mod.rs (load: the main file and every import, one offset space), resolve.rs
 │   │                  (import paths, E0312/E0314/E0319), tests.rs (in-memory loading)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_PARTS, RUNTIME_SOURCE, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes, Output), build.rs (build, --emit per module), guard.rs
-│                      (panics → internal error, exit 2), pipeline.rs (load all modules, check, gate before codegen),
-│                      gate/ (mod.rs, walk.rs: stops M10/M11 constructs until their milestone, PRP-030),
+│                      (panics → internal error, exit 2), pipeline.rs (load all modules, check, codegen),
 │                      source.rs (source map of all files, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)
 ├── tests/
@@ -276,7 +277,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── parser.rs    — parser public-API tests (every spec program parses)
 │   ├── codegen.rs   — builds and runs real executables at -O0 and -O2
 │   ├── cli.rs       — the lughac binary: commands, emit, diagnostics, exit codes
-│   ├── modules.rs   — programs of several files through lughac (emit, gate, per-file diagnostics)
+│   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
 │   ├── programs/    — m1/ … m11/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations;
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
@@ -307,8 +308,6 @@ Update this tree when modules or `tests/` are added.
 ## KNOWN ISSUES — DO NOT FIX
 
 These look like bugs but are specified behavior:
-
-- **v2 constructs stop with `not implemented yet: … (milestone N)`, exit 2,** until their milestone lands (PRP-030 gate): only generics (milestone 11) remain. Generics check but don't compile yet: `lughac check` accepts them, `build`, `run` and `--emit=ir` stop before codegen (PRP-035); `--emit=ast` shows them. PRP-036 deletes the gate.
 
 - **A function whose only exit is a `return` inside `while true` is rejected** as missing a return. Spec §6 rejects it on purpose to keep return checking simple; users add `panic("unreachable");`.
 - **Integer overflow always panics**, even at `-O2`. Spec §12 decided against wrapping.

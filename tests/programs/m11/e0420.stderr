@@ -1,0 +1,8 @@
+error[E0420]: generic instantiation too deep
+  --> tests/programs/m11/e0420.la:2:5
+  |
+2 |     nest([x]);
+  |     ^^^^^^^^^
+  |
+  = help: nest<i64> -> nest<i64[]> -> nest<i64[][]> -> …: each call needs a deeper instance
+

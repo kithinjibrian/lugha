@@ -21,9 +21,9 @@ pub(super) fn layout(ty: &Type, structs: &Structs, enums: &Enums) -> (u64, u64) 
         Type::U8 | Type::Bool => (1, 1),
         Type::I32 => (4, 4),
         Type::I64 | Type::F64 | Type::String | Type::Array(_) => (8, 8),
-        Type::Struct(name, _) => {
+        Type::Struct(..) => {
             let (mut size, mut align) = (0u64, 1u64);
-            for (_, field) in &structs[name] {
+            for (_, field) in &structs[&ty.to_string()] {
                 let (field_size, field_align) = layout(field, structs, enums);
                 size = size.next_multiple_of(field_align) + field_size;
                 align = align.max(field_align);
@@ -60,10 +60,11 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// The position and type of `field` in struct type `ty`.
     fn field_index(&self, ty: &Type, field: &str) -> (u32, Type) {
-        let Type::Struct(name, _) = ty else {
+        let Type::Struct(..) = ty else {
             unreachable!("checked: {ty} is a struct")
         };
-        let (index, (_, field_ty)) = self.structs[name]
+        let name = ty.to_string();
+        let (index, (_, field_ty)) = self.structs[&name]
             .iter()
             .enumerate()
             .find(|(_, (f, _))| f == field)
@@ -88,12 +89,12 @@ impl<'ctx> Lowerer<'ctx> {
             let value = self.value_for_store(value, &field_ty)?;
             values.push((index, self.stored_form(value, &field_ty)));
         }
-        let Type::Struct(name, _) = &ty else {
+        let Type::Struct(..) = &ty else {
             unreachable!("checked: a literal has its struct type")
         };
         let struct_type = self
             .context
-            .get_struct_type(name)
+            .get_struct_type(&ty.to_string())
             .expect("declared before lowering");
         let mut aggregate = struct_type.get_undef();
         for (index, value) in values {

@@ -23,6 +23,8 @@ mod expr;
 mod flow;
 mod generics;
 mod infer;
+mod instances;
+mod layouts;
 mod literal;
 mod liveness;
 mod matching;
@@ -41,6 +43,7 @@ mod visibility;
 
 use std::collections::{HashMap, HashSet};
 
+pub use instances::Instance;
 pub use modules::{Unit, check_modules, qualify, symbol};
 pub use types::{Enums, Structs, Type, indirect_slot, slot_names_variant};
 
@@ -69,6 +72,12 @@ pub struct Checked {
     /// associated call, struct literal or construction — in declaration
     /// order (PRP-035), for monomorphization.
     pub instances: HashMap<ExprId, Vec<Type>>,
+    /// Every generic function and method instance the compiled code
+    /// reaches, in discovery order (PRP-036).
+    pub monos: Vec<Instance>,
+    /// Every concrete type the compiled code uses, instances' bodies
+    /// included, so codegen can declare each layout once (PRP-036).
+    pub used: Vec<Type>,
 }
 
 /// Type-checks `program`, a program of one file, returning the type table
@@ -106,6 +115,9 @@ impl Checker {
             annotations: HashMap::new(),
             type_params: Vec::new(),
             instances: HashMap::new(),
+            owner: String::new(),
+            uses: Vec::new(),
+            body_types: HashMap::new(),
         }
     }
 }
@@ -180,6 +192,13 @@ pub(super) struct Checker {
     type_params: Vec<generics::Generic>,
     /// See `Checked::instances`.
     instances: HashMap<ExprId, Vec<Type>>,
+    /// The key of the function or method whose body is being checked.
+    owner: String,
+    /// Every generic call, with the body it is in (PRP-036).
+    uses: Vec<instances::Use>,
+    /// The types in each generic body that mention its parameters, by the
+    /// body's key: each instance's types are these, substituted (PRP-036).
+    body_types: HashMap<String, Vec<Type>>,
 }
 
 impl Checker {
@@ -188,6 +207,7 @@ impl Checker {
     }
 
     fn record(&mut self, expr: &crate::ast::Expr, ty: Type) {
+        self.body_type(&ty);
         self.types[expr.id.0 as usize] = Some(ty);
     }
 }

@@ -20,6 +20,8 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn declare_functions(&mut self, unit: &Unit) -> Result<(), CodegenError> {
         for item in &unit.program.items {
             let (name, params, ret, is_extern) = match item {
+                // Generic functions are declared per instance (`instances.rs`).
+                Item::Fun(f) if !f.type_params.is_empty() => continue,
                 Item::Fun(f) => (&f.name.name, &f.params, f.ret.as_ref(), false),
                 Item::Extern(e) => (&e.name.name, &e.params, e.ret.as_ref(), true),
                 // Methods are declared by `declare_methods`.

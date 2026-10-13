@@ -2297,6 +2297,47 @@ Branch: prp-035-generic_checking
 
 Branch: prp-036-generic_compiling
 
+### WHAT WAS DONE
+
+- Discovery:
+  - instances and E0420 are worked out in the checker;
+  - `Option<T>` changes in the spec only;
+  - one PRP finishes milestone 11.
+- PRP-036 written and approved.
+- Checker:
+  - `check/instances.rs` lists instances from the non-generic bodies (E0420 past 64; a generic `main` is E0304);
+  - `check/layouts.rs` lists concrete generic types and substituted tables (`Checked.used`; E0420 for growing types).
+- Codegen: `codegen/instances.rs` declares and defines each instance under a substitution. Calls find their instance, and tables and helpers are keyed by the printed type.
+- Driver: the gate is deleted (`driver/gate/`).
+- Spec: the generics rules folded in (§3 grammar, §4, §6, §7, §8, §9 symbols, monomorphization, E0420; §10 generics program; §11 row 11). The title is "in progress: milestone 12".
+
+### FILES CREATED OR MODIFIED
+
+- New: `src/check/{instances,layouts}.rs`, `src/codegen/instances.rs`, `tests/programs/m11/{stack,list,copies,equality,e0420}.*`, `tests/programs/m11/modules/`, `PRPs/prp-036-generic_compiling.md`.
+- Deleted: `src/driver/gate/`.
+- Modified:
+  - the checker: `mod.rs`, `types.rs`, `call.rs`, `method_calls.rs`, `methods.rs`, `builtins.rs`, `body.rs`, `env.rs`, `generics.rs`, `modules/mod.rs`, `errors/generics.rs`;
+  - codegen: `lower.rs`, `value.rs`, `declare.rs`, `function.rs`, `methods.rs`, `structs.rs`, `enums.rs`, `copy.rs`, `equality.rs`;
+  - the driver: `pipeline.rs`, `mod.rs`;
+  - tests and docs: `tests/cli.rs`, `tests/modules.rs`, the spec and the draft, CLAUDE.md, README, CHANGELOG, TODO, MEMORY (decision 42).
+
+### TESTS WRITTEN
+
+- `check/instances.rs`: instance lists, recursion, E0420, generic `main`.
+- `check/layouts.rs`: substituted tables, growing types.
+- `tests/modules.rs`: instance symbols.
+- `tests/cli.rs`: generics run.
+- `m11/` run programs: stack, list, copies, equality, modules; the `e0420` golden.
+- The §10 generics program, from the spec.
+
+### DECISIONS MADE
+
+- MEMORY 42. PRP amendments: concrete types in the checker, E0420 for growing types, helper names keep the length prefix.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

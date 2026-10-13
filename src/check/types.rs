@@ -10,7 +10,7 @@ pub type Structs = HashMap<String, Vec<(String, Type)>>;
 pub type Enums = HashMap<String, Vec<(String, Vec<Type>)>>;
 
 /// A type in the checker (spec §4).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Type {
     I32,
     I64,
@@ -53,6 +53,20 @@ impl Type {
         self.is_integer() || *self == Type::F64
     }
 
+    /// `self` with each type parameter named in `map` replaced: how codegen
+    /// makes a generic body's types concrete for one instance (PRP-036).
+    pub fn substitute(&self, map: &HashMap<String, Type>) -> Type {
+        let all = |args: &[Type]| args.iter().map(|a| a.substitute(map)).collect();
+        match self {
+            Type::Param(name) => map.get(name).cloned().unwrap_or_else(|| self.clone()),
+            Type::Array(inner) => Type::Array(Box::new(inner.substitute(map))),
+            Type::Option(inner) => Type::Option(Box::new(inner.substitute(map))),
+            Type::Struct(key, args) => Type::Struct(key.clone(), all(args)),
+            Type::Enum(key, args) => Type::Enum(key.clone(), all(args)),
+            other => other.clone(),
+        }
+    }
+
     /// True if a value of type `self` may appear where `expected` is wanted.
     pub(super) fn fits(&self, expected: &Type) -> bool {
         match (self, expected) {
@@ -84,8 +98,9 @@ impl Type {
     pub fn contains_array(&self, structs: &Structs) -> bool {
         match self {
             Type::Array(_) => true,
-            Type::Struct(name, _) => structs
-                .get(name)
+            // Tables are keyed by the type as it prints: `Stack<i64>` (PRP-036).
+            Type::Struct(..) => structs
+                .get(&self.to_string())
                 .is_some_and(|fields| fields.iter().any(|(_, ty)| ty.contains_array(structs))),
             _ => false,
         }
@@ -108,25 +123,26 @@ pub fn indirect_slot(owner: &Type, slot: &Type, structs: &Structs, enums: &Enums
     let mut stack = vec![slot.clone()];
     let mut seen: Vec<Type> = Vec::new();
     while let Some(ty) = stack.pop() {
-        if ty == *owner {
+        // By name: an instance may be spelled `Tree<i64>` either way (PRP-036).
+        if ty.to_string() == owner.to_string() {
             return true;
         }
         if seen.contains(&ty) {
             continue;
         }
         match &ty {
-            Type::Struct(name, _) => {
+            Type::Struct(..) => {
                 stack.extend(
                     structs
-                        .get(name)
+                        .get(&ty.to_string())
                         .into_iter()
                         .flatten()
                         .map(|(_, t)| t.clone()),
                 );
             }
-            Type::Enum(name, _) => {
+            Type::Enum(..) => {
                 let payloads = enums
-                    .get(name)
+                    .get(&ty.to_string())
                     .into_iter()
                     .flatten()
                     .flat_map(|(_, ps)| ps.iter().cloned());

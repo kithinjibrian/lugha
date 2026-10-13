@@ -1,0 +1,19 @@
+enum List<T> { Nil, Cons(T, List<T>) }
+
+fun count<T>(l: List<T>): i64 = match l {
+    Nil => 0,
+    Cons(_, rest) => 1 + count(rest),
+};
+
+fun prepend<T>(x: T, l: List<T>): List<T> = List.Cons(x, l);
+
+fun main() {
+    let nums: List<i64> = prepend(1, prepend(2, prepend(3, List.Nil)));
+    let flags: List<bool> = prepend(true, List.Nil);
+    println(count(nums));
+    println(count(flags));
+    match nums {
+        Cons(first, _) => println(first),
+        Nil => println(-1),
+    }
+}

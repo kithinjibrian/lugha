@@ -42,8 +42,8 @@ pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnu
             .expect("enums are declared before lowering")
             .into(),
         // Declared by `declare_structs` before anything is lowered.
-        Type::Struct(name, _) => context
-            .get_struct_type(name)
+        Type::Struct(..) => context
+            .get_struct_type(&ty.to_string())
             .expect("structs are declared before lowering")
             .into(),
         Type::Void | Type::Never | Type::Error => unreachable!("checked: {ty} is not a value type"),
@@ -72,15 +72,13 @@ impl<'ctx> Lowerer<'ctx> {
     /// The type an annotation declares, as the checker resolved it
     /// (architecture rule 4; PRP-034: names depend on the module).
     pub(super) fn annotation_type(&self, ty: &Annotation) -> Type {
-        self.annotations
-            .get(&ty.span)
-            .cloned()
-            .expect("checked: every written type is resolved")
+        let ty = self.annotations.get(&ty.span);
+        self.concrete(ty.expect("checked: every written type is resolved"))
     }
 
     /// The checker's type for `expr`.
     pub(super) fn ty(&self, expr: &Expr) -> Type {
-        self.types[expr.id.0 as usize].clone()
+        self.concrete(&self.types[expr.id.0 as usize])
     }
 
     /// Lowers `expr` where a value of type `ty` is needed. In code that never

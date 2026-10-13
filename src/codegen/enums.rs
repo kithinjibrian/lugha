@@ -18,7 +18,7 @@ use crate::check::{Enums, Structs, Type, indirect_slot};
 /// The variants of an enum or `Option` type, in tag order.
 pub(super) fn variants(ty: &Type, enums: &Enums) -> Vec<(String, Vec<Type>)> {
     match ty {
-        Type::Enum(name, _) => enums[name].clone(),
+        Type::Enum(..) => enums[&ty.to_string()].clone(),
         Type::Option(inner) => vec![
             ("None".into(), Vec::new()),
             ("Some".into(), vec![(**inner).clone()]),
@@ -69,7 +69,7 @@ fn collect(ty: &Type, out: &mut BTreeSet<String>, all: &mut Vec<Type>) {
                 all.push(ty.clone());
             }
         }
-        Type::Enum(name, _) if out.insert(name.clone()) => all.push(ty.clone()),
+        Type::Enum(..) if out.insert(ty.to_string()) => all.push(ty.clone()),
         _ => {}
     }
 }
@@ -82,11 +82,11 @@ impl<'ctx> Lowerer<'ctx> {
         for name in self.enums.keys() {
             collect(&Type::Enum(name.clone(), Vec::new()), &mut names, &mut all);
         }
-        let mut seen: Vec<Type> = self.types.clone();
+        // Every concrete type the program uses, instances' bodies included
+        // (`Checked::used`), and every field and payload.
+        let mut seen: Vec<Type> = self.used.clone();
         seen.extend(self.structs.values().flatten().map(|(_, t)| t.clone()));
         seen.extend(self.enums.values().flatten().flat_map(|(_, ps)| ps.clone()));
-        // Every written type, so a signature's `Option<T>` is declared too.
-        seen.extend(self.annotations.values().cloned());
         for ty in &seen {
             collect(ty, &mut names, &mut all);
         }

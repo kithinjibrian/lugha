@@ -25,6 +25,16 @@ pub(super) fn subst(ty: &Type, generics: &[Generic], args: &[Type]) -> Type {
     replace(ty, &map)
 }
 
+/// True if `ty` mentions a type parameter.
+pub(super) fn has_param(ty: &Type) -> bool {
+    match ty {
+        Type::Param(_) => true,
+        Type::Array(inner) | Type::Option(inner) => has_param(inner),
+        Type::Struct(_, args) | Type::Enum(_, args) => args.iter().any(has_param),
+        _ => false,
+    }
+}
+
 /// The parameters as types: `[T, U]` for `<T, U>`.
 pub(super) fn params(generics: &[Generic]) -> Vec<Type> {
     generics

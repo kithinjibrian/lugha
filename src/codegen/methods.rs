@@ -13,7 +13,7 @@ use super::CodegenError;
 use super::function::Signature;
 use super::lower::{Lowerer, POSITIONED};
 use super::value::{Value, llvm_type};
-use crate::ast::{Expr, ExprKind, Item};
+use crate::ast::{Expr, ExprKind, FunDecl, ImplDecl, Item};
 use crate::check::{Type, Unit, qualify, symbol};
 
 /// A declared method or associated function.
@@ -30,6 +30,12 @@ pub(super) fn key(owner: &str, name: &str) -> String {
     format!("{owner}.{name}")
 }
 
+/// True for a method of a generic `impl` or with parameters of its own:
+/// compiled per instance (`instances.rs`, PRP-036).
+pub(super) fn generic(i: &ImplDecl, f: &FunDecl) -> bool {
+    !i.params.is_empty() || !f.type_params.is_empty()
+}
+
 impl<'ctx> Lowerer<'ctx> {
     /// Declares every method of `unit` as `lugha_fn_<Type>.<name>`
     /// (`lugha_fn_geometry/Vec2.len` in a module, PRP-034), receiver first.
@@ -37,7 +43,7 @@ impl<'ctx> Lowerer<'ctx> {
         for item in &unit.program.items {
             let Item::Impl(i) = item else { continue };
             let owner = qualify(unit.path, &i.ty.name);
-            for f in &i.methods {
+            for f in i.methods.iter().filter(|f| !generic(i, f)) {
                 let params: Vec<Type> = f
                     .params
                     .iter()
@@ -85,7 +91,7 @@ impl<'ctx> Lowerer<'ctx> {
             } else {
                 Type::Struct(name.clone(), Vec::new())
             };
-            for f in &i.methods {
+            for f in i.methods.iter().filter(|f| !generic(i, f)) {
                 let method = self.methods[&key(&name, &f.name.name)].clone();
                 let receiver = method.receiver.map(|_| owner.clone());
                 self.define_with(f, &method.signature, receiver)?;
@@ -117,7 +123,11 @@ impl<'ctx> Lowerer<'ctx> {
             }
             _ => return Ok(None),
         };
-        let Some(method) = method.and_then(|k| self.methods.get(&k)).cloned() else {
+        let found = method.and_then(|k| {
+            let instance = self.instance_of(call, &k);
+            instance.or_else(|| self.methods.get(&k).cloned())
+        });
+        let Some(method) = found else {
             return Ok(None); // a variant constructor, or a function of a module
         };
         let mut values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len() + 1);

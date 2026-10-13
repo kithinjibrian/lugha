@@ -1,0 +1,202 @@
+//! Generic instances (v2 draft §9 "Monomorphization", PRP-036): each
+//! generic function and method in `Checked::monos` is declared and lowered
+//! once per set of type arguments, from its one AST body, with every type
+//! the checker recorded made concrete by substitution — never inferred
+//! (architecture rule 4).
+
+use std::collections::HashMap;
+
+use inkwell::module::Linkage;
+use inkwell::types::{BasicMetadataTypeEnum, BasicType};
+
+use super::CodegenError;
+use super::function::Signature;
+use super::lower::Lowerer;
+use super::methods::Method;
+use super::value::llvm_type;
+use crate::ast::{Expr, FunDecl, ImplDecl, Item};
+use crate::check::{Instance, Type, Unit, qualify, symbol};
+
+/// Where an instance's code comes from.
+struct Source<'a> {
+    f: &'a FunDecl,
+    /// The `impl` of a method, `None` for a function.
+    owner: Option<(&'a ImplDecl, String)>,
+}
+
+/// `key<args>`: how an instance is named in `Lowerer::monos`.
+pub(super) fn instance_name(key: &str, args: &[Type]) -> String {
+    format!("{key}<{}>", spelled(args))
+}
+
+/// Type arguments as they print, comma-separated.
+fn spelled(args: &[Type]) -> String {
+    args.iter()
+        .map(Type::to_string)
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+impl<'ctx> Lowerer<'ctx> {
+    /// `ty` with the current instance's type parameters replaced.
+    pub(super) fn concrete(&self, ty: &Type) -> Type {
+        if self.subst.is_empty() {
+            ty.clone()
+        } else {
+            ty.substitute(&self.subst)
+        }
+    }
+
+    /// The instance a generic call calls, made concrete: `None` for a call
+    /// of something that isn't generic.
+    pub(super) fn instance_of(&self, call: &Expr, key: &str) -> Option<Method<'ctx>> {
+        let args = self.instances.get(&call.id)?;
+        let args: Vec<Type> = args.iter().map(|a| self.concrete(a)).collect();
+        let name = instance_name(key, &args);
+        let method = self.monos.get(&name);
+        Some(
+            method
+                .unwrap_or_else(|| panic!("checked: `{name}` is listed"))
+                .clone(),
+        )
+    }
+
+    /// Declares every instance: `lugha_fn_max<i64>`, `lugha_fn_Stack<string>.push`.
+    pub(super) fn declare_instances(&mut self, units: &[Unit], monos: &[Instance]) {
+        for mono in monos {
+            let source = find(units, &mono.key);
+            self.enter(&source, &mono.args);
+            let f = source.f;
+            let params: Vec<Type> = f
+                .params
+                .iter()
+                .map(|p| self.annotation_type(&p.ty))
+                .collect();
+            let ret = f.ret.as_ref().map(|t| self.annotation_type(t));
+            let ptr = self.context.ptr_type(Default::default());
+            let mut types: Vec<BasicMetadataTypeEnum> =
+                f.receiver.iter().map(|_| ptr.into()).collect();
+            types.extend(params.iter().map(|ty| self.param_type(ty)));
+            let fn_type = match &ret {
+                Some(ty) => llvm_type(self.context, ty).fn_type(&types, false),
+                None => self.context.void_type().fn_type(&types, false),
+            };
+            let name = symbol_of(&source, mono);
+            let function = self
+                .module
+                .add_function(&name, fn_type, Some(Linkage::External));
+            let signature = Signature {
+                function,
+                params,
+                ret,
+                is_extern: false,
+            };
+            let receiver = f.receiver.map(|r| r.mutable);
+            let method = Method {
+                signature,
+                receiver,
+            };
+            self.monos
+                .insert(instance_name(&mono.key, &mono.args), method);
+            self.subst.clear();
+        }
+    }
+
+    /// Lowers every instance's body under its substitution.
+    pub(super) fn define_instances(
+        &mut self,
+        units: &[Unit],
+        monos: &[Instance],
+    ) -> Result<(), CodegenError> {
+        for mono in monos {
+            let source = find(units, &mono.key);
+            let method = self.monos[&instance_name(&mono.key, &mono.args)].clone();
+            self.enter(&source, &mono.args);
+            let receiver = match (&source.owner, method.receiver) {
+                (Some((i, owner)), Some(_)) => {
+                    let args = mono.args[..i.params.len()].to_vec();
+                    Some(owner_type(units, owner, args))
+                }
+                _ => None,
+            };
+            self.define_with(source.f, &method.signature, receiver)?;
+            self.subst.clear();
+        }
+        Ok(())
+    }
+
+    /// Makes `args` the types of `source`'s parameters: the `impl`'s, then its own.
+    fn enter(&mut self, source: &Source, args: &[Type]) {
+        let outer = source.owner.iter().flat_map(|(i, _)| i.params.iter());
+        let names = outer.chain(source.f.type_params.iter().map(|p| &p.name));
+        self.subst = names
+            .map(|n| n.name.clone())
+            .zip(args.iter().cloned())
+            .collect::<HashMap<_, _>>();
+    }
+}
+
+/// The declaration of function or method `key`.
+fn find<'a>(units: &[Unit<'a>], key: &str) -> Source<'a> {
+    for unit in units {
+        for item in &unit.program.items {
+            match item {
+                Item::Fun(f) if qualify(unit.path, &f.name.name) == key => {
+                    return Source { f, owner: None };
+                }
+                Item::Impl(i) => {
+                    let owner = qualify(unit.path, &i.ty.name);
+                    let found = i
+                        .methods
+                        .iter()
+                        .find(|f| format!("{owner}.{}", f.name.name) == key);
+                    if let Some(f) = found {
+                        return Source {
+                            f,
+                            owner: Some((i, owner)),
+                        };
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    unreachable!("checked: instance `{key}` has a declaration")
+}
+
+/// The symbol of `mono`: the type arguments go on the function, or for a
+/// method on its type and then its own (`lugha_fn_Stack<string>.tag<f64>`).
+fn symbol_of(source: &Source, mono: &Instance) -> String {
+    match &source.owner {
+        None => format!("lugha_fn_{}", symbol(&instance_name(&mono.key, &mono.args))),
+        Some((i, owner)) => {
+            let (outer, own) = mono.args.split_at(i.params.len());
+            let owner = if outer.is_empty() {
+                owner.clone()
+            } else {
+                instance_name(owner, outer)
+            };
+            let own = if own.is_empty() {
+                String::new()
+            } else {
+                format!("<{}>", symbol(&spelled(own)))
+            };
+            format!("lugha_fn_{}.{}{own}", symbol(&owner), source.f.name.name)
+        }
+    }
+}
+
+/// The type an `impl` of `owner` is for, at `args`.
+fn owner_type(units: &[Unit], owner: &str, args: Vec<Type>) -> Type {
+    let is_enum = units.iter().any(|u| {
+        u.program
+            .items
+            .iter()
+            .any(|item| matches!(item, Item::Enum(e) if qualify(u.path, &e.name.name) == owner))
+    });
+    if is_enum {
+        Type::Enum(owner.to_string(), args)
+    } else {
+        Type::Struct(owner.to_string(), args)
+    }
+}

@@ -89,7 +89,10 @@ impl Checker {
             Some((&ret, expect)),
             &inputs,
         ) {
-            Some(targs) => subst(&ret, &generics, &targs),
+            Some(targs) => {
+                self.used(call, key, &targs);
+                subst(&ret, &generics, &targs)
+            }
             None => Type::Error,
         }
     }

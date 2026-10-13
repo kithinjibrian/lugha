@@ -147,3 +147,33 @@ fn modules_get_their_own_symbols() {
     // An extern declared in two modules is one declaration.
     assert_eq!(ir.matches("declare i32 @abs(").count(), 1, "{ir}");
 }
+
+#[test]
+fn generic_instances_get_their_own_symbols() {
+    // PRP-036: type arguments as they print, module paths with `/`.
+    let f = Fixture::new();
+    f.file(
+        "main.la",
+        "import a.b;\nstruct Stack<T> { items: T[] }\n\
+         impl Stack<T> { fun push(mut self, x: T) { self.items.push(x); } fun tag<U>(self, u: U): U = u; }\n\
+         fun main() { let mut s = Stack { items: [\"x\"] }; s.push(\"y\"); let t = s.tag(1.5); \
+         let p = b.max(b.Point { x: 1 }); }\n",
+    )
+    .file(
+        "a/b.la",
+        "struct Point { x: i64 }\nfun max<T>(x: T): T = x;\n",
+    );
+    let out = lughac(f.path(), &["build", "--emit=ir", "main.la"]);
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    let ir = text(&out.stdout);
+    for symbol in [
+        "@\"lugha_fn_Stack<string>.push\"",
+        "@\"lugha_fn_Stack<string>.tag<f64>\"",
+        "@\"lugha_fn_a/b/max<a/b/Point>\"",
+    ] {
+        let defined = ir
+            .lines()
+            .any(|l| l.starts_with("define") && l.contains(symbol));
+        assert!(defined, "{symbol}: {ir}");
+    }
+}
