@@ -101,35 +101,35 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (new `check/self_type.rs`, which holds `items_for`):
-- [ ] **Resolution:**
+- [x] **Resolution:**
   - `Self` resolves in item signatures (`Self`, `Self[]`, `Option<Self>`) and in default bodies;
   - in a function, struct field or `impl`, it is E0305.
-- [ ] **Satisfaction:**
+- [x] **Satisfaction:**
   - `Money` and a generic `Stack<i64>` satisfy `Ordered`;
   - a `less(self, other: i64)` is E0422, with the substituted help.
-- [ ] **Bounds:**
+- [x] **Bounds:**
   - with `T: Ordered`, `a.less(b)` checks and `a.less(1)` is E0403;
   - `a.max(b)` has type `T`;
   - `fun zero(): Self` gives `T.zero(): T`.
-- [ ] **E0427:**
+- [x] **E0427:**
   - `fun f(x: Ordered)`, `Ordered[]` and `Option<Ordered>` are E0427, with help;
   - an interface whose only `Self` is the receiver is still a type;
   - an interface with both an associated function and `Self` reports E0425.
-- [ ] **Inference:** `fun g<T, O: Pick<T>>(o: O): T` with `interface Pick<T> { fun pick(self, other: Self): T; }` infers `T` from the concrete type.
+- [x] **Inference:** `fun g<T, O: Pick<T>>(o: O): T` with `interface Pick<T> { fun pick(self, other: Self): T; }` infers `T` from the concrete type.
 
 Acceptance — `tests/programs/m25/`:
-- [ ] `self.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `self.la`: the §10 program.
+- [x] `more.la`:
   - `Self` returns through a bound (`fun twice(self): Self`);
   - an associated `fun zero(): Self` through `T.zero()`;
   - `Self[]` and `Option<Self>` parameters;
   - a generic `Pair<T>` satisfying `Ordered`;
   - a default method using `Self`, overridden by one type.
-- [ ] `e0427.la`: reject golden.
-- [ ] The §10 `Self` program runs from the spec.
+- [x] `e0427.la`: reject golden.
+- [x] The §10 `Self` program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -137,10 +137,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 `Self` program and the `m25/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The spec is at milestone 25; docs updated.
-- [ ] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 `Self` program and the `m25/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The spec is at milestone 25; docs updated.
+- [x] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -149,3 +149,12 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m25/self.la
 ```
+
+## AMENDMENTS (during build, session 67)
+
+- **E0427 comes from the syntax** (`self_type::written_self_use`), recorded in pass 1. Struct fields and enum payloads resolve before interface items, so a check on the resolved items missed `struct S { o: Ordered }` (found while building; tested now).
+- **`items_for` lives in `check/self_type.rs`** with `self_param` and `no_self_param`. The E0316 check for a parameter named `Self` (from PRP-050) moved there, which keeps `interfaces.rs` at 299 lines without a split.
+- **A literal argument for `Self` is E0401** (`a.less(1)` with `a: T`), not E0403: the literal is of the wrong kind for `T`.
+- **E0422's help prints parameter types without names** (`fun less(self, Bad): bool`), as it always has.
+- **The v5 test** that a written `Self` in a default body is E0305 now checks that it resolves (v6).
+- **`-O2`** was checked by hand for `m25/self` and `m25/more`.

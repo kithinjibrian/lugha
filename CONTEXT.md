@@ -3167,21 +3167,45 @@ Branch: prp-052-iterators (merged into main)
 
 ---
 
-## SESSION 67 — 2026-10-13 — Self in interfaces (milestone 25) — open
+## SESSION 67 — 2026-10-13 — Self in interfaces (milestone 25) — closed
 Branch: prp-053-self_in_interfaces
+
+### WHAT WAS DONE
+- No interview: the v6 draft settles milestone 25. PRP-053 written and approved.
+- `Self` resolves in interface items and default bodies; `items_for` replaces it in satisfaction, bound calls, interface values and inference.
+- E0427 for an interface that uses `Self` written as a type, detected from syntax in pass 1 (a struct field naming it resolves before interface items).
+- Spec: §4 `Self`, the default-method sentence, E0427, the §10 `Self` program; milestone 25 done.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/self_type.rs`, `src/check/errors/v6.rs`, `tests/programs/m25/` (`self`, `more`, `e0427`).
+- Modified: `src/check/{interfaces,generics,satisfy,bound_infer,iface_values,iface_tables,defaults,mod}.rs`, `src/check/errors/mod.rs`, `tests/spec.rs`, the v6 spec.
+- Docs: PRP-053, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 63, CONTEXT.
+
+### TESTS WRITTEN
+- Checker (`self_type.rs`): where `Self` resolves (E0305 elsewhere), satisfaction with `Self` replaced (E0422 help), bound calls (`a.max(b): T`, `T.zero(): T`, E0401), E0427 (types, arrays, `Option`, fields, payloads; E0425 first), inference through `Self`. The v5 default test now allows a written `Self`.
+- `tests/programs/m25/`; the §10 program from the spec. Earlier programs' IR byte-identical with `main`; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 63.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-053 waits for the user's merge OK; then tag `m25`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 24 complete** (PRP-052, MEMORY 62): iterators — `Iter<T>` in the prelude, `for x of e` over anything with `fun next(mut self): Option<T>`, on a copy. Tagged `m24`. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
+**Milestone 25 complete** (PRP-053, MEMORY 63): `Self` in interfaces, bounds-only interfaces (E0427). Tag `m25` goes on the merge of PRP-053. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
 
-Next: **milestone 25, `Self`** — discovery and PRP-053. Scope (v6 draft decision 2, §4 "`Self`", §9 E0427, §10 "`Self`"):
-- `Self` in interface signatures and default bodies means the implementing type (it hides a type named `Self`); outside interfaces it stays E0305; an interface parameter named `Self` is already E0316;
-- satisfaction: `C` meets `fun less(self, other: Self): bool` with `fun less(self, other: C): bool` (`Stack<T>` for generic types); through a bound `T: Ordered`, `Self` is `T`; `T.zero()` for `fun zero(): Self`;
-- an interface mentioning `Self` beyond the receiver is a bound only: as a type it is the new **E0427**; an interface value satisfies a `Self` interface with `Self` replaced by that interface;
-- default bodies: today `SELF` is the hidden parameter and a written `Self` is E0305 (`resolve_named`); v6 lets it be written.
+Next: **milestone 26, converting between interfaces** — discovery and PRP-054; it completes v6 (tags `m26`, `v6`). Scope (v6 draft decision 4, §4 "Converting between interfaces", §9, §10):
+- where `I` is expected, a value of interface type `J` converts when `J` declares every item of `I` (defaulted ones included) the same way after substituting arguments; else E0422 naming what `J` lacks (today: E0403 via `errors::interface_to_interface` in `iface_values.rs::convert`);
+- the box keeps its concrete type (type patterns still see it), and each method behaves as through `J`;
+- `?` converts an interface error `J` into `F` the same way (`iface_tables.rs::try_converts` rejects `from` interfaces today);
+- codegen: each table of `J` gains a slot per interface `J` values convert to, pointing at the derived table (`I`'s slots taken from `C`'s `J` table); chains close over the slots; no symbols when unused.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
 
 See `TODO.md`.

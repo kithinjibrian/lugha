@@ -1,0 +1,8 @@
+error[E0427]: `Ordered` can't be a type: `less` uses `Self`
+  --> tests/programs/m25/e0427.la:7:15
+  |
+7 | fun first(xs: Ordered[]): bool = false;
+  |               ^^^^^^^
+  |
+  = help: two `Ordered` values could hold different types; use it as a bound: `<T: Ordered>`
+

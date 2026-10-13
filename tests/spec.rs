@@ -92,6 +92,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Errors as interfaces",
         "Generic interfaces",
         "Iterators",
+        "`Self`",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

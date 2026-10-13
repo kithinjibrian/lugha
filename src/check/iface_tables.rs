@@ -106,7 +106,7 @@ impl Checker {
         };
         self.interfaces
             .iter()
-            .filter(|(_, info)| info.not_value.is_none())
+            .filter(|(_, info)| info.not_value.is_none() && info.uses_self.is_none())
             .map(|(key, info)| {
                 let shape = InterfaceShape {
                     params: info.generics.iter().map(|g| g.name.clone()).collect(),

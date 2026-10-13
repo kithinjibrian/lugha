@@ -1,0 +1,33 @@
+// The v6 draft's §10 `Self` program (milestone 25).
+
+interface Ordered {
+    fun less(self, other: Self): bool;
+    fun max(self, other: Self): Self = if self.less(other) { other } else { self };
+}
+
+struct Money { cents: i64 }
+
+impl Money {
+    fun less(self, other: Money): bool = self.cents < other.cents;
+}
+
+struct Version { major: i64, minor: i64 }
+
+impl Version {
+    fun less(self, other: Version): bool =
+        self.major < other.major || (self.major == other.major && self.minor < other.minor);
+}
+
+fun largest<T: Ordered>(xs: T[]): T {
+    let mut best = xs[0];
+    for x of xs {
+        best = best.max(x);
+    }
+    best
+}
+
+fun main() {
+    println(largest([Money { cents: 250 }, Money { cents: 1999 }, Money { cents: 5 }]).cents);
+    let v = largest([Version { major: 1, minor: 9 }, Version { major: 2, minor: 0 }, Version { major: 1, minor: 10 }]);
+    println("{v.major}.{v.minor}");
+}

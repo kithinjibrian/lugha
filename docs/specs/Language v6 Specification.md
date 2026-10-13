@@ -1,14 +1,15 @@
-# Lugha v6 Specification (in progress: milestones 23–24 done)
+# Lugha v6 Specification (in progress: milestones 23–25 done)
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 23–24, generic interfaces and iterators, are done; milestones 25–26 are next). It is built from the approved plan, `Language v6 Draft.md`, milestone by milestone. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v5 Specification.md` keeps v5 frozen.
+**Status:** in progress (milestones 23–25, generic interfaces, iterators and `Self`, are done; milestone 26 is next). It is built from the approved plan, `Language v6 Draft.md`, milestone by milestone. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v5 Specification.md` keeps v5 frozen.
 
 **v5.** This is v4 plus interface values, type patterns, default methods and `?` converting into an interface error (milestones 20–22).
 
-**Changes since v5** (milestones 23–24):
+**Changes since v5** (milestones 23–25):
 - An interface may take type parameters, and a bound passes it arguments: `interface Source<T> { fun next(mut self): Option<T>; }`, `fun collect<T, S: Source<T>>(src: S): T[]`. A parameter that appears only in a bound's arguments is read off the concrete type's methods. A generic interface is a type too: `let s: Source<i64> = Count { n: 0, end: 3 };` (sections 3–4, 9).
 - The prelude declares `interface Iter<T> { fun next(mut self): Option<T>; }`, and `for x of e` loops over anything with that `next`, working on a copy of `e` (sections 4–5, 9).
+- Inside an interface, `Self` is the type that satisfies it: `fun less(self, other: Self): bool`. Such an interface is a bound only; as a type it is E0427 (sections 4, 9).
 
 Every valid v5 program is a valid v6 program.
 
@@ -463,11 +464,12 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 - **Bounds at a use:** a type argument that doesn't satisfy its bound is E0419. For example, `largest([[1]])` fails because `i64[]` is not `Ord`. Every type is `Eq`, so only `Ord` can fail: it holds for the numbers, `string`, and type parameters declared `Ord`.
 
 **Interfaces.**
-- **Declaring one:** `interface Shape { fun area(self): f64; fun name(self): string; }` lists methods (with a `self` or `mut self` receiver) and associated functions (without one), each ending in `;`. Their signatures use concrete types and the interface's own type parameters (below), and no `Self`; an item has no type parameters of its own. An item name appears once (E0310).
+- **Declaring one:** `interface Shape { fun area(self): f64; fun name(self): string; }` lists methods (with a `self` or `mut self` receiver) and associated functions (without one), each ending in `;`. Their signatures use concrete types, the interface's own type parameters (below) and `Self` (v6, below); an item has no type parameters of its own. An item name appears once (E0310).
 - **Generic interfaces** (v6): `interface Source<T> { fun next(mut self): Option<T>; }` takes type parameters as a struct does, with bounds (`interface Sorted<T: Ord>`); a parameter named like a type, twice, or `Self` is E0316. It is always written with its arguments, `Source<i64>`; a bare `Source` or the wrong number is E0418, and an argument that misses its parameter's bound is E0419. A type satisfies `Source<X>` when it satisfies the interface with `X` substituted, and a call through `S: Source<X>` is checked against the substituted signature. A generic interface is a type wherever a plain one is, written with its arguments (`Source<i64>`, `Source<T>[]`), and its values follow every rule of interface values below at those arguments: a value converts to `Source<i64>` when it satisfies `Source<i64>`, `s.next()` is checked against the substituted signature, and a `Source<i64>` is not a `Source<string>` (E0403).
 - **Iterators** (v6): the prelude declares `interface Iter<T> { fun next(mut self): Option<T>; }`. `Iter` is visible in every module, like `Result`, unless the module declares something named `Iter`, which it then means there. `for x of e` loops over any `e` that isn't an array and whose type has `next` with exactly that shape: a struct or enum with its own method, a type parameter whose bounds declare it, or an interface value (`Iter<i64>`, or a program's own `Source<i64>`). This is satisfaction of the prelude's `Iter<T>` by structure, so a loop works whether or not the program names `Iter`. Anything else is E0411 (section 5).
+- **`Self`** (v6): in an interface's signatures and default bodies, `Self` is the type that satisfies the interface, and can be written wherever a type can: `other: Self`, `: Self`, `Self[]`, `Option<Self>`. It means that even in a module that declares a type named `Self`; outside interfaces, a written `Self` is an unknown type (E0305), and an interface parameter can't be named `Self` (E0316). A type `C` satisfies an item that mentions `Self` when its method has `C` in those places (`Money` meets `fun less(self, other: Self): bool` with `fun less(self, other: Money): bool`; for a generic type, `Self` is it at its arguments, `Stack<i64>`), and a mismatch is E0422, showing the signature with `Self` replaced. Through a bound `T: Ordered`, `Self` is `T`: `a.less(b)` needs `b: T`, `a.max(b)` is a `T`, and an associated `fun zero(): Self` is called as `T.zero()`. An interface any of whose methods mentions `Self` outside its receiver is a bound only: written as a type (`Ordered`, `Ordered[]`, a field) it is E0427, naming the method, because two `Ordered` values could hold different types (E0425 comes first for an interface with an associated function). An interface value satisfies such an interface, as a type argument, when its own items match with `Self` replaced by its interface type.
 - **Bounds with arguments** (v6): a bound's arguments may name the declaration's other type parameters, `fun collect<T, S: Source<T>>(src: S): T[]`. A parameter that no argument or expected type fixes is read off the methods of the type a bound parameter has: `collect(Count { … })` gives `S = Count`, then `T = i64` from `Count.next`, and this repeats until nothing new is learnt (`T` from `S`, `S` from `H: Holder<S>`). A parameter still unknown is E0412; one that the arguments fix differently fails the bound (E0422). The same holds for a parameter declared as an interface value: `fun count<T>(s: Source<T>): i64` called as `count(Count { … })` reads `T = i64` off `Count.next`, then converts the argument to `Source<i64>`.
-- **Default methods** (v5): a method may end in `= expr;` or a block instead of `;`. Its body is checked once, with `self` of a hidden type that has only the interface's items, so it can call them on `self` and nothing else (no fields, E0410; a written `Self` is an unknown type, E0305). A type satisfies the interface without the defaulted method; a method of its own by that name must match the signature (E0422), and is used instead of the default. A default is called through an interface value or a bound; on a concrete type without its own method it doesn't exist (E0415, with help naming the interface). Only methods take a default body; an associated function with one is E0201.
+- **Default methods** (v5): a method may end in `= expr;` or a block instead of `;`. Its body is checked once, with `self` of a hidden type that has only the interface's items, so it can call them on `self` and nothing else (no fields, E0410). `Self` names that hidden type (v6), so a default can take and return it: `fun max(self, other: Self): Self = if self.less(other) { other } else { self };`. A type satisfies the interface without the defaulted method; a method of its own by that name must match the signature (E0422), and is used instead of the default. A default is called through an interface value or a bound; on a concrete type without its own method it doesn't exist (E0415, with help naming the interface). Only methods take a default body; an associated function with one is E0201.
 - **Satisfying one:** a type satisfies `Shape` if, for every item, it has a method or associated function with the same name, the same receiver kind, and the same parameter and return types, visible where the bound is checked. No declaration is needed. A generic type's methods count with its type arguments substituted (`Stack<i64>` meets `fun size(self): i64` through `impl Stack<T>`); a method with type parameters of its own never matches. A type parameter satisfies an interface when its own bounds declare every item the same way. Primitives, strings, arrays and `Option` have no methods of their own, so they satisfy only an interface with no items.
 - **Using one as a bound:** `fun total<T: Shape>(xs: T[]): f64`, combined freely with `Eq`, `Ord` and other interfaces (`T: Shape + Eq`), or from another module (`T: shapes.Shape`). In the body, `x.area()` and, for an associated item, `T.make(…)` are allowed when some bound declares them, and are checked against its signature. Calling something no bound declares is E0421, with help suggesting a bound. Two bounds of one parameter may declare the same name only with the same signature; otherwise the bound list is E0423.
 - **At a use:** a type argument that doesn't satisfy an interface bound is E0422, which names each missing or mismatched item.
@@ -893,6 +895,7 @@ Name and type errors, reported by the checker:
 | E0424 | `?` where it can't return | `?` on an `i64`; in `main`; on an `Option` in a function returning `Result`; error types that neither match nor convert (v4, v5) |
 | E0425 | An interface with an associated function used as a type | `fun f(x: Factory)` where `Factory` declares `fun make(): Factory;` (v5) |
 | E0426 | A type pattern that can't apply | `c: Circle` on an `i64`; `s: Shape` (an interface); `d: Dot` when `Dot` doesn't satisfy the interface (v5) |
+| E0427 | An interface that uses `Self` used as a type | `let xs: Ordered[] = …;` where `Ordered` declares `fun less(self, other: Self): bool;` (v6) |
 | E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum, `Option`, function or interface parameters or returns (§8) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut` |
@@ -1608,6 +1611,42 @@ fun main() {
 }
 ```
 
+**`Self`** (milestone 25). Prints `1999` then `2.0` on two lines, exits with 0.
+
+```
+interface Ordered {
+    fun less(self, other: Self): bool;
+    fun max(self, other: Self): Self = if self.less(other) { other } else { self };
+}
+
+struct Money { cents: i64 }
+
+impl Money {
+    fun less(self, other: Money): bool = self.cents < other.cents;
+}
+
+struct Version { major: i64, minor: i64 }
+
+impl Version {
+    fun less(self, other: Version): bool =
+        self.major < other.major || (self.major == other.major && self.minor < other.minor);
+}
+
+fun largest<T: Ordered>(xs: T[]): T {
+    let mut best = xs[0];
+    for x of xs {
+        best = best.max(x);
+    }
+    best
+}
+
+fun main() {
+    println(largest([Money { cents: 250 }, Money { cents: 1999 }, Money { cents: 5 }]).cents);
+    let v = largest([Version { major: 1, minor: 9 }, Version { major: 2, minor: 0 }, Version { major: 1, minor: 10 }]);
+    println("{v.major}.{v.minor}");
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1638,7 +1677,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 22 | Default methods and error conversion (v5) | interface methods with bodies, `lugha_fn_<I>.<m><T>`; `?` converting into an interface error | The errors-as-interfaces program in section 10 passes (done: v5 complete) |
 | 23 | Generic interfaces (v6) | `interface I<T>`, bounds with arguments, inference through bounds, generic interface values | The generic-interfaces program in section 10 passes (done) |
 | 24 | Iterators (v6) | `Iter<T>` in the prelude, `for … of` over iterators | The iterators program in section 10 passes (done) |
-| 25 | `Self` (v6, planned) | `Self` in interfaces, bounds-only interfaces (E0427) | The `Self` program passes |
+| 25 | `Self` (v6) | `Self` in interfaces, bounds-only interfaces (E0427) | The `Self` program in section 10 passes (done) |
 | 26 | Converting between interfaces (v6, planned) | one interface value to another, and through `?` | The converting-between-interfaces program passes |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.

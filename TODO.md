@@ -164,9 +164,9 @@ Done when the generic-interfaces program passes.
 Done when the iterators program passes.
 - [x] PRP-052: `Iter<T>` in the prelude; `for … of` over iterators; tagged `m24`
 
-### Milestone 25 — `Self`
+### Milestone 25 — `Self` ✅
 Done when the `Self` program passes.
-- [ ] `Self` in interface signatures and default bodies; bounds-only interfaces (E0427)
+- [x] PRP-053: `Self` in interface signatures and default bodies; bounds-only interfaces (E0427); tagged `m25` at merge
 
 ### Milestone 26 — Converting between interfaces
 Done when the converting-between-interfaces program passes and the v6 spec is complete.

@@ -25,8 +25,12 @@ impl Checker {
     /// The item `name` that one of `param`'s bounds declares, with that bound.
     pub(super) fn bound_entry(&self, param: &str, name: &str) -> Option<(Requirement, Applied)> {
         let bounds = self.bounds(param);
+        let me = Type::Param(param.to_string());
         bounds.interfaces.into_iter().find_map(|a| {
-            let req = self.items(&a).into_iter().find(|r| r.name == name)?;
+            let req = self
+                .items_for(&a, &me)
+                .into_iter()
+                .find(|r| r.name == name)?;
             Some((req, a))
         })
     }
@@ -90,7 +94,7 @@ impl Checker {
     /// when it satisfies it.
     pub(super) fn unmet(&self, arg: &Type, interface: &Applied) -> Vec<String> {
         let mut problems = Vec::new();
-        for req in &self.items(interface) {
+        for req in &self.items_for(interface, arg) {
             match self.offer(arg, req) {
                 Offer::Matches => {}
                 Offer::Missing if req.default.is_some() => {}
@@ -115,7 +119,7 @@ impl Checker {
             },
             // An interface value offers what its interface declares (v5).
             Type::Interface(..) => {
-                let items = self.items(&Applied::of(arg).expect("an interface type"));
+                let items = self.items_for(&Applied::of(arg).expect("an interface type"), arg);
                 return match items.iter().find(|r| r.name == req.name) {
                     Some(item) if item.same(req) => Offer::Matches,
                     Some(_) => Offer::Mismatched,

@@ -43,6 +43,8 @@ pub(super) struct InterfaceInfo {
     /// Its first associated function, if any: such an interface can't be a
     /// type (E0425, v5).
     pub not_value: Option<String>,
+    /// Its first method whose written signature uses `Self` (E0427, v6).
+    pub uses_self: Option<String>,
 }
 
 impl Checker {
@@ -71,6 +73,7 @@ impl Checker {
                     items: Vec::new(),
                     span,
                     not_value: not_value.map(|it| it.name.name.clone()),
+                    uses_self: super::self_type::written_self_use(i),
                 };
                 self.interfaces.insert(key, info);
             }
@@ -109,10 +112,9 @@ impl Checker {
             }
             self.type_params = self.interfaces[&key].generics.clone();
             self.check_params(&i.type_params, &[]);
+            self.type_params.push(super::self_type::self_param());
             // `Self` is the implementing type in milestone 25's interfaces.
-            for p in i.type_params.iter().filter(|p| p.name.name == super::SELF) {
-                self.report(errors::bad_type_param(&p.name.name, p.name.span));
-            }
+            self.no_self_param(&i.type_params);
             let mut items: Vec<Requirement> = Vec::new();
             for it in &i.items {
                 let params = it.params.iter().map(|p| self.resolve(&p.ty)).collect();

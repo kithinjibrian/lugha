@@ -1,0 +1,66 @@
+// `Self` in interfaces (milestone 25): returns, associated functions,
+// `Self[]` and `Option<Self>`, generic types, and defaults.
+
+interface Number {
+    fun zero(): Self;
+    fun plus(self, other: Self): Self;
+    fun twice(self): Self = self.plus(self);
+}
+
+struct Cents { n: i64 }
+
+impl Cents {
+    fun zero(): Cents = Cents { n: 0 };
+    fun plus(self, other: Cents): Cents = Cents { n: self.n + other.n };
+    fun better(self, other: Cents): bool = self.n > other.n;
+}
+
+struct Pair<T> { a: T, b: T }
+
+impl Pair<T> {
+    fun zero(): Pair<T> = panic("no zero pair");
+    fun plus(self, other: Pair<T>): Pair<T> = other;
+    // Its own `twice` replaces the default.
+    fun twice(self): Pair<T> = Pair { a: self.b, b: self.a };
+}
+
+fun total<T: Number>(xs: T[]): T {
+    let mut sum = T.zero();
+    for x of xs {
+        sum = sum.plus(x);
+    }
+    sum
+}
+
+interface Pick {
+    fun better(self, other: Self): bool;
+    fun best(self, all: Self[]): Self {
+        let mut top = self;
+        for x of all {
+            if x.better(top) {
+                top = x;
+            }
+        }
+        top
+    }
+    fun first(self, maybe: Option<Self>): Self = match maybe {
+        Some(x) => x,
+        None => self,
+    };
+}
+
+fun choose<T: Pick>(start: T, rest: T[]): T = start.best(rest);
+
+fun pick_first<T: Pick>(x: T, maybe: Option<T>): T = x.first(maybe);
+
+// Defaults are called through a bound (or an interface value), never on a concrete type.
+fun double<T: Number>(x: T): T = x.twice();
+
+fun main() {
+    println(total([Cents { n: 5 }, Cents { n: 7 }]).n);
+    println(double(Cents { n: 21 }).n);
+    let p = double(Pair { a: "x", b: "y" });
+    println("{p.a}{p.b}");
+    println(choose(Cents { n: 3 }, [Cents { n: 9 }, Cents { n: 4 }]).n);
+    println(pick_first(Cents { n: 1 }, Some(Cents { n: 8 })).n);
+}

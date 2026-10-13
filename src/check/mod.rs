@@ -49,6 +49,7 @@ mod ops;
 mod patterns;
 mod results;
 mod satisfy;
+mod self_type;
 mod stmt;
 mod struct_literal;
 mod structs;

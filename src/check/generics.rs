@@ -151,8 +151,8 @@ impl Checker {
     /// A written name in a type position: a parameter in scope, or a type
     /// (E0305 if unknown, E0418 if generic but written without arguments).
     pub(super) fn resolve_named(&mut self, name: &str, span: Span) -> Type {
-        // A default method's hidden `Self` can't be written (v5: out of scope).
-        if name != super::defaults::SELF && self.type_params.iter().any(|g| g.name == name) {
+        // `Self` is in scope only in an interface's items and default bodies (v6).
+        if self.type_params.iter().any(|g| g.name == name) {
             return Type::Param(name.to_string());
         }
         let ident = Ident {

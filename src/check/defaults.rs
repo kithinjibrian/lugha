@@ -188,9 +188,12 @@ mod tests {
             e("interface I { fun a(self): i64; fun b(self): i64 = self.n; }"),
             [("E0410", "n".into())]
         );
+        // v6: `Self` may be written in a default body; it is the receiver's type.
         assert_eq!(
-            e("interface I { fun a(self): i64; fun b(self): i64 { let s: Self = self; 1 } }"),
-            [("E0305", "Self".into())]
+            e(
+                "interface I { fun a(self): i64; fun b(self): i64 { let s: Self = self; s.a() + s.n } }"
+            ),
+            [("E0410", "n".into())]
         );
         assert_eq!(
             e("interface I { fun a(self): i64; fun b(self): string = self.a(); }"),

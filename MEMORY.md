@@ -1006,9 +1006,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 63. `Self` in interfaces — milestone 25 (PRP-053)
+
+**Decision:** `Self` is the hidden type parameter defaults already had (`check::SELF`), now writable inside interfaces.
+- **Resolution:** `resolve_interfaces` pushes `self_type::self_param()` into `type_params` while items resolve; default bodies already have it; `resolve_named` no longer special-cases `SELF`, so elsewhere `Self` is E0305. An interface parameter named `Self` is E0316 (`no_self_param`).
+- **Substitution:** `self_type::items_for(applied, self_ty)` = `items` with `Self` replaced; used by `unmet` (the argument), `bound_entry` (the type parameter), `offer` for interface values (the interface type) and `read_off` (the bound parameter's type).
+- **E0427** (`errors/v6.rs`): `InterfaceInfo.uses_self`, read from the syntax in pass 1 (`written_self_use`) because struct fields resolve before interface items; reported by `interface_type` after E0425; such interfaces have no `Checked.interfaces` entry.
+- **Codegen:** unchanged (bound calls and default instances are per concrete type).
+
+**Why:** reusing the defaults' hidden parameter made `Self` a substitution, with no new machinery in codegen.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 25 complete**: PRP-053 `Self` in interfaces
 - **Milestone 24 complete**: PRP-052 iterators
 - **Milestone 23 complete**: PRP-050 generic interfaces as bounds, PRP-051 generic interface values
 - **Milestone 22 complete — Lugha v5 complete (branch, merge held)**: PRP-049 default methods and `?` conversion
@@ -1071,23 +1084,23 @@ Open questions live in `DECISIONS.md`, not here.
 - v0 language spec reviewed and fixed
 
 ### In Progress
-- Nothing (milestone 25, `Self`, is next)
+- Nothing (milestone 26, converting between interfaces, is next)
 
 ### Not Started
-- Milestones 25–26 (v6 draft, MEMORY 59)
+- Milestone 26 (v6 draft, MEMORY 59)
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 24 complete** (PRP-052, MEMORY 62): iterators — `Iter<T>` in the prelude, `for x of e` over anything with `fun next(mut self): Option<T>`, on a copy. Tagged `m24`. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
+**Milestone 25 complete** (PRP-053, MEMORY 63): `Self` in interfaces, bounds-only interfaces (E0427). Tag `m25` goes on the merge of PRP-053. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
 
-Next: **milestone 25, `Self`** — discovery and PRP-053. Scope (v6 draft decision 2, §4 "`Self`", §9 E0427, §10 "`Self`"):
-- `Self` in interface signatures and default bodies means the implementing type (it hides a type named `Self`); outside interfaces it stays E0305; an interface parameter named `Self` is already E0316;
-- satisfaction: `C` meets `fun less(self, other: Self): bool` with `fun less(self, other: C): bool` (`Stack<T>` for generic types); through a bound `T: Ordered`, `Self` is `T`; `T.zero()` for `fun zero(): Self`;
-- an interface mentioning `Self` beyond the receiver is a bound only: as a type it is the new **E0427**; an interface value satisfies a `Self` interface with `Self` replaced by that interface;
-- default bodies: today `SELF` is the hidden parameter and a written `Self` is E0305 (`resolve_named`); v6 lets it be written.
+Next: **milestone 26, converting between interfaces** — discovery and PRP-054; it completes v6 (tags `m26`, `v6`). Scope (v6 draft decision 4, §4 "Converting between interfaces", §9, §10):
+- where `I` is expected, a value of interface type `J` converts when `J` declares every item of `I` (defaulted ones included) the same way after substituting arguments; else E0422 naming what `J` lacks (today: E0403 via `errors::interface_to_interface` in `iface_values.rs::convert`);
+- the box keeps its concrete type (type patterns still see it), and each method behaves as through `J`;
+- `?` converts an interface error `J` into `F` the same way (`iface_tables.rs::try_converts` rejects `from` interfaces today);
+- codegen: each table of `J` gains a slot per interface `J` values convert to, pointing at the derived table (`I`'s slots taken from `C`'s `J` table); chains close over the slots; no symbols when unused.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
 
 See `TODO.md`.

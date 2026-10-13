@@ -73,7 +73,7 @@ impl Checker {
         names: &[&str],
         bound: &mut HashMap<String, Type>,
     ) {
-        for req in self.items(applied) {
+        for req in self.items_for(applied, concrete) {
             let Some(offered) = self.offered(concrete, &req.name) else {
                 continue;
             };
