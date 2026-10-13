@@ -3196,6 +3196,11 @@ Branch: prp-053-self_in_interfaces (merged into main)
 
 ---
 
+## SESSION 68 — 2026-10-13 — Converting between interfaces (milestone 26) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 25 complete** (PRP-053, MEMORY 63): `Self` in interfaces, bounds-only interfaces (E0427). Tagged `m25`. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
