@@ -11,9 +11,10 @@ use super::control::Loop;
 use super::function::Signature;
 use super::runtime::Constants;
 use super::scope::Scopes;
-use super::{CodegenError, SourceInfo};
-use crate::ast::{ExprId, Item, Program};
-use crate::check::{Checked, Enums, Structs, Type};
+use super::{CodegenError, ModuleSource, SourceInfo};
+use crate::ast::{ExprId, Item};
+use crate::check::{Checked, Enums, Structs, Type, Unit};
+use crate::span::Span;
 
 /// Every builder call below happens after `position_at_end`, so a
 /// `BuilderError` can only mean a compiler bug.
@@ -32,8 +33,12 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) enums: Enums,
     /// Values read from a place for the last time, stored without a copy.
     pub(super) moves: HashSet<ExprId>,
-    /// Every declared function, by Lugha name.
+    /// Every declared function, by key (`geometry.origin`; PRP-034).
     pub(super) functions: HashMap<String, Signature<'ctx>>,
+    /// The checker's key for what each call calls (PRP-034).
+    pub(super) callees: HashMap<ExprId, String>,
+    /// The checker's type for every written type, by span.
+    pub(super) annotations: HashMap<Span, Type>,
     /// Every method and associated function, by `Type.name` (v1).
     pub(super) methods: HashMap<String, super::methods::Method<'ctx>>,
     /// The function being emitted, for appending basic blocks.
@@ -46,32 +51,50 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) loops: Vec<Loop<'ctx>>,
     /// String literals and the file name, emitted once each.
     pub(super) constants: Constants<'ctx>,
-    /// The source file, for panic locations.
+    /// Every module's source, for panic locations.
     pub(super) source: OwnedSource,
 }
 
-/// The source name and text, owned so the lowerer has no extra lifetime.
-pub(super) struct OwnedSource {
+/// One module's source, owned so the lowerer has no extra lifetime.
+pub(super) struct OwnedFile {
     pub name: String,
+    base: usize,
     text: String,
 }
 
+/// Every module's source, in offset order.
+pub(super) struct OwnedSource {
+    pub files: Vec<OwnedFile>,
+}
+
 impl OwnedSource {
+    /// The file holding `offset`, and `offset` within it.
+    pub(super) fn file_at(&self, offset: usize) -> (&OwnedFile, usize) {
+        let file = self
+            .files
+            .iter()
+            .rev()
+            .find(|f| f.base <= offset)
+            .unwrap_or(&self.files[0]);
+        (file, offset - file.base.min(offset))
+    }
+
     pub(super) fn line_col(&self, offset: usize) -> (usize, usize) {
+        let (file, local) = self.file_at(offset);
         SourceInfo {
-            name: &self.name,
-            text: &self.text,
+            name: &file.name,
+            text: &file.text,
         }
-        .line_col(offset)
+        .line_col(local)
     }
 }
 
-/// Lowers a checked `program` into a verified module.
+/// Lowers a checked program of modules into one verified LLVM module.
 pub(super) fn lower<'ctx>(
     context: &'ctx Context,
-    program: &Program,
+    units: &[Unit],
     checked: &Checked,
-    source: &SourceInfo,
+    sources: &[ModuleSource],
 ) -> Result<Module<'ctx>, CodegenError> {
     let mut lowerer = Lowerer {
         context,
@@ -82,6 +105,8 @@ pub(super) fn lower<'ctx>(
         enums: checked.enums.clone(),
         moves: checked.moves.clone(),
         functions: HashMap::new(),
+        callees: checked.callees.clone(),
+        annotations: checked.annotations.clone(),
         methods: HashMap::new(),
         function: None,
         ret: None,
@@ -89,20 +114,34 @@ pub(super) fn lower<'ctx>(
         loops: Vec::new(),
         constants: Constants::default(),
         source: OwnedSource {
-            name: source.name.to_string(),
-            text: source.text.to_string(),
+            files: sources
+                .iter()
+                .map(|s| OwnedFile {
+                    name: s.name.to_string(),
+                    base: s.base,
+                    text: s.text.to_string(),
+                })
+                .collect(),
         },
     };
-    lowerer.declare_enums(program);
+    lowerer.declare_enums();
     lowerer.declare_structs();
-    lowerer.declare_functions(program)?;
-    lowerer.declare_methods(program);
-    for item in &program.items {
-        if let Item::Fun(f) = item {
-            lowerer.define(f)?;
+    for unit in units {
+        lowerer.declare_functions(unit)?;
+    }
+    for unit in units {
+        lowerer.declare_methods(unit);
+    }
+    for unit in units {
+        for item in &unit.program.items {
+            if let Item::Fun(f) = item {
+                lowerer.define(unit.path, f)?;
+            }
         }
     }
-    lowerer.define_methods(program)?;
+    for unit in units {
+        lowerer.define_methods(unit)?;
+    }
     let user_main = lowerer
         .functions
         .get("main")

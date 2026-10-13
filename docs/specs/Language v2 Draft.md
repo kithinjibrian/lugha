@@ -185,8 +185,8 @@ Equality is deep and costs time proportional to the values compared. `f64` keeps
 | Item | Symbol |
 | --- | --- |
 | Function in the root module | `lugha_fn_<name>` (unchanged, so `main` is still `lugha_fn_main`) |
-| Function in module `a.b` | `lugha_fn_a.b.<name>` |
-| Method | `lugha_fn_<module.>Type.<name>` |
+| Function in module `a.b` | `lugha_fn_a/b/<name>` (PRP-034: `/` after the module path, so it can't collide with a method) |
+| Method | `lugha_fn_<module/>Type.<name>`, e.g. `lugha_fn_shapes/circle/Circle.area` |
 | Generic instance | the symbol above with the type arguments in source spelling, `lugha_fn_max<i64>`, `lugha_fn_Stack<string>.push` |
 | Deep equality helper | `lugha_eq_<type>`, one per struct, enum or array type compared, emitted like the copy helpers |
 

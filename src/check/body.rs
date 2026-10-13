@@ -8,7 +8,7 @@ use crate::ast::{FunDecl, Ident};
 impl Checker {
     /// Checks one function body against its signature.
     pub(super) fn function(&mut self, f: &FunDecl) {
-        let signature = &self.functions[&f.name.name];
+        let signature = &self.functions[&self.key(&f.name.name)];
         let (params, ret) = (signature.params.clone(), signature.ret.clone());
         self.body(f, params, ret, None);
     }

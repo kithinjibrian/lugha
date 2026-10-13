@@ -87,10 +87,10 @@ Done when the v2 draft's patterns program passes.
 - [x] PRP-031: deep `==` on every type (`lugha_eq_*`), string `<` (`lugha_rt_str_cmp`); `Language v2 Specification.md` started (printed by `lughac spec`)
 - [x] PRP-032: nested patterns and guards, usefulness-based E0417/W0102, W0103 — **milestone 9 done**, tag `m9`
 
-### Milestone 10 — Modules
+### Milestone 10 — Modules ✅
 Done when the two-module program passes.
 - [x] PRP-033: front end — `private`/`public` syntax, loading every imported module (E0312, E0314, E0319), one offset space, file-aware diagnostics and `--emit`, directory test cases
-- [ ] PRP-034: names across modules, `private` (E0313), `public` (E0317), no leaking (E0318), module symbols, gate removed — **milestone 10 done**
+- [x] PRP-034: names across modules, `private` (E0313), `public` (E0317), no leaking (E0318), module symbols (`lugha_fn_a/b/f`), gate removed — **milestone 10 done**, tag `m10`
 
 ### Milestone 11 — Generics
 Done when the generics program passes and the full v2 spec replaces v1 in `lughac spec`.

@@ -24,20 +24,24 @@ mod liveness;
 mod matching;
 mod method_calls;
 mod methods;
+mod modules;
 mod ops;
 mod patterns;
 mod stmt;
+mod struct_literal;
 mod structs;
 mod swap;
 mod types;
 mod usefulness;
+mod visibility;
 
 use std::collections::{HashMap, HashSet};
 
+pub use modules::{Unit, check_modules, qualify, symbol};
 pub use types::{Enums, Structs, Type, indirect_slot, slot_names_variant};
 
 use crate::ast::{ExprId, Program};
-use crate::diagnostic::{Diagnostic, Severity};
+use crate::diagnostic::Diagnostic;
 use crate::span::Span;
 
 /// The checker's output.
@@ -51,63 +55,49 @@ pub struct Checked {
     pub enums: Enums,
     /// Values read from a place for the last time: stored without a copy (PRP-018).
     pub moves: HashSet<ExprId>,
+    /// The key of the function or extern each call calls (PRP-034), so
+    /// codegen never resolves names itself.
+    pub callees: HashMap<ExprId, String>,
+    /// The resolved type of every written type, by its span (unique in the
+    /// program's one offset space).
+    pub annotations: HashMap<Span, Type>,
 }
 
-/// Type-checks `program`, returning the type table and any warnings.
+/// Type-checks `program`, a program of one file, returning the type table
+/// and any warnings. [`check_modules`] checks several.
 ///
 /// # Errors
 ///
 /// Every diagnostic found (errors and warnings) when there is at least one error.
 pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
-    let mut checker = Checker {
-        types: vec![None; program.expr_count as usize],
-        diagnostics: Vec::new(),
-        functions: HashMap::new(),
-        structs: HashMap::new(),
-        enums: HashMap::new(),
-        methods: HashMap::new(),
-        scopes: Vec::new(),
-        ret: Type::Void,
-        loops: 0,
-        dead: false,
-        iterating: Vec::new(),
-        changes: Vec::new(),
-        mentions: HashMap::new(),
-    };
-    checker.program(program);
-    if checker
-        .diagnostics
-        .iter()
-        .any(|d| d.severity == Severity::Error)
-    {
-        return Err(checker.diagnostics);
+    check_modules(&[Unit { path: &[], program }])
+}
+
+impl Checker {
+    /// A checker with room for `count` expression types.
+    fn new(count: usize) -> Self {
+        Checker {
+            types: vec![None; count],
+            diagnostics: Vec::new(),
+            functions: HashMap::new(),
+            structs: HashMap::new(),
+            enums: HashMap::new(),
+            methods: HashMap::new(),
+            scopes: Vec::new(),
+            ret: Type::Void,
+            loops: 0,
+            dead: false,
+            iterating: Vec::new(),
+            changes: Vec::new(),
+            mentions: HashMap::new(),
+            module: Vec::new(),
+            imports: HashMap::new(),
+            privacy: visibility::Privacy::default(),
+            externs: HashMap::new(),
+            callees: HashMap::new(),
+            annotations: HashMap::new(),
+        }
     }
-    // Every expression of a valid program has been visited; `Error` is a safe filler.
-    let types = checker
-        .types
-        .into_iter()
-        .map(|t| t.unwrap_or(Type::Error))
-        .collect();
-    let structs = checker
-        .structs
-        .into_iter()
-        .map(|(name, info)| (name, info.fields))
-        .collect();
-    let enums = checker
-        .enums
-        .into_iter()
-        .map(|(name, info)| (name, info.variants))
-        .collect();
-    let moves = liveness::moves(program, &checker.mentions);
-    Ok((
-        Checked {
-            types,
-            structs,
-            enums,
-            moves,
-        },
-        checker.diagnostics,
-    ))
 }
 
 /// A declared function.
@@ -162,6 +152,18 @@ pub(super) struct Checker {
     changes: Vec<conflicts::Change>,
     /// The local every `Name` expression resolved to, for move on last use.
     mentions: HashMap<ExprId, liveness::Mention>,
+    /// The module whose names are being resolved (PRP-034).
+    module: Vec<String>,
+    /// The current module's imports: last segment → module path.
+    imports: HashMap<String, Vec<String>>,
+    /// Who declares what, and what is `private`.
+    privacy: visibility::Privacy,
+    /// Every extern's C name: its signature and first declaration (E0306).
+    externs: HashMap<String, (Vec<Type>, Type, Span)>,
+    /// See `Checked::callees`.
+    callees: HashMap<ExprId, String>,
+    /// See `Checked::annotations`.
+    annotations: HashMap<Span, Type>,
 }
 
 impl Checker {

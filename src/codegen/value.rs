@@ -12,7 +12,7 @@ use inkwell::values::BasicValueEnum;
 
 use super::CodegenError;
 use super::lower::Lowerer;
-use crate::ast::{Expr, Type as Annotation, TypeKind};
+use crate::ast::{Expr, Type as Annotation};
 use crate::check::Type;
 
 /// The result of lowering an expression.
@@ -67,21 +67,13 @@ pub(super) fn is_aggregate(ty: &Type) -> bool {
 }
 
 impl<'ctx> Lowerer<'ctx> {
-    /// The type an annotation declares; the checker has already resolved its names.
+    /// The type an annotation declares, as the checker resolved it
+    /// (architecture rule 4; PRP-034: names depend on the module).
     pub(super) fn annotation_type(&self, ty: &Annotation) -> Type {
-        match &ty.kind {
-            TypeKind::I32 => Type::I32,
-            TypeKind::I64 => Type::I64,
-            TypeKind::U8 => Type::U8,
-            TypeKind::F64 => Type::F64,
-            TypeKind::Bool => Type::Bool,
-            TypeKind::String => Type::String,
-            TypeKind::Array(element) => Type::Array(Box::new(self.annotation_type(element))),
-            TypeKind::Option(inner) => Type::Option(Box::new(self.annotation_type(inner))),
-            TypeKind::Applied(_) => unreachable!("checked: E0305, or stopped by the gate"),
-            TypeKind::Named(name) if self.enums.contains_key(name) => Type::Enum(name.clone()),
-            TypeKind::Named(name) => Type::Struct(name.clone()),
-        }
+        self.annotations
+            .get(&ty.span)
+            .cloned()
+            .expect("checked: every written type is resolved")
     }
 
     /// The checker's type for `expr`.

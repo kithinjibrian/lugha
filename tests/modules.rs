@@ -1,6 +1,6 @@
 //! Programs of several files through the `lughac` binary (PRP-033): every
 //! module is loaded, `--emit` shows each one, and diagnostics name the file
-//! they are in. Programs that import still stop at the milestone 10 gate.
+//! they are in, and the program runs (PRP-034).
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -85,15 +85,12 @@ fn emit_ast_shows_every_module_after_a_header() {
 }
 
 #[test]
-fn programs_that_import_stop_at_the_gate() {
+fn programs_that_import_run() {
+    // PRP-034: the milestone 10 gate is gone.
     let f = two_modules();
-    let out = lughac(f.path(), &["check", "main.la"]);
-    assert_eq!(out.status.code(), Some(2));
-    let stderr = text(&out.stderr);
-    assert!(
-        stderr.contains("not implemented yet: modules (milestone 10)"),
-        "{stderr}"
-    );
+    let out = lughac(f.path(), &["run", "main.la"]);
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    assert_eq!(text(&out.stdout), "0.0\n");
 }
 
 #[test]
@@ -113,4 +110,40 @@ fn errors_in_a_module_name_its_file() {
         ),
         "{line}"
     );
+}
+
+#[test]
+fn modules_get_their_own_symbols() {
+    let f = Fixture::new();
+    f.file(
+        "main.la",
+        "import a;\nimport b;\nimport shapes.circle;\nextern fun abs(x: i32): i32;\n\
+         fun main() { let n = a.f() + b.f(); let c = circle.Circle { r: 1.0 }; let x = c.area(); let y = abs(-1); }\n",
+    )
+    .file("a.la", "extern fun abs(x: i32): i32;\nfun f(): i64 = 1;\n")
+    .file("b.la", "fun f(): i64 = 2;\n")
+    .file(
+        "shapes/circle.la",
+        "struct Circle { r: f64 }\nimpl Circle { fun area(self): f64 = 3.0 * self.r * self.r; }\n",
+    );
+    let out = lughac(f.path(), &["build", "--emit=ir", "main.la"]);
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    let ir = text(&out.stdout);
+    // Two modules' `f` are different functions, called as the checker resolved them.
+    assert!(ir.contains("define i64 @\"lugha_fn_a/f\"()"), "{ir}");
+    assert!(ir.contains("define i64 @\"lugha_fn_b/f\"()"), "{ir}");
+    let main = &ir[ir
+        .find("define void @lugha_fn_main()")
+        .expect("main keeps its symbol")..];
+    assert!(
+        main.contains("call i64 @\"lugha_fn_a/f\"()")
+            && main.contains("call i64 @\"lugha_fn_b/f\"()"),
+        "{ir}"
+    );
+    assert!(
+        ir.contains("@\"lugha_fn_shapes/circle/Circle.area\""),
+        "{ir}"
+    );
+    // An extern declared in two modules is one declaration.
+    assert_eq!(ir.matches("declare i32 @abs(").count(), 1, "{ir}");
 }

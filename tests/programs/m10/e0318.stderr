@@ -1,0 +1,11 @@
+error[E0318]: `store.Entry` is private, but this signature is visible to other modules
+  --> store.la:3:14
+  |
+1 | private struct Entry { key: string }
+  |                ----- declared `private` here
+2 |
+3 | fun first(): Entry = Entry { key: "a" };
+  |              ^^^^^
+  |
+  = help: make this declaration `private` too, or remove `private` from the type
+

@@ -527,9 +527,35 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 39. Names across modules (PRP-034)
+
+**Decision:**
+- **Keys:** an item `X` of module `a.b` is keyed `a.b.X`; a main-file item is keyed `X`, so single-file programs are unchanged. `check::qualify`.
+  - Keys are the names in `Type::Struct`/`Enum`, in LLVM type names and in messages (the full module path, a discovery answer).
+- **Symbols:** `check::symbol(key)` turns `.` into `/`, giving `lugha_fn_a/b/f` and methods `lugha_fn_a/b/T.m`, so a function can't collide with a method (a discovery answer). Externs keep their C name and are declared once.
+- **One id space:** `parser::parse_from(tokens, first)`; the loader chains each module's `expr_count`.
+- **Checker:**
+  - **Entry:** `check_modules(&[Unit])` (`check()` wraps it), with `check/modules/` (passes over every module, `enter`, `key`, `imported`) and `modules/lookup.rs` (`type_named_by`, `type_key`, `module_call`, `same_extern`, `main` outside the main file).
+  - **Side tables:** `Checked.callees` (call → function key; associated calls → method key) and `Checked.annotations` (written-type span → `Type`). Codegen reads these and never resolves names (rule 4).
+- **Visibility (`check/visibility.rs`):** a `Privacy` table tracks items (owner module and `private`), methods and fields.
+  - E0313 covers foreign private items, methods and fields, and literals of structs with any private field.
+  - E0317 is reported at every `public`.
+  - E0318 is reported for a non-private signature mentioning a private type (through arrays and `Option`), at the written type.
+  - E0304 covers `main` in a module; E0306 one C function with two signatures; E0311 a local named like a module.
+- **Codegen:** `emit_ir_modules`/`emit_object_modules` take `&[Unit]` and a `ModuleSource` per file. Panics find their file by offset, with one file-name constant per file.
+- **Gate:** generics only.
+- **Splits (approved):** `check/modules/{mod,lookup}`, `check/struct_literal.rs`, `codegen/declare.rs`.
+
+**Why:** These follow the session 42 discovery answers. Keys keep one map per kind and leave single-file behaviour identical; the side tables keep codegen from becoming a second resolver.
+
+**Rules out:** packages, `public` semantics, re-exports, selective imports.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 10 complete**: PRP-034 names across modules, visibility (E0313/E0317/E0318), module symbols
 - PRP-033: modules front end — loading, E0312/E0314/E0319, file-aware diagnostics and `--emit`, `private`/`public` syntax
 - **Milestone 9 complete**: PRP-032 nested patterns, guards, usefulness-based E0417/W0102, W0103
 - PRP-031: deep `==` on every type, string order; `Language v2 Specification.md` (in progress) printed by `lughac spec`

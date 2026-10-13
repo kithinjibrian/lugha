@@ -93,7 +93,7 @@ pub fn load(
     // A module to read, and the import that asked for it (`None` for main).
     let mut queue: VecDeque<(Vec<String>, PathBuf, Option<Span>)> = VecDeque::new();
     queue.push_back((Vec::new(), main.to_path_buf(), None));
-    let mut base = 0usize;
+    let (mut base, mut next_id) = (0usize, 0u32);
     while let Some((path, file, asked_by)) = queue.pop_front() {
         let bytes = match read(&file) {
             Ok(bytes) => bytes,
@@ -106,7 +106,10 @@ pub fn load(
             }
             Err(source) => return Err(LoadError::Io { path: file, source }),
         };
-        let module = parse_module(path, file, base, bytes, &mut loaded.diagnostics);
+        let module = parse_module(path, file, (base, next_id), bytes, &mut loaded.diagnostics);
+        if let Some(program) = &module.program {
+            next_id = program.expr_count;
+        }
         if let Some(program) = &module.program {
             for import in &program.imports {
                 let target = resolve::target(&root, import);
@@ -130,12 +133,12 @@ pub fn load(
     Ok(loaded)
 }
 
-/// Decodes, lexes and parses one file at `base`, moving its diagnostics
-/// into the shared offset space.
+/// Decodes, lexes and parses one file at `base`, numbering its expressions
+/// from `first_id`, and moves its diagnostics into the shared offset space.
 fn parse_module(
     path: Vec<String>,
     file: PathBuf,
-    base: usize,
+    (base, first_id): (usize, u32),
     bytes: Vec<u8>,
     diagnostics: &mut Vec<Diagnostic>,
 ) -> Module {
@@ -171,7 +174,7 @@ fn parse_module(
                 token.span = Span::new(token.span.start + base, token.span.end + base);
             }
             // The parser's spans all come from these tokens, so they are already shifted.
-            match parser::parse(&tokens) {
+            match parser::parse_from(&tokens, first_id) {
                 Ok((program, warnings)) => {
                     diagnostics.extend(warnings);
                     Some(program)

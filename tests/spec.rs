@@ -61,6 +61,7 @@ fn the_extractor_finds_every_section_10_program() {
         "A stack",
         "A rejected enum program",
         "Patterns and equality",
+        "Two modules",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),
@@ -96,9 +97,18 @@ fn every_section_10_program_runs_as_stated() {
         .into_iter()
         .filter(|p| p.stderr.is_none())
     {
-        let dir = TempDir::with("prog.la", &program.source);
+        // A multi-file program runs from `main.la` with its modules beside it.
+        let main = if program.modules.is_empty() {
+            "prog.la"
+        } else {
+            "main.la"
+        };
+        let dir = TempDir::with(main, &program.source);
+        for (name, src) in &program.modules {
+            std::fs::write(dir.0.join(name), src).expect("temp dir is writable");
+        }
         for opt in ["-O0", "-O2"] {
-            let out = lughac(&dir, &["run", opt, "prog.la"]);
+            let out = lughac(&dir, &["run", opt, main]);
             assert_eq!(
                 text(&out.stdout),
                 program.stdout,

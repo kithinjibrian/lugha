@@ -1,0 +1,27 @@
+// Modules (PRP-034): a nested module, an import cycle, private fields and
+// helpers, a `Point` in two modules, and a panic located inside a module.
+import parity;
+import shapes.circle;
+import range;
+import points;
+
+struct Point { x: i64 }
+
+fun main() {
+    println(parity.even(10));
+    println(parity.odd(7));
+    let c = circle.Circle { r: 2.0 };
+    println(c.area());
+    let s = circle.Shape.Round(c);
+    match s {
+        Round(k) => println(k.r),
+        Flat => println("flat"),
+    }
+    let r = range.Range.new(9, 3);
+    println(r.len());
+    println(r.contains(4));
+    let p = Point { x: 1 };
+    let q = points.Point { x: 2, y: 3 };
+    println(p.x + q.x + q.y);
+    println(range.checked(100));
+}

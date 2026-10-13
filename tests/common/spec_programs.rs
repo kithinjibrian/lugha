@@ -8,7 +8,11 @@
 /// A §10 program and what the spec says it does.
 pub struct SpecProgram {
     pub title: String,
+    /// The program, or its main file's source when it has several files.
     pub source: String,
+    /// Its other files, `(file name, source)`, for a §10 example written as
+    /// several blocks that each start with `// <file>.la` (PRP-034).
+    pub modules: Vec<(String, String)>,
     /// Every expected output ends with a newline (spec §10); empty if none.
     pub stdout: String,
     pub exit: i32,
@@ -75,10 +79,12 @@ pub fn section_10() -> Vec<SpecProgram> {
         };
         let sentence = rest.lines().next().expect("the paragraph has a sentence");
         let blocks = fenced_blocks(rest);
-        let source = blocks
-            .first()
-            .unwrap_or_else(|| panic!("`{title}` has a program"))
-            .clone();
+        let (source, modules) = files(&blocks).unwrap_or_else(|| {
+            let source = blocks
+                .first()
+                .unwrap_or_else(|| panic!("`{title}` has a program"));
+            (source.clone(), Vec::new())
+        });
         let stdout = printed(sentence);
         let stderr = if stdout.is_empty() {
             blocks.get(1).cloned()
@@ -88,12 +94,31 @@ pub fn section_10() -> Vec<SpecProgram> {
         programs.push(SpecProgram {
             title: title.to_string(),
             source,
+            modules,
             stdout,
             exit: exit_code(sentence),
             stderr,
         });
     }
     programs
+}
+
+/// A multi-file example: every block whose first line is `// <file>.la`,
+/// split into `main.la`'s source and the other files. `None` for one file.
+fn files(blocks: &[String]) -> Option<(String, Vec<(String, String)>)> {
+    let named: Vec<(String, String)> = blocks
+        .iter()
+        .filter_map(|block| {
+            let first = block.lines().next()?;
+            let name = first.strip_prefix("// ")?.trim();
+            name.ends_with(".la")
+                .then(|| (name.to_string(), block.clone()))
+        })
+        .collect();
+    let main = named.iter().position(|(name, _)| name == "main.la")?;
+    let mut modules = named;
+    let (_, source) = modules.remove(main);
+    Some((source, modules))
 }
 
 /// The §11 milestone 2 program and the exit code the milestone table gives it.
@@ -112,6 +137,7 @@ pub fn milestone_2() -> SpecProgram {
     SpecProgram {
         title: "milestone 2".into(),
         source,
+        modules: Vec::new(),
         stdout: String::new(),
         exit: exit_code(row),
         stderr: None,
@@ -130,12 +156,19 @@ pub fn json_diagnostic() -> String {
         .expect("followed by the line")
 }
 
-/// `(title, source)` of every §10 and §11 program.
+/// `(title, source)` of every §10 and §11 program, each file of a
+/// multi-file program on its own.
 pub fn all() -> Vec<(String, String)> {
     section_10()
         .into_iter()
         .chain([milestone_2()])
-        .map(|p| (p.title, p.source))
+        .flat_map(|p| {
+            let modules = p.modules.into_iter().map({
+                let title = p.title.clone();
+                move |(name, src)| (format!("{title} ({name})"), src)
+            });
+            std::iter::once((p.title, p.source)).chain(modules)
+        })
         .collect()
 }
 

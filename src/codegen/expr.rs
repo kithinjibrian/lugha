@@ -60,7 +60,15 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Binary(op, op_span, lhs, rhs) => self.binary(*op, op_span.start, lhs, rhs)?,
             ExprKind::Cast(inner, _) => self.cast(expr, inner)?,
             ExprKind::Call(callee, args) => {
-                if let Some(value) = self.method_call(callee, args)? {
+                // `f(…)` and `m.f(…)`: the checker named the function (PRP-034).
+                if self
+                    .callees
+                    .get(&expr.id)
+                    .is_some_and(|key| self.functions.contains_key(key))
+                {
+                    return self.call(expr, args);
+                }
+                if let Some(value) = self.method_call(expr, callee, args)? {
                     return Ok(value);
                 }
                 match self.constructed_variant(callee) {

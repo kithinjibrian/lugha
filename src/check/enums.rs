@@ -24,18 +24,20 @@ impl Checker {
         for item in &program.items {
             let Item::Enum(e) = item else { continue };
             let name = &e.name.name;
+            let key = self.key(name);
             if INTRINSICS.contains(&name.as_str()) {
                 self.report(errors::reserved(name, e.name.span));
             } else if BUILTIN_NAMES.contains(&name.as_str()) {
                 self.report(errors::builtin_name(name, e.name.span));
-            } else if let Some(first) = self.type_span(name) {
+            } else if let Some(first) = self.type_span(&key) {
                 self.report(errors::duplicate(name, e.name.span, first));
             } else {
+                self.register_item(&key, e.visibility);
                 let info = EnumInfo {
                     variants: Vec::new(),
                     span: e.name.span,
                 };
-                self.enums.insert(name.clone(), info);
+                self.enums.insert(key, info);
             }
         }
     }
@@ -44,9 +46,10 @@ impl Checker {
     pub(super) fn resolve_enums(&mut self, program: &Program) {
         for item in &program.items {
             let Item::Enum(e) = item else { continue };
+            let key = self.key(&e.name.name);
             if self
                 .enums
-                .get(&e.name.name)
+                .get(&key)
                 .is_none_or(|info| info.span != e.name.span)
             {
                 continue; // a duplicate, already reported
@@ -67,7 +70,7 @@ impl Checker {
                 variants.push((v.name.name.clone(), payloads));
             }
             self.enums
-                .get_mut(&e.name.name)
+                .get_mut(&key)
                 .expect("collected in pass 1")
                 .variants = variants;
         }
@@ -85,19 +88,27 @@ impl Checker {
         }
     }
 
-    /// The enum a `Name` expression refers to, when it is a type rather than a local.
-    fn enum_named<'e>(&self, expr: &'e Expr) -> Option<&'e str> {
-        match &expr.kind {
-            ExprKind::Name(name) if self.local(name).is_none() && self.enums.contains_key(name) => {
-                Some(name)
-            }
-            _ => None,
+    /// The key of the enum `expr` names, `E` or `m.E` (PRP-034), when it
+    /// names one rather than a local.
+    fn enum_named(&mut self, expr: &Expr) -> Option<String> {
+        let key = match &expr.kind {
+            ExprKind::Name(name) if self.local(name).is_none() => self.key(name),
+            ExprKind::Field(base, e) => match &base.kind {
+                ExprKind::Name(m) => super::qualify(&self.imported(m)?, &e.name),
+                _ => return None,
+            },
+            _ => return None,
+        };
+        if !self.enums.contains_key(&key) {
+            return None;
         }
+        self.item_visible(&key, expr.span);
+        Some(key)
     }
 
     /// `E.V` without a call: a payload-less variant. `None` if `base` isn't an enum name.
     pub(super) fn variant_value(&mut self, base: &Expr, variant: &Ident) -> Option<Type> {
-        let name = self.enum_named(base)?.to_string();
+        let name = self.enum_named(base)?;
         self.record(base, Type::Void);
         Some(self.construct(&name, variant, &[], variant.span))
     }
@@ -120,7 +131,7 @@ impl Checker {
         let ExprKind::Field(base, variant) = &callee.kind else {
             return None;
         };
-        let name = self.enum_named(base)?.to_string();
+        let name = self.enum_named(base)?;
         self.record(base, Type::Void);
         self.record(callee, Type::Void);
         Some(self.construct(&name, variant, args, call.span))

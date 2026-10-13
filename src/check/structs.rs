@@ -4,9 +4,8 @@
 use std::collections::HashSet;
 
 use super::env::INTRINSICS;
-use super::expr::Expect;
 use super::{Checker, Type, errors};
-use crate::ast::{Expr, Ident, Item, Program};
+use crate::ast::{Item, Program};
 use crate::span::Span;
 
 /// A declared struct.
@@ -23,19 +22,24 @@ impl Checker {
         for item in &program.items {
             let Item::Struct(s) = item else { continue };
             let name = &s.name.name;
+            let key = self.key(name);
             if INTRINSICS.contains(&name.as_str()) {
                 self.report(errors::reserved(name, s.name.span));
             } else if super::enums::BUILTIN_NAMES.contains(&name.as_str()) {
                 self.report(errors::builtin_name(name, s.name.span));
-            } else if let Some(first) = self.structs.get(name) {
+            } else if let Some(first) = self.structs.get(&key) {
                 let first = first.span;
                 self.report(errors::duplicate(name, s.name.span, first));
             } else {
+                self.register_item(&key, s.visibility);
+                for field in &s.fields {
+                    self.register_field(&key, &field.name.name, field.visibility);
+                }
                 let info = StructInfo {
                     fields: Vec::new(),
                     span: s.name.span,
                 };
-                self.structs.insert(name.clone(), info);
+                self.structs.insert(key, info);
             }
         }
     }
@@ -45,9 +49,10 @@ impl Checker {
     pub(super) fn resolve_structs(&mut self, program: &Program) {
         for item in &program.items {
             let Item::Struct(s) = item else { continue };
+            let key = self.key(&s.name.name);
             if self
                 .structs
-                .get(&s.name.name)
+                .get(&key)
                 .is_none_or(|info| info.span != s.name.span)
             {
                 continue; // a duplicate, already reported
@@ -70,14 +75,14 @@ impl Checker {
                 fields.push((field.name.name.clone(), ty));
             }
             self.structs
-                .get_mut(&s.name.name)
+                .get_mut(&key)
                 .expect("collected in pass 1")
                 .fields = fields;
         }
         let mut reported = HashSet::new();
         for item in &program.items {
             let Item::Struct(s) = item else { continue };
-            let start = &s.name.name;
+            let start = &self.key(&s.name.name);
             if reported.contains(start)
                 || self
                     .structs
@@ -130,53 +135,6 @@ impl Checker {
             .find(|(f, _)| f == name)
             .map(|(_, ty)| ty.clone())
     }
-
-    /// `S { f: e, … }`: every field exactly once, in any order, each
-    /// expecting its declared type (spec §4); values checked in source order.
-    pub(super) fn struct_literal(
-        &mut self,
-        expr: &Expr,
-        name: &Ident,
-        given: &[(Ident, Expr)],
-    ) -> Type {
-        let Some(info) = self.structs.get(&name.name) else {
-            self.report(errors::unknown_type(&name.name, name.span));
-            for (_, value) in given {
-                self.value(value, None);
-            }
-            return Type::Error;
-        };
-        let declared = info.fields.clone();
-        let ty = Type::Struct(name.name.clone());
-        for (i, (field, value)) in given.iter().enumerate() {
-            if let Some((first, _)) = given[..i].iter().find(|(f, _)| f.name == field.name) {
-                self.report(errors::field_given_twice(
-                    &field.name,
-                    field.span,
-                    first.span,
-                ));
-            }
-            match declared.iter().find(|(f, _)| *f == field.name) {
-                Some((_, field_ty)) => {
-                    let why = format!("`{}` is declared as {field_ty}", field.name);
-                    self.expect_type(value, &Expect::because(field_ty.clone(), field.span, why));
-                }
-                None => {
-                    self.report(errors::no_field(&field.name, ty.clone(), field.span));
-                    self.value(value, None);
-                }
-            }
-        }
-        let missing: Vec<&str> = declared
-            .iter()
-            .map(|(f, _)| f.as_str())
-            .filter(|f| !given.iter().any(|(g, _)| g.name == *f))
-            .collect();
-        if !missing.is_empty() {
-            self.report(errors::missing_fields(&missing, &name.name, expr.span));
-        }
-        ty
-    }
 }
 
 #[cfg(test)]
@@ -223,38 +181,6 @@ mod tests {
         assert_eq!(
             errors("extern fun f(p: P);\nstruct P { x: i64 }\nfun main() {}"),
             [("E0409", "P")]
-        );
-    }
-
-    #[test]
-    fn literals_give_every_field_once() {
-        assert_eq!(
-            errors(&format!("{POINT}fun main() {{ let p = P {{ x: 1.0 }}; }}")),
-            [("E0413", "P { x: 1.0 }")]
-        );
-        let missing = diagnostics(&format!("{POINT}fun main() {{ let p = P {{ }}; }}"));
-        assert_eq!(missing[0].message, "missing fields `x`, `y` in `P`");
-        assert_eq!(
-            errors(&format!(
-                "{POINT}fun main() {{ let p = P {{ x: 1.0, y: 2.0, x: 3.0 }}; }}"
-            )),
-            [("E0414", "x")]
-        );
-        assert_eq!(
-            errors(&format!(
-                "{POINT}fun main() {{ let p = P {{ x: 1.0, y: 2.0, z: 3.0 }}; }}"
-            )),
-            [("E0410", "z")]
-        );
-        assert_eq!(
-            errors(&format!(
-                "{POINT}fun main() {{ let p = P {{ x: 1, y: 2.0 }}; }}"
-            )),
-            [("E0401", "1")]
-        );
-        assert_eq!(
-            errors("fun main() { let p = Q { x: 1 }; }"),
-            [("E0305", "Q")]
         );
     }
 

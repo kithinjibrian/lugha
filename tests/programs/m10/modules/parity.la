@@ -1,0 +1,5 @@
+import oddity;
+
+fun even(n: i64): bool = if n == 0 { true } else { oddity.odd(n - 1) };
+
+fun odd(n: i64): bool = oddity.odd(n);

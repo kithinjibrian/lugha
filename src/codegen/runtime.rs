@@ -44,7 +44,8 @@ pub const RUNTIME_SYMBOLS: [&str; 20] = [
 #[derive(Default)]
 pub(super) struct Constants<'ctx> {
     strings: HashMap<String, PointerValue<'ctx>>,
-    file: Option<PointerValue<'ctx>>,
+    /// File names for panic locations, by name.
+    files: HashMap<String, PointerValue<'ctx>>,
 }
 
 /// The runtime's name for a primitive or string type, as in `lugha_rt_print_<name>`.
@@ -201,18 +202,19 @@ impl<'ctx> Lowerer<'ctx> {
         self.start_dead_block("after.panic");
     }
 
-    /// The source file name as a C string, emitted once per module.
-    pub(super) fn file_name(&mut self) -> PointerValue<'ctx> {
-        if let Some(file) = self.constants.file {
-            return file;
+    /// The name of the file holding offset `at`, as a C string emitted once
+    /// per file (a program's modules share one offset space, PRP-034).
+    pub(super) fn file_name(&mut self, at: usize) -> PointerValue<'ctx> {
+        let name = self.source.file_at(at).0.name.clone();
+        if let Some(file) = self.constants.files.get(&name) {
+            return *file;
         }
-        let name = self.source.name.clone();
         let file = self
             .builder
             .build_global_string_ptr(&name, "file")
             .expect(POSITIONED)
             .as_pointer_value();
-        self.constants.file = Some(file);
+        self.constants.files.insert(name, file);
         file
     }
 
@@ -224,7 +226,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     fn call_panic(&mut self, message: BasicValueEnum<'ctx>, at: usize) {
-        let file = self.file_name();
+        let file = self.file_name(at);
         let (line, col) = self.source.line_col(at);
         let i64_type = self.context.i64_type();
         let panic = self.runtime(

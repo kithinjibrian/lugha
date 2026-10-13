@@ -130,7 +130,7 @@ impl<'ctx> Lowerer<'ctx> {
             .build_conditional_branch(in_bounds, ok, fail)
             .expect(POSITIONED);
         self.builder.position_at_end(fail);
-        let file = self.file_name();
+        let file = self.file_name(at);
         let (line, col) = self.source.line_col(at);
         let i64_type = self.context.i64_type();
         let panic = self.runtime(

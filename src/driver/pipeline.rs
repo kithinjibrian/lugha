@@ -13,7 +13,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use super::gate;
 use super::render::Report;
 use super::source::Source;
-use crate::ast::Program;
 use crate::check::{self, Checked};
 use crate::codegen::{self, CodegenError, OptLevel};
 use crate::diagnostic::{Diagnostic, Severity};
@@ -34,8 +33,6 @@ pub(super) struct Front {
     pub source: Source,
     /// Every module, the main file first (PRP-033).
     pub modules: Vec<Module>,
-    /// The main module. While imports are gated it is the whole program.
-    pub program: Program,
     pub warnings: Vec<Diagnostic>,
     /// The checker's output; `None` for the parse-only front end (`--emit=ast`).
     pub checked: Option<Checked>,
@@ -71,14 +68,9 @@ pub(super) fn parsed(path: &Path) -> Result<Front, Failure> {
     {
         return Err(Failure::Program(source, loaded.diagnostics));
     }
-    let program = loaded.modules[0]
-        .program
-        .clone()
-        .expect("a module without errors parsed");
     Ok(Front {
         source,
         modules: loaded.modules,
-        program,
         warnings: loaded.diagnostics,
         checked: None,
     })
@@ -102,7 +94,7 @@ pub(super) fn front(path: &Path) -> Result<Front, Failure> {
         let report = Report::internal(message, Some(gated.span));
         return Err(Failure::Internal(front.source, Box::new(report)));
     }
-    match check::check(&front.program) {
+    match check::check_modules(&units(&front.modules)) {
         Ok((checked, warnings)) => {
             front.warnings.extend(warnings);
             front.checked = Some(checked);
@@ -114,7 +106,8 @@ pub(super) fn front(path: &Path) -> Result<Front, Failure> {
 
 /// The program's LLVM IR, for `--emit=ir`.
 pub(super) fn ir(front: &Front) -> Result<String, Failure> {
-    codegen::emit_ir(&front.program, checked(front), &source_info(front))
+    let units = units(&front.modules);
+    codegen::emit_ir_modules(&units, checked(front), &sources(front))
         .map_err(|e| codegen_failure(&front.source, e))
 }
 
@@ -122,10 +115,10 @@ pub(super) fn ir(front: &Front) -> Result<String, Failure> {
 pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Failure> {
     let temp = TempDir::new().map_err(|e| internal(&front.source, temp_error(e)))?;
     let object = temp.path.join("prog.o");
-    codegen::emit_object(
-        &front.program,
+    codegen::emit_object_modules(
+        &units(&front.modules),
         checked(front),
-        &source_info(front),
+        &sources(front),
         opt,
         &object,
     )
@@ -167,11 +160,29 @@ pub(super) fn default_output(file: &Path) -> PathBuf {
 }
 
 /// The source name and text codegen needs for panic locations.
-fn source_info(front: &Front) -> codegen::SourceInfo<'_> {
-    codegen::SourceInfo {
-        name: &front.source.main().name,
-        text: &front.source.main().text,
-    }
+/// Every module's file, for panic locations in any of them.
+fn sources(front: &Front) -> Vec<codegen::ModuleSource<'_>> {
+    front
+        .source
+        .files
+        .iter()
+        .map(|f| codegen::ModuleSource {
+            name: &f.name,
+            base: f.base,
+            text: &f.text,
+        })
+        .collect()
+}
+
+/// The modules as the checker and codegen take them, the main file first.
+fn units(modules: &[Module]) -> Vec<check::Unit<'_>> {
+    modules
+        .iter()
+        .map(|m| check::Unit {
+            path: &m.path,
+            program: m.program.as_ref().expect("every module parsed"),
+        })
+        .collect()
 }
 
 /// The type table of a front end that ran the checker.

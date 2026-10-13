@@ -46,9 +46,12 @@ fn codes(loaded: &Loaded) -> Vec<(&'static str, String)> {
 #[test]
 fn modules_load_root_first_with_increasing_bases() {
     let loaded = ok(&[
-        ("main.la", b"import a;\nimport b.c;\nfun main() {}\n"),
-        ("a.la", b"fun f() {}\n"),
-        ("b/c.la", b"fun g() {}\n"),
+        (
+            "main.la",
+            b"import a;\nimport b.c;\nfun main() { let x = 1; }\n",
+        ),
+        ("a.la", b"fun f(): i64 = 2;\n"),
+        ("b/c.la", b"fun g(): i64 = 3;\n"),
     ]);
     let paths: Vec<Vec<String>> = loaded.modules.iter().map(|m| m.path.clone()).collect();
     assert_eq!(
@@ -68,6 +71,16 @@ fn modules_load_root_first_with_increasing_bases() {
     let span = f.span;
     assert!(span.start >= a.base && span.end <= a.base + a.text.len());
     assert!(loaded.diagnostics.is_empty());
+    // Expression ids continue across modules (PRP-034).
+    let counts: Vec<u32> = loaded
+        .modules
+        .iter()
+        .map(|m| m.program.as_ref().expect("parsed").expr_count)
+        .collect();
+    assert!(
+        counts[0] <= counts[1] && counts[1] <= counts[2],
+        "{counts:?}"
+    );
 }
 
 #[test]

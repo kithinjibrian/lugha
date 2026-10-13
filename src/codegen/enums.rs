@@ -13,7 +13,6 @@ use inkwell::values::PointerValue;
 
 use super::lower::{Lowerer, POSITIONED};
 use super::structs::layout;
-use crate::ast::{Item, Program};
 use crate::check::{Enums, Structs, Type, indirect_slot};
 
 /// The variants of an enum or `Option` type, in tag order.
@@ -78,7 +77,7 @@ fn collect(ty: &Type, out: &mut BTreeSet<String>, all: &mut Vec<Type>) {
 impl<'ctx> Lowerer<'ctx> {
     /// Declares a named LLVM type for every enum and every `Option<T>` the
     /// program uses, before struct bodies, which may hold them.
-    pub(super) fn declare_enums(&self, program: &Program) {
+    pub(super) fn declare_enums(&self) {
         let (mut names, mut all) = (BTreeSet::new(), Vec::new());
         for name in self.enums.keys() {
             collect(&Type::Enum(name.clone()), &mut names, &mut all);
@@ -86,12 +85,8 @@ impl<'ctx> Lowerer<'ctx> {
         let mut seen: Vec<Type> = self.types.clone();
         seen.extend(self.structs.values().flatten().map(|(_, t)| t.clone()));
         seen.extend(self.enums.values().flatten().flat_map(|(_, ps)| ps.clone()));
-        for item in &program.items {
-            if let Item::Fun(f) = item {
-                seen.extend(f.params.iter().map(|p| self.annotation_type(&p.ty)));
-                seen.extend(f.ret.iter().map(|t| self.annotation_type(t)));
-            }
-        }
+        // Every written type, so a signature's `Option<T>` is declared too.
+        seen.extend(self.annotations.values().cloned());
         for ty in &seen {
             collect(ty, &mut names, &mut all);
         }

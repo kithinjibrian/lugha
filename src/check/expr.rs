@@ -106,7 +106,9 @@ impl Checker {
             ExprKind::Unary(op, operand) => self.unary(*op, operand, expr, expect),
             ExprKind::Binary(op, _, lhs, rhs) => self.binary(expr, *op, lhs, rhs, expect),
             ExprKind::Call(callee, args) => {
-                if let Some(ty) = self.method_call(expr, callee, args) {
+                if let Some(ty) = self.module_call(expr, callee, args) {
+                    ty
+                } else if let Some(ty) = self.method_call(expr, callee, args) {
                     ty
                 } else if let Some(ty) = self.construction(expr, callee, args, expect) {
                     ty
@@ -126,7 +128,9 @@ impl Checker {
                 Some(ty) => ty,
                 None => self.field(base, field),
             },
-            ExprKind::StructLit(lit) => self.struct_literal(expr, &lit.name, &lit.fields),
+            ExprKind::StructLit(lit) => {
+                self.struct_literal(expr, lit.module.as_ref(), &lit.name, &lit.fields)
+            }
             ExprKind::Array(elements) => self.array_literal(expr, elements, expect),
             ExprKind::Repeat(value, count) => self.repeat(value, count, expect),
             ExprKind::Int(_) | ExprKind::Float(_) => unreachable!("literals are matched first"),

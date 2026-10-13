@@ -13,8 +13,8 @@ use super::CodegenError;
 use super::function::Signature;
 use super::lower::{Lowerer, POSITIONED};
 use super::value::{Value, llvm_type};
-use crate::ast::{Expr, ExprKind, Item, Program};
-use crate::check::Type;
+use crate::ast::{Expr, ExprKind, Item};
+use crate::check::{Type, Unit, qualify, symbol};
 
 /// A declared method or associated function.
 #[derive(Debug, Clone)]
@@ -25,16 +25,18 @@ pub(super) struct Method<'ctx> {
     pub receiver: Option<bool>,
 }
 
-/// The key of a method: `Type.name`, which is also its symbol after `lugha_fn_`.
+/// The key of a method: `Type.name`, with the type's key (`geometry.Vec2.len`).
 pub(super) fn key(owner: &str, name: &str) -> String {
     format!("{owner}.{name}")
 }
 
 impl<'ctx> Lowerer<'ctx> {
-    /// Declares every method as `lugha_fn_<Type>.<name>`, receiver first.
-    pub(super) fn declare_methods(&mut self, program: &Program) {
-        for item in &program.items {
+    /// Declares every method of `unit` as `lugha_fn_<Type>.<name>`
+    /// (`lugha_fn_geometry/Vec2.len` in a module, PRP-034), receiver first.
+    pub(super) fn declare_methods(&mut self, unit: &Unit) {
+        for item in &unit.program.items {
             let Item::Impl(i) = item else { continue };
+            let owner = qualify(unit.path, &i.ty.name);
             for f in &i.methods {
                 let params: Vec<Type> = f
                     .params
@@ -50,9 +52,9 @@ impl<'ctx> Lowerer<'ctx> {
                     Some(ty) => llvm_type(self.context, ty).fn_type(&types, false),
                     None => self.context.void_type().fn_type(&types, false),
                 };
-                let key = key(&i.ty.name, &f.name.name);
+                let key = key(&owner, &f.name.name);
                 let function = self.module.add_function(
-                    &format!("lugha_fn_{key}"),
+                    &format!("lugha_fn_{}.{}", symbol(&owner), f.name.name),
                     fn_type,
                     Some(Linkage::External),
                 );
@@ -74,16 +76,17 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Lowers every method body.
-    pub(super) fn define_methods(&mut self, program: &Program) -> Result<(), CodegenError> {
-        for item in &program.items {
+    pub(super) fn define_methods(&mut self, unit: &Unit) -> Result<(), CodegenError> {
+        for item in &unit.program.items {
             let Item::Impl(i) = item else { continue };
-            let owner = if self.enums.contains_key(&i.ty.name) {
-                Type::Enum(i.ty.name.clone())
+            let name = qualify(unit.path, &i.ty.name);
+            let owner = if self.enums.contains_key(&name) {
+                Type::Enum(name.clone())
             } else {
-                Type::Struct(i.ty.name.clone())
+                Type::Struct(name.clone())
             };
             for f in &i.methods {
-                let method = self.methods[&key(&i.ty.name, &f.name.name)].clone();
+                let method = self.methods[&key(&name, &f.name.name)].clone();
                 let receiver = method.receiver.map(|_| owner.clone());
                 self.define_with(f, &method.signature, receiver)?;
             }
@@ -94,6 +97,7 @@ impl<'ctx> Lowerer<'ctx> {
     /// A call whose callee is `T.f` or `x.m`, if it isn't a variant constructor.
     pub(super) fn method_call(
         &mut self,
+        call: &Expr,
         callee: &Expr,
         args: &[Expr],
     ) -> Result<Option<Value<'ctx>>, CodegenError> {
@@ -105,13 +109,14 @@ impl<'ctx> Lowerer<'ctx> {
             return self.array_builtin(base, &name.name, args).map(Some);
         }
         // The checker gives a type name `void` (associated calls and variants).
-        let (owner, receiver) = match (&base_type, &base.kind) {
-            (Type::Void, ExprKind::Name(owner)) => (owner.clone(), None),
-            (Type::Struct(owner) | Type::Enum(owner), _) => (owner.clone(), Some(base)),
+        // An associated call's method key comes from the checker (PRP-034).
+        let (method, receiver) = match &base_type {
+            Type::Void => (self.callees.get(&call.id).cloned(), None),
+            Type::Struct(owner) | Type::Enum(owner) => (Some(key(owner, &name.name)), Some(base)),
             _ => return Ok(None),
         };
-        let Some(method) = self.methods.get(&key(&owner, &name.name)).cloned() else {
-            return Ok(None); // a variant constructor
+        let Some(method) = method.and_then(|k| self.methods.get(&k)).cloned() else {
+            return Ok(None); // a variant constructor, or a function of a module
         };
         let mut values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len() + 1);
         if let Some(base) = receiver {

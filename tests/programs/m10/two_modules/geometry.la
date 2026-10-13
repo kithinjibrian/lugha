@@ -1,0 +1,7 @@
+struct Vec2 { x: f64, y: f64 }
+
+impl Vec2 {
+    fun add(self, o: Vec2): Vec2 = Vec2 { x: self.x + o.x, y: self.y + o.y };
+}
+
+fun origin(): Vec2 = Vec2 { x: 0.0, y: 0.0 };

@@ -12,6 +12,7 @@ mod cast;
 mod construct;
 mod control;
 mod copy;
+mod declare;
 mod enums;
 mod equality;
 mod expr;
@@ -39,7 +40,7 @@ use inkwell::targets::{
 };
 
 use crate::ast::Program;
-use crate::check::Checked;
+use crate::check::{Checked, Unit};
 
 pub use runtime::RUNTIME_SYMBOLS;
 
@@ -48,6 +49,18 @@ pub use runtime::RUNTIME_SYMBOLS;
 pub struct SourceInfo<'a> {
     /// The path as given on the command line.
     pub name: &'a str,
+    /// The file's text.
+    pub text: &'a str,
+}
+
+/// One module's source for panic locations: its name, where it starts in
+/// the program's one offset space, and its text (PRP-034).
+#[derive(Debug, Clone, Copy)]
+pub struct ModuleSource<'a> {
+    /// The name diagnostics use for the file.
+    pub name: &'a str,
+    /// The offset of its first byte.
+    pub base: usize,
     /// The file's text.
     pub text: &'a str,
 }
@@ -98,9 +111,32 @@ pub fn emit_ir(
     checked: &Checked,
     source: &SourceInfo,
 ) -> Result<String, CodegenError> {
+    emit_ir_modules(&[Unit { path: &[], program }], checked, &[single(source)])
+}
+
+/// Lowers a checked program of several modules (the main file first) to
+/// verified LLVM IR text.
+///
+/// # Errors
+///
+/// As [`emit_ir`].
+pub fn emit_ir_modules(
+    units: &[Unit],
+    checked: &Checked,
+    sources: &[ModuleSource],
+) -> Result<String, CodegenError> {
     let context = Context::create();
-    let module = lower::lower(&context, program, checked, source)?;
+    let module = lower::lower(&context, units, checked, sources)?;
     Ok(module.print_to_string().to_string())
+}
+
+/// A one-file program's source at offset 0.
+fn single<'a>(source: &SourceInfo<'a>) -> ModuleSource<'a> {
+    ModuleSource {
+        name: source.name,
+        base: 0,
+        text: source.text,
+    }
 }
 
 /// Lowers a checked `program`, optimises it at `opt`, and writes a native object file to `path`.
@@ -116,8 +152,24 @@ pub fn emit_object(
     opt: OptLevel,
     path: &Path,
 ) -> Result<(), CodegenError> {
+    let units = [Unit { path: &[], program }];
+    emit_object_modules(&units, checked, &[single(source)], opt, path)
+}
+
+/// [`emit_object`] for a program of several modules, the main file first.
+///
+/// # Errors
+///
+/// As [`emit_object`].
+pub fn emit_object_modules(
+    units: &[Unit],
+    checked: &Checked,
+    sources: &[ModuleSource],
+    opt: OptLevel,
+    path: &Path,
+) -> Result<(), CodegenError> {
     let context = Context::create();
-    let module = lower::lower(&context, program, checked, source)?;
+    let module = lower::lower(&context, units, checked, sources)?;
     let machine = host_machine(opt)?;
     module.set_triple(&machine.get_triple());
     module.set_data_layout(&machine.get_target_data().get_data_layout());

@@ -1,6 +1,6 @@
 ## FEATURE: Names across modules — `m.f` / `m.T`, `private` (E0313), `public` (E0317), no leaking (E0318), and module symbols — completes milestone 10.
 
-**Status:** approved 2026-10-13 — session 42
+**Status:** implemented 2026-10-13 — session 42
 **Milestone:** 10 (second of two PRPs: 033 front end, **034 names, visibility and symbols**). Milestone 10 is done when the draft's two-module program passes.
 **Spec:** `Language v2 Draft.md`:
 - decision 9;
@@ -48,6 +48,22 @@ A program can span several files and actually run.
   - `src/driver/{pipeline,gate}`;
   - `tests/common/spec_programs.rs`, `tests/spec.rs`.
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 42)
+- **Associated calls:** `T.f()` and `m.T.f()` record the method key (`geometry.Vec2.new`) in `Checked.callees`, so codegen finds the method without resolving the owner itself.
+- **Call dispatch:** codegen checks the callee table first. Without that, `m.f()` (whose base is a non-value, like an enum's) would be mistaken for a variant constructor.
+- **`impl` headers:** `impl m.T` is E0305, worded like an unknown type. An `impl` must be in its type's module.
+- **E0311 wording:** "`x` is the name of an imported module" when the clash is with a module.
+- **Approved splits:**
+  - `check/modules.rs` (442 lines) became `check/modules/{mod,lookup}.rs`;
+  - struct literals moved to `check/struct_literal.rs`;
+  - function declaration and the C ABI moved to `codegen/declare.rs`.
+
+  A script confirmed the moved code is unchanged, apart from visibility qualifiers and one signature rustfmt rewrapped.
+- **Tests:**
+  - **Where they went:** the codegen symbol tests are in `tests/modules.rs` (`--emit=ir`), because `codegen/function.rs` was at the limit.
+  - **Test order:** the checker and visibility tests were written first and failed first. The IR test, acceptance programs and spec test were written after the code.
+- **§10 example sentence:** it uses the standard "Prints …" form so the extractor treats it as a run program.
 
 ### Discovery answers (session 42)
 1. **Symbols:** the module path's segments and the item are joined with `/`, and methods keep `.`.
@@ -169,30 +185,30 @@ A program can span several files and actually run.
 ## TESTS TO WRITE
 
 Unit tests — `check/modules.rs` (several in-memory modules through `check_modules`):
-- [ ] **Using another module:**
+- [x] **Using another module:**
   - `geometry.origin()`, `geometry.Vec2` in a parameter and in a return type;
   - `geometry.Vec2 { … }`, `shapes.Shape.Circle(1.0)` and `geometry.Vec2.new()`;
   - a method call on a value from another module.
-- [ ] **Within a module:** its own items are used unqualified, and two modules may each declare `Point` with no clash.
-- [ ] **Errors:**
+- [x] **Within a module:** its own items are used unqualified, and two modules may each declare `Point` with no clash.
+- [x] **Errors:**
   - E0301 for an unknown module or function;
   - E0305 for an unknown type in a known module;
   - E0311 for a local named like a module;
   - E0304 for `main` in a module;
   - E0306 for one extern with two signatures.
-- [ ] **Messages:** a type mismatch between modules prints full paths (`geometry.Vec2`).
-- [ ] **Single-file programs:** unchanged; all existing checker tests pass as they are.
+- [x] **Messages:** a type mismatch between modules prints full paths (`geometry.Vec2`).
+- [x] **Single-file programs:** unchanged; all existing checker tests pass as they are.
 
 Unit tests — `check/visibility.rs`:
-- [ ] **E0313** for another module's:
+- [x] **E0313** for another module's:
   - private function, struct and associated function;
   - private method;
   - private field read, field assignment and `swap` of a field;
   - struct literal with a private field.
 
   Each is allowed inside its own module.
-- [ ] **E0317** on items, methods and fields.
-- [ ] **E0318:**
+- [x] **E0317** on items, methods and fields.
+- [x] **E0318:**
   - a function returning a private struct;
   - a public field of a private type;
   - an enum payload of a private type.
@@ -200,16 +216,16 @@ Unit tests — `check/visibility.rs`:
   None for a `private` function using a private type.
 
 Codegen IR:
-- [ ] **Symbols:**
+- [x] **Symbols:**
   - `define … @"lugha_fn_geometry/origin"`;
   - a method `@"lugha_fn_shapes/circle/Circle.area"`;
   - the main file's `@lugha_fn_main` unchanged;
   - an extern declared in two modules declared once.
-- [ ] **Resolution:** calls use the checker's callee table, so two modules' `f` call different symbols.
+- [x] **Resolution:** calls use the checker's callee table, so two modules' `f` call different symbols.
 
 Acceptance — `tests/programs/m10/` (cross-checked at `-O0`/`-O2`; expected output written by hand):
-- [ ] **`two_modules/`:** the draft program, which prints `3.5`.
-- [ ] **`modules/`:** three files covering:
+- [x] **`two_modules/`:** the draft program, which prints `3.5`.
+- [x] **`modules/`:** three files covering:
   - a nested module (`shapes/circle.la`);
   - a module cycle;
   - a `private` helper used inside its module;
@@ -217,9 +233,9 @@ Acceptance — `tests/programs/m10/` (cross-checked at `-O0`/`-O2`; expected out
   - two modules each with a `Point`;
   - an enum from another module matched in `main`;
   - a panic location inside a module.
-- [ ] **Goldens:** `e0313_field/` and `e0318/`, plus `e0317.la` (single file). Captured and reviewed.
-- [ ] **Spec:** the spec's §10 two-module program runs from `lughac spec`'s text.
-- [ ] **Regression:** every earlier test passes. The gate's M10 tests are removed, and `tests/modules.rs`'s gate test becomes a run test.
+- [x] **Goldens:** `e0313_field/` and `e0318/`, plus `e0317.la` (single file). Captured and reviewed.
+- [x] **Spec:** the spec's §10 two-module program runs from `lughac spec`'s text.
+- [x] **Regression:** every earlier test passes. The gate's M10 tests are removed, and `tests/modules.rs`'s gate test becomes a run test.
 
 ## ROLLBACK PLAN
 
@@ -227,11 +243,11 @@ Acceptance — `tests/programs/m10/` (cross-checked at `-O0`/`-O2`; expected out
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The two-module program passes from the spec's §10, and milestone 10 is done.
-- [ ] Qualified names, visibility (E0313, E0317, E0318) and module symbols behave as above; single-file programs are unchanged.
-- [ ] The spec and draft are updated; CLAUDE.md, README, TODO, CHANGELOG, MEMORY updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The two-module program passes from the spec's §10, and milestone 10 is done.
+- [x] Qualified names, visibility (E0313, E0317, E0318) and module symbols behave as above; single-file programs are unchanged.
+- [x] The spec and draft are updated; CLAUDE.md, README, TODO, CHANGELOG, MEMORY updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

@@ -40,10 +40,24 @@ use crate::span::Span;
 /// assert_eq!(lugha::parser::sexp::program(&program), "(fun main () i32 (block (+ 2 (* 3 4))))");
 /// ```
 pub fn parse(tokens: &[Token]) -> Result<(Program, Vec<Diagnostic>), Vec<Diagnostic>> {
+    parse_from(tokens, 0)
+}
+
+/// [`parse`], numbering expressions from `first`: the modules of one program
+/// share one id space (PRP-034), so each starts where the last one ended.
+/// `Program::expr_count` is then one past the last id used.
+///
+/// # Errors
+///
+/// As [`parse`].
+pub fn parse_from(
+    tokens: &[Token],
+    first: u32,
+) -> Result<(Program, Vec<Diagnostic>), Vec<Diagnostic>> {
     let mut parser = Parser {
         tokens,
         pos: 0,
-        next_id: 0,
+        next_id: first,
         depth: 0,
         no_struct: false,
         diagnostics: Vec::new(),

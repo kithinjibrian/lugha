@@ -10,21 +10,15 @@ use crate::span::Span;
 pub(super) const INTRINSICS: [&str; 5] = ["print", "println", "panic", "to_string", "swap"];
 
 impl Checker {
-    /// Collects signatures, checks `main`, then every function body (spec §6).
-    pub(super) fn program(&mut self, program: &Program) {
-        self.collect_structs(program);
-        self.collect_enums(program);
-        self.resolve_structs(program);
-        self.resolve_enums(program);
-        self.collect(program);
-        self.collect_methods(program);
-        self.check_main(program);
+    /// Every function and method body of the current module, once the
+    /// passes of spec §6 have run over every module (`modules.rs`).
+    pub(super) fn bodies(&mut self, program: &Program) {
         for item in &program.items {
             // A duplicate or reserved definition was reported; skip its body to avoid a cascade.
             if let Item::Fun(f) = item
                 && self
                     .functions
-                    .get(&f.name.name)
+                    .get(&self.key(&f.name.name))
                     .is_some_and(|sig| sig.span == f.name.span)
             {
                 self.function(f);
@@ -34,11 +28,11 @@ impl Checker {
     }
 
     /// Pass 1: every function signature, in source order.
-    fn collect(&mut self, program: &Program) {
+    pub(super) fn collect(&mut self, program: &Program) {
         for item in &program.items {
-            let (name, params, ret, is_extern) = match item {
-                Item::Fun(f) => (&f.name, &f.params, f.ret.as_ref(), false),
-                Item::Extern(e) => (&e.name, &e.params, e.ret.as_ref(), true),
+            let (name, params, ret, is_extern, visibility) = match item {
+                Item::Fun(f) => (&f.name, &f.params, f.ret.as_ref(), false, f.visibility),
+                Item::Extern(e) => (&e.name, &e.params, e.ret.as_ref(), true, e.visibility),
                 Item::Struct(_) | Item::Enum(_) | Item::Impl(_) => continue,
             };
             let declared = params;
@@ -71,6 +65,7 @@ impl Checker {
                 }
             }
             let text = &name.name;
+            let key = self.key(text);
             if is_extern && text.starts_with("lugha_") {
                 self.report(errors::reserved_extern(text, name.span));
             } else if INTRINSICS.contains(&text.as_str()) {
@@ -79,24 +74,28 @@ impl Checker {
                 self.report(errors::builtin_name(text, name.span));
             } else if let Some(first) = self
                 .functions
-                .get(text)
+                .get(&key)
                 .map(|f| f.span)
-                .or_else(|| self.type_span(text))
+                .or_else(|| self.type_span(&key))
             {
                 self.report(errors::duplicate(text, name.span, first));
             } else {
+                if is_extern {
+                    self.same_extern(text, &params, &ret_type, name.span);
+                }
+                self.register_item(&key, visibility);
                 let signature = Signature {
                     params,
                     ret: ret_type,
                     span: name.span,
                 };
-                self.functions.insert(text.clone(), signature);
+                self.functions.insert(key, signature);
             }
         }
     }
 
     /// `main` must exist as `fun main()` or `fun main(): i32` (spec §6).
-    fn check_main(&mut self, program: &Program) {
+    pub(super) fn check_main(&mut self, program: &Program) {
         let main = program.items.iter().find_map(|item| match item {
             Item::Fun(f) if f.name.name == "main" => Some(f),
             _ => None,
@@ -112,8 +111,15 @@ impl Checker {
         }
     }
 
-    /// The type an annotation names. Unknown names are E0305 and become `Error`.
+    /// The type an annotation names. Unknown names are E0305 and become
+    /// `Error`. Every result is recorded for codegen (`Checked::annotations`).
     pub(super) fn resolve(&mut self, ty: &Annotation) -> Type {
+        let resolved = self.resolve_here(ty);
+        self.annotations.insert(ty.span, resolved.clone());
+        resolved
+    }
+
+    fn resolve_here(&mut self, ty: &Annotation) -> Type {
         match &ty.kind {
             TypeKind::I32 => Type::I32,
             TypeKind::I64 => Type::I64,
@@ -123,20 +129,26 @@ impl Checker {
             TypeKind::String => Type::String,
             TypeKind::Array(element) => Type::Array(Box::new(self.resolve(element))),
             TypeKind::Option(inner) => Type::Option(Box::new(self.resolve(inner))),
-            TypeKind::Named(name) if self.enums.contains_key(name) => Type::Enum(name.clone()),
-            TypeKind::Named(name) if self.structs.contains_key(name) => Type::Struct(name.clone()),
             TypeKind::Named(name) => {
-                self.report(errors::unknown_type(name, ty.span));
-                Type::Error
+                let ident = Ident {
+                    name: name.clone(),
+                    span: ty.span,
+                };
+                self.type_key(None, &ident, ty.span)
+                    .and_then(|key| self.named_type(&key))
+                    .unwrap_or(Type::Error)
             }
-            // The gate stops type arguments on declared types and every
-            // module-qualified type (PRP-030), so only unknown names like
-            // `Box<List>` get here.
-            TypeKind::Applied(applied) if applied.module.is_none() => {
+            // `m.T` (PRP-034).
+            TypeKind::Applied(applied) if applied.args.is_empty() => self
+                .type_key(applied.module.as_ref(), &applied.name, ty.span)
+                .and_then(|key| self.named_type(&key))
+                .unwrap_or(Type::Error),
+            // The gate stops type arguments on declared types (PRP-030), so
+            // only unknown names like `Box<List>` get here.
+            TypeKind::Applied(applied) => {
                 self.report(errors::unknown_type(&applied.name.name, ty.span));
                 Type::Error
             }
-            TypeKind::Applied(_) => unreachable!("the gate stops modules (milestone 10)"),
         }
     }
 
@@ -165,21 +177,27 @@ impl Checker {
         );
     }
 
-    /// Where a struct or enum named `name` is declared.
+    /// Where the struct or enum with key `name` is declared.
     pub(super) fn type_span(&self, name: &str) -> Option<Span> {
         let as_struct = self.structs.get(name).map(|s| s.span);
         as_struct.or_else(|| self.enums.get(name).map(|e| e.span))
     }
 
-    /// True if `name` names a type, so no local may use it (E0311).
+    /// True if `name` names a type here, or an imported module, so no local
+    /// may use it (E0311).
     pub(super) fn is_type_name(&self, name: &str) -> bool {
-        name == "Option" || self.structs.contains_key(name) || self.enums.contains_key(name)
+        let key = self.key(name);
+        name == "Option"
+            || self.structs.contains_key(&key)
+            || self.enums.contains_key(&key)
+            || self.imports.contains_key(name)
     }
 
-    /// Reports E0311 for a local named like a type.
+    /// Reports E0311 for a local named like a type or a module.
     pub(super) fn check_local_name(&mut self, name: &Ident) {
         if self.is_type_name(&name.name) {
-            self.report(errors::local_named_like_type(&name.name, name.span));
+            let module = self.imports.contains_key(&name.name);
+            self.report(errors::local_named_like_type(&name.name, name.span, module));
         }
     }
 

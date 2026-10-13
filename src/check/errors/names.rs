@@ -92,8 +92,13 @@ pub(in crate::check) fn duplicate_variant(
     .with_label(first, "first declared here")
 }
 
-pub(in crate::check) fn local_named_like_type(name: &str, span: Span) -> Diagnostic {
-    Diagnostic::error("E0311", format!("`{name}` is the name of a type"), span)
+pub(in crate::check) fn local_named_like_type(name: &str, span: Span, module: bool) -> Diagnostic {
+    let what = if module {
+        "an imported module"
+    } else {
+        "a type"
+    };
+    Diagnostic::error("E0311", format!("`{name}` is the name of {what}"), span)
         .with_help("rename the variable")
 }
 
@@ -123,4 +128,59 @@ pub(in crate::check) fn method_named_like(
         span,
     )
     .with_help("give the method a different name")
+}
+
+/// E0313: another module's `private` item, method or field (v2 draft §6).
+pub(in crate::check) fn private_item(
+    name: &str,
+    module: &[String],
+    span: Span,
+    help: Option<String>,
+) -> Diagnostic {
+    let d = Diagnostic::error(
+        "E0313",
+        format!("`{name}` is private to module `{}`", module.join(".")),
+        span,
+    );
+    match help {
+        Some(help) => d.with_help(help),
+        None => d.with_help("only its own module can use it; remove `private` to share it"),
+    }
+}
+
+/// E0317: `public` is for packages, which arrive in v3.
+pub(in crate::check) fn public_reserved(span: Span) -> Diagnostic {
+    Diagnostic::error("E0317", "`public` needs packages (v3)", span)
+        .with_help("remove it: everything is already visible to the whole program")
+}
+
+/// E0318: a signature other modules can use mentions a `private` type.
+pub(in crate::check) fn leaked_private(ty: &str, span: Span, declared: Option<Span>) -> Diagnostic {
+    let d = Diagnostic::error(
+        "E0318",
+        format!("`{ty}` is private, but this signature is visible to other modules"),
+        span,
+    )
+    .with_help("make this declaration `private` too, or remove `private` from the type");
+    match declared {
+        Some(at) => d.with_label(at, "declared `private` here"),
+        None => d,
+    }
+}
+
+/// E0304 for `main` outside the main file (v2 draft §6).
+pub(in crate::check) fn main_in_module(span: Span) -> Diagnostic {
+    Diagnostic::error("E0304", "`main` belongs in the main file", span)
+        .with_help("rename it, or move it to the file you pass to `lughac`")
+}
+
+/// E0306: the same C function declared with two signatures (v2 draft §8).
+pub(in crate::check) fn extern_mismatch(name: &str, span: Span, first: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0306",
+        format!("extern `{name}` is declared with a different signature elsewhere"),
+        span,
+    )
+    .with_label(first, "first declared here")
+    .with_help("every declaration of a C function must match")
 }

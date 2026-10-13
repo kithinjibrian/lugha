@@ -1,4 +1,4 @@
-# Lugha v2 Specification (in progress: milestone 10)
+# Lugha v2 Specification (in progress: milestone 11)
 
 Oct 9, 2026 · @kithinji
 
@@ -6,14 +6,16 @@ Oct 9, 2026 · @kithinji
 
 **v1.** This is v0 plus enums, `match`, `Option`, recursive data, methods and growable arrays (milestones 6–8). Every valid v0 program is a valid v1 program unless it uses one of the new keywords as a name.
 
-**Changes since v1.2** (milestone 9):
+**Changes since v1.2** (milestones 9 and 10):
 - `==` and `!=` compare any two values of the same type deeply (section 4).
 - Strings are ordered bytewise by `<`, `<=`, `>` and `>=` (section 4).
 - Either operand of a comparison can give the other its type (`None == o`).
 - `match` patterns nest (`Some(Circle(r))`) and arms take `if` guards (sections 3–5).
 - An unused `match` binding is warning W0103.
+- A program can span several files: `import` loads a module, and its items are used as `m.f`, `m.T` (section 6).
+- Everything is visible to the whole program unless it is `private`, which limits it to its module; `public` is reserved for packages (section 6).
 
-Every valid v1.2 program is a valid v2 program unless it uses `import`, `private` or `public` as a name. Those are now keywords for v2 features that are still being built: they parse, but `lughac` stops with "not implemented yet (milestone N)", exit 2.
+Every valid v1.2 program is a valid v2 program unless it uses `import`, `private` or `public` as a name. Generics (milestone 11) parse, but `lughac` still stops at them with "not implemented yet (milestone 11)", exit 2.
 
 ## 1. Overview
 
@@ -73,6 +75,7 @@ Source files are UTF-8. The lexer produces a flat list of tokens, each carrying 
 
 ```
 fun  extern  struct  enum  impl  let  mut  if  else  while  for  in  of  match
+import  private  public
 return  break  continue  true  false  as  self
 i32  i64  u8  f64  bool  string
 ```
@@ -132,16 +135,18 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 The grammar is LL(1) apart from expressions, which use Pratt parsing with the precedence table below. Parentheses around the condition of `if` and `while`, and around a `for` header, are optional: `if x > 0 {` and `if (x > 0) {` are both valid.
 
 ```ebnf
-program      = { item } EOF ;
-item         = fun_decl | extern_decl | struct_decl | enum_decl | impl_decl ;
+program      = { import } { item } EOF ;
+import       = "import" IDENT { "." IDENT } ";" ;
+item         = [ visibility ] ( fun_decl | extern_decl | struct_decl | enum_decl ) | impl_decl ;
+visibility   = "private" | "public" ;                (* `public`: E0317 until packages *)
 
 fun_decl     = "fun" IDENT "(" [ params ] ")" [ ":" type ] fun_body ;
 fun_body     = block | "=" expr ";" ;          (* "= e;" means "{ e }" *)
 extern_decl  = "extern" "fun" IDENT "(" [ params ] ")" [ ":" type ] ";" ;
 struct_decl  = "struct" IDENT "{" [ field { "," field } [ "," ] ] "}" ;
-field        = IDENT ":" type ;
+field        = [ visibility ] IDENT ":" type ;
 enum_decl    = "enum" IDENT "{" [ variant { "," variant } [ "," ] ] "}" ;
-impl_decl    = "impl" IDENT "{" { method } "}" ;
+impl_decl    = "impl" IDENT "{" { [ visibility ] method } "}" ;
 method       = "fun" IDENT "(" [ receiver [ "," params ] | params ] ")" [ ":" type ] fun_body ;
 receiver     = [ "mut" ] "self" ;
 variant      = IDENT [ "(" type { "," type } [ "," ] ")" ] ;
@@ -151,7 +156,7 @@ param        = IDENT ":" type ;
 type         = base_type { "[" "]" } ;
 base_type    = "i32" | "i64" | "u8" | "f64" | "bool" | "string"
              | "Option" "<" type ">"
-             | IDENT ;
+             | IDENT [ "." IDENT ] ;               (* `m.T`: a type of module `m` *)
 
 block        = "{" { stmt } [ expr ] "}" ;   (* trailing expr = tail value *)
 stmt         = var_decl | while_stmt | for_stmt
@@ -183,7 +188,7 @@ call         = "(" [ expr { "," expr } [ "," ] ] ")" ;
 index        = "[" expr "]" ;
 member       = "." IDENT ;
 primary      = INT | FLOAT | STRING | "true" | "false"
-             | IDENT [ struct_init ]
+             | IDENT [ "." IDENT ] [ struct_init ]  (* `m.T { … }` *)
              | "self"
              | "(" expr ")"
              | "[" [ expr ( ";" expr | { "," expr } [ "," ] ) ] "]"
@@ -224,6 +229,7 @@ infix        = binop expr | "as" type ;
 | E0204 | Assignment used as an expression | `a = b = c;`, `if (x = 1) {}`, `f(x = 1)` |
 | E0205 | Struct literal in a condition without parentheses | `if p == Point { x: 0.0 } { }` |
 | E0206 | Nesting too deep | More than 256 levels of nested expressions and blocks |
+| E0208 | `import` after an item | `fun f() {}` then `import geometry;` (v2) |
 | E0207 | `::` used as a path separator | `Shape::Circle(1.0)` — help: write `Shape.Circle`; parsing continues as if `.` were written |
 
 ## 4. Type system
@@ -444,9 +450,22 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 - **Loading.** `import shapes.circle;` loads `<root>/shapes/circle.la`, where the root is the main file's directory. Each file is loaded once, however many files import it, so import cycles are fine.
 - **Errors.** A missing file is E0312. These are E0314: importing the same module twice in one file, two imports whose last names clash, or an import named like one of the file's own items. Importing the main file is E0319.
 - **Each file is checked for its own errors.** Invalid UTF-8 (E0110) and lexical and syntax errors in any module are reported against that module's file.
-- **Not yet built.** A program that imports anything, or writes `private` or `public`, still stops with "not implemented yet (milestone 10)", exit 2, until name resolution across modules lands.
+- **Order and cycles.** The passes above run over all modules together, so an item may be used before its declaration across files too.
 
-**Names.** Functions, structs, enums, intrinsics and the built-in names `Option`, `Some` and `None` share one global namespace, and duplicates are a compile error. Methods live in their type's namespace, so a function `dist` and a method `Point.dist` can coexist. No local may be named like a type (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then globals.
+**Using another module.** `import shapes.circle;` binds the name `circle` in that file only.
+- **Calls:** `circle.area(c)` calls function `area` of the module.
+- **Types:** `circle.Circle` names its type in annotations; `circle.Circle { r: 1.0 }` builds it; `circle.Circle.new()` calls an associated function; `circle.Shape.Round(c)` and `circle.Shape.Flat` build variants.
+- **Methods:** a method call on a value from another module (`c.area()`) works like any method call.
+- **Errors:** an unknown module name is E0301; an unknown function or type in a known module is E0301 or E0305.
+
+**Names.** Each module has its own namespace for functions, structs, enums and externs, so two modules may each declare `Point`; duplicates within a module are a compile error. Intrinsics and the built-in names `Option`, `Some` and `None` are visible in every module. Methods live in their type's namespace, so a function `dist` and a method `Point.dist` can coexist. No local may be named like a type or an imported module (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then the module's own items, then imported module names. In messages a type from another module is shown with its full module path (`shapes.circle.Circle`); a main-file type keeps its bare name. `main` belongs in the main file (E0304 elsewhere).
+
+**Visibility.** Everything is visible to every module of the program unless it is marked `private`, which limits it to its own module. That covers functions, externs, structs, enums, methods, associated functions and struct fields.
+- **Private items** (E0313): naming another module's `private` item, calling its `private` method, or reading or assigning its `private` field (including through `swap` and `mut self`) is an error.
+- **Struct literals:** a literal outside the struct's module needs every field to be visible, so a struct with a `private` field is built through one of its functions (`range.Range.new(1, 5)`). This is how a type protects an invariant such as `lo <= hi`. `==`, copies and passing values are unaffected: they never name a field.
+- **Fields and variants:** a field can be no more visible than its struct; variants share their enum's visibility.
+- **`public`** is reserved for packages (v3), where it will mean "visible to other packages". Writing it is E0317.
+- **No leaking** (E0318): a declaration that isn't `private` may not mention a `private` type in its signature (parameters, return type, a field's type, a variant's payloads), looking inside arrays and `Option`, since other modules couldn't name that type.
 
 **Functions.** Declared with `fun`, typed parameters, and an optional `: type` return annotation. Omitting the annotation means `void`.
 
@@ -546,6 +565,8 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - Extern functions are called exactly like Lugha functions.
 - Variadic C functions such as `printf` cannot be declared in v0. Use the `print` and `println` intrinsics instead.
 - The extern name is used as the C symbol name unchanged. Lugha functions themselves are emitted with a `lugha_fn_` prefix, so they never collide with C symbols. Methods and associated functions are `lugha_fn_<Type>.<name>` (for example `lugha_fn_Point.dist`); `.` can't appear in a Lugha name, so these can't collide either.
+- Items of a module other than the main file put the module's path before their name, joined with `/`: function `area` of module `shapes.circle` is `lugha_fn_shapes/circle/area`, and its method `Circle.area` is `lugha_fn_shapes/circle/Circle.area`. A name contains neither `/` nor `.`, so a module function (`lugha_fn_a/b/c`) can't collide with a method (`lugha_fn_a/b.c`, method `c` of type `b` in module `a`).
+- An extern follows the visibility rules of section 6, and the same C function may be declared in several modules only with identical signatures (E0306); it is one symbol.
 - Runtime library functions use the `lugha_rt_` prefix. Neither prefix is a prefix of the other, so a Lugha function can never collide with a runtime function, whatever its name.
 - Extern names starting with `lugha_` are reserved and rejected with an E03xx error, so an extern declaration can't collide with either.
 - Extern C code must not keep a Lugha string after the call returns, and must not write through the pointer (section 7).
@@ -632,16 +653,19 @@ Name and type errors, reported by the checker:
 | E0301 | Undefined name | `count + 1` with no `count` in scope; a call to an undefined function |
 | E0302 | Name defined more than once, or a function named like an intrinsic | two `fun area`; `fun println()` |
 | E0303 | No `main` function | |
-| E0304 | `main` with the wrong signature | `fun main(argc: i32): i32` |
+| E0304 | `main` with the wrong signature, or outside the main file | `fun main(argc: i32): i32`; a `main` in a module (v2) |
 | E0305 | Unknown type name | `let p: Point = 1;` with no `Point` |
-| E0306 | Reserved extern name | `extern fun lugha_rt_alloc(size: i64): i64;` (§8) |
+| E0306 | Reserved extern name, or one C function declared with two signatures | `extern fun lugha_rt_alloc(size: i64): i64;` (§8) |
 | E0307 | Struct contains itself | `struct A { b: B }` with `struct B { a: A }` — hold it in an array instead (`A[]`) |
 | E0308 | Field declared twice | `struct P { x: i64, x: f64 }` |
 | E0309 | Variant declared twice | `enum E { A, B, A }` |
 | E0310 | Method declared twice, or named like a field or variant | `impl P { fun x(self) {} }` where `P` has a field `x` |
-| E0311 | A local named like a type | `let Shape = 3;`, `fun f(Point: i64)` |
+| E0311 | A local named like a type or an imported module | `let Shape = 3;`, `fun f(Point: i64)` |
 | E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` (v2) |
+| E0313 | Another module's `private` item, method or field | `range.helper()`; `r.lo`; `range.Range { lo: 1, hi: 5 }` (v2) |
 | E0314 | Import clash | `import a.util;` and `import b.util;` in one file; an import named like an item (v2) |
+| E0317 | `public` before packages exist | `public fun f() {}` (v2) |
+| E0318 | A `private` type in a non-`private` signature | `private struct S {}` then `fun make(): S` (v2) |
 | E0319 | The main file imported | a module writing `import main;` (v2) |
 | E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
 | E0402 | Integer literal out of range for its type | `let b: u8 = 256;` |
@@ -922,6 +946,30 @@ fun main() {
 }
 ```
 
+**Two modules** (milestone 10). Prints `3.5`, exits with 0. The two files sit in one directory, and `lughac run main.la` builds both.
+
+```
+// geometry.la
+struct Vec2 { x: f64, y: f64 }
+
+impl Vec2 {
+    fun add(self, o: Vec2): Vec2 = Vec2 { x: self.x + o.x, y: self.y + o.y };
+}
+
+fun origin(): Vec2 = Vec2 { x: 0.0, y: 0.0 };
+```
+
+```
+// main.la
+import geometry;
+
+fun main() {
+    let mut p = geometry.origin();
+    p = p.add(geometry.Vec2 { x: 1.5, y: 2.0 });
+    println(p.x + p.y);
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -937,6 +985,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 7 | Methods (v1) | `impl`, `self`/`mut self`, associated functions, method calls | The methods program in section 10 passes (done) |
 | 8 | Growable arrays (v1) | `push`, `pop`, `clear` on `T[]` | The stack program in section 10 passes (done: v1 complete) |
 | 9 | Patterns and equality (v2) | deep `==` on every type, string order, nested patterns, guards, W0103 | The patterns program in section 10 passes (done) |
+| 10 | Modules (v2) | `import`, per-module names, `m.f`/`m.T`, `private` (E0313), `public` reserved (E0317), no leaking (E0318), module symbols | The two-module program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

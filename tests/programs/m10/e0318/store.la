@@ -1,0 +1,3 @@
+private struct Entry { key: string }
+
+fun first(): Entry = Entry { key: "a" };

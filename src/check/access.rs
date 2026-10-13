@@ -13,6 +13,7 @@ impl Checker {
             (Type::Error | Type::Never, _) => Type::Error,
             (Type::String | Type::Array(_), "len") => Type::I64,
             (Type::Struct(s), name) if self.struct_field(&s, name).is_some() => {
+                self.field_visible(&s, name, field.span);
                 self.struct_field(&s, name).expect("just found")
             }
             (ty, name) => {

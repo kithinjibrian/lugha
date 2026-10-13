@@ -3,10 +3,9 @@
 
 use std::collections::HashSet;
 
-use super::{GENERICS, Gated, MODULES, VISIBILITY};
+use super::{GENERICS, Gated};
 use crate::ast::{
     Block, Expr, ExprKind, ForIter, FunDecl, Item, Stmt, StmtKind, Type, TypeKind, TypeParam,
-    Visibility,
 };
 use crate::span::Span;
 
@@ -26,12 +25,6 @@ impl Walk<'_> {
         });
     }
 
-    fn visibility(&mut self, v: Option<Visibility>) {
-        if let Some(v) = v {
-            self.hit(VISIBILITY, v.span);
-        }
-    }
-
     fn type_params(&mut self, params: &[TypeParam]) {
         if let Some(param) = params.first() {
             self.hit(GENERICS, param.name.span);
@@ -42,20 +35,16 @@ impl Walk<'_> {
         match item {
             Item::Fun(f) => self.fun(f),
             Item::Extern(e) => {
-                self.visibility(e.visibility);
                 e.params.iter().for_each(|p| self.ty(&p.ty));
                 e.ret.iter().for_each(|t| self.ty(t));
             }
             Item::Struct(s) => {
-                self.visibility(s.visibility);
                 self.type_params(&s.type_params);
                 for field in &s.fields {
-                    self.visibility(field.visibility);
                     self.ty(&field.ty);
                 }
             }
             Item::Enum(e) => {
-                self.visibility(e.visibility);
                 self.type_params(&e.type_params);
                 e.variants
                     .iter()
@@ -63,9 +52,6 @@ impl Walk<'_> {
                     .for_each(|t| self.ty(t));
             }
             Item::Impl(i) => {
-                if let Some(module) = &i.module {
-                    self.hit(MODULES, module.span);
-                }
                 if let Some(param) = i.params.first() {
                     self.hit(GENERICS, param.span);
                 }
@@ -75,7 +61,6 @@ impl Walk<'_> {
     }
 
     fn fun(&mut self, f: &FunDecl) {
-        self.visibility(f.visibility);
         self.type_params(&f.type_params);
         f.params.iter().for_each(|p| self.ty(&p.ty));
         f.ret.iter().for_each(|t| self.ty(t));
@@ -85,10 +70,10 @@ impl Walk<'_> {
     fn ty(&mut self, ty: &Type) {
         match &ty.kind {
             TypeKind::Array(inner) | TypeKind::Option(inner) => self.ty(inner),
+            // Type arguments are generics; `m.T` alone is a module's type (PRP-034).
             TypeKind::Applied(applied) => {
-                if applied.module.is_some() {
-                    self.hit(MODULES, ty.span);
-                } else if self.declared.contains(applied.name.name.as_str()) {
+                let declared = self.declared.contains(applied.name.name.as_str());
+                if !applied.args.is_empty() && (declared || applied.module.is_some()) {
                     self.hit(GENERICS, ty.span);
                 }
                 applied.args.iter().for_each(|t| self.ty(t));
@@ -152,12 +137,7 @@ impl Walk<'_> {
                 self.expr(callee);
                 args.iter().for_each(|a| self.expr(a));
             }
-            ExprKind::StructLit(lit) => {
-                if lit.module.is_some() {
-                    self.hit(MODULES, e.span);
-                }
-                lit.fields.iter().for_each(|(_, v)| self.expr(v));
-            }
+            ExprKind::StructLit(lit) => lit.fields.iter().for_each(|(_, v)| self.expr(v)),
             ExprKind::Array(elements) => elements.iter().for_each(|x| self.expr(x)),
             ExprKind::If { cond, then, else_ } => {
                 self.expr(cond);

@@ -14,7 +14,7 @@ impl Checker {
         if let Some(local) = self.local(name) {
             return local.ty;
         }
-        if self.functions.contains_key(name) || INTRINSICS.contains(&name) {
+        if self.functions.contains_key(&self.key(name)) || INTRINSICS.contains(&name) {
             self.report(errors::not_value(name, span));
         } else {
             self.report(errors::undefined(name, span));
@@ -35,14 +35,24 @@ impl Checker {
             self.report(errors::not_function(name, callee.span));
             return self.unchecked_args(args);
         }
-        let Some(signature) = self.functions.get(name) else {
+        let key = self.key(name);
+        if !self.functions.contains_key(&key) {
             if INTRINSICS.contains(&name.as_str()) {
                 return self.intrinsic(call, name, args);
             }
             self.report(errors::undefined(name, callee.span));
             return self.unchecked_args(args);
-        };
+        }
+        self.call_key(call, &key, args)
+    }
+
+    /// A call of the function or extern with key `key`, recorded for codegen
+    /// (`Checked::callees`): arity, then each argument against its parameter.
+    pub(super) fn call_key(&mut self, call: &Expr, key: &str, args: &[Expr]) -> Type {
+        self.callees.insert(call.id, key.to_string());
+        let signature = &self.functions[key];
         let (params, ret) = (signature.params.clone(), signature.ret.clone());
+        let name = key.rsplit('.').next().unwrap_or(key);
         if args.len() != params.len() {
             self.report(errors::arity(name, params.len(), args.len(), call.span));
             self.unchecked_args(args);
@@ -87,7 +97,7 @@ impl Checker {
     }
 
     /// Checks arguments of a call that is already wrong, for their own errors.
-    fn unchecked_args(&mut self, args: &[Expr]) -> Type {
+    pub(super) fn unchecked_args(&mut self, args: &[Expr]) -> Type {
         for arg in args {
             self.expr(arg, None);
         }

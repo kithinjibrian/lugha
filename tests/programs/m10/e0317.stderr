@@ -1,0 +1,8 @@
+error[E0317]: `public` needs packages (v3)
+  --> tests/programs/m10/e0317.la:1:1
+  |
+1 | public fun f() {}
+  | ^^^^^^
+  |
+  = help: remove it: everything is already visible to the whole program
+

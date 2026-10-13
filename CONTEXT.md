@@ -2146,7 +2146,63 @@ CLAUDE.md (stages, tree, known issue), TODO.md, CHANGELOG.md, MEMORY.md (decisio
 
 ## SESSION 42 — 2026-10-13 — Names across modules (PRP-034) — open
 
-Branch: prp-034-module_names
+Branch: main → prp-034-module_names
+
+### WHAT WAS DONE
+
+Discovery (2 questions, each answered with the recommended option):
+- `/` after the module path in symbols;
+- full module paths in messages.
+
+PRP-034 approved.
+
+Implemented PRP-034:
+- **Ids:** one id space across modules.
+- **Checker:** keys, every pass over every module, imports, `m.f`/`m.T`/`m.T { … }`/`m.T.f()`/`m.T.V`, the callee and annotation side tables, and visibility (E0313, E0317, E0318).
+- **Codegen:** all modules, `/` symbols, panic locations per file.
+- **Gate:** reduced to generics.
+- **Spec:** module sections and the two-module §10 program, with the spec extraction now handling multi-file examples.
+- **Approved splits:** three.
+
+**Milestone 10 complete.** 305 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/check/modules/{mod,lookup}.rs, src/check/visibility.rs, src/check/struct_literal.rs (new)
+src/check/{mod,env,structs,enums,methods,method_calls,call,access,expr,body}.rs, src/check/errors/names.rs
+src/codegen/declare.rs (new); src/codegen/{mod,lower,function,methods,expr,value,enums,runtime,heap}.rs
+src/parser/mod.rs (parse_from), src/modules/{mod,tests}.rs; src/driver/{pipeline}.rs, src/driver/gate/{mod,walk}.rs
+tests/modules.rs (run + IR symbols), tests/common/spec_programs.rs, tests/spec.rs
+tests/programs/m10/ (two_modules/, modules/, e0313_field/, e0318/, e0317.la + expectations)
+docs/specs/Language v2 Specification.md (milestone 10), Language v2 Draft.md (symbols)
+PRPs/prp-034-module_names.md — new PRP; implemented; amendments
+CLAUDE.md (rule 7, tree, known issue), README.md, TODO.md, CHANGELOG.md, MEMORY.md (decision 39)
+```
+
+### TESTS WRITTEN
+
+- **Checker (`check/modules`):**
+  - keys;
+  - every cross-module form;
+  - separate namespaces;
+  - E0301/E0305/E0311/E0304/E0306;
+  - full-path messages.
+- **Visibility:** E0313 (functions, associated functions, methods, field read, assign and `swap`, literals), E0317 ×3, E0318 ×3, and private things allowed in their own module.
+- **CLI and IR:** programs that import run; module symbols, separate `f`s, one shared extern.
+- **Acceptance:**
+  - `m10/two_modules` (`3.5`);
+  - `m10/modules` (7 lines plus a panic in `range.la:12:7`, exit 101);
+  - goldens `e0313_field`, `e0318`, `e0317`;
+  - the spec's §10 two-module program at -O0/-O2.
+
+### DECISIONS MADE
+
+- MEMORY 39.
+
+### PENDING DECISIONS OPENED
+
+- None.
 
 ---
 

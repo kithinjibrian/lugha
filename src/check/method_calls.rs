@@ -21,10 +21,7 @@ impl Checker {
         let ExprKind::Field(base, name) = &callee.kind else {
             return None;
         };
-        if let ExprKind::Name(t) = &base.kind
-            && self.local(t).is_none()
-            && let Some(ty) = self.named_type(t)
-        {
+        if let Some(ty) = self.type_named_by(base) {
             let method = self.method(&ty, &name.name);
             if method.is_none() && matches!(ty, Type::Enum(_)) {
                 return None; // `E.V(..)`: a variant, or E0415 from construction
@@ -48,7 +45,15 @@ impl Checker {
         args: &[Expr],
     ) -> Type {
         match method {
-            Some(m) if m.receiver.is_none() => self.arguments(call, &name.name, &m, args),
+            Some(m) if m.receiver.is_none() => {
+                if let Type::Struct(owner) | Type::Enum(owner) = ty {
+                    self.method_visible(owner, &name.name, name.span);
+                    // Codegen finds `T.f` / `m.T.f` by this key (PRP-034).
+                    self.callees
+                        .insert(call.id, format!("{owner}.{}", name.name));
+                }
+                self.arguments(call, &name.name, &m, args)
+            }
             found => {
                 let help = found.map(|_| format!("call it on a value: `x.{}(…)`", name.name));
                 self.report(errors::no_method(&name.name, ty, name.span, help));
@@ -89,6 +94,9 @@ impl Checker {
             self.report(errors::no_method(&name.name, receiver, name.span, help));
             return self.unchecked(args);
         };
+        if let Type::Struct(owner) | Type::Enum(owner) = receiver {
+            self.method_visible(owner, &name.name, name.span);
+        }
         let ret = self.arguments(call, &name.name, &m, args);
         let receiver = PlaceUse::Receiver(&name.name);
         // E0510 explains a change to the root better than E0508's "mentions it".

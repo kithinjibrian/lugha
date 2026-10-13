@@ -1,0 +1,7 @@
+import geometry;
+
+fun main() {
+    let mut p = geometry.origin();
+    p = p.add(geometry.Vec2 { x: 1.5, y: 2.0 });
+    println(p.x + p.y);
+}

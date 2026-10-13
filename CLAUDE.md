@@ -166,7 +166,7 @@ The language itself is defined by `docs/specs/Language v2 Specification.md` (`lu
 4. **Codegen never infers types.** It reads the checker's expression → type side table. *Why:* opaque pointers need the element type on every load/store/GEP (spec §9), and two type computations will disagree.
 5. **User-program errors are `Diagnostic` records, never panics or strings.** Each has a stable code from its stage's range (E01xx lex … E05xx, W01xx). New codes take the next unused number; a code is never reused or renumbered. Human and JSON output render from the same record. *Why:* spec §9; codes are a public contract.
 6. **Exit codes are 0 / 1 / 2.** 1 = the user's program has errors; 2 = bad CLI usage or internal compiler error. A `module.verify()` failure or a Rust panic inside lughac is exit 2, never 1. *Why:* spec §9; tools tell "your bug" from "our bug" by it.
-7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, equality helpers → `lugha_eq_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
+7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, items of a module other than the main file → the module path joined with `/` first (`lugha_fn_shapes/circle/area`, `lugha_fn_shapes/circle/Circle.area`), runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, equality helpers → `lugha_eq_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
 8. **Generated code allocates only through `lugha_rt_alloc`.** Never emit calls to `malloc`. *Why:* Boehm can't see `malloc` memory and will free live objects.
 9. **Follow the milestone order (spec §11).** The lexer and parser cover the full §2–§3 syntax. The checker and codegen implement only the current milestone's subset; in milestones 1–2 treat every value as `i64`. *Why:* each milestone must end in a running program, while syntax is cheap to do once and fully specified.
 10. **The §10 programs are the acceptance tests.** Their stdout and exit codes must match exactly. *Why:* they define "conforming compiler".
@@ -244,12 +244,14 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (declarations, E0307/E0308, literals), liveness.rs (move on last use), enums.rs
 │   │                  (declarations, construction), matching.rs (match, guards, W0103), patterns.rs (pattern typing),
 │   │                  usefulness.rs (E0417 witnesses, W0102), methods.rs (impl,
-│   │                  E0310), method_calls.rs (calls, receivers, E0415, E0508), builtins.rs (push, pop, clear), swap.rs (swap, E0509), conflicts.rs (E0510), errors/ (mod.rs, names.rs E03xx,
+│   │                  E0310), method_calls.rs (calls, receivers, E0415, E0508), builtins.rs (push, pop, clear), swap.rs (swap, E0509), conflicts.rs (E0510), modules/ (mod.rs check_modules,
+│   │                  keys, passes; lookup.rs m.f / m.T, externs, main), visibility.rs (E0313/E0317/E0318),
+│   │                  struct_literal.rs (S { … }, m.S { … }), errors/ (mod.rs, names.rs E03xx,
 │   │                  types.rs E04xx, places.rs E05xx/W01xx)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
-│   │                  function.rs (signatures, bodies, return, calls), runtime.rs (intrinsics, string
+│   │                  function.rs (bodies, return, calls), declare.rs (signatures, symbols, C ABI), runtime.rs (intrinsics, string
 │   │                  literals, panics), heap.rs (headers, element layout, bounds checks, string ops),
 │   │                  array.rs (allocation, list/repeat literals, for … of), copy.rs (deep copies, copy sites, mangle), equality.rs (deep ==, lugha_eq_*),
 │   │                  structs.rs (named types, layout, literals, fields, place addresses), enums.rs
@@ -304,7 +306,7 @@ Update this tree when modules or `tests/` are added.
 
 These look like bugs but are specified behavior:
 
-- **v2 constructs stop with `not implemented yet: … (milestone N)`, exit 2,** until their milestone lands (PRP-030 gate): `import`, `private`/`public` and qualified names (milestone 10), generics (11). They parse, and `--emit=ast` shows them. Each milestone PRP deletes its gate entries.
+- **v2 constructs stop with `not implemented yet: … (milestone N)`, exit 2,** until their milestone lands (PRP-030 gate): only generics (milestone 11) remain. They parse, and `--emit=ast` shows them. Each milestone PRP deletes its gate entries.
 
 - **A function whose only exit is a `return` inside `while true` is rejected** as missing a return. Spec §6 rejects it on purpose to keep return checking simple; users add `panic("unreachable");`.
 - **Integer overflow always panics**, even at `-O2`. Spec §12 decided against wrapping.

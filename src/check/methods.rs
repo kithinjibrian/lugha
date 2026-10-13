@@ -26,9 +26,11 @@ impl Checker {
     pub(super) fn collect_methods(&mut self, program: &Program) {
         for item in &program.items {
             let Item::Impl(i) = item else { continue };
-            let owner = &i.ty.name;
-            let Some(ty) = self.named_type(owner) else {
-                self.report(errors::unknown_type(owner, i.ty.span));
+            // An `impl` belongs to its type's module, so it never names one.
+            let owner = &self.key(&i.ty.name);
+            let ty = self.named_type(owner).filter(|_| i.module.is_none());
+            let Some(ty) = ty else {
+                self.report(errors::unknown_type(&i.ty.name, i.ty.span));
                 continue;
             };
             for f in &i.methods {
@@ -44,6 +46,7 @@ impl Checker {
                     self.report(errors::method_named_like(name, what, owner, f.name.span));
                     continue;
                 }
+                self.register_method(owner, name, f.visibility);
                 let method = Method {
                     receiver: f.receiver.map(|r| r.mutable),
                     params,
@@ -62,15 +65,12 @@ impl Checker {
     pub(super) fn method_bodies(&mut self, program: &Program) {
         for item in &program.items {
             let Item::Impl(i) = item else { continue };
-            let Some(ty) = self.named_type(&i.ty.name) else {
+            let owner = self.key(&i.ty.name);
+            let Some(ty) = self.named_type(&owner) else {
                 continue;
             };
             for f in &i.methods {
-                let Some(m) = self
-                    .methods
-                    .get(&i.ty.name)
-                    .and_then(|m| m.get(&f.name.name))
-                else {
+                let Some(m) = self.methods.get(&owner).and_then(|m| m.get(&f.name.name)) else {
                     continue;
                 };
                 if m.span != f.name.span {
@@ -82,7 +82,7 @@ impl Checker {
         }
     }
 
-    /// The struct or enum type called `name`.
+    /// The struct or enum type with key `name`.
     pub(super) fn named_type(&self, name: &str) -> Option<Type> {
         if self.structs.contains_key(name) {
             Some(Type::Struct(name.to_string()))
