@@ -3104,6 +3104,11 @@ Branch: prp-050-generic_interface_bounds (merged into main)
 
 ---
 
+## SESSION 65 — 2026-10-13 — Generic interface values (milestone 23, part 2) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 23, part 1 done** (PRP-050, MEMORY 60): generic interfaces as bounds — `interface Source<T>`, `S: Source<T>`, inference through bounds, generic defaults. `Language v6 Specification.md` (in progress) is what `lughac spec` prints; v5 is frozen.
