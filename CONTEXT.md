@@ -2821,7 +2821,7 @@ Branch: prp-044-input_output
 
 ## SESSION 56 — 2026-10-13 — String literals inside interpolations — open
 
-Branch: main
+Branch: prp-045-nested_strings
 
 ---
 
