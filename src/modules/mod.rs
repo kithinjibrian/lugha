@@ -133,6 +133,27 @@ pub fn load(
     Ok(loaded)
 }
 
+/// The prelude's module path. `$` can't start a module name, so no file clashes.
+pub const PRELUDE_PATH: &str = "$prelude";
+
+/// Appends the prelude (`lugha::PRELUDE`) to `modules`, after the last one
+/// in the shared offset space, numbering its expressions after theirs.
+/// Its diagnostics, which only a compiler bug can cause, go to `diagnostics`.
+pub fn with_prelude(modules: &mut Vec<Module>, diagnostics: &mut Vec<Diagnostic>) {
+    let base = modules.last().map_or(0, |m| m.base + m.text.len() + 1);
+    let first_id = modules
+        .iter()
+        .filter_map(|m| m.program.as_ref())
+        .map(|p| p.expr_count)
+        .max()
+        .unwrap_or(0);
+    let path = vec![PRELUDE_PATH.to_string()];
+    let bytes = crate::PRELUDE.as_bytes().to_vec();
+    let file = PathBuf::from("<prelude>");
+    let module = parse_module(path, file, (base, first_id), bytes, diagnostics);
+    modules.push(module);
+}
+
 /// Decodes, lexes and parses one file at `base`, numbering its expressions
 /// from `first_id`, and moves its diagnostics into the shared offset space.
 fn parse_module(

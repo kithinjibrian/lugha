@@ -1,16 +1,17 @@
-# Lugha v3 Specification (in progress: milestone 15)
+# Lugha v3 Specification
 
 Oct 13, 2026 · @kithinji
 
-**Status:** v3 is being built milestone by milestone (13–16). The plan is `Language v3 Draft.md`. This file describes exactly what `lughac` implements now, and is what `lughac spec` prints. `Language v2 Specification.md` keeps v2 frozen.
+**Status:** complete (milestones 13–16). It is built from the approved plan, `Language v3 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v2 Specification.md` keeps v2 frozen.
 
 **v2.** This is v1.2 plus deep `==` and string order, nested patterns and guards, modules with `private`, generics with `Eq`/`Ord` bounds, and interfaces as bounds (milestones 9–12).
 
-**Changes since v2** (milestones 13–15):
+**Changes since v2** (milestones 13–16):
 - `args()` returns the program's command-line arguments, and `parse_i64`/`parse_f64` turn text into numbers, returning an `Option` (section 5).
 - String literals interpolate: `"{name} is {age}"`, with `{{` and `}}` for literal braces (sections 2, 3, 5).
 - Functions are values: `fun(i64): i64` is a type, a named function can be stored, passed and returned, and any value of function type can be called (sections 3, 4).
 - Closures: `fun(x) = x + k` and `fun(x: i64): i64 { … }` are function values that capture the variables they mention, by copy and read-only (sections 3, 4, 7).
+- Arrays have `map`, `filter`, `fold`, `sort_by`, `any` and `all`, each taking a function value and returning a new value (section 4).
 
 Every valid v2 program is a valid v3 program unless it has a `{` or `}` in a string literal (write `{{` or `}}`; E0111 points at each one), or defines a function named `args`, `parse_i64` or `parse_f64`.
 
@@ -382,6 +383,18 @@ Calling a method that doesn't exist, a `self` method on a type or an associated 
 
 They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (E0501), not inside a string (E0506), and not an array being iterated by `for … of` (E0507). `push` stores its value like an assignment does — copied from a place, moved on last use — and reads it before the array grows, so `xs.push(xs[0])` simply appends a copy of the first element (E0508 doesn't apply). `pop` moves the element out. Indexing is still bounds-checked against the current `.len`, and copying an array copies its current elements.
 
+**Array helpers** (v3). Every array `xs: T[]` also has these methods. Each takes `self`: the receiver never changes, and every array it returns is new.
+
+| Method | Arguments | Result |
+| --- | --- | --- |
+| `xs.map(f)` | `f: fun(T): U` | `U[]`: `f` applied to each element, in order |
+| `xs.filter(f)` | `f: fun(T): bool` | `T[]`: the elements for which `f` is true, in order |
+| `xs.fold(init, f)` | `init: A`, `f: fun(A, T): A` | `A`: `f(…f(f(init, xs[0]), xs[1])…)`, left to right |
+| `xs.sort_by(less)` | `less: fun(T, T): bool` | `T[]`: sorted so that `less` holds between neighbours or neither way, stably (equal elements keep their order) |
+| `xs.any(f)` / `xs.all(f)` | `f: fun(T): bool` | `bool`, stopping at the first element that decides |
+
+`T` comes from the receiver, and the other type arguments (`U`, `A`) are inferred as for any generic call, so a closure argument needs no written types: `xs.map(fun(x) = "{x}")` is a `string[]`, its result type coming from the closure's body. Arity and argument types are checked at the call (E0405, E0403). `f` runs once per element it is given, in order; a panic inside it stops the program as usual. If `less` is inconsistent, `sort_by` still returns every element exactly once, in some order. The helpers chain: `people.filter(fun(p) = p.age >= 18).map(fun(p) = p.name)`. Functions named `map`, `filter` and so on in a program are unaffected: the helpers exist only as array methods.
+
 **Generic declarations.** `fun`, `struct`, `enum` and methods can take type parameters.
 - **Scope:** a type parameter is a type inside its declaration (fields, payloads, signature and body), and a method also sees its `impl`'s parameters. It may not be named like a type, a module or another parameter of the same declaration, nor a method's like its `impl`'s (E0316).
 - **Bounds:** `T: Eq`, `T: Ord`, interfaces (below), or several (`T: Shape + Eq`). Anything else is E0315. `Ord` doesn't imply `Eq`; write both if both are used.
@@ -644,6 +657,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - A generic instance adds its type arguments as they print, with module paths joined by `/`: `lugha_fn_max<i64>`, `lugha_fn_a/b/max<a/b/Point>`. A method's go on its type, then its own: `lugha_fn_Stack<string>.push`, `lugha_fn_Stack<string>.tag<f64>`. `<` can't appear in a Lugha name, so instances can't collide with anything else.
 - A function used as a value (v3) is called through `lugha_ref_<symbol>`, a wrapper that takes an environment pointer first and calls `lugha_fn_<symbol>`: `lugha_ref_double`, `lugha_ref_max<i64>`, `lugha_ref_Point.at`. It is emitted once, when first needed.
 - A closure's body (v3) is `lugha_closure_<enclosing>.<n>`: the enclosing function's symbol without its prefix, then the closure's number in that function from 0 (`lugha_closure_main.0`, `lugha_closure_main.0.0` for a closure inside it, `lugha_closure_max<i64>.0` in an instance). Its environment comes first, as for every function value's code.
+- The array helpers (v3) are generic functions of a prelude written in Lugha, bundled with the compiler and checked with every program, under the module path `$prelude`, which no program can name: `lugha_fn_$prelude/map<Person, string>`. Each is compiled only at the types a program uses.
 - An extern follows the visibility rules of section 6, and the same C function may be declared in several modules only with identical signatures (E0306); it is one symbol.
 - Runtime library functions use the `lugha_rt_` prefix. Neither prefix is a prefix of the other, so a Lugha function can never collide with a runtime function, whatever its name.
 - Extern names starting with `lugha_` are reserved and rejected with an E03xx error, so an extern declaration can't collide with either.
@@ -673,6 +687,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 - **Array copies:** generate one deep-copy function per type that contains arrays (for example `lugha_copy_i64_arr_arr`, or `lugha_copy_5Point_arr` — struct names are length-prefixed so they can't be confused with `_arr` or primitive names; the `lugha_copy_` prefix is disjoint from `lugha_fn_` and `lugha_rt_`), and call it at each copy site listed in section 4. For arrays of plain values, the copy is one `lugha_rt_alloc` plus `llvm.memcpy`.
 - **Deep equality:** generate one `lugha_eq_<type>(T, T) -> i1` per struct, enum, `Option` or array type compared, with the copy helpers' type names (`lugha_eq_1L_opt` for `Option<L>`). Numbers and `bool` compare inline, and strings through `lugha_rt_str_eq`.
 - **Struct, enum and array arguments:** pass a pointer to the caller's storage rather than the value itself, since the callee can't modify it.
+- **Array helpers** (v3): `xs.map(f)` calls the prelude's `map` instance with `xs` first. The prelude is Lugha source like any other (`sort_by` is a bottom-up merge sort between two buffers), so it needs no special lowering; `--emit=tokens|ast` leaves it out, and an error inside it is reported as an internal compiler error.
 - **Calling a function value** (v3): extract its code and environment, and call the code indirectly with the environment as a hidden first argument, then the arguments as for any call (aggregates by pointer).
 - **Monomorphization:** after checking, the checker lists every generic function and method instance reachable from the non-generic code, at concrete type arguments, and every concrete type those instances use (E0420 when they nest too deep). Codegen compiles each instance from its one body by substituting the type arguments into the types the checker recorded; it still never infers a type. Generic structs and enums get one LLVM type per instance, named as they print (`%"Stack<i64>"`), and their own copy and equality helpers (`lugha_copy_10Stack<i64>`).
 - **Methods:** ordinary functions whose first parameter is the receiver. A `self` receiver is passed like a struct argument; a `mut self` receiver is the address of the caller's place itself, so the method's writes land there.
@@ -1191,6 +1206,21 @@ fun main() {
 }
 ```
 
+**Array helpers** (milestone 16). Prints `ann, cy` then `61` then `cy` on three lines, exits with 0.
+
+```
+struct Person { name: string, age: i64 }
+
+fun main() {
+    let people = [Person { name: "ann", age: 30 }, Person { name: "bo", age: 12 }, Person { name: "cy", age: 31 }];
+    let adults = people.filter(fun(p) = p.age >= 18);
+    let names = adults.map(fun(p) = p.name);
+    println(names.fold("", fun(acc, n) = if acc == "" { n } else { "{acc}, {n}" }));
+    println(adults.fold(0, fun(sum, p) = sum + p.age));
+    println(people.sort_by(fun(a, b) = a.age > b.age)[0].name);
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1212,6 +1242,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 13 | Input and interpolation (v3) | `args()`, `parse_i64`, `parse_f64`, string interpolation (E0111), `lughac run … -- args` | The arguments program in section 10 passes (done) |
 | 14 | Functions as values (v3) | function types, named and associated functions as values, calling values, no `==` on functions, `lugha_ref_*` | The functions-as-values program in section 10 passes (done) |
 | 15 | Closures (v3) | closure literals, capture by copy (E0511), parameter inference, `lugha_closure_*`, closures in generic code (E0209) | The closures program in section 10 passes (done) |
+| 16 | Array helpers (v3) | `map`, `filter`, `fold`, `sort_by`, `any`, `all`, from a Lugha prelude | The array-helpers program in section 10 passes (done: v3 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

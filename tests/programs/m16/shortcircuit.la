@@ -1,0 +1,6 @@
+fun main() {
+    // 0 is never reached: each helper stops at the element that decides.
+    let xs = [1, 5, 0];
+    println(xs.any(fun(x) = if x == 0 { panic("any went too far") } else { x > 3 }));
+    println(xs.all(fun(x) = if x == 0 { panic("all went too far") } else { x < 3 }));
+}

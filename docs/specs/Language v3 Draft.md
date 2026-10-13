@@ -127,7 +127,7 @@ A closure that panics stops the program as usual.
 **Lowering notes.**
 - **Calling a function value:** pass its environment pointer as a hidden first argument to its code pointer. Aggregates are passed by pointer, as for ordinary calls.
 - **Monomorphization:** each instance compiles its own closures; a closure's captured types are concrete there.
-- **Array methods** are emitted inline, like `push`, with bounds-free loops over the receiver. `sort_by` is a stable merge sort into a new array, allocated through `lugha_rt_alloc`.
+- **Array methods** are generic functions of a prelude written in Lugha and bundled with the compiler (amended by PRP-041; this draft first had them emitted inline). `sort_by` is a stable merge sort into a new array.
 - **Interpolated strings** lower to the same formatting the print intrinsics use, concatenated into one string.
 
 **Runtime.** It gains:
@@ -244,5 +244,5 @@ fun main() {
 
 - [ ] **Printing function values:** proposed, never (E0403). There's nothing useful to show.
 - [ ] **Closures in interpolations:** `"{f(x)}"` is allowed (a call is an expression). A closure literal inside `{…}` would need braces inside braces; proposed, allowed only if the lexer can match nesting simply, else E0111.
-- [ ] **`sort_by` with an inconsistent `less`:** the result is some order of the elements, never a crash or lost element; documented rather than checked.
+- [x] **`sort_by` with an inconsistent `less`:** the result is some order of the elements, never a crash or lost element; documented rather than checked. Resolved (PRP-041): documented in §4.
 - [x] **Environment layout for empty captures:** a closure capturing nothing could reuse the null environment. Resolved (PRP-040): yes, as an optimization with no visible effect.

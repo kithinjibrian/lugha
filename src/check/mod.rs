@@ -24,6 +24,7 @@ mod expr;
 mod flow;
 mod fun_values;
 mod generics;
+mod helpers;
 mod infer;
 mod input;
 mod instances;

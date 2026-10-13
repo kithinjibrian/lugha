@@ -78,14 +78,31 @@ pub(super) fn parsed(path: &Path) -> Result<Front, Failure> {
 /// Reads, lexes, parses and type-checks `path` (spec §9 stages 1–3).
 pub(super) fn front(path: &Path) -> Result<Front, Failure> {
     let mut front = parsed(path)?;
+    // The prelude's array helpers (v3) are checked and compiled with every program.
+    let mut prelude_errors = Vec::new();
+    modules::with_prelude(&mut front.modules, &mut prelude_errors);
+    let prelude = front.modules.last().expect("the prelude was just added");
+    front.source.add("<prelude>", prelude.base, &prelude.text);
+    let start = prelude.base;
     match check::check_modules(&units(&front.modules)) {
-        Ok((checked, warnings)) => {
+        Ok((checked, warnings)) if prelude_errors.is_empty() => {
             front.warnings.extend(warnings);
             front.checked = Some(checked);
             Ok(front)
         }
-        Err(errors) => Err(Failure::Program(front.source, errors)),
+        Ok(_) => Err(prelude_failure(&front.source, &prelude_errors)),
+        // A mistake inside the prelude is the compiler's, not the program's.
+        Err(errors) => match errors.iter().find(|d| d.span.start >= start) {
+            Some(_) => Err(prelude_failure(&front.source, &errors)),
+            None => Err(Failure::Program(front.source, errors)),
+        },
     }
+}
+
+/// An internal error for a diagnostic inside the prelude: a compiler bug.
+fn prelude_failure(source: &Source, errors: &[Diagnostic]) -> Failure {
+    let first = errors.first().map_or("an error", |d| d.message.as_str());
+    internal(source, format!("the prelude doesn't check: {first}"))
 }
 
 /// The program's LLVM IR, for `--emit=ir`.

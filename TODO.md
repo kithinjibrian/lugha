@@ -115,9 +115,9 @@ Done when the functions-as-values program passes.
 Done when the closures program passes.
 - [x] PRP-040: closure literals, capture by copy (E0511), parameter inference, `lugha_closure_*`, closures in generic code (E0209)
 
-### Milestone 16 — Array helpers
+### Milestone 16 — Array helpers ✅
 Done when the array-helpers program passes and the v3 spec is complete.
-- [ ] `map`, `filter`, `fold`, `sort_by`, `any`, `all`
+- [x] PRP-041: `map`, `filter`, `fold`, `sort_by`, `any`, `all`, written in the Lugha prelude (`src/prelude.la`) — v3 complete
 
 ## Found while working — needs a PRP
 

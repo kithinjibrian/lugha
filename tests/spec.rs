@@ -67,6 +67,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Arguments and interpolation",
         "Functions as values",
         "Closures",
+        "Array helpers",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

@@ -1,0 +1,6 @@
+error[E0403]: expected bool, found i64
+  --> tests/programs/m16/e0403.la:3:36
+  |
+3 |     let evens = xs.filter(fun(x) = x % 2);
+  |                                    ^^^^^ expected bool
+

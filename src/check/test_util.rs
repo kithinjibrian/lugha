@@ -1,9 +1,39 @@
 //! Test helpers for the checker's unit tests: check a source and look at
 //! its types, errors or warnings.
 
-use super::{Checked, Type, check};
-use crate::ast::{Item, StmtKind};
+use super::{Checked, Type, Unit, check_modules};
+use crate::ast::{Item, Program, StmtKind};
+use crate::diagnostic::Diagnostic;
+use crate::modules::{Module, with_prelude};
 use crate::{lexer, parser};
+
+/// Checks `program` as the main file, with the prelude after it as in
+/// every real program (PRP-041).
+fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
+    let main = Module {
+        path: Vec::new(),
+        file: "test.la".into(),
+        base: 0,
+        // Only the prelude's base depends on it: past every test source.
+        text: " ".repeat(1 << 16),
+        program: Some(program.clone()),
+    };
+    let mut modules = vec![main];
+    let mut prelude_errors = Vec::new();
+    with_prelude(&mut modules, &mut prelude_errors);
+    assert!(
+        prelude_errors.is_empty(),
+        "the prelude parses: {prelude_errors:?}"
+    );
+    let units: Vec<Unit> = modules
+        .iter()
+        .map(|m| Unit {
+            path: &m.path,
+            program: m.program.as_ref().expect("both parsed"),
+        })
+        .collect();
+    check_modules(&units)
+}
 
 fn program(src: &str) -> crate::ast::Program {
     let (tokens, _) = lexer::lex(src).expect("test source lexes");

@@ -2589,6 +2589,48 @@ Branch: prp-040-closures
 
 Branch: prp-041-array_helpers
 
+### WHAT WAS DONE
+
+- Discovery: the helpers are written in Lugha in a bundled prelude (amends the draft's "inline" note). PRP-041 written and approved.
+- Prelude: `src/prelude.la` (`map`, `filter`, `fold`, `sort_by` stable merge sort, `any`, `all`) as module `$prelude`, appended on the checking path (`modules::with_prelude`, `pipeline::front`); errors in it are internal.
+- Checker:
+  - `check/helpers.rs`: array helper calls;
+  - `infer::bind`;
+  - partial closure hints, so `U` comes from a closure body;
+  - test helpers load the prelude.
+- Codegen: helper calls go to prelude instances with the receiver first.
+- Spec: v3 complete (title, status, §4 helpers, §9 prelude, §10 program, §11 row 16); draft notes amended or resolved.
+
+### FILES CREATED OR MODIFIED
+
+- New: `src/prelude.la`, `src/check/helpers.rs`, `tests/programs/m16/`, the PRP.
+- Modified:
+  - `src/lib.rs` (`PRELUDE`), `src/modules/mod.rs`, the driver (`pipeline.rs`, `source.rs`);
+  - the checker (`mod.rs`, `method_calls.rs`, `infer.rs`, `closures.rs`, `test_util.rs`);
+  - codegen (`methods.rs`);
+  - tests (`cli.rs`, `spec.rs`, `modules.rs`);
+  - docs: the specs, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (decision 48).
+
+### TESTS WRITTEN
+
+- Checker (4): types, chaining, errors, names.
+- Driver: the prelude in emit output.
+- `m16/`:
+  - helpers;
+  - sort (stability, unchanged receiver, 1000 elements);
+  - shortcircuit;
+  - structs;
+  - the e0403 golden.
+- The §10 array-helpers program.
+
+### DECISIONS MADE
+
+- MEMORY 48; PRP amendments.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

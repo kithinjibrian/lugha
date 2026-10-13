@@ -113,6 +113,20 @@ impl<'ctx> Lowerer<'ctx> {
         };
         let base_type = self.ty(base);
         if let Type::Array(_) = base_type {
+            // `xs.map(f)` and the other helpers call the prelude (v3, PRP-041).
+            let key = self.callees.get(&call.id).cloned();
+            if let Some(helper) = key.and_then(|k| self.instance_of(call, &k)) {
+                let mut values: Vec<BasicMetadataValueEnum> =
+                    vec![self.get(base, &base_type)?.into()];
+                values.extend(self.arguments(args, &helper.signature.params[1..], false)?);
+                let site = self
+                    .builder
+                    .build_call(helper.signature.function, &values, "helper");
+                return Ok(Some(match site.expect(POSITIONED).try_as_basic_value() {
+                    ValueKind::Basic(result) => Value::Val(result),
+                    ValueKind::Instruction(_) => Value::Void,
+                }));
+            }
             return self.array_builtin(base, &name.name, args).map(Some);
         }
         // The checker gives a type name `void` (associated calls and variants).

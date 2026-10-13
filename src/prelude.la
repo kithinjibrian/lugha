@@ -1,0 +1,96 @@
+// The Lugha prelude (v3 draft §4, PRP-041): the array helpers behind
+// `xs.map(f)`, `xs.filter(f)`, `xs.fold(init, f)`, `xs.sort_by(less)`,
+// `xs.any(f)` and `xs.all(f)`. It is checked with every program and each
+// helper is compiled only for the element types a program uses. Programs
+// can't name this module; an array method call is the only way in.
+//
+// Every helper takes its array as an ordinary parameter, so the caller's
+// array never changes, and every array it returns is new.
+
+// `f` applied to each element, in order.
+fun map<T, U>(xs: T[], f: fun(T): U): U[] {
+    let mut out: U[] = [];
+    for x of xs {
+        out.push(f(x));
+    }
+    out
+}
+
+// The elements for which `keep` is true, in order.
+fun filter<T>(xs: T[], keep: fun(T): bool): T[] {
+    let mut out: T[] = [];
+    for x of xs {
+        if keep(x) {
+            out.push(x);
+        }
+    }
+    out
+}
+
+// `f(…f(f(init, xs[0]), xs[1])…)`, left to right.
+fun fold<T, A>(xs: T[], init: A, f: fun(A, T): A): A {
+    let mut acc = init;
+    for x of xs {
+        acc = f(acc, x);
+    }
+    acc
+}
+
+// True at the first element for which `f` is true; later ones aren't tested.
+fun any<T>(xs: T[], f: fun(T): bool): bool {
+    for x of xs {
+        if f(x) {
+            return true;
+        }
+    }
+    false
+}
+
+// False at the first element for which `f` is false; later ones aren't tested.
+fun all<T>(xs: T[], f: fun(T): bool): bool {
+    for x of xs {
+        if !f(x) {
+            return false;
+        }
+    }
+    true
+}
+
+// A stable bottom-up merge sort into a new array: runs of `width` are
+// merged pairwise from `src` into `dst`, then the buffers trade places. On a
+// tie the left run's element goes first, which keeps equal elements in
+// their original order. An inconsistent `less` still gives back every
+// element exactly once, in some order.
+fun sort_by<T>(xs: T[], less: fun(T, T): bool): T[] {
+    let n = xs.len;
+    let mut src = xs;
+    if n < 2 {
+        return src;
+    }
+    let mut dst = xs;
+    let mut width = 1;
+    while width < n {
+        let mut lo = 0;
+        while lo < n {
+            let mid = if lo + width < n { lo + width } else { n };
+            let hi = if mid + width < n { mid + width } else { n };
+            let mut a = lo;
+            let mut b = mid;
+            let mut k = lo;
+            while k < hi {
+                if a < mid && (b >= hi || !less(src[b], src[a])) {
+                    dst[k] = src[a];
+                    a += 1;
+                } else {
+                    dst[k] = src[b];
+                    b += 1;
+                }
+                k += 1;
+            }
+            lo = hi;
+        }
+        swap(src, dst);
+        width *= 2;
+    }
+    src
+}

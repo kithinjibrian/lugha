@@ -92,6 +92,9 @@ impl Checker {
         if matches!(receiver, Type::Error | Type::Never) {
             return self.unchecked(args);
         }
+        if let Some(ty) = self.helper_call(call, (receiver, name), args, expect) {
+            return ty;
+        }
         if let Some(m) = builtin(receiver, &name.name) {
             // Built-ins grow the array in place: the `mut self` place rules
             // apply, but the value is read before the array changes, so

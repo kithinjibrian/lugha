@@ -83,7 +83,11 @@ impl Checker {
             );
             return matches!(found, Type::Error | Type::Never);
         }
-        let found = self.value(e, None);
+        // A closure gets what is known of its type (v3): `fun(T): U` with
+        // `T` bound gives its parameter, and its body decides `U`.
+        let hint = matches!(e.kind, ExprKind::Closure(_))
+            .then(|| Expect::of(unknown(&substitute(&want.ty, bound), names)));
+        let found = self.value(e, hint.as_ref());
         unify(&want.ty, &found, names, bound);
         let ty = substitute(&want.ty, bound);
         if !found.fits(&ty) {
@@ -92,6 +96,22 @@ impl Checker {
         }
         matches!(found, Type::Error | Type::Never)
     }
+}
+
+/// The parameters among `generics` that `declared` puts where `actual` has
+/// a type, as `infer` takes them (`bound`).
+pub(super) fn bind(declared: &Type, actual: &Type, generics: &[Generic]) -> Bound {
+    let names: Vec<&str> = generics.iter().map(|g| g.name.as_str()).collect();
+    let mut bound = Bound::new();
+    unify(declared, actual, &names, &mut bound);
+    bound
+}
+
+/// `ty` with every parameter among `names` that is still unbound replaced by
+/// `Error`, which a closure reads as "not known".
+fn unknown(ty: &Type, names: &[&str]) -> Type {
+    let map: Vec<(String, Type)> = names.iter().map(|n| (n.to_string(), Type::Error)).collect();
+    ty.substitute(&map.into_iter().collect())
 }
 
 /// `ty` with the bound parameters replaced.

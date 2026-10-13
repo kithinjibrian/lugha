@@ -32,8 +32,8 @@ impl Checker {
         for (i, (name, written)) in c.params.iter().enumerate() {
             let ty = match (written, &expected) {
                 (Some(t), _) => self.resolve(t),
-                (None, Some((ps, _))) => ps[i].clone(),
-                (None, None) => {
+                (None, Some((ps, _))) if ps[i] != Type::Error => ps[i].clone(),
+                (None, _) => {
                     self.report(errors::cannot_infer_param(&name.name, name.span));
                     Type::Error
                 }

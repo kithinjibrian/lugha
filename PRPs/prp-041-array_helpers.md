@@ -127,39 +127,39 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (a new `check/helpers.rs`, or in `builtins.rs`):
-- [ ] **Types:**
+- [x] **Types:**
   - `xs.map(fun(x) = x * 2)` is `i64[]`;
   - `xs.map(fun(x) = "{x}")` is `string[]` (`U` from the body);
   - `xs.filter(fun(x) = x > 1)` is `i64[]`;
   - `xs.fold(0, fun(acc, x) = acc + x)` is `i64`;
   - `xs.sort_by(fun(a, b) = a < b)` is `i64[]`;
   - `xs.any(...)` and `xs.all(...)` are `bool`.
-- [ ] **Named functions as arguments:** `xs.map(double)` works.
-- [ ] **Errors:**
+- [x] **Named functions as arguments:** `xs.map(double)` works.
+- [x] **Errors:**
   - `xs.map()` is E0405;
   - `xs.filter(fun(x) = x)` on `i64[]` is E0403;
   - `xs.map(fun(x: string) = x)` on `i64[]` is E0403.
-- [ ] **Chaining:** `people.filter(…).map(…)` checks.
-- [ ] **Names:** user functions named `map` and `filter` are still allowed and callable; `map(xs, f)` with no user `map` is E0301.
-- [ ] **The prelude** checks with no diagnostics.
+- [x] **Chaining:** `people.filter(…).map(…)` checks.
+- [x] **Names:** user functions named `map` and `filter` are still allowed and callable; `map(xs, f)` with no user `map` is E0301.
+- [x] **The prelude** checks with no diagnostics.
 
 Acceptance — `tests/programs/m16/` (run at `-O0` and `-O2`):
-- [ ] `helpers.la`: each helper on `i64[]` and `string[]`, including empty arrays and chaining.
-- [ ] `sort.la`: `sort_by` on numbers, strings and structs, both orders.
+- [x] `helpers.la`: each helper on `i64[]` and `string[]`, including empty arrays and chaining.
+- [x] `sort.la`: `sort_by` on numbers, strings and structs, both orders.
   - Stability: equal keys keep their order.
   - The receiver is unchanged.
   - 1,000 elements in a pseudo-random order come out sorted.
-- [ ] `shortcircuit.la`: `any`/`all` stop early (a counter in a captured array can't count, so the `f` passed panics on the element after the deciding one).
-- [ ] `structs.la`: helpers over structs and closures capturing locals (`filter(fun(p) = p.age >= limit)`).
-- [ ] `e0403.la`: reject golden for a wrongly typed closure.
-- [ ] The §10 array-helpers program runs from the spec.
+- [x] `shortcircuit.la`: `any`/`all` stop early (a counter in a captured array can't count, so the `f` passed panics on the element after the deciding one).
+- [x] `structs.la`: helpers over structs and closures capturing locals (`filter(fun(p) = p.age >= limit)`).
+- [x] `e0403.la`: reject golden for a wrongly typed closure.
+- [x] The §10 array-helpers program runs from the spec.
 
 Driver:
-- [ ] `--emit=ast` on a user program doesn't show the prelude.
-- [ ] `--emit=ir` contains `lugha_fn_$prelude/map<i64, i64>` when `map` is used, and no prelude code otherwise.
+- [x] `--emit=ast` on a user program doesn't show the prelude.
+- [x] `--emit=ir` contains `lugha_fn_$prelude/map<i64, i64>` when `map` is used, and no prelude code otherwise.
 
 Regression:
-- [ ] Every earlier test passes. Programs that don't use the helpers give byte-identical IR, since the prelude's generic functions compile only when used.
+- [x] Every earlier test passes. Programs that don't use the helpers give byte-identical IR, since the prelude's generic functions compile only when used.
 
 ## ROLLBACK PLAN
 
@@ -167,10 +167,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 array-helpers program and the `m16/` programs pass.
-- [ ] The spec is complete (no "in progress"); CLAUDE.md, README, TODO, CHANGELOG and MEMORY are updated; tags `m16` and `v3`.
-- [ ] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The §10 array-helpers program and the `m16/` programs pass.
+- [x] The spec is complete (no "in progress"); CLAUDE.md, README, TODO, CHANGELOG and MEMORY are updated; tags `m16` and `v3`.
+- [x] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -179,3 +179,10 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m16/helpers.la
 ```
+
+## AMENDMENTS (during build, session 51)
+
+- **Where the prelude is added:** it is appended in `pipeline::front()` (`modules::with_prelude`), not inside `modules::load`. The loader's own behaviour and tests are unchanged, and `--emit=tokens|ast` (which use `loaded`/`parsed`) never see it, so no filtering was needed.
+- **Checker tests:** they load the prelude through `check/test_util.rs`, as real programs do. The public `check::check(&Program)` stays a single-file check without helpers.
+- **Closure hints:** unknown parts of a closure's expected type are passed as `Error`, which `closure()` reads as unknown.
+- **No file splits were needed.**

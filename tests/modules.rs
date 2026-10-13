@@ -177,3 +177,24 @@ fn generic_instances_get_their_own_symbols() {
         assert!(defined, "{symbol}: {ir}");
     }
 }
+
+#[test]
+fn the_prelude_shows_only_as_compiled_instances() {
+    // PRP-041: the helpers live in a hidden prelude module.
+    let f = Fixture::new();
+    f.file(
+        "main.la",
+        "fun main() { let xs = [1, 2]; let ys = xs.map(fun(x) = x + 1); }\n",
+    )
+    .file("plain.la", "fun main() { println(1); }\n");
+    let ast = text(&lughac(f.path(), &["build", "--emit=ast", "main.la"]).stdout);
+    assert!(
+        !ast.contains("prelude") && !ast.contains("sort_by"),
+        "{ast}"
+    );
+    let ir = text(&lughac(f.path(), &["build", "--emit=ir", "main.la"]).stdout);
+    assert!(ir.contains("@\"lugha_fn_$prelude/map<i64, i64>\""), "{ir}");
+    assert!(!ir.contains("sort_by"), "only what is used compiles: {ir}");
+    let plain = text(&lughac(f.path(), &["build", "--emit=ir", "plain.la"]).stdout);
+    assert!(!plain.contains("prelude"), "{plain}");
+}

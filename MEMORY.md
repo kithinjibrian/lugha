@@ -750,9 +750,33 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 48. Array helpers in a Lugha prelude (PRP-041)
+
+**Decision:**
+- **Prelude** (`src/prelude.la`, `lugha::PRELUDE`): the six helpers are generic Lugha functions (a discovery answer), in module path `$prelude` (`modules::PRELUDE_PATH`), which no program can name. `sort_by` is a bottom-up merge sort between two buffers.
+- **Loading:**
+  - `modules::with_prelude` appends it after the user's modules, in the same offset and id spaces;
+  - the driver adds it only in `front()` (the checking path), so `--emit=tokens|ast` never sees it;
+  - `Source.add` names it `<prelude>`;
+  - any diagnostic in it is an internal error (exit 2);
+  - checker tests load it too (`check/test_util.rs`).
+- **Checker** (`check/helpers.rs`):
+  - `helper_call` in `on_value`, before the array built-ins, turns `xs.m(args)` into a call of `$prelude.m`;
+  - `infer::bind` binds the element type from the already-checked receiver, then the arguments are inferred;
+  - the key and arguments are recorded in `callees`/`instances`/`used`.
+- **Partly-known closure types:** `infer` hints a closure argument with the expected type, where still-unbound callee parameters become `Error`. A closure reads an `Error` parameter as unknown (E0412) and an `Error` return as "from the body". That is how `xs.map(fun(x) = "{x}")` decides `U`.
+- **Codegen:** an array method with a prelude key calls the instance with the receiver first. IR is unchanged when no helper is used.
+
+**Why:** The helpers are ordinary generic code, so there's no special codegen; the merge sort is readable Lugha rather than builder calls.
+
+**Rules out:** other built-in methods (`len()`, `reverse`, `find`), and prelude names visible to programs.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 16 complete — Lugha v3 complete**: PRP-041 array helpers in a Lugha prelude
 - **Milestone 15 complete**: PRP-040 closures
 - **Milestone 14 complete**: PRP-039 functions as values
 - **Milestone 13 complete**: PRP-038 args, parsing, interpolation; the v3 spec begins
@@ -808,7 +832,7 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- v3 milestones 13–16 (draft approved, session 47, MEMORY 44)
+- Lugha v4 (nothing planned; see the v3 spec's §11 out-of-scope list)
 
 ---
 

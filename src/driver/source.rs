@@ -52,6 +52,15 @@ impl Source {
         Source { files }
     }
 
+    /// Adds a file that isn't one of the program's own, such as the prelude.
+    pub(super) fn add(&mut self, name: &str, base: usize, text: &str) {
+        self.files.push(SourceFile {
+            name: name.to_string(),
+            base,
+            text: text.to_string(),
+        });
+    }
+
     /// The main file.
     pub(super) fn main(&self) -> &SourceFile {
         &self.files[0]
