@@ -2891,7 +2891,7 @@ Branch: main
 
 ## SESSION 58 — 2026-10-13 — Interface values (milestone 20) — open
 
-Branch: main
+Branch: prp-046-interface_value_checking
 
 ---
 
