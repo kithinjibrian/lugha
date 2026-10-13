@@ -184,7 +184,7 @@ Done when the bits program passes.
 
 ### Milestone 29 — Integer methods ✅
 Done when the hashing program passes and the v7 spec is complete.
-- [x] PRP-057: `wrapping_add`/`sub`/`mul`, `count_ones`, `leading_zeros`, `trailing_zeros`; v7 complete; tagged `m29` and `v7` at merge
+- [x] PRP-057: `wrapping_add`/`sub`/`mul`, `count_ones`, `leading_zeros`, `trailing_zeros`; v7 complete; tagged `m29` and `v7`
 
 ## Found while working — needs a PRP
 

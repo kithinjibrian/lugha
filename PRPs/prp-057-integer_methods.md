@@ -1,6 +1,6 @@
 ## FEATURE: Integer methods — `wrapping_add`/`sub`/`mul`, `count_ones`, `leading_zeros`, `trailing_zeros`; milestone 29, v7 complete.
 
-**Status:** approved 2026-10-13 — session 72. This is the second half of the user's "do all of them in one go" (milestones 28–29), merged once CI is green.
+**Status:** merged 2026-10-13 — session 72. This is the second half of the user's "do all of them in one go" (milestones 28–29), merged once CI is green.
 **Milestone:** 29 (one PRP; completes v7; tags `m29` and `v7` at merge)
 **Spec:** `Language v7 Draft.md`:
 - decisions 2 and 4, and the choice "The counting methods return `i64`";

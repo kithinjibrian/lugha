@@ -1153,7 +1153,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Lugha v7 is complete** (milestones 27–29; PRP-055–057; MEMORY 65–68): `u32`, `u64`, `f32`; bit operators; integer methods. Tags `m29` and `v7` go on the merge of PRP-057. `Language v7 Specification.md` is what `lughac spec` prints; v0–v6 are frozen.
+**Lugha v7 is complete** (milestones 27–29; PRP-055–057; MEMORY 65–68): `u32`, `u64`, `f32`; bit operators; integer methods. Tagged `m29` and `v7`. `Language v7 Specification.md` is what `lughac spec` prints; v0–v6 are frozen.
 
 Next: **v8 direction — discovery** (one question at a time, recommended option first). Candidates are in the v7 spec's §11 out-of-scope list and §12 open questions:
 - packages with `public`;

@@ -3317,7 +3317,7 @@ Branch: prp-056-bits (merged into main)
 ---
 
 ## SESSION 72 — 2026-10-13 — Integer methods (milestone 29) — closed
-Branch: prp-057-integer_methods
+Branch: prp-057-integer_methods (merged into main)
 
 ### WHAT WAS DONE
 - Second half of the user's "in one go": PRP-057 written as approved within the v7 draft, built, merged on green CI.
@@ -3341,13 +3341,13 @@ Branch: prp-057-integer_methods
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tags `m29` and `v7`.
+- Nothing. PRP-057 merged into `main`, tagged `m29` and `v7`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v7 is complete** (milestones 27–29; PRP-055–057; MEMORY 65–68): `u32`, `u64`, `f32`; bit operators; integer methods. Tags `m29` and `v7` go on the merge of PRP-057. `Language v7 Specification.md` is what `lughac spec` prints; v0–v6 are frozen.
+**Lugha v7 is complete** (milestones 27–29; PRP-055–057; MEMORY 65–68): `u32`, `u64`, `f32`; bit operators; integer methods. Tagged `m29` and `v7`. `Language v7 Specification.md` is what `lughac spec` prints; v0–v6 are frozen.
 
 Next: **v8 direction — discovery** (one question at a time, recommended option first). Candidates are in the v7 spec's §11 out-of-scope list and §12 open questions:
 - packages with `public`;
