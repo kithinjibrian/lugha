@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v7 Specification.md` (`lughac spec` prints it): Lugha v7, complete (milestones 27–29: `u32`, `u64`, `f32`; bit operators; integer methods). `Language v7 Draft.md` is the approved plan it was built from. The v0–v6 files are frozen. `Result`, `Iter` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v8 Specification.md` (`lughac spec` prints it): Lugha v8, in progress (milestone 30, packages: loading and imports done; `public` next). `Language v8 Draft.md` is the approved plan. The v0–v7 files are frozen. `Result`, `Iter` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
 
 ---
 
@@ -328,7 +328,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them, except the one it names: a value to an interface where one is expected (v5, recorded in `Checked.conversions`). Every other one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (packages, iterator helpers, `Self` outside interfaces…) even partially. v7 is complete (milestones 27–29); any further language feature is v8 and needs an approved spec change first.
+5. **Never implement a §11 "out of scope" feature** (package versions, iterator helpers, `Self` outside interfaces…) even partially. v8 (milestone 30, packages) follows `Language v8 Draft.md`; anything beyond it needs an approved spec change first.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

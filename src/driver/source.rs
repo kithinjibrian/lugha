@@ -2,7 +2,7 @@
 //! column (PRP-033). All files share one offset space (`modules`): each
 //! starts at its base, so a `Span` needs no file id.
 
-use crate::modules::Module;
+use crate::modules::Loaded;
 
 /// One source file and where it sits in the shared offset space.
 #[derive(Debug, Clone)]
@@ -34,21 +34,32 @@ impl Source {
         }
     }
 
-    /// The files of loaded `modules`, named for messages.
-    pub(super) fn of(main: &str, root: &std::path::Path, modules: &[Module]) -> Self {
-        let files = modules
-            .iter()
-            .map(|m| SourceFile {
-                name: if m.path.is_empty() {
-                    main.to_string()
-                } else {
-                    let relative = m.file.strip_prefix(root).unwrap_or(&m.file);
-                    relative.display().to_string()
-                },
-                base: m.base,
-                text: m.text.clone(),
-            })
-            .collect();
+    /// The files of `loaded`, modules and manifests (v8), named for
+    /// messages and ordered by base, as `index_at` needs.
+    pub(super) fn of(main: &str, root: &std::path::Path, loaded: &Loaded) -> Self {
+        let relative = |file: &std::path::Path| {
+            file.strip_prefix(root)
+                .unwrap_or(file)
+                .display()
+                .to_string()
+        };
+        let modules = loaded.modules.iter().map(|m| SourceFile {
+            name: if m.path.is_empty() {
+                main.to_string()
+            } else {
+                relative(&m.file)
+            },
+            base: m.base,
+            text: m.text.clone(),
+        });
+        let manifests = loaded.manifests.iter().map(|m| SourceFile {
+            name: relative(&m.file),
+            base: m.base,
+            text: m.text.clone(),
+        });
+        let mut files: Vec<SourceFile> = modules.chain(manifests).collect();
+        // The main file has base 0, so it stays first.
+        files.sort_by_key(|f| f.base);
         Source { files }
     }
 

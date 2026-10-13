@@ -9,6 +9,8 @@
 //!
 //! Depends on: ast, lexer, parser, diagnostic, span.
 
+pub mod manifest;
+mod packages;
 mod resolve;
 #[cfg(test)]
 mod tests;
@@ -35,7 +37,28 @@ pub struct Module {
     pub text: String,
     /// The parsed module; `None` if it didn't lex or parse (see the diagnostics).
     pub program: Option<Program>,
+    /// Its package; `None` for the root package (v8).
+    pub package: Option<String>,
+    /// Each import's module path, in order, as resolved through the
+    /// manifests (v8): a package's own `import util.x;` is `geo.util.x`.
+    pub imports: Vec<Vec<String>>,
 }
+
+/// A `lugha.toml` that was read, so its diagnostics map back to it (v8).
+#[derive(Debug, Clone)]
+pub struct ManifestFile {
+    /// The file it was read from.
+    pub file: PathBuf,
+    /// Where it starts in the program's shared offset space.
+    pub base: usize,
+    /// Its text.
+    pub text: String,
+}
+
+/// How the loader reads a file. Reading a folder must fail with an error
+/// other than `NotFound`, as `std::fs::read` does: that is how a
+/// manifest's folders are found to exist.
+pub type Read<'a> = dyn FnMut(&Path) -> io::Result<Vec<u8>> + 'a;
 
 /// Every module of a program, and every diagnostic found loading them.
 #[derive(Debug, Clone)]
@@ -44,6 +67,8 @@ pub struct Loaded {
     pub modules: Vec<Module>,
     /// Errors and warnings from all modules, in the shared offset space.
     pub diagnostics: Vec<Diagnostic>,
+    /// Every manifest read (v8), in the same offset space.
+    pub manifests: Vec<ManifestFile>,
 }
 
 /// Why a program couldn't be loaded at all — an internal error, not a
@@ -79,22 +104,22 @@ pub enum LoadError {
 /// let loaded = lugha::modules::load(Path::new("main.la"), &mut read).unwrap();
 /// assert_eq!(loaded.modules.len(), 1);
 /// ```
-pub fn load(
-    main: &Path,
-    read: &mut dyn FnMut(&Path) -> io::Result<Vec<u8>>,
-) -> Result<Loaded, LoadError> {
+pub fn load(main: &Path, read: &mut Read<'_>) -> Result<Loaded, LoadError> {
     let root = main.parent().unwrap_or(Path::new("")).to_path_buf();
     let mut loaded = Loaded {
         modules: Vec::new(),
         diagnostics: Vec::new(),
+        manifests: Vec::new(),
     };
+    let (mut base, mut next_id) = (0usize, 0u32);
+    let mut packages = packages::Packages::new(root);
     // Every file ever queued, so each is read once, whoever imports it.
     let mut seen: Vec<PathBuf> = vec![main.to_path_buf()];
-    // A module to read, and the import that asked for it (`None` for main).
-    let mut queue: VecDeque<(Vec<String>, PathBuf, Option<Span>)> = VecDeque::new();
-    queue.push_back((Vec::new(), main.to_path_buf(), None));
-    let (mut base, mut next_id) = (0usize, 0u32);
-    while let Some((path, file, asked_by)) = queue.pop_front() {
+    // A module to read, its package, and the import that asked for it (`None` for main).
+    type Pending = (Vec<String>, PathBuf, Option<String>, Option<Span>);
+    let mut queue: VecDeque<Pending> = VecDeque::new();
+    queue.push_back((Vec::new(), main.to_path_buf(), None, None));
+    while let Some((path, file, package, asked_by)) = queue.pop_front() {
         let bytes = match read(&file) {
             Ok(bytes) => bytes,
             Err(e) if e.kind() == io::ErrorKind::NotFound && asked_by.is_some() => {
@@ -106,28 +131,33 @@ pub fn load(
             }
             Err(source) => return Err(LoadError::Io { path: file, source }),
         };
-        let module = parse_module(path, file, (base, next_id), bytes, &mut loaded.diagnostics);
-        if let Some(program) = &module.program {
-            next_id = program.expr_count;
-        }
-        if let Some(program) = &module.program {
-            for import in &program.imports {
-                let target = resolve::target(&root, import);
-                if let Some(d) = resolve::check(import, program, main, &target) {
-                    loaded.diagnostics.push(d);
-                    continue;
-                }
-                if !seen.contains(&target) {
-                    seen.push(target.clone());
-                    queue.push_back((names(import), target, Some(import_path_span(import))));
-                }
-            }
-        }
+        let mut module = parse_module(path, file, (base, next_id), bytes, &mut loaded.diagnostics);
+        module.package = package.clone();
         // One byte of gap, so a span at a file's very end isn't the next file's start.
         base = base
             .checked_add(module.text.len())
             .and_then(|b| b.checked_add(1))
             .ok_or(LoadError::TooLarge)?;
+        // After its first module, so the main file keeps offset 0 (read once).
+        packages.read_manifest(&package, read, &mut base, &mut loaded)?;
+        if let Some(program) = &module.program {
+            next_id = program.expr_count;
+            for import in &program.imports {
+                let (target, error) =
+                    packages.resolve(import, &package, read, &mut base, &mut loaded)?;
+                module.imports.push(target.path.clone());
+                let error = error.or_else(|| resolve::check(import, program, main, &target.file));
+                if let Some(d) = error {
+                    loaded.diagnostics.push(d);
+                    continue;
+                }
+                if !seen.contains(&target.file) {
+                    seen.push(target.file.clone());
+                    let at = Some(import_path_span(import));
+                    queue.push_back((target.path, target.file, target.package, at));
+                }
+            }
+        }
         loaded.modules.push(module);
     }
     Ok(loaded)
@@ -181,6 +211,8 @@ fn parse_module(
                 base,
                 text,
                 program: None,
+                package: None,
+                imports: Vec::new(),
             };
         }
     };
@@ -213,6 +245,8 @@ fn parse_module(
         base,
         text,
         program,
+        package: None,
+        imports: Vec::new(),
     }
 }
 

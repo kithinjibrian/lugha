@@ -1,0 +1,8 @@
+error[E0320]: `geo` is both a package and a local module
+  --> lugha.toml:2:1
+  |
+2 | geo = "libs/geo"
+  | ^^^^^^^^^^^^^^^^
+  |
+  = help: rename the folder `geo/` (or `geo.la`) or the package in `lugha.toml`
+

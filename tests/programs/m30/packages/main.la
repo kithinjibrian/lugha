@@ -1,0 +1,11 @@
+// Packages (milestone 30): `geo` from lugha.toml; geo uses its own package `mathx`.
+import geo.shapes;
+// A local module named like geo's: different keys, no clash.
+import util.names;
+
+fun main() {
+    let c = shapes.circle(2.0);
+    println(c.area());
+    println(shapes.label(c));
+    println(names.kind());
+}

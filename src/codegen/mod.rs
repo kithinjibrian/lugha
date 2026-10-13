@@ -122,7 +122,15 @@ pub fn emit_ir(
     checked: &Checked,
     source: &SourceInfo,
 ) -> Result<String, CodegenError> {
-    emit_ir_modules(&[Unit { path: &[], program }], checked, &[single(source)])
+    emit_ir_modules(
+        &[Unit {
+            path: &[],
+            program,
+            imports: &[],
+        }],
+        checked,
+        &[single(source)],
+    )
 }
 
 /// Lowers a checked program of several modules (the main file first) to
@@ -163,7 +171,11 @@ pub fn emit_object(
     opt: OptLevel,
     path: &Path,
 ) -> Result<(), CodegenError> {
-    let units = [Unit { path: &[], program }];
+    let units = [Unit {
+        path: &[],
+        program,
+        imports: &[],
+    }];
     emit_object_modules(&units, checked, &[single(source)], opt, path)
 }
 

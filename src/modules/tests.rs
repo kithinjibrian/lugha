@@ -12,11 +12,14 @@ fn run(files: &[(&str, &[u8])]) -> Result<Loaded, LoadError> {
         .iter()
         .map(|(p, bytes)| (Path::new("dir").join(p), bytes.to_vec()))
         .collect();
-    let mut read = |path: &Path| {
-        table
-            .get(path)
-            .cloned()
-            .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))
+    // A folder exists when some file is under it; reading one fails as
+    // `std::fs::read` does on a directory (v8 manifests probe folders so).
+    let mut read = |path: &Path| match table.get(path) {
+        Some(bytes) => Ok(bytes.clone()),
+        None if table.keys().any(|f| f.starts_with(path)) => {
+            Err(io::Error::from(io::ErrorKind::IsADirectory))
+        }
+        None => Err(io::Error::from(io::ErrorKind::NotFound)),
     };
     load(Path::new("dir/main.la"), &mut read)
 }
@@ -31,14 +34,18 @@ fn codes(loaded: &Loaded) -> Vec<(&'static str, String)> {
         .diagnostics
         .iter()
         .map(|d| {
-            let m = loaded
-                .modules
-                .iter()
-                .rev()
-                .find(|m| m.base <= d.span.start)
-                .expect("a module holds every span");
-            let text = &m.text[d.span.start - m.base..d.span.end - m.base];
-            (d.code, text.to_string())
+            // Modules and manifests (v8) share the offset space.
+            let files = loaded.modules.iter().map(|m| (m.base, &m.text));
+            let manifests = loaded.manifests.iter().map(|m| (m.base, &m.text));
+            let (base, text) = files
+                .chain(manifests)
+                .filter(|(base, _)| *base <= d.span.start)
+                .max_by_key(|(base, _)| *base)
+                .expect("a file holds every span");
+            (
+                d.code,
+                text[d.span.start - base..d.span.end - base].to_string(),
+            )
         })
         .collect()
 }
@@ -153,4 +160,122 @@ fn unreadable_files_are_internal() {
         load(Path::new("main.la"), &mut read),
         Err(LoadError::Io { .. })
     ));
+}
+
+/// The module paths of `loaded`, as `a.b` strings ("" for the main file).
+fn paths(loaded: &Loaded) -> Vec<String> {
+    loaded.modules.iter().map(|m| m.path.join(".")).collect()
+}
+
+const GEO: &[u8] = b"[packages]\ngeo = \"libs/geo\"\n";
+
+#[test]
+fn package_imports_resolve_through_the_manifest() {
+    let loaded = ok(&[
+        ("main.la", b"import geo.shapes;\nfun main() {}\n"),
+        ("lugha.toml", GEO),
+        (
+            "libs/geo/shapes.la",
+            b"import util.x;\nfun area(): i64 = 1;\n",
+        ),
+        ("libs/geo/util/x.la", b"fun y(): i64 = 2;\n"),
+    ]);
+    assert!(loaded.diagnostics.is_empty(), "{:?}", codes(&loaded));
+    assert_eq!(paths(&loaded), ["", "geo.shapes", "geo.util.x"]);
+    let shapes = &loaded.modules[1];
+    assert_eq!(shapes.package.as_deref(), Some("geo"));
+    assert_eq!(
+        shapes.imports,
+        [vec!["geo".to_string(), "util".into(), "x".into()]]
+    );
+    assert_eq!(
+        loaded.modules[0].imports,
+        [vec!["geo".to_string(), "shapes".into()]]
+    );
+    assert_eq!(loaded.manifests.len(), 1);
+    assert!(
+        loaded.manifests[0].base > loaded.modules[0].base,
+        "main keeps offset 0"
+    );
+}
+
+#[test]
+fn a_packages_own_packages_are_not_transitive() {
+    let loaded = ok(&[
+        (
+            "main.la",
+            b"import geo.shapes;\nimport mathx.trig;\nfun main() {}\n",
+        ),
+        ("lugha.toml", GEO),
+        ("libs/geo/lugha.toml", b"[packages]\nmathx = \"../mathx\"\n"),
+        (
+            "libs/geo/shapes.la",
+            b"import mathx.trig;\nfun area(): i64 = 1;\n",
+        ),
+        ("libs/mathx/trig.la", b"fun sin(): i64 = 0;\n"),
+    ]);
+    // The root doesn't list `mathx`: its import is a missing local module.
+    assert_eq!(codes(&loaded), [("E0312", "mathx.trig".to_string())]);
+    assert!(
+        paths(&loaded).contains(&"mathx.trig".to_string()),
+        "{:?}",
+        paths(&loaded)
+    );
+}
+
+#[test]
+fn package_mistakes_are_diagnostics() {
+    let clash = ok(&[
+        ("main.la", b"import geo.shapes;\nfun main() {}\n"),
+        ("lugha.toml", GEO),
+        ("geo/other.la", b"fun f() {}\n"),
+        ("libs/geo/shapes.la", b"fun f() {}\n"),
+    ]);
+    assert_eq!(codes(&clash)[0].0, "E0320");
+    let missing = ok(&[
+        ("main.la", b"fun main() {}\n"),
+        ("lugha.toml", b"[packages]\ngeo = \"nowhere\"\n"),
+    ]);
+    assert_eq!(
+        codes(&missing),
+        [("E0322", "geo = \"nowhere\"".to_string())]
+    );
+    let two = ok(&[
+        ("main.la", b"import geo.shapes;\nfun main() {}\n"),
+        (
+            "lugha.toml",
+            b"[packages]\ngeo = \"libs/geo\"\nmathx = \"libs/m1\"\n",
+        ),
+        ("libs/geo/lugha.toml", b"[packages]\nmathx = \"../m2\"\n"),
+        ("libs/geo/shapes.la", b"fun f() {}\n"),
+        ("libs/m1/a.la", b"fun f() {}\n"),
+        ("libs/m2/a.la", b"fun f() {}\n"),
+    ]);
+    assert_eq!(codes(&two), [("E0323", "mathx = \"../m2\"".to_string())]);
+    let bare = ok(&[
+        ("main.la", b"import geo;\nimport geo.nope;\nfun main() {}\n"),
+        ("lugha.toml", GEO),
+        ("libs/geo/shapes.la", b"fun f() {}\n"),
+    ]);
+    let found: Vec<&str> = codes(&bare).iter().map(|(c, _)| *c).collect();
+    assert_eq!(found, ["E0312", "E0312"]);
+    let bad = ok(&[
+        ("main.la", b"fun main() {}\n"),
+        ("lugha.toml", b"geo = 1\n"),
+    ]);
+    assert_eq!(codes(&bad), [("E0321", "geo = 1".to_string())]);
+}
+
+#[test]
+fn packages_may_import_each_other() {
+    let loaded = ok(&[
+        ("main.la", b"import a.x;\nfun main() {}\n"),
+        ("lugha.toml", b"[packages]\na = \"pa\"\nb = \"pb\"\n"),
+        ("pa/lugha.toml", b"[packages]\nb = \"../pb\"\n"),
+        ("pb/lugha.toml", b"[packages]\na = \"../pa\"\n"),
+        ("pa/x.la", b"import b.y;\nfun f() {}\n"),
+        ("pb/y.la", b"import a.x;\nfun g() {}\n"),
+    ]);
+    assert!(loaded.diagnostics.is_empty(), "{:?}", codes(&loaded));
+    assert_eq!(paths(&loaded), ["", "a.x", "b.y"]);
 }

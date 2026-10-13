@@ -1,22 +1,11 @@
 //! Where an import points, and the import errors: E0312, E0314, E0319.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use super::{import_path_span, names};
 use crate::ast::{Import, Item, Program};
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
-
-/// The file `import a.b;` reads: `<root>/a/b.la`. Segments are identifiers
-/// (the parser guarantees it), so the path can't leave the root.
-pub(super) fn target(root: &Path, import: &Import) -> PathBuf {
-    let mut file = root.to_path_buf();
-    for segment in &import.path {
-        file.push(&segment.name);
-    }
-    file.set_extension("la");
-    file
-}
 
 /// E0319 for importing the main file, or E0314 for a clash with an earlier
 /// import or an item of the same file; `None` if `import` is fine.

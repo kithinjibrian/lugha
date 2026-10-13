@@ -219,3 +219,43 @@ fn only_the_prelude_functions_a_program_reaches_compile() {
     assert!(ir.contains("str_split") && ir.contains("str_at"), "{ir}");
     assert!(!ir.contains("str_trim"), "{ir}");
 }
+
+/// A program with a `lugha.toml` and one package (v8, PRP-058).
+fn with_package(manifest: &str) -> Fixture {
+    let f = Fixture::new();
+    f.file("lugha.toml", manifest)
+        .file(
+            "main.la",
+            "import geo.shapes;\n\nfun main() {\n    println(shapes.area(2.0));\n}\n",
+        )
+        .file("libs/geo/shapes.la", "fun area(r: f64): f64 = 3.0 * r * r;\n");
+    f
+}
+
+#[test]
+fn packages_from_the_manifest_build_and_run() {
+    let f = with_package("[packages]\ngeo = \"libs/geo\"\n");
+    let out = lughac(f.path(), &["run", "main.la"]);
+    assert_eq!(text(&out.stdout), "12.0\n", "{}", text(&out.stderr));
+    let ir = lughac(f.path(), &["build", "main.la", "--emit=ir"]);
+    assert!(
+        text(&ir.stdout).contains("@\"lugha_fn_geo/shapes/area\""),
+        "{}",
+        text(&ir.stdout)
+    );
+}
+
+#[test]
+fn manifest_mistakes_point_into_lugha_toml() {
+    let f = with_package("[packages]\ngeo = libs/geo\n");
+    let out = lughac(f.path(), &["check", "main.la"]);
+    assert_eq!(out.status.code(), Some(1));
+    let human = text(&out.stderr);
+    assert!(human.contains("E0321") && human.contains("lugha.toml:2:1"), "{human}");
+    let out = lughac(f.path(), &["check", "main.la", "--diagnostics=json"]);
+    let json = text(&out.stderr);
+    assert!(
+        json.contains("\"code\":\"E0321\"") && json.contains("\"file\":\"lugha.toml\""),
+        "{json}"
+    );
+}

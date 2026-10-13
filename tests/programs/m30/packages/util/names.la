@@ -1,0 +1,3 @@
+// The program's own util.names, not geo's.
+
+fun kind(): string = "local";

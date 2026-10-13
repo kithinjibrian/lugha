@@ -45,7 +45,7 @@ pub(super) fn loaded(path: &Path) -> Result<(Source, Loaded), Failure> {
     match modules::load(path, &mut read) {
         Ok(loaded) => {
             let root = path.parent().unwrap_or(Path::new(""));
-            Ok((Source::of(&name, root, &loaded.modules), loaded))
+            Ok((Source::of(&name, root, &loaded), loaded))
         }
         Err(error) => {
             let report = Report::internal(error.to_string(), None);
@@ -183,6 +183,7 @@ fn units(modules: &[Module]) -> Vec<check::Unit<'_>> {
         .map(|m| check::Unit {
             path: &m.path,
             program: m.program.as_ref().expect("every module parsed"),
+            imports: &m.imports,
         })
         .collect()
 }

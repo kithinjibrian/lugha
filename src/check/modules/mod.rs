@@ -16,6 +16,9 @@ use crate::diagnostic::{Diagnostic, Severity};
 pub struct Unit<'a> {
     pub path: &'a [String],
     pub program: &'a Program,
+    /// Each import's resolved module path (v8, `Module::imports`); empty
+    /// means the paths as written, as for a single file.
+    pub imports: &'a [Vec<String>],
 }
 
 /// Type-checks a whole program of modules, the main file first.
@@ -137,9 +140,12 @@ impl Checker {
             .program
             .imports
             .iter()
-            .map(|i| {
-                let path: Vec<String> = i.path.iter().map(|s| s.name.clone()).collect();
-                (path.last().expect("an import has a path").clone(), path)
+            .enumerate()
+            .map(|(n, i)| {
+                let written = || i.path.iter().map(|s| s.name.clone()).collect();
+                let path: Vec<String> = unit.imports.get(n).cloned().unwrap_or_else(written);
+                let last = i.path.last().expect("an import has a path").name.clone();
+                (last, path)
             })
             .collect::<HashMap<_, _>>();
     }
@@ -189,6 +195,7 @@ pub(crate) mod test_util {
             .map(|m| Unit {
                 path: &m.path,
                 program: m.program.as_ref().expect("parsed"),
+                imports: &m.imports,
             })
             .collect();
         check_modules(&units)

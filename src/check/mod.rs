@@ -129,7 +129,11 @@ pub struct Checked {
 ///
 /// Every diagnostic found (errors and warnings) when there is at least one error.
 pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
-    check_modules(&[Unit { path: &[], program }])
+    check_modules(&[Unit {
+        path: &[],
+        program,
+        imports: &[],
+    }])
 }
 
 impl Checker {

@@ -1,0 +1,3 @@
+// The manifest's path isn't quoted.
+
+fun main() {}

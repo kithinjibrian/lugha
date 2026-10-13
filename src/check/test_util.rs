@@ -17,6 +17,8 @@ fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic
         // Only the prelude's base depends on it: past every test source.
         text: " ".repeat(1 << 16),
         program: Some(program.clone()),
+        package: None,
+        imports: Vec::new(),
     };
     let mut modules = vec![main];
     let mut prelude_errors = Vec::new();
@@ -30,6 +32,7 @@ fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic
         .map(|m| Unit {
             path: &m.path,
             program: m.program.as_ref().expect("both parsed"),
+            imports: &m.imports,
         })
         .collect();
     check_modules(&units)
