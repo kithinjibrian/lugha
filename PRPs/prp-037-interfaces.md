@@ -1,6 +1,6 @@
 ## FEATURE: Interfaces — structural bounds on type parameters; v2 complete.
 
-**Status:** approved 2026-10-13 — session 46
+**Status:** merged 2026-10-13 — session 46
 **Milestone:** 12 (one PRP; completes milestone 12 and the v2 spec, tag `m12`)
 **Spec:** `Language v2 Draft.md`:
 - decision 10;

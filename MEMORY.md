@@ -706,14 +706,18 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 11 is complete** (tag `m11`). Generics are checked (PRP-035, MEMORY 41) and compiled (PRP-036, MEMORY 42), and the spec has their rules.
+**Lugha v2 is complete** (tags `m12` and `v2`). Milestones 9–12 are done:
+- patterns and equality;
+- modules;
+- generics (MEMORY 41, 42);
+- interfaces (MEMORY 43).
 
-Next is **milestone 12, interfaces**, the last v2 milestone (MEMORY 40, `docs/decisions/generics.md`, draft decision 10, §4 "Interfaces"). It covers:
-- `interface Shape { fun area(self): f64; }`, used only as a bound (`T: Shape`), combined with `Eq`/`Ord`;
-- structural satisfaction;
-- E0421 for a method no bound provides, E0422 for a type that doesn't satisfy one, E0305 for an interface used as a type;
-- the §10 interfaces program in the draft.
+`Language v2 Specification.md` is final and is what `lughac spec` prints.
 
-`interface` is not yet a keyword: the M12 PRP adds the syntax too. Start with discovery. When M12 is done, the v2 spec is complete (no longer "in progress").
+There is no planned work. Possible next directions, each needing discovery, a spec change for v3 and a PRP:
+- the spec's §11 out-of-scope list: closures, shared references, interface values, `Self`, packages with `public`, explicit type arguments, `.len()`;
+- the draft's §12 open questions (printing generic values through a `Show`-style interface; `mut` bindings in `match`).
+
+Housekeeping is also possible.
 
 See `TODO.md`.
