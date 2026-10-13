@@ -2538,7 +2538,7 @@ Branch: prp-039-function_values
 
 ---
 
-## SESSION 50 — 2026-10-13 — Closures (milestone 15) — open
+## SESSION 50 — 2026-10-13 — Closures (milestone 15) — closed
 
 Branch: prp-040-closures
 
@@ -2579,18 +2579,20 @@ Branch: prp-040-closures
 
 - None.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-040-closures` fast-forward merged into `main` and deleted; tag `m15`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 14 is complete** (tag `m14`; MEMORY 46). `lughac spec` prints `Language v3 Specification.md` (in progress: milestone 14).
+**Milestone 15 is complete** (tag `m15`; MEMORY 47). `lughac spec` prints `Language v3 Specification.md` (in progress: milestone 15).
 
-Next is **milestone 15, closures** (`Language v3 Draft.md`: decisions 2–3, §3 `closure`, §4 "Closures", §5 evaluation order, §7 environments, §9 `lugha_closure_*`, E0209, E0511, the §10 closures program). It covers:
-- `fun(x) = e` and `fun(x: T): R { … }` literals, with parameter types inferred from an expected function type (E0412 otherwise) and the return type from the body;
-- capture by copy, read-only (E0511), copied when the closure is created (moved on last use);
-- one GC environment per closure;
-- closures inside generic code.
+Next is **milestone 16, array helpers**, the last v3 milestone (`Language v3 Draft.md`: decision 5, §4 "Built-in array methods", §9 lowering notes, the §10 array-helpers program). It covers:
+- `map`, `filter`, `fold`, `sort_by` (stable merge sort), `any`, `all` on `T[]`, each taking `self` and returning a new value;
+- closures as their arguments.
 
-Values already use `{ code, env }` with the environment passed first, so closures only add environments and literals. Start with discovery for PRP-040.
+When it is done, the v3 spec is complete: tags `m16` and `v3`. Start with discovery for PRP-041.
 
 See `TODO.md`.

@@ -1,6 +1,6 @@
 ## FEATURE: Closures — `fun(x) = e` literals that capture by copy.
 
-**Status:** approved 2026-10-13 — session 50
+**Status:** merged 2026-10-13 — session 50
 **Milestone:** 15 (one PRP)
 **Spec:** `Language v3 Draft.md`:
 - decisions 2–3;
