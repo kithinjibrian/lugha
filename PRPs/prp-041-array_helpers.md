@@ -1,6 +1,6 @@
 ## FEATURE: Array helpers — `map`, `filter`, `fold`, `sort_by`, `any`, `all`, written in a Lugha prelude; v3 complete.
 
-**Status:** approved 2026-10-13 — session 51
+**Status:** merged 2026-10-13 — session 51
 **Milestone:** 16 (one PRP; completes milestone 16 and the v3 spec, tags `m16` and `v3`)
 **Spec:** `Language v3 Draft.md`:
 - decision 5;

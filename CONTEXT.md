@@ -2585,7 +2585,7 @@ Branch: prp-040-closures
 
 ---
 
-## SESSION 51 — 2026-10-13 — Array helpers (milestone 16) — open
+## SESSION 51 — 2026-10-13 — Array helpers (milestone 16) — closed
 
 Branch: prp-041-array_helpers
 
@@ -2631,16 +2631,27 @@ Branch: prp-041-array_helpers
 
 - None.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-041-array_helpers` fast-forward merged into `main` and deleted; tags `m16` and `v3`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 15 is complete** (tag `m15`; MEMORY 47). `lughac spec` prints `Language v3 Specification.md` (in progress: milestone 15).
+**Lugha v3 is complete** (tags `m16` and `v3`). Milestones 13–16 are done:
+- input and interpolation;
+- functions as values;
+- closures;
+- array helpers in a Lugha prelude (MEMORY 45–48).
 
-Next is **milestone 16, array helpers**, the last v3 milestone (`Language v3 Draft.md`: decision 5, §4 "Built-in array methods", §9 lowering notes, the §10 array-helpers program). It covers:
-- `map`, `filter`, `fold`, `sort_by` (stable merge sort), `any`, `all` on `T[]`, each taking `self` and returning a new value;
-- closures as their arguments.
+`Language v3 Specification.md` is final and is what `lughac spec` prints.
 
-When it is done, the v3 spec is complete: tags `m16` and `v3`. Start with discovery for PRP-041.
+There is no planned work. Possible next directions, each needing discovery, a v4 spec change and a PRP:
+- the v3 spec's §11 out-of-scope list: packages with `public`, interface values and dynamic dispatch, `Self`, shared references, closures that change their captures, bitwise operators and more integer types, or-patterns, `mut` match bindings, explicit type arguments, `.len()`;
+- stdin and file input;
+- the open question on printing generic values.
+
+Housekeeping is also possible.
 
 See `TODO.md`.
