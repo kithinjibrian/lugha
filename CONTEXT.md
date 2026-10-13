@@ -3105,7 +3105,7 @@ Branch: prp-050-generic_interface_bounds (merged into main)
 ---
 
 ## SESSION 65 — 2026-10-13 — Generic interface values (milestone 23, part 2) — closed
-Branch: prp-051-generic_interface_values
+Branch: prp-051-generic_interface_values (merged into main)
 
 ### WHAT WAS DONE
 - Discovery: an interface-typed parameter (`Source<T>`) reads `T` off a concrete argument's methods. PRP-051 written and approved.
@@ -3132,13 +3132,13 @@ Branch: prp-051-generic_interface_values
 - None.
 
 ### STILL OPEN AT CLOSE
-- PRP-051 waits for the user's merge OK; then tag `m23`.
+- Nothing. PRP-051 merged into `main`, tagged `m23`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 23 complete** (PRP-050, PRP-051; MEMORY 60–61): generic interfaces as bounds and as values. `Language v6 Specification.md` (in progress) is what `lughac spec` prints. Tag `m23` goes on the merge of PRP-051.
+**Milestone 23 complete** (PRP-050, PRP-051; MEMORY 60–61): generic interfaces as bounds and as values. `Language v6 Specification.md` (in progress) is what `lughac spec` prints. Tagged `m23`.
 
 Next: **milestone 24, iterators** — discovery and PRP-052. Scope (v6 draft §4 "Iterators", §5 desugaring, §10 "Iterators"):
 - the prelude declares `interface Iter<T> { fun next(mut self): Option<T>; }`; a module's own `Iter` hides it;

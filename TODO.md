@@ -158,7 +158,7 @@ Done when the errors-as-interfaces program passes and the v5 spec is complete.
 ### Milestone 23 — Generic interfaces ✅
 Done when the generic-interfaces program passes.
 - [x] PRP-050: `interface I<T>`, bounds with arguments, inference through bounds; generic defaults; `Language v6 Specification.md` begins
-- [x] PRP-051: generic interface values (`Source<i64>`), tables `lugha_vt_Count.Source<i64>`, inference into `Source<T>` parameters; tag `m23` at merge
+- [x] PRP-051: generic interface values (`Source<i64>`), tables `lugha_vt_Count.Source<i64>`, inference into `Source<T>` parameters; tagged `m23`
 
 ### Milestone 24 — Iterators
 Done when the iterators program passes.

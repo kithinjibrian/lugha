@@ -1067,7 +1067,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 23 complete** (PRP-050, PRP-051; MEMORY 60–61): generic interfaces as bounds and as values. `Language v6 Specification.md` (in progress) is what `lughac spec` prints. Tag `m23` goes on the merge of PRP-051.
+**Milestone 23 complete** (PRP-050, PRP-051; MEMORY 60–61): generic interfaces as bounds and as values. `Language v6 Specification.md` (in progress) is what `lughac spec` prints. Tagged `m23`.
 
 Next: **milestone 24, iterators** — discovery and PRP-052. Scope (v6 draft §4 "Iterators", §5 desugaring, §10 "Iterators"):
 - the prelude declares `interface Iter<T> { fun next(mut self): Option<T>; }`; a module's own `Iter` hides it;

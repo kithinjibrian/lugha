@@ -1,6 +1,6 @@
 ## FEATURE: Generic interface values — `Source<i64>` as a type; milestone 23 complete.
 
-**Status:** approved 2026-10-13 — session 65
+**Status:** merged 2026-10-13 — session 65
 **Milestone:** 23, the second of two PRPs. 050 covered bounds; **051 covers values**, completes the milestone, and adds the tag `m23`.
 **Spec:** `Language v6 Draft.md`:
 - decision 3;
