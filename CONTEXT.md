@@ -3197,7 +3197,7 @@ Branch: prp-053-self_in_interfaces (merged into main)
 ---
 
 ## SESSION 68 — 2026-10-13 — Converting between interfaces (milestone 26) — closed
-Branch: prp-054-interface_conversion
+Branch: prp-054-interface_conversion (merged into main)
 
 ### WHAT WAS DONE
 - No interview: the draft settles the behaviour. PRP-054 approved with one amendment to draft §9: lookup functions instead of per-table slots.
@@ -3222,13 +3222,13 @@ Branch: prp-054-interface_conversion
 - None.
 
 ### STILL OPEN AT CLOSE
-- PRP-054 waits for the user's merge OK; then tags `m26` and `v6`.
+- Nothing. PRP-054 merged into `main`, tagged `m26` and `v6`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v6 is complete** (milestones 23–26; PRP-050–054; MEMORY 59–64): generic interfaces, iterators, `Self` in interfaces, converting between interfaces. Tags `m26` and `v6` go on the merge of PRP-054. `Language v6 Specification.md` is what `lughac spec` prints; v0–v5 are frozen.
+**Lugha v6 is complete** (milestones 23–26; PRP-050–054; MEMORY 59–64): generic interfaces, iterators, `Self` in interfaces, converting between interfaces. Tagged `m26` and `v6`. `Language v6 Specification.md` is what `lughac spec` prints; v0–v5 are frozen.
 
 Next: **v7 direction — discovery** (one question at a time, recommended option first). Candidates are in the v6 spec's §11 out-of-scope list and §12 open questions:
 - `Self` outside interfaces (in `impl`), default methods called on concrete types;

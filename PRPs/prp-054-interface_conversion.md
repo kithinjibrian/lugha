@@ -1,6 +1,6 @@
 ## FEATURE: Converting between interfaces — a `Pet` value becomes a `Named` when `Pet` declares `Named`'s items; through `?` too; milestone 26, v6 complete.
 
-**Status:** approved 2026-10-13 — session 68
+**Status:** merged 2026-10-13 — session 68
 **Milestone:** 26 (one PRP; completes v6; tags `m26` and `v6` at merge)
 **Spec:** `Language v6 Draft.md`:
 - decision 4, and the choice "Conversion between interfaces needs every item, defaulted ones included";

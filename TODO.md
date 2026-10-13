@@ -170,7 +170,7 @@ Done when the `Self` program passes.
 
 ### Milestone 26 — Converting between interfaces ✅
 Done when the converting-between-interfaces program passes and the v6 spec is complete.
-- [x] PRP-054: `J` to `I` where `J` declares `I`'s items; through `?`; v6 complete; tagged `m26` and `v6` at merge
+- [x] PRP-054: `J` to `I` where `J` declares `I`'s items; through `?`; v6 complete; tagged `m26` and `v6`
 
 ## Found while working — needs a PRP
 
