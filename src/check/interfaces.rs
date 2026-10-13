@@ -163,7 +163,7 @@ impl Checker {
     }
 
     /// The key of the interface `b` names, here or through an import.
-    fn interface_key(&self, b: &Bound) -> Option<String> {
+    pub(super) fn interface_key(&self, b: &Bound) -> Option<String> {
         let key = match &b.module {
             None => self.key(&b.name.name),
             Some(m) => qualify(&self.imported(&m.name)?, &b.name.name),

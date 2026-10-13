@@ -16,7 +16,7 @@ $ lughac run fib.la
 832040
 ```
 
-Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is complete (milestones 17–19), with v4.1 allowing string literals inside interpolations. v5, interface values, is complete (milestones 20–22), and v6, generic interfaces, iterators, `Self` and converting between interfaces, is complete (milestones 23–26). v7, numbers and bits, is complete (milestones 27–29: `u32`, `u64`, `f32`, the bit operators and integer methods), and v8, packages, is in progress. Today it has everything in v1.2:
+Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is complete (milestones 17–19), with v4.1 allowing string literals inside interpolations. v5, interface values, is complete (milestones 20–22), and v6, generic interfaces, iterators, `Self` and converting between interfaces, is complete (milestones 23–26). v7, numbers and bits, is complete (milestones 27–29: `u32`, `u64`, `f32`, the bit operators and integer methods), and v8, packages, is complete (milestone 30). Today it has everything in v1.2:
 - **Basic types:** integers (`i32`, `i64`, `u8`), `f64`, `bool` and immutable strings.
 - **Compound types:** growable arrays (`push`, `pop`, `clear`), structs, and enums with exhaustive `match`, including `Option<T>` and recursive enums.
 - **Behaviour:** methods in `impl` blocks, `if` expressions, loops and `for … of`, and `swap(a, b)` to exchange two places without copying.
@@ -43,9 +43,9 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **More numbers (v7, milestone 27):** `u32`, `u64` and `f32`, as in `let h: u64 = 14695981039346656037;` and `-1 as u32`; an `f32` prints its own shortest form (`0.1`).
 - **Bits (v7, milestone 28):** `& | ^ ~ << >>` with Rust's precedence (`flags & MASK == 0`), `&=` and friends, `0b1010` literals; a shift by the width or more panics.
 - **Integer methods (v7, milestone 29):** `h.wrapping_mul(1099511628211)` and friends never panic; `x.count_ones()`, `leading_zeros()`, `trailing_zeros()` give an `i64`.
-- **Packages (v8, milestone 30, in progress):** a `lugha.toml` next to `main.la` lists package folders (`[packages]` / `geo = "libs/geo"`), and `import geo.shapes;` loads a package's module; a package can list its own packages.
+- **Packages (v8, milestone 30):** a `lugha.toml` next to `main.la` lists package folders (`[packages]` / `geo = "libs/geo"`), and `import geo.shapes;` loads a package's module; a package can list its own packages, and other packages see only what it marks `public`.
 
-Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v8 Specification.md`](docs/specs/Language%20v8%20Specification.md) (what `lughac spec` prints, in progress); the approved plan it is built from is [`Language v8 Draft.md`](docs/specs/Language%20v8%20Draft.md), and v7 is frozen in [`Language v7 Specification.md`](docs/specs/Language%20v7%20Specification.md).
+Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v8 Specification.md`](docs/specs/Language%20v8%20Specification.md) (what `lughac spec` prints); the approved plan it is built from is [`Language v8 Draft.md`](docs/specs/Language%20v8%20Draft.md), and v7 is frozen in [`Language v7 Specification.md`](docs/specs/Language%20v7%20Specification.md).
 
 ## Prerequisites
 

@@ -148,26 +148,6 @@ pub(in crate::check) fn private_item(
     }
 }
 
-/// E0317: `public` is for packages, which arrive in v3.
-pub(in crate::check) fn public_reserved(span: Span) -> Diagnostic {
-    Diagnostic::error("E0317", "`public` needs packages (v3)", span)
-        .with_help("remove it: everything is already visible to the whole program")
-}
-
-/// E0318: a signature other modules can use mentions a `private` type.
-pub(in crate::check) fn leaked_private(ty: &str, span: Span, declared: Option<Span>) -> Diagnostic {
-    let d = Diagnostic::error(
-        "E0318",
-        format!("`{ty}` is private, but this signature is visible to other modules"),
-        span,
-    )
-    .with_help("make this declaration `private` too, or remove `private` from the type");
-    match declared {
-        Some(at) => d.with_label(at, "declared `private` here"),
-        None => d,
-    }
-}
-
 /// E0304 for `main` outside the main file (v2 draft §6).
 pub(in crate::check) fn main_in_module(span: Span) -> Diagnostic {
     Diagnostic::error("E0304", "`main` belongs in the main file", span)

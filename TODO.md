@@ -188,10 +188,10 @@ Done when the hashing program passes and the v7 spec is complete.
 
 ## v8 (draft approved, session 73 — `docs/specs/Language v8 Draft.md`)
 
-### Milestone 30 — Packages
+### Milestone 30 — Packages ✅
 Done when the packages programs pass and the v8 spec is complete.
 - [x] PRP-058: `lugha.toml`, package imports and per-package manifests (E0320–E0323); `Language v8 Specification.md` begins
-- [ ] PRP-059: `public` and package visibility (E0313, E0318; E0317 retired)
+- [x] PRP-059: `public` and package visibility (E0313, E0318; E0317 retired); v8 complete; tagged `m30` and `v8` at merge
 
 ## Found while working — needs a PRP
 

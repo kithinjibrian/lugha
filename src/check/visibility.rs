@@ -1,198 +1,211 @@
-//! Visibility across modules (v2 draft decision 9, §6; PRP-034): `private`
-//! items, methods and fields are usable only in their own module (E0313),
-//! `public` waits for packages (E0317), and a signature other modules can
-//! use may not mention a `private` type (E0318).
+//! Visibility across modules and packages (v2 draft decision 9, §6;
+//! PRP-034; v8 PRP-059): `private` items, methods and fields are usable only
+//! in their own module, those without a keyword only in their own package,
+//! and `public` ones everywhere (E0313). A declaration may not expose a type
+//! less visible than itself (E0318).
 
 use std::collections::HashMap;
 
-use super::{Checker, Type, errors};
-use crate::ast::{FunDecl, Item, Program, Type as Annotation, Visibility, VisibilityKind};
+use super::levels::{Level, Owner, level};
+use super::{Checker, errors};
+use crate::ast::{FunDecl, Item, Program, Type as Annotation, TypeParam, Visibility};
 use crate::span::Span;
 
-/// Who may use what: each item's owning module and whether it is `private`.
+/// Who may use what: each item's owner and level, and the levels of methods
+/// and fields (their owner is their type's).
 #[derive(Default)]
 pub(super) struct Privacy {
-    /// Functions, externs, structs and enums by key.
-    items: HashMap<String, (Vec<String>, bool)>,
+    /// Functions, externs, structs, enums and interfaces by key.
+    pub(super) items: HashMap<String, Owner>,
     /// Methods and associated functions by (type key, name).
-    methods: HashMap<(String, String), bool>,
+    methods: HashMap<(String, String), Level>,
     /// Fields by (struct key, name).
-    fields: HashMap<(String, String), bool>,
-}
-
-/// True for `private`.
-pub(super) fn is_private(v: Option<Visibility>) -> bool {
-    v.is_some_and(|v| v.kind == VisibilityKind::Private)
+    fields: HashMap<(String, String), Level>,
 }
 
 impl Checker {
     /// Records that the current module declares item `key`.
     pub(super) fn register_item(&mut self, key: &str, v: Option<Visibility>) {
-        let entry = (self.module.clone(), is_private(v));
-        self.privacy.items.insert(key.to_string(), entry);
+        let owner = self.owner_here(v);
+        self.privacy.items.insert(key.to_string(), owner);
     }
 
     pub(super) fn register_method(&mut self, owner: &str, name: &str, v: Option<Visibility>) {
         let key = (owner.to_string(), name.to_string());
-        self.privacy.methods.insert(key, is_private(v));
+        self.privacy.methods.insert(key, self.owner_here(v).level);
     }
 
     pub(super) fn register_field(&mut self, owner: &str, name: &str, v: Option<Visibility>) {
         let key = (owner.to_string(), name.to_string());
-        self.privacy.fields.insert(key, is_private(v));
+        self.privacy.fields.insert(key, self.owner_here(v).level);
     }
 
-    /// The module that declares item `key`, if another module does.
-    fn foreign(&self, key: &str) -> Option<Vec<String>> {
-        let (owner, _) = self.privacy.items.get(key)?;
-        (*owner != self.module).then(|| owner.clone())
-    }
-
-    /// E0313 if item `key` is another module's `private` item.
+    /// E0313 if item `key` may not be used here.
     pub(super) fn item_visible(&mut self, key: &str, span: Span) {
-        let private = self.privacy.items.get(key).is_some_and(|(_, p)| *p);
-        if let (true, Some(owner)) = (private, self.foreign(key)) {
-            let name = key.rsplit('.').next().unwrap_or(key);
-            self.report(errors::private_item(name, &owner, span, None));
+        let Some(owner) = self.privacy.items.get(key).cloned() else {
+            return;
+        };
+        let name = key.rsplit('.').next().unwrap_or(key);
+        if let Some(d) = self.denied(name, &owner, owner.level, span, None) {
+            self.report(d);
         }
     }
 
-    /// E0313 if method `name` of type `owner` is `private` to another module.
-    pub(super) fn method_visible(&mut self, owner: &str, name: &str, span: Span) {
-        let key = (owner.to_string(), name.to_string());
-        if self.privacy.methods.get(&key) == Some(&true)
-            && let Some(module) = self.foreign(owner)
-        {
-            self.report(errors::private_item(name, &module, span, None));
+    /// E0313 for a method or field `name` of type `owner` at `level`, if it
+    /// may not be used here.
+    fn member_visible(&mut self, owner: &str, name: &str, level: Option<Level>, span: Span) {
+        let (Some(level), Some(type_owner)) = (level, self.privacy.items.get(owner).cloned())
+        else {
+            return;
+        };
+        if let Some(d) = self.denied(name, &type_owner, level, span, None) {
+            self.report(d);
         }
+    }
+
+    /// E0313 if method `name` of type `owner` may not be used here.
+    pub(super) fn method_visible(&mut self, owner: &str, name: &str, span: Span) {
+        let level = self
+            .privacy
+            .methods
+            .get(&(owner.to_string(), name.to_string()));
+        self.member_visible(owner, name, level.copied(), span);
     }
 
     /// True if method `name` of type `owner` may be used here (milestone 12:
     /// only such methods satisfy an interface).
     pub(super) fn method_usable(&self, owner: &str, name: &str) -> bool {
-        let key = (owner.to_string(), name.to_string());
-        self.privacy.methods.get(&key) != Some(&true) || self.foreign(owner).is_none()
-    }
-
-    /// E0313 if field `name` of struct `owner` is `private` to another module.
-    pub(super) fn field_visible(&mut self, owner: &str, name: &str, span: Span) {
-        let key = (owner.to_string(), name.to_string());
-        if self.privacy.fields.get(&key) == Some(&true)
-            && let Some(module) = self.foreign(owner)
-        {
-            self.report(errors::private_item(name, &module, span, None));
+        let level = self
+            .privacy
+            .methods
+            .get(&(owner.to_string(), name.to_string()));
+        match (level, self.privacy.items.get(owner)) {
+            (Some(level), Some(type_owner)) => self
+                .denied(name, type_owner, *level, Span::new(0, 0), None)
+                .is_none(),
+            _ => true,
         }
     }
 
-    /// E0313 for a literal of another module's struct with a `private` field:
+    /// E0313 if field `name` of struct `owner` may not be used here.
+    pub(super) fn field_visible(&mut self, owner: &str, name: &str, span: Span) {
+        let level = self
+            .privacy
+            .fields
+            .get(&(owner.to_string(), name.to_string()));
+        self.member_visible(owner, name, level.copied(), span);
+    }
+
+    /// E0313 for a literal of a struct with a field this module can't see:
     /// it must be built through one of the struct's functions.
     pub(super) fn literal_visible(&mut self, owner: &str, span: Span) {
-        let Some(module) = self.foreign(owner) else {
+        let Some(type_owner) = self.privacy.items.get(owner).cloned() else {
             return;
         };
-        let hidden = self
+        let name = owner.rsplit('.').next().unwrap_or(owner).to_string();
+        // A type this module can't see is reported already (`item_visible`).
+        let here = Span::new(0, 0);
+        if self
+            .denied(&name, &type_owner, type_owner.level, here, None)
+            .is_some()
+        {
+            return;
+        }
+        let mut fields: Vec<(&String, &Level)> = self
             .privacy
             .fields
             .iter()
-            .find(|((s, _), private)| s == owner && **private)
-            .map(|((_, f), _)| f.clone());
-        if let Some(field) = hidden {
-            let name = owner.rsplit('.').next().unwrap_or(owner);
-            let help = format!("`{field}` is private: build it with one of `{name}`'s functions");
-            self.report(errors::private_item(name, &module, span, Some(help)));
+            .filter(|((s, _), _)| s == owner)
+            .map(|((_, f), level)| (f, level))
+            .collect();
+        fields.sort();
+        let hidden = fields.into_iter().find_map(|(field, level)| {
+            let help = format!(
+                "a `{name}` literal sets `{field}`: build it with one of `{name}`'s functions"
+            );
+            self.denied(field, &type_owner, *level, span, Some(help))
+        });
+        if let Some(d) = hidden {
+            self.report(d);
         }
     }
 
-    /// E0317 for every `public` (v3 packages), then E0318 for every
-    /// signature other modules can use that mentions a `private` type.
+    /// E0318 for every declaration that exposes a less visible type.
     pub(super) fn visibility_rules(&mut self, program: &Program) {
         for item in &program.items {
             match item {
                 Item::Fun(f) => self.signature(f),
                 Item::Extern(e) => {
-                    self.public_keyword(e.visibility);
-                    if !is_private(e.visibility) {
-                        e.params.iter().for_each(|p| self.leak(&p.ty));
-                        e.ret.iter().for_each(|t| self.leak(t));
-                    }
+                    let at = level(e.visibility);
+                    e.params.iter().for_each(|p| self.leak(&p.ty, at));
+                    e.ret.iter().for_each(|t| self.leak(t, at));
                 }
                 Item::Struct(s) => {
-                    self.public_keyword(s.visibility);
                     for field in &s.fields {
-                        self.public_keyword(field.visibility);
-                        // A private struct's fields are private already.
-                        if !is_private(s.visibility) && !is_private(field.visibility) {
-                            self.leak(&field.ty);
-                        }
+                        // A field is no more visible than its struct.
+                        let at = level(s.visibility).min(level(field.visibility));
+                        self.leak(&field.ty, at);
                     }
                 }
                 Item::Enum(e) => {
-                    self.public_keyword(e.visibility);
-                    if !is_private(e.visibility) {
-                        e.variants
-                            .iter()
-                            .flat_map(|v| &v.payloads)
-                            .for_each(|t| self.leak(t));
-                    }
+                    let at = level(e.visibility);
+                    let payloads = e.variants.iter().flat_map(|v| &v.payloads);
+                    payloads.for_each(|t| self.leak(t, at));
                 }
                 Item::Impl(i) => i.methods.iter().for_each(|m| self.signature(m)),
                 Item::Interface(i) => {
-                    self.public_keyword(i.visibility);
-                    if !is_private(i.visibility) {
-                        let types = i
-                            .items
-                            .iter()
-                            .flat_map(|it| it.params.iter().map(|p| &p.ty).chain(&it.ret));
-                        types.for_each(|t| self.leak(t));
-                    }
+                    let at = level(i.visibility);
+                    let types = i
+                        .items
+                        .iter()
+                        .flat_map(|it| it.params.iter().map(|p| &p.ty).chain(&it.ret));
+                    types.for_each(|t| self.leak(t, at));
                 }
             }
         }
     }
 
     fn signature(&mut self, f: &FunDecl) {
-        self.public_keyword(f.visibility);
-        if !is_private(f.visibility) {
-            f.params.iter().for_each(|p| self.leak(&p.ty));
-            f.ret.iter().for_each(|t| self.leak(t));
-        }
+        let at = level(f.visibility);
+        f.params.iter().for_each(|p| self.leak(&p.ty, at));
+        f.ret.iter().for_each(|t| self.leak(t, at));
+        self.bound_leaks(&f.type_params, at);
     }
 
-    fn public_keyword(&mut self, v: Option<Visibility>) {
-        if let Some(v) = v
-            && v.kind == VisibilityKind::Public
-        {
-            self.report(errors::public_reserved(v.span));
+    /// E0318 if the written type `ty`, in a declaration visible at `at`,
+    /// mentions a less visible type.
+    fn leak(&mut self, ty: &Annotation, at: Level) {
+        if at == Level::Private {
+            return;
         }
-    }
-
-    /// E0318 if the written type `ty` mentions a `private` type.
-    fn leak(&mut self, ty: &Annotation) {
         let Some(resolved) = self.annotations.get(&ty.span).cloned() else {
             return;
         };
-        if let Some(key) = self.private_inside(&resolved) {
+        if let Some(key) = self.hidden_inside(&resolved, at) {
             let declared = self.type_span(&key);
-            self.report(errors::leaked_private(&key, ty.span, declared));
+            self.report(errors::leaked_type(
+                &key,
+                at == Level::Public,
+                ty.span,
+                declared,
+            ));
         }
     }
 
-    /// The first `private` struct or enum `ty` mentions, looking inside
-    /// arrays and `Option`.
-    fn private_inside(&self, ty: &Type) -> Option<String> {
-        match ty {
-            Type::Struct(k, _) | Type::Enum(k, _) => self
-                .privacy
-                .items
-                .get(k)
-                .is_some_and(|(_, private)| *private)
-                .then(|| k.clone()),
-            Type::Array(inner) | Type::Option(inner) => self.private_inside(inner),
-            Type::Fun(params, ret) => params
-                .iter()
-                .chain([&**ret])
-                .find_map(|t| self.private_inside(t)),
-            _ => None,
+    /// E0318 for a `public` function's bound naming an interface that isn't
+    /// `public` (v8).
+    fn bound_leaks(&mut self, params: &[TypeParam], at: Level) {
+        if at != Level::Public {
+            return;
+        }
+        for b in params.iter().flat_map(|p| &p.bounds) {
+            let Some(key) = self.interface_key(b) else {
+                continue;
+            };
+            if self.privacy.items.get(&key).is_some_and(|o| o.level < at) {
+                let declared = self.type_span(&key);
+                self.report(errors::leaked_type(&key, true, b.span, declared));
+            }
         }
     }
 }
@@ -260,18 +273,11 @@ mod tests {
     }
 
     #[test]
-    fn public_waits_for_packages() {
-        assert_eq!(
-            errors(&[(
-                "main.la",
-                "public fun f() {}\nstruct S { public x: i64 }\nimpl S { public fun g(self) {} }\nfun main() {}\n"
-            )]),
-            [
-                ("E0317", "public".to_string()),
-                ("E0317", "public".to_string()),
-                ("E0317", "public".to_string())
-            ]
-        );
+    fn public_is_allowed_in_v8() {
+        ok(&[(
+            "main.la",
+            "public fun f() {}\npublic struct S { public x: i64 }\nimpl S { public fun g(self) {} }\nfun main() {}\n",
+        )]);
     }
 
     #[test]

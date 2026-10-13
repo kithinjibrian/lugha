@@ -230,7 +230,7 @@ fn with_package(manifest: &str) -> Fixture {
         )
         .file(
             "libs/geo/shapes.la",
-            "fun area(r: f64): f64 = 3.0 * r * r;\n",
+            "public fun area(r: f64): f64 = 3.0 * r * r;\n",
         );
     f
 }

@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v8 Specification.md` (`lughac spec` prints it): Lugha v8, in progress (milestone 30, packages: loading and imports done; `public` next). `Language v8 Draft.md` is the approved plan. The v0–v7 files are frozen. `Result`, `Iter` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v8 Specification.md` (`lughac spec` prints it): Lugha v8, complete (milestone 30: packages — `lugha.toml`, package imports, `public` / package / `private` visibility). `Language v8 Draft.md` is the approved plan it was built from. The v0–v7 files are frozen. `Result`, `Iter` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
 
 ---
 
@@ -251,7 +251,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (declarations), construct.rs (E.V, Some, None), matching.rs (match, guards, W0103), patterns.rs (pattern typing),
 │   │                  usefulness.rs (E0417 witnesses, W0102), methods.rs (impl,
 │   │                  E0310), method_calls.rs (calls, receivers, E0415, E0508), arguments.rs (call arguments, arity), builtins.rs (push, pop, clear), swap.rs (swap, E0509), conflicts.rs (E0510), modules/ (mod.rs check_modules,
-│   │                  keys, passes; lookup.rs m.f / m.T, externs, main), visibility.rs (E0313/E0317/E0318),
+│   │                  keys, passes; lookup.rs m.f / m.T, externs, main), visibility.rs (E0313/E0318), levels.rs (v8 visibility levels: private, package, public),
 │   │                  struct_literal.rs (S { … }, m.S { … }), generics.rs (type parameters, E0315/E0316,
 │   │                  E0418, substitution), bounds.rs (Eq/Ord, E0419), infer.rs (type arguments, E0412,
 │   │                  Checked.instances), instances.rs (instance list, E0420, Checked.monos), layouts.rs
@@ -260,7 +260,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  E0422), input.rs (args, parse_i64/f64, interpolation), fun_values.rs (function types
 │   │                  and values, calls of values), closures.rs (closure types, captures, E0511), helpers.rs
 │   │                  (xs.map(f) etc. as prelude calls), results.rs (Ok/Err, `?`, E0424), errors/ (mod.rs, names.rs E03xx, types.rs E04xx, places.rs E05xx/W01xx,
-│   │                  generics.rs milestone 11–12 codes, v4.rs v4 codes, v5.rs v5 codes, v6.rs v6 codes),
+│   │                  generics.rs milestone 11–12 codes, v4.rs v4 codes, v5.rs v5 codes, v6.rs v6 codes, v8.rs v8 visibility),
 │   │                  iface_values.rs (interface types, E0425, conversion, Checked.conversions), iface_calls.rs
 │   │                  (calls on interface values), iface_tables.rs (Checked.interfaces, conversion reachability), type_patterns.rs
 │   │                  (`c: Circle` patterns, E0426), defaults.rs (default methods: `Self`, bodies, instances),
@@ -313,7 +313,7 @@ pub fn parse_number(src: &str) -> i64 {
 │                      execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
-│   └── specs/       — Language v8 Specification.md (the language definition, in progress, printed by `lughac spec`);
+│   └── specs/       — Language v8 Specification.md (the language definition, complete, printed by `lughac spec`);
 │                      Language v8 Draft.md (approved v8 plan, milestone 30); Language v7 Draft.md (approved v7 plan, milestones 27–29); Language v6 Draft.md (approved v6 plan, milestones 23–26); Language v5 Draft.md (approved v5 plan, milestones 20–22); Language v4 Draft.md (approved v4 plan, milestones 17–19); v3 and v2 Drafts (past plans);
 │                      Language v7, v6, v5, v4, v3, v2, v1 (v1.2) and v0 Specification.md (frozen)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
@@ -329,7 +329,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them, except the one it names: a value to an interface where one is expected (v5, recorded in `Checked.conversions`). Every other one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (package versions, iterator helpers, `Self` outside interfaces…) even partially. v8 (milestone 30, packages) follows `Language v8 Draft.md`; anything beyond it needs an approved spec change first.
+5. **Never implement a §11 "out of scope" feature** (package versions, iterator helpers, `Self` outside interfaces…) even partially. v8 is complete (milestone 30); any further language feature is v9 and needs an approved spec change first.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

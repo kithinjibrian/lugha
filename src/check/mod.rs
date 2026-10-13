@@ -39,6 +39,7 @@ mod instances;
 mod interfaces;
 mod iterators;
 mod layouts;
+mod levels;
 mod literal;
 mod liveness;
 mod matching;
@@ -133,6 +134,7 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagno
         path: &[],
         program,
         imports: &[],
+        package: None,
     }])
 }
 
@@ -154,6 +156,7 @@ impl Checker {
             changes: Vec::new(),
             mentions: HashMap::new(),
             module: Vec::new(),
+            package: None,
             imports: HashMap::new(),
             privacy: visibility::Privacy::default(),
             externs: HashMap::new(),
@@ -233,6 +236,8 @@ pub(super) struct Checker {
     mentions: HashMap<ExprId, liveness::Mention>,
     /// The module whose names are being resolved (PRP-034).
     module: Vec<String>,
+    /// Its package; `None` for the root package (v8).
+    package: Option<String>,
     /// The current module's imports: last segment → module path.
     imports: HashMap<String, Vec<String>>,
     /// Who declares what, and what is `private`.

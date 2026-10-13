@@ -2,12 +2,12 @@
 import mathx.consts;
 import util.names;
 
-struct Circle { r: f64 }
+public struct Circle { r: f64 }
 
 impl Circle {
-    fun area(self): f64 = consts.pi() * self.r * self.r;
+    public fun area(self): f64 = consts.pi() * self.r * self.r;
 }
 
-fun circle(r: f64): Circle = Circle { r: r };
+public fun circle(r: f64): Circle = Circle { r: r };
 
-fun label(c: Circle): string = "{names.kind()} {c.area()}";
+public fun label(c: Circle): string = "{names.kind()} {c.area()}";

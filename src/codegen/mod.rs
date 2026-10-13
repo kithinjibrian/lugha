@@ -127,6 +127,7 @@ pub fn emit_ir(
             path: &[],
             program,
             imports: &[],
+            package: None,
         }],
         checked,
         &[single(source)],
@@ -175,6 +176,7 @@ pub fn emit_object(
         path: &[],
         program,
         imports: &[],
+        package: None,
     }];
     emit_object_modules(&units, checked, &[single(source)], opt, path)
 }

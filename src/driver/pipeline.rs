@@ -184,6 +184,7 @@ fn units(modules: &[Module]) -> Vec<check::Unit<'_>> {
             path: &m.path,
             program: m.program.as_ref().expect("every module parsed"),
             imports: &m.imports,
+            package: m.package.as_deref(),
         })
         .collect()
 }

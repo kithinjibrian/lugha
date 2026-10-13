@@ -1,0 +1,16 @@
+error[E0313]: `diameter` is not `public`: it is only visible inside package `geo`
+  --> tests/programs/m30/e0313/main.la:6:15
+  |
+6 |     println(c.diameter());
+  |               ^^^^^^^^
+  |
+  = help: mark it `public` to use it from other packages
+
+error[E0313]: `r` is not `public`: it is only visible inside package `geo`
+  --> tests/programs/m30/e0313/main.la:7:13
+  |
+7 |     let d = shapes.Circle { r: 1.0 };
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: a `Circle` literal sets `r`: build it with one of `Circle`'s functions
+

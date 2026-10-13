@@ -1,15 +1,16 @@
-# Lugha v8 Specification (in progress: milestone 30)
+# Lugha v8 Specification
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestone 30, packages: loading and imports are done; `public` and package visibility are next). It is built from the approved plan, `Language v8 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v7 Specification.md` keeps v7 frozen.
+**Status:** complete (milestone 30). It is built from the approved plan, `Language v8 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v7 Specification.md` keeps v7 frozen.
 
 **v7.** This is v6 plus `u32`, `u64` and `f32`, bit operators, and wrapping and bit-counting methods on integers (milestones 27–29).
 
-**Changes since v7** (milestone 30 so far):
+**Changes since v7** (milestone 30):
 - A `lugha.toml` next to the main file lists packages, `name = "path"` under `[packages]`; `import geo.shapes;` then loads `shapes.la` from package `geo`'s folder, and a package may list its own packages in its own `lugha.toml` (section 6).
+- `public` is allowed (it was reserved, E0317): an item without a keyword is now visible within its own package, `public` makes it visible to other packages, and `private` still limits it to its module. A `public` declaration may mention only `public` types (sections 3, 6).
 
-Every valid v7 program is a valid v8 program.
+Every valid v7 program is a valid v8 program: one without a `lugha.toml` is a single package, where the default visibility still reaches every module.
 
 **v6.** This is v5 plus generic interfaces, iterators, `Self` in interfaces and converting between interfaces (milestones 23–26).
 
@@ -177,7 +178,7 @@ The grammar is LL(1) apart from expressions, which use Pratt parsing with the pr
 program      = { import } { item } EOF ;
 import       = "import" IDENT { "." IDENT } ";" ;
 item         = [ visibility ] ( fun_decl | extern_decl | struct_decl | enum_decl | interface_decl ) | impl_decl ;
-visibility   = "private" | "public" ;                (* `public`: E0317 until packages *)
+visibility   = "private" | "public" ;                (* `public`: v8, packages *)
 
 fun_decl     = "fun" IDENT [ type_params ] "(" [ params ] ")" [ ":" type ] fun_body ;
 fun_body     = block | "=" expr ";" ;          (* "= e;" means "{ e }" *)
@@ -681,7 +682,7 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 - **Not transitive.** A package's manifest is seen only by that package's modules: a program that wants `mathx` lists it itself, even if a package it uses lists `mathx` too.
 - **One name, one folder.** Across all the manifests of a build, a package name must mean one folder (compared after resolving `.` and `..`), or it is E0323 at the later entry. Because the root package's modules have no package prefix, no package name may also be a folder or `.la` file in the main file's folder, and inside a package a listed name may not also be one of that package's own folders or files: either is E0320.
 - **Loading.** Every file is read once, so packages may import each other. A package has no main file; `main` in one is E0304, and importing the program's main file is E0319, as for any module.
-- **Visibility.** Until `public` arrives (the rest of milestone 30), every item that isn't `private` is visible across packages.
+- **Visibility.** Another package sees only what is `public` (below).
 
 **Using another module.** `import shapes.circle;` binds the name `circle` in that file only.
 - **Calls:** `circle.area(c)` calls function `area` of the module.
@@ -691,12 +692,19 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 
 **Names.** Each module has its own namespace for functions, structs, enums, interfaces and externs, so two modules may each declare `Point`; duplicates within a module are a compile error. Intrinsics and the built-in names `Option`, `Some`, `None`, `Eq` and `Ord` are visible in every module, and no program may declare them (E0302). Methods live in their type's namespace, so a function `dist` and a method `Point.dist` can coexist. No local may be named like a type or an imported module (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then the module's own items, then imported module names. In messages a type from another module is shown with its full module path (`shapes.circle.Circle`); a main-file type keeps its bare name. `main` belongs in the main file (E0304 elsewhere).
 
-**Visibility.** Everything is visible to every module of the program unless it is marked `private`, which limits it to its own module. That covers functions, externs, structs, enums, methods, associated functions and struct fields.
-- **Private items** (E0313): naming another module's `private` item, calling its `private` method, or reading or assigning its `private` field (including through `swap` and `mut self`) is an error.
+**Visibility.** Each function, extern, struct, enum, interface, method, associated function and struct field has one of three levels (v8):
+
+| Written | Visible in |
+| --- | --- |
+| `private` | its own module only |
+| nothing | every module of its own package |
+| `public` | every package that imports its module |
+
+A program without a `lugha.toml` is one package, so there "nothing" means the whole program, as before v8. The prelude's items are visible everywhere.
+- **Using what isn't visible** (E0313): naming such an item, calling such a method, or reading or assigning such a field (including through `swap` and `mut self`) is an error. Its message says why: "`helper` is private to module `range`", or "`helper` is not `public`: it is only visible inside package `geo`". A method another package can't see doesn't satisfy that package's interface bounds (E0422).
 - **Struct literals:** a literal outside the struct's module needs every field to be visible, so a struct with a `private` field is built through one of its functions (`range.Range.new(1, 5)`). This is how a type protects an invariant such as `lo <= hi`. `==`, copies and passing values are unaffected: they never name a field.
 - **Fields and variants:** a field can be no more visible than its struct; variants share their enum's visibility.
-- **`public`** is reserved for packages (v3), where it will mean "visible to other packages". Writing it is E0317.
-- **No leaking** (E0318): a declaration that isn't `private` may not mention a `private` type in its signature (parameters, return type, a field's type, a variant's payloads), looking inside arrays and `Option`, since other modules couldn't name that type.
+- **No leaking** (E0318): a declaration may not mention a type less visible than itself, since the code that can use it couldn't name that type. A declaration that isn't `private` may not mention a `private` type in its signature (parameters, return type, a field's type, a variant's payloads, an interface item), looking inside arrays, `Option` and function types. A `public` declaration (v8) may mention only `public` structs, enums and interfaces, looking also inside type arguments (`Box<Inner>`), interface types and a generic function's bounds.
 
 **Functions.** Declared with `fun`, typed parameters, and an optional `: type` return annotation. Omitting the annotation means `void`.
 
@@ -928,12 +936,12 @@ Name and type errors, reported by the checker:
 | E0310 | Method declared twice, or named like a field or variant | `impl P { fun x(self) {} }` where `P` has a field `x` |
 | E0311 | A local named like a type or an imported module | `let Shape = 3;`, `fun f(Point: i64)` |
 | E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` (v2) |
-| E0313 | Another module's `private` item, method or field | `range.helper()`; `r.lo`; `range.Range { lo: 1, hi: 5 }` (v2) |
+| E0313 | An item, method or field not visible here | another module's `private` item: `range.helper()`, `r.lo`, `range.Range { lo: 1, hi: 5 }` (v2); another package's item without `public` (v8) |
 | E0314 | Import clash | `import a.util;` and `import b.util;` in one file; an import named like an item (v2) |
 | E0315 | Unknown bound | `fun f<T: Hash>(x: T)`; a struct as a bound (v2) |
 | E0316 | Bad type parameter name | `fun f<T, T>()`, a parameter named like a struct (v2) |
-| E0317 | `public` before packages exist | `public fun f() {}` (v2) |
-| E0318 | A `private` type in a non-`private` signature | `private struct S {}` then `fun make(): S` (v2) |
+| E0317 | Retired in v8 (was: `public` before packages existed); never reported, never reused | |
+| E0318 | A declaration exposing a less visible type | `private struct S {}` then `fun make(): S` (v2); `public fun a(): Inner` where `Inner` isn't `public` (v8) |
 | E0319 | The main file imported | a module writing `import main;` (v2) |
 | E0320 | A package name that is also a local folder or file (v8) | `geo` in `lugha.toml` while `geo/` sits next to `main.la` |
 | E0321 | A malformed `lugha.toml` (v8) | `geo = libs/geo` (no quotes); `[deps]`; `geo` listed twice |
@@ -1810,6 +1818,38 @@ fun main() {
 }
 ```
 
+**Packages** (milestone 30). Prints `12.0`, exits with 0. The files sit as their first lines say, and `lughac run main.la` builds them all.
+
+```
+# lugha.toml
+[packages]
+geo = "libs/geo"
+```
+
+```
+// libs/geo/shapes.la
+public struct Circle { r: f64 }
+
+impl Circle {
+    public fun area(self): f64 = 3.0 * self.r * self.r;
+    fun diameter(self): f64 = 2.0 * self.r;
+}
+
+public fun circle(r: f64): Circle = Circle { r: r };
+```
+
+```
+// main.la
+import geo.shapes;
+
+fun main() {
+    let c = shapes.circle(2.0);
+    println(c.area());
+}
+```
+
+In the same layout, a `main.la` that calls `c.diameter()` or writes `shapes.Circle { r: 1.0 }` is rejected with E0313: `diameter` and the field `r` have no `public`, so only package `geo` may use them.
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1845,7 +1885,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 27 | More numbers (v7) | `u32`, `u64`, `f32`: literals, arithmetic, casts, printing, externs | The more-numbers program in section 10 passes (done) |
 | 28 | Bits (v7) | `& \| ^ ~ << >>`, the compound forms, `0b` literals, the shift panic | The bits program in section 10 passes (done) |
 | 29 | Integer methods (v7) | `wrapping_add`/`sub`/`mul`, `count_ones`, `leading_zeros`, `trailing_zeros` | The hashing program in section 10 passes (done: v7 complete) |
-| 30 | Packages (v8) | `lugha.toml`, package imports, per-package manifests, `public` and package visibility, E0320–E0323 | The packages programs in section 10 pass (in progress: loading done) |
+| 30 | Packages (v8) | `lugha.toml`, package imports, per-package manifests, `public` and package visibility, E0320–E0323 | The packages program in section 10 passes (done: v8 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -1895,3 +1935,5 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [ ] **One argument per type** (v6). A type satisfies `Source<X>` for at most one `X`, since it has one `next`. That suits iterators but rules out an interface such as `From<T>` implemented once per `T`, which would need methods overloaded by type.
 - [ ] **`%=`** (v7). The compound assignments still lack `%=`, which v0 left out. Adding it is one line of grammar if programs want it.
 - [ ] **Unsigned indexes** (v7). `xs[i]` needs an `i64`, so a `u32` index needs a cast. Accepting any integer index would remove the cast, but it needs a rule for negative values.
+- [ ] **Re-exports** (v8). A package can't yet expose another package's items as its own (`public import`); users import both.
+- [ ] **A `--package` flag** (v8). Pointing at a package without editing `lugha.toml`, for a one-off build, could come later as a command-line override.

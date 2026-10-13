@@ -19,6 +19,8 @@ pub struct Unit<'a> {
     /// Each import's resolved module path (v8, `Module::imports`); empty
     /// means the paths as written, as for a single file.
     pub imports: &'a [Vec<String>],
+    /// The module's package (v8, `Module::package`); `None` for the root.
+    pub package: Option<&'a str>,
 }
 
 /// Type-checks a whole program of modules, the main file first.
@@ -136,6 +138,7 @@ impl Checker {
     /// Makes `unit` the module whose names are being resolved.
     fn enter(&mut self, unit: &Unit) {
         self.module = unit.path.to_vec();
+        self.package = unit.package.map(str::to_string);
         self.imports = unit
             .program
             .imports
@@ -175,12 +178,16 @@ pub(crate) mod test_util {
 
     /// Loads `files` (`main.la` first) from memory.
     pub fn loaded(files: &[(&str, &str)]) -> Loaded {
-        let mut read = |path: &Path| {
-            files
+        // A folder exists when a file is under it (v8 manifests probe folders).
+        let mut read = |path: &Path| match files.iter().find(|(name, _)| Path::new(name) == path) {
+            Some((_, src)) => Ok(src.as_bytes().to_vec()),
+            None if files
                 .iter()
-                .find(|(name, _)| Path::new(name) == path)
-                .map(|(_, src)| src.as_bytes().to_vec())
-                .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::NotFound))
+                .any(|(name, _)| Path::new(name).starts_with(path)) =>
+            {
+                Err(std::io::Error::from(std::io::ErrorKind::IsADirectory))
+            }
+            None => Err(std::io::Error::from(std::io::ErrorKind::NotFound)),
         };
         let loaded = load(Path::new("main.la"), &mut read).expect("files are readable");
         assert!(loaded.diagnostics.is_empty(), "{:?}", loaded.diagnostics);
@@ -196,6 +203,7 @@ pub(crate) mod test_util {
                 path: &m.path,
                 program: m.program.as_ref().expect("parsed"),
                 imports: &m.imports,
+                package: m.package.as_deref(),
             })
             .collect();
         check_modules(&units)

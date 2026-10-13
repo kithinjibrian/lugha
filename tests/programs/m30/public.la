@@ -1,0 +1,14 @@
+// `public` is allowed since v8 (it was E0317); in a program without
+// packages it changes nothing.
+
+public struct Point { public x: i64 }
+
+impl Point {
+    public fun twice(self): i64 = self.x * 2;
+}
+
+public fun make(): Point = Point { x: 21 };
+
+fun main() {
+    println(make().twice());
+}

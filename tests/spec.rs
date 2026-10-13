@@ -97,6 +97,7 @@ fn the_extractor_finds_every_section_10_program() {
         "More numbers",
         "Bits",
         "Hashing",
+        "Packages",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),
@@ -151,7 +152,11 @@ fn every_section_10_program_runs_as_stated() {
         };
         let dir = TempDir::with(main, &program.source);
         for (name, src) in &program.modules {
-            std::fs::write(dir.0.join(name), src).expect("temp dir is writable");
+            // A package's files sit in folders (v8).
+            let path = dir.0.join(name);
+            let parent = path.parent().expect("a file has a folder");
+            std::fs::create_dir_all(parent).expect("temp dir is writable");
+            std::fs::write(path, src).expect("temp dir is writable");
         }
         for opt in ["-O0", "-O2"] {
             let mut command = vec!["run", opt, main];

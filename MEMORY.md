@@ -1099,10 +1099,18 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 71. Package visibility — v8 complete (PRP-059)
+
+**Decision:** `check/levels.rs`: `Level { Private, Package, Public }` from the keyword; `Owner { module, package, level }` per item (`Privacy.items`), methods/fields store a `Level` and use their type's owner; prelude items are `Public`. `Checker.package` comes from `Unit.package` (`Module::package`). `denied` decides (Public anywhere; Package same package; Private same module) for `item_visible`, `method_visible`, `method_usable` (bounds), `field_visible`, `literal_visible` (reports the hidden field; skipped when the type itself is hidden). Messages: v2's for private; `errors/v8.rs::package_item` for package. E0318 via `hidden_inside(ty, at)`: shallow structs/enums for v7 levels (unchanged), deep (type args, interface types, bounds) only for `public` declarations, so no v7 program changes. E0317 retired (constructor and `m10/e0317` golden removed; `m30/public` shows `public` builds). Spec extractor: `# lugha.toml` blocks, subfolder files, only `.la` lexed/parsed.
+
+**Why:** levels compare as an ordered enum, so leak checks are "less visible than the declaration".
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
-- **Milestone 30, part 1**: PRP-058 loading packages; v8 spec begins
+- **Milestone 30 complete — Lugha v8 complete**: PRP-058 loading packages, PRP-059 package visibility
 - **Milestone 29 complete — Lugha v7 complete**: PRP-057 integer methods
 - **Milestone 28 complete**: PRP-056 bit operators
 - **Milestone 27 complete**: PRP-055 `u32`, `u64`, `f32`; v7 spec begins
@@ -1170,23 +1178,25 @@ Open questions live in `DECISIONS.md`, not here.
 - v0 language spec reviewed and fixed
 
 ### In Progress
-- Milestone 30: PRP-059 visibility next
+- Nothing
 
 ### Not Started
-- Milestone 30 part 2 (PRP-059)
+- Lugha v9 (nothing planned; see the v8 spec's §11 out-of-scope list)
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 30, part 1 done** (PRP-058, MEMORY 70): `lugha.toml`, package imports, per-package manifests, E0320–E0323. `Language v8 Specification.md` (in progress) is what `lughac spec` prints; v7 is frozen.
+**Lugha v8 is complete** (milestone 30; PRP-058–059; MEMORY 69–71): packages — `lugha.toml`, package imports, per-package manifests, `public` / package / `private` visibility. Tags `m30` and `v8` go on the merge of PRP-059. `Language v8 Specification.md` is what `lughac spec` prints; v0–v7 are frozen.
 
-Next: **PRP-059, `public` and package visibility** (completes milestone 30 and v8; tags `m30`, `v8`; part of the user's "in one go"). Scope (v8 draft decision 3, §3, §6 "Visibility", E0313/E0318 changes, E0317 retired, §10 "Packages" and "A rejected package program"):
-- `public` allowed on items, methods, fields (`check/visibility.rs` E0317 goes); `Unit` needs the module's package (`Module.package`);
-- no keyword = visible within the package: E0313 from another package, message naming the package; `private` unchanged; interface satisfaction respects it;
-- E0318: a `public` declaration mentioning a non-`public` type;
-- spec §10: the packages programs need the extractor (`tests/common/spec_programs.rs`) to accept `# lugha.toml` and files in subfolders (`// libs/geo/shapes.la`).
+Next: **v9 direction — discovery** (one question at a time, recommended option first; explain options concretely — what you type, where it lives). Candidates are in the v8 spec's §11 out-of-scope list and §12 open questions:
+- or-patterns and `mut` bindings in `match`, `unwrap()`, `%=` (recommended for v8 but not chosen);
+- iterator helpers, strings as iterators, `for n of mut c`;
+- `Self` outside interfaces, default methods on concrete types;
+- package versions/downloading, re-exports (`public import`), a `--package` flag;
+- `i8`/`i16`/`u16`, rotations, checked/saturating methods, `parse_u64`, unsigned indexes;
+- binary I/O, directories, streams and processes.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/array.rs` (295), `check/env.rs` (295), `check/visibility.rs` (294), `check/generics.rs` (294), `check/satisfy.rs` (294).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `check/visibility.rs` (~297).
 
 See `TODO.md`.

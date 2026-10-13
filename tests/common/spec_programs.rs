@@ -136,15 +136,19 @@ pub fn section_10() -> Vec<SpecProgram> {
     programs
 }
 
-/// A multi-file example: every block whose first line is `// <file>.la`,
-/// split into `main.la`'s source and the other files. `None` for one file.
+/// A multi-file example: every block whose first line is `// <path>.la`,
+/// or `# lugha.toml` for a manifest (v8), split into `main.la`'s source and
+/// the other files, by path from the main file's folder. `None` for one file.
 fn files(blocks: &[String]) -> Option<(String, Vec<(String, String)>)> {
     let named: Vec<(String, String)> = blocks
         .iter()
         .filter_map(|block| {
             let first = block.lines().next()?;
-            let name = first.strip_prefix("// ")?.trim();
-            name.ends_with(".la")
+            let name = first
+                .strip_prefix("// ")
+                .or_else(|| first.strip_prefix("# "))?
+                .trim();
+            (name.ends_with(".la") || name.ends_with("lugha.toml"))
                 .then(|| (name.to_string(), block.clone()))
         })
         .collect();
@@ -198,10 +202,15 @@ pub fn all() -> Vec<(String, String)> {
         .into_iter()
         .chain([milestone_2()])
         .flat_map(|p| {
-            let modules = p.modules.into_iter().map({
-                let title = p.title.clone();
-                move |(name, src)| (format!("{title} ({name})"), src)
-            });
+            // Only Lugha sources: a manifest (v8) is not lexed or parsed.
+            let modules = p
+                .modules
+                .into_iter()
+                .filter(|(name, _)| name.ends_with(".la"))
+                .map({
+                    let title = p.title.clone();
+                    move |(name, src)| (format!("{title} ({name})"), src)
+                });
             std::iter::once((p.title, p.source)).chain(modules)
         })
         .collect()

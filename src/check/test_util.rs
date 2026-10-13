@@ -33,6 +33,7 @@ fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic
             path: &m.path,
             program: m.program.as_ref().expect("both parsed"),
             imports: &m.imports,
+            package: m.package.as_deref(),
         })
         .collect();
     check_modules(&units)
