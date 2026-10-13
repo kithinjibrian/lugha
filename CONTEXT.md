@@ -2210,6 +2210,12 @@ CLAUDE.md (rule 7, tree, known issue), README.md, TODO.md, CHANGELOG.md, MEMORY.
 
 ---
 
+## SESSION 43 — 2026-10-13 — v2 interfaces amendment (milestone 12) — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 10 is complete** (tag `m10`): modules, `import`, per-module names, `private`/`public` (E0313/E0317/E0318), and module symbols `lugha_fn_a/b/f`. `lughac spec` prints the v2 spec, "in progress: milestone 11".
