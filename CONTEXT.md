@@ -3017,26 +3017,44 @@ Branch: prp-049-default_methods
 
 ---
 
-## SESSION 62 — 2026-10-13 — Merge milestones 21 and 22; v5 — open
+## SESSION 62 — 2026-10-13 — Merge milestones 21 and 22; v5 — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user reviewed sessions 60–61 (built while away) and said "merge".
+- `main` fast-forwarded to `prp-049-default_methods` (which contains `prp-048-type_patterns`).
+- Tags: `m21` on the PRP-048 commit, `m22` and `v5` on this close commit.
+- PRP-048 and PRP-049 marked merged; both branches deleted locally and remotely.
+
+### FILES CREATED OR MODIFIED
+- PRP-048, PRP-049 (status), MEMORY.md (state, start point), CONTEXT.md.
+
+### TESTS WRITTEN
+- None (merge only; CI checked on `main`).
+
+### DECISIONS MADE
+- The "decisions taken while away" in PRP-048 and PRP-049 (MEMORY 57–58) stand as approved.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v5 is built, not merged.** The user was away and chose "build m21 and m22, hold merges":
-- `prp-048-type_patterns`: milestone 21, type patterns (PRP-048, MEMORY 57), CI green;
-- `prp-049-default_methods`: milestone 22, default methods and `?` conversion (PRP-049, MEMORY 58), stacked on it, CI green.
+**Lugha v5 is complete and merged** (tags `m21`, `m22`, `v5`; PRP-048 and PRP-049, MEMORY 57–58, approved by the user as built, including the decisions taken while away). `Language v5 Specification.md` is what `lughac spec` prints.
 
-`main` is at milestone 20 (tag `m20`).
+Next: **v6 direction — discovery** (one question at a time, recommended option first). Candidates are in the v5 spec's §11 out-of-scope list and §12 open questions:
+- `Self` and generic interfaces;
+- packages;
+- bitwise operators and more integer types;
+- `match` additions and `unwrap()`;
+- binary I/O;
+- §12: defaults callable on concrete types, inline storage of small boxed values.
 
-**On the user's return:**
-1. Review "Decisions taken while away" in PRP-048 (5 items) and PRP-049 (5 items), and the amendments (notably the `match` scrutinee parsing change in PRP-048).
-2. If approved:
-   - fast-forward `main` to `prp-048-type_patterns` and tag `m21`;
-   - then to `prp-049-default_methods` and tag `m22` and `v5`;
-   - mark both PRPs merged; delete both branches.
-
-Then: v6 direction (discovery). Candidates are in the v5 spec's §11 out-of-scope list: `Self` and generic interfaces, packages, bitwise operators and more integer types, `match` additions and `unwrap()`, binary I/O.
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `codegen/control.rs` (292), `check/infer.rs` (291), `codegen/interfaces.rs` (266).
 
 See `TODO.md`.

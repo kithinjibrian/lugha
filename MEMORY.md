@@ -1017,20 +1017,22 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- Lugha v5 (nothing planned; see the v4 spec's §11 out-of-scope list)
+- Lugha v6 (nothing planned; see the v5 spec's §11 out-of-scope list)
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 20 complete** (tag `m20`; PRP-046 and PRP-047, MEMORY 55–56): interface values check, compile and run. `Language v5 Specification.md` is in progress (milestone 20) and is what `lughac spec` prints; v4 (with v4.1) is frozen.
+**Lugha v5 is complete and merged** (tags `m21`, `m22`, `v5`; PRP-048 and PRP-049, MEMORY 57–58, approved by the user as built, including the decisions taken while away). `Language v5 Specification.md` is what `lughac spec` prints.
 
-Next: **milestone 21, type patterns** — discovery and PRP-048. Its scope (v5 draft §3, §4 "Type patterns", §9 E0426, §10 "Type patterns"):
-- `name: T` and `_: T` patterns in `match` on an interface value, nested and guarded;
-- a `_` arm required (E0417 with `_` as the witness); W0102 for a repeated unguarded type;
-- E0426 for a type pattern on a non-interface value, with an interface as `T`, or with a `T` that can't satisfy the interface;
-- codegen compares the table's identity slot (slot 0, `lugha_type_<Type>`) with the pattern type's, then binds the box's value (copied when stored).
+Next: **v6 direction — discovery** (one question at a time, recommended option first). Candidates are in the v5 spec's §11 out-of-scope list and §12 open questions:
+- `Self` and generic interfaces;
+- packages;
+- bitwise operators and more integer types;
+- `match` additions and `unwrap()`;
+- binary I/O;
+- §12: defaults callable on concrete types, inline storage of small boxed values.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/array.rs` (297), `check/infer.rs` (291), `codegen/control.rs` (292), `check/usefulness.rs` (277), `check/matching.rs` (260), `codegen/patterns.rs` (261), `codegen/matching.rs` (253).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `codegen/control.rs` (292), `check/infer.rs` (291), `codegen/interfaces.rs` (266).
 
 See `TODO.md`.

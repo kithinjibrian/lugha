@@ -1,6 +1,6 @@
 ## FEATURE: Default methods and `?` error conversion — milestone 22; v5 complete.
 
-**Status:** pre-approved 2026-10-13 — session 61 (built while the user was away; open questions answered with the recommended option, listed below for review; merge held for the user; stacked on `prp-048-type_patterns`)
+**Status:** merged 2026-10-13 — session 62 (built in session 61 while the user was away; decisions approved at merge)
 **Milestone:** 22 (one PRP; completes v5; tags `m22` and `v5` at merge)
 **Spec:** `Language v5 Draft.md`:
 - decisions 5–6;
