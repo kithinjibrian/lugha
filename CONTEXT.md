@@ -3137,7 +3137,7 @@ Branch: prp-051-generic_interface_values (merged into main)
 ---
 
 ## SESSION 66 — 2026-10-13 — Iterators (milestone 24) — open
-Branch: main
+Branch: prp-052-iterators
 
 ---
 
