@@ -504,9 +504,33 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 38. Modules front end (PRP-033)
+
+**Decision:**
+- **M10 split:** 033 is the front end; 034 covers names, visibility and symbols.
+- **Stage:** `src/modules/` (lexer → parser → **modules** → check). `load(main, read)` takes a read closure, so tests run in memory.
+  - The root is the main file's directory; `import a.b` reads `<root>/a/b.la`.
+  - Each file is read once (BFS), so cycles are free.
+  - Errors: E0312 at the import, E0314 for a repeat, a last-segment clash or a clash with an item, and E0319 for importing the main file (a new code).
+  - An unreadable existing file is `LoadError::Io` (internal).
+- **One offset space:** each file's base is the previous base plus its length plus 1. Tokens are shifted after lexing, so `Span` is unchanged.
+- **Driver:** `Source` is a map of `SourceFile { name, base, text }`. The main file is named as given; modules relative to the root.
+  - Rendering uses codespan `SimpleFiles` with per-file local ranges.
+  - JSON gives local offsets; a label in another file gets a `"file"` key, so single-file output is identical.
+- **`--emit=tokens|ast`:** a `; module <name>` header when there is more than one module. `--emit=tokens` re-lexes each module.
+- **Visibility syntax:** `Visibility { kind: Private | Public, span }` on fun, extern, struct, enum and methods, plus a real `Field` struct. A visibility on a parameter or before `import` is one E0201. The gate stops visibility as milestone 10.
+- **Runner:** a directory `d/` with `d.stdout|exit|stderr` beside it is one case (`runner/dirs.rs`).
+
+**Why:** These are the session 41 discovery answers. The offset space keeps AST nodes small (the E0206 limit) and leaves check and codegen untouched.
+
+**Rules out:** a file id in `Span`; reading outside the root.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- PRP-033: modules front end — loading, E0312/E0314/E0319, file-aware diagnostics and `--emit`, `private`/`public` syntax
 - **Milestone 9 complete**: PRP-032 nested patterns, guards, usefulness-based E0417/W0102, W0103
 - PRP-031: deep `==` on every type, string order; `Language v2 Specification.md` (in progress) printed by `lughac spec`
 - PRP-030: all v2 syntax parses (`--emit=ast`); `driver/gate/` stops v2 constructs until their milestone

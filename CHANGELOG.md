@@ -13,6 +13,7 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- Modules front end: `lughac` loads the main file and every module it imports (cycles allowed), reporting a missing module (E0312), clashing imports (E0314) and importing the main file (E0319); diagnostics name the file they are in (human and JSON), and `--emit=tokens|ast` prints every module. `private` and `public` replace `pub` as keywords; programs that import or use them still stop at the milestone 10 gate
 - v2 draft amended (visibility): everything is visible to the whole program by default, `private` limits an item, method or field to its module (struct literals need every field visible), `public` is reserved for v3 packages; rationale in `docs/decisions/visibility.md`
 - Nested `match` patterns (`Some(Circle(r))`, `Pair(1, Some("a"))`) and `if` guards; E0417 now lists the missing cases as patterns (up to three, then "and N more"), W0102 also catches arms covered by several earlier arms, and new warning W0103 flags unused bindings (such as a misspelled variant) — **milestone 9 complete**
 - `==` and `!=` on every type, compared deeply (structs, enums, `Option`, arrays; `NaN` stays unequal), and bytewise `<`/`<=`/`>`/`>=` on strings; either operand can type the other (`None == o`). `lughac spec` now prints `Language v2 Specification.md` (in progress: milestone 9); v1.2's file is frozen

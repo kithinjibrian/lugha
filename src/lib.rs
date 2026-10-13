@@ -13,6 +13,7 @@ pub mod diagnostic;
 pub mod driver;
 pub mod lexer;
 pub mod link;
+pub mod modules;
 pub mod parser;
 pub mod span;
 

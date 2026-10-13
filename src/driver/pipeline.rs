@@ -12,13 +12,13 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use super::gate;
 use super::render::Report;
-use super::source::{self, LoadError, Source};
+use super::source::Source;
 use crate::ast::Program;
 use crate::check::{self, Checked};
 use crate::codegen::{self, CodegenError, OptLevel};
-use crate::diagnostic::Diagnostic;
-use crate::lexer::{self, Token};
-use crate::{link, parser};
+use crate::diagnostic::{Diagnostic, Severity};
+use crate::link;
+use crate::modules::{self, Loaded, Module};
 
 /// Why a command stopped.
 pub(super) enum Failure {
@@ -29,54 +29,59 @@ pub(super) enum Failure {
     Internal(Source, Box<Report>),
 }
 
-/// A program that lexed and parsed, with any warnings found on the way.
+/// A program whose modules all loaded and parsed, with any warnings.
 pub(super) struct Front {
     pub source: Source,
+    /// Every module, the main file first (PRP-033).
+    pub modules: Vec<Module>,
+    /// The main module. While imports are gated it is the whole program.
     pub program: Program,
     pub warnings: Vec<Diagnostic>,
     /// The checker's output; `None` for the parse-only front end (`--emit=ast`).
     pub checked: Option<Checked>,
 }
 
-/// Reads `path`; an unreadable file is internal, invalid UTF-8 is E0110.
-pub(super) fn load(path: &Path) -> Result<Source, Failure> {
-    source::load(path).map_err(|error| match error {
-        LoadError::Io(e) => {
-            let name = path.display().to_string();
-            let report = Report::internal(format!("cannot read `{name}`: {e}"), None);
-            Failure::Internal(
-                Source {
-                    name,
-                    text: String::new(),
-                },
+/// Loads `path` and every module it imports. A file that can't be read is
+/// internal; mistakes in the program come back as diagnostics.
+pub(super) fn loaded(path: &Path) -> Result<(Source, Loaded), Failure> {
+    let name = path.display().to_string();
+    let mut read = |file: &Path| std::fs::read(file);
+    match modules::load(path, &mut read) {
+        Ok(loaded) => {
+            let root = path.parent().unwrap_or(Path::new(""));
+            Ok((Source::of(&name, root, &loaded.modules), loaded))
+        }
+        Err(error) => {
+            let report = Report::internal(error.to_string(), None);
+            Err(Failure::Internal(
+                Source::single(name, ""),
                 Box::new(report),
-            )
+            ))
         }
-        LoadError::Utf8(source, diagnostic) => Failure::Program(source, vec![*diagnostic]),
-    })
-}
-
-/// Lexes `source`, returning tokens and warnings.
-pub(super) fn tokens(source: &Source) -> Result<(Vec<Token>, Vec<Diagnostic>), Failure> {
-    lexer::lex(&source.text).map_err(|errors| Failure::Program(source.clone(), errors))
-}
-
-/// Reads, lexes and parses `path` — everything `--emit=ast` needs.
-pub(super) fn parsed(path: &Path) -> Result<Front, Failure> {
-    let source = load(path)?;
-    let (tokens, mut warnings) = tokens(&source)?;
-    match parser::parse(&tokens) {
-        Ok((program, parse_warnings)) => {
-            warnings.extend(parse_warnings);
-            Ok(Front {
-                source,
-                program,
-                warnings,
-                checked: None,
-            })
-        }
-        Err(errors) => Err(Failure::Program(source, errors)),
     }
+}
+
+/// Loads, lexes and parses every module — everything `--emit=ast` needs.
+pub(super) fn parsed(path: &Path) -> Result<Front, Failure> {
+    let (source, loaded) = loaded(path)?;
+    if loaded
+        .diagnostics
+        .iter()
+        .any(|d| d.severity == Severity::Error)
+    {
+        return Err(Failure::Program(source, loaded.diagnostics));
+    }
+    let program = loaded.modules[0]
+        .program
+        .clone()
+        .expect("a module without errors parsed");
+    Ok(Front {
+        source,
+        modules: loaded.modules,
+        program,
+        warnings: loaded.diagnostics,
+        checked: None,
+    })
 }
 
 /// Reads, lexes, parses and type-checks `path` (spec §9 stages 1–3), stopping
@@ -84,7 +89,12 @@ pub(super) fn parsed(path: &Path) -> Result<Front, Failure> {
 pub(super) fn front(path: &Path) -> Result<Front, Failure> {
     let mut front = parsed(path)?;
     // v2 syntax parses, but the checker only knows what has landed (PRP-030).
-    if let Some(gated) = gate::first(&front.program) {
+    let gated = front
+        .modules
+        .iter()
+        .filter_map(|m| m.program.as_ref().and_then(gate::first))
+        .next();
+    if let Some(gated) = gated {
         let message = format!(
             "not implemented yet: {} (milestone {})",
             gated.what, gated.milestone
@@ -159,8 +169,8 @@ pub(super) fn default_output(file: &Path) -> PathBuf {
 /// The source name and text codegen needs for panic locations.
 fn source_info(front: &Front) -> codegen::SourceInfo<'_> {
     codegen::SourceInfo {
-        name: &front.source.name,
-        text: &front.source.text,
+        name: &front.source.main().name,
+        text: &front.source.main().text,
     }
 }
 

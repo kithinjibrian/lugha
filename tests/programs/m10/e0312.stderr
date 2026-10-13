@@ -1,0 +1,8 @@
+error[E0312]: module `shapes.cirlce` not found
+  --> tests/programs/m10/e0312.la:1:8
+  |
+1 | import shapes.cirlce;
+  |        ^^^^^^^^^^^^^
+  |
+  = help: there is no file `tests/programs/m10/shapes/cirlce.la`
+

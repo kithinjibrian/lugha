@@ -89,7 +89,8 @@ Done when the v2 draft's patterns program passes.
 
 ### Milestone 10 — Modules
 Done when the two-module program passes.
-- [ ] `import`, `private` (items, methods, fields), `public` reserved (E0317), no-leak rule (E0318), multi-file loading, per-file diagnostics, module-qualified symbols (E0312–E0314). Visibility follows `docs/decisions/visibility.md` (amended draft, session 40)
+- [x] PRP-033: front end — `private`/`public` syntax, loading every imported module (E0312, E0314, E0319), one offset space, file-aware diagnostics and `--emit`, directory test cases
+- [ ] PRP-034: names across modules, `private` (E0313), `public` (E0317), no leaking (E0318), module symbols, gate removed — **milestone 10 done**
 
 ### Milestone 11 — Generics
 Done when the generics program passes and the full v2 spec replaces v1 in `lughac spec`.

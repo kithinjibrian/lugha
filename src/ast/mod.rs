@@ -12,7 +12,7 @@ mod header;
 mod pattern;
 
 pub use expr::{BinOp, Expr, ExprId, ExprKind, StructLiteral, UnOp};
-pub use header::{Import, TypeParam};
+pub use header::{Field, Import, TypeParam, Visibility, VisibilityKind};
 pub use pattern::{Arm, Pattern, PatternKind};
 
 use crate::span::Span;
@@ -55,8 +55,8 @@ pub enum Item {
 /// A function with a body.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunDecl {
-    /// The `pub` keyword, if written (v2 draft §6).
-    pub public: Option<Span>,
+    /// `private` or `public`, if written (v2 draft §6).
+    pub visibility: Option<Visibility>,
     /// Function name.
     pub name: Ident,
     /// `<T, U: Eq>` after the name (v2 draft §4).
@@ -76,8 +76,8 @@ pub struct FunDecl {
 /// A C function declaration (spec §8).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ExternDecl {
-    /// The `pub` keyword, if written (v2 draft §8).
-    pub public: Option<Span>,
+    /// `private` or `public`, if written (v2 draft §6).
+    pub visibility: Option<Visibility>,
     /// The C symbol name.
     pub name: Ident,
     /// Parameters in order.
@@ -91,8 +91,8 @@ pub struct ExternDecl {
 /// A struct declaration.
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructDecl {
-    /// The `pub` keyword, if written (v2 draft §6).
-    pub public: Option<Span>,
+    /// `private` or `public`, if written (v2 draft §6).
+    pub visibility: Option<Visibility>,
     /// Struct name.
     pub name: Ident,
     /// `<T, …>` after the name (v2 draft §4).
@@ -115,8 +115,8 @@ pub struct Receiver {
 /// An enum declaration (v1).
 #[derive(Debug, Clone, PartialEq)]
 pub struct EnumDecl {
-    /// The `pub` keyword, if written (v2 draft §6).
-    pub public: Option<Span>,
+    /// `private` or `public`, if written (v2 draft §6).
+    pub visibility: Option<Visibility>,
     /// Enum name.
     pub name: Ident,
     /// `<T, …>` after the name (v2 draft §4).
@@ -153,7 +153,7 @@ pub struct ImplDecl {
     pub span: Span,
 }
 
-/// A typed name: a function parameter or a struct field.
+/// A typed name: a function parameter.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Param {
     /// The name.
@@ -161,9 +161,6 @@ pub struct Param {
     /// Its declared type.
     pub ty: Type,
 }
-
-/// A struct field has the same shape as a parameter.
-pub type Field = Param;
 
 /// A written type.
 #[derive(Debug, Clone, PartialEq, Eq)]

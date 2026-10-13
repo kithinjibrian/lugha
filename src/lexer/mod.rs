@@ -167,10 +167,14 @@ mod tests {
         ];
         assert_eq!(kinds(src), expected);
         // v2 draft §2; longer words stay identifiers.
-        assert_eq!(kinds("import pub"), [Import, Pub]);
+        assert_eq!(kinds("import private public"), [Import, Private, Public]);
         assert_eq!(
-            kinds("important pubs"),
-            [Ident("important".into()), Ident("pubs".into())]
+            kinds("important pub privately"),
+            [
+                Ident("important".into()),
+                Ident("pub".into()),
+                Ident("privately".into())
+            ]
         );
         // `Option`, `Some` and `None` are built-in names, not keywords (v1 §2).
         assert_eq!(

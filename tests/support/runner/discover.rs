@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use super::{Case, Malformed, Mode, lossy};
+use super::{Case, Malformed, Mode, dirs, lossy};
 
 #[derive(Default)]
 struct Group {
@@ -14,7 +14,8 @@ struct Group {
     exit: Option<PathBuf>,
 }
 
-/// Finds every `.la` program under `root` and loads its expectations.
+/// Finds every `.la` program under `root` and loads its expectations. A
+/// directory with expectations beside it is one multi-file case (`dirs.rs`).
 ///
 /// # Errors
 ///
@@ -33,8 +34,13 @@ pub fn discover(root: &Path) -> Result<Vec<Case>, Vec<Malformed>> {
         }]);
     }
 
+    let case_dirs = dirs::case_dirs(root, &files);
     let mut groups: BTreeMap<PathBuf, Group> = BTreeMap::new();
     for rel in files {
+        // A case directory's own files are its modules.
+        if case_dirs.iter().any(|dir| rel.starts_with(dir)) {
+            continue;
+        }
         let group = groups.entry(rel.with_extension("")).or_default();
         match rel.extension().and_then(|e| e.to_str()) {
             Some("la") => group.la = Some(rel),
@@ -48,7 +54,16 @@ pub fn discover(root: &Path) -> Result<Vec<Case>, Vec<Malformed>> {
 
     let mut cases = Vec::new();
     let mut malformed = Vec::new();
-    for group in groups.into_values() {
+    for (stem, mut group) in groups {
+        if case_dirs.contains(&stem) {
+            match dirs::main_of(root, &stem) {
+                Ok(main) => group.la = Some(main),
+                Err(bad) => {
+                    malformed.push(bad);
+                    continue;
+                }
+            }
+        }
         let Some(la) = &group.la else {
             for orphan in [&group.stdout, &group.stderr, &group.exit]
                 .into_iter()
@@ -161,6 +176,27 @@ mod tests {
             .map(|c| c.name)
             .collect();
         assert_eq!(names, ["m1/a.la", "m2/b.la"]);
+    }
+
+    #[test]
+    fn a_directory_with_main_la_is_one_case() {
+        let f = Fixture::new();
+        f.file("m10/two/main.la", "")
+            .file("m10/two/geo.la", "")
+            .file("m10/two/shapes/circle.la", "");
+        f.file("m10/two.stdout", "").file("m10/two.exit", "0\n");
+        f.file("m10/one.la", "").file("m10/one.stderr", "e\n");
+        let cases = discover(f.path()).unwrap();
+        let names: Vec<_> = cases.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(names, ["m10/one.la", "m10/two/main.la"]);
+        assert!(cases[1].path.ends_with("m10/two/main.la"));
+    }
+
+    #[test]
+    fn a_case_directory_needs_main_la() {
+        let f = Fixture::new();
+        f.file("two/geo.la", "").file("two.stderr", "e\n");
+        assert_eq!(reasons(&f), ["two/: a case directory needs a main.la"]);
     }
 
     #[test]

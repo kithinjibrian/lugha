@@ -30,7 +30,7 @@ impl Parser<'_> {
             })
         })?;
         Ok(EnumDecl {
-            public: None,
+            visibility: None,
             name,
             type_params,
             variants,
@@ -51,7 +51,7 @@ impl Parser<'_> {
         let open = self.expect(&TokenKind::LBrace)?;
         let mut methods = Vec::new();
         while !self.at(&TokenKind::RBrace) {
-            let public = self.at(&TokenKind::Pub).then(|| self.bump());
+            let visibility = self.visibility();
             if !self.at(&TokenKind::Fun) {
                 if self.at(&TokenKind::Eof) {
                     self.close(open, &TokenKind::RBrace)?;
@@ -59,7 +59,7 @@ impl Parser<'_> {
                 return Err(self.expected("`fun` or `}`"));
             }
             let mut method = self.fun_decl_with(true)?;
-            method.public = public;
+            method.visibility = visibility;
             methods.push(method);
         }
         self.bump();
@@ -93,7 +93,7 @@ impl Parser<'_> {
             self.block()?
         };
         Ok(FunDecl {
-            public: None,
+            visibility: None,
             name,
             type_params,
             receiver,

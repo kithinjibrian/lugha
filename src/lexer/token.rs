@@ -31,8 +31,10 @@ pub enum TokenKind {
     Impl,
     /// `import` (v2 draft §2).
     Import,
-    /// `pub` (v2 draft §2).
-    Pub,
+    /// `private` (v2 draft §2, decision 9).
+    Private,
+    /// `public`, reserved for v3 packages (v2 draft §2, decision 9).
+    Public,
     Match,
     SelfKw,
     Let,
@@ -109,7 +111,8 @@ pub fn keyword(word: &str) -> Option<TokenKind> {
         "enum" => Enum,
         "impl" => Impl,
         "import" => Import,
-        "pub" => Pub,
+        "private" => Private,
+        "public" => Public,
         "match" => Match,
         "self" => SelfKw,
         "let" => Let,

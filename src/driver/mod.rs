@@ -7,6 +7,7 @@
 //!
 //! Depends on: lexer, parser, codegen, link, diagnostic.
 
+mod build;
 mod gate;
 mod guard;
 mod json;
@@ -16,17 +17,16 @@ mod source;
 
 use std::ffi::OsString;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
-use self::pipeline::{Failure, Front};
+use self::pipeline::Failure;
 use self::render::Report;
-use self::source::{Source, line_col};
+use self::source::Source;
 use crate::codegen::OptLevel;
 use crate::diagnostic::Diagnostic;
-use crate::parser::sexp;
 
 /// Runs `lughac` with the process's arguments and standard streams.
 pub fn main() -> ExitCode {
@@ -74,7 +74,7 @@ where
             output,
             emit,
             options,
-        } => build(&mut out, file, output.as_deref(), *emit, options.opt),
+        } => build::build(&mut out, file, output.as_deref(), *emit, options.opt),
         Command::Run { file, options } => pipeline::front(file).and_then(|front| {
             out.diagnostics(&front.source, &front.warnings);
             pipeline::run(&front, options.opt)
@@ -205,45 +205,6 @@ fn opt_level(level: &str) -> Result<OptLevel, String> {
         "2" => Ok(OptLevel::O2),
         _ => Err("expected 0 or 2".to_string()),
     }
-}
-
-fn build(
-    out: &mut Output,
-    file: &Path,
-    output: Option<&Path>,
-    emit: Option<Emit>,
-    opt: OptLevel,
-) -> Result<u8, Failure> {
-    if let Some(Emit::Tokens) = emit {
-        let source = pipeline::load(file)?;
-        let (tokens, warnings) = pipeline::tokens(&source)?;
-        out.diagnostics(&source, &warnings);
-        for token in tokens
-            .iter()
-            .filter(|t| t.kind != crate::lexer::TokenKind::Eof)
-        {
-            let (line, col) = line_col(&source.text, token.span.start);
-            out.print(&format!("{line}:{col} {:?}\n", token.kind));
-        }
-        return Ok(0);
-    }
-    // `--emit=ast` shows the tree even when it doesn't type-check.
-    let front: Front = if let Some(Emit::Ast) = emit {
-        pipeline::parsed(file)?
-    } else {
-        pipeline::front(file)?
-    };
-    out.diagnostics(&front.source, &front.warnings);
-    match emit {
-        Some(Emit::Ast) => out.print(&format!("{}\n", sexp::program(&front.program))),
-        Some(Emit::Ir) => out.print(&pipeline::ir(&front)?),
-        Some(Emit::Tokens) => unreachable!("handled above"),
-        None => {
-            let exe = output.map_or_else(|| pipeline::default_output(file), Path::to_path_buf);
-            pipeline::build(&front, opt, &exe)?;
-        }
-    }
-    Ok(0)
 }
 
 /// Where lughac's own output goes. Write errors (e.g. a closed pipe) are

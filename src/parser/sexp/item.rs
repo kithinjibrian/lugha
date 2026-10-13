@@ -2,8 +2,9 @@
 //! headers: `pub`, type parameters and qualified names (v2 draft §3).
 
 use super::block;
-use crate::ast::{FunDecl, Ident, Item, Param, Program, Type, TypeKind, TypeParam};
-use crate::span::Span;
+use crate::ast::{
+    FunDecl, Ident, Item, Param, Program, Type, TypeKind, TypeParam, Visibility, VisibilityKind,
+};
 
 /// Prints every import, then every item, one per line.
 ///
@@ -25,9 +26,13 @@ pub fn program(program: &Program) -> String {
         .join("\n")
 }
 
-/// `pub ` when the item was declared `pub` (v2 draft §6).
-fn public(at: Option<Span>) -> &'static str {
-    if at.is_some() { "pub " } else { "" }
+/// `private `, `public `, or nothing (v2 draft §6).
+fn visibility(v: Option<Visibility>) -> &'static str {
+    match v.map(|v| v.kind) {
+        Some(VisibilityKind::Private) => "private ",
+        Some(VisibilityKind::Public) => "public ",
+        None => "",
+    }
 }
 
 /// ` (type-params T (U Eq Ord))`, or nothing when there are none.
@@ -61,14 +66,25 @@ fn item(item: &Item) -> String {
         Item::Fun(f) => fun(f),
         Item::Extern(e) => format!(
             "({}extern {} {} {})",
-            public(e.public),
+            visibility(e.visibility),
             e.name.name,
             params(&e.params),
             ret(&e.ret)
         ),
         Item::Struct(s) => {
-            let fields: String = s.fields.iter().map(|f| format!(" {}", param(f))).collect();
-            let (p, tp) = (public(s.public), type_params(&s.type_params));
+            let fields: String = s
+                .fields
+                .iter()
+                .map(|f| {
+                    format!(
+                        " ({}{} {})",
+                        visibility(f.visibility),
+                        f.name.name,
+                        ty(&f.ty)
+                    )
+                })
+                .collect();
+            let (p, tp) = (visibility(s.visibility), type_params(&s.type_params));
             format!("({p}struct {}{tp}{fields})", s.name.name)
         }
         Item::Enum(e) => {
@@ -83,7 +99,7 @@ fn item(item: &Item) -> String {
                     }
                 })
                 .collect();
-            let (p, tp) = (public(e.public), type_params(&e.type_params));
+            let (p, tp) = (visibility(e.visibility), type_params(&e.type_params));
             format!("({p}enum {}{tp}{variants})", e.name.name)
         }
         Item::Impl(i) => {
@@ -109,7 +125,7 @@ fn fun(f: &FunDecl) -> String {
     list.extend(f.params.iter().map(param));
     format!(
         "({}fun {}{} ({}) {} {})",
-        public(f.public),
+        visibility(f.visibility),
         f.name.name,
         type_params(&f.type_params),
         list.join(" "),

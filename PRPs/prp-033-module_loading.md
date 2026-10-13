@@ -1,6 +1,6 @@
 ## FEATURE: Modules front end — `private`/`public` syntax, loading every imported file, and diagnostics that name their file.
 
-**Status:** approved 2026-10-13 — session 41
+**Status:** implemented 2026-10-13 — session 41
 **Milestone:** 10 (first of two PRPs: **033 front end**, 034 names, visibility and symbols)
 **Spec:** `Language v2 Draft.md`:
 - decision 9 (visibility);
@@ -44,6 +44,19 @@ The checker isn't touched: a program that imports anything still stops at the ga
   - `src/driver/{mod,pipeline,source,render,json}.rs`, `src/driver/gate/`;
   - `tests/support/runner/`, `tests/{cli,parser}.rs`.
 - **Open decisions that must be resolved first:** none.
+
+### Amendments during implementation (session 41)
+- **Directory layout:** `src/modules/` is a directory (`mod.rs`, `resolve.rs`, `tests.rs`) rather than one file, to stay under 300 lines.
+- **Parameters and imports:** a visibility on a parameter, or before `import`, is reported once at the keyword, and parsing continues.
+- **Offsets:**
+  - each file's base is the previous base plus its length plus 1, so a span at a file's end can't be mistaken for the next file's start;
+  - JSON offsets are local to their file, which keeps single-file output identical.
+- **`--emit=tokens`** re-lexes each loaded module for file-local lines. Only lex errors (`E01xx`) stop it, so a module that doesn't parse still shows its tokens. Modules it can't reach because of a parse error aren't shown.
+- **Approved split:** `driver/mod.rs` (313 lines) moved `build`, `tokens` and `header` verbatim to `driver/build.rs`. `opt_level` stays in `mod.rs`, because clap's argument parser uses it.
+- **Runner:** the directory-case logic lives in a new `runner/dirs.rs`, keeping `discover.rs` under 300 lines.
+- **Tests:**
+  - **Where the CLI tests went:** the multi-module tests are in a new `tests/modules.rs` (one file per area), because `tests/cli.rs` was near the limit.
+  - **Test order:** they, and the source-map, render and JSON tests, were written after the driver code. The loader, parser, lexer, gate and runner tests were written first and failed first.
 
 ### Discovery answers (session 41)
 1. **M10 split:** two PRPs. This one is the front end; PRP-034 covers names, visibility and symbols, and completes milestone 10.
@@ -153,44 +166,44 @@ The checker isn't touched: a program that imports anything still stops at the ga
 ## TESTS TO WRITE
 
 Unit tests — `src/modules.rs` (in-memory `read`):
-- [ ] **Loading:** a root importing `a` and `b.c` loads three modules, root first, with increasing bases and spans offset by each base.
-- [ ] **Cycles and repeats:** `a` ↔ `b` loads each once; a module imported by two files loads once.
-- [ ] **E0312** with the looked-for path in the help.
-- [ ] **E0314:** for a repeated import, a last-segment clash, and a clash with an item.
-- [ ] **E0319:** a module importing `main`'s path.
-- [ ] **Errors in imported files:** E0110, and lex and parse errors, all at offsets inside that module's range.
-- [ ] **Internal errors:** a read error other than not-found is internal.
+- [x] **Loading:** a root importing `a` and `b.c` loads three modules, root first, with increasing bases and spans offset by each base.
+- [x] **Cycles and repeats:** `a` ↔ `b` loads each once; a module imported by two files loads once.
+- [x] **E0312** with the looked-for path in the help.
+- [x] **E0314:** for a repeated import, a last-segment clash, and a clash with an item.
+- [x] **E0319:** a module importing `main`'s path.
+- [x] **Errors in imported files:** E0110, and lex and parse errors, all at offsets inside that module's range.
+- [x] **Internal errors:** a read error other than not-found is internal.
 
 Unit tests — lexer, parser, sexp:
-- [ ] **Keywords:** `private` and `public` are keywords; `pub` is an identifier again.
-- [ ] **Visibility:**
+- [x] **Keywords:** `private` and `public` are keywords; `pub` is an identifier again.
+- [x] **Visibility:**
   - on functions, externs, structs, enums, methods and fields;
   - E0201 on a parameter, `let`, `private impl`, and `public` before `import`.
-- [ ] **Unchanged:** the existing sexp outputs, apart from the `pub` cases rewritten.
+- [x] **Unchanged:** the existing sexp outputs, apart from the `pub` cases rewritten.
 
 Unit tests — driver (source map, render, JSON):
-- [ ] **Line and column:** an offset in the second file maps to its line and column.
-- [ ] **Labels in other files:** they render under that file.
-- [ ] **JSON:** a label in another file carries `"file"`; single-file JSON is unchanged.
+- [x] **Line and column:** an offset in the second file maps to its line and column.
+- [x] **Labels in other files:** they render under that file.
+- [x] **JSON:** a label in another file carries `"file"`; single-file JSON is unchanged.
 
 Integration — `tests/cli.rs`:
-- [ ] **`--emit=ast`** on a two-module program prints both modules after `; module` lines; a single file prints as before.
-- [ ] **`check`** on a valid two-module program exits 2 with the milestone 10 gate message.
-- [ ] **Errors in an imported module** name that module's file in human and JSON output.
+- [x] **`--emit=ast`** on a two-module program prints both modules after `; module` lines; a single file prints as before.
+- [x] **`check`** on a valid two-module program exits 2 with the milestone 10 gate message.
+- [x] **Errors in an imported module** name that module's file in human and JSON output.
 
 Acceptance — `tests/programs/m10/`:
-- [ ] **`e0312.la`:** a missing module.
-- [ ] **`e0314/`:** a directory case with a clashing import.
-- [ ] **`parse_error/`:** a directory case with a syntax error in a module.
+- [x] **`e0312.la`:** a missing module.
+- [x] **`e0314/`:** a directory case with a clashing import.
+- [x] **`parse_error/`:** a directory case with a syntax error in a module.
 
 The goldens are captured and reviewed.
 
 Runner:
-- [ ] Malformed directory cases are reported; existing cases are still discovered unchanged.
+- [x] Malformed directory cases are reported; existing cases are still discovered unchanged.
 
 Regression:
-- [ ] Every earlier test passes.
-- [ ] The `pub` tests from PRP-030 become `private`/`public`.
+- [x] Every earlier test passes.
+- [x] The `pub` tests from PRP-030 become `private`/`public`.
 
 ## ROLLBACK PLAN
 
@@ -198,11 +211,11 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] Multi-file programs load with cycles allowed; E0312, E0314, E0319 and per-file errors behave as above; programs that import stop at the gate.
-- [ ] Diagnostics and `--emit` are file-aware; single-file output is unchanged.
-- [ ] Spec updated; CLAUDE.md, TODO, CHANGELOG, MEMORY updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] Multi-file programs load with cycles allowed; E0312, E0314, E0319 and per-file errors behave as above; programs that import stop at the gate.
+- [x] Diagnostics and `--emit` are file-aware; single-file output is unchanged.
+- [x] Spec updated; CLAUDE.md, TODO, CHANGELOG, MEMORY updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`

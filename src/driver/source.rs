@@ -1,44 +1,73 @@
-//! Loading a source file, and mapping byte offsets to lines and columns.
+//! The program's source files, and mapping offsets back to a file, line and
+//! column (PRP-033). All files share one offset space (`modules`): each
+//! starts at its base, so a `Span` needs no file id.
 
-use std::path::Path;
+use crate::modules::Module;
 
-use crate::diagnostic::Diagnostic;
-use crate::span::Span;
-
-/// A loaded source file.
+/// One source file and where it sits in the shared offset space.
 #[derive(Debug, Clone)]
-pub(super) struct Source {
-    /// The path as given on the command line, used in messages and JSON.
+pub(super) struct SourceFile {
+    /// The main file as given on the command line; a module as its path
+    /// relative to the main file's directory (`shapes/circle.la`).
     pub name: String,
-    /// The file's text (for invalid UTF-8, only the valid prefix).
+    /// The offset of the file's first byte.
+    pub base: usize,
+    /// The file's text.
     pub text: String,
 }
 
-/// Why a file could not be loaded.
-pub(super) enum LoadError {
-    /// The file can't be read — an internal error (exit 2).
-    Io(std::io::Error),
-    /// The file isn't UTF-8 — a program error (E0110, exit 1). Boxed: large and rare.
-    Utf8(Source, Box<Diagnostic>),
+/// Every loaded source file; the main file first.
+#[derive(Debug, Clone)]
+pub(super) struct Source {
+    pub files: Vec<SourceFile>,
 }
 
-/// Reads `path` as UTF-8 source.
-pub(super) fn load(path: &Path) -> Result<Source, LoadError> {
-    let bytes = std::fs::read(path).map_err(LoadError::Io)?;
-    let name = path.display().to_string();
-    match String::from_utf8(bytes) {
-        Ok(text) => Ok(Source { name, text }),
-        Err(error) => {
-            let valid = error.utf8_error().valid_up_to();
-            let mut bytes = error.into_bytes();
-            bytes.truncate(valid);
-            let text = String::from_utf8(bytes).expect("bytes before valid_up_to are UTF-8");
-            // Empty span at the first bad byte: the valid prefix is all there is to show.
-            let span = Span::new(valid, valid);
-            let diagnostic = Diagnostic::error("E0110", "source is not valid UTF-8", span)
-                .with_help("save the file as UTF-8");
-            Err(LoadError::Utf8(Source { name, text }, Box::new(diagnostic)))
+impl Source {
+    /// A program of one file, starting at offset 0.
+    pub(super) fn single(name: impl Into<String>, text: impl Into<String>) -> Self {
+        Source {
+            files: vec![SourceFile {
+                name: name.into(),
+                base: 0,
+                text: text.into(),
+            }],
         }
+    }
+
+    /// The files of loaded `modules`, named for messages.
+    pub(super) fn of(main: &str, root: &std::path::Path, modules: &[Module]) -> Self {
+        let files = modules
+            .iter()
+            .map(|m| SourceFile {
+                name: if m.path.is_empty() {
+                    main.to_string()
+                } else {
+                    let relative = m.file.strip_prefix(root).unwrap_or(&m.file);
+                    relative.display().to_string()
+                },
+                base: m.base,
+                text: m.text.clone(),
+            })
+            .collect();
+        Source { files }
+    }
+
+    /// The main file.
+    pub(super) fn main(&self) -> &SourceFile {
+        &self.files[0]
+    }
+
+    /// The index of the file holding `offset`: the last one starting at or before it.
+    pub(super) fn index_at(&self, offset: usize) -> usize {
+        self.files
+            .iter()
+            .rposition(|f| f.base <= offset)
+            .unwrap_or(0)
+    }
+
+    /// The file holding `offset`.
+    pub(super) fn file_at(&self, offset: usize) -> &SourceFile {
+        &self.files[self.index_at(offset)]
     }
 }
 
@@ -69,16 +98,16 @@ mod tests {
     }
 
     #[test]
-    fn invalid_utf8_is_e0110_at_the_first_bad_byte() {
-        let path = std::env::temp_dir().join(format!("lugha-source-{}.la", std::process::id()));
-        std::fs::write(&path, b"fun main() {\n  \xff }").expect("temp file is writable");
-        let result = load(&path);
-        let _ = std::fs::remove_file(&path);
-        let Err(LoadError::Utf8(source, d)) = result else {
-            panic!("expected E0110")
-        };
-        assert_eq!(d.code, "E0110");
-        assert_eq!((d.span.start, d.span.end), (15, 15));
-        assert_eq!(source.text, "fun main() {\n  ");
+    fn offsets_find_their_file() {
+        let mut source = Source::single("main.la", "fun main() {}\n");
+        source.files.push(SourceFile {
+            name: "geometry.la".into(),
+            base: 15,
+            text: "fun f() {}\n\nfun g() {}\n".into(),
+        });
+        assert_eq!(source.file_at(3).name, "main.la");
+        assert_eq!(source.file_at(15).name, "geometry.la");
+        let file = source.file_at(28);
+        assert_eq!(line_col(&file.text, 28 - file.base), (3, 2));
     }
 }

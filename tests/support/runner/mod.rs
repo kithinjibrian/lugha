@@ -7,6 +7,7 @@
 //! `discover` reads the folder, `execute` runs processes, `report` compares
 //! and formats.
 
+mod dirs;
 mod discover;
 mod execute;
 mod report;

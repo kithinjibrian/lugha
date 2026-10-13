@@ -1,8 +1,9 @@
 //! v2 module syntax at the top level: `import` lines, which come before
-//! every item (E0208), and `pub` before an item (v2 draft §3).
+//! every item (E0208), and `private`/`public` before an item, method or
+//! field (v2 draft §3, decision 9).
 
 use super::{PResult, Parser};
-use crate::ast::{Import, Item};
+use crate::ast::{Import, Item, Visibility, VisibilityKind};
 use crate::diagnostic::Diagnostic;
 use crate::lexer::TokenKind;
 use crate::span::Span;
@@ -38,32 +39,45 @@ impl Parser<'_> {
         self.error(diagnostic);
     }
 
-    /// `pub` and the item it marks; `pub` fits only `fun`, `extern`,
-    /// `struct` and `enum` (v2 draft §6).
-    pub(super) fn pub_item(&mut self) -> PResult<Item> {
-        let at = Some(self.bump());
+    /// `private` or `public` at the current token, if there is one.
+    pub(super) fn visibility(&mut self) -> Option<Visibility> {
+        let kind = match self.peek() {
+            TokenKind::Private => VisibilityKind::Private,
+            TokenKind::Public => VisibilityKind::Public,
+            _ => return None,
+        };
+        Some(Visibility {
+            kind,
+            span: self.bump(),
+        })
+    }
+
+    /// A visibility and the item it marks: only `fun`, `extern`, `struct`
+    /// and `enum` take one (v2 draft §3).
+    pub(super) fn visible_item(&mut self) -> PResult<Item> {
+        let visibility = self.visibility();
         Ok(match self.peek() {
             TokenKind::Fun => {
                 let mut f = self.fun_decl_with(false)?;
-                f.public = at;
+                f.visibility = visibility;
                 Item::Fun(f)
             }
             TokenKind::Extern => {
                 let mut e = self.extern_decl()?;
-                e.public = at;
+                e.visibility = visibility;
                 Item::Extern(e)
             }
             TokenKind::Struct => {
                 let mut s = self.struct_decl()?;
-                s.public = at;
+                s.visibility = visibility;
                 Item::Struct(s)
             }
             TokenKind::Enum => {
                 let mut e = self.enum_decl()?;
-                e.public = at;
+                e.visibility = visibility;
                 Item::Enum(e)
             }
-            _ => return Err(self.expected("`fun`, `extern`, `struct` or `enum` after `pub`")),
+            _ => return Err(self.expected("`fun`, `extern`, `struct` or `enum`")),
         })
     }
 }
@@ -90,14 +104,25 @@ mod tests {
     #[test]
     fn pub_marks_items_and_methods() {
         assert_eq!(
-            program("pub fun f() {}\npub extern fun g();\npub struct S {}\npub enum E { A }"),
-            "(pub fun f () void (block))\n(pub extern g () void)\n(pub struct S)\n(pub enum E A)"
+            program(
+                "private fun f() {}\npublic extern fun g();\nprivate struct S {}\npublic enum E { A }"
+            ),
+            "(private fun f () void (block))\n(public extern g () void)\n(private struct S)\n(public enum E A)"
         );
         assert_eq!(
-            program("impl S { pub fun f(self) {} fun g() {} }"),
-            "(impl S (pub fun f (self) void (block)) (fun g () void (block)))"
+            program("impl S { private fun f(self) {} fun g() {} }"),
+            "(impl S (private fun f (self) void (block)) (fun g () void (block)))"
         );
-        assert_eq!(errors("pub impl S {}"), [("E0201", "impl")]);
-        assert_eq!(errors("fun f() { pub let x = 1; }"), [("E0201", "pub")]);
+        assert_eq!(
+            program("struct Range { private lo: i64, public hi: i64, n: i64 }"),
+            "(struct Range (private lo i64) (public hi i64) (n i64))"
+        );
+        assert_eq!(errors("private impl S {}"), [("E0201", "impl")]);
+        assert_eq!(
+            errors("fun f() { private let x = 1; }"),
+            [("E0201", "private")]
+        );
+        assert_eq!(errors("fun f(private x: i64) {}"), [("E0201", "private")]);
+        assert_eq!(errors("public import a;"), [("E0201", "public")]);
     }
 }

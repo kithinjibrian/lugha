@@ -3,9 +3,10 @@
 
 use std::collections::HashSet;
 
-use super::{GENERICS, Gated, MODULES, PUB};
+use super::{GENERICS, Gated, MODULES, VISIBILITY};
 use crate::ast::{
     Block, Expr, ExprKind, ForIter, FunDecl, Item, Stmt, StmtKind, Type, TypeKind, TypeParam,
+    Visibility,
 };
 use crate::span::Span;
 
@@ -25,9 +26,9 @@ impl Walk<'_> {
         });
     }
 
-    fn public(&mut self, at: Option<Span>) {
-        if let Some(at) = at {
-            self.hit(PUB, at);
+    fn visibility(&mut self, v: Option<Visibility>) {
+        if let Some(v) = v {
+            self.hit(VISIBILITY, v.span);
         }
     }
 
@@ -41,17 +42,20 @@ impl Walk<'_> {
         match item {
             Item::Fun(f) => self.fun(f),
             Item::Extern(e) => {
-                self.public(e.public);
+                self.visibility(e.visibility);
                 e.params.iter().for_each(|p| self.ty(&p.ty));
                 e.ret.iter().for_each(|t| self.ty(t));
             }
             Item::Struct(s) => {
-                self.public(s.public);
+                self.visibility(s.visibility);
                 self.type_params(&s.type_params);
-                s.fields.iter().for_each(|f| self.ty(&f.ty));
+                for field in &s.fields {
+                    self.visibility(field.visibility);
+                    self.ty(&field.ty);
+                }
             }
             Item::Enum(e) => {
-                self.public(e.public);
+                self.visibility(e.visibility);
                 self.type_params(&e.type_params);
                 e.variants
                     .iter()
@@ -71,7 +75,7 @@ impl Walk<'_> {
     }
 
     fn fun(&mut self, f: &FunDecl) {
-        self.public(f.public);
+        self.visibility(f.visibility);
         self.type_params(&f.type_params);
         f.params.iter().for_each(|p| self.ty(&p.ty));
         f.ret.iter().for_each(|t| self.ty(t));

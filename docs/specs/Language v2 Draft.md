@@ -204,6 +204,7 @@ Equality is deep and costs time proportional to the values compared. `f64` keeps
 | E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` |
 | E0313 | `private` item or field used from another module | `range.helper()`; `r.lo`; `range.Range { lo: 1, hi: 5 }` |
 | E0314 | Import clash | `import a.util;` and `import b.util;` in one file |
+| E0319 | The main file imported | a module writing `import main;` (PRP-033) |
 | E0315 | Unknown bound | `fun f<T: Hash>(x: T)` |
 | E0316 | Bad type parameter name | `fun f<T, T>()`, `struct S<i64>`, a parameter named like a struct |
 | E0317 | `public` used before packages exist | `public fun f() {}` — help: remove it; everything is visible to the program |

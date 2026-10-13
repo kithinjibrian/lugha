@@ -47,10 +47,7 @@ pub(super) fn guarded(
                 Some(at) => format!("this is a bug in lughac ({at}); please report it"),
                 None => "this is a bug in lughac; please report it".to_string(),
             });
-            let source = Source {
-                name: file.unwrap_or_default().to_string(),
-                text: String::new(),
-            };
+            let source = Source::single(file.unwrap_or_default(), "");
             let text = match format {
                 Format::Human => render::human(&report, &source),
                 Format::Json => json::line(&report, &source),

@@ -13,7 +13,7 @@ Oct 9, 2026 · @kithinji
 - `match` patterns nest (`Some(Circle(r))`) and arms take `if` guards (sections 3–5).
 - An unused `match` binding is warning W0103.
 
-Every valid v1.2 program is a valid v2 program unless it uses `import` or `pub` as a name. Those are now keywords for v2 features that are still being built: they parse, but `lughac` stops with "not implemented yet (milestone N)", exit 2.
+Every valid v1.2 program is a valid v2 program unless it uses `import`, `private` or `public` as a name. Those are now keywords for v2 features that are still being built: they parse, but `lughac` stops with "not implemented yet (milestone N)", exit 2.
 
 ## 1. Overview
 
@@ -439,6 +439,13 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 2. Resolve struct field and enum payload types, check for structs that contain themselves through structs alone (E0307), and mark the enum payload slots that lead back to their enum (indirect slots, section 7).
 3. Check each function body against the global table.
 
+**Modules (loading).** A program can span several files (v2, milestone 10; being built).
+- **Files are modules.** A file is a module named by its path from the main file's directory, without `.la`, with `/` written as `.`: `shapes/circle.la` is `shapes.circle`.
+- **Loading.** `import shapes.circle;` loads `<root>/shapes/circle.la`, where the root is the main file's directory. Each file is loaded once, however many files import it, so import cycles are fine.
+- **Errors.** A missing file is E0312. These are E0314: importing the same module twice in one file, two imports whose last names clash, or an import named like one of the file's own items. Importing the main file is E0319.
+- **Each file is checked for its own errors.** Invalid UTF-8 (E0110) and lexical and syntax errors in any module are reported against that module's file.
+- **Not yet built.** A program that imports anything, or writes `private` or `public`, still stops with "not implemented yet (milestone 10)", exit 2, until name resolution across modules lands.
+
 **Names.** Functions, structs, enums, intrinsics and the built-in names `Option`, `Some` and `None` share one global namespace, and duplicates are a compile error. Methods live in their type's namespace, so a function `dist` and a method `Point.dist` can coexist. No local may be named like a type (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then globals.
 
 **Functions.** Declared with `fun`, typed parameters, and an optional `: type` return annotation. Omitting the annotation means `void`.
@@ -597,7 +604,7 @@ The C `main` emitted by the compiler calls `lugha_rt_init()` (which runs `GC_INI
 | `lughac run prog.la` | Build to a temporary file and run it |
 | `lughac check prog.la` | Lex, parse and type-check only; no codegen or linking (type checking from milestone 3) |
 | `lughac spec` | Print the LLM-ready spec bundled with this compiler version |
-| `lughac build --emit=tokens\|ast\|ir prog.la` | Print an intermediate stage and stop |
+| `lughac build --emit=tokens\|ast\|ir prog.la` | Print an intermediate stage and stop; with several modules, `tokens` and `ast` print each after a `; module <name>` line (`main` for the main file) |
 | `--diagnostics=human\|json` | Diagnostic format for `build`, `run` and `check`; `human` is the default |
 | `-O0` / `-O2` | Optimization level; `-O0` is the default |
 
@@ -633,6 +640,9 @@ Name and type errors, reported by the checker:
 | E0309 | Variant declared twice | `enum E { A, B, A }` |
 | E0310 | Method declared twice, or named like a field or variant | `impl P { fun x(self) {} }` where `P` has a field `x` |
 | E0311 | A local named like a type | `let Shape = 3;`, `fun f(Point: i64)` |
+| E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` (v2) |
+| E0314 | Import clash | `import a.util;` and `import b.util;` in one file; an import named like an item (v2) |
+| E0319 | The main file imported | a module writing `import main;` (v2) |
 | E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
 | E0402 | Integer literal out of range for its type | `let b: u8 = 256;` |
 | E0403 | Type mismatch | `let n: i32 = ok;` where `ok` is `bool`; `if`/`else` of different types |
@@ -664,7 +674,7 @@ Name and type errors, reported by the checker:
 | W0102 | Unreachable `match` arm (warning) | an arm after `_`, or a variant already covered |
 | W0103 | Unused `match` binding (warning) | `Some(Emtpy) => 0`, a misspelled variant that became a binding |
 
-**JSON diagnostics.** With `--diagnostics=json`, the compiler writes one JSON object per line to stderr, one per diagnostic, and nothing else. Lines and columns are 1-based; columns and offsets count UTF-8 bytes. `label` is the text shown under the primary span, or `null`. `labels` holds secondary spans, and `help` is an optional suggestion. Internal errors have `"code":null`, and `"span":null` when they have no location.
+**JSON diagnostics.** With `--diagnostics=json`, the compiler writes one JSON object per line to stderr, one per diagnostic, and nothing else. Lines and columns are 1-based; columns and offsets count UTF-8 bytes. `label` is the text shown under the primary span, or `null`. `labels` holds secondary spans, and `help` is an optional suggestion. Internal errors have `"code":null`, and `"span":null` when they have no location. `"file"` is the file of the primary span: the main file as given on the command line, or a module's path relative to the main file's directory (`shapes/circle.la`); lines, columns and offsets are within that file. A label in a different file carries its own `"file"` key, which appears only then.
 
 ```json
 {"severity":"error","code":"E0401","message":"float literal where i32 expected","file":"main.la","span":{"start":{"line":3,"col":17,"offset":49},"end":{"line":3,"col":20,"offset":52}},"label":"expected i32","labels":[{"span":{"start":{"line":3,"col":13,"offset":45},"end":{"line":3,"col":14,"offset":46}},"message":"this operand is i32"}],"help":null}

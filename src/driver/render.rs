@@ -6,7 +6,7 @@
 use codespan_reporting::diagnostic::{
     Diagnostic as CsDiagnostic, Label as CsLabel, Severity as CsSeverity,
 };
-use codespan_reporting::files::SimpleFile;
+use codespan_reporting::files::SimpleFiles;
 use codespan_reporting::term::termcolor::NoColor;
 use codespan_reporting::term::{self, Chars, Config};
 
@@ -65,27 +65,40 @@ pub(super) fn human(report: &Report, source: &Source) -> String {
     if let Some(code) = report.code {
         diagnostic = diagnostic.with_code(code);
     }
+    // One codespan file per module; each span goes to the file holding it,
+    // as a range local to that file (PRP-033).
+    let mut files = SimpleFiles::new();
+    let ids: Vec<usize> = source
+        .files
+        .iter()
+        .map(|f| files.add(f.name.as_str(), f.text.as_str()))
+        .collect();
+    let local = |span: Span| {
+        let index = source.index_at(span.start);
+        let base = source.files[index].base;
+        (ids[index], span.start - base..span.end - base)
+    };
     let mut labels = Vec::new();
     if let Some(span) = report.span {
         let text = report.label.clone().unwrap_or_default();
-        labels.push(CsLabel::primary((), span.start..span.end).with_message(text));
+        let (file, range) = local(span);
+        labels.push(CsLabel::primary(file, range).with_message(text));
     }
     for label in &report.labels {
-        let range = label.span.start..label.span.end;
-        labels.push(CsLabel::secondary((), range).with_message(&label.message));
+        let (file, range) = local(label.span);
+        labels.push(CsLabel::secondary(file, range).with_message(&label.message));
     }
     diagnostic = diagnostic.with_labels(labels);
     if let Some(help) = &report.help {
         diagnostic = diagnostic.with_notes(vec![format!("help: {help}")]);
     }
 
-    let file = SimpleFile::new(&source.name, &source.text);
     let config = Config {
         chars: Chars::ascii(),
         ..Config::default()
     };
     let mut out = NoColor::new(Vec::new());
-    if term::emit_to_write_style(&mut out, &config, &file, &diagnostic).is_err() {
+    if term::emit_to_write_style(&mut out, &config, &files, &diagnostic).is_err() {
         // Only reachable if a span lies outside the source — still say what went wrong.
         return format!("error: {}\n\n", report.message);
     }
@@ -106,10 +119,7 @@ pub(super) mod tests {
     /// until the checker exists.
     pub(in crate::driver) fn e0401() -> (Source, Diagnostic) {
         let text = "fun main() {\n    let x: i32 = 5;\n    let y = x + 2.5;\n}\n";
-        let source = Source {
-            name: "main.la".into(),
-            text: text.into(),
-        };
+        let source = Source::single("main.la", text);
         let d = Diagnostic::error(
             "E0401",
             "float literal where i32 expected",
@@ -129,10 +139,7 @@ pub(super) mod tests {
 
     #[test]
     fn help_is_a_note_and_internal_errors_have_no_code() {
-        let source = Source {
-            name: "a.la".into(),
-            text: "2e5\n".into(),
-        };
+        let source = Source::single("a.la", "2e5\n");
         let d = Diagnostic::error(
             "E0107",
             "float literal needs a fractional part",
@@ -150,5 +157,20 @@ pub(super) mod tests {
             internal.lines().all(|l| l == l.trim_end()),
             "trailing whitespace: {internal:?}"
         );
+    }
+
+    #[test]
+    fn labels_render_in_the_file_that_holds_them() {
+        let mut source = Source::single("main.la", "import geo;\nfun main() {}\n");
+        source.files.push(crate::driver::source::SourceFile {
+            name: "geo.la".into(),
+            base: 26,
+            text: "fun f() {}\n".into(),
+        });
+        let d = Diagnostic::error("E0314", "clash", Span::new(7, 10))
+            .with_label(Span::new(30, 31), "also here");
+        let text = human(&Report::from(&d), &source);
+        assert!(text.contains("--> main.la:1:8"), "{text}");
+        assert!(text.contains("geo.la:1:5"), "{text}");
     }
 }

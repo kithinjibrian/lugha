@@ -19,7 +19,7 @@ pub(super) struct Gated {
 }
 
 const MODULES: (&str, u8) = ("modules", 10);
-const PUB: (&str, u8) = ("pub", 10);
+const VISIBILITY: (&str, u8) = ("visibility", 10);
 const GENERICS: (&str, u8) = ("generics", 11);
 
 /// The first not-yet-implemented v2 construct in `program`, in source order.
@@ -76,10 +76,13 @@ mod tests {
             gated("import geometry;\nfun main() {}"),
             Some(("modules", 10, "import geometry;"))
         );
-        assert_eq!(gated("pub fun f() {}"), Some(("pub", 10, "pub")));
         assert_eq!(
-            gated("impl S { pub fun f(self) {} }"),
-            Some(("pub", 10, "pub"))
+            gated("private fun f() {}"),
+            Some(("visibility", 10, "private"))
+        );
+        assert_eq!(
+            gated("impl S { public fun f(self) {} }"),
+            Some(("visibility", 10, "public"))
         );
         assert_eq!(
             gated("fun f(v: geometry.Vec2) {}"),
@@ -119,13 +122,21 @@ mod tests {
     }
 
     #[test]
+    fn field_visibility_is_gated() {
+        assert_eq!(
+            gated("struct R { private lo: i64 }"),
+            Some(("visibility", 10, "private"))
+        );
+    }
+
+    #[test]
     fn the_first_in_source_order_wins() {
         assert_eq!(
-            gated("fun f<T>() {}\npub fun g() {}"),
+            gated("fun f<T>() {}\nprivate fun g() {}"),
             Some(("generics", 11, "T"))
         );
         assert_eq!(
-            gated("struct S { x: geometry.Vec2 }\npub fun f() {}"),
+            gated("struct S { x: geometry.Vec2 }\nprivate fun f() {}"),
             Some(("modules", 10, "geometry.Vec2"))
         );
     }

@@ -2088,7 +2088,55 @@ TODO.md (milestone 10), CHANGELOG.md, MEMORY.md (decision 37)
 
 ## SESSION 41 — 2026-10-13 — Modules front end (PRP-033) — open
 
-Branch: prp-033-module_loading
+Branch: main → prp-033-module_loading
+
+### WHAT WAS DONE
+
+Discovery (3 questions, each answered with the recommended option):
+- two PRPs for milestone 10;
+- one offset space;
+- directory test cases.
+
+PRP-033 approved, including the new code E0319.
+
+Implemented PRP-033:
+- **Syntax:** `private`/`public` (replacing `pub`), with field and method visibility.
+- **Loading:** the `src/modules/` loader (E0312, E0314, E0319, cycles, errors per file, one offset space).
+- **Driver:** a source map with file-aware human and JSON output, `--emit` per module, and the gate over every module.
+- **Runner:** directory cases.
+- **Tests and spec:** `tests/modules.rs`, the `m10/` goldens, and spec updates.
+- **Approved split:** `driver/build.rs`.
+
+297 tests pass.
+
+### FILES CREATED OR MODIFIED
+
+```
+src/modules/{mod,resolve,tests}.rs (new), src/lib.rs
+src/lexer/{token,mod}.rs; src/ast/{mod,header}.rs; src/parser/{import,item,decl,describe,recover}.rs; src/parser/sexp/item.rs
+src/driver/{mod,pipeline,source,render,json,guard}.rs, src/driver/build.rs (new, split); src/driver/gate/{mod,walk}.rs
+tests/support/runner/{discover,dirs (new),mod}.rs; tests/modules.rs (new); tests/programs/m10/
+docs/specs/Language v2 Specification.md, Language v2 Draft.md (E0319)
+PRPs/prp-033-module_loading.md — new PRP; implemented; amendments
+CLAUDE.md (stages, tree, known issue), TODO.md, CHANGELOG.md, MEMORY.md (decision 38)
+```
+
+### TESTS WRITTEN
+
+- **Loader (7):** order and bases, cycles and repeats, E0312, E0314 ×3, E0319, errors in imported files, internal errors.
+- **Syntax:** lexer keywords; parser visibility forms and E0201s; gate visibility.
+- **Driver:** offset → file, labels in other files (human and JSON).
+- **Runner:** directory cases and a directory missing `main.la`.
+- **CLI (`tests/modules.rs`):** `--emit` per module, the gate, errors naming the module's file.
+- **Acceptance:** `m10` goldens `e0312`, `e0314/`, `parse_error/`.
+
+### DECISIONS MADE
+
+- MEMORY 38.
+
+### PENDING DECISIONS OPENED
+
+- None.
 
 ---
 

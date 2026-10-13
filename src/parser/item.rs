@@ -1,7 +1,8 @@
 //! Top-level items and types (spec §3, §6, §8; v2 draft §3).
 
 use super::{PResult, Parser};
-use crate::ast::{ExternDecl, Import, Item, Param, StructDecl, Type, TypeKind};
+use crate::ast::{ExternDecl, Field, Import, Item, Param, StructDecl, Type, TypeKind};
+use crate::diagnostic::Diagnostic;
 use crate::lexer::TokenKind;
 use crate::span::Span;
 
@@ -10,7 +11,21 @@ impl Parser<'_> {
     /// next item after an error.
     pub(super) fn program(&mut self) -> (Vec<Import>, Vec<Item>) {
         let mut imports = Vec::new();
-        while self.at(&TokenKind::Import) {
+        loop {
+            // `private import a;`: one error at the keyword, then the import.
+            if matches!(self.peek(), TokenKind::Private | TokenKind::Public)
+                && self.peek_at(1) == &TokenKind::Import
+            {
+                let at = self.bump();
+                self.error(Diagnostic::error(
+                    "E0201",
+                    "an import can't have a visibility",
+                    at,
+                ));
+            }
+            if !self.at(&TokenKind::Import) {
+                break;
+            }
             match self.import() {
                 Ok(import) => imports.push(import),
                 Err(_) => self.sync_item(),
@@ -49,7 +64,7 @@ impl Parser<'_> {
             TokenKind::Struct => self.struct_decl().map(Item::Struct),
             TokenKind::Enum => self.enum_decl().map(Item::Enum),
             TokenKind::Impl => self.impl_decl().map(Item::Impl),
-            TokenKind::Pub => self.pub_item(),
+            TokenKind::Private | TokenKind::Public => self.visible_item(),
             other => {
                 let is_statement = starts_statement(other);
                 let reported = self.expected("`fun`, `extern`, `struct`, `enum` or `impl`");
@@ -69,7 +84,7 @@ impl Parser<'_> {
         let ret = self.return_type()?;
         self.expect(&TokenKind::Semi)?;
         Ok(ExternDecl {
-            public: None,
+            visibility: None,
             name,
             params,
             ret,
@@ -82,9 +97,17 @@ impl Parser<'_> {
         let name = self.ident("struct name")?;
         let type_params = self.type_params()?;
         let open = self.expect(&TokenKind::LBrace)?;
-        let fields = self.comma_list(open, TokenKind::RBrace, |p| p.param("field name"))?;
+        let fields = self.comma_list(open, TokenKind::RBrace, |p| {
+            let visibility = p.visibility();
+            let Param { name, ty } = p.param("field name")?;
+            Ok(Field {
+                visibility,
+                name,
+                ty,
+            })
+        })?;
         Ok(StructDecl {
-            public: None,
+            visibility: None,
             name,
             type_params,
             fields,
@@ -98,6 +121,13 @@ impl Parser<'_> {
     }
 
     pub(super) fn param(&mut self, what: &str) -> PResult<Param> {
+        // Fields read their visibility first; anywhere else one is a mistake
+        // reported once, and parsing goes on as if it weren't there.
+        if let Some(v) = self.visibility() {
+            let message = "a parameter can't have a visibility";
+            let help = "only items, methods and fields take `private` or `public`";
+            self.error(Diagnostic::error("E0201", message, v.span).with_help(help));
+        }
         let name = self.ident(what)?;
         self.expect(&TokenKind::Colon)?;
         Ok(Param {

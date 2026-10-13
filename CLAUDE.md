@@ -161,7 +161,7 @@ The language itself is defined by `docs/specs/Language v2 Specification.md` (`lu
 ## ARCHITECTURE RULES
 
 1. **The spec is the source of truth.** Read the relevant section of `docs/specs/Language v2 Specification.md` (and, for features not yet landed, `Language v2 Draft.md`) before implementing any language feature, and cite the section in the PRP. If code and spec disagree, the code is wrong. If the spec looks wrong, stop and propose a spec change — never edit the spec without explicit approval. *Why:* `lughac spec` ships the spec as the language reference; drift makes it lie.
-2. **Stages only depend backwards.** lexer → parser → check → codegen → driver. A stage never imports a later one. *Why:* `lughac check` and `--emit=tokens|ast|ir` must run the pipeline partway.
+2. **Stages only depend backwards.** lexer → parser → modules → check → codegen → driver. A stage never imports a later one. *Why:* `lughac check` and `--emit=tokens|ast|ir` must run the pipeline partway.
 3. **Every token and AST node carries a byte-offset `Span`.** *Why:* every diagnostic needs a location, and spans can't be recovered later.
 4. **Codegen never infers types.** It reads the checker's expression → type side table. *Why:* opaque pointers need the element type on every load/store/GEP (spec §9), and two type computations will disagree.
 5. **User-program errors are `Diagnostic` records, never panics or strings.** Each has a stable code from its stage's range (E01xx lex … E05xx, W01xx). New codes take the next unused number; a code is never reused or renumbered. Human and JSON output render from the same record. *Why:* spec §9; codes are a public contract.
@@ -257,10 +257,13 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  indirect slots), matching.rs (match lowering, switch), patterns.rs (nested/guarded arms),
 │   │                  methods.rs (method symbols, receivers, calls),
 │   │                  swap.rs (swap: loads and crossed stores)
+│   ├── modules/     — mod.rs (load: the main file and every import, one offset space), resolve.rs
+│   │                  (import paths, E0312/E0314/E0319), tests.rs (in-memory loading)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_PARTS, RUNTIME_SOURCE, LinkError
-│   └── driver/      — mod.rs (clap CLI, exit codes), guard.rs (panics → internal error, exit 2), pipeline.rs,
+│   └── driver/      — mod.rs (clap CLI, exit codes, Output), build.rs (build, --emit per module), guard.rs
+│                      (panics → internal error, exit 2), pipeline.rs (load all modules, gate, check),
 │                      gate/ (mod.rs, walk.rs: stops M10/M11 constructs until their milestone, PRP-030),
-│                      source.rs (load, E0110, line_col),
+│                      source.rs (source map of all files, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)
 ├── tests/
 │   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
@@ -269,9 +272,11 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── parser.rs    — parser public-API tests (every spec program parses)
 │   ├── codegen.rs   — builds and runs real executables at -O0 and -O2
 │   ├── cli.rs       — the lughac binary: commands, emit, diagnostics, exit codes
+│   ├── modules.rs   — programs of several files through lughac (emit, gate, per-file diagnostics)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m8/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations
-│   └── support/     — fixture.rs (temp dirs), runner/ (discover, execute, report)
+│   ├── programs/    — m1/ … m10/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations;
+│   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
+│   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
 │   └── specs/       — Language v2 Specification.md (the language definition, in progress, printed by `lughac spec`);
@@ -299,7 +304,7 @@ Update this tree when modules or `tests/` are added.
 
 These look like bugs but are specified behavior:
 
-- **v2 constructs stop with `not implemented yet: … (milestone N)`, exit 2,** until their milestone lands (PRP-030 gate). They parse, and `--emit=ast` shows them. Each milestone PRP deletes its gate entries.
+- **v2 constructs stop with `not implemented yet: … (milestone N)`, exit 2,** until their milestone lands (PRP-030 gate): `import`, `private`/`public` and qualified names (milestone 10), generics (11). They parse, and `--emit=ast` shows them. Each milestone PRP deletes its gate entries.
 
 - **A function whose only exit is a `return` inside `while true` is rejected** as missing a return. Spec §6 rejects it on purpose to keep return checking simple; users add `panic("unreachable");`.
 - **Integer overflow always panics**, even at `-O2`. Spec §12 decided against wrapping.
