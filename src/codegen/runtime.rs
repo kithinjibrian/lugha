@@ -31,6 +31,9 @@ fn suffix(ty: &Type) -> &'static str {
         Type::I64 => "i64",
         Type::U8 => "u8",
         Type::F64 => "f64",
+        // `u32` prints through the `u64` functions, zero-extended (v7).
+        Type::U32 | Type::U64 => "u64",
+        Type::F32 => "f32",
         Type::Bool => "bool",
         Type::String => "str",
         _ => unreachable!("checked: intrinsics take primitives or strings"),
@@ -52,6 +55,7 @@ impl<'ctx> Lowerer<'ctx> {
         let abi = |ty: &Type| -> BasicMetadataTypeEnum<'ctx> {
             match ty {
                 Type::Bool | Type::U8 => self.context.i32_type().into(),
+                Type::U32 => self.context.i64_type().into(),
                 Type::String => self.context.ptr_type(AddressSpace::default()).into(),
                 _ => super::value::llvm_type(self.context, ty).into(),
             }
@@ -70,7 +74,8 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Calls `lugha_rt_init` (it runs `GC_INIT()`), first thing in the C `main`.
-    /// Widens `bool`/`u8` to the runtime's `i32` parameters.
+    /// Widens `bool`/`u8` to the runtime's `i32` parameters, and `u32` to
+    /// the `u64` ones (v7).
     pub(super) fn abi_value(
         &self,
         ty: &Type,
@@ -81,6 +86,13 @@ impl<'ctx> Lowerer<'ctx> {
                 let i32_type = self.context.i32_type();
                 self.builder
                     .build_int_z_extend(value.into_int_value(), i32_type, "abi")
+                    .expect(POSITIONED)
+                    .into()
+            }
+            Type::U32 => {
+                let i64_type = self.context.i64_type();
+                self.builder
+                    .build_int_z_extend(value.into_int_value(), i64_type, "abi")
                     .expect(POSITIONED)
                     .into()
             }

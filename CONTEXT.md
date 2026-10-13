@@ -3256,20 +3256,45 @@ Branch: main
 
 ---
 
-## SESSION 70 — 2026-10-13 — More numbers (milestone 27) — open
+## SESSION 70 — 2026-10-13 — More numbers (milestone 27) — closed
 Branch: prp-055-more_numbers
+
+### WHAT WAS DONE
+- No interview: the v7 draft settles milestone 27. PRP-055 written and approved.
+- Mid-build, the user chose lexer keywords for `u32`/`u64`/`f32` (like the v0 types) over names recognised only in types; the draft's compatibility sentence was amended (v4 precedent).
+- Checker, codegen and runtime support for the three types; `lughac spec` prints the new `Language v7 Specification.md`.
+- Approved splits: `check/types.rs` → `check/slots.rs`; `ast/mod.rs` → `ast/types.rs` (verbatim).
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/numbers.rs`, `src/check/slots.rs`, `src/ast/types.rs`, `tests/programs/m27/` (`numbers`, `widths`, `overflow`, `e0402`), `docs/specs/Language v7 Specification.md`.
+- Modified: `src/lexer/{token,mod}.rs`, `src/parser/{item,describe}.rs`, `src/parser/sexp/item.rs`, `src/ast/mod.rs`, `src/check/{types,env,literal,expr,mod}.rs`, `src/codegen/{value,structs,arith,cast,expr,runtime,input}.rs`, `runtime/print.c`, `src/link.rs`, `src/lib.rs`, `tests/{cli,spec}.rs`, the v7 draft.
+- Docs: PRP-055, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 66, CONTEXT.
+
+### TESTS WRITTEN
+- Lexer: the new keywords. Checker (`numbers.rs`): literals and ranges (E0402, E0401), unsigned negation (E0404), every cast pair, mixing (E0404), externs. Codegen (`cast.rs`): `uadd` at i64, `udiv i32`, `icmp ult`, `fadd float`, `fpext`, `fptrunc`.
+- `tests/programs/m27/`; the §10 program from the spec. Earlier programs' IR byte-identical with `main`; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 66.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-055 waits for the user's merge OK; then tag `m27`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v7 draft approved** (`docs/specs/Language v7 Draft.md`, MEMORY 65): numbers and bits — milestones 27–29. `main` has v6 complete (tags `m26`, `v6`); `Language v6 Specification.md` is what `lughac spec` prints until milestone 27 starts `Language v7 Specification.md`.
+**Milestone 27 complete** (PRP-055, MEMORY 66): `u32`, `u64`, `f32` as keyword types. Tag `m27` goes on the merge of PRP-055. `Language v7 Specification.md` (in progress) is what `lughac spec` prints; v6 is frozen.
 
-Next: **milestone 27, more numbers** — discovery and PRP-055. Scope (v7 draft §2 type keywords, §4 "New numeric types", §7, §8, §9 runtime printing, §10 "More numbers"):
-- `u32`, `u64`, `f32` as types: lexer keywords, literal typing and ranges (E0402), unsigned negation E0404, casts between all numeric types, arithmetic with overflow panics at each width;
-- printing and interpolation (`lugha_rt_print_u64`, `lugha_rt_print_f32` with shortest round-trip), extern signatures;
-- codegen layout (4/8/4 bytes).
+Next: **milestone 28, bits** — discovery and PRP-056. Scope (v7 draft decisions 3 and 5, §2 operators and `0b` literals, §3 precedence and `assign_op`, §4 "Bit operators", §5 compound forms, §9, §10 "Bits"):
+- lexer: `& | ^ ~ << >>` and `&= |= ^= <<= >>=` (a lone `&`/`|` is E0101 today), `0b` literals (E0105/E0106/E0108);
+- parser: Rust precedence (`<< >>` > `&` > `^` > `|` > comparisons), prefix `~`;
+- checker: integer operands of one type, shift amount of the shifted type, E0404 otherwise;
+- codegen: `and`/`or`/`xor`/`shl`/`lshr`/`ashr`, shift range check panicking `shift out of range` at the operator.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (295), `check/interfaces.rs` (299), `check/infer.rs` (297), `parser/expr.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292), `codegen/runtime.rs` (~295), `codegen/arith.rs` (277).
 
 See `TODO.md`.

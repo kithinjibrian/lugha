@@ -29,14 +29,23 @@ impl<'ctx> Lowerer<'ctx> {
         let b = &self.builder;
         Ok(match (&from, &to) {
             _ if from == to => value,
-            (Type::F64, _) => {
+            // Between the two float widths (v7).
+            (Type::F64, Type::F32) => b
+                .build_float_trunc(value.into_float_value(), self.context.f32_type(), "fptrunc")
+                .expect(POSITIONED)
+                .into(),
+            (Type::F32, Type::F64) => b
+                .build_float_ext(value.into_float_value(), self.context.f64_type(), "fpext")
+                .expect(POSITIONED)
+                .into(),
+            (Type::F32 | Type::F64, _) => {
                 let name = if is_signed(&to) {
                     "llvm.fptosi.sat"
                 } else {
                     "llvm.fptoui.sat"
                 };
                 let target = llvm_type(self.context, &to);
-                let source = self.context.f64_type().into();
+                let source = llvm_type(self.context, &from);
                 let saturate = Intrinsic::find(name)
                     .and_then(|i| i.get_declaration(&self.module, &[target, source]))
                     .expect("LLVM 21 provides the saturating float-to-int intrinsics");
@@ -48,12 +57,13 @@ impl<'ctx> Lowerer<'ctx> {
                     ValueKind::Instruction(_) => unreachable!("the intrinsic returns an integer"),
                 }
             }
-            (_, Type::F64) => {
-                let (v, f64_type) = (value.into_int_value(), self.context.f64_type());
+            (_, Type::F32 | Type::F64) => {
+                let v = value.into_int_value();
+                let float = llvm_type(self.context, &to).into_float_type();
                 if is_signed(&from) {
-                    b.build_signed_int_to_float(v, f64_type, "sitofp")
+                    b.build_signed_int_to_float(v, float, "sitofp")
                 } else {
-                    b.build_unsigned_int_to_float(v, f64_type, "uitofp")
+                    b.build_unsigned_int_to_float(v, float, "uitofp")
                 }
                 .expect(POSITIONED)
                 .into()
@@ -97,5 +107,25 @@ mod tests {
         assert!(ir.contains("uitofp i8"), "{ir}");
         assert!(ir.contains("@llvm.fptosi.sat.i32.f64"), "{ir}");
         assert!(ir.contains("@llvm.fptoui.sat.i8.f64"), "{ir}");
+    }
+
+    #[test]
+    fn the_v7_types_use_their_own_operations() {
+        let ir = ir("fun main() {\n\
+            let a: u64 = 1; let b = a + a; let c = a < b;\n\
+            let d: u32 = 7; let e = d / d;\n\
+            let x: f32 = 1.5; let y = x + x; let z = y as f64; let w = z as f32;\n\
+        }");
+        for needle in [
+            "@llvm.uadd.with.overflow.i64",
+            "udiv i32",
+            "icmp ult i64",
+            "fadd float",
+            "fpext float",
+            "fptrunc double",
+        ] {
+            assert!(ir.contains(needle), "{needle}: {ir}");
+        }
+        assert!(!ir.contains("div.min"), "no MIN check for unsigned: {ir}");
     }
 }

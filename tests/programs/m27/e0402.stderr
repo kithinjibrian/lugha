@@ -1,0 +1,8 @@
+error[E0402]: integer literal out of range for u32
+  --> tests/programs/m27/e0402.la:4:18
+  |
+4 |     let n: u32 = 4294967296;
+  |                  ^^^^^^^^^^
+  |
+  = help: u32 holds 0 to 4294967295
+

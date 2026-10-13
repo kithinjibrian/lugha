@@ -3,7 +3,7 @@
 **Status:** approved 2026-10-13 — session 69
 **Base:** `Language v6 Specification.md`, complete (milestones 23–26). It stays the source of truth, and what `lughac spec` prints, until v7's first milestone starts `Language v7 Specification.md`. That file then grows milestone by milestone, and v6 is frozen, as earlier versions were.
 
-This draft lists only what changes, in the order of the v6 sections. Everything not mentioned keeps its v6 meaning. Every valid v6 program stays valid in v7, because everything v7 adds was an error before:
+This draft lists only what changes, in the order of the v6 sections. Everything not mentioned keeps its v6 meaning. Every valid v6 program stays valid in v7, except one that uses `u32`, `u64` or `f32` as a name: they become type keywords like `i32` (amended by PRP-055, at the user's direction, following v4's precedent with `Result`). Everything else v7 adds was an error before:
 - `u32`, `u64` and `f32` were unknown types (E0305);
 - `&`, `|`, `^`, `~`, `<<`, `>>` and `0b` literals were lexing or parsing errors;
 - methods on integers were E0415.

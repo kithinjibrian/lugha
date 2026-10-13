@@ -66,6 +66,9 @@ pub enum TokenKind {
     TyF64,
     TyBool,
     TyString,
+    TyU32,
+    TyU64,
+    TyF32,
 
     // Operators.
     Plus,
@@ -146,6 +149,9 @@ pub fn keyword(word: &str) -> Option<TokenKind> {
         "f64" => TyF64,
         "bool" => TyBool,
         "string" => TyString,
+        "u32" => TyU32,
+        "u64" => TyU64,
+        "f32" => TyF32,
         _ => return None,
     })
 }

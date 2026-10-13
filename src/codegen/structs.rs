@@ -19,8 +19,8 @@ use crate::check::{Enums, Structs, Type};
 pub(super) fn layout(ty: &Type, structs: &Structs, enums: &Enums) -> (u64, u64) {
     match ty {
         Type::U8 | Type::Bool => (1, 1),
-        Type::I32 => (4, 4),
-        Type::I64 | Type::F64 | Type::String | Type::Array(_) => (8, 8),
+        Type::I32 | Type::U32 | Type::F32 => (4, 4),
+        Type::I64 | Type::U64 | Type::F64 | Type::String | Type::Array(_) => (8, 8),
         // `{ code, env }` (v3 draft §7), `{ table, box }` (v5 draft §7).
         Type::Fun(..) | Type::Interface(..) => (16, 8),
         Type::Struct(..) => {

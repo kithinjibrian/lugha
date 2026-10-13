@@ -159,6 +159,9 @@ impl Parser<'_> {
             TokenKind::TyF64 => TypeKind::F64,
             TokenKind::TyBool => TypeKind::Bool,
             TokenKind::TyString => TypeKind::String,
+            TokenKind::TyU32 => TypeKind::U32,
+            TokenKind::TyU64 => TypeKind::U64,
+            TokenKind::TyF32 => TypeKind::F32,
             // `Option<T>` (v1); elsewhere `Option` is an ordinary name.
             TokenKind::Ident(name) if name == "Option" && self.peek_at(1) == &TokenKind::Lt => {
                 self.bump();

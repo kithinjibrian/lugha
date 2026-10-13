@@ -33,6 +33,9 @@ pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnu
         Type::I64 => context.i64_type().into(),
         Type::U8 => context.i8_type().into(),
         Type::F64 => context.f64_type().into(),
+        Type::U32 => context.i32_type().into(),
+        Type::U64 => context.i64_type().into(),
+        Type::F32 => context.f32_type().into(),
         Type::Bool => context.bool_type().into(),
         // Strings and arrays are pointers to heap objects (spec §7).
         Type::String | Type::Array(_) => context.ptr_type(AddressSpace::default()).into(),
@@ -63,7 +66,7 @@ pub(super) fn int_type<'ctx>(context: &'ctx Context, ty: &Type) -> IntType<'ctx>
     llvm_type(context, ty).into_int_type()
 }
 
-/// `i32` and `i64` are signed; `u8` is not.
+/// `i32` and `i64` are signed; `u8`, `u32` and `u64` are not.
 pub(super) fn is_signed(ty: &Type) -> bool {
     matches!(ty, Type::I32 | Type::I64)
 }

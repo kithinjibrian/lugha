@@ -49,7 +49,7 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Unary(UnOp::Neg, operand) => {
                 let ty = self.ty(expr);
                 let value = self.get(operand, &ty)?;
-                if ty == Type::F64 {
+                if ty.is_float() {
                     self.builder
                         .build_float_neg(value.into_float_value(), "neg")
                         .expect(POSITIONED)
@@ -123,6 +123,12 @@ impl<'ctx> Lowerer<'ctx> {
         match literal.kind {
             ExprKind::Float(value) => {
                 let value = if negate { -value } else { value };
+                // An `f32` literal is the `f32` nearest its value, as `x as f32` (v7).
+                if self.ty(literal) == Type::F32 {
+                    #[allow(clippy::cast_possible_truncation)] // rounding to f32 is the point
+                    let single = f64::from(value as f32);
+                    return self.context.f32_type().const_float(single).into();
+                }
                 self.context.f64_type().const_float(value).into()
             }
             ExprKind::Int(value) => {

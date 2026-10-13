@@ -152,7 +152,7 @@ impl Checker {
         let (ty, ok, symbol) = match op {
             UnOp::Neg => {
                 let ty = self.value(operand, expect);
-                let ok = matches!(ty, Type::I32 | Type::I64 | Type::F64);
+                let ok = matches!(ty, Type::I32 | Type::I64) || ty.is_float();
                 (ty, ok, "-")
             }
             UnOp::Not => {

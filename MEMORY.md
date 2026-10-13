@@ -1041,9 +1041,23 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 66. More numbers — milestone 27 (PRP-055)
+
+**Decision:** `u32`, `u64`, `f32` are lexer keywords (`TyU32`…), like the v0 types — at the user's direction, breaking only v6 programs that use them as names (v4's `Result` precedent; draft amended).
+- **Checker:** `Type::U32/U64/F32`; `check/numbers.rs` (`is_float`, `is_unsigned`, `Type::primitive` for keyword types); `literal_range` covers them; a float literal takes `f32` when expected; unsigned negation E0404; mixing types stays E0404 (as `i32 + i64` always was).
+- **Codegen:** float paths test `is_float()`; `is_signed` stays `i32`/`i64`, so unsigned ops come for free; casts add `fptrunc`/`fpext` and use the source/target float width; `f32` literals are `f64::from(value as f32)`; layout 4/8/4.
+- **Runtime:** `lugha_rt_print_u64`, `lugha_rt_print_f32`, `lugha_rt_to_string_u64`, `lugha_rt_to_string_f32`; `format_float(x, single, …)` stops at the fewest digits that read back (`strtof` for `f32`); `u32` is zero-extended to the `u64` functions (`abi` / `abi_value`).
+- **Approved splits:** `slot_names_variant`/`indirect_slot` → `check/slots.rs`; AST `Type`/`TypeKind`/`AppliedType` → `ast/types.rs` (verbatim).
+- **Spec:** `Language v7 Specification.md` begins; v6 frozen.
+
+**Why:** signedness and float width were already parameters in codegen, so the new types are mostly table entries.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 27 complete**: PRP-055 `u32`, `u64`, `f32`; v7 spec begins
 - **Milestone 26 complete — Lugha v6 complete**: PRP-054 converting between interfaces
 - **Milestone 25 complete**: PRP-053 `Self` in interfaces
 - **Milestone 24 complete**: PRP-052 iterators
@@ -1108,22 +1122,23 @@ Open questions live in `DECISIONS.md`, not here.
 - v0 language spec reviewed and fixed
 
 ### In Progress
-- Nothing
+- Lugha v7: milestone 28 (bits) next
 
 ### Not Started
-- Lugha v7: draft approved (MEMORY 65), milestones 27–29 not started
+- Milestones 28–29 (v7 draft, MEMORY 65)
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v7 draft approved** (`docs/specs/Language v7 Draft.md`, MEMORY 65): numbers and bits — milestones 27–29. `main` has v6 complete (tags `m26`, `v6`); `Language v6 Specification.md` is what `lughac spec` prints until milestone 27 starts `Language v7 Specification.md`.
+**Milestone 27 complete** (PRP-055, MEMORY 66): `u32`, `u64`, `f32` as keyword types. Tag `m27` goes on the merge of PRP-055. `Language v7 Specification.md` (in progress) is what `lughac spec` prints; v6 is frozen.
 
-Next: **milestone 27, more numbers** — discovery and PRP-055. Scope (v7 draft §2 type keywords, §4 "New numeric types", §7, §8, §9 runtime printing, §10 "More numbers"):
-- `u32`, `u64`, `f32` as types: lexer keywords, literal typing and ranges (E0402), unsigned negation E0404, casts between all numeric types, arithmetic with overflow panics at each width;
-- printing and interpolation (`lugha_rt_print_u64`, `lugha_rt_print_f32` with shortest round-trip), extern signatures;
-- codegen layout (4/8/4 bytes).
+Next: **milestone 28, bits** — discovery and PRP-056. Scope (v7 draft decisions 3 and 5, §2 operators and `0b` literals, §3 precedence and `assign_op`, §4 "Bit operators", §5 compound forms, §9, §10 "Bits"):
+- lexer: `& | ^ ~ << >>` and `&= |= ^= <<= >>=` (a lone `&`/`|` is E0101 today), `0b` literals (E0105/E0106/E0108);
+- parser: Rust precedence (`<< >>` > `&` > `^` > `|` > comparisons), prefix `~`;
+- checker: integer operands of one type, shift amount of the shifted type, E0404 otherwise;
+- codegen: `and`/`or`/`xor`/`shl`/`lshr`/`ashr`, shift range check panicking `shift out of range` at the operator.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (295), `check/interfaces.rs` (299), `check/infer.rs` (297), `parser/expr.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292), `codegen/runtime.rs` (~295), `codegen/arith.rs` (277).
 
 See `TODO.md`.

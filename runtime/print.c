@@ -20,9 +20,10 @@ static void put(char *out, size_t cap, size_t *used, const char *text, size_t n)
 /*
  * Spec §5: the shortest decimal that round-trips, in Lugha float syntax —
  * always a `.` with a digit on each side, and an exponent (`1.0e16`,
- * `2.5e-7`) when the magnitude is >= 1e16 or below 1e-5.
+ * `2.5e-7`) when the magnitude is >= 1e16 or below 1e-5. With `single`
+ * (v7 `f32`), "round-trips" means reads back as the same float.
  */
-static void format_f64(double x, char *out, size_t cap) {
+static void format_float(double x, bool single, char *out, size_t cap) {
     if (isnan(x)) {
         snprintf(out, cap, "NaN");
         return;
@@ -39,7 +40,7 @@ static void format_f64(double x, char *out, size_t cap) {
     char sci[FORMAT_CAP];
     for (int precision = 0; precision <= 16; precision++) {
         snprintf(sci, sizeof sci, "%.*e", precision, x);
-        if (strtod(sci, NULL) == x) {
+        if (single ? (double)strtof(sci, NULL) == x : strtod(sci, NULL) == x) {
             break;
         }
     }
@@ -117,7 +118,17 @@ void lugha_rt_print_u8(uint32_t value) {
 
 void lugha_rt_print_f64(double value) {
     char text[FORMAT_CAP];
-    format_f64(value, text, sizeof text);
+    format_float(value, false, text, sizeof text);
+    fputs(text, stdout);
+}
+
+void lugha_rt_print_u64(uint64_t value) {
+    printf("%" PRIu64, value);
+}
+
+void lugha_rt_print_f32(float value) {
+    char text[FORMAT_CAP];
+    format_float((double)value, true, text, sizeof text);
     fputs(text, stdout);
 }
 
@@ -154,7 +165,19 @@ LughaString *lugha_rt_to_string_u8(uint32_t value) {
 
 LughaString *lugha_rt_to_string_f64(double value) {
     char text[FORMAT_CAP];
-    format_f64(value, text, sizeof text);
+    format_float(value, false, text, sizeof text);
+    return make_string(text);
+}
+
+LughaString *lugha_rt_to_string_u64(uint64_t value) {
+    char text[FORMAT_CAP];
+    snprintf(text, sizeof text, "%" PRIu64, value);
+    return make_string(text);
+}
+
+LughaString *lugha_rt_to_string_f32(float value) {
+    char text[FORMAT_CAP];
+    format_float((double)value, true, text, sizeof text);
     return make_string(text);
 }
 

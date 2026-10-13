@@ -110,40 +110,40 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — lexer and parser:
-- [ ] `u32`, `u64` and `f32` lex as type keywords, and parse and print in types.
+- [x] `u32`, `u64` and `f32` lex as type keywords, and parse and print in types.
 
 Unit tests — checker (`check/types.rs`, `check/literal.rs`, `check/ops.rs`):
-- [ ] **Literals:**
+- [x] **Literals:**
   - `let b: u64 = 18446744073709551615;` checks, and `let c: u32 = 4294967296;` is E0402;
   - `let x: f32 = 0.5;` checks, and `let y: f32 = 1;` is E0401.
-- [ ] **Negation:** `-n` on a `u32` and on a `u64` is E0404; on an `f32` it's fine.
-- [ ] **Casts:** every numeric pair casts; `true as u32` is E0408.
-- [ ] **Mixing:** `u32 + u64` is E0403.
-- [ ] **Externs:** `extern fun f(a: u32, b: u64, c: f32): f32;` is allowed.
+- [x] **Negation:** `-n` on a `u32` and on a `u64` is E0404; on an `f32` it's fine.
+- [x] **Casts:** every numeric pair casts; `true as u32` is E0408.
+- [x] **Mixing:** `u32 + u64` is E0403.
+- [x] **Externs:** `extern fun f(a: u32, b: u64, c: f32): f32;` is allowed.
 
 Unit tests — codegen (`codegen/arith.rs`, `codegen/cast.rs`):
-- [ ] `u64` addition uses `llvm.uadd.with.overflow.i64`, and `u32` division `udiv` with no MIN check.
-- [ ] `f32` arithmetic is `fadd float`, `f32` to `f64` is `fpext`, and `f64` to `f32` is `fptrunc`.
-- [ ] `u64` comparison is `icmp ult`.
+- [x] `u64` addition uses `llvm.uadd.with.overflow.i64`, and `u32` division `udiv` with no MIN check.
+- [x] `f32` arithmetic is `fadd float`, `f32` to `f64` is `fpext`, and `f64` to `f32` is `fptrunc`.
+- [x] `u64` comparison is `icmp ult`.
 
 Unit tests — runtime (`link.rs`):
-- [ ] Every new symbol is in the runtime source (the existing symbol test).
+- [x] Every new symbol is in the runtime source (the existing symbol test).
 
 Acceptance — `tests/programs/m27/`:
-- [ ] `numbers.la`: the §10 program.
-- [ ] `widths.la`:
+- [x] `numbers.la`: the §10 program.
+- [x] `widths.la`:
   - `u32` and `u64` arithmetic near their limits, and `u64` division and remainder;
   - every cast pair, including saturation (`1.0e20 as u32`) and NaN;
   - `f32` arithmetic and printing (`1.0 / 3.0`, `1.0e30`, `-0.0`);
   - interpolation and `to_string`;
   - arrays and struct fields of each type;
   - `u64` comparison above `i64::MAX`.
-- [ ] `overflow.la`: `u64` addition past the limit panics (`integer overflow`, exit 101).
-- [ ] `e0402.la`: reject golden.
-- [ ] The §10 program runs from the spec.
+- [x] `overflow.la`: `u64` addition past the limit panics (`integer overflow`, exit 101).
+- [x] `e0402.la`: reject golden.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -151,10 +151,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m27/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] `Language v7 Specification.md` begins (milestone 27); docs updated.
-- [ ] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m27/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] `Language v7 Specification.md` begins (milestone 27); docs updated.
+- [x] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -163,3 +163,13 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m27/numbers.la
 ```
+
+## AMENDMENTS (during build, session 70)
+
+- **Keywords, at the user's direction.** The build first recognised `u32`, `u64` and `f32` only in type positions, to keep v6 programs that use them as names valid. The user asked for lexer keywords instead, like the v0 types. That breaks only such programs; no repo program, prelude code or spec example uses those names. The draft's compatibility sentence and the spec's v7 note say so (v4's `Result` precedent).
+- **Mixing types is E0404, not E0403** (`u32 + u64`), as `i32 + i64` always was.
+- **Approved splits** (verbatim):
+  - `check/types.rs` (305 lines): `slot_names_variant`, `indirect_slot` and their test moved to `check/slots.rs`;
+  - `ast/mod.rs` (302 lines): `Type`, `TypeKind` and `AppliedType` moved to `ast/types.rs`.
+- **`check/numbers.rs`** holds the new helpers (`is_float`, `is_unsigned`, `Type::primitive`), which keeps `check/env.rs` and `check/types.rs` under 300 lines.
+- **`-O2`** was checked by hand for `m27/numbers` and `m27/widths`.

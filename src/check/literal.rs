@@ -24,6 +24,7 @@ impl Checker {
         let reason = expect.and_then(|e| e.reason.as_ref());
         match (kind, expected) {
             (ExprKind::Float(_), None | Some(Type::F64)) => Type::F64,
+            (ExprKind::Float(_), Some(Type::F32)) => Type::F32,
             (ExprKind::Float(_), Some(ty)) => {
                 self.report(errors::wrong_literal(true, ty, expr.span, reason));
                 Type::Error
@@ -36,9 +37,9 @@ impl Checker {
             (ExprKind::Int(value), expected) => {
                 let ty = expected.unwrap_or(Type::I64);
                 let (max, negated_max) = ty.literal_range();
-                // A negated u8 literal never fits: u8 has no negative values (spec §4 rule 6).
+                // A negated unsigned literal never fits: no negative values (spec §4 rule 6).
                 let fits = if negated {
-                    *value <= negated_max && ty != Type::U8
+                    *value <= negated_max && !ty.is_unsigned()
                 } else {
                     *value <= max
                 };

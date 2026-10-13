@@ -68,7 +68,7 @@ impl<'ctx> Lowerer<'ctx> {
         b: BasicValueEnum<'ctx>,
         at: usize,
     ) -> BasicValueEnum<'ctx> {
-        if ty == Type::F64 {
+        if ty.is_float() {
             let builder = &self.builder;
             let (a, b) = (a.into_float_value(), b.into_float_value());
             return match op {
@@ -190,7 +190,7 @@ impl<'ctx> Lowerer<'ctx> {
         a: BasicValueEnum<'ctx>,
         b: BasicValueEnum<'ctx>,
     ) -> IntValue<'ctx> {
-        if ty == Type::F64 {
+        if ty.is_float() {
             let predicate = match op {
                 BinOp::Lt => FloatPredicate::OLT,
                 BinOp::Le => FloatPredicate::OLE,

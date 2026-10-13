@@ -133,18 +133,13 @@ impl Checker {
 
     fn resolve_here(&mut self, ty: &Annotation) -> Type {
         match &ty.kind {
-            TypeKind::I32 => Type::I32,
-            TypeKind::I64 => Type::I64,
-            TypeKind::U8 => Type::U8,
-            TypeKind::F64 => Type::F64,
-            TypeKind::Bool => Type::Bool,
-            TypeKind::String => Type::String,
             TypeKind::Array(element) => Type::Array(Box::new(self.resolve(element))),
             TypeKind::Option(inner) => Type::Option(Box::new(self.resolve(inner))),
             TypeKind::Named(name) => self.resolve_named(name, ty.span),
             // `m.T`, `T<args>`, `m.T<args>` (PRP-034, PRP-035).
             TypeKind::Applied(applied) => self.resolve_applied(applied, ty.span),
             TypeKind::Fun(params, ret) => self.resolve_fun(params, ret.as_deref()),
+            primitive => Type::primitive(primitive).expect("every other kind is a keyword type"),
         }
     }
 

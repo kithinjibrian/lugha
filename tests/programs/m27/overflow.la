@@ -1,0 +1,6 @@
+// u64 arithmetic panics on overflow, like every integer type.
+
+fun main() {
+    let b: u64 = 18446744073709551615;
+    println(b + 1);
+}

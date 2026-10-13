@@ -1,0 +1,40 @@
+// u32, u64 and f32 (milestone 27): limits, casts, printing, storage.
+
+struct Pixel { r: u32, big: u64, gain: f32 }
+
+fun main() {
+    let a: u32 = 4294967295;
+    println(a - 1);
+    println(a / 2);
+    let b: u64 = 18446744073709551615;
+    println(b / 3);
+    println(b % 10);
+    let half: u64 = 9223372036854775808;
+    println(half > 9223372036854775807);
+
+    // casts: saturation, NaN, truncation, signedness
+    println(1.0e20 as u32);
+    println(-5.5 as u64);
+    let nan: f64 = 0.0 / 0.0;
+    println(nan as u32);
+    println(300 as u32 as u8);
+    println(b as i64);
+    println(a as f32);
+    println(a as u64 + 1);
+
+    // f32 prints its own shortest form
+    let third: f32 = 1.0 / 3.0;
+    println(third);
+    let large: f32 = 1.0e30;
+    println(large);
+    let z: f32 = -0.0;
+    println(z);
+    println(third as f64);
+    println(third * 3.0 == 1.0);
+
+    // storage and text
+    let p = Pixel { r: 7, big: 8, gain: 0.5 };
+    let xs: u64[] = [1, 2, 3];
+    let fs: f32[] = [0.25, 1.5];
+    println("{p.r} {p.big} {p.gain} {xs[2]} {fs[1]} {to_string(a)}");
+}

@@ -174,9 +174,9 @@ Done when the converting-between-interfaces program passes and the v6 spec is co
 
 ## v7 (draft approved, session 69 — `docs/specs/Language v7 Draft.md`)
 
-### Milestone 27 — More numbers
+### Milestone 27 — More numbers ✅
 Done when the more-numbers program passes.
-- [ ] `u32`, `u64`, `f32`: literals, arithmetic, casts, printing, externs
+- [x] PRP-055: `u32`, `u64`, `f32`: literals, arithmetic, casts, printing, externs; `Language v7 Specification.md` begins; tagged `m27` at merge
 
 ### Milestone 28 — Bits
 Done when the bits program passes.
