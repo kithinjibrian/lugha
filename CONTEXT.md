@@ -2922,6 +2922,12 @@ Branch: prp-046-interface_value_checking
 
 ---
 
+## SESSION 59 — 2026-10-13 — Compiling interface values (milestone 20, part 2) — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 20, first half done** (PRP-046, MEMORY 55): `lughac check` accepts interface values; `build`, `run` and `--emit=ir` stop at the gate in `driver/pipeline.rs::stop_gated`. v4.1 is the current release; the v5 draft is approved (MEMORY 54).
