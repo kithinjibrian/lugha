@@ -162,7 +162,7 @@ Done when the generic-interfaces program passes.
 
 ### Milestone 24 — Iterators ✅
 Done when the iterators program passes.
-- [x] PRP-052: `Iter<T>` in the prelude; `for … of` over iterators; tagged `m24` at merge
+- [x] PRP-052: `Iter<T>` in the prelude; `for … of` over iterators; tagged `m24`
 
 ### Milestone 25 — `Self`
 Done when the `Self` program passes.

@@ -3137,7 +3137,7 @@ Branch: prp-051-generic_interface_values (merged into main)
 ---
 
 ## SESSION 66 — 2026-10-13 — Iterators (milestone 24) — closed
-Branch: prp-052-iterators
+Branch: prp-052-iterators (merged into main)
 
 ### WHAT WAS DONE
 - No interview: the v6 draft settles milestone 24. PRP-052 written and approved.
@@ -3163,13 +3163,13 @@ Branch: prp-052-iterators
 - None.
 
 ### STILL OPEN AT CLOSE
-- PRP-052 waits for the user's merge OK; then tag `m24`.
+- Nothing. PRP-052 merged into `main`, tagged `m24`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 24 complete** (PRP-052, MEMORY 62): iterators — `Iter<T>` in the prelude, `for x of e` over anything with `fun next(mut self): Option<T>`, on a copy. Tag `m24` goes on the merge of PRP-052. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
+**Milestone 24 complete** (PRP-052, MEMORY 62): iterators — `Iter<T>` in the prelude, `for x of e` over anything with `fun next(mut self): Option<T>`, on a copy. Tagged `m24`. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
 
 Next: **milestone 25, `Self`** — discovery and PRP-053. Scope (v6 draft decision 2, §4 "`Self`", §9 E0427, §10 "`Self`"):
 - `Self` in interface signatures and default bodies means the implementing type (it hides a type named `Self`); outside interfaces it stays E0305; an interface parameter named `Self` is already E0316;

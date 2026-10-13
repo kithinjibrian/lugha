@@ -1,6 +1,6 @@
 ## FEATURE: Iterators — `Iter<T>` in the prelude and `for x of e` over anything with `next`; milestone 24.
 
-**Status:** approved 2026-10-13 — session 66
+**Status:** merged 2026-10-13 — session 66
 **Milestone:** 24 (one PRP; tag `m24` at merge)
 **Spec:** `Language v6 Draft.md`:
 - decision 5 and the choices made while writing the draft ("`for … of` iterates a copy", "A module's own `Iter` hides the prelude's");
