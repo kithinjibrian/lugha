@@ -3072,6 +3072,11 @@ Branch: main
 
 ---
 
+## SESSION 64 — 2026-10-13 — Generic interfaces (milestone 23) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v6 draft approved** (`docs/specs/Language v6 Draft.md`, MEMORY 59): generic interfaces, iterators, `Self`, converting between interfaces — milestones 23–26. `main` has v5 complete (tags `m22`, `v5`); `Language v5 Specification.md` is what `lughac spec` prints until milestone 23 starts `Language v6 Specification.md`.
