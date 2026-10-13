@@ -2397,6 +2397,12 @@ Branch: prp-037-interfaces
 
 ---
 
+## SESSION 47 — 2026-10-13 — v3 direction — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v2 is complete** (tags `m12` and `v2`). Milestones 9–12 are done:
