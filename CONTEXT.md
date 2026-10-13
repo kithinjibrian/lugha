@@ -2922,7 +2922,7 @@ Branch: prp-046-interface_value_checking
 
 ---
 
-## SESSION 59 — 2026-10-13 — Compiling interface values (milestone 20, part 2) — open
+## SESSION 59 — 2026-10-13 — Compiling interface values (milestone 20, part 2) — closed
 
 Branch: prp-047-interface_value_compiling
 
@@ -2949,19 +2949,21 @@ Branch: prp-047-interface_value_compiling
 ### PENDING DECISIONS OPENED
 - None.
 
+### STILL OPEN AT CLOSE
+- Nothing. PRP-047 merged to `main` (fast-forward), tagged `m20`, branch deleted.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 20, first half done** (PRP-046, MEMORY 55): `lughac check` accepts interface values; `build`, `run` and `--emit=ir` stop at the gate in `driver/pipeline.rs::stop_gated`. v4.1 is the current release; the v5 draft is approved (MEMORY 54).
+**Milestone 20 complete** (tag `m20`; PRP-046 and PRP-047, MEMORY 55–56): interface values check, compile and run. `Language v5 Specification.md` is in progress (milestone 20) and is what `lughac spec` prints; v4 (with v4.1) is frozen.
 
-Next: **PRP-047, compiling interface values** — discovery and PRP. Its scope (v5 draft §7, §9, §10, §11):
-- two-word values: a `lugha_vt_<Type>.<Interface>` dispatch table (type identity, copy function, methods in declaration order) and a GC box (`lugha_rt_alloc`), primitives boxed too;
-- conversion at each `Checked.conversions` entry (no copy when the value is moved), `lugha_dyn_<Type>.<method>` wrappers, indirect calls for callees `<Interface>.<method>`, deep copies (`is_deep`);
-- tables only for converted pairs, so programs without interface values give byte-identical IR;
-- remove the gate and `codegen/value.rs`'s `unreachable!` arm; `tests/interface_values.rs` becomes a run test; the §10 interface-values program passes;
-- `Language v5 Specification.md` begins (and `lughac spec` prints it); CLAUDE.md rule 7 (new symbols), anti-patterns 4 and 5; tag `m20`.
+Next: **milestone 21, type patterns** — discovery and PRP-048. Its scope (v5 draft §3, §4 "Type patterns", §9 E0426, §10 "Type patterns"):
+- `name: T` and `_: T` patterns in `match` on an interface value, nested and guarded;
+- a `_` arm required (E0417 with `_` as the witness); W0102 for a repeated unguarded type;
+- E0426 for a type pattern on a non-interface value, with an interface as `T`, or with a `T` that can't satisfy the interface;
+- codegen compares the table's identity slot (slot 0, `lugha_type_<Type>`) with the pattern type's, then binds the box's value (copied when stored).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/array.rs` (297), `check/infer.rs` (291), `codegen/control.rs` (292).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/array.rs` (297), `check/infer.rs` (291), `codegen/control.rs` (292), `check/usefulness.rs` (277), `check/matching.rs` (260), `codegen/patterns.rs` (261), `codegen/matching.rs` (253).
 
 See `TODO.md`.

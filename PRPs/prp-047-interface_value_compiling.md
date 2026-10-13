@@ -1,6 +1,6 @@
 ## FEATURE: Compiling interface values — dispatch tables, boxes, dynamic calls; milestone 20 complete.
 
-**Status:** approved 2026-10-13 — session 59
+**Status:** merged 2026-10-13 — session 59
 **Milestone:** 20 (second of two PRPs: 046 checking, **047 compiling** — gate removed, `Language v5 Specification.md` begins, tag `m20`)
 **Spec:** `Language v5 Draft.md`:
 - decisions 1–3 and 7;
