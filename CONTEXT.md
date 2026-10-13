@@ -3105,7 +3105,7 @@ Branch: prp-050-generic_interface_bounds (merged into main)
 ---
 
 ## SESSION 65 — 2026-10-13 — Generic interface values (milestone 23, part 2) — open
-Branch: main
+Branch: prp-051-generic_interface_values
 
 ---
 
