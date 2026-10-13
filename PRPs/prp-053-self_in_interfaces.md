@@ -1,6 +1,6 @@
 ## FEATURE: `Self` in interfaces — the implementing type in signatures and default bodies; bounds-only interfaces (E0427); milestone 25.
 
-**Status:** approved 2026-10-13 — session 67
+**Status:** merged 2026-10-13 — session 67
 **Milestone:** 25 (one PRP; tag `m25` at merge)
 **Spec:** `Language v6 Draft.md`:
 - decision 2, and the choice "Inside an interface, `Self` always means the implementing type";

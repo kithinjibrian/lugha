@@ -3168,7 +3168,7 @@ Branch: prp-052-iterators (merged into main)
 ---
 
 ## SESSION 67 — 2026-10-13 — Self in interfaces (milestone 25) — closed
-Branch: prp-053-self_in_interfaces
+Branch: prp-053-self_in_interfaces (merged into main)
 
 ### WHAT WAS DONE
 - No interview: the v6 draft settles milestone 25. PRP-053 written and approved.
@@ -3192,13 +3192,13 @@ Branch: prp-053-self_in_interfaces
 - None.
 
 ### STILL OPEN AT CLOSE
-- PRP-053 waits for the user's merge OK; then tag `m25`.
+- Nothing. PRP-053 merged into `main`, tagged `m25`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 25 complete** (PRP-053, MEMORY 63): `Self` in interfaces, bounds-only interfaces (E0427). Tag `m25` goes on the merge of PRP-053. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
+**Milestone 25 complete** (PRP-053, MEMORY 63): `Self` in interfaces, bounds-only interfaces (E0427). Tagged `m25`. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
 
 Next: **milestone 26, converting between interfaces** — discovery and PRP-054; it completes v6 (tags `m26`, `v6`). Scope (v6 draft decision 4, §4 "Converting between interfaces", §9, §10):
 - where `I` is expected, a value of interface type `J` converts when `J` declares every item of `I` (defaulted ones included) the same way after substituting arguments; else E0422 naming what `J` lacks (today: E0403 via `errors::interface_to_interface` in `iface_values.rs::convert`);
