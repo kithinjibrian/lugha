@@ -2538,6 +2538,12 @@ Branch: prp-039-function_values
 
 ---
 
+## SESSION 50 — 2026-10-13 — Closures (milestone 15) — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 14 is complete** (tag `m14`; MEMORY 46). `lughac spec` prints `Language v3 Specification.md` (in progress: milestone 14).
