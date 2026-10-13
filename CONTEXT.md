@@ -2585,6 +2585,12 @@ Branch: prp-040-closures
 
 ---
 
+## SESSION 51 — 2026-10-13 — Array helpers (milestone 16) — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 15 is complete** (tag `m15`; MEMORY 47). `lughac spec` prints `Language v3 Specification.md` (in progress: milestone 15).
