@@ -2144,7 +2144,7 @@ CLAUDE.md (stages, tree, known issue), TODO.md, CHANGELOG.md, MEMORY.md (decisio
 
 ---
 
-## SESSION 42 — 2026-10-13 — Names across modules (PRP-034) — open
+## SESSION 42 — 2026-10-13 — Names across modules (PRP-034) — closed
 
 Branch: main → prp-034-module_names
 
@@ -2204,24 +2204,24 @@ CLAUDE.md (rule 7, tree, known issue), README.md, TODO.md, CHANGELOG.md, MEMORY.
 
 - None.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-034-module_names` fast-forward merged into `main` and deleted; tagged `m10`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-Milestone 10 is in progress. PRP-033 (modules front end) is merged:
-- `src/modules/` loads every imported file into one offset space (E0312, E0314, E0319);
-- diagnostics and `--emit` are file-aware;
-- `private`/`public` parse, and programs that import or use them stop at the M10 gate.
+**Milestone 10 is complete** (tag `m10`): modules, `import`, per-module names, `private`/`public` (E0313/E0317/E0318), and module symbols `lugha_fn_a/b/f`. `lughac spec` prints the v2 spec, "in progress: milestone 11".
 
-Next is **PRP-034: names across modules** (v2 draft decision 9, §5, §6, §8, §9; `docs/decisions/visibility.md`). It covers:
-- **Checker:** per-module namespaces, and `m.f`, `m.T`, `m.T.f()`, `m.T.V(…)` and `m.T { … }` resolution (the checker currently gets only the root `Program`, so ExprIds per module need a plan).
-- **Visibility:** `private` items, methods and fields (E0313), `public` (E0317), and no leaking (E0318).
-- **Codegen:** module-qualified symbols (`lugha_fn_a.b.f`, `lugha_fn_a.b.T.m`), one LLVM module, and the same C function declared in two modules with identical signatures (E0306).
-- **Spec and tests:**
-  - remove the gate entries for modules and visibility;
-  - fold the draft's module sections into the v2 spec, with the two-module §10 program, so the spec extraction learns multi-file examples;
-  - mark milestone 10 done (tag `m10`).
+Next is **milestone 11, generics**, the last of v2 (draft decisions 3–5; draft §3, §4, §6, §9, §10 generics program). It covers:
+- type parameters on fun, struct, enum and methods (`impl Stack<T>`), with `Eq`/`Ord` bounds (E0315 unknown bound, E0316 bad parameter name);
+- inference only (E0412 when undecided), bodies checked once against their bounds, and E0419 for a bound not met at a use;
+- monomorphized codegen with instance symbols (`lugha_fn_max<i64>`), E0420 for too-deep instantiation, and `Option<T>` as an ordinary generic enum;
+- `Eq`/`Ord` as reserved built-in names (E0302).
 
-Start with discovery.
+Generics are the only thing the gate still stops. When M11 lands, the full v2 spec drops "in progress", the gate goes, and the draft retires.
+
+Start with discovery: it likely splits into several PRPs (for example type parameters in the checker, then monomorphization, then `Option` and the spec).
 
 See `TODO.md`.

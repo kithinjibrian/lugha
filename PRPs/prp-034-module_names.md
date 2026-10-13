@@ -1,6 +1,6 @@
 ## FEATURE: Names across modules — `m.f` / `m.T`, `private` (E0313), `public` (E0317), no leaking (E0318), and module symbols — completes milestone 10.
 
-**Status:** implemented 2026-10-13 — session 42
+**Status:** merged into `main` 2026-10-13 — session 42 (tag `m10`)
 **Milestone:** 10 (second of two PRPs: 033 front end, **034 names, visibility and symbols**). Milestone 10 is done when the draft's two-module program passes.
 **Spec:** `Language v2 Draft.md`:
 - decision 9;
