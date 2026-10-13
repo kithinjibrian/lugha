@@ -2985,6 +2985,12 @@ Branch: prp-048-type_patterns
 
 ---
 
+## SESSION 61 — 2026-10-13 — Default methods and error conversion (milestone 22) — open
+
+Branch: prp-049-default_methods
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 21 built on branch `prp-048-type_patterns`, not merged** (the user is away; they chose "build m21 and m22, hold merges"). `main` is at milestone 20 (tag `m20`).
