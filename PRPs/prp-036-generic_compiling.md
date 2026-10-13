@@ -1,6 +1,6 @@
 ## FEATURE: Compiling generics — instances, monomorphization, E0420, the gate removed, the spec folded.
 
-**Status:** approved 2026-10-13 — session 45
+**Status:** merged 2026-10-13 — session 45
 **Milestone:** 11 (second of two PRPs: 035 checking, **036 compiling**); completes milestone 11 (tag `m11`)
 **Spec:** `Language v2 Draft.md`:
 - decisions 3–5;

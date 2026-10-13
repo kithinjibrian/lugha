@@ -670,15 +670,14 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 11 is half done.** PRP-035 (merged, session 44, MEMORY 41) type-checks generics. `lughac check` accepts them, and `build`/`run`/`--emit=ir` stop at the gate before codegen.
+**Milestone 11 is complete** (tag `m11`). Generics are checked (PRP-035, MEMORY 41) and compiled (PRP-036, MEMORY 42), and the spec has their rules.
 
-Next is **PRP-036, compiling generics**, which completes milestone 11 (tag `m11`):
-- monomorphization from `Checked.instances`, with instance symbols (`lugha_fn_max<i64>`);
-- E0420 for too-deep instantiation;
-- `Option<T>` as an ordinary generic enum;
-- the gate removed;
-- the generic rules folded into `Language v2 Specification.md`, and the §10 generics program running.
+Next is **milestone 12, interfaces**, the last v2 milestone (MEMORY 40, `docs/decisions/generics.md`, draft decision 10, §4 "Interfaces"). It covers:
+- `interface Shape { fun area(self): f64; }`, used only as a bound (`T: Shape`), combined with `Eq`/`Ord`;
+- structural satisfaction;
+- E0421 for a method no bound provides, E0422 for a type that doesn't satisfy one, E0305 for an interface used as a type;
+- the §10 interfaces program in the draft.
 
-Start with discovery. Then comes milestone 12, interfaces (MEMORY 40).
+`interface` is not yet a keyword: the M12 PRP adds the syntax too. Start with discovery. When M12 is done, the v2 spec is complete (no longer "in progress").
 
 See `TODO.md`.
