@@ -119,7 +119,7 @@ impl Checker {
                 self.methods.get(owner).and_then(|m| m.get(name)).is_none()
             }
             // Interface values dispatch at run time; the others don't occur.
-            Type::Interface(_) | Type::Param(_) | Type::Error => false,
+            Type::Interface(..) | Type::Param(_) | Type::Error => false,
             _ => true,
         };
         if !lacks {

@@ -90,6 +90,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Interface values",
         "Type patterns",
         "Errors as interfaces",
+        "Generic interfaces",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

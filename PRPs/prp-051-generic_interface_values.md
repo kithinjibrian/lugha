@@ -116,43 +116,43 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (`check/iface_values.rs`, `check/bound_infer.rs`, `check/applied.rs`):
-- [ ] **Types:**
+- [x] **Types:**
   - `Source<i64>` resolves as a type;
   - `Source<P>` with `interface Source<T: Ord>` and a non-`Ord` `P` is E0419;
   - `Source` and `Source<i64, i64>` are E0418;
   - the "not a value type yet" test now checks.
-- [ ] **Conversion:**
+- [x] **Conversion:**
   - `let s: Source<i64> = Count {…}` converts;
   - `let s: Source<string> = Count {…}` is E0422, with help showing `Option<string>`;
   - a `Source<i64>` where a `Source<string>` is expected is E0403;
   - `Source<i64>[]` holds `Count` and `Repeat<i64>`.
-- [ ] **Calls:** `s.next()` has type `Option<i64>`; `mut self` rules as in v5.
-- [ ] **Inference:**
+- [x] **Calls:** `s.next()` has type `Option<i64>`; `mut self` rules as in v5.
+- [x] **Inference:**
   - `total(Count {…}, 0)` gives `T = i64` and converts;
   - `fun f<T>(s: Source<T>)` given a `Source<string>` value gives `T = string`.
-- [ ] **Satisfaction:** a `Source<i64>` value satisfies `S: Source<i64>`, and calls through it dispatch.
-- [ ] **Type patterns:** `c: Count` on a `Source<i64>` checks, and `w: Words` (which offers `Option<string>`) is E0426.
-- [ ] **`?`:** an error converting into `Result<i64, Problem<string>>` checks.
+- [x] **Satisfaction:** a `Source<i64>` value satisfies `S: Source<i64>`, and calls through it dispatch.
+- [x] **Type patterns:** `c: Count` on a `Source<i64>` checks, and `w: Words` (which offers `Option<string>`) is E0426.
+- [x] **`?`:** an error converting into `Result<i64, Problem<string>>` checks.
 
 Unit tests — codegen (`codegen/interfaces.rs`, `dispatch.rs`):
-- [ ] Converting a `Count` to `Source<i64>` emits `@"lugha_vt_Count.Source<i64>"` with a slot for `lugha_fn_Count.next`.
-- [ ] A default slot points at `@"lugha_fn_Source<i64>.skip<Count>"`.
-- [ ] A dynamic call on a `Source<string>` returns `%"Option<string>"`.
+- [x] Converting a `Count` to `Source<i64>` emits `@"lugha_vt_Count.Source<i64>"` with a slot for `lugha_fn_Count.next`.
+- [x] A default slot points at `@"lugha_fn_Source<i64>.skip<Count>"`.
+- [x] A dynamic call on a `Source<string>` returns `%"Option<string>"`.
 
 Acceptance — `tests/programs/m23/`:
-- [ ] `values.la`:
+- [x] `values.la`:
   - `Source<i64>` and `Source<string>` values in arrays, struct fields and `Option`;
   - copies are independent;
   - a generic function taking `Source<T>`, with `T` inferred;
   - a default method through a value;
   - type patterns on a `Source<i64>`;
   - `?` into a generic interface error.
-- [ ] `e0403.la`: reject golden, a `Source<i64>` where a `Source<string>` is expected.
-- [ ] `e0418.la`: becomes a bare `Source` as a type.
-- [ ] The §10 generic-interfaces program runs from the spec (`tests/spec.rs`).
+- [x] `e0403.la`: reject golden, a `Source<i64>` where a `Source<string>` is expected.
+- [x] `e0418.la`: becomes a bare `Source` as a type.
+- [x] The §10 generic-interfaces program runs from the spec (`tests/spec.rs`).
 
 Regression:
-- [ ] Every earlier test passes, and programs without generic interface values give byte-identical IR (compared with `main`).
+- [x] Every earlier test passes, and programs without generic interface values give byte-identical IR (compared with `main`).
 
 ## ROLLBACK PLAN
 
@@ -160,10 +160,10 @@ Regression:
 - To abandon: delete the branch. `main` keeps generic interfaces as bounds only.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 generic-interfaces program and the `m23/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] Milestone 23 is marked done in the spec; docs updated.
-- [ ] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 generic-interfaces program and the `m23/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] Milestone 23 is marked done in the spec; docs updated.
+- [x] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -172,3 +172,12 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m23/values.la
 ```
+
+## AMENDMENTS (during build, session 65)
+
+- **Approved split:** `check/applied.rs` reached 305 lines with the new tests. `applied_bound`, `bound_args` and their two tests moved verbatim to `check/bound_args.rs`, and `applied.rs`'s test helpers became `pub(in crate::check)`.
+- **`Applied::plain` removed:** every site now takes the interface type's own arguments (`Applied::of`).
+- **A disagreeing literal is E0403, not E0422:** in `pick(Count {…}, "s")`, the value goes first (literals defer) and fixes `T = i64`, so `"s"` is the mismatch.
+- **`layouts::depth`** counts interface arguments too (E0420).
+- **No new codes.** `errors/v6.rs` is deleted.
+- **`-O2`** was checked by hand for `m23/bounds` and `m23/values`.

@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v6 Specification.md` (`lughac spec` prints it): Lugha v6, in progress (milestone 23: generic interfaces as bounds so far). `Language v6 Draft.md` is the approved plan (milestones 23–26: generic interfaces, iterators, `Self`, converting between interfaces). The v0–v5 files are frozen. `Result` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v6 Specification.md` (`lughac spec` prints it): Lugha v6, in progress (milestone 23 done: generic interfaces, as bounds and as values). `Language v6 Draft.md` is the approved plan (milestones 23–26: generic interfaces, iterators, `Self`, converting between interfaces). The v0–v5 files are frozen. `Result` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
 
 ---
 
@@ -166,7 +166,7 @@ The language itself is defined by `docs/specs/Language v6 Specification.md` (`lu
 4. **Codegen never infers types.** It reads the checker's expression → type side table. *Why:* opaque pointers need the element type on every load/store/GEP (spec §9), and two type computations will disagree.
 5. **User-program errors are `Diagnostic` records, never panics or strings.** Each has a stable code from its stage's range (E01xx lex … E05xx, W01xx). New codes take the next unused number; a code is never reused or renumbered. Human and JSON output render from the same record. *Why:* spec §9; codes are a public contract.
 6. **Exit codes are 0 / 1 / 2.** 1 = the user's program has errors; 2 = bad CLI usage or internal compiler error. A `module.verify()` failure or a Rust panic inside lughac is exit 2, never 1. *Why:* spec §9; tools tell "your bug" from "our bug" by it.
-7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, items of a module other than the main file → the module path joined with `/` first (`lugha_fn_shapes/circle/area`, `lugha_fn_shapes/circle/Circle.area`), generic instances → the type arguments as they print, module paths with `/` (`lugha_fn_max<i64>`, `lugha_fn_Stack<string>.push`, `lugha_fn_a/b/max<a/b/Point>`), functions used as values → wrappers `lugha_ref_<symbol>` (v3), closure bodies → `lugha_closure_<enclosing>.<n>` (v3), interface dispatch tables → `lugha_vt_<Type>.<Interface>` with identities `lugha_type_<Type>` and box copies `lugha_copy_<type>_box` (v5), default methods → `lugha_fn_<Interface>.<method><Type>` (v5; a generic interface's arguments go on the interface, `lugha_fn_Source<i64>.skip<Count>`, v6), runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, equality helpers → `lugha_eq_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
+7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, items of a module other than the main file → the module path joined with `/` first (`lugha_fn_shapes/circle/area`, `lugha_fn_shapes/circle/Circle.area`), generic instances → the type arguments as they print, module paths with `/` (`lugha_fn_max<i64>`, `lugha_fn_Stack<string>.push`, `lugha_fn_a/b/max<a/b/Point>`), functions used as values → wrappers `lugha_ref_<symbol>` (v3), closure bodies → `lugha_closure_<enclosing>.<n>` (v3), interface dispatch tables → `lugha_vt_<Type>.<Interface>` (a generic interface with its arguments, `lugha_vt_Count.Source<i64>`, v6) with identities `lugha_type_<Type>` and box copies `lugha_copy_<type>_box` (v5), default methods → `lugha_fn_<Interface>.<method><Type>` (v5; a generic interface's arguments go on the interface, `lugha_fn_Source<i64>.skip<Count>`, v6), runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, equality helpers → `lugha_eq_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
 8. **Generated code allocates only through `lugha_rt_alloc`.** Never emit calls to `malloc`. *Why:* Boehm can't see `malloc` memory and will free live objects.
 9. **Follow the milestone order (spec §11).** The lexer and parser cover the full §2–§3 syntax. The checker and codegen implement only the current milestone's subset; in milestones 1–2 treat every value as `i64`. *Why:* each milestone must end in a running program, while syntax is cheap to do once and fully specified.
 10. **The §10 programs are the acceptance tests.** Their stdout and exit codes must match exactly. *Why:* they define "conforming compiler".
@@ -260,12 +260,13 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  E0422), input.rs (args, parse_i64/f64, interpolation), fun_values.rs (function types
 │   │                  and values, calls of values), closures.rs (closure types, captures, E0511), helpers.rs
 │   │                  (xs.map(f) etc. as prelude calls), results.rs (Ok/Err, `?`, E0424), errors/ (mod.rs, names.rs E03xx, types.rs E04xx, places.rs E05xx/W01xx,
-│   │                  generics.rs milestone 11–12 codes, v4.rs v4 codes, v5.rs v5 codes, v6.rs v6 diagnostics),
+│   │                  generics.rs milestone 11–12 codes, v4.rs v4 codes, v5.rs v5 codes),
 │   │                  iface_values.rs (interface types, E0425, conversion, Checked.conversions), iface_calls.rs
 │   │                  (calls on interface values), iface_tables.rs (Checked.interfaces, conversion reachability), type_patterns.rs
 │   │                  (`c: Circle` patterns, E0426), defaults.rs (default methods: `Self`, bodies, instances),
-│   │                  applied.rs (generic interfaces: `Applied`, items at arguments, bound arguments E0418/E0419),
-│   │                  bound_infer.rs (inferring type arguments through bounds)
+│   │                  applied.rs (generic interfaces: `Applied`, items at arguments), bound_args.rs (bounds with
+│   │                  arguments, E0418/E0419), bound_infer.rs (inferring type arguments through bounds and
+│   │                  interface-typed parameters)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,

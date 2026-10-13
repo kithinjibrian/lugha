@@ -981,10 +981,23 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 61. Generic interface values — milestone 23 complete (PRP-051)
+
+**Decision:** `Type::Interface(key, args)`; generic interface values follow every v5 rule at their arguments.
+- **Checker:** `Applied::of`/`ty` bridge types and applied interfaces; `no_type_args` resolves `Source<i64>` (E0418 count, E0419 bounds); conversion via `satisfies(&ty, &applied)`, same-interface values only when `fits` (different arguments are E0403); `through_interface`, `offer`, type patterns, `?` (`try_converts`) and `conversion_uses` (default instances `[concrete, X…]`) take the `Applied`. Substitution, `has_param`, `unify`, `unbound`, `depth` and `fits` treat interface arguments like a struct's.
+- **Inference into `Source<T>` parameters** (discovery): `bound_infer.rs::interface_input`, hooked in `infer::input`, reads unbound arguments off a concrete argument's methods and converts it.
+- **`Checked.interfaces`** is `HashMap<String, InterfaceShape { params, methods }>`; codegen substitutes with `methods_at(args)` for dynamic calls; tables `lugha_vt_<T>.<Interface<args>>`, default slots `<I>.<m>` at `[ty, args…]`, copies mangled with arguments (`lugha_copy_11Source<i64>`).
+- **Removed:** the temporary E0418 (`errors/v6.rs`).
+- **Split (approved):** `applied_bound`, `bound_args` and two tests moved verbatim from `applied.rs` to `bound_args.rs`.
+
+**Why:** carrying arguments on the type, like structs, reuses substitution and monomorphization; `InterfaceShape` keeps signatures out of codegen's hands (architecture rule 4).
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
-- **Milestone 23, part 1**: PRP-050 generic interfaces as bounds; v6 spec begins
+- **Milestone 23 complete**: PRP-050 generic interfaces as bounds, PRP-051 generic interface values
 - **Milestone 22 complete — Lugha v5 complete (branch, merge held)**: PRP-049 default methods and `?` conversion
 - **Milestone 21 complete (branch, merge held)**: PRP-048 type patterns
 - **Milestone 20 complete**: PRP-046 checking and PRP-047 compiling interface values; v5 spec begins
@@ -1045,7 +1058,7 @@ Open questions live in `DECISIONS.md`, not here.
 - v0 language spec reviewed and fixed
 
 ### In Progress
-- Milestone 23: PRP-051 generic interface values next (PRP-050 bounds done)
+- Nothing (milestone 24, iterators, is next)
 
 ### Not Started
 - Milestones 24–26 (v6 draft, MEMORY 59)
@@ -1054,14 +1067,13 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 23, part 1 done** (PRP-050, MEMORY 60): generic interfaces as bounds — `interface Source<T>`, `S: Source<T>`, inference through bounds, generic defaults. `Language v6 Specification.md` (in progress) is what `lughac spec` prints; v5 is frozen.
+**Milestone 23 complete** (PRP-050, PRP-051; MEMORY 60–61): generic interfaces as bounds and as values. `Language v6 Specification.md` (in progress) is what `lughac spec` prints. Tag `m23` goes on the merge of PRP-051.
 
-Next: **PRP-051, generic interface values** (completes milestone 23, tag `m23`). Scope (v6 draft §4 "As a value type", §9, §10 "Generic interfaces"):
-- `Type::Interface` gains arguments (`Source<i64>`); lift the "can't be a value type yet" E0418 (`errors/v6.rs`, `iface_values.rs::no_type_args`);
-- conversion, dynamic calls and copies at the substituted signatures; `Checked.interfaces` per applied interface; tables `lugha_vt_Count.Source<i64>`, copies mangled with arguments;
-- type patterns and `?` conversion with generic interface types; default slots `lugha_fn_Source<i64>.skip<Count>`;
-- fold the §10 generic-interfaces program into the spec (it needs values).
+Next: **milestone 24, iterators** — discovery and PRP-052. Scope (v6 draft §4 "Iterators", §5 desugaring, §10 "Iterators"):
+- the prelude declares `interface Iter<T> { fun next(mut self): Option<T>; }`; a module's own `Iter` hides it;
+- `for x of e` on a non-array that satisfies `Iter<T>` (structurally) or is an `Iter<T>` value: a hidden mutable copy of `e` (moved on last use), `next` until `None`, `x` immutable; `break`/`continue`; otherwise E0411;
+- codegen lowers the §5 desugaring (direct call for a concrete type, dynamic for a value).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/satisfy.rs` (294), `check/infer.rs` (293), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `codegen/control.rs` (292).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
 
 See `TODO.md`.

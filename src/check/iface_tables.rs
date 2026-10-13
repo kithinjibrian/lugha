@@ -4,6 +4,7 @@
 
 use std::collections::HashMap;
 
+use super::applied::Applied;
 use super::{Checker, Type};
 use crate::ast::Expr;
 
@@ -18,13 +19,36 @@ pub struct InterfaceMethod {
     pub ret: Type,
 }
 
+/// An interface as codegen needs it (v6): its type parameters' names and
+/// its methods in declaration order, in those parameters.
+#[derive(Debug, Clone, PartialEq)]
+pub struct InterfaceShape {
+    pub params: Vec<String>,
+    pub methods: Vec<InterfaceMethod>,
+}
+
+impl InterfaceShape {
+    /// The methods at `args`, the type arguments of an interface type.
+    pub fn methods_at(&self, args: &[Type]) -> Vec<InterfaceMethod> {
+        let map: HashMap<String, Type> = self.params.iter().cloned().zip(args.to_vec()).collect();
+        self.methods
+            .iter()
+            .map(|m| InterfaceMethod {
+                params: m.params.iter().map(|p| p.substitute(&map)).collect(),
+                ret: m.ret.substitute(&map),
+                ..m.clone()
+            })
+            .collect()
+    }
+}
+
 impl Checker {
     /// Records the methods a conversion of `ty` to interface `key` puts in
     /// its dispatch table, so generic ones are compiled even if nothing
     /// calls them directly: a generic type's methods at its arguments, a
     /// type parameter's through its bound in each instance (PRP-047).
-    pub(super) fn conversion_uses(&mut self, expr: &Expr, ty: &Type, key: &str) {
-        let items = self.interfaces[key].items.clone();
+    pub(super) fn conversion_uses(&mut self, expr: &Expr, ty: &Type, interface: &Applied) {
+        let items = self.items(interface);
         for item in items {
             let name = &item.name;
             let own = match ty {
@@ -39,8 +63,10 @@ impl Checker {
                     self.used(expr, &method_key, args);
                 }
                 // The type lacks it: its slot is the default's instance (v5).
+                // A generic interface's default also takes its arguments (v6).
                 (_, None) if item.default.is_some() => {
-                    self.used(expr, &format!("{key}.{name}"), std::slice::from_ref(ty));
+                    let args = [std::slice::from_ref(ty), &interface.args].concat();
+                    self.used(expr, &format!("{}.{name}", interface.key), &args);
                 }
                 _ => {}
             }
@@ -51,24 +77,20 @@ impl Checker {
     /// true, recording the conversion, when `to` is an interface that
     /// `from`, a concrete type, satisfies (v5).
     pub(super) fn try_converts(&mut self, inner: &Expr, from: &Type, to: &Type) -> bool {
-        let Type::Interface(key) = to else {
+        let Some(interface) = Applied::of(to) else {
             return false;
         };
-        if matches!(from, Type::Interface(_))
-            || !self
-                .unmet(from, &super::applied::Applied::plain(key))
-                .is_empty()
-        {
+        if matches!(from, Type::Interface(..)) || !self.unmet(from, &interface).is_empty() {
             return false;
         }
         self.try_conversions.insert(inner.id, to.clone());
-        self.conversion_uses(inner, from, key);
+        self.conversion_uses(inner, from, &interface);
         true
     }
 
     /// Every interface's methods, for `Checked.interfaces`. Interfaces with
     /// an associated function are never values, so they have no tables.
-    pub(super) fn interface_methods(&self) -> HashMap<String, Vec<InterfaceMethod>> {
+    pub(super) fn interface_methods(&self) -> HashMap<String, InterfaceShape> {
         let methods = |items: &[super::interfaces::Requirement]| {
             items
                 .iter()
@@ -85,7 +107,13 @@ impl Checker {
         self.interfaces
             .iter()
             .filter(|(_, info)| info.not_value.is_none())
-            .map(|(key, info)| (key.clone(), methods(&info.items)))
+            .map(|(key, info)| {
+                let shape = InterfaceShape {
+                    params: info.generics.iter().map(|g| g.name.clone()).collect(),
+                    methods: methods(&info.items),
+                };
+                (key.clone(), shape)
+            })
             .collect()
     }
 }
@@ -117,7 +145,7 @@ mod tests {
     #[test]
     fn codegen_gets_each_interfaces_methods_in_order() {
         let checked = ok(&format!("{SHAPES}fun main() {{}}"));
-        let shape = &checked.interfaces["Shape"];
+        let shape = &checked.interfaces["Shape"].methods;
         let names: Vec<&str> = shape.iter().map(|m| m.name.as_str()).collect();
         assert_eq!(names, ["area", "grow"]);
         assert!(!shape[0].mutable && shape[1].mutable);

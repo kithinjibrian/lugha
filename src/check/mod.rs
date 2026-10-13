@@ -13,6 +13,7 @@ mod arguments;
 mod array;
 mod assign;
 mod body;
+mod bound_args;
 mod bound_infer;
 mod bounds;
 mod builtins;
@@ -59,7 +60,7 @@ mod visibility;
 use std::collections::{HashMap, HashSet};
 
 pub use defaults::SELF;
-pub use iface_tables::InterfaceMethod;
+pub use iface_tables::{InterfaceMethod, InterfaceShape};
 pub use instances::Instance;
 pub use modules::{Unit, check_modules, qualify, symbol};
 pub use types::{Enums, Structs, Type, indirect_slot, slot_names_variant};
@@ -102,7 +103,7 @@ pub struct Checked {
     pub conversions: HashMap<ExprId, Type>,
     /// Every interface's methods in declaration order, by key (v5): the
     /// slots of its dispatch tables.
-    pub interfaces: HashMap<String, Vec<InterfaceMethod>>,
+    pub interfaces: HashMap<String, InterfaceShape>,
     /// The operands of `?` whose error converts to an interface error, with
     /// that interface type (v5).
     pub try_conversions: HashMap<ExprId, Type>,

@@ -31,11 +31,8 @@ impl<'ctx> Lowerer<'ctx> {
         ty: &Type,
         to: &Type,
     ) -> BasicValueEnum<'ctx> {
-        let Type::Interface(interface) = to else {
-            unreachable!("checked: conversions are to interfaces")
-        };
         let boxed = self.new_box(ty, value);
-        let table = self.table(ty, interface);
+        let table = self.table(ty, to);
         self.pair(table, boxed).into()
     }
 }

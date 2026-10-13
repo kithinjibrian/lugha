@@ -135,9 +135,9 @@ impl<'ctx> Lowerer<'ctx> {
             return self.array_builtin(base, &name.name, args).map(Some);
         }
         // `s.area()` on an interface value: through its table (v5).
-        if let Type::Interface(interface) = &base_type {
+        if let Type::Interface(..) = &base_type {
             return self
-                .dynamic_call(base, interface, &name.name, args)
+                .dynamic_call(base, &base_type, &name.name, args)
                 .map(Some);
         }
         // The checker gives a type name `void` (associated calls and variants).

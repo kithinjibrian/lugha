@@ -1,13 +1,13 @@
-# Lugha v6 Specification (in progress: milestone 23)
+# Lugha v6 Specification (in progress: milestone 23 done)
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestone 23: generic interfaces as bounds). It is built from the approved plan, `Language v6 Draft.md`, milestone by milestone. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v5 Specification.md` keeps v5 frozen.
+**Status:** in progress (milestone 23, generic interfaces, is done; milestones 24–26 are next). It is built from the approved plan, `Language v6 Draft.md`, milestone by milestone. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v5 Specification.md` keeps v5 frozen.
 
 **v5.** This is v4 plus interface values, type patterns, default methods and `?` converting into an interface error (milestones 20–22).
 
-**Changes since v5** (milestone 23 so far):
-- An interface may take type parameters, and a bound passes it arguments: `interface Source<T> { fun next(mut self): Option<T>; }`, `fun collect<T, S: Source<T>>(src: S): T[]`. A parameter that appears only in a bound's arguments is read off the concrete type's methods (sections 3–4, 9).
+**Changes since v5** (milestone 23):
+- An interface may take type parameters, and a bound passes it arguments: `interface Source<T> { fun next(mut self): Option<T>; }`, `fun collect<T, S: Source<T>>(src: S): T[]`. A parameter that appears only in a bound's arguments is read off the concrete type's methods. A generic interface is a type too: `let s: Source<i64> = Count { n: 0, end: 3 };` (sections 3–4, 9).
 
 Every valid v5 program is a valid v6 program.
 
@@ -463,8 +463,8 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 
 **Interfaces.**
 - **Declaring one:** `interface Shape { fun area(self): f64; fun name(self): string; }` lists methods (with a `self` or `mut self` receiver) and associated functions (without one), each ending in `;`. Their signatures use concrete types and the interface's own type parameters (below), and no `Self`; an item has no type parameters of its own. An item name appears once (E0310).
-- **Generic interfaces** (v6): `interface Source<T> { fun next(mut self): Option<T>; }` takes type parameters as a struct does, with bounds (`interface Sorted<T: Ord>`); a parameter named like a type, twice, or `Self` is E0316. It is always written with its arguments, `Source<i64>`; a bare `Source` or the wrong number is E0418, and an argument that misses its parameter's bound is E0419. A type satisfies `Source<X>` when it satisfies the interface with `X` substituted, and a call through `S: Source<X>` is checked against the substituted signature. A generic interface is not yet a type: `Source<i64>` in a type position is E0418 (generic interface values come later in milestone 23).
-- **Bounds with arguments** (v6): a bound's arguments may name the declaration's other type parameters, `fun collect<T, S: Source<T>>(src: S): T[]`. A parameter that no argument or expected type fixes is read off the methods of the type a bound parameter has: `collect(Count { … })` gives `S = Count`, then `T = i64` from `Count.next`, and this repeats until nothing new is learnt (`T` from `S`, `S` from `H: Holder<S>`). A parameter still unknown is E0412; one that the arguments fix differently fails the bound (E0422).
+- **Generic interfaces** (v6): `interface Source<T> { fun next(mut self): Option<T>; }` takes type parameters as a struct does, with bounds (`interface Sorted<T: Ord>`); a parameter named like a type, twice, or `Self` is E0316. It is always written with its arguments, `Source<i64>`; a bare `Source` or the wrong number is E0418, and an argument that misses its parameter's bound is E0419. A type satisfies `Source<X>` when it satisfies the interface with `X` substituted, and a call through `S: Source<X>` is checked against the substituted signature. A generic interface is a type wherever a plain one is, written with its arguments (`Source<i64>`, `Source<T>[]`), and its values follow every rule of interface values below at those arguments: a value converts to `Source<i64>` when it satisfies `Source<i64>`, `s.next()` is checked against the substituted signature, and a `Source<i64>` is not a `Source<string>` (E0403).
+- **Bounds with arguments** (v6): a bound's arguments may name the declaration's other type parameters, `fun collect<T, S: Source<T>>(src: S): T[]`. A parameter that no argument or expected type fixes is read off the methods of the type a bound parameter has: `collect(Count { … })` gives `S = Count`, then `T = i64` from `Count.next`, and this repeats until nothing new is learnt (`T` from `S`, `S` from `H: Holder<S>`). A parameter still unknown is E0412; one that the arguments fix differently fails the bound (E0422). The same holds for a parameter declared as an interface value: `fun count<T>(s: Source<T>): i64` called as `count(Count { … })` reads `T = i64` off `Count.next`, then converts the argument to `Source<i64>`.
 - **Default methods** (v5): a method may end in `= expr;` or a block instead of `;`. Its body is checked once, with `self` of a hidden type that has only the interface's items, so it can call them on `self` and nothing else (no fields, E0410; a written `Self` is an unknown type, E0305). A type satisfies the interface without the defaulted method; a method of its own by that name must match the signature (E0422), and is used instead of the default. A default is called through an interface value or a bound; on a concrete type without its own method it doesn't exist (E0415, with help naming the interface). Only methods take a default body; an associated function with one is E0201.
 - **Satisfying one:** a type satisfies `Shape` if, for every item, it has a method or associated function with the same name, the same receiver kind, and the same parameter and return types, visible where the bound is checked. No declaration is needed. A generic type's methods count with its type arguments substituted (`Stack<i64>` meets `fun size(self): i64` through `impl Stack<T>`); a method with type parameters of its own never matches. A type parameter satisfies an interface when its own bounds declare every item the same way. Primitives, strings, arrays and `Option` have no methods of their own, so they satisfy only an interface with no items.
 - **Using one as a bound:** `fun total<T: Shape>(xs: T[]): f64`, combined freely with `Eq`, `Ord` and other interfaces (`T: Shape + Eq`), or from another module (`T: shapes.Shape`). In the body, `x.area()` and, for an associated item, `T.make(…)` are allowed when some bound declares them, and are checked against its signature. Calling something no bound declares is E0421, with help suggesting a bound. Two bounds of one parameter may declare the same name only with the same signature; otherwise the bound list is E0423.
@@ -472,7 +472,7 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 - **Names and visibility:** interfaces share their module's item namespace (E0302) and follow the visibility rules of section 6. Through a bound, each instance calls the concrete type's own method, so there is no dispatch at run time.
 
 **Interface values** (v5).
-- **The type:** an interface whose items are all methods is a type, written by its name (`Shape`, `shapes.Shape`) wherever a type can be: `Shape[]`, `Option<Shape>`, fields, payloads, parameters, return types, function types and type arguments. It takes no type arguments (E0418). An interface with an associated function can still be a bound, but used as a type it is E0425, naming the associated function.
+- **The type:** an interface whose items are all methods is a type, written by its name (`Shape`, `shapes.Shape`) wherever a type can be: `Shape[]`, `Option<Shape>`, fields, payloads, parameters, return types, function types and type arguments. A generic interface takes its arguments (v6, above); a plain one takes none (E0418). An interface with an associated function can still be a bound, but used as a type it is E0425, naming the associated function.
 - **Conversion,** the one implicit conversion: where the expected type is exactly an interface `I`, a value of a type that satisfies `I` (checked where the conversion happens, with that place's visibility) becomes an `I`; a type that doesn't is E0422, naming each missing or mismatched item. An expected type reaches a value through `let` annotations, arguments, struct-literal fields, array elements, payloads (`Some(c)`, `Ok(c)`), assignments, `return` and tail values, and the branches of `if` and `match`. A numeric literal takes its default type (`i64`, `f64`) and converts.
   - **Not inside other types:** a `Circle[]` is not a `Shape[]`, and an `Option<Circle>` is not an `Option<Shape>` (E0403).
   - **Not between interfaces:** a value of interface type `J` doesn't convert to another interface `I` (E0403), even if `J` declares the same items.
@@ -733,7 +733,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - Items of a module other than the main file put the module's path before their name, joined with `/`: function `area` of module `shapes.circle` is `lugha_fn_shapes/circle/area`, and its method `Circle.area` is `lugha_fn_shapes/circle/Circle.area`. A name contains neither `/` nor `.`, so a module function (`lugha_fn_a/b/c`) can't collide with a method (`lugha_fn_a/b.c`, method `c` of type `b` in module `a`).
 - A generic instance adds its type arguments as they print, with module paths joined by `/`: `lugha_fn_max<i64>`, `lugha_fn_a/b/max<a/b/Point>`. A method's go on its type, then its own: `lugha_fn_Stack<string>.push`, `lugha_fn_Stack<string>.tag<f64>`. `<` can't appear in a Lugha name, so instances can't collide with anything else.
 - A function used as a value (v3) is called through `lugha_ref_<symbol>`, a wrapper that takes an environment pointer first and calls `lugha_fn_<symbol>`: `lugha_ref_double`, `lugha_ref_max<i64>`, `lugha_ref_Point.at`. It is emitted once, when first needed.
-- An interface value's table (v5) is `lugha_vt_<Type>.<Interface>`, with names printed as in other symbols (`lugha_vt_Circle.Shape`, `lugha_vt_Stack<i64>.geo/Sized`), emitted once per pair a program converts. Its identity slot points at `lugha_type_<Type>`, its copy slot at `lugha_copy_<mangled type>_box` (`lugha_copy_6Circle_box`), and each method slot at the method itself: methods take their receiver as a pointer, so a call passes the box. Copying an interface value goes through `lugha_copy_<mangled interface>` (`lugha_copy_5Shape`). A type pattern compares the table's identity slot with `lugha_type_<T>`.
+- An interface value's table (v5) is `lugha_vt_<Type>.<Interface>`, with names printed as in other symbols (`lugha_vt_Circle.Shape`, `lugha_vt_Stack<i64>.geo/Sized`), emitted once per pair a program converts. Its identity slot points at `lugha_type_<Type>`, its copy slot at `lugha_copy_<mangled type>_box` (`lugha_copy_6Circle_box`), and each method slot at the method itself: methods take their receiver as a pointer, so a call passes the box. Copying an interface value goes through `lugha_copy_<mangled interface>` (`lugha_copy_5Shape`). A generic interface (v6) prints with its arguments: `lugha_vt_Count.Source<i64>`, `lugha_copy_11Source<i64>`. A type pattern compares the table's identity slot with `lugha_type_<T>`.
 - A default method (v5) compiles once per type that uses it, through a table or a bound: `lugha_fn_<Interface>.<method><Type>` (`lugha_fn_Error.report<ParseError>`); that type's table slot and bound calls use it. A generic interface's default (v6) compiles once per type and interface arguments, the arguments printed on the interface: `lugha_fn_Source<i64>.skip<Count>`. A converted `?` error is boxed on the failure branch, like any conversion. A program without interface values has none of these.
 - A closure's body (v3) is `lugha_closure_<enclosing>.<n>`: the enclosing function's symbol without its prefix, then the closure's number in that function from 0 (`lugha_closure_main.0`, `lugha_closure_main.0.0` for a closure inside it, `lugha_closure_max<i64>.0` in an instance). Its environment comes first, as for every function value's code.
 - The array helpers (v3) are generic functions of a prelude written in Lugha, bundled with the compiler and checked with every program, under the module path `$prelude`, which no program can name: `lugha_fn_$prelude/map<Person, string>`. Each is compiled only at the types a program uses.
@@ -1491,6 +1491,58 @@ fun main() {
 }
 ```
 
+**Generic interfaces** (milestone 23). Prints `3` then `a-b` then `11` on three lines, exits with 0.
+
+```
+interface Source<T> {
+    fun next(mut self): Option<T>;
+}
+
+struct Count { n: i64, end: i64 }
+
+impl Count {
+    fun next(mut self): Option<i64> {
+        if self.n == self.end {
+            return None;
+        }
+        self.n += 1;
+        Some(self.n)
+    }
+}
+
+struct Words { xs: string[], at: i64 }
+
+impl Words {
+    fun next(mut self): Option<string> {
+        if self.at == self.xs.len {
+            return None;
+        }
+        self.at += 1;
+        Some(self.xs[self.at - 1])
+    }
+}
+
+fun collect<T, S: Source<T>>(src: S): T[] {
+    let mut s = src;
+    let mut out: T[] = [];
+    let mut more = true;
+    while more {
+        match s.next() {
+            Some(x) => { out.push(x); }
+            None => { more = false; }
+        }
+    }
+    out
+}
+
+fun main() {
+    println(collect(Count { n: 0, end: 3 }).len);
+    println(collect(Words { xs: ["a", "b"], at: 0 }).join("-"));
+    let mut s: Source<i64> = Count { n: 10, end: 12 };
+    println(s.next().unwrap_or(0));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1519,7 +1571,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 20 | Interface values (v5) | interfaces as types, conversion, dynamic calls, copies, `lugha_vt_*` (E0425) | The interface-values program in section 10 passes (done) |
 | 21 | Type patterns (v5) | `name: T` and `_: T` in `match`, E0426 | The type-patterns program in section 10 passes (done) |
 | 22 | Default methods and error conversion (v5) | interface methods with bodies, `lugha_fn_<I>.<m><T>`; `?` converting into an interface error | The errors-as-interfaces program in section 10 passes (done: v5 complete) |
-| 23 | Generic interfaces (v6) | `interface I<T>`, bounds with arguments, inference through bounds; then generic interface values | The generic-interfaces program passes (in progress: bounds done) |
+| 23 | Generic interfaces (v6) | `interface I<T>`, bounds with arguments, inference through bounds, generic interface values | The generic-interfaces program in section 10 passes (done) |
 | 24 | Iterators (v6, planned) | `Iter<T>` in the prelude, `for … of` over iterators | The iterators program passes |
 | 25 | `Self` (v6, planned) | `Self` in interfaces, bounds-only interfaces (E0427) | The `Self` program passes |
 | 26 | Converting between interfaces (v6, planned) | one interface value to another, and through `?` | The converting-between-interfaces program passes |

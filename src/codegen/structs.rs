@@ -22,7 +22,7 @@ pub(super) fn layout(ty: &Type, structs: &Structs, enums: &Enums) -> (u64, u64) 
         Type::I32 => (4, 4),
         Type::I64 | Type::F64 | Type::String | Type::Array(_) => (8, 8),
         // `{ code, env }` (v3 draft §7), `{ table, box }` (v5 draft §7).
-        Type::Fun(..) | Type::Interface(_) => (16, 8),
+        Type::Fun(..) | Type::Interface(..) => (16, 8),
         Type::Struct(..) => {
             let (mut size, mut align) = (0u64, 1u64);
             for (_, field) in &structs[&ty.to_string()] {

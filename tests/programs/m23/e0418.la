@@ -1,9 +1,9 @@
-// Generic interfaces are bounds only until milestone 23's second half.
+// A generic interface is written with its arguments.
 
 interface Source<T> {
     fun next(mut self): Option<T>;
 }
 
-fun first(s: Source<i64>): i64 = 0;
+fun first(s: Source): i64 = 0;
 
 fun main() {}

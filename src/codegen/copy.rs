@@ -125,7 +125,7 @@ impl<'ctx> Lowerer<'ctx> {
         let source = function.get_nth_param(0).expect("one parameter");
         let copy = match ty {
             Type::Struct(..) => self.copy_fields(source.into_struct_value(), &ty.to_string()),
-            Type::Interface(_) => self.copy_interface(source.into_struct_value()),
+            Type::Interface(..) => self.copy_interface(source.into_struct_value()),
             _ => self.copy_elements(source.into_pointer_value(), ty).into(),
         };
         self.builder.build_return(Some(&copy)).expect(POSITIONED);
@@ -204,7 +204,7 @@ fn root(expr: &Expr) -> Option<&str> {
 pub(super) fn mangle(ty: &Type) -> String {
     match ty {
         Type::Array(element) => format!("{}_arr", mangle(element)),
-        Type::Struct(..) | Type::Enum(..) | Type::Interface(_) => length_prefixed(ty),
+        Type::Struct(..) | Type::Enum(..) | Type::Interface(..) => length_prefixed(ty),
         Type::Option(inner) => format!("{}_opt", mangle(inner)),
         Type::String => "str".to_string(),
         other => other.to_string(),

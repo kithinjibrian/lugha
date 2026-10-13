@@ -1,6 +1,7 @@
 //! Interface values (v5 draft §4, milestone 20): interfaces as types,
 //! E0425, and conversion where an interface is the expected type.
 
+use super::applied::Applied;
 use super::expr::Expect;
 use super::{Checker, Type, errors, qualify};
 use crate::ast::{AppliedType, Expr, Ident};
@@ -30,26 +31,28 @@ impl Checker {
             return Some(Type::Error);
         }
         self.item_visible(&key, span);
-        Some(Type::Interface(key))
+        Some(Type::Interface(key, Vec::new()))
     }
 
-    /// `ty` for an interface written with type arguments: E0418 unless
-    /// their count is the interface's, and for a generic interface, which
-    /// isn't a value type yet (v6, PRP-051).
+    /// `ty`, an interface, with the type arguments written after it (v6):
+    /// E0418 unless their count is the interface's, E0419 for one that
+    /// misses its parameter's bound.
     pub(super) fn no_type_args(&mut self, ty: Type, applied: &AppliedType, span: Span) -> Type {
-        let Type::Interface(key) = &ty else { return ty };
-        let expected = self.interface_generics(key).len();
+        let Type::Interface(key, _) = &ty else {
+            return ty;
+        };
+        let generics = self.interface_generics(key);
         let name = &applied.name.name;
-        if applied.args.len() != expected {
-            let d = errors::type_args(name, expected, applied.args.len(), span);
+        if applied.args.len() != generics.len() {
+            let d = errors::type_args(name, generics.len(), applied.args.len(), span);
             self.report(d);
             return Type::Error;
         }
-        if expected > 0 {
-            self.report(errors::generic_interface_value(name, span));
+        let args: Vec<Type> = applied.args.iter().map(|a| self.resolve(a)).collect();
+        if args.contains(&Type::Error) || !self.meets_bounds(&generics, &args, span) {
             return Type::Error;
         }
-        ty
+        Type::Interface(key.clone(), args)
     }
 
     /// The type `expr` has for its context, given `ty`, the type it was
@@ -58,26 +61,25 @@ impl Checker {
     /// records it and the interface type is returned, while `expr` keeps its
     /// own type for codegen. Every other case is `ty` unchanged.
     pub(super) fn convert(&mut self, expr: &Expr, ty: Type, expect: Option<&Expect>) -> Type {
-        let Some(Expect {
-            ty: wanted @ Type::Interface(key),
-            reason,
-        }) = expect
-        else {
+        let Some(Expect { ty: wanted, reason }) = expect else {
+            return ty;
+        };
+        let Some(interface) = Applied::of(wanted) else {
             return ty;
         };
         match &ty {
             // Already reported, never produced, already converted, or E0407 to come.
             Type::Error | Type::Never | Type::Void => ty,
-            Type::Interface(found) if found == key => ty,
-            Type::Interface(_) => {
+            Type::Interface(..) if ty.fits(wanted) => ty,
+            Type::Interface(..) => {
                 let d =
                     errors::interface_to_interface(wanted.clone(), ty, expr.span, reason.as_ref());
                 self.report(d);
                 Type::Error
             }
-            _ if self.satisfies(&ty, &super::applied::Applied::plain(key), expr.span) => {
+            _ if self.satisfies(&ty, &interface, expr.span) => {
                 self.conversions.insert(expr.id, wanted.clone());
-                self.conversion_uses(expr, &ty, key);
+                self.conversion_uses(expr, &ty, &interface);
                 wanted.clone()
             }
             _ => Type::Error,
@@ -107,7 +109,7 @@ mod tests {
              fun pick(o: Option<Shape>): f64 = match o {{ Some(s) => s.area(), None => 0.0 }};\n\
              fun main() {{}}"
         ));
-        let shape = Type::Interface("Shape".into());
+        let shape = Type::Interface("Shape".into(), Vec::new());
         let src =
             format!("{SHAPES}fun main() {{ let s: Shape = Circle {{ r: 1.0 }}; let t = s; }}");
         assert_eq!(let_type(&src, "t"), shape);
@@ -170,7 +172,7 @@ mod tests {
         let converted: Vec<_> = checked.conversions.iter().collect();
         assert_eq!(converted.len(), 1);
         let (id, to) = converted[0];
-        assert_eq!(*to, Type::Interface("Shape".into()));
+        assert_eq!(*to, Type::Interface("Shape".into(), Vec::new()));
         assert_eq!(
             checked.types[id.0 as usize],
             Type::Struct("Circle".into(), vec![])

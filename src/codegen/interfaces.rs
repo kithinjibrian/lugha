@@ -13,7 +13,7 @@ use super::CodegenError;
 use super::copy::{aliasing, mangle};
 use super::instances::instance_name;
 use super::lower::{Lowerer, POSITIONED};
-use super::methods::key;
+use super::methods::key as method_key;
 use super::value::{Value, llvm_type};
 use crate::ast::Expr;
 use crate::check::{Type, symbol};
@@ -71,7 +71,8 @@ impl<'ctx> Lowerer<'ctx> {
         table: PointerValue<'ctx>,
         boxed: PointerValue<'ctx>,
     ) -> StructValue<'ctx> {
-        let ty = llvm_type(self.context, &Type::Interface(String::new())).into_struct_type();
+        let ty =
+            llvm_type(self.context, &Type::Interface(String::new(), Vec::new())).into_struct_type();
         let pair = self
             .builder
             .build_insert_value(ty.get_undef(), table, 0, "table")
@@ -101,16 +102,24 @@ impl<'ctx> Lowerer<'ctx> {
         heap
     }
 
-    /// The LLVM type of a table of `interface`: one pointer per slot.
-    fn table_type(&self, interface: &str) -> StructType<'ctx> {
+    /// The LLVM type of a table of interface `key`: one pointer per slot.
+    fn table_type(&self, key: &str) -> StructType<'ctx> {
         let ptr = self.context.ptr_type(Default::default());
-        let count = SLOTS as usize + self.interfaces[interface].len();
+        let count = SLOTS as usize + self.interfaces[key].methods.len();
         self.context.struct_type(&vec![ptr.into(); count], false)
     }
 
-    /// `lugha_vt_<Type>.<Interface>`, emitted once per pair.
-    pub(super) fn table(&mut self, ty: &Type, interface: &str) -> PointerValue<'ctx> {
-        let name = format!("lugha_vt_{}.{}", symbol(&ty.to_string()), symbol(interface));
+    /// `lugha_vt_<Type>.<Interface>`, emitted once per pair; a generic
+    /// interface prints with its arguments (`lugha_vt_Count.Source<i64>`, v6).
+    pub(super) fn table(&mut self, ty: &Type, interface: &Type) -> PointerValue<'ctx> {
+        let Type::Interface(key, args) = interface else {
+            unreachable!("checked: tables are for interface types")
+        };
+        let name = format!(
+            "lugha_vt_{}.{}",
+            symbol(&ty.to_string()),
+            symbol(&interface.to_string())
+        );
         if let Some(global) = self.module.get_global(&name) {
             return global.as_pointer_value();
         }
@@ -121,11 +130,11 @@ impl<'ctx> Lowerer<'ctx> {
                 .as_pointer_value()
                 .into(),
         ];
-        for m in self.interfaces[interface].clone() {
-            let method = self.method_of(ty, interface, &m.name);
+        for m in self.interfaces[key].methods.clone() {
+            let method = self.method_of(ty, key, args, &m.name);
             slots.push(method.as_global_value().as_pointer_value().into());
         }
-        let table_type = self.table_type(interface);
+        let table_type = self.table_type(key);
         let global = self.module.add_global(table_type, None, &name);
         global.set_initializer(&table_type.const_named_struct(&slots));
         global.set_constant(true);
@@ -134,21 +143,22 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// The type's own method when it has one, else the instance of
-    /// `interface`'s default for `ty` (v5).
-    fn method_of(&self, ty: &Type, interface: &str, name: &str) -> FunctionValue<'ctx> {
+    /// interface `key`'s default for `ty` and the interface's `args` (v5, v6).
+    fn method_of(&self, ty: &Type, key: &str, args: &[Type], name: &str) -> FunctionValue<'ctx> {
         let own = match ty {
-            Type::Struct(owner, args) | Type::Enum(owner, args) => {
-                let k = key(owner, name);
-                match args.is_empty() {
+            Type::Struct(owner, targs) | Type::Enum(owner, targs) => {
+                let k = method_key(owner, name);
+                match targs.is_empty() {
                     true => self.methods.get(&k),
-                    false => self.monos.get(&instance_name(&k, args)),
+                    false => self.monos.get(&instance_name(&k, targs)),
                 }
             }
             _ => None,
         };
         let default = || {
-            let k = format!("{interface}.{name}");
-            self.monos.get(&instance_name(&k, std::slice::from_ref(ty)))
+            let k = format!("{key}.{name}");
+            let all = [std::slice::from_ref(ty), args].concat();
+            self.monos.get(&instance_name(&k, &all))
         };
         own.or_else(default)
             .expect("checked: a satisfied interface's methods are compiled")

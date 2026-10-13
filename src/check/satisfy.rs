@@ -114,8 +114,8 @@ impl Checker {
                 None => return Offer::Missing,
             },
             // An interface value offers what its interface declares (v5).
-            Type::Interface(key) => {
-                let items = self.items(&Applied::plain(key));
+            Type::Interface(..) => {
+                let items = self.items(&Applied::of(arg).expect("an interface type"));
                 return match items.iter().find(|r| r.name == req.name) {
                     Some(item) if item.same(req) => Offer::Matches,
                     Some(_) => Offer::Mismatched,

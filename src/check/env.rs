@@ -64,7 +64,7 @@ impl Checker {
                     let d = match ty {
                         Type::Array(_) => errors::extern_array(at),
                         Type::Struct(_, _) => errors::extern_struct(at),
-                        Type::Fun(..) | Type::Interface(_) => errors::extern_value(ty, at),
+                        Type::Fun(..) | Type::Interface(..) => errors::extern_value(ty, at),
                         Type::Enum(_, _) | Type::Option(_) => errors::extern_enum(at),
                         _ => continue,
                     };

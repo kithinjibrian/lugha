@@ -31,7 +31,7 @@ pub(in crate::check) fn interface_to_interface(
 /// E0410, with help when the value is an interface value: its fields are
 /// reached through a type pattern (v5 draft §4).
 pub(in crate::check) fn no_field_on(name: &str, ty: Type, span: Span) -> Diagnostic {
-    let interface = matches!(ty, Type::Interface(_));
+    let interface = matches!(ty, Type::Interface(..));
     let d = super::no_field(name, ty, span);
     match interface {
         true => d.with_help(
@@ -45,7 +45,7 @@ pub(in crate::check) fn no_field_on(name: &str, ty: Type, span: Span) -> Diagnos
 /// which has no `==` (v5 draft §4).
 pub(in crate::check) fn bad_operands_on(op: &str, types: &[Type], span: Span) -> Diagnostic {
     let d = super::bad_operands(op, types, span);
-    match types.iter().any(|t| matches!(t, Type::Interface(_))) {
+    match types.iter().any(|t| matches!(t, Type::Interface(..))) {
         true => d.with_help("interface values have no `==`; match on the concrete types first"),
         false => d,
     }
@@ -55,7 +55,7 @@ pub(in crate::check) fn bad_operands_on(op: &str, types: &[Type], span: Span) ->
 /// both hold Lugha code that C can't call.
 pub(in crate::check) fn extern_value(ty: &Type, span: Span) -> Diagnostic {
     match ty {
-        Type::Interface(_) => {
+        Type::Interface(..) => {
             Diagnostic::error("E0409", "interface values can't cross the C boundary", span)
                 .with_help("C can't call a Lugha method; pass the data it needs instead")
         }

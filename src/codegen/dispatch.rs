@@ -65,11 +65,15 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn dynamic_call(
         &mut self,
         base: &Expr,
-        interface: &str,
+        interface: &Type,
         name: &str,
         args: &[Expr],
     ) -> Result<Value<'ctx>, CodegenError> {
-        let methods = &self.interfaces[interface];
+        let Type::Interface(key, targs) = interface else {
+            unreachable!("checked: a dynamic call is on an interface value")
+        };
+        // A generic interface's signatures at its arguments (v6).
+        let methods = self.interfaces[key].methods_at(targs);
         let index = methods.iter().position(|m| m.name == name);
         let index = index.expect("checked: the interface declares the method");
         let method = methods[index].clone();
@@ -162,6 +166,36 @@ mod tests {
         assert!(
             !f.contains("switch"),
             "type patterns use the arm chain: {f}"
+        );
+    }
+
+    #[test]
+    fn generic_interface_values_use_tables_named_with_their_arguments() {
+        let ir = ir("interface Source<T> {\n\
+                fun next(mut self): Option<T>;\n\
+                fun skip(mut self): bool = match self.next() { Some(_) => true, None => false };\n\
+            }\n\
+            struct Count { n: i64 }\nimpl Count { fun next(mut self): Option<i64> = Some(self.n); }\n\
+            struct Words { at: i64 }\nimpl Words { fun next(mut self): Option<string> = None; }\n\
+            fun main() {\n\
+                let mut s: Source<i64> = Count { n: 1 };\n\
+                let b = s.skip();\n\
+                let mut w: Source<string> = Words { at: 0 };\n\
+                let x = w.next();\n\
+            }");
+        let table = ir
+            .lines()
+            .find(|l| l.starts_with("@\"lugha_vt_Count.Source<i64>\" = "))
+            .unwrap_or_else(|| panic!("a table for Count as Source<i64>: {ir}"));
+        assert!(table.contains("@lugha_fn_Count.next"), "{table}");
+        assert!(
+            table.contains("@\"lugha_fn_Source<i64>.skip<Count>\""),
+            "the default's slot: {table}"
+        );
+        let main = body(&ir, "main");
+        assert!(
+            main.contains("call %\"Option<string>\" %"),
+            "a dynamic call at the substituted signature: {main}"
         );
     }
 }

@@ -17,7 +17,7 @@ impl Checker {
         bindings: &mut Vec<(Ident, Type)>,
     ) -> Pat {
         let span = pattern.span;
-        let Type::Interface(key) = ty else {
+        let Some(interface) = super::applied::Applied::of(ty) else {
             if !matches!(ty, Type::Error | Type::Never) {
                 let message = format!("a type pattern needs an interface value, found `{ty}`");
                 self.report(errors::bad_type_pattern(message, span, None));
@@ -37,10 +37,10 @@ impl Checker {
         let concrete = "a type pattern names a concrete type";
         let problem = match &found {
             Type::Error => return Pat::Wild,
-            Type::Interface(_) => Some((format!("`{found}` is an interface; {concrete}"), None)),
+            Type::Interface(..) => Some((format!("`{found}` is an interface; {concrete}"), None)),
             Type::Param(_) => Some((format!("`{found}` is a type parameter; {concrete}"), None)),
             _ => {
-                let unmet = self.unmet(&found, &super::applied::Applied::plain(key));
+                let unmet = self.unmet(&found, &interface);
                 let message =
                     format!("`{found}` doesn't satisfy `{ty}`, so this arm can never match");
                 (!unmet.is_empty()).then(|| (message, Some(unmet.join("; "))))

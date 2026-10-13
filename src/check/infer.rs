@@ -90,6 +90,9 @@ impl Checker {
             .then(|| Expect::of(unknown(&substitute(&want.ty, bound), names)));
         let found = self.value(e, hint.as_ref());
         unify(&want.ty, &found, names, bound);
+        if let Some(failed) = self.interface_input(e, want, &found, names, bound) {
+            return failed;
+        }
         let ty = substitute(&want.ty, bound);
         if !found.fits(&ty) {
             self.report(errors::mismatch(ty, found, e.span, want.reason.as_ref()));
@@ -127,7 +130,7 @@ pub(super) fn unbound(ty: &Type, names: &[&str], bound: &Bound) -> bool {
     match ty {
         Type::Param(n) => names.contains(&n.as_str()) && !bound.contains_key(n),
         Type::Array(inner) | Type::Option(inner) => unbound(inner, names, bound),
-        Type::Struct(_, args) | Type::Enum(_, args) => {
+        Type::Struct(_, args) | Type::Enum(_, args) | Type::Interface(_, args) => {
             args.iter().any(|a| unbound(a, names, bound))
         }
         Type::Fun(params, ret) => {
@@ -154,7 +157,9 @@ pub(super) fn unify(declared: &Type, actual: &Type, names: &[&str], bound: &mut 
             }
             unify(dr, ar, names, bound);
         }
-        (Type::Struct(k, ds), Type::Struct(l, as_)) | (Type::Enum(k, ds), Type::Enum(l, as_))
+        (Type::Struct(k, ds), Type::Struct(l, as_))
+        | (Type::Enum(k, ds), Type::Enum(l, as_))
+        | (Type::Interface(k, ds), Type::Interface(l, as_))
             if k == l =>
         {
             for (d, a) in ds.iter().zip(as_) {

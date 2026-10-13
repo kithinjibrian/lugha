@@ -33,9 +33,10 @@ pub enum Type {
     Option(Box<Type>),
     /// A function value, `fun(A, B): R`; `R` is `Void` for no result (v3).
     Fun(Vec<Type>, Box<Type>),
-    /// A value of an interface type, by the interface's key: some type that
-    /// satisfies it, chosen at run time (v5 draft §4).
-    Interface(String),
+    /// A value of an interface type, by the interface's key, with its type
+    /// arguments (empty unless it is generic, v6): some type that satisfies
+    /// it, chosen at run time (v5 draft §4).
+    Interface(String, Vec<Type>),
     /// No value: statements, blocks without a tail, `if` without `else`,
     /// functions without a return type.
     Void,
@@ -69,6 +70,7 @@ impl Type {
             Type::Struct(key, args) => Type::Struct(key.clone(), all(args)),
             Type::Fun(params, ret) => Type::Fun(all(params), Box::new(ret.substitute(map))),
             Type::Enum(key, args) => Type::Enum(key.clone(), all(args)),
+            Type::Interface(key, args) => Type::Interface(key.clone(), all(args)),
             other => other.clone(),
         }
     }
@@ -77,7 +79,9 @@ impl Type {
     pub(super) fn fits(&self, expected: &Type) -> bool {
         match (self, expected) {
             // An argument that already failed doesn't make the whole type wrong.
-            (Type::Struct(k, a), Type::Struct(l, b)) | (Type::Enum(k, a), Type::Enum(l, b)) => {
+            (Type::Struct(k, a), Type::Struct(l, b))
+            | (Type::Enum(k, a), Type::Enum(l, b))
+            | (Type::Interface(k, a), Type::Interface(l, b)) => {
                 k == l && a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.fits(y))
             }
             _ => {
@@ -101,7 +105,7 @@ impl Type {
     /// element, a payload, a type argument or a function type.
     pub fn mentions_interface(&self) -> bool {
         match self {
-            Type::Interface(_) => true,
+            Type::Interface(..) => true,
             Type::Array(inner) | Type::Option(inner) => inner.mentions_interface(),
             Type::Struct(_, args) | Type::Enum(_, args) => {
                 args.iter().any(Type::mentions_interface)
@@ -121,7 +125,7 @@ impl Type {
     pub fn is_deep(&self, structs: &Structs) -> bool {
         match self {
             // An interface value's inside can change through `mut self` (v5).
-            Type::Array(_) | Type::Interface(_) => true,
+            Type::Array(_) | Type::Interface(..) => true,
             // Tables are keyed by the type as it prints: `Stack<i64>` (PRP-036).
             Type::Struct(..) => structs
                 .get(&self.to_string())
@@ -203,7 +207,9 @@ impl fmt::Display for Type {
                 };
             }
             // The prelude's types print without their module: `Result<i64, string>` (v4).
-            Type::Struct(name, args) | Type::Enum(name, args) if !args.is_empty() => {
+            Type::Struct(name, args) | Type::Enum(name, args) | Type::Interface(name, args)
+                if !args.is_empty() =>
+            {
                 let args: Vec<String> = args.iter().map(ToString::to_string).collect();
                 let name = name.strip_prefix("$prelude.").unwrap_or(name);
                 return write!(f, "{name}<{}>", args.join(", "));
@@ -211,7 +217,7 @@ impl fmt::Display for Type {
             Type::Struct(name, _) | Type::Enum(name, _) => {
                 name.strip_prefix("$prelude.").unwrap_or(name)
             }
-            Type::Param(name) | Type::Interface(name) => name,
+            Type::Param(name) | Type::Interface(name, _) => name,
             Type::Option(inner) => return write!(f, "Option<{inner}>"),
             Type::Void => "void",
             Type::Never => "never",

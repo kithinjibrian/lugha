@@ -3104,21 +3104,47 @@ Branch: prp-050-generic_interface_bounds (merged into main)
 
 ---
 
-## SESSION 65 — 2026-10-13 — Generic interface values (milestone 23, part 2) — open
+## SESSION 65 — 2026-10-13 — Generic interface values (milestone 23, part 2) — closed
 Branch: prp-051-generic_interface_values
+
+### WHAT WAS DONE
+- Discovery: an interface-typed parameter (`Source<T>`) reads `T` off a concrete argument's methods. PRP-051 written and approved.
+- `Type::Interface(key, args)`; generic interface values check, compile and run (conversion, calls, copies, type patterns, defaults, `?`).
+- `Checked.interfaces` → `InterfaceShape`; tables and copies named with arguments.
+- Approved split: `applied.rs` → `bound_args.rs` (verbatim).
+- Spec: §4 values, §9 symbols, the §10 generic-interfaces program; milestone 23 done.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/bound_args.rs`, `tests/programs/m23/` (`values`, `e0403`), `e0418` changed.
+- Deleted: `src/check/errors/v6.rs`.
+- Modified: `src/check/{types,applied,iface_values,iface_calls,iface_tables,method_calls,satisfy,bound_infer,type_patterns,infer,generics,layouts,bounds,defaults,env,literal,mod}.rs`, `src/check/errors/{mod,v5}.rs`, `src/codegen/{interfaces,dispatch,methods,defaults,lower,copy,structs,value}.rs`, `tests/spec.rs`, the v6 spec.
+- Docs: PRP-051, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 61, CONTEXT.
+
+### TESTS WRITTEN
+- Checker: generic interfaces as value types (E0418, E0419), conversion (E0422 help, E0403), calls (E0403, E0501), bounds and type patterns (E0426); inference into `Source<T>` parameters.
+- Codegen: `lugha_vt_Count.Source<i64>` slots, the default's slot, a dynamic call returning `Option<string>`.
+- `tests/programs/m23/values.la`, `e0403`, `e0418`; the §10 program from the spec. Earlier programs' IR byte-identical with `main`; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 61.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-051 waits for the user's merge OK; then tag `m23`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 23, part 1 done** (PRP-050, MEMORY 60): generic interfaces as bounds — `interface Source<T>`, `S: Source<T>`, inference through bounds, generic defaults. `Language v6 Specification.md` (in progress) is what `lughac spec` prints; v5 is frozen.
+**Milestone 23 complete** (PRP-050, PRP-051; MEMORY 60–61): generic interfaces as bounds and as values. `Language v6 Specification.md` (in progress) is what `lughac spec` prints. Tag `m23` goes on the merge of PRP-051.
 
-Next: **PRP-051, generic interface values** (completes milestone 23, tag `m23`). Scope (v6 draft §4 "As a value type", §9, §10 "Generic interfaces"):
-- `Type::Interface` gains arguments (`Source<i64>`); lift the "can't be a value type yet" E0418 (`errors/v6.rs`, `iface_values.rs::no_type_args`);
-- conversion, dynamic calls and copies at the substituted signatures; `Checked.interfaces` per applied interface; tables `lugha_vt_Count.Source<i64>`, copies mangled with arguments;
-- type patterns and `?` conversion with generic interface types; default slots `lugha_fn_Source<i64>.skip<Count>`;
-- fold the §10 generic-interfaces program into the spec (it needs values).
+Next: **milestone 24, iterators** — discovery and PRP-052. Scope (v6 draft §4 "Iterators", §5 desugaring, §10 "Iterators"):
+- the prelude declares `interface Iter<T> { fun next(mut self): Option<T>; }`; a module's own `Iter` hides it;
+- `for x of e` on a non-array that satisfies `Iter<T>` (structurally) or is an `Iter<T>` value: a hidden mutable copy of `e` (moved on last use), `next` until `None`, `x` immutable; `break`/`continue`; otherwise E0411;
+- codegen lowers the §5 desugaring (direct call for a concrete type, dynamic for a value).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/satisfy.rs` (294), `check/infer.rs` (293), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `codegen/control.rs` (292).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
 
 See `TODO.md`.

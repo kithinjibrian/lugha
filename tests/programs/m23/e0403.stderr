@@ -1,0 +1,8 @@
+error[E0403]: expected Source<string>, found Source<i64>
+   --> tests/programs/m23/e0403.la:17:19
+   |
+17 |     println(words(s));
+   |                   ^ expected Source<string>
+   |
+   = help: a value of one interface type doesn't convert to another interface
+

@@ -1,13 +1,13 @@
 //! Generic interfaces (v6 draft §4, milestone 23): an interface with its
-//! type arguments, its items at those arguments, and bounds that pass
-//! arguments (`S: Source<T>`, E0418, E0419).
+//! type arguments and its items at those arguments. Bounds that pass
+//! arguments are in `bound_args.rs`.
 
 use std::fmt;
 
 use super::generics::{Generic, subst};
 use super::interfaces::Requirement;
-use super::{Checker, Type, errors};
-use crate::ast::{Bound, TypeParam};
+use super::{Checker, Type};
+use crate::ast::TypeParam;
 
 /// An interface with its type arguments: `Source<i64>`, or `Shape` with none.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -19,12 +19,20 @@ pub(crate) struct Applied {
 }
 
 impl Applied {
-    /// A plain interface, without arguments.
-    pub(super) fn plain(key: &str) -> Applied {
-        Applied {
-            key: key.to_string(),
-            args: Vec::new(),
-        }
+    /// The interface of an interface value's type, `None` for any other type.
+    pub(super) fn of(ty: &Type) -> Option<Applied> {
+        let Type::Interface(key, args) = ty else {
+            return None;
+        };
+        Some(Applied {
+            key: key.clone(),
+            args: args.clone(),
+        })
+    }
+
+    /// The type of this interface's values (v6).
+    pub(super) fn ty(&self) -> Type {
+        Type::Interface(self.key.clone(), self.args.clone())
     }
 
     /// The same interface with `generics` replaced by `args` in its arguments.
@@ -39,12 +47,7 @@ impl Applied {
 impl fmt::Display for Applied {
     /// As written: `Source<i64>`, `Shape`.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let name = Type::Interface(self.key.clone());
-        if self.args.is_empty() {
-            return write!(f, "{name}");
-        }
-        let args: Vec<String> = self.args.iter().map(Type::to_string).collect();
-        write!(f, "{name}<{}>", args.join(", "))
+        write!(f, "{}", self.ty())
     }
 }
 
@@ -75,34 +78,6 @@ impl Checker {
             .get(key)
             .map(|i| i.generics.clone())
             .unwrap_or_default()
-    }
-
-    /// `b`'s interface with its arguments, resolved without reporting: the
-    /// declaration's checks report (`bound_args`). `None` for the wrong
-    /// number of arguments.
-    pub(super) fn applied_bound(&mut self, key: String, b: &Bound) -> Option<Applied> {
-        let arity = self.interface_generics(&key).len();
-        if b.args.len() != arity {
-            return None;
-        }
-        let args = self.quietly(|c| b.args.iter().map(|a| c.resolve(a)).collect());
-        Some(Applied { key, args })
-    }
-
-    /// E0418 for a bound with the wrong number of arguments and E0419 for
-    /// an argument that misses the interface parameter's bound, reporting
-    /// what resolving the arguments finds (E0305, E0313).
-    pub(super) fn bound_args(&mut self, key: &str, b: &Bound) {
-        let generics = self.interface_generics(key);
-        let args: Vec<Type> = b.args.iter().map(|a| self.resolve(a)).collect();
-        if args.len() != generics.len() {
-            let d = errors::type_args(&b.name.name, generics.len(), args.len(), b.span);
-            self.report(d);
-            return;
-        }
-        if !args.contains(&Type::Error) {
-            self.meets_bounds(&generics, &args, b.span);
-        }
     }
 
     /// Runs `f`, dropping what it reports: for resolving declarations
@@ -142,10 +117,10 @@ impl Checker {
 }
 
 #[cfg(test)]
-mod tests {
+pub(super) mod tests {
     use crate::check::test_util::{diagnostics, errors, ok};
 
-    const SOURCE: &str = "interface Source<T> { fun next(mut self): Option<T>; }\n\
+    pub(in crate::check) const SOURCE: &str = "interface Source<T> { fun next(mut self): Option<T>; }\n\
         struct Count { n: i64, end: i64 }\n\
         impl Count {\n\
             fun next(mut self): Option<i64> {\n\
@@ -163,14 +138,14 @@ mod tests {
             }\n\
         }\n";
 
-    fn e(body: &str) -> Vec<(&'static str, String)> {
+    pub(in crate::check) fn e(body: &str) -> Vec<(&'static str, String)> {
         errors(&format!("{SOURCE}{body}\nfun main() {{}}"))
             .into_iter()
             .map(|(c, t)| (c, t.to_string()))
             .collect()
     }
 
-    fn codes(body: &str) -> Vec<&'static str> {
+    pub(in crate::check) fn codes(body: &str) -> Vec<&'static str> {
         e(body).into_iter().map(|(c, _)| c).collect()
     }
 
@@ -180,44 +155,6 @@ mod tests {
         assert_eq!(codes("interface I<T, T> { fun f(self): T; }"), ["E0316"]);
         assert_eq!(codes("interface I<Self> { fun f(self); }"), ["E0316"]);
         assert_eq!(codes("interface I<T> { fun f(self): Nope<T>; }"), ["E0305"]);
-    }
-
-    #[test]
-    fn bounds_pass_arguments() {
-        ok(&format!(
-            "{SOURCE}fun a<S: Source<i64>>(s: S) {{}}\n\
-             fun b<T, S: Source<T>>(s: S) {{}}\n\
-             fun c<T, S: Source<T[]> + Eq>(s: S) {{}}\n\
-             fun main() {{}}"
-        ));
-        assert_eq!(e("fun f<S: Source>(s: S) {}"), [("E0418", "Source".into())]);
-        assert_eq!(
-            e("fun f<S: Source<i64, i64>>(s: S) {}"),
-            [("E0418", "Source<i64, i64>".into())]
-        );
-        assert_eq!(codes("fun f<S: Source<Nope>>(s: S) {}"), ["E0305"]);
-        let sorted = "interface Sorted<T: Ord> { fun get(self): T; }\nstruct P {}\n";
-        assert_eq!(
-            codes(&format!("{sorted}fun f<S: Sorted<P>>(s: S) {{}}")),
-            ["E0419"]
-        );
-        assert_eq!(
-            codes("fun f<S: Source<i64> + Source<string>>(s: S) {}"),
-            ["E0423"]
-        );
-    }
-
-    #[test]
-    fn calls_through_bounds_use_the_arguments() {
-        ok(&format!(
-            "{SOURCE}fun a<S: Source<i64>>(s: S): i64 {{ let mut t = s; t.next().unwrap_or(0) }}\n\
-             fun b<T, S: Source<T>>(s: S, d: T): T {{ let mut t = s; t.next().unwrap_or(d) }}\n\
-             fun main() {{}}"
-        ));
-        assert_eq!(
-            codes("fun f<S: Source<i64>>(s: S): string { let mut t = s; t.next().unwrap_or(0) }"),
-            ["E0403"]
-        );
     }
 
     #[test]
@@ -244,19 +181,59 @@ mod tests {
     }
 
     #[test]
-    fn generic_interfaces_are_not_value_types_yet() {
-        let src = format!("{SOURCE}fun f(s: Source<i64>) {{}}\nfun main() {{}}");
-        assert_eq!(errors(&src), [("E0418", "Source<i64>")]);
+    fn generic_interfaces_are_value_types() {
+        ok(&format!(
+            "{SOURCE}struct Pipe {{ from: Source<i64> }}\n\
+             fun f(s: Source<i64>): Option<i64> {{ let mut t = s; t.next() }}\n\
+             fun main() {{\n\
+                 let s: Source<i64> = Count {{ n: 0, end: 1 }};\n\
+                 let all: Source<i64>[] = [Count {{ n: 0, end: 1 }}, Repeat {{ x: 7, left: 1 }}];\n\
+                 let p = Pipe {{ from: Count {{ n: 0, end: 1 }} }};\n\
+                 let o: Option<Source<string>> = Some(Repeat {{ x: \"r\", left: 1 }});\n\
+                 let n = f(s);\n\
+             }}"
+        ));
+        assert_eq!(e("fun f(s: Source) {}"), [("E0418", "Source".into())]);
+        assert_eq!(
+            e("fun f(s: Source<i64, i64>) {}"),
+            [("E0418", "Source<i64, i64>".into())]
+        );
+        let sorted = "interface Sorted<T: Ord> { fun get(self): T; }\nstruct P {}\n";
+        assert_eq!(
+            codes(&format!("{sorted}fun f(s: Sorted<P>) {{}}")),
+            ["E0419"]
+        );
+    }
+
+    #[test]
+    fn conversion_and_calls_use_the_arguments() {
+        let src =
+            format!("{SOURCE}fun main() {{ let s: Source<string> = Count {{ n: 0, end: 1 }}; }}");
         let d = &diagnostics(&src)[0];
-        assert!(
-            d.message.contains("can't be a value type yet"),
-            "{}",
-            d.message
+        assert_eq!(d.code, "E0422");
+        let help = d.help.as_deref().expect("a help");
+        assert!(help.contains("Option<string>"), "{help}");
+        assert_eq!(
+            codes("fun w(s: Source<string>) {}\nfun f(s: Source<i64>) { w(s); }"),
+            ["E0403"]
         );
         assert_eq!(
-            codes("fun f() { let s: Source<i64> = Count { n: 0, end: 1 }; }"),
-            ["E0418"]
+            codes("fun f(s: Source<i64>): string { let mut t = s; t.next().unwrap_or(0) }"),
+            ["E0403"]
         );
-        assert_eq!(e("fun f(s: Source) {}"), [("E0418", "Source".into())]);
+        assert_eq!(codes("fun f(s: Source<i64>) { s.next(); }"), ["E0501"]);
+    }
+
+    #[test]
+    fn values_satisfy_bounds_and_match_type_patterns() {
+        ok(&format!(
+            "{SOURCE}fun a<S: Source<i64>>(s: S) {{}}\n\
+             fun d(s: Source<i64>): i64 = match s {{ c: Count => c.end, _: Repeat<i64> => 1, _ => 0 }};\n\
+             fun main() {{ let s: Source<i64> = Count {{ n: 0, end: 1 }}; a(s); let n = d(s); }}"
+        ));
+        assert_eq!(
+            codes("fun d(s: Source<string>): i64 = match s { c: Count => 1, _ => 0 };"),
+            ["E0426"]
+        );
     }
 }

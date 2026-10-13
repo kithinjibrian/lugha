@@ -1,28 +1,30 @@
 //! Calls on interface values (v5 draft §4, milestone 20): `s.area()` is
 //! checked against the interface's signature and dispatched at run time.
 
+use super::applied::Applied;
 use super::methods::Method;
-use super::{Checker, Type, errors};
+use super::{Checker, errors};
 use crate::ast::{Expr, Ident};
 
 impl Checker {
-    /// Method `name` of a value of interface type `key`: the interface's
-    /// item, recorded as the callee `<key>.<name>` so codegen dispatches it.
-    /// `None` after E0415 when the interface has no such method.
+    /// Method `name` of a value of type `interface`: the interface's item at
+    /// its arguments (v6), recorded as the callee `<key>.<name>` so codegen
+    /// dispatches it. `None` after E0415 when the interface has no such method.
     pub(super) fn through_interface(
         &mut self,
         call: &Expr,
-        key: &str,
+        interface: &Applied,
         name: &Ident,
     ) -> Option<Method> {
-        let items = &self.interfaces[key].items;
+        let key = &interface.key;
+        let items = self.items(interface);
         let Some(req) = items.iter().find(|r| r.name == name.name).cloned() else {
             let names: Vec<String> = items.iter().map(|r| format!("`{}`", r.name)).collect();
             let help = match names.is_empty() {
                 true => format!("`{key}` declares no methods"),
                 false => format!("`{key}` declares {}", names.join(", ")),
             };
-            let ty = Type::Interface(key.to_string());
+            let ty = interface.ty();
             self.report(errors::no_method(&name.name, &ty, name.span, Some(help)));
             return None;
         };
@@ -136,7 +138,7 @@ mod tests {
 
     #[test]
     fn interface_values_are_deep() {
-        let shape = Type::Interface("Shape".into());
+        let shape = Type::Interface("Shape".into(), Vec::new());
         let mut structs = Structs::new();
         assert!(shape.is_deep(&structs));
         structs.insert("H".into(), vec![("s".into(), shape)]);

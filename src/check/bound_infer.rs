@@ -5,12 +5,43 @@
 use std::collections::HashMap;
 
 use super::applied::Applied;
-use super::generics::{Generic, subst};
+use super::expr::Expect;
+use super::generics::{Generic, replace, subst};
 use super::infer::{unbound, unify};
 use super::interfaces::Requirement;
 use super::{Checker, Type};
+use crate::ast::Expr;
 
 impl Checker {
+    /// An argument `e`, found to be of concrete type `found`, for a
+    /// parameter declared as interface `want` with unbound arguments (v6):
+    /// they are read off `found`'s methods, then `e` converts. `Some`
+    /// (whether it failed) when it applied.
+    pub(super) fn interface_input(
+        &mut self,
+        e: &Expr,
+        want: &Expect,
+        found: &Type,
+        names: &[&str],
+        bound: &mut HashMap<String, Type>,
+    ) -> Option<bool> {
+        let applied = Applied::of(&want.ty)?;
+        if matches!(found, Type::Interface(..) | Type::Error | Type::Never) {
+            return None;
+        }
+        self.read_off(&applied, found, names, bound);
+        let map = bound.iter().map(|(k, v)| (k.as_str(), v)).collect();
+        let ty = replace(&want.ty, &map);
+        if unbound(&ty, names, bound) {
+            return None; // E0403 or E0412 follows
+        }
+        let expect = Expect {
+            ty,
+            reason: want.reason.clone(),
+        };
+        Some(self.convert(e, found.clone(), Some(&expect)) == Type::Error)
+    }
+
     /// Binds the parameters among `generics` that only a bound's arguments
     /// mention, from what the bound parameters' types offer for the
     /// interface's items, until nothing new is bound.
@@ -62,8 +93,8 @@ impl Checker {
     fn offered(&self, ty: &Type, name: &str) -> Option<Requirement> {
         match ty {
             Type::Param(p) => self.bound_item(p, name),
-            Type::Interface(key) => self
-                .items(&Applied::plain(key))
+            Type::Interface(..) => self
+                .items(&Applied::of(ty).expect("an interface type"))
                 .into_iter()
                 .find(|r| r.name == name),
             Type::Struct(owner, args) | Type::Enum(owner, args) => {
@@ -160,5 +191,26 @@ mod tests {
         ok(&format!(
             "{SOURCE}fun pass<U: Source<string>>(u: U): string[] = collect(u);\nfun main() {{}}"
         ));
+    }
+
+    #[test]
+    fn an_interface_typed_parameter_reads_its_arguments_off_the_value() {
+        let lib =
+            "fun count<T>(s: Source<T>): T[] = [];\nfun pick<T>(s: Source<T>, d: T): T = d;\n";
+        let at = |body: &str, name: &str| {
+            let_type(&format!("{SOURCE}{lib}fun main() {{ {body} }}"), name)
+        };
+        assert_eq!(at("let x = count(Count { n: 1 });", "x"), array(Type::I64));
+        assert_eq!(at("let x = pick(Count { n: 1 }, 0);", "x"), Type::I64);
+        assert_eq!(
+            at(
+                "let w: Source<string> = Words { xs: [] }; let x = count(w);",
+                "x"
+            ),
+            array(Type::String)
+        );
+        let src = format!("{SOURCE}{lib}fun main() {{ let x = pick(Count {{ n: 1 }}, \"s\"); }}");
+        // The value goes first and fixes `T`, so the literal is the mismatch.
+        assert_eq!(errors(&src), [("E0403", "\"s\"")]);
     }
 }

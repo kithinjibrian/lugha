@@ -1,0 +1,112 @@
+// Generic interface values (milestone 23): `Source<i64>` is a type.
+
+interface Source<T> {
+    fun next(mut self): Option<T>;
+    fun skip(mut self): bool = self.next().is_some();
+}
+
+struct Count { n: i64, end: i64 }
+
+impl Count {
+    fun next(mut self): Option<i64> {
+        if self.n == self.end {
+            return None;
+        }
+        self.n += 1;
+        Some(self.n)
+    }
+}
+
+struct Words { xs: string[], at: i64 }
+
+impl Words {
+    fun next(mut self): Option<string> {
+        if self.at == self.xs.len {
+            return None;
+        }
+        self.at += 1;
+        Some(self.xs[self.at - 1])
+    }
+}
+
+struct Repeat<T> { x: T, left: i64 }
+
+impl Repeat<T> {
+    fun next(mut self): Option<T> {
+        if self.left == 0 {
+            return None;
+        }
+        self.left -= 1;
+        Some(self.x)
+    }
+}
+
+struct Pipe { from: Source<i64>, label: string }
+
+// `T` is read off the argument's methods when it isn't an interface value yet.
+fun count<T>(s: Source<T>): i64 {
+    let mut src = s;
+    let mut n = 0;
+    while src.next().is_some() {
+        n += 1;
+    }
+    n
+}
+
+fun describe(s: Source<i64>): string = match s {
+    c: Count => "count to {c.end}",
+    _: Repeat<i64> => "repeat",
+    _ => "other",
+};
+
+interface Problem<T> {
+    fun detail(self): T;
+}
+
+struct Bad { code: i64 }
+
+impl Bad {
+    fun detail(self): i64 = self.code;
+}
+
+fun check(n: i64): Result<i64, Bad> = if n < 10 { Ok(n) } else { Err(Bad { code: n }) };
+
+fun run(n: i64): Result<i64, Problem<i64>> {
+    let m = check(n)?;
+    Ok(m + 1)
+}
+
+fun main() {
+    let mut s: Source<i64> = Count { n: 10, end: 12 };
+    println(s.next().unwrap_or(0));
+    let mut other = s;
+    other.next();
+    println(s.next().unwrap_or(0));
+
+    let all: Source<i64>[] = [Count { n: 0, end: 3 }, Repeat { x: 7, left: 2 }];
+    for a of all {
+        println("{describe(a)}: {count(a)}");
+    }
+
+    let w: Source<string> = Words { xs: ["x", "y"], at: 0 };
+    println(count(w));
+    let mut rest = w;
+    rest.skip();
+    println(rest.next().unwrap_or("-"));
+
+    let p = Pipe { from: Count { n: 0, end: 5 }, label: "p" };
+    println("{p.label} {count(p.from)}");
+    let o: Option<Source<i64>> = Some(Count { n: 1, end: 2 });
+    match o {
+        Some(x) => println(count(x)),
+        None => println("none"),
+    }
+
+    println(count(Count { n: 0, end: 4 }));
+    for n of [3, 50] {
+        match run(n) {
+            Ok(v) => println(v),
+            Err(e) => println(e.detail()),
+        }
+    }
+}

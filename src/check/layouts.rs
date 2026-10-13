@@ -138,7 +138,7 @@ fn depth(ty: &Type) -> usize {
     match ty {
         Type::Array(inner) | Type::Option(inner) => 1 + depth(inner),
         Type::Fun(params, ret) => 1 + params.iter().chain([&**ret]).map(depth).max().unwrap_or(0),
-        Type::Struct(_, args) | Type::Enum(_, args) => {
+        Type::Struct(_, args) | Type::Enum(_, args) | Type::Interface(_, args) => {
             args.iter().map(depth).max().map_or(0, |d| d + 1)
         }
         _ => 0,
