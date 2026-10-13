@@ -242,12 +242,14 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
 │   │                  (fields, indexing), array.rs (literals, for … of, E0507 guard), structs.rs
 │   │                  (declarations, E0307/E0308, literals), liveness.rs (move on last use), enums.rs
-│   │                  (declarations, construction), matching.rs (match, guards, W0103), patterns.rs (pattern typing),
+│   │                  (declarations), construct.rs (E.V, Some, None), matching.rs (match, guards, W0103), patterns.rs (pattern typing),
 │   │                  usefulness.rs (E0417 witnesses, W0102), methods.rs (impl,
 │   │                  E0310), method_calls.rs (calls, receivers, E0415, E0508), builtins.rs (push, pop, clear), swap.rs (swap, E0509), conflicts.rs (E0510), modules/ (mod.rs check_modules,
 │   │                  keys, passes; lookup.rs m.f / m.T, externs, main), visibility.rs (E0313/E0317/E0318),
-│   │                  struct_literal.rs (S { … }, m.S { … }), errors/ (mod.rs, names.rs E03xx,
-│   │                  types.rs E04xx, places.rs E05xx/W01xx)
+│   │                  struct_literal.rs (S { … }, m.S { … }), generics.rs (type parameters, E0315/E0316,
+│   │                  E0418, substitution), bounds.rs (Eq/Ord, E0419), infer.rs (type arguments, E0412,
+│   │                  Checked.instances), errors/ (mod.rs, names.rs E03xx, types.rs E04xx,
+│   │                  places.rs E05xx/W01xx, generics.rs milestone 11 codes)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
@@ -263,7 +265,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (import paths, E0312/E0314/E0319), tests.rs (in-memory loading)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_PARTS, RUNTIME_SOURCE, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes, Output), build.rs (build, --emit per module), guard.rs
-│                      (panics → internal error, exit 2), pipeline.rs (load all modules, gate, check),
+│                      (panics → internal error, exit 2), pipeline.rs (load all modules, check, gate before codegen),
 │                      gate/ (mod.rs, walk.rs: stops M10/M11 constructs until their milestone, PRP-030),
 │                      source.rs (source map of all files, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines)
@@ -276,7 +278,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── cli.rs       — the lughac binary: commands, emit, diagnostics, exit codes
 │   ├── modules.rs   — programs of several files through lughac (emit, gate, per-file diagnostics)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m10/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations;
+│   ├── programs/    — m1/ … m11/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations;
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
@@ -306,7 +308,7 @@ Update this tree when modules or `tests/` are added.
 
 These look like bugs but are specified behavior:
 
-- **v2 constructs stop with `not implemented yet: … (milestone N)`, exit 2,** until their milestone lands (PRP-030 gate): only generics (milestone 11) remain. They parse, and `--emit=ast` shows them. Each milestone PRP deletes its gate entries.
+- **v2 constructs stop with `not implemented yet: … (milestone N)`, exit 2,** until their milestone lands (PRP-030 gate): only generics (milestone 11) remain. Generics check but don't compile yet: `lughac check` accepts them, `build`, `run` and `--emit=ir` stop before codegen (PRP-035); `--emit=ast` shows them. PRP-036 deletes the gate.
 
 - **A function whose only exit is a `return` inside `while true` is rejected** as missing a return. Spec §6 rejects it on purpose to keep return checking simple; users add `panic("unreachable");`.
 - **Integer overflow always panics**, even at `-O2`. Spec §12 decided against wrapping.

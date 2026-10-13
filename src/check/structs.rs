@@ -4,6 +4,7 @@
 use std::collections::HashSet;
 
 use super::env::INTRINSICS;
+use super::generics::Generic;
 use super::{Checker, Type, errors};
 use crate::ast::{Item, Program};
 use crate::span::Span;
@@ -14,6 +15,8 @@ pub(super) struct StructInfo {
     pub fields: Vec<(String, Type)>,
     /// The struct's name in its declaration.
     pub span: Span,
+    /// Type parameters, `struct Stack<T>` (v2 draft §4).
+    pub generics: Vec<Generic>,
 }
 
 impl Checker {
@@ -38,6 +41,7 @@ impl Checker {
                 let info = StructInfo {
                     fields: Vec::new(),
                     span: s.name.span,
+                    generics: Self::generics(&s.type_params),
                 };
                 self.structs.insert(key, info);
             }
@@ -57,6 +61,8 @@ impl Checker {
             {
                 continue; // a duplicate, already reported
             }
+            self.type_params = self.structs[&key].generics.clone();
+            self.check_params(&s.type_params, &[]);
             let mut fields: Vec<(String, Type)> = Vec::new();
             for (i, field) in s.fields.iter().enumerate() {
                 let ty = self.resolve(&field.ty);
@@ -79,6 +85,7 @@ impl Checker {
                 .expect("collected in pass 1")
                 .fields = fields;
         }
+        self.type_params.clear();
         let mut reported = HashSet::new();
         for item in &program.items {
             let Item::Struct(s) = item else { continue };
@@ -112,7 +119,7 @@ impl Checker {
             return false;
         };
         for (_, ty) in &info.fields {
-            let Type::Struct(next) = ty else { continue };
+            let Type::Struct(next, _) = ty else { continue };
             if next == start {
                 return true;
             }
@@ -148,7 +155,7 @@ mod tests {
     fn structs_resolve_in_any_order() {
         let src = "fun main() { let r = R { p: P { y: 2.0, x: 1.0 } }; let x = r.p.x; }\n\
                    struct R { p: P }\nstruct P { x: f64, y: f64 }";
-        assert_eq!(let_type(src, "r"), Type::Struct("R".into()));
+        assert_eq!(let_type(src, "r"), Type::Struct("R".into(), Vec::new()));
         assert_eq!(let_type(src, "x"), Type::F64);
         ok(
             "struct Node { value: i64, kids: Node[] }\nfun main() { let n = Node { value: 1, kids: [] }; }",

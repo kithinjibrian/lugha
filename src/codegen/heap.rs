@@ -207,7 +207,7 @@ impl<'ctx> Lowerer<'ctx> {
         field: &Ident,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         let ty = self.ty(base);
-        if matches!(ty, Type::Struct(_)) {
+        if matches!(ty, Type::Struct(_, _)) {
             return self.struct_field(base, field);
         }
         let object = self.get(base, &ty)?.into_pointer_value();

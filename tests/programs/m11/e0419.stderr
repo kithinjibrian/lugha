@@ -1,0 +1,8 @@
+error[E0419]: `i64[]` doesn't satisfy `Ord`
+  --> tests/programs/m11/e0419.la:3:13
+  |
+3 | fun size(s: Set<i64[]>): i64 = s.items.len;
+  |             ^^^^^^^^^^
+  |
+  = help: only numbers, strings and parameters with `Ord` are ordered
+

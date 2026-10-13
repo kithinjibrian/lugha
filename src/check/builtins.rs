@@ -20,6 +20,8 @@ pub(super) fn builtin(receiver: &Type, name: &str) -> Option<Method> {
         params,
         ret,
         span: Span::new(0, 0),
+        generics: Vec::new(),
+        outer: 0,
     })
 }
 

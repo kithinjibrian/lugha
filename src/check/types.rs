@@ -21,10 +21,14 @@ pub enum Type {
     String,
     /// `T[]`: a fixed-length array on the GC heap (spec §4, §7).
     Array(Box<Type>),
-    /// A user-declared struct, by name (spec §4).
-    Struct(String),
-    /// A user-declared enum, by name (v1 §4).
-    Enum(String),
+    /// A user-declared struct, by key, with its type arguments (empty
+    /// unless it is generic; v2 draft §4, PRP-035).
+    Struct(String, Vec<Type>),
+    /// A user-declared enum, by key, with its type arguments (v1 §4).
+    Enum(String, Vec<Type>),
+    /// A type parameter inside generic code, by name: abstract, allowing
+    /// only what its bounds provide (v2 draft §4).
+    Param(String),
     /// The built-in `Option<T>`: `Some(T)` or `None` (v1 §4).
     Option(Box<Type>),
     /// No value: statements, blocks without a tail, `if` without `else`,
@@ -51,7 +55,17 @@ impl Type {
 
     /// True if a value of type `self` may appear where `expected` is wanted.
     pub(super) fn fits(&self, expected: &Type) -> bool {
-        self == expected || matches!(self, Type::Never | Type::Error) || *expected == Type::Error
+        match (self, expected) {
+            // An argument that already failed doesn't make the whole type wrong.
+            (Type::Struct(k, a), Type::Struct(l, b)) | (Type::Enum(k, a), Type::Enum(l, b)) => {
+                k == l && a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.fits(y))
+            }
+            _ => {
+                self == expected
+                    || matches!(self, Type::Never | Type::Error)
+                    || *expected == Type::Error
+            }
+        }
     }
 
     /// The literal range of an integer type: (largest positive, largest negated magnitude).
@@ -70,7 +84,7 @@ impl Type {
     pub fn contains_array(&self, structs: &Structs) -> bool {
         match self {
             Type::Array(_) => true,
-            Type::Struct(name) => structs
+            Type::Struct(name, _) => structs
                 .get(name)
                 .is_some_and(|fields| fields.iter().any(|(_, ty)| ty.contains_array(structs))),
             _ => false,
@@ -101,7 +115,7 @@ pub fn indirect_slot(owner: &Type, slot: &Type, structs: &Structs, enums: &Enums
             continue;
         }
         match &ty {
-            Type::Struct(name) => {
+            Type::Struct(name, _) => {
                 stack.extend(
                     structs
                         .get(name)
@@ -110,7 +124,7 @@ pub fn indirect_slot(owner: &Type, slot: &Type, structs: &Structs, enums: &Enums
                         .map(|(_, t)| t.clone()),
                 );
             }
-            Type::Enum(name) => {
+            Type::Enum(name, _) => {
                 let payloads = enums
                     .get(name)
                     .into_iter()
@@ -136,7 +150,12 @@ impl fmt::Display for Type {
             Type::Bool => "bool",
             Type::String => "string",
             Type::Array(element) => return write!(f, "{element}[]"),
-            Type::Struct(name) | Type::Enum(name) => name,
+            Type::Struct(name, args) | Type::Enum(name, args) if !args.is_empty() => {
+                let args: Vec<String> = args.iter().map(ToString::to_string).collect();
+                return write!(f, "{name}<{}>", args.join(", "));
+            }
+            Type::Struct(name, _) | Type::Enum(name, _) => name,
+            Type::Param(name) => name,
             Type::Option(inner) => return write!(f, "Option<{inner}>"),
             Type::Void => "void",
             Type::Never => "never",
@@ -150,7 +169,7 @@ mod tests {
     use super::{Enums, Structs, Type, indirect_slot};
 
     fn e(name: &str) -> Type {
-        Type::Enum(name.into())
+        Type::Enum(name.into(), Vec::new())
     }
 
     #[test]
@@ -182,7 +201,7 @@ mod tests {
             ("Plain".to_string(), vec![("P".into(), vec![Type::F64])]),
         ]
         .into();
-        let node = Type::Struct("Node".into());
+        let node = Type::Struct("Node".into(), Vec::new());
         let opt = Type::Option(Box::new(node.clone()));
         let structs: Structs = [(
             "Node".to_string(),

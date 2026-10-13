@@ -3,6 +3,7 @@
 
 use std::collections::HashMap;
 
+use super::generics::{Generic, params, renamed, with_args};
 use super::{Checker, Type, errors};
 use crate::ast::{Item, Program};
 use crate::span::Span;
@@ -16,6 +17,10 @@ pub(super) struct Method {
     pub ret: Type,
     /// The method's name in its declaration.
     pub span: Span,
+    /// The `impl`'s type parameters, then the method's own (PRP-035).
+    pub generics: Vec<Generic>,
+    /// How many of `generics` are the `impl`'s, bound by the receiver's type.
+    pub outer: usize,
 }
 
 /// Methods by type name, then method name.
@@ -33,8 +38,17 @@ impl Checker {
                 self.report(errors::unknown_type(&i.ty.name, i.ty.span));
                 continue;
             };
+            let declared = self.generics_of(owner);
+            if i.params.len() != declared.len() {
+                let d = errors::type_args(&i.ty.name, declared.len(), i.params.len(), i.ty.span);
+                self.report(d);
+                continue;
+            }
+            let outer = renamed(&declared, &i.params);
             for f in &i.methods {
                 let name = &f.name.name;
+                self.check_params(&f.type_params, &outer);
+                self.type_params = [outer.clone(), Self::generics(&f.type_params)].concat();
                 let params = f.params.iter().map(|p| self.resolve(&p.ty)).collect();
                 let ret = f.ret.as_ref().map_or(Type::Void, |t| self.resolve(t));
                 if let Some(first) = self.methods.get(owner).and_then(|m| m.get(name)) {
@@ -52,6 +66,8 @@ impl Checker {
                     params,
                     ret,
                     span: f.name.span,
+                    generics: self.type_params.clone(),
+                    outer: outer.len(),
                 };
                 self.methods
                     .entry(owner.clone())
@@ -59,6 +75,7 @@ impl Checker {
                     .insert(name.clone(), method);
             }
         }
+        self.type_params.clear();
     }
 
     /// Checks every method body whose signature was accepted.
@@ -77,17 +94,21 @@ impl Checker {
                     continue; // a duplicate, already reported
                 }
                 let (params, ret) = (m.params.clone(), m.ret.clone());
-                self.body(f, params, ret, Some(ty.clone()));
+                let receiver = with_args(&ty, params_of_impl(m));
+                let generics = m.generics.clone();
+                self.type_params = generics;
+                self.body(f, params, ret, Some(receiver));
             }
         }
+        self.type_params.clear();
     }
 
-    /// The struct or enum type with key `name`.
+    /// The struct or enum type with key `name`, without type arguments.
     pub(super) fn named_type(&self, name: &str) -> Option<Type> {
         if self.structs.contains_key(name) {
-            Some(Type::Struct(name.to_string()))
+            Some(Type::Struct(name.to_string(), Vec::new()))
         } else if self.enums.contains_key(name) {
-            Some(Type::Enum(name.to_string()))
+            Some(Type::Enum(name.to_string(), Vec::new()))
         } else {
             None
         }
@@ -96,8 +117,8 @@ impl Checker {
     /// "field" or "variant" if `ty` already has a member called `name` (E0310).
     fn member_named(&self, ty: &Type, name: &str) -> Option<&'static str> {
         match ty {
-            Type::Struct(s) if self.struct_field(s, name).is_some() => Some("field"),
-            Type::Enum(e) if self.enums[e].variants.iter().any(|(v, _)| v == name) => {
+            Type::Struct(s, _) if self.struct_field(s, name).is_some() => Some("field"),
+            Type::Enum(e, _) if self.enums[e].variants.iter().any(|(v, _)| v == name) => {
                 Some("variant")
             }
             _ => None,
@@ -106,11 +127,16 @@ impl Checker {
 
     pub(super) fn method(&self, ty: &Type, name: &str) -> Option<Method> {
         let owner = match ty {
-            Type::Struct(n) | Type::Enum(n) => n,
+            Type::Struct(n, _) | Type::Enum(n, _) => n,
             _ => return None,
         };
         self.methods.get(owner).and_then(|m| m.get(name)).cloned()
     }
+}
+
+/// The `impl`'s parameters as types: `Stack<T>`'s `[T]` for `self`.
+fn params_of_impl(m: &Method) -> Vec<Type> {
+    params(&m.generics[..m.outer])
 }
 
 #[cfg(test)]
@@ -127,7 +153,7 @@ mod tests {
              impl V {{ fun new(x: f64, y: f64): V = V {{ x: x, y: y }}; }}\n\
              impl V {{ fun len_sq(self): f64 = self.x * self.x; }}"
         );
-        assert_eq!(let_type(&src, "v"), Type::Struct("V".into()));
+        assert_eq!(let_type(&src, "v"), Type::Struct("V".into(), Vec::new()));
         assert_eq!(let_type(&src, "n"), Type::F64);
         ok(
             "enum S { A, B }\nimpl S { fun flip(self): S = match self { A => S.B, B => S.A }; }\nfun main() { let s = S.A.flip(); }",

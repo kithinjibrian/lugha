@@ -1,0 +1,5 @@
+struct Set<T: Ord> { items: T[] }
+
+fun size(s: Set<i64[]>): i64 = s.items.len;
+
+fun main() {}

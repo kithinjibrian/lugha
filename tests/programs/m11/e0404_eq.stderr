@@ -1,0 +1,8 @@
+error[E0404]: cannot apply `==` to T
+  --> tests/programs/m11/e0404_eq.la:3:12
+  |
+3 |         if y == x {
+  |            ^^^^^^
+  |
+  = help: declare `T: Eq`
+

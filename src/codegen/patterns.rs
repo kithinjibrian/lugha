@@ -25,7 +25,7 @@ enum Subject<'ctx> {
 impl<'ctx> Lowerer<'ctx> {
     /// The variants of `ty` if it is an enum or `Option`.
     fn variants_of(&self, ty: &Type) -> Option<Vec<(String, Vec<Type>)>> {
-        matches!(ty, Type::Enum(_) | Type::Option(_)).then(|| variants(ty, &self.enums))
+        matches!(ty, Type::Enum(_, _) | Type::Option(_)).then(|| variants(ty, &self.enums))
     }
 
     /// True if no arm has a guard and every payload slot is `_` or a binding:
@@ -60,7 +60,7 @@ impl<'ctx> Lowerer<'ctx> {
         let sty = self.ty(scrutinee);
         let value = self.get(scrutinee, &sty)?;
         let subject = match &sty {
-            Type::Enum(_) | Type::Option(_) => {
+            Type::Enum(_, _) | Type::Option(_) => {
                 let slot = self.entry_alloca(&sty, "scrutinee");
                 self.builder.build_store(slot, value).expect(POSITIONED);
                 Subject::At(slot)

@@ -21,7 +21,7 @@ pub(super) fn layout(ty: &Type, structs: &Structs, enums: &Enums) -> (u64, u64) 
         Type::U8 | Type::Bool => (1, 1),
         Type::I32 => (4, 4),
         Type::I64 | Type::F64 | Type::String | Type::Array(_) => (8, 8),
-        Type::Struct(name) => {
+        Type::Struct(name, _) => {
             let (mut size, mut align) = (0u64, 1u64);
             for (_, field) in &structs[name] {
                 let (field_size, field_align) = layout(field, structs, enums);
@@ -30,7 +30,7 @@ pub(super) fn layout(ty: &Type, structs: &Structs, enums: &Enums) -> (u64, u64) 
             }
             (size.next_multiple_of(align), align)
         }
-        Type::Enum(_) | Type::Option(_) => super::enums::enum_layout(ty, structs, enums),
+        Type::Enum(_, _) | Type::Option(_) => super::enums::enum_layout(ty, structs, enums),
         _ => unreachable!("checked: {ty} is not stored in memory"),
     }
 }
@@ -60,7 +60,7 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// The position and type of `field` in struct type `ty`.
     fn field_index(&self, ty: &Type, field: &str) -> (u32, Type) {
-        let Type::Struct(name) = ty else {
+        let Type::Struct(name, _) = ty else {
             unreachable!("checked: {ty} is a struct")
         };
         let (index, (_, field_ty)) = self.structs[name]
@@ -88,7 +88,7 @@ impl<'ctx> Lowerer<'ctx> {
             let value = self.value_for_store(value, &field_ty)?;
             values.push((index, self.stored_form(value, &field_ty)));
         }
-        let Type::Struct(name) = &ty else {
+        let Type::Struct(name, _) = &ty else {
             unreachable!("checked: a literal has its struct type")
         };
         let struct_type = self
@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn layouts_use_natural_alignment() {
-        let s = |name: &str| Type::Struct(name.to_string());
+        let s = |name: &str| Type::Struct(name.to_string(), Vec::new());
         let structs: Structs = [
             (
                 "A".to_string(),

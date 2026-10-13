@@ -37,7 +37,7 @@ impl<'ctx> Lowerer<'ctx> {
         }
         let composite = matches!(
             ty,
-            Type::Struct(_) | Type::Enum(_) | Type::Option(_) | Type::Array(_)
+            Type::Struct(_, _) | Type::Enum(_, _) | Type::Option(_) | Type::Array(_)
         );
         if composite && matches!(op, BinOp::Eq | BinOp::Ne) {
             let equal = self.equal(a, b, &ty);

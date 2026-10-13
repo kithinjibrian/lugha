@@ -1,0 +1,6 @@
+error[E0418]: `Pair` takes 2 type arguments but 1 was given
+  --> tests/programs/m11/e0418.la:3:14
+  |
+3 | fun first(p: Pair<i64>): i64 = p.a;
+  |              ^^^^^^^^^
+

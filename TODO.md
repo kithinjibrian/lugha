@@ -94,7 +94,8 @@ Done when the two-module program passes.
 
 ### Milestone 11 — Generics
 Done when the generics program passes and the full v2 spec replaces v1 in `lughac spec`.
-- [ ] Type parameters, `Eq`/`Ord` bounds, inference, monomorphization; `Option<T>` as a generic enum (E0315, E0316, E0418–E0420)
+- [x] PRP-035: checking — type parameters, `Eq`/`Ord` bounds, inference, `Checked.instances` (E0315, E0316, E0418, E0419, E0412); `lughac check` accepts generics, the gate moves before codegen
+- [ ] PRP-036: compiling — monomorphization, `lugha_fn_max<i64>`-style symbols, `Option<T>` as a generic enum (E0420), gate removed, spec folded
 
 ### Milestone 12 — Interfaces
 Done when the interfaces program passes and the v2 spec is complete.

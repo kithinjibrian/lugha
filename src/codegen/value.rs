@@ -37,16 +37,18 @@ pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnu
         // Strings and arrays are pointers to heap objects (spec §7).
         Type::String | Type::Array(_) => context.ptr_type(AddressSpace::default()).into(),
         // Declared by `declare_enums` before anything is lowered.
-        Type::Enum(_) | Type::Option(_) => context
+        Type::Enum(_, _) | Type::Option(_) => context
             .get_struct_type(&ty.to_string())
             .expect("enums are declared before lowering")
             .into(),
         // Declared by `declare_structs` before anything is lowered.
-        Type::Struct(name) => context
+        Type::Struct(name, _) => context
             .get_struct_type(name)
             .expect("structs are declared before lowering")
             .into(),
         Type::Void | Type::Never | Type::Error => unreachable!("checked: {ty} is not a value type"),
+        // The gate stops generic programs before codegen (PRP-035).
+        Type::Param(_) => unreachable!("codegen never sees a type parameter"),
     }
 }
 
@@ -63,7 +65,7 @@ pub(super) fn is_signed(ty: &Type) -> bool {
 /// True for values held in memory and passed to functions as a pointer to
 /// the caller's storage: structs and enums (spec §7, v1 §7).
 pub(super) fn is_aggregate(ty: &Type) -> bool {
-    matches!(ty, Type::Struct(_) | Type::Enum(_) | Type::Option(_))
+    matches!(ty, Type::Struct(_, _) | Type::Enum(_, _) | Type::Option(_))
 }
 
 impl<'ctx> Lowerer<'ctx> {

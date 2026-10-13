@@ -81,9 +81,9 @@ impl<'ctx> Lowerer<'ctx> {
             let Item::Impl(i) = item else { continue };
             let name = qualify(unit.path, &i.ty.name);
             let owner = if self.enums.contains_key(&name) {
-                Type::Enum(name.clone())
+                Type::Enum(name.clone(), Vec::new())
             } else {
-                Type::Struct(name.clone())
+                Type::Struct(name.clone(), Vec::new())
             };
             for f in &i.methods {
                 let method = self.methods[&key(&name, &f.name.name)].clone();
@@ -112,7 +112,9 @@ impl<'ctx> Lowerer<'ctx> {
         // An associated call's method key comes from the checker (PRP-034).
         let (method, receiver) = match &base_type {
             Type::Void => (self.callees.get(&call.id).cloned(), None),
-            Type::Struct(owner) | Type::Enum(owner) => (Some(key(owner, &name.name)), Some(base)),
+            Type::Struct(owner, _) | Type::Enum(owner, _) => {
+                (Some(key(owner, &name.name)), Some(base))
+            }
             _ => return Ok(None),
         };
         let Some(method) = method.and_then(|k| self.methods.get(&k)).cloned() else {

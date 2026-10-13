@@ -42,7 +42,7 @@ impl<'ctx> Lowerer<'ctx> {
             None => self.append("match.impossible"),
         };
         let slot = match &sty {
-            Type::Enum(_) | Type::Option(_) => {
+            Type::Enum(_, _) | Type::Option(_) => {
                 let slot = self.entry_alloca(&sty, "scrutinee");
                 self.builder.build_store(slot, value).expect(POSITIONED);
                 Some(slot)

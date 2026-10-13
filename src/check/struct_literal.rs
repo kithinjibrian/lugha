@@ -2,19 +2,21 @@
 //! another module, `m.S { … }`, which needs every field visible (E0313).
 
 use super::expr::Expect;
+use super::generics::{params, subst};
 use super::{Checker, Type, errors};
-use crate::ast::{Expr, Ident};
+use crate::ast::{Expr, StructLiteral};
 
 impl Checker {
     /// `S { f: e, … }`: every field exactly once, in any order, each
-    /// expecting its declared type (spec §4); values checked in source order.
+    /// expecting its declared type (spec §4); values checked in source
+    /// order, except that a generic struct's deferring values go last (PRP-035).
     pub(super) fn struct_literal(
         &mut self,
         expr: &Expr,
-        module: Option<&Ident>,
-        name: &Ident,
-        given: &[(Ident, Expr)],
+        lit: &StructLiteral,
+        expect: Option<&Expect>,
     ) -> Type {
+        let (module, name, given) = (lit.module.as_ref(), &lit.name, &lit.fields);
         // `m.S { … }` names its module (PRP-034); the span covers the whole
         // literal, where a private-item error belongs.
         let key = match module {
@@ -35,10 +37,11 @@ impl Checker {
             }
             return Type::Error;
         };
-        let declared = info.fields.clone();
+        let (declared, generics) = (info.fields.clone(), info.generics.clone());
         let key = key.expect("found just above");
         self.literal_visible(&key, expr.span);
-        let ty = Type::Struct(key);
+        let ty = Type::Struct(key, params(&generics));
+        let mut inputs = Vec::new();
         for (i, (field, value)) in given.iter().enumerate() {
             if let Some((first, _)) = given[..i].iter().find(|(f, _)| f.name == field.name) {
                 self.report(errors::field_given_twice(
@@ -50,7 +53,12 @@ impl Checker {
             match declared.iter().find(|(f, _)| *f == field.name) {
                 Some((_, field_ty)) => {
                     let why = format!("`{}` is declared as {field_ty}", field.name);
-                    self.expect_type(value, &Expect::because(field_ty.clone(), field.span, why));
+                    let want = Expect::because(field_ty.clone(), field.span, why);
+                    if generics.is_empty() {
+                        self.expect_type(value, &want);
+                    } else {
+                        inputs.push((value, want));
+                    }
                 }
                 None => {
                     self.report(errors::no_field(&field.name, ty.clone(), field.span));
@@ -66,7 +74,16 @@ impl Checker {
         if !missing.is_empty() {
             self.report(errors::missing_fields(&missing, &name.name, expr.span));
         }
-        ty
+        match self.infer(
+            expr,
+            &generics,
+            Default::default(),
+            Some((&ty, expect)),
+            &inputs,
+        ) {
+            Some(targs) => subst(&ty, &generics, &targs),
+            None => Type::Error,
+        }
     }
 }
 

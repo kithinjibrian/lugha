@@ -24,7 +24,7 @@ impl<'ctx> Lowerer<'ctx> {
     ) -> IntValue<'ctx> {
         match ty {
             Type::String => self.string_binary(BinOp::Eq, a, b).into_int_value(),
-            Type::Struct(_) | Type::Enum(_) | Type::Option(_) | Type::Array(_) => {
+            Type::Struct(_, _) | Type::Enum(_, _) | Type::Option(_) | Type::Array(_) => {
                 let helper = self.eq_function(ty);
                 let call = self
                     .builder
@@ -63,7 +63,7 @@ impl<'ctx> Lowerer<'ctx> {
         let (a, b) = (param(0), param(1));
         let unequal = self.append("unequal");
         match ty {
-            Type::Struct(name) => self.eq_fields(a, b, name, unequal),
+            Type::Struct(name, _) => self.eq_fields(a, b, name, unequal),
             Type::Array(_) => self.eq_elements(a, b, ty, unequal),
             _ => self.eq_variants(a, b, ty, unequal),
         }

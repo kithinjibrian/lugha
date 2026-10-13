@@ -571,9 +571,29 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 41. Generic checking (PRP-035)
+
+**Decision:**
+- **M11 split:** PRP-035 checks generics; PRP-036 compiles them (monomorphization, E0420, `Option<T>` as a generic enum, gate removed, spec folded).
+- **Types:** `Type::Struct(key, args)`, `Type::Enum(key, args)` and `Type::Param(name)`. A parameter allows only what its bounds give: `==` with `Eq`, `<` with `Ord` (otherwise E0404 with "declare `T: Eq`"). Every concrete type is `Eq`; `Ord` is numbers and `string`.
+- **Declarations (`check/generics.rs`):** parameters are in scope through `Checker.type_params` while signatures, fields, payloads and bodies are resolved. E0315 unknown bound, E0316 bad name (duplicate, like a type or module, or a method parameter named like its `impl`'s), E0418 wrong count (including a bare generic name and a wrong `impl` header). `Eq`/`Ord` are built-in names (E0302). An `impl`'s parameters take the declaration's bounds under the `impl`'s names.
+- **Bounds (`check/bounds.rs`):** E0419 at the type or use whose argument misses a bound.
+- **Inference (`check/infer.rs`):** binds the callee's parameters from the expected type, then the arguments that type alone, then deferring ones (literals, `None`, `[]`). Methods first bind their `impl`'s parameters from the receiver. Undecided is E0412 at the use, except when the context already failed. Fields and variants are substituted where they are read (`field_type`, `variants_of`).
+- **Side table:** `Checked.instances: ExprId → type arguments` for every generic call, associated call, struct literal and construction, for PRP-036.
+- **Gate:** moved from before checking to before codegen (`ir`, `build`, `run`).
+- **Splits (approved):** `check/construct.rs` out of `enums.rs`, `check/bounds.rs` out of `generics.rs`; new `check/errors/generics.rs`.
+- **Amendment:** `max(1, "a")` is E0401 at `1`: the string decides `T` before the literal, as the inference order says. The PRP's checklist had said E0403 at `"a"`.
+
+**Why:** This checks generic code once, so PRP-036 only has to instantiate it. Recording instances keeps codegen from inferring anything (rule 4).
+
+**Rules out:** explicit type arguments, bounds on `impl`, interfaces (milestone 12).
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- PRP-035: generics are type-checked (`lughac check`); the gate stops them before codegen
 - **Milestone 10 complete**: PRP-034 names across modules, visibility (E0313/E0317/E0318), module symbols
 - PRP-033: modules front end — loading, E0312/E0314/E0319, file-aware diagnostics and `--emit`, `private`/`public` syntax
 - **Milestone 9 complete**: PRP-032 nested patterns, guards, usefulness-based E0417/W0102, W0103

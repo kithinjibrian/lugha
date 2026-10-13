@@ -130,40 +130,40 @@ The `Language v2 Specification.md` sentence on generics changes (below); the ful
 ## TESTS TO WRITE
 
 Unit tests — `check/generics.rs`:
-- [ ] **Accepted declarations:** `fun max<T: Ord>`, `struct Pair<A, B>`, `enum Tree<T: Eq>`, `impl Stack<T>` with methods, and a method with its own `<U>`.
-- [ ] **E0315** for `T: Hash`.
-- [ ] **E0316** for:
+- [x] **Accepted declarations:** `fun max<T: Ord>`, `struct Pair<A, B>`, `enum Tree<T: Eq>`, `impl Stack<T>` with methods, and a method with its own `<U>`.
+- [x] **E0315** for `T: Hash`.
+- [x] **E0316** for:
   - `<T, T>`;
   - a parameter named like a struct or a module;
   - a method's parameter named like its `impl`'s.
-- [ ] **E0302** for `struct Eq {}`.
-- [ ] **E0418:** for `Pair<i64>`, `Stack<i64, i64>`, a bare `Stack` parameter, and `impl Stack<T, U>` on a one-parameter `Stack`.
-- [ ] **E0419:** for `struct Set<T: Ord>` used as `Set<i64[]>`; `Set<string>` is fine; `Set<U>` with `U: Ord` in scope is fine, and with an unbounded `U` it is E0419.
-- [ ] **Generic bodies:**
+- [x] **E0302** for `struct Eq {}`.
+- [x] **E0418:** for `Pair<i64>`, `Stack<i64, i64>`, a bare `Stack` parameter, and `impl Stack<T, U>` on a one-parameter `Stack`.
+- [x] **E0419:** for `struct Set<T: Ord>` used as `Set<i64[]>`; `Set<string>` is fine; `Set<U>` with `U: Ord` in scope is fine, and with an unbounded `U` it is E0419.
+- [x] **Generic bodies:**
   - `a == b` without `Eq` is E0404, with help naming `T: Eq`;
   - `a < b` without `Ord` is E0404;
   - `a + b`, `a as i64`, `println(a)`, `a.len` and `a[0]` are their usual errors;
   - `let x: T = 0;` is E0401.
 
 Unit tests — `check/infer.rs`:
-- [ ] **From arguments:** `max(3, 7)` is `i64`; `max(x_u8, 3)` is `u8`; `first(["a"])` is `Option<string>`.
-- [ ] **From the expected type:** `let s: Stack<string> = Stack.new();` and `let o: Pair<i64, f64> = Pair { a: 1, b: 2.0 };`.
-- [ ] **From fields and payloads:** `Wrap { v: 2.5 }` is `Wrap<f64>`, and `Tree.Node(1, Tree.Leaf)` with an expected `Tree<i64>`.
-- [ ] **Methods:** `s.push(1)` on `Stack<string>` is E0401 at `1`; `s.pop()` is `Option<string>`.
-- [ ] **E0412** for `let e = Stack.new();`, and **E0419** for `largest([[1]])`.
-- [ ] **Clashes:** `max(1, "a")` is the existing mismatch, at `"a"`.
-- [ ] **Side table:** `instances` records `[i64]` for `max(3, 7)` and `[string]` for `Stack.new()` with an expected `Stack<string>`.
+- [x] **From arguments:** `max(3, 7)` is `i64`; `max(x_u8, 3)` is `u8`; `first(["a"])` is `Option<string>`.
+- [x] **From the expected type:** `let s: Stack<string> = Stack.new();` and `let o: Pair<i64, f64> = Pair { a: 1, b: 2.0 };`.
+- [x] **From fields and payloads:** `Wrap { v: 2.5 }` is `Wrap<f64>`, and `Tree.Node(1, Tree.Leaf)` with an expected `Tree<i64>`.
+- [x] **Methods:** `s.push(1)` on `Stack<string>` is E0401 at `1`; `s.pop()` is `Option<string>`.
+- [x] **E0412** for `let e = Stack.new();`, and **E0419** for `largest([[1]])`.
+- [x] **Clashes:** `max(1, "a")` is E0401 at `1` (amended: see below).
+- [x] **Side table:** `instances` records `[i64]` for `max(3, 7)` and `[string]` for `Stack.new()` with an expected `Stack<string>`.
 
 Integration — `tests/cli.rs` (the existing gate test changes):
-- [ ] `check` on the draft's generics program exits 0.
-- [ ] `build`/`run` on it exit 2 with the milestone 11 message.
-- [ ] `--emit=ast` still works.
+- [x] `check` on the draft's generics program exits 0.
+- [x] `build`/`run` on it exit 2 with the milestone 11 message.
+- [x] `--emit=ast` still works.
 
 Acceptance — `tests/programs/m11/` (`check`-only goldens, through the reject mode):
-- [ ] `e0419.la`, `e0418.la` and `e0404_eq.la` (an `==` without `Eq`). Captured and reviewed.
+- [x] `e0419.la`, `e0418.la` and `e0404_eq.la` (an `==` without `Eq`). Captured and reviewed.
 
 Regression:
-- [ ] Every earlier test passes, with messages unchanged for non-generic programs.
+- [x] Every earlier test passes, with messages unchanged for non-generic programs.
 
 ## ROLLBACK PLAN
 
@@ -171,14 +171,21 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] Generic programs check: the draft's generics program passes `lughac check`, and the errors above are reported.
-- [ ] `build`/`run` stop at the gate; non-generic programs are unchanged.
-- [ ] The spec sentence and codes are updated; CLAUDE.md, TODO, CHANGELOG, MEMORY updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] Generic programs check: the draft's generics program passes `lughac check`, and the errors above are reported.
+- [x] `build`/`run` stop at the gate; non-generic programs are unchanged.
+- [x] The spec sentence and codes are updated; CLAUDE.md, TODO, CHANGELOG, MEMORY updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 - `cargo fmt --check`
 - `cargo clippy --all-targets -- -D warnings`
 - `cargo test`
 - `lughac check` on the draft's generics program → exit 0
+
+## AMENDMENTS (during build, session 44)
+
+- **Clash location:** `max(1, "a")` is E0401 at `1`, not E0403 at `"a"`. The inference order above decides `T` from the string first, because the literal defers. The checklist had contradicted that order.
+- **No cascade:** when the expected type already failed (E0418 or E0419 on the annotation), an undecided parameter is not reported again as E0412.
+- **Files (splits approved):** `check/construct.rs` holds construction (`E.V`, `Some`, `None`), moved out of `enums.rs`. `check/bounds.rs` holds `Eq`/`Ord` and E0419, moved out of `generics.rs`. `check/errors/generics.rs` holds the new codes' constructors, so `errors/types.rs` stays under 300 lines.
+- **Test added:** a unit test checks the draft's own generics program (`infer.rs`), alongside the CLI test.

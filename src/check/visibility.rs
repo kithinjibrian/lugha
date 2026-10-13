@@ -164,7 +164,7 @@ impl Checker {
     /// arrays and `Option`.
     fn private_inside(&self, ty: &Type) -> Option<String> {
         match ty {
-            Type::Struct(k) | Type::Enum(k) => self
+            Type::Struct(k, _) | Type::Enum(k, _) => self
                 .privacy
                 .items
                 .get(k)

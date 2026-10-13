@@ -11,14 +11,18 @@ mod access;
 mod array;
 mod assign;
 mod body;
+mod bounds;
 mod builtins;
 mod call;
 mod conflicts;
+mod construct;
 mod enums;
 mod env;
 mod errors;
 mod expr;
 mod flow;
+mod generics;
+mod infer;
 mod literal;
 mod liveness;
 mod matching;
@@ -61,6 +65,10 @@ pub struct Checked {
     /// The resolved type of every written type, by its span (unique in the
     /// program's one offset space).
     pub annotations: HashMap<Span, Type>,
+    /// The type arguments of every use of something generic — a call,
+    /// associated call, struct literal or construction — in declaration
+    /// order (PRP-035), for monomorphization.
+    pub instances: HashMap<ExprId, Vec<Type>>,
 }
 
 /// Type-checks `program`, a program of one file, returning the type table
@@ -96,12 +104,16 @@ impl Checker {
             externs: HashMap::new(),
             callees: HashMap::new(),
             annotations: HashMap::new(),
+            type_params: Vec::new(),
+            instances: HashMap::new(),
         }
     }
 }
 
 /// A declared function.
 pub(super) struct Signature {
+    /// Type parameters, `fun max<T: Ord>` (v2 draft §4).
+    pub generics: Vec<generics::Generic>,
     pub params: Vec<Type>,
     pub ret: Type,
     pub span: Span,
@@ -164,6 +176,10 @@ pub(super) struct Checker {
     callees: HashMap<ExprId, String>,
     /// See `Checked::annotations`.
     annotations: HashMap<Span, Type>,
+    /// The type parameters in scope where types are being resolved or bodies checked.
+    type_params: Vec<generics::Generic>,
+    /// See `Checked::instances`.
+    instances: HashMap<ExprId, Vec<Type>>,
 }
 
 impl Checker {

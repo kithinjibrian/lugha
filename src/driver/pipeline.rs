@@ -76,24 +76,9 @@ pub(super) fn parsed(path: &Path) -> Result<Front, Failure> {
     })
 }
 
-/// Reads, lexes, parses and type-checks `path` (spec §9 stages 1–3), stopping
-/// at v2 constructs whose milestone hasn't landed (exit 2).
+/// Reads, lexes, parses and type-checks `path` (spec §9 stages 1–3).
 pub(super) fn front(path: &Path) -> Result<Front, Failure> {
     let mut front = parsed(path)?;
-    // v2 syntax parses, but the checker only knows what has landed (PRP-030).
-    let gated = front
-        .modules
-        .iter()
-        .filter_map(|m| m.program.as_ref().and_then(gate::first))
-        .next();
-    if let Some(gated) = gated {
-        let message = format!(
-            "not implemented yet: {} (milestone {})",
-            gated.what, gated.milestone
-        );
-        let report = Report::internal(message, Some(gated.span));
-        return Err(Failure::Internal(front.source, Box::new(report)));
-    }
     match check::check_modules(&units(&front.modules)) {
         Ok((checked, warnings)) => {
             front.warnings.extend(warnings);
@@ -104,8 +89,26 @@ pub(super) fn front(path: &Path) -> Result<Front, Failure> {
     }
 }
 
+/// Stops at v2 constructs codegen can't compile until their milestone
+/// lands (exit 2). The checker knows them already (PRP-035).
+fn stop_gated(front: &Front) -> Result<(), Failure> {
+    let gated = front
+        .modules
+        .iter()
+        .filter_map(|m| m.program.as_ref().and_then(gate::first))
+        .next();
+    let Some(gated) = gated else { return Ok(()) };
+    let message = format!(
+        "not implemented yet: {} (milestone {})",
+        gated.what, gated.milestone
+    );
+    let report = Report::internal(message, Some(gated.span));
+    Err(Failure::Internal(front.source.clone(), Box::new(report)))
+}
+
 /// The program's LLVM IR, for `--emit=ir`.
 pub(super) fn ir(front: &Front) -> Result<String, Failure> {
+    stop_gated(front)?;
     let units = units(&front.modules);
     codegen::emit_ir_modules(&units, checked(front), &sources(front))
         .map_err(|e| codegen_failure(&front.source, e))
@@ -113,6 +116,7 @@ pub(super) fn ir(front: &Front) -> Result<String, Failure> {
 
 /// Compiles and links `front` into the executable `exe`.
 pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Failure> {
+    stop_gated(front)?;
     let temp = TempDir::new().map_err(|e| internal(&front.source, temp_error(e)))?;
     let object = temp.path.join("prog.o");
     codegen::emit_object_modules(

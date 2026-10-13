@@ -4,6 +4,7 @@
 
 use super::qualify;
 use crate::ast::{Expr, ExprKind, Ident, Item, Program};
+use crate::check::expr::Expect;
 use crate::check::{Checker, Type, errors};
 use crate::span::Span;
 
@@ -65,6 +66,7 @@ impl Checker {
         call: &Expr,
         callee: &Expr,
         args: &[Expr],
+        expect: Option<&Expect>,
     ) -> Option<Type> {
         let ExprKind::Field(base, f) = &callee.kind else {
             return None;
@@ -82,7 +84,7 @@ impl Checker {
             return Some(self.unchecked_args(args));
         }
         self.item_visible(&key, f.span);
-        Some(self.call_key(call, &key, args))
+        Some(self.call_key(call, &key, args, expect))
     }
 
     /// E0306 unless every declaration of the C function `name` has the

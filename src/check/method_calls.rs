@@ -4,6 +4,7 @@
 use super::assign::{PlaceUse, root_name};
 use super::builtins::builtin;
 use super::expr::Expect;
+use super::generics::subst;
 use super::methods::Method;
 use super::{Checker, Type, errors};
 use crate::ast::{Expr, ExprKind, Ident};
@@ -17,42 +18,43 @@ impl Checker {
         call: &Expr,
         callee: &Expr,
         args: &[Expr],
+        expect: Option<&Expect>,
     ) -> Option<Type> {
         let ExprKind::Field(base, name) = &callee.kind else {
             return None;
         };
         if let Some(ty) = self.type_named_by(base) {
             let method = self.method(&ty, &name.name);
-            if method.is_none() && matches!(ty, Type::Enum(_)) {
+            if method.is_none() && matches!(ty, Type::Enum(_, _)) {
                 return None; // `E.V(..)`: a variant, or E0415 from construction
             }
             self.record(base, Type::Void);
             self.record(callee, Type::Void);
-            return Some(self.associated(call, &ty, name, method, args));
+            return Some(self.associated(call, &ty, (name, method), args, expect));
         }
         let mark = self.changes_mark();
         let receiver = self.value(base, None);
         self.record(callee, Type::Void);
-        Some(self.on_value(call, base, &receiver, name, args, mark))
+        Some(self.on_value(call, (base, &receiver), name, args, (mark, expect)))
     }
 
     fn associated(
         &mut self,
         call: &Expr,
         ty: &Type,
-        name: &Ident,
-        method: Option<Method>,
+        (name, method): (&Ident, Option<Method>),
         args: &[Expr],
+        expect: Option<&Expect>,
     ) -> Type {
         match method {
             Some(m) if m.receiver.is_none() => {
-                if let Type::Struct(owner) | Type::Enum(owner) = ty {
+                if let Type::Struct(owner, _) | Type::Enum(owner, _) = ty {
                     self.method_visible(owner, &name.name, name.span);
                     // Codegen finds `T.f` / `m.T.f` by this key (PRP-034).
                     self.callees
                         .insert(call.id, format!("{owner}.{}", name.name));
                 }
-                self.arguments(call, &name.name, &m, args)
+                self.arguments(call, &name.name, &m, args, (&[], expect))
             }
             found => {
                 let help = found.map(|_| format!("call it on a value: `x.{}(…)`", name.name));
@@ -65,11 +67,10 @@ impl Checker {
     fn on_value(
         &mut self,
         call: &Expr,
-        base: &Expr,
-        receiver: &Type,
+        (base, receiver): (&Expr, &Type),
         name: &Ident,
         args: &[Expr],
-        mark: usize,
+        (mark, expect): (usize, Option<&Expect>),
     ) -> Type {
         if matches!(receiver, Type::Error | Type::Never) {
             return self.unchecked(args);
@@ -78,7 +79,7 @@ impl Checker {
             // Built-ins grow the array in place: the `mut self` place rules
             // apply, but the value is read before the array changes, so
             // E0508 doesn't (v1 §4).
-            let ret = self.arguments(call, &name.name, &m, args);
+            let ret = self.arguments(call, &name.name, &m, args, (&[], expect));
             if self.check_place_for(base, PlaceUse::Receiver(&name.name)) {
                 self.no_change_inside(&[base], PlaceUse::Receiver(&name.name), mark);
             }
@@ -94,10 +95,15 @@ impl Checker {
             self.report(errors::no_method(&name.name, receiver, name.span, help));
             return self.unchecked(args);
         };
-        if let Type::Struct(owner) | Type::Enum(owner) = receiver {
+        if let Type::Struct(owner, _) | Type::Enum(owner, _) = receiver {
             self.method_visible(owner, &name.name, name.span);
         }
-        let ret = self.arguments(call, &name.name, &m, args);
+        // The `impl`'s parameters come from the receiver: `Stack<string>` binds `T`.
+        let bound = match receiver {
+            Type::Struct(_, targs) | Type::Enum(_, targs) => targs.clone(),
+            _ => Vec::new(),
+        };
+        let ret = self.arguments(call, &name.name, &m, args, (&bound, expect));
         let receiver = PlaceUse::Receiver(&name.name);
         // E0510 explains a change to the root better than E0508's "mentions it".
         if m.receiver == Some(true)
@@ -129,16 +135,40 @@ impl Checker {
         }
     }
 
-    fn arguments(&mut self, call: &Expr, name: &str, m: &Method, args: &[Expr]) -> Type {
+    /// Arity, then the arguments, inferring the method's type arguments
+    /// after the `impl`'s are bound to `outer` (PRP-035).
+    fn arguments(
+        &mut self,
+        call: &Expr,
+        name: &str,
+        m: &Method,
+        args: &[Expr],
+        (outer, expect): (&[Type], Option<&Expect>),
+    ) -> Type {
         if args.len() != m.params.len() {
             self.report(errors::arity(name, m.params.len(), args.len(), call.span));
             self.unchecked(args);
-            return m.ret.clone();
+            return if m.generics.is_empty() {
+                m.ret.clone()
+            } else {
+                Type::Error
+            };
         }
-        for (arg, ty) in args.iter().zip(&m.params) {
-            self.expect_type(arg, &Expect::of(ty.clone()));
+        let inputs: Vec<_> = args
+            .iter()
+            .zip(&m.params)
+            .map(|(a, t)| (a, Expect::of(t.clone())))
+            .collect();
+        let bound = m
+            .generics
+            .iter()
+            .map(|g| g.name.clone())
+            .zip(outer.iter().cloned())
+            .collect();
+        match self.infer(call, &m.generics, bound, Some((&m.ret, expect)), &inputs) {
+            Some(targs) => subst(&m.ret, &m.generics, &targs),
+            None => Type::Error,
         }
-        m.ret.clone()
     }
 
     fn unchecked(&mut self, args: &[Expr]) -> Type {

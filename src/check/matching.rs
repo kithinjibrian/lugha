@@ -56,7 +56,7 @@ impl Checker {
         }
         match result {
             Some((ty, _)) => ty,
-            None if arms.is_empty() && !matches!(sty, Type::Enum(_)) => Type::Error,
+            None if arms.is_empty() && !matches!(sty, Type::Enum(_, _)) => Type::Error,
             None => Type::Never,
         }
     }

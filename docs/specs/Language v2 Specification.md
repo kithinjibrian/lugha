@@ -15,7 +15,7 @@ Oct 9, 2026 · @kithinji
 - A program can span several files: `import` loads a module, and its items are used as `m.f`, `m.T` (section 6).
 - Everything is visible to the whole program unless it is `private`, which limits it to its module; `public` is reserved for packages (section 6).
 
-Every valid v1.2 program is a valid v2 program unless it uses `import`, `private` or `public` as a name. Generics (milestone 11) parse, but `lughac` still stops at them with "not implemented yet (milestone 11)", exit 2.
+Every valid v1.2 program is a valid v2 program unless it uses `import`, `private` or `public` as a name. Generics (milestone 11) parse and are checked by `lughac check`; `build` and `run` stop at them with "not implemented yet (milestone 11)", exit 2.
 
 ## 1. Overview
 
@@ -664,6 +664,8 @@ Name and type errors, reported by the checker:
 | E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` (v2) |
 | E0313 | Another module's `private` item, method or field | `range.helper()`; `r.lo`; `range.Range { lo: 1, hi: 5 }` (v2) |
 | E0314 | Import clash | `import a.util;` and `import b.util;` in one file; an import named like an item (v2) |
+| E0315 | Unknown bound | `fun f<T: Hash>(x: T)` (v2, milestone 11) |
+| E0316 | Bad type parameter name | `fun f<T, T>()`, a parameter named like a struct (v2, milestone 11) |
 | E0317 | `public` before packages exist | `public fun f() {}` (v2) |
 | E0318 | A `private` type in a non-`private` signature | `private struct S {}` then `fun make(): S` (v2) |
 | E0319 | The main file imported | a module writing `import main;` (v2) |
@@ -682,6 +684,8 @@ Name and type errors, reported by the checker:
 | E0415 | No such variant or method | `Shape.Circel(1.0)`, a `Square` pattern on a `Shape`, `p.size()`, `xs.push(1)` |
 | E0416 | Wrong number of payloads | `Shape.Rect(1.0)`, `Rect(w) => …` |
 | E0417 | Non-exhaustive `match` | `match s { Circle(r) => r }` with more variants; an integer `match` without `_` |
+| E0418 | Wrong number of type arguments | `Stack<i64, i64>`, a bare `Stack` as a parameter type (v2, milestone 11) |
+| E0419 | Type argument doesn't satisfy its bound | `largest([[1]])`: `i64[]` is not `Ord` (v2, milestone 11) |
 | E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum or `Option` parameters or returns (§8) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut` |

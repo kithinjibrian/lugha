@@ -142,7 +142,7 @@ mod tests {
         let src = main("let a = match s { Some(Circle(r)) => r, _ => 0.0 };");
         assert_eq!(let_type(&src, "a"), Type::F64);
         let src = main("let b = match s { Some(x) => x, None => Shape.Empty };");
-        assert_eq!(let_type(&src, "b"), Type::Enum("Shape".into()));
+        assert_eq!(let_type(&src, "b"), Type::Enum("Shape".into(), Vec::new()));
         ok(&main(
             "let c = match p { P(1, Some(\"a\")) => 1, P(n, _) => n }; let d = match s { Some(Empty) => 1, _ => 2 };",
         ));

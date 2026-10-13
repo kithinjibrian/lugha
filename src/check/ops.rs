@@ -45,16 +45,20 @@ impl Checker {
             && match op {
                 // Strings join with `+` (spec §4).
                 BinOp::Add if l == Type::String => true,
-                // Every type has deep equality; numbers and strings are ordered (v2 draft §4).
-                BinOp::Eq | BinOp::Ne => true,
-                BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge => {
-                    l.is_numeric() || l == Type::String
-                }
+                // Every type has deep equality, numbers and strings are
+                // ordered, and a parameter has what its bounds give (v2 draft §4).
+                BinOp::Eq | BinOp::Ne => self.eq_ok(&l),
+                BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge => self.ord_ok(&l),
                 _ => l.is_numeric(),
             };
         if !allowed && l != Type::Never {
+            let ord = !matches!(op, BinOp::Eq | BinOp::Ne);
+            let wanted = self
+                .missing_bound(&l, ord)
+                .filter(|_| l == r && !arithmetic);
             let types = if l == r { vec![l] } else { vec![l, r] };
-            self.report(errors::bad_operands(op.symbol(), &types, expr.span));
+            let d = errors::bad_operands(op.symbol(), &types, expr.span);
+            self.report(errors::with_bound_help(d, wanted, ord));
             return Type::Error;
         }
         if arithmetic { l } else { Type::Bool }
@@ -113,7 +117,7 @@ fn from_operand(ty: &Type, span: Span, to: &Expr, any: bool) -> Option<Expect> {
 
 /// True if `e` can't be typed without an expected type: a numeric literal,
 /// `None`, `[]`, or a list, repeat or `Some` whose first value is one.
-fn defers(e: &Expr) -> bool {
+pub(super) fn defers(e: &Expr) -> bool {
     match &e.kind {
         _ if is_literal(e) => true,
         ExprKind::Name(name) => name == "None",

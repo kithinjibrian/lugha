@@ -4,6 +4,7 @@
 
 use super::env::INTRINSICS;
 use super::expr::Expect;
+use super::generics::subst;
 use super::{Checker, Type, errors};
 use crate::ast::{Expr, ExprKind};
 use crate::span::Span;
@@ -23,7 +24,13 @@ impl Checker {
     }
 
     /// `callee(args)`: the callee must name a function (spec §6).
-    pub(super) fn call(&mut self, call: &Expr, callee: &Expr, args: &[Expr]) -> Type {
+    pub(super) fn call(
+        &mut self,
+        call: &Expr,
+        callee: &Expr,
+        args: &[Expr],
+        expect: Option<&Expect>,
+    ) -> Type {
         let ExprKind::Name(name) = &callee.kind else {
             self.expr(callee, None);
             self.report(errors::not_callable(callee.span));
@@ -43,25 +50,48 @@ impl Checker {
             self.report(errors::undefined(name, callee.span));
             return self.unchecked_args(args);
         }
-        self.call_key(call, &key, args)
+        self.call_key(call, &key, args, expect)
     }
 
     /// A call of the function or extern with key `key`, recorded for codegen
-    /// (`Checked::callees`): arity, then each argument against its parameter.
-    pub(super) fn call_key(&mut self, call: &Expr, key: &str, args: &[Expr]) -> Type {
+    /// (`Checked::callees`): arity, then each argument against its
+    /// parameter, inferring a generic function's type arguments (PRP-035).
+    pub(super) fn call_key(
+        &mut self,
+        call: &Expr,
+        key: &str,
+        args: &[Expr],
+        expect: Option<&Expect>,
+    ) -> Type {
         self.callees.insert(call.id, key.to_string());
         let signature = &self.functions[key];
         let (params, ret) = (signature.params.clone(), signature.ret.clone());
+        let generics = signature.generics.clone();
         let name = key.rsplit('.').next().unwrap_or(key);
         if args.len() != params.len() {
             self.report(errors::arity(name, params.len(), args.len(), call.span));
             self.unchecked_args(args);
-            return ret;
+            return if generics.is_empty() {
+                ret
+            } else {
+                Type::Error
+            };
         }
-        for (arg, ty) in args.iter().zip(params) {
-            self.expect_type(arg, &Expect::of(ty));
+        let inputs: Vec<_> = args
+            .iter()
+            .zip(params)
+            .map(|(a, t)| (a, Expect::of(t)))
+            .collect();
+        match self.infer(
+            call,
+            &generics,
+            Default::default(),
+            Some((&ret, expect)),
+            &inputs,
+        ) {
+            Some(targs) => subst(&ret, &generics, &targs),
+            None => Type::Error,
         }
-        ret
     }
 
     /// `print(x)`, `println([x])`, `panic(msg)`, `to_string(x)` (spec §5).

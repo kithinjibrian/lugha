@@ -18,7 +18,7 @@ use crate::check::{Enums, Structs, Type, indirect_slot};
 /// The variants of an enum or `Option` type, in tag order.
 pub(super) fn variants(ty: &Type, enums: &Enums) -> Vec<(String, Vec<Type>)> {
     match ty {
-        Type::Enum(name) => enums[name].clone(),
+        Type::Enum(name, _) => enums[name].clone(),
         Type::Option(inner) => vec![
             ("None".into(), Vec::new()),
             ("Some".into(), vec![(**inner).clone()]),
@@ -69,7 +69,7 @@ fn collect(ty: &Type, out: &mut BTreeSet<String>, all: &mut Vec<Type>) {
                 all.push(ty.clone());
             }
         }
-        Type::Enum(name) if out.insert(name.clone()) => all.push(ty.clone()),
+        Type::Enum(name, _) if out.insert(name.clone()) => all.push(ty.clone()),
         _ => {}
     }
 }
@@ -80,7 +80,7 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn declare_enums(&self) {
         let (mut names, mut all) = (BTreeSet::new(), Vec::new());
         for name in self.enums.keys() {
-            collect(&Type::Enum(name.clone()), &mut names, &mut all);
+            collect(&Type::Enum(name.clone(), Vec::new()), &mut names, &mut all);
         }
         let mut seen: Vec<Type> = self.types.clone();
         seen.extend(self.structs.values().flatten().map(|(_, t)| t.clone()));
@@ -204,16 +204,20 @@ mod tests {
         let structs: Structs = [(
             "P".to_string(),
             vec![
-                ("e".into(), Type::Enum("B".into())),
+                ("e".into(), Type::Enum("B".into(), Vec::new())),
                 ("x".into(), Type::I64),
             ],
         )]
         .into();
-        let e = |n: &str| Type::Enum(n.into());
+        let e = |n: &str| Type::Enum(n.into(), Vec::new());
         assert_eq!(enum_layout(&e("S"), &structs, &enums), (16, 8));
         assert_eq!(enum_layout(&e("B"), &structs, &enums), (8, 4));
         assert_eq!(
-            crate::codegen::structs::layout(&Type::Struct("P".into()), &structs, &enums),
+            crate::codegen::structs::layout(
+                &Type::Struct("P".into(), Vec::new()),
+                &structs,
+                &enums
+            ),
             (16, 8)
         );
         assert_eq!(

@@ -35,6 +35,7 @@ impl Checker {
                 Item::Extern(e) => (&e.name, &e.params, e.ret.as_ref(), true, e.visibility),
                 Item::Struct(_) | Item::Enum(_) | Item::Impl(_) => continue,
             };
+            let generics = self.enter_params(item);
             let declared = params;
             let params = params
                 .iter()
@@ -56,14 +57,15 @@ impl Checker {
                 for (annotation, ty) in annotations.zip(params.iter().chain([&ret_type])) {
                     match ty {
                         Type::Array(_) => self.report(errors::extern_array(annotation.span)),
-                        Type::Struct(_) => self.report(errors::extern_struct(annotation.span)),
-                        Type::Enum(_) | Type::Option(_) => {
+                        Type::Struct(_, _) => self.report(errors::extern_struct(annotation.span)),
+                        Type::Enum(_, _) | Type::Option(_) => {
                             self.report(errors::extern_enum(annotation.span));
                         }
                         _ => {}
                     }
                 }
             }
+            self.type_params.clear();
             let text = &name.name;
             let key = self.key(text);
             if is_extern && text.starts_with("lugha_") {
@@ -85,6 +87,7 @@ impl Checker {
                 }
                 self.register_item(&key, visibility);
                 let signature = Signature {
+                    generics,
                     params,
                     ret: ret_type,
                     span: name.span,
@@ -129,26 +132,9 @@ impl Checker {
             TypeKind::String => Type::String,
             TypeKind::Array(element) => Type::Array(Box::new(self.resolve(element))),
             TypeKind::Option(inner) => Type::Option(Box::new(self.resolve(inner))),
-            TypeKind::Named(name) => {
-                let ident = Ident {
-                    name: name.clone(),
-                    span: ty.span,
-                };
-                self.type_key(None, &ident, ty.span)
-                    .and_then(|key| self.named_type(&key))
-                    .unwrap_or(Type::Error)
-            }
-            // `m.T` (PRP-034).
-            TypeKind::Applied(applied) if applied.args.is_empty() => self
-                .type_key(applied.module.as_ref(), &applied.name, ty.span)
-                .and_then(|key| self.named_type(&key))
-                .unwrap_or(Type::Error),
-            // The gate stops type arguments on declared types (PRP-030), so
-            // only unknown names like `Box<List>` get here.
-            TypeKind::Applied(applied) => {
-                self.report(errors::unknown_type(&applied.name.name, ty.span));
-                Type::Error
-            }
+            TypeKind::Named(name) => self.resolve_named(name, ty.span),
+            // `m.T`, `T<args>`, `m.T<args>` (PRP-034, PRP-035).
+            TypeKind::Applied(applied) => self.resolve_applied(applied, ty.span),
         }
     }
 

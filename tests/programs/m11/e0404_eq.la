@@ -1,0 +1,10 @@
+fun contains<T>(xs: T[], x: T): bool {
+    for y of xs {
+        if y == x {
+            return true;
+        }
+    }
+    false
+}
+
+fun main() {}

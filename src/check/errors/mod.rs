@@ -1,11 +1,14 @@
 //! One constructor per checker error code, so the wording lives in one place
 //! (spec §9: codes are stable, messages may improve).
-//! Split by code range: `names` (E03xx), `types` (E04xx), `places` (E05xx, W01xx).
+//! Split by code range: `names` (E03xx), `types` (E04xx), `places` (E05xx, W01xx),
+//! with `generics` holding milestone 11's codes from both ranges.
 
+mod generics;
 mod names;
 mod places;
 mod types;
 
+pub(super) use generics::*;
 pub(super) use names::*;
 pub(super) use places::*;
 pub(super) use types::*;

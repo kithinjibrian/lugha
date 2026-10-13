@@ -2250,6 +2250,43 @@ TODO.md (milestone 12), CHANGELOG.md, MEMORY.md (decision 40)
 
 Branch: prp-035-generic_checking
 
+### WHAT WAS DONE
+
+- Discovery: milestone 11 splits into PRP-035 (checking) and PRP-036 (compiling). PRP-035 written and approved.
+- `Type::Struct`/`Type::Enum` carry type arguments; `Type::Param` added. Non-generic programs and their messages are unchanged.
+- Generic declarations (`check/generics.rs`): parameter scopes, E0315, E0316, E0418, `Eq`/`Ord` reserved (E0302), and substitution of fields and variants.
+- Bounds (`check/bounds.rs`): E0419, plus E0404 with "declare `T: Eq`" help for `==` or `<` without the bound.
+- Inference (`check/infer.rs`): from the expected type, then arguments that type alone, then deferring ones. Methods bind their `impl`'s parameters from the receiver. E0412 when undecided. `Checked.instances` records every use's type arguments.
+- The gate moved from before checking to before codegen: `lughac check` accepts generics, while `build`, `run` and `--emit=ir` exit 2.
+- Spec: the "Changes since v1.2" sentence; E0315, E0316, E0418 and E0419 added to §9.
+- Splits approved: `check/construct.rs` out of `enums.rs`, `check/bounds.rs` out of `generics.rs`; new `check/errors/generics.rs`.
+
+### FILES CREATED OR MODIFIED
+
+- New: `src/check/{generics,bounds,infer,construct}.rs`, `src/check/errors/generics.rs`, `tests/programs/m11/{e0418,e0419,e0404_eq}.{la,stderr}`, `PRPs/prp-035-generic_checking.md`.
+- Modified:
+  - the checker: `mod.rs`, `types.rs`, `env.rs`, `structs.rs`, `enums.rs`, `methods.rs`, `method_calls.rs`, `call.rs`, `expr.rs`, `struct_literal.rs`, `access.rs`, `ops.rs`, `body.rs`, `builtins.rs`, `modules/`, `errors/mod.rs`, plus mechanical `Type` pattern updates;
+  - codegen: mechanical `Type` pattern updates only;
+  - the driver: `pipeline.rs` (gate before codegen);
+  - tests and docs: `tests/cli.rs`, the spec, CLAUDE.md, CHANGELOG, TODO, MEMORY (decision 41).
+
+### TESTS WRITTEN
+
+- `check/generics.rs`: declarations, E0315/E0316/E0302, E0418.
+- `check/bounds.rs`: E0419; bare parameters allow only their bounds.
+- `check/infer.rs`: from arguments, from the expected type, from methods' receivers; E0412/E0419/clashes; no cascade; `instances`; the draft's generics program checks.
+- `tests/cli.rs`: generics check, but `run` and `--emit=ir` stop at the gate.
+- The `m11/` reject goldens.
+- 316 tests pass.
+
+### DECISIONS MADE
+
+- MEMORY 41. The PRP amendment: `max(1, "a")` is E0401 at `1`, following the inference order.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

@@ -12,9 +12,9 @@ impl Checker {
         match (ty, field.name.as_str()) {
             (Type::Error | Type::Never, _) => Type::Error,
             (Type::String | Type::Array(_), "len") => Type::I64,
-            (Type::Struct(s), name) if self.struct_field(&s, name).is_some() => {
+            (Type::Struct(s, args), name) if self.struct_field(&s, name).is_some() => {
                 self.field_visible(&s, name, field.span);
-                self.struct_field(&s, name).expect("just found")
+                self.field_type(&s, &args, name).expect("just found")
             }
             (ty, name) => {
                 self.report(errors::no_field(name, ty, field.span));

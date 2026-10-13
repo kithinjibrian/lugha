@@ -106,14 +106,14 @@ impl Checker {
             ExprKind::Unary(op, operand) => self.unary(*op, operand, expr, expect),
             ExprKind::Binary(op, _, lhs, rhs) => self.binary(expr, *op, lhs, rhs, expect),
             ExprKind::Call(callee, args) => {
-                if let Some(ty) = self.module_call(expr, callee, args) {
+                if let Some(ty) = self.module_call(expr, callee, args, expect) {
                     ty
-                } else if let Some(ty) = self.method_call(expr, callee, args) {
+                } else if let Some(ty) = self.method_call(expr, callee, args, expect) {
                     ty
                 } else if let Some(ty) = self.construction(expr, callee, args, expect) {
                     ty
                 } else {
-                    self.call(expr, callee, args)
+                    self.call(expr, callee, args, expect)
                 }
             }
             ExprKind::If { cond, then, else_ } => {
@@ -124,13 +124,11 @@ impl Checker {
             ExprKind::Str(_) => Type::String,
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
             ExprKind::Index(base, _, index) => self.index(base, index),
-            ExprKind::Field(base, field) => match self.variant_value(base, field) {
+            ExprKind::Field(base, field) => match self.variant_value(expr, (base, field), expect) {
                 Some(ty) => ty,
                 None => self.field(base, field),
             },
-            ExprKind::StructLit(lit) => {
-                self.struct_literal(expr, lit.module.as_ref(), &lit.name, &lit.fields)
-            }
+            ExprKind::StructLit(lit) => self.struct_literal(expr, lit, expect),
             ExprKind::Array(elements) => self.array_literal(expr, elements, expect),
             ExprKind::Repeat(value, count) => self.repeat(value, count, expect),
             ExprKind::Int(_) | ExprKind::Float(_) => unreachable!("literals are matched first"),
