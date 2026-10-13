@@ -3317,7 +3317,7 @@ Branch: prp-056-bits (merged into main)
 ---
 
 ## SESSION 72 — 2026-10-13 — Integer methods (milestone 29) — open
-Branch: main
+Branch: prp-057-integer_methods
 
 ---
 
