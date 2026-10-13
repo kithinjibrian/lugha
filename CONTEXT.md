@@ -2434,6 +2434,12 @@ Branch: main
 
 ---
 
+## SESSION 48 — 2026-10-13 — Input and interpolation (milestone 13) — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v2 is complete** (tag `v2`). **The v3 draft is approved** (session 47, MEMORY 44, `docs/specs/Language v3 Draft.md`).
