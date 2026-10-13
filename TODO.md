@@ -119,6 +119,20 @@ Done when the closures program passes.
 Done when the array-helpers program passes and the v3 spec is complete.
 - [x] PRP-041: `map`, `filter`, `fold`, `sort_by`, `any`, `all`, written in the Lugha prelude (`src/prelude.la`) — v3 complete
 
+## v4 (draft approved, session 52 — `docs/specs/Language v4 Draft.md`)
+
+### Milestone 17 — Results and `?`
+Done when the results program passes.
+- [ ] `Result<T, E>`, `Ok`/`Err`, the `?` operator (E0424)
+
+### Milestone 18 — Text and option helpers
+Done when the text-helpers program passes.
+- [ ] String helpers, `join`, `Option`/`Result` helpers, internal intrinsics for the prelude
+
+### Milestone 19 — Input and output
+Done when the reading-input program passes and the v4 spec is complete.
+- [ ] `read_line`, `read_file`, `write_file`, `append_file`, `eprint`/`eprintln`, `exit`; stdin and scratch directories in the runner
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.

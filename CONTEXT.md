@@ -2637,27 +2637,52 @@ Branch: prp-041-array_helpers
 
 ---
 
-## SESSION 52 — 2026-10-13 — v4 direction — open
+## SESSION 52 — 2026-10-13 — v4 direction — closed
 
 Branch: main
+
+### WHAT WAS DONE
+
+- v4 discovery, five answers:
+  1. headline: input and output;
+  2. errors as `Result<T, E>`;
+  3. the `?` operator for `Result` and `Option`;
+  4. string and `Option`/`Result` helpers;
+  5. the I/O surface `read_line`, `read_file`, `write_file`, `append_file`, `eprint`/`eprintln`, `exit`.
+- Wrote `docs/specs/Language v4 Draft.md`, approved: milestones 17–19, code E0424, and three §10 programs.
+
+### FILES CREATED OR MODIFIED
+
+- New: `docs/specs/Language v4 Draft.md`.
+- Modified: MEMORY (decision 49), TODO (v4 milestones), CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+
+- None (a design session).
+
+### DECISIONS MADE
+
+- MEMORY 49.
+
+### PENDING DECISIONS OPENED
+
+- None. The draft's §12 lists four questions to settle in their milestone's PRP.
+
+### STILL OPEN AT CLOSE
+
+- Nothing. Work is on `main`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v3 is complete** (tags `m16` and `v3`). Milestones 13–16 are done:
-- input and interpolation;
-- functions as values;
-- closures;
-- array helpers in a Lugha prelude (MEMORY 45–48).
+**Lugha v3 is complete** (tag `v3`). **The v4 draft is approved** (session 52, MEMORY 49, `docs/specs/Language v4 Draft.md`): input and output.
 
-`Language v3 Specification.md` is final and is what `lughac spec` prints.
+Next is **milestone 17, `Result` and `?`**. It covers:
+- the predeclared `enum Result<T, E> { Ok(T), Err(E) }`, with `Ok`/`Err` without a prefix, inferred from the expected type (E0412 alone);
+- the postfix `?` on `Result` (the same `E`) and `Option`, returning early from the enclosing function or closure, with E0424 for misuse;
+- the "Results and `?`" program in the draft's §10.
 
-There is no planned work. Possible next directions, each needing discovery, a v4 spec change and a PRP:
-- the v3 spec's §11 out-of-scope list: packages with `public`, interface values and dynamic dispatch, `Self`, shared references, closures that change their captures, bitwise operators and more integer types, or-patterns, `mut` match bindings, explicit type arguments, `.len()`;
-- stdin and file input;
-- the open question on printing generic values.
-
-Housekeeping is also possible.
+This milestone starts `Language v4 Specification.md` (as v3 did at M13). Start with discovery for PRP-042. A likely question is whether `Result` is a real generic enum declared in the prelude, or built in like `Option`.
 
 See `TODO.md`.

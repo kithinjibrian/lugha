@@ -773,6 +773,31 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 49. Lugha v4 direction (session 52)
+
+**Decision:** `docs/specs/Language v4 Draft.md` is approved: input and output, as milestones 17–19.
+- **Errors:** a predeclared `Result<T, E>` (`Ok`/`Err` without a prefix, like `Some`). I/O returns `Result<T, string>` with the system's message.
+- **`?`:** a postfix operator on `Result` (the same `E`, no conversions) and on `Option`. It returns early from the enclosing function or closure, and misuse is E0424.
+- **Helpers** (prelude methods):
+  - for strings: `lines` (drops a trailing `\r`), `split`, `trim`, `contains`, `starts_with`, `ends_with`, `slice` (bytes), and `join` on `string[]`;
+  - for `Option` and `Result`: `unwrap_or`, `ok_or`, `ok`, `map`, `map_err`, `is_*`;
+  - no `unwrap()`;
+  - the prelude may call compiler-internal intrinsics (`lugha_rt_str_slice`).
+- **I/O:**
+  - `read_line(): Option<string>`;
+  - `read_file`, `write_file` and `append_file`, returning `Result<…, string>`, with the bytes written for writes (Lugha has no unit type);
+  - `eprint`/`eprintln`, which flush stdout first;
+  - `exit(i32)`;
+  - text only.
+- **Tests:** `<name>.stdin` files, a scratch directory for file writes, and "Run with … on stdin" in §10.
+- **Milestones:** M17 `Result` and `?`; M18 helpers; M19 I/O, after which the v4 spec is complete.
+
+**Why:** Programs could compute but not read data. Errors as values, made short by `?`, fit Lugha's exhaustive `match`.
+
+**Rules out (v4):** interface values, packages, bitwise operators and more integer types, `match` additions, binary or directory I/O, `unwrap()`, error conversions in `?`.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -832,25 +857,19 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- Lugha v4 (nothing planned; see the v3 spec's §11 out-of-scope list)
+- v4 milestones 17–19 (draft approved, session 52, MEMORY 49)
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v3 is complete** (tags `m16` and `v3`). Milestones 13–16 are done:
-- input and interpolation;
-- functions as values;
-- closures;
-- array helpers in a Lugha prelude (MEMORY 45–48).
+**Lugha v3 is complete** (tag `v3`). **The v4 draft is approved** (session 52, MEMORY 49, `docs/specs/Language v4 Draft.md`): input and output.
 
-`Language v3 Specification.md` is final and is what `lughac spec` prints.
+Next is **milestone 17, `Result` and `?`**. It covers:
+- the predeclared `enum Result<T, E> { Ok(T), Err(E) }`, with `Ok`/`Err` without a prefix, inferred from the expected type (E0412 alone);
+- the postfix `?` on `Result` (the same `E`) and `Option`, returning early from the enclosing function or closure, with E0424 for misuse;
+- the "Results and `?`" program in the draft's §10.
 
-There is no planned work. Possible next directions, each needing discovery, a v4 spec change and a PRP:
-- the v3 spec's §11 out-of-scope list: packages with `public`, interface values and dynamic dispatch, `Self`, shared references, closures that change their captures, bitwise operators and more integer types, or-patterns, `mut` match bindings, explicit type arguments, `.len()`;
-- stdin and file input;
-- the open question on printing generic values.
-
-Housekeeping is also possible.
+This milestone starts `Language v4 Specification.md` (as v3 did at M13). Start with discovery for PRP-042. A likely question is whether `Result` is a real generic enum declared in the prelude, or built in like `Option`.
 
 See `TODO.md`.
