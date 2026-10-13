@@ -3136,6 +3136,11 @@ Branch: prp-051-generic_interface_values (merged into main)
 
 ---
 
+## SESSION 66 — 2026-10-13 — Iterators (milestone 24) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 23 complete** (PRP-050, PRP-051; MEMORY 60–61): generic interfaces as bounds and as values. `Language v6 Specification.md` (in progress) is what `lughac spec` prints. Tagged `m23`.
