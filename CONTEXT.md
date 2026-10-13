@@ -2144,9 +2144,9 @@ CLAUDE.md (stages, tree, known issue), TODO.md, CHANGELOG.md, MEMORY.md (decisio
 
 ---
 
-## SESSION 42 — 2026-10-13 — Names across modules (PRP-034) discovery — open
+## SESSION 42 — 2026-10-13 — Names across modules (PRP-034) — open
 
-Branch: main
+Branch: prp-034-module_names
 
 ---
 
