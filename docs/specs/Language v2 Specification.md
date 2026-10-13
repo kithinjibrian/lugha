@@ -1,12 +1,12 @@
-# Lugha v2 Specification (in progress: milestone 12)
+# Lugha v2 Specification
 
 Oct 9, 2026 · @kithinji
 
-**Status:** v2 is being built milestone by milestone (9–12). The plan is `Language v2 Draft.md`. This file describes exactly what `lughac` implements now, and is what `lughac spec` prints. `Language v1 Specification.md` keeps v1.2 frozen.
+**Status:** complete (milestones 9–12). It is built from the approved plan, `Language v2 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v1 Specification.md` keeps v1.2 frozen.
 
 **v1.** This is v0 plus enums, `match`, `Option`, recursive data, methods and growable arrays (milestones 6–8). Every valid v0 program is a valid v1 program unless it uses one of the new keywords as a name.
 
-**Changes since v1.2** (milestones 9–11):
+**Changes since v1.2** (milestones 9–12):
 - `==` and `!=` compare any two values of the same type deeply (section 4).
 - Strings are ordered bytewise by `<`, `<=`, `>` and `>=` (section 4).
 - Either operand of a comparison can give the other its type (`None == o`).
@@ -15,8 +15,9 @@ Oct 9, 2026 · @kithinji
 - A program can span several files: `import` loads a module, and its items are used as `m.f`, `m.T` (section 6).
 - Everything is visible to the whole program unless it is `private`, which limits it to its module; `public` is reserved for packages (section 6).
 - Functions, structs, enums and methods can be generic (`fun max<T: Ord>`, `struct Stack<T>`), with `Eq` and `Ord` bounds and type arguments that are always inferred; each instance compiles separately (sections 4, 6, 9).
+- Interfaces (`interface Shape { fun area(self): f64; }`) are bounds that let generic code call methods; any type with matching methods satisfies one (section 4).
 
-Every valid v1.2 program is a valid v2 program unless it uses `import`, `private` or `public` as a name, or names a type `Eq` or `Ord`.
+Every valid v1.2 program is a valid v2 program unless it uses `import`, `private`, `public` or `interface` as a name, or names a type `Eq` or `Ord`.
 
 ## 1. Overview
 
@@ -76,7 +77,7 @@ Source files are UTF-8. The lexer produces a flat list of tokens, each carrying 
 
 ```
 fun  extern  struct  enum  impl  let  mut  if  else  while  for  in  of  match
-import  private  public
+import  private  public  interface
 return  break  continue  true  false  as  self
 i32  i64  u8  f64  bool  string
 ```
@@ -138,7 +139,7 @@ The grammar is LL(1) apart from expressions, which use Pratt parsing with the pr
 ```ebnf
 program      = { import } { item } EOF ;
 import       = "import" IDENT { "." IDENT } ";" ;
-item         = [ visibility ] ( fun_decl | extern_decl | struct_decl | enum_decl ) | impl_decl ;
+item         = [ visibility ] ( fun_decl | extern_decl | struct_decl | enum_decl | interface_decl ) | impl_decl ;
 visibility   = "private" | "public" ;                (* `public`: E0317 until packages *)
 
 fun_decl     = "fun" IDENT [ type_params ] "(" [ params ] ")" [ ":" type ] fun_body ;
@@ -151,7 +152,9 @@ impl_decl    = "impl" IDENT [ "<" IDENT { "," IDENT } ">" ] "{" { [ visibility ]
 method       = "fun" IDENT [ type_params ] "(" [ receiver [ "," params ] | params ] ")" [ ":" type ] fun_body ;
 type_params  = "<" type_param { "," type_param } [ "," ] ">" ;
 type_param   = IDENT [ ":" bound { "+" bound } ] ;
-bound        = "Eq" | "Ord" ;
+bound        = "Eq" | "Ord" | IDENT [ "." IDENT ] ;   (* an interface, `m.Shape` from module `m` *)
+interface_decl = "interface" IDENT "{" { iface_item } "}" ;
+iface_item   = "fun" IDENT "(" [ receiver [ "," params ] | params ] ")" [ ":" type ] ";" ;
 receiver     = [ "mut" ] "self" ;
 variant      = IDENT [ "(" type { "," type } [ "," ] ")" ] ;
 params       = param { "," param } [ "," ] ;
@@ -377,8 +380,8 @@ They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (
 
 **Generic declarations.** `fun`, `struct`, `enum` and methods can take type parameters.
 - **Scope:** a type parameter is a type inside its declaration (fields, payloads, signature and body), and a method also sees its `impl`'s parameters. It may not be named like a type, a module or another parameter of the same declaration, nor a method's like its `impl`'s (E0316).
-- **Bounds:** `T: Eq`, `T: Ord`, or both (`T: Eq + Ord`). Any other bound is E0315. `Ord` doesn't imply `Eq`; write both if both are used.
-- **What a bare `T` allows:** being stored, moved, copied, passed, returned and put in arrays, structs and enums. `==` needs `T: Eq`, and `<` needs `T: Ord`. Using either without the bound is E0404, with help suggesting the bound.
+- **Bounds:** `T: Eq`, `T: Ord`, interfaces (below), or several (`T: Shape + Eq`). Anything else is E0315. `Ord` doesn't imply `Eq`; write both if both are used.
+- **What a bare `T` allows:** being stored, moved, copied, passed, returned and put in arrays, structs and enums. `==` needs `T: Eq`, `<` needs `T: Ord`, and a method call needs an interface bound that declares it. Using `==` or `<` without its bound is E0404, with help suggesting the bound.
 - **What `T` never allows:** arithmetic, casts, printing, `.len`, or indexing. Those need a concrete type.
 - **Checked once:** a generic body is checked once, with its parameters abstract, so every instance compiles.
 
@@ -387,6 +390,14 @@ They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (
 - **Inference:** at a call, a struct literal, a variant or an associated function, the type arguments are inferred, never written. They come first from the expected type, then from the arguments that can be typed alone, then from the ones that can't (number literals, `None`, `[]`), so `max(x, 3)` with `x: u8` makes `3` a `u8`. A method's `impl` parameters come from its receiver: `s.push(1)` on a `Stack<string>` is E0401.
 - **Can't infer:** a parameter still undecided is E0412, with help to annotate: `let s: Stack<i64> = Stack.new();`.
 - **Bounds at a use:** a type argument that doesn't satisfy its bound is E0419. For example, `largest([[1]])` fails because `i64[]` is not `Ord`. Every type is `Eq`, so only `Ord` can fail: it holds for the numbers, `string`, and type parameters declared `Ord`.
+
+**Interfaces.**
+- **Declaring one:** `interface Shape { fun area(self): f64; fun name(self): string; }` lists methods (with a `self` or `mut self` receiver) and associated functions (without one), each ending in `;`. Their signatures use concrete types only: no type parameters and no `Self`. An item name appears once (E0310).
+- **Satisfying one:** a type satisfies `Shape` if, for every item, it has a method or associated function with the same name, the same receiver kind, and the same parameter and return types, visible where the bound is checked. No declaration is needed. A generic type's methods count with its type arguments substituted (`Stack<i64>` meets `fun size(self): i64` through `impl Stack<T>`); a method with type parameters of its own never matches. A type parameter satisfies an interface when its own bounds declare every item the same way. Primitives, strings, arrays and `Option` have no methods of their own, so they satisfy only an interface with no items.
+- **Using one as a bound:** `fun total<T: Shape>(xs: T[]): f64`, combined freely with `Eq`, `Ord` and other interfaces (`T: Shape + Eq`), or from another module (`T: shapes.Shape`). In the body, `x.area()` and, for an associated item, `T.make(…)` are allowed when some bound declares them, and are checked against its signature. Calling something no bound declares is E0421, with help suggesting a bound. Two bounds of one parameter may declare the same name only with the same signature; otherwise the bound list is E0423.
+- **At a use:** a type argument that doesn't satisfy an interface bound is E0422, which names each missing or mismatched item.
+- **Not a type:** an interface is never the type of a value; `let s: Shape = …` is E0305, with help to use it as a bound.
+- **Names and visibility:** interfaces share their module's item namespace (E0302) and follow the visibility rules of section 6. Each instance calls the concrete type's own method, so there is no dispatch at run time.
 
 **Generic recursion.** A generic struct or enum may contain itself only with its own parameters unchanged: `enum List<T> { Nil, Cons(T, List<T>) }` is fine, and the indirect-slot rule (section 7) applies to each instance. Instantiation must end: a program whose instances nest more than 64 deep, such as `f<T>` calling `f<T[]>` or a `struct S<T>` holding `S<T[]>`, is E0420. Recursion at the same arguments (`count<T>` calling `count<T>`) never counts. Generic code copies exactly where concrete code would, because each instance is concrete (Array copies, above).
 
@@ -479,7 +490,7 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 - **Methods:** a method call on a value from another module (`c.area()`) works like any method call.
 - **Errors:** an unknown module name is E0301; an unknown function or type in a known module is E0301 or E0305.
 
-**Names.** Each module has its own namespace for functions, structs, enums and externs, so two modules may each declare `Point`; duplicates within a module are a compile error. Intrinsics and the built-in names `Option`, `Some`, `None`, `Eq` and `Ord` are visible in every module, and no program may declare them (E0302). Methods live in their type's namespace, so a function `dist` and a method `Point.dist` can coexist. No local may be named like a type or an imported module (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then the module's own items, then imported module names. In messages a type from another module is shown with its full module path (`shapes.circle.Circle`); a main-file type keeps its bare name. `main` belongs in the main file (E0304 elsewhere).
+**Names.** Each module has its own namespace for functions, structs, enums, interfaces and externs, so two modules may each declare `Point`; duplicates within a module are a compile error. Intrinsics and the built-in names `Option`, `Some`, `None`, `Eq` and `Ord` are visible in every module, and no program may declare them (E0302). Methods live in their type's namespace, so a function `dist` and a method `Point.dist` can coexist. No local may be named like a type or an imported module (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then the module's own items, then imported module names. In messages a type from another module is shown with its full module path (`shapes.circle.Circle`); a main-file type keeps its bare name. `main` belongs in the main file (E0304 elsewhere).
 
 **Visibility.** Everything is visible to every module of the program unless it is marked `private`, which limits it to its own module. That covers functions, externs, structs, enums, methods, associated functions and struct fields.
 - **Private items** (E0313): naming another module's `private` item, calling its `private` method, or reading or assigning its `private` field (including through `swap` and `mut self`) is an error.
@@ -681,7 +692,7 @@ Name and type errors, reported by the checker:
 | E0302 | Name defined more than once, or a function named like an intrinsic | two `fun area`; `fun println()` |
 | E0303 | No `main` function | |
 | E0304 | `main` with the wrong signature, generic, or outside the main file | `fun main(argc: i32): i32`; `fun main<T>()`; a `main` in a module (v2) |
-| E0305 | Unknown type name | `let p: Point = 1;` with no `Point` |
+| E0305 | Unknown type name, or an interface used as a type | `let p: Point = 1;` with no `Point`; `let s: Shape = c;` for an interface `Shape` |
 | E0306 | Reserved extern name, or one C function declared with two signatures | `extern fun lugha_rt_alloc(size: i64): i64;` (§8) |
 | E0307 | Struct contains itself | `struct A { b: B }` with `struct B { a: A }` — hold it in an array instead (`A[]`) |
 | E0308 | Field declared twice | `struct P { x: i64, x: f64 }` |
@@ -691,7 +702,7 @@ Name and type errors, reported by the checker:
 | E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` (v2) |
 | E0313 | Another module's `private` item, method or field | `range.helper()`; `r.lo`; `range.Range { lo: 1, hi: 5 }` (v2) |
 | E0314 | Import clash | `import a.util;` and `import b.util;` in one file; an import named like an item (v2) |
-| E0315 | Unknown bound | `fun f<T: Hash>(x: T)` (v2) |
+| E0315 | Unknown bound | `fun f<T: Hash>(x: T)`; a struct as a bound (v2) |
 | E0316 | Bad type parameter name | `fun f<T, T>()`, a parameter named like a struct (v2) |
 | E0317 | `public` before packages exist | `public fun f() {}` (v2) |
 | E0318 | A `private` type in a non-`private` signature | `private struct S {}` then `fun make(): S` (v2) |
@@ -714,6 +725,9 @@ Name and type errors, reported by the checker:
 | E0418 | Wrong number of type arguments | `Stack<i64, i64>`, a bare `Stack` as a parameter type (v2) |
 | E0419 | Type argument doesn't satisfy its bound | `largest([[1]])`: `i64[]` is not `Ord` (v2) |
 | E0420 | Generic instantiation too deep | `fun f<T>(x: T) { f([x]); }`; `struct S<T> { xs: S<T[]>[] }` (v2) |
+| E0421 | A method no bound declares | `s.perimeter()` in `fun f<T: Shape>(s: T)` (v2) |
+| E0422 | A type argument doesn't satisfy an interface | `total_area([1, 2])`: `i64` has no method `area` (v2) |
+| E0423 | Two bounds declare one item differently | `T: Sized + Measured` where both declare `size` with different types (v2) |
 | E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum or `Option` parameters or returns (§8) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut` |
@@ -1045,6 +1059,45 @@ fun main() {
 }
 ```
 
+**Interfaces** (milestone 12). Prints `15.0` then `9.0` then `square` on three lines, exits with 0.
+
+```
+interface Shape {
+    fun area(self): f64;
+    fun name(self): string;
+}
+
+struct Circle { r: f64 }
+
+impl Circle {
+    fun area(self): f64 = 3.0 * self.r * self.r;
+    fun name(self): string = "circle";
+}
+
+struct Square { side: f64 }
+
+impl Square {
+    fun area(self): f64 = self.side * self.side;
+    fun name(self): string = "square";
+}
+
+fun total_area<T: Shape>(shapes: T[]): f64 {
+    let mut sum = 0.0;
+    for s of shapes {
+        sum += s.area();
+    }
+    sum
+}
+
+fun describe<T: Shape>(s: T): string = s.name();
+
+fun main() {
+    println(total_area([Circle { r: 1.0 }, Circle { r: 2.0 }]));
+    println(total_area([Square { side: 3.0 }]));
+    println(describe(Square { side: 1.0 }));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1062,6 +1115,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 9 | Patterns and equality (v2) | deep `==` on every type, string order, nested patterns, guards, W0103 | The patterns program in section 10 passes (done) |
 | 10 | Modules (v2) | `import`, per-module names, `m.f`/`m.T`, `private` (E0313), `public` reserved (E0317), no leaking (E0318), module symbols | The two-module program in section 10 passes (done) |
 | 11 | Generics (v2) | type parameters, `Eq`/`Ord` bounds, inference, monomorphization, instance symbols, E0420; `Option<T>` as a predeclared generic enum | The generics program in section 10 passes (done) |
+| 12 | Interfaces (v2) | `interface` declarations, interfaces as bounds, structural satisfaction (E0421, E0422, E0423) | The interfaces program in section 10 passes (done: v2 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

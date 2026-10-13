@@ -1,0 +1,8 @@
+import api;
+import impls;
+
+fun report<T: api.Named>(x: T): string = "<" + x.label() + ">";
+
+fun main() {
+    println(report(impls.Tag { text: "hi" }));
+}

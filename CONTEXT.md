@@ -2348,6 +2348,49 @@ Branch: prp-036-generic_compiling
 
 Branch: prp-037-interfaces
 
+### WHAT WAS DONE
+
+- Discovery: one PRP for milestone 12; clashing bounds are E0423 at the bound list. PRP-037 written and approved.
+- Syntax:
+  - `interface` keyword;
+  - `Item::Interface`;
+  - qualified bounds `T: m.Shape`;
+  - `parser/interface.rs`;
+  - S-expressions.
+- Checker:
+  - `check/interfaces.rs`: declarations, bounds, E0315 help, E0423, interface as a type E0305;
+  - `check/satisfy.rs`: calls through bounds E0421, satisfaction E0422;
+  - calls through bounds feed the instance pass.
+- Codegen: calls through bounds reach the concrete method or instance; `T.f(…)` has no receiver.
+- Spec complete: §2 keyword, §3 grammar, §4 "Interfaces", §6 names, §9 codes E0421–E0423, §10 interfaces program, §11 row 12; the title is no longer "in progress".
+- Approved split: `check/test_util.rs` out of `check/mod.rs`, moved verbatim.
+
+### FILES CREATED OR MODIFIED
+
+- New: `src/parser/interface.rs`, `src/check/{interfaces,satisfy,test_util}.rs`, `tests/programs/m12/` (shapes, generic_impl, bounds, modules/, e0421–e0423).
+- Modified:
+  - lexer, AST and parser (`token.rs`, `header.rs`, `mod.rs`, `generic.rs`, `item.rs`, `import.rs`, `decl.rs`, `recover.rs`, `describe.rs`, `sexp/item.rs`);
+  - the checker (`mod.rs`, `generics.rs`, `bounds.rs`, `instances.rs`, `method_calls.rs`, `env.rs`, `structs.rs`, `enums.rs`, `methods.rs`, `visibility.rs`, `modules/`, `errors/generics.rs`);
+  - codegen (`methods.rs`, `declare.rs`);
+  - docs: the spec and the draft, CLAUDE.md, README, CHANGELOG, TODO, MEMORY (decision 43).
+
+### TESTS WRITTEN
+
+- Parser: interfaces and bounds.
+- `check/interfaces.rs`: declarations, bounds, E0423, interface as a type, the draft's program.
+- `check/satisfy.rs`: calls, E0421, E0422 (missing, mismatched, receiver kind, another module's private method), generic types and parameters satisfying.
+- `check/instances.rs`: calls through bounds reach generic methods.
+- `m12/`: four run programs and three reject goldens.
+- The §10 interfaces program, run from the spec.
+
+### DECISIONS MADE
+
+- MEMORY 43; PRP amendments (E0201 for a body, E0415 for the wrong kind of call, E0422 wording, no E0318 for bounds).
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

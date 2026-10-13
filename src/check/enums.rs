@@ -38,7 +38,7 @@ impl Checker {
                 let info = EnumInfo {
                     variants: Vec::new(),
                     span: e.name.span,
-                    generics: Self::generics(&e.type_params),
+                    generics: self.generics(&e.type_params),
                 };
                 self.enums.insert(key, info);
             }

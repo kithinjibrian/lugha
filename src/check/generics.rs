@@ -4,11 +4,13 @@ use super::{Checker, Type, errors};
 use crate::ast::{AppliedType, Ident, Item, TypeParam};
 use crate::span::Span;
 
-/// What a type parameter's bounds allow: `==` with `Eq`, `<` with `Ord`.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+/// What a type parameter's bounds allow: `==` with `Eq`, `<` with `Ord`,
+/// and the items of each interface (by key, milestone 12).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct Bounds {
     pub eq: bool,
     pub ord: bool,
+    pub interfaces: Vec<String>,
 }
 
 /// A declared type parameter: its name and bounds.
@@ -50,7 +52,7 @@ pub(super) fn renamed(declared: &[Generic], names: &[Ident]) -> Vec<Generic> {
     named
         .map(|(g, n)| Generic {
             name: n.name.clone(),
-            bounds: g.bounds,
+            bounds: g.bounds.clone(),
         })
         .collect()
 }
@@ -84,17 +86,15 @@ pub(super) fn replace(ty: &Type, map: &HashMap<&str, &Type>) -> Type {
 }
 
 impl Checker {
-    /// Type parameters as written, before any checks: names and the `Eq`
-    /// and `Ord` among their bounds (pass 1 needs them before every type is known).
-    pub(super) fn generics(params: &[TypeParam]) -> Vec<Generic> {
+    /// Type parameters as written, before any checks: names and the
+    /// bounds that name `Eq`, `Ord` or an interface (pass 1 needs them
+    /// before every type is known; interfaces are collected first).
+    pub(super) fn generics(&self, params: &[TypeParam]) -> Vec<Generic> {
         params
             .iter()
             .map(|p| Generic {
                 name: p.name.name.clone(),
-                bounds: Bounds {
-                    eq: p.bounds.iter().any(|b| b.name == "Eq"),
-                    ord: p.bounds.iter().any(|b| b.name == "Ord"),
-                },
+                bounds: self.bounds_of(p),
             })
             .collect()
     }
@@ -107,7 +107,7 @@ impl Checker {
             return Vec::new();
         };
         self.check_params(&f.type_params, &[]);
-        self.type_params = Self::generics(&f.type_params);
+        self.type_params = self.generics(&f.type_params);
         self.type_params.clone()
     }
 
@@ -115,13 +115,7 @@ impl Checker {
     /// duplicate, a name like a type or module, or one of `outer`'s.
     pub(super) fn check_params(&mut self, params: &[TypeParam], outer: &[Generic]) {
         for (i, p) in params.iter().enumerate() {
-            for bound in p
-                .bounds
-                .iter()
-                .filter(|b| b.name != "Eq" && b.name != "Ord")
-            {
-                self.report(errors::unknown_bound(&bound.name, bound.span));
-            }
+            self.check_bounds(p);
             let repeated = params[..i].iter().any(|q| q.name.name == p.name.name)
                 || outer.iter().any(|g| g.name == p.name.name);
             if repeated || self.is_type_name(&p.name.name) {

@@ -3,7 +3,8 @@
 
 use super::block;
 use crate::ast::{
-    FunDecl, Ident, Item, Param, Program, Type, TypeKind, TypeParam, Visibility, VisibilityKind,
+    FunDecl, Ident, InterfaceItem, Item, Param, Program, Type, TypeKind, TypeParam, Visibility,
+    VisibilityKind,
 };
 
 /// Prints every import, then every item, one per line.
@@ -45,7 +46,10 @@ fn type_params(params: &[TypeParam]) -> String {
         .map(|p| match p.bounds.as_slice() {
             [] => p.name.name.clone(),
             bounds => {
-                let bounds: Vec<&str> = bounds.iter().map(|b| b.name.as_str()).collect();
+                let bounds: Vec<String> = bounds
+                    .iter()
+                    .map(|b| qualified(&b.module, &b.name))
+                    .collect();
                 format!("({} {})", p.name.name, bounds.join(" "))
             }
         })
@@ -112,7 +116,30 @@ fn item(item: &Item) -> String {
             };
             format!("(impl {}{params}{methods})", qualified(&i.module, &i.ty))
         }
+        Item::Interface(i) => {
+            let items: String = i
+                .items
+                .iter()
+                .map(|m| format!(" {}", signature(m)))
+                .collect();
+            format!(
+                "({}interface {}{items})",
+                visibility(i.visibility),
+                i.name.name
+            )
+        }
     }
+}
+
+/// `(fun name (receiver params…) ret)`: an interface's required item.
+fn signature(f: &InterfaceItem) -> String {
+    let mut list: Vec<String> = f
+        .receiver
+        .map(|r| if r.mutable { "(mut self)" } else { "self" }.to_string())
+        .into_iter()
+        .collect();
+    list.extend(f.params.iter().map(param));
+    format!("(fun {} ({}) {})", f.name.name, list.join(" "), ret(&f.ret))
 }
 
 /// `(fun name (receiver params…) ret body)`.

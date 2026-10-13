@@ -31,6 +31,8 @@ pub enum TokenKind {
     Impl,
     /// `import` (v2 draft §2).
     Import,
+    /// `interface` (v2 draft §2, milestone 12).
+    Interface,
     /// `private` (v2 draft §2, decision 9).
     Private,
     /// `public`, reserved for v3 packages (v2 draft §2, decision 9).
@@ -111,6 +113,7 @@ pub fn keyword(word: &str) -> Option<TokenKind> {
         "enum" => Enum,
         "impl" => Impl,
         "import" => Import,
+        "interface" => Interface,
         "private" => Private,
         "public" => Public,
         "match" => Match,

@@ -128,43 +128,43 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — lexer/parser:
-- [ ] `interface` lexes as a keyword.
-- [ ] `interface Shape { fun area(self): f64; fun make(r: f64): Circle; }` parses and prints as an S-expression.
-- [ ] `T: Shape + Eq` and `T: m.Shape` parse.
-- [ ] An interface item with a body is a parse error.
+- [x] `interface` lexes as a keyword.
+- [x] `interface Shape { fun area(self): f64; fun make(r: f64): Circle; }` parses and prints as an S-expression.
+- [x] `T: Shape + Eq` and `T: m.Shape` parse.
+- [x] An interface item with a body is a parse error.
 
 Unit tests — checker (`check/interfaces.rs` and the call file):
-- [ ] **Accepted:** the draft's interfaces program checks.
-- [ ] **Declarations:** a duplicate interface (E0302); a duplicate item (E0310); an unknown type in a signature (E0305).
-- [ ] **Bounds:** `T: Circle` (a struct) is E0315 with the help; `T: m.Shape` from an import works; a `private` interface from another module is E0313.
-- [ ] **E0423** for `T: A + B` with `size(self): i64` and `size(self): f64`; identical duplicates are accepted.
-- [ ] **Interface as a type** is E0305 with the help.
-- [ ] **Calls through bounds:**
+- [x] **Accepted:** the draft's interfaces program checks.
+- [x] **Declarations:** a duplicate interface (E0302); a duplicate item (E0310); an unknown type in a signature (E0305).
+- [x] **Bounds:** `T: Circle` (a struct) is E0315 with the help; `T: m.Shape` from an import works; a `private` interface from another module is E0313.
+- [x] **E0423** for `T: A + B` with `size(self): i64` and `size(self): f64`; identical duplicates are accepted.
+- [x] **Interface as a type** is E0305 with the help.
+- [x] **Calls through bounds:**
   - `s.area()` types as `f64`;
   - `T.make(1.0)` works;
   - `s.perimeter()` is E0421 with the help;
   - wrong argument types are the usual E0401/E0403;
   - a `mut self` item called on an immutable binding is the usual E0501.
-- [ ] **E0422:**
+- [x] **E0422:**
   - `total_area([1, 2])` (i64 has no `area`);
   - a type whose `area` returns `i64` (mismatched);
   - a `self` item met only by `mut self` (receiver kind);
   - a `private` method of another module's type.
 
   The message lists each missing or mismatched item.
-- [ ] **Generic types satisfy:** `Stack<i64>` meets `Sized` through `impl Stack<T>`; a parameter `U: Shape` passed on to `T: Shape` satisfies it.
-- [ ] **Instances:** a call through a bound on a generic receiver adds the method's instance (`Stack.size<i64>`).
+- [x] **Generic types satisfy:** `Stack<i64>` meets `Sized` through `impl Stack<T>`; a parameter `U: Shape` passed on to `T: Shape` satisfies it.
+- [x] **Instances:** a call through a bound on a generic receiver adds the method's instance (`Stack.size<i64>`).
 
 Acceptance — `tests/programs/m12/` (run, `-O0` and `-O2`):
-- [ ] `shapes.la`: two shape types through `total_area<T: Shape>` and `describe<T: Shape>`, with an associated item through `T.make`.
-- [ ] `generic_impl.la`: `Stack<i64>` and `Stack<string>` satisfying `Sized` through a generic `impl`.
-- [ ] `bounds.la`: `T: Shape + Ord`-style combinations (`Eq` and an interface together), and a `mut self` item changing the caller's value.
-- [ ] `modules/`: an interface declared in one module, satisfied by a type of a second, used as a bound in the main file.
-- [ ] `e0421.la`, `e0422.la`, `e0423.la`: reject goldens.
-- [ ] The §10 interfaces program runs from the spec (`tests/spec.rs`).
+- [x] `shapes.la`: two shape types through `total_area<T: Shape>` and `describe<T: Shape>`, with an associated item through `T.make`.
+- [x] `generic_impl.la`: `Stack<i64>` and `Stack<string>` satisfying `Sized` through a generic `impl`.
+- [x] `bounds.la`: `T: Shape + Ord`-style combinations (`Eq` and an interface together), and a `mut self` item changing the caller's value.
+- [x] `modules/`: an interface declared in one module, satisfied by a type of a second, used as a bound in the main file.
+- [x] `e0421.la`, `e0422.la`, `e0423.la`: reject goldens.
+- [x] The §10 interfaces program runs from the spec (`tests/spec.rs`).
 
 Regression:
-- [ ] Every earlier test passes. Non-interface programs are unchanged, except that the name `interface` is now reserved.
+- [x] Every earlier test passes. Non-interface programs are unchanged, except that the name `interface` is now reserved.
 
 ## ROLLBACK PLAN
 
@@ -172,11 +172,11 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 interfaces program and the `m12/` programs pass.
-- [ ] E0421, E0422, E0423 and the E0305/E0315 helps are reported as specified.
-- [ ] The spec is complete (no "in progress"); CLAUDE.md, README, TODO, CHANGELOG and MEMORY are updated; tags `m12` and `v2`.
-- [ ] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The §10 interfaces program and the `m12/` programs pass.
+- [x] E0421, E0422, E0423 and the E0305/E0315 helps are reported as specified.
+- [x] The spec is complete (no "in progress"); CLAUDE.md, README, TODO, CHANGELOG and MEMORY are updated; tags `m12` and `v2`.
+- [x] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -185,3 +185,11 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m12/shapes.la
 ```
+
+## AMENDMENTS (during build, session 46)
+
+- **Split (approved):** the checker's test helpers moved verbatim from `check/mod.rs` to `check/test_util.rs`, to make room for the interface state.
+- **Parse error code:** an interface item with a body is E0201 at `{` (the parser's "expected `;`"), not E0202.
+- **Wrong kind of call:** calling a required associated function on a value, or a method on the type, is E0415 with a hint, as for concrete types.
+- **E0422 wording:** "`i64` doesn't satisfy `Shape`", with help "no method `area`" or "`area` should be `fun area(self): f64`".
+- **No E0318 for bounds:** bounds aren't types in signatures. A non-private function may name a private interface as a bound of its own module, since callers elsewhere never write it.

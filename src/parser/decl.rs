@@ -106,7 +106,10 @@ impl Parser<'_> {
 
     /// `( [receiver ,] params )`. Outside an `impl` a receiver is E0201, and
     /// parsing continues without it.
-    fn receiver_params(&mut self, in_impl: bool) -> PResult<(Option<Receiver>, Vec<Param>)> {
+    pub(super) fn receiver_params(
+        &mut self,
+        in_impl: bool,
+    ) -> PResult<(Option<Receiver>, Vec<Param>)> {
         let open = self.expect(&TokenKind::LParen)?;
         let starts_receiver = self.at(&TokenKind::SelfKw)
             || (self.at(&TokenKind::Mut) && self.peek_at(1) == &TokenKind::SelfKw);

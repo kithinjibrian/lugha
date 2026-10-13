@@ -30,8 +30,7 @@ impl Checker {
                 self.report(errors::reserved(name, s.name.span));
             } else if super::enums::BUILTIN_NAMES.contains(&name.as_str()) {
                 self.report(errors::builtin_name(name, s.name.span));
-            } else if let Some(first) = self.structs.get(&key) {
-                let first = first.span;
+            } else if let Some(first) = self.type_span(&key) {
                 self.report(errors::duplicate(name, s.name.span, first));
             } else {
                 self.register_item(&key, s.visibility);
@@ -41,7 +40,7 @@ impl Checker {
                 let info = StructInfo {
                     fields: Vec::new(),
                     span: s.name.span,
-                    generics: Self::generics(&s.type_params),
+                    generics: self.generics(&s.type_params),
                 };
                 self.structs.insert(key, info);
             }

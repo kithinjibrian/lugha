@@ -1,0 +1,8 @@
+error[E0421]: no bound of `T` declares `perimeter`
+  --> tests/programs/m12/e0421.la:5:43
+  |
+5 | fun perimeter_of<T: Shape>(s: T): f64 = s.perimeter();
+  |                                           ^^^^^^^^^
+  |
+  = help: add an interface that declares `perimeter` to `T`'s bounds
+

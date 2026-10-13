@@ -11,6 +11,7 @@ use inkwell::values::{BasicMetadataValueEnum, ValueKind};
 
 use super::CodegenError;
 use super::function::Signature;
+use super::instances::instance_name;
 use super::lower::{Lowerer, POSITIONED};
 use super::value::{Value, llvm_type};
 use crate::ast::{Expr, ExprKind, FunDecl, ImplDecl, Item};
@@ -123,15 +124,26 @@ impl<'ctx> Lowerer<'ctx> {
             }
             _ => return Ok(None),
         };
+        // Through a bound (milestone 12) the checker recorded no instance:
+        // the receiver's own type arguments name it (`Stack.size<i64>`).
+        let type_args = match &base_type {
+            Type::Struct(_, a) | Type::Enum(_, a) if !a.is_empty() => Some(a.clone()),
+            _ => None,
+        };
         let found = method.and_then(|k| {
             let instance = self.instance_of(call, &k);
-            instance.or_else(|| self.methods.get(&k).cloned())
+            let by_type =
+                || type_args.and_then(|a| self.monos.get(&instance_name(&k, &a)).cloned());
+            instance
+                .or_else(by_type)
+                .or_else(|| self.methods.get(&k).cloned())
         });
         let Some(method) = found else {
             return Ok(None); // a variant constructor, or a function of a module
         };
         let mut values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len() + 1);
-        if let Some(base) = receiver {
+        // `T.make(…)` through a bound names its type with `T`: no receiver.
+        if let Some(base) = receiver.filter(|_| method.receiver.is_some()) {
             values.push(
                 self.receiver(base, &base_type, method.receiver == Some(true))?
                     .into(),

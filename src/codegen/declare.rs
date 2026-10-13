@@ -25,7 +25,7 @@ impl<'ctx> Lowerer<'ctx> {
                 Item::Fun(f) => (&f.name.name, &f.params, f.ret.as_ref(), false),
                 Item::Extern(e) => (&e.name.name, &e.params, e.ret.as_ref(), true),
                 // Methods are declared by `declare_methods`.
-                Item::Struct(_) | Item::Enum(_) | Item::Impl(_) => continue,
+                Item::Struct(_) | Item::Enum(_) | Item::Impl(_) | Item::Interface(_) => continue,
             };
             let params: Vec<Type> = params.iter().map(|p| self.annotation_type(&p.ty)).collect();
             let ret = ret.map(|t| self.annotation_type(t));

@@ -97,9 +97,9 @@ Done when the generics program passes and the full v2 spec replaces v1 in `lugha
 - [x] PRP-035: checking — type parameters, `Eq`/`Ord` bounds, inference, `Checked.instances` (E0315, E0316, E0418, E0419, E0412); `lughac check` accepts generics, the gate moves before codegen
 - [x] PRP-036: compiling — instance list and E0420 in the checker, monomorphization in codegen (`lugha_fn_max<i64>`), `Option<T>` described as a predeclared generic enum, gate removed, spec folded
 
-### Milestone 12 — Interfaces
+### Milestone 12 — Interfaces ✅
 Done when the interfaces program passes and the v2 spec is complete.
-- [ ] `interface` declarations, interfaces as bounds (`T: Shape`), structural satisfaction (E0421, E0422); rationale in `docs/decisions/generics.md`
+- [x] PRP-037: `interface` declarations, interfaces as bounds, structural satisfaction (E0421, E0422, E0423); the v2 spec is complete
 
 ## Found while working — needs a PRP
 

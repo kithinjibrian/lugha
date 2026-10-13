@@ -1,0 +1,8 @@
+error[E0422]: `i64` doesn't satisfy `Shape`
+   --> tests/programs/m12/e0422.la:14:13
+   |
+14 |     println(total([1, 2]));
+   |             ^^^^^^^^^^^^^
+   |
+   = help: no method `area`
+

@@ -33,7 +33,7 @@ impl Checker {
             let (name, params, ret, is_extern, visibility) = match item {
                 Item::Fun(f) => (&f.name, &f.params, f.ret.as_ref(), false, f.visibility),
                 Item::Extern(e) => (&e.name, &e.params, e.ret.as_ref(), true, e.visibility),
-                Item::Struct(_) | Item::Enum(_) | Item::Impl(_) => continue,
+                Item::Struct(_) | Item::Enum(_) | Item::Impl(_) | Item::Interface(_) => continue,
             };
             let generics = self.enter_params(item);
             let declared = params;
@@ -168,7 +168,10 @@ impl Checker {
     /// Where the struct or enum with key `name` is declared.
     pub(super) fn type_span(&self, name: &str) -> Option<Span> {
         let as_struct = self.structs.get(name).map(|s| s.span);
-        as_struct.or_else(|| self.enums.get(name).map(|e| e.span))
+        let as_enum = || self.enums.get(name).map(|e| e.span);
+        as_struct
+            .or_else(as_enum)
+            .or_else(|| self.interfaces.get(name).map(|i| i.span))
     }
 
     /// True if `name` names a type here, or an imported module, so no local
@@ -178,6 +181,7 @@ impl Checker {
         name == "Option"
             || self.structs.contains_key(&key)
             || self.enums.contains_key(&key)
+            || self.interfaces.contains_key(&key)
             || self.imports.contains_key(name)
     }
 

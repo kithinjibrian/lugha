@@ -12,7 +12,9 @@ mod header;
 mod pattern;
 
 pub use expr::{BinOp, Expr, ExprId, ExprKind, StructLiteral, UnOp};
-pub use header::{Field, Import, TypeParam, Visibility, VisibilityKind};
+pub use header::{
+    Bound, Field, Import, InterfaceDecl, InterfaceItem, TypeParam, Visibility, VisibilityKind,
+};
 pub use pattern::{Arm, Pattern, PatternKind};
 
 use crate::span::Span;
@@ -50,6 +52,8 @@ pub enum Item {
     Enum(EnumDecl),
     /// `impl Type { methods }` (v1).
     Impl(ImplDecl),
+    /// `interface Name { signatures }` (v2 draft §4, milestone 12).
+    Interface(InterfaceDecl),
 }
 
 /// A function with a body.

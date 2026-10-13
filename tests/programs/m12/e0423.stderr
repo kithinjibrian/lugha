@@ -1,0 +1,8 @@
+error[E0423]: `Sized` and `Measured` both declare `size` with different signatures
+  --> tests/programs/m12/e0423.la:9:13
+  |
+9 | fun both<T: Sized + Measured>(x: T) {}
+  |             ^^^^^^^^^^^^^^^^
+  |
+  = help: a call through these bounds couldn't tell which one is meant
+

@@ -23,6 +23,18 @@ impl Checker {
         let ExprKind::Field(base, name) = &callee.kind else {
             return None;
         };
+        // `T.f(…)` through a bound of type parameter `T` (milestone 12).
+        if let ExprKind::Name(t) = &base.kind
+            && self.local(t).is_none()
+            && self.type_params.iter().any(|g| g.name == *t)
+        {
+            self.record(base, Type::Param(t.clone()));
+            self.record(callee, Type::Void);
+            return Some(match self.through_bound(call, t, name, false) {
+                Some(m) => self.arguments(call, &name.name, &m, args, (&[], expect)),
+                None => self.unchecked(args),
+            });
+        }
         if let Some(ty) = self.type_named_by(base) {
             let method = self.method(&ty, &name.name);
             if method.is_none() && matches!(ty, Type::Enum(_, _)) {
@@ -85,10 +97,17 @@ impl Checker {
             }
             return ret;
         }
-        let Some(m) = self
-            .method(receiver, &name.name)
-            .filter(|m| m.receiver.is_some())
-        else {
+        let found = match receiver {
+            // `x.m(…)` through a bound of `x`'s type parameter (milestone 12).
+            Type::Param(p) => match self.through_bound(call, p, name, true) {
+                Some(m) => Some(m),
+                None => return self.unchecked(args),
+            },
+            _ => self
+                .method(receiver, &name.name)
+                .filter(|m| m.receiver.is_some()),
+        };
+        let Some(m) = found else {
             let help = self
                 .method(receiver, &name.name)
                 .map(|_| format!("call it on the type: `{receiver}.{}(…)`", name.name));

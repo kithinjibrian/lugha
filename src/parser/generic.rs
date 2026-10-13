@@ -20,7 +20,7 @@ impl Parser<'_> {
             let mut bounds = Vec::new();
             if p.eat(&TokenKind::Colon) {
                 loop {
-                    bounds.push(p.ident("bound name")?);
+                    bounds.push(p.bound()?);
                     if !p.eat(&TokenKind::Plus) {
                         break;
                     }

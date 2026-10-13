@@ -7,9 +7,30 @@ use crate::diagnostic::Diagnostic;
 use crate::span::Span;
 
 /// E0315: a bound other than `Eq` or `Ord` (v2 draft §4).
-pub(in crate::check) fn unknown_bound(name: &str, span: Span) -> Diagnostic {
-    Diagnostic::error("E0315", format!("unknown bound `{name}`"), span)
-        .with_help("the bounds are `Eq` and `Ord`")
+pub(in crate::check) fn unknown_bound(name: &str, span: Span, is_type: bool) -> Diagnostic {
+    let help = if is_type {
+        format!("`{name}` is a type: only interfaces, `Eq` and `Ord` can be bounds")
+    } else {
+        "the bounds are `Eq`, `Ord` and interfaces".to_string()
+    };
+    Diagnostic::error("E0315", format!("unknown bound `{name}`"), span).with_help(help)
+}
+
+/// E0423: two bounds of one parameter declare `item` differently.
+pub(in crate::check) fn clashing_bounds(a: &str, b: &str, item: &str, span: Span) -> Diagnostic {
+    let message = format!("`{a}` and `{b}` both declare `{item}` with different signatures");
+    Diagnostic::error("E0423", message, span)
+        .with_help("a call through these bounds couldn't tell which one is meant")
+}
+
+/// E0305 for an interface written as a type (milestone 12).
+pub(in crate::check) fn interface_as_type(name: &str, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0305",
+        format!("`{name}` is an interface, not a type"),
+        span,
+    )
+    .with_help(format!("use it as a bound: `<T: {name}>`"))
 }
 
 /// E0316: a type parameter named twice, or like a type or module.
@@ -84,4 +105,31 @@ pub(in crate::check) fn too_deep(chain: &str, span: Span) -> Diagnostic {
 pub(in crate::check) fn type_too_deep(ty: &Type, span: Span) -> Diagnostic {
     Diagnostic::error("E0420", format!("generic type `{ty}` nests too deep"), span)
         .with_help("a generic type may contain itself only with its own parameters unchanged")
+}
+
+/// E0421: a call through a type parameter that none of its bounds declares.
+pub(in crate::check) fn no_bound_declares(param: &str, name: &str, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0421",
+        format!("no bound of `{param}` declares `{name}`"),
+        span,
+    )
+    .with_help(format!(
+        "add an interface that declares `{name}` to `{param}`'s bounds"
+    ))
+}
+
+/// E0422: a type argument that doesn't satisfy an interface bound.
+pub(in crate::check) fn unsatisfied(
+    ty: &Type,
+    interface: &str,
+    problems: &[String],
+    span: Span,
+) -> Diagnostic {
+    Diagnostic::error(
+        "E0422",
+        format!("`{ty}` doesn't satisfy `{interface}`"),
+        span,
+    )
+    .with_help(problems.join("; "))
 }

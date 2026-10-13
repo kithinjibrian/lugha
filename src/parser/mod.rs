@@ -12,6 +12,7 @@ mod describe;
 mod expr;
 mod generic;
 mod import;
+mod interface;
 mod item;
 mod pattern;
 mod primary;

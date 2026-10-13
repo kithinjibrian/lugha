@@ -610,9 +610,45 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 43. Interfaces (PRP-037)
+
+**Decision:**
+- **Syntax:**
+  - `interface` is a keyword;
+  - an `Item::Interface` holds items with an optional receiver, parameters and a return type, and no body;
+  - a bound is `{ module, name, span }`, so `T: m.Shape` works.
+- **Declarations** (`check/interfaces.rs`):
+  - interfaces are collected first in pass 1, so struct, enum and function bounds can name them;
+  - they share the item namespace (E0302) and follow `private`/E0313/E0318;
+  - item signatures resolve in pass 2, with E0310 for a repeated item.
+  - `Bounds.interfaces` holds the interface keys.
+- **Bound errors:**
+  - E0315 for a non-interface bound, with a hint when it names a type;
+  - E0423 at the bound list when two interfaces declare one name differently;
+  - E0305 with a "use it as a bound" hint for an interface in a type position.
+- **Use** (`check/satisfy.rs`):
+  - `x.m(…)` and `T.f(…)` on a type parameter check against the bound's signature;
+  - E0421 when no bound declares the name;
+  - E0415 for calling a method as associated, or the reverse.
+- **Satisfaction** (structural; E0422 lists what is missing or mismatched): every item needs a visible method with the same name, receiver kind and types.
+  - A generic type's `impl` parameters are substituted; a method with its own type parameters never matches.
+  - A type parameter satisfies an interface through its own bounds.
+  - Built-in types have no methods.
+- **Instances:** a call through a bound is recorded with its parameter. The instance pass resolves it to the concrete method, and adds an instance when that method is generic.
+- **Codegen:** a receiver whose type has arguments finds the instance `key<type args>`. `T.make(…)` passes no receiver.
+- **Split (approved):** the checker's test helpers moved verbatim to `check/test_util.rs`.
+- **v2 complete:** the spec is no longer "in progress"; tags `m12` and `v2`.
+
+**Why:** These follow the session 46 discovery answers: one PRP, and E0423 at the bound. Monomorphization made calls through bounds static calls, so codegen barely changed.
+
+**Rules out (v2):** interface values, `Self`, generic interfaces, default methods, operator overloading.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 12 complete — Lugha v2 complete**: PRP-037 interfaces (E0421, E0422, E0423)
 - **Milestone 11 complete**: PRP-036 compiles generics (instances, E0420, gate removed, spec folded)
 - PRP-035: generics are type-checked (`lughac check`); the gate stops them before codegen
 - **Milestone 10 complete**: PRP-034 names across modules, visibility (E0313/E0317/E0318), module symbols
@@ -664,7 +700,7 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- Milestone 12, interfaces (MEMORY 40)
+- Lugha v3 (nothing planned yet; see the spec's §11 out-of-scope list)
 
 ---
 

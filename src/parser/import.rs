@@ -52,7 +52,7 @@ impl Parser<'_> {
         })
     }
 
-    /// A visibility and the item it marks: only `fun`, `extern`, `struct`
+    /// A visibility and the item it marks: only `fun`, `extern`, `struct`, `interface`
     /// and `enum` take one (v2 draft §3).
     pub(super) fn visible_item(&mut self) -> PResult<Item> {
         let visibility = self.visibility();
@@ -77,7 +77,12 @@ impl Parser<'_> {
                 e.visibility = visibility;
                 Item::Enum(e)
             }
-            _ => return Err(self.expected("`fun`, `extern`, `struct` or `enum`")),
+            TokenKind::Interface => {
+                let mut i = self.interface_decl()?;
+                i.visibility = visibility;
+                Item::Interface(i)
+            }
+            _ => return Err(self.expected("`fun`, `extern`, `struct`, `enum` or `interface`")),
         })
     }
 }

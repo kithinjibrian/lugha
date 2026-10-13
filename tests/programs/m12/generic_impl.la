@@ -1,0 +1,22 @@
+interface Sized {
+    fun size(self): i64;
+}
+
+struct Stack<T> { items: T[] }
+
+impl Stack<T> {
+    fun size(self): i64 = self.items.len;
+}
+
+fun total<T: Sized>(xs: T[]): i64 {
+    let mut n = 0;
+    for x of xs {
+        n += x.size();
+    }
+    n
+}
+
+fun main() {
+    println(total([Stack { items: [1, 2] }, Stack { items: [3] }]));
+    println(total([Stack { items: ["a"] }]));
+}

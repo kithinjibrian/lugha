@@ -92,6 +92,7 @@ impl Parser<'_> {
                 | TokenKind::Struct
                 | TokenKind::Enum
                 | TokenKind::Impl
+                | TokenKind::Interface
                 | TokenKind::Import
                 | TokenKind::Private
                 | TokenKind::Public

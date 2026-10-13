@@ -51,7 +51,7 @@ impl Checker {
             for f in &i.methods {
                 let name = &f.name.name;
                 self.check_params(&f.type_params, &outer);
-                self.type_params = [outer.clone(), Self::generics(&f.type_params)].concat();
+                self.type_params = [outer.clone(), self.generics(&f.type_params)].concat();
                 let params = f.params.iter().map(|p| self.resolve(&p.ty)).collect();
                 let ret = f.ret.as_ref().map_or(Type::Void, |t| self.resolve(t));
                 if let Some(first) = self.methods.get(owner).and_then(|m| m.get(name)) {

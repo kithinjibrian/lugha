@@ -169,6 +169,10 @@ mod tests {
         // v2 draft §2; longer words stay identifiers.
         assert_eq!(kinds("import private public"), [Import, Private, Public]);
         assert_eq!(
+            kinds("interface interfaces"),
+            [Interface, Ident("interfaces".into())]
+        );
+        assert_eq!(
             kinds("important pub privately"),
             [
                 Ident("important".into()),

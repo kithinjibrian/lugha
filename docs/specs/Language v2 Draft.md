@@ -229,6 +229,7 @@ Equality is deep and costs time proportional to the values compared. `f64` keeps
 | E0420 | Generic instantiation too deep | `fun f<T>(x: T) { f([x]); }` |
 | E0421 | A method no bound provides (milestone 12) | `s.perimeter()` in `fun f<T: Shape>(s: T)` |
 | E0422 | A type argument doesn't satisfy an interface (milestone 12) | `total_area([1, 2])`: `i64` has no method `area` |
+| E0423 | Two bounds declare one item differently (milestone 12, PRP-037) | `T: Sized + Measured` where both declare `size` with different types |
 
 **Reused codes:**
 - E0302: built-in names, imports.

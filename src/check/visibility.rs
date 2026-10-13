@@ -67,6 +67,13 @@ impl Checker {
         }
     }
 
+    /// True if method `name` of type `owner` may be used here (milestone 12:
+    /// only such methods satisfy an interface).
+    pub(super) fn method_usable(&self, owner: &str, name: &str) -> bool {
+        let key = (owner.to_string(), name.to_string());
+        self.privacy.methods.get(&key) != Some(&true) || self.foreign(owner).is_none()
+    }
+
     /// E0313 if field `name` of struct `owner` is `private` to another module.
     pub(super) fn field_visible(&mut self, owner: &str, name: &str, span: Span) {
         let key = (owner.to_string(), name.to_string());
@@ -129,6 +136,16 @@ impl Checker {
                     }
                 }
                 Item::Impl(i) => i.methods.iter().for_each(|m| self.signature(m)),
+                Item::Interface(i) => {
+                    self.public_keyword(i.visibility);
+                    if !is_private(i.visibility) {
+                        let types = i
+                            .items
+                            .iter()
+                            .flat_map(|it| it.params.iter().map(|p| &p.ty).chain(&it.ret));
+                        types.for_each(|t| self.leak(t));
+                    }
+                }
             }
         }
     }

@@ -1,7 +1,7 @@
 //! v2 declaration headers: imports, visibility, fields and type parameters
 //! (v2 draft §3, §6).
 
-use super::{Ident, Type};
+use super::{Ident, Param, Receiver, Type};
 use crate::span::Span;
 
 /// `import a.b.c;` — a module path, bound by its last segment (v2 draft §6).
@@ -18,8 +18,42 @@ pub struct Import {
 pub struct TypeParam {
     /// The parameter's name.
     pub name: Ident,
-    /// Bound names in order, resolved by the checker (E0315).
-    pub bounds: Vec<Ident>,
+    /// Bounds in order, resolved by the checker (E0315).
+    pub bounds: Vec<Bound>,
+}
+
+/// A bound: `Eq`, `Ord`, or an interface, `Shape` or `m.Shape` (milestone 12).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Bound {
+    /// `m` in `m.Shape`.
+    pub module: Option<Ident>,
+    pub name: Ident,
+    /// The whole bound, module included.
+    pub span: Span,
+}
+
+/// `interface Name { fun area(self): f64; … }` (v2 draft §4, milestone 12).
+#[derive(Debug, Clone, PartialEq)]
+pub struct InterfaceDecl {
+    /// `private` or `public`, if written.
+    pub visibility: Option<Visibility>,
+    pub name: Ident,
+    /// Required methods and associated functions, in order.
+    pub items: Vec<InterfaceItem>,
+    /// From `interface` to the closing brace.
+    pub span: Span,
+}
+
+/// A required method (with a receiver) or associated function: a
+/// signature ending in `;`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct InterfaceItem {
+    pub name: Ident,
+    pub receiver: Option<Receiver>,
+    pub params: Vec<Param>,
+    pub ret: Option<Type>,
+    /// From `fun` to the `;`.
+    pub span: Span,
 }
 
 /// `private` or `public` before a declaration or a field (v2 draft decision 9).

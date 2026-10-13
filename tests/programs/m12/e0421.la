@@ -1,0 +1,7 @@
+interface Shape {
+    fun area(self): f64;
+}
+
+fun perimeter_of<T: Shape>(s: T): f64 = s.perimeter();
+
+fun main() {}

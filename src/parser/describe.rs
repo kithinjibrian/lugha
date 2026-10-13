@@ -54,6 +54,7 @@ fn symbol(kind: &TokenKind) -> &'static str {
         Enum => "enum",
         Impl => "impl",
         Import => "import",
+        Interface => "interface",
         Private => "private",
         Public => "public",
         Match => "match",

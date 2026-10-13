@@ -1,0 +1,5 @@
+struct Tag { text: string }
+
+impl Tag {
+    fun label(self): string = self.text;
+}

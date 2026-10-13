@@ -20,16 +20,21 @@ impl Checker {
                 self.report(errors::unmet_bound(arg, bound, span));
                 return false;
             }
+            for key in &g.bounds.interfaces {
+                if !self.satisfies(arg, key, span) {
+                    return false;
+                }
+            }
         }
         true
     }
 
     /// The bounds of the parameter `name` in scope.
-    fn bounds(&self, name: &str) -> Bounds {
+    pub(super) fn bounds(&self, name: &str) -> Bounds {
         self.type_params
             .iter()
             .find(|g| g.name == name)
-            .map_or_else(Bounds::default, |g| g.bounds)
+            .map_or_else(Bounds::default, |g| g.bounds.clone())
     }
 
     /// True if `==` works on `ty`: always, except through a parameter

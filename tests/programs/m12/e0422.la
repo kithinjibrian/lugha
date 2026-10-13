@@ -1,0 +1,15 @@
+interface Shape {
+    fun area(self): f64;
+}
+
+fun total<T: Shape>(xs: T[]): f64 {
+    let mut sum = 0.0;
+    for x of xs {
+        sum += x.area();
+    }
+    sum
+}
+
+fun main() {
+    println(total([1, 2]));
+}

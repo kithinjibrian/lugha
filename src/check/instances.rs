@@ -25,6 +25,9 @@ pub(super) struct Use {
     /// The key of the body the call is in.
     owner: String,
     callee: Instance,
+    /// For a call through a bound (milestone 12), the type parameter; the
+    /// callee is then just the method's name until the parameter is known.
+    through: Option<String>,
     span: Span,
 }
 
@@ -41,8 +44,45 @@ impl Checker {
         self.uses.push(Use {
             owner: self.owner.clone(),
             callee,
+            through: None,
             span: call.span,
         });
+    }
+
+    /// Records a call of `name` through a bound of type parameter `param`:
+    /// each instance resolves it to the concrete type's method.
+    pub(super) fn bound_used(&mut self, call: &Expr, param: &str, name: &str) {
+        let callee = Instance {
+            key: name.to_string(),
+            args: Vec::new(),
+        };
+        self.uses.push(Use {
+            owner: self.owner.clone(),
+            callee,
+            through: Some(param.to_string()),
+            span: call.span,
+        });
+    }
+
+    /// The instance a call of `name` through `param` reaches when the
+    /// parameters `generics` are `args`: `None` unless the concrete type's
+    /// method is generic (a non-generic one is compiled anyway).
+    fn bound_target(
+        &self,
+        generics: &[Generic],
+        args: &[Type],
+        param: &str,
+        name: &str,
+    ) -> Option<Instance> {
+        let concrete = subst(&Type::Param(param.to_string()), generics, args);
+        let (Type::Struct(owner, targs) | Type::Enum(owner, targs)) = &concrete else {
+            return None;
+        };
+        let m = self.methods.get(owner)?.get(name)?;
+        (!m.generics.is_empty()).then(|| Instance {
+            key: m.key.clone(),
+            args: targs.clone(),
+        })
     }
 
     /// Every instance reachable from the non-generic bodies, in discovery
@@ -74,15 +114,22 @@ impl Checker {
             next += 1;
             let generics = self.params_of(&owner);
             for u in self.uses.iter().filter(|u| u.owner == owner) {
-                let args = u
-                    .callee
-                    .args
-                    .iter()
-                    .map(|a| subst(a, &generics, &args))
-                    .collect();
-                let callee = Instance {
-                    key: u.callee.key.clone(),
-                    args,
+                let callee = match &u.through {
+                    None => Instance {
+                        key: u.callee.key.clone(),
+                        args: u
+                            .callee
+                            .args
+                            .iter()
+                            .map(|a| subst(a, &generics, &args))
+                            .collect(),
+                    },
+                    Some(param) => {
+                        match self.bound_target(&generics, &args, param, &u.callee.key) {
+                            Some(instance) => instance,
+                            None => continue,
+                        }
+                    }
                 };
                 if !seen.insert(callee.clone()) {
                     continue;
@@ -211,6 +258,16 @@ mod tests {
             help.starts_with("f<i64> -> f<i64[]> -> f<i64[][]> -> "),
             "{help}"
         );
+    }
+
+    #[test]
+    fn calls_through_bounds_reach_generic_methods() {
+        let src = "interface Sized { fun size(self): i64; }\n\
+            struct Stack<T> { items: T[] }\n\
+            impl Stack<T> { fun size(self): i64 = self.items.len; }\n\
+            fun count<T: Sized>(x: T): i64 = x.size();\n\
+            fun main() { let n = count(Stack { items: [true] }); }";
+        assert_eq!(monos(src), ["count<Stack<bool>>", "Stack.size<bool>"]);
     }
 
     #[test]

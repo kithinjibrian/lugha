@@ -52,7 +52,12 @@ impl Checker {
                 || name.name.clone(),
                 |m| format!("{}.{}", m.name, name.name),
             );
-            self.report(errors::unknown_type(&shown, span));
+            let d = if self.interfaces.contains_key(&key) {
+                errors::interface_as_type(&shown, span)
+            } else {
+                errors::unknown_type(&shown, span)
+            };
+            self.report(d);
             return None;
         }
         self.item_visible(&key, span);
