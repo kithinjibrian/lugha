@@ -887,13 +887,13 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Lugha v3 is complete** (tag `v3`). **The v4 draft is approved** (session 52, MEMORY 49, `docs/specs/Language v4 Draft.md`): input and output.
+**Milestone 17 is complete** (tag `m17`; MEMORY 50). `lughac spec` prints `Language v4 Specification.md` (in progress: milestone 17).
 
-Next is **milestone 17, `Result` and `?`**. It covers:
-- the predeclared `enum Result<T, E> { Ok(T), Err(E) }`, with `Ok`/`Err` without a prefix, inferred from the expected type (E0412 alone);
-- the postfix `?` on `Result` (the same `E`) and `Option`, returning early from the enclosing function or closure, with E0424 for misuse;
-- the "Results and `?`" program in the draft's §10.
+Next is **milestone 18, text and option helpers** (`Language v4 Draft.md`: decision 4, §4 helper table, §9 prelude intrinsics, the §10 text-helpers program). It covers:
+- prelude methods on `string`: `lines`, `split`, `trim`, `contains`, `starts_with`, `ends_with`, `slice`, plus `join` on `string[]`;
+- prelude methods on `Option`/`Result`: `unwrap_or`, `ok_or`, `ok`, `map`, `map_err`, `is_*`;
+- compiler-internal intrinsics the prelude needs (for example `lugha_rt_str_slice`), which programs can't name.
 
-This milestone starts `Language v4 Specification.md` (as v3 did at M13). Start with discovery for PRP-042. A likely question is whether `Result` is a real generic enum declared in the prelude, or built in like `Option`.
+Helper dispatch today exists only for array receivers (`check/helpers.rs`), so it needs to generalize by receiver type. Start with discovery for PRP-043.
 
 See `TODO.md`.

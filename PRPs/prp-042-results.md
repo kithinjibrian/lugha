@@ -1,6 +1,6 @@
 ## FEATURE: Results and `?` — the prelude's `Result<T, E>` and early returns; the v4 spec begins.
 
-**Status:** approved 2026-10-13 — session 53
+**Status:** merged 2026-10-13 — session 53
 **Milestone:** 17 (one PRP; first v4 milestone)
 **Spec:** `Language v4 Draft.md`:
 - decisions 2–3;
