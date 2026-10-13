@@ -1054,9 +1054,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 67. Bits — milestone 28 (PRP-056)
+
+**Decision:** built as part of the user's "do all of them in one go" (milestones 28–29 back to back, each its own PRP and merge).
+- **Lexer:** `& &= | |= ^ ^= ~ << <<=`; `>>` and `>>=` are not tokens — the parser (`parser/operators.rs`) reads `>` touching `>` as `Shr`, `>` touching `>=` as `>>=` (and the expression loop stops there), so `Option<Option<i64>>` still closes. `0b` literals share the hex path (`radix`). The E0101 "did you mean `&&`" help is gone.
+- **AST/levels:** `BinOp::{BitOr 5, BitXor 6, BitAnd 7, Shl/Shr 8}`, `+ -` 9, `* / %` 10, `as` 11 (`CAST_LEVEL`); `UnOp::BitNot`; `AssignOp` bit forms; `BinOp::is_bitwise`.
+- **Checker:** bit ops are "arithmetic" (context type flows to operands) but need `is_integer`; `~` integer; compound bit forms need an integer (`assign.rs`). Mixed types E0404.
+- **Codegen** (`codegen/bits.rs`): `and/or/xor/shl`, `lshr`/`ashr` by signedness; shifts first `icmp uge n, width` → `shift out of range` panic at the operator (folded away for constant amounts); `~` is `not`.
+
+**Why:** two-token `>>` avoids splitting tokens when closing nested generics.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 28 complete**: PRP-056 bit operators
 - **Milestone 27 complete**: PRP-055 `u32`, `u64`, `f32`; v7 spec begins
 - **Milestone 26 complete — Lugha v6 complete**: PRP-054 converting between interfaces
 - **Milestone 25 complete**: PRP-053 `Self` in interfaces
@@ -1122,23 +1135,21 @@ Open questions live in `DECISIONS.md`, not here.
 - v0 language spec reviewed and fixed
 
 ### In Progress
-- Lugha v7: milestone 28 (bits) next
+- Lugha v7: milestone 29 (integer methods) next
 
 ### Not Started
-- Milestones 28–29 (v7 draft, MEMORY 65)
+- Milestone 29 (v7 draft, MEMORY 65)
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 27 complete** (PRP-055, MEMORY 66): `u32`, `u64`, `f32` as keyword types. Tagged `m27`. `Language v7 Specification.md` (in progress) is what `lughac spec` prints; v6 is frozen.
+**Milestone 28 complete** (PRP-056, MEMORY 67): bit operators, compound forms, `0b` literals, the shift panic. Tag `m28` goes on the merge of PRP-056. `Language v7 Specification.md` (in progress) is what `lughac spec` prints.
 
-Next: **milestone 28, bits** — discovery and PRP-056. Scope (v7 draft decisions 3 and 5, §2 operators and `0b` literals, §3 precedence and `assign_op`, §4 "Bit operators", §5 compound forms, §9, §10 "Bits"):
-- lexer: `& | ^ ~ << >>` and `&= |= ^= <<= >>=` (a lone `&`/`|` is E0101 today), `0b` literals (E0105/E0106/E0108);
-- parser: Rust precedence (`<< >>` > `&` > `^` > `|` > comparisons), prefix `~`;
-- checker: integer operands of one type, shift amount of the shifted type, E0404 otherwise;
-- codegen: `and`/`or`/`xor`/`shl`/`lshr`/`ashr`, shift range check panicking `shift out of range` at the operator.
+Next: **milestone 29, integer methods** — PRP-057, completing v7 (tags `m29`, `v7`); the user asked for milestones 28–29 in one go. Scope (v7 draft decisions 2 and 4, §4 "Methods on integers", §9, §10 "Hashing"):
+- `a.wrapping_add(b)`, `wrapping_sub`, `wrapping_mul` (same type, `b` typed by `a`); `count_ones()`, `leading_zeros()`, `trailing_zeros()` → `i64`; other names on integers E0415; `(5).count_ones()` works (literal receiver `i64`);
+- codegen: plain `add/sub/mul`; `llvm.ctpop`/`ctlz`/`cttz` (`is_zero_poison` false) then `zext`/`trunc` to `i64`.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (295), `check/interfaces.rs` (299), `check/infer.rs` (297), `parser/expr.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292), `codegen/runtime.rs` (~295), `codegen/arith.rs` (277).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `parser/expr.rs` (~290), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/ops.rs` (~289), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
 
 See `TODO.md`.

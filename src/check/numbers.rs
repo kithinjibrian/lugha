@@ -97,4 +97,23 @@ mod tests {
     fn externs_take_them() {
         ok("extern fun f(a: u32, b: u64, c: f32): f32;\nfun main() {}");
     }
+
+    #[test]
+    fn bit_operators_take_one_integer_type() {
+        assert_eq!(ty("let a: u32 = 6; let b = a & 3;", "b"), Type::U32);
+        assert_eq!(ty("let a: u8 = 6; let b = 1 << a;", "b"), Type::U8);
+        assert_eq!(ty("let a: i64 = 6; let b = ~a;", "b"), Type::I64);
+        assert_eq!(
+            ty("let a: u64 = 1; let mut b = a; b <<= 3; let c = b;", "c"),
+            Type::U64
+        );
+        assert_eq!(codes("let a = true & false;"), ["E0404"]);
+        assert_eq!(codes("let x: f64 = 1.0; let y = x | 1.0;"), ["E0404"]);
+        assert_eq!(
+            codes("let a: u32 = 1; let b: u64 = 2; let c = a & b;"),
+            ["E0404"]
+        );
+        assert_eq!(codes("let a = ~true;"), ["E0404"]);
+        assert_eq!(codes("let mut x: f64 = 1.0; x &= 2.0;"), ["E0404"]);
+    }
 }

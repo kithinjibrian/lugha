@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v7 Specification.md` (`lughac spec` prints it): Lugha v7, in progress (milestone 27 done: `u32`, `u64`, `f32`). `Language v7 Draft.md` is the approved plan (milestones 27–29: more numbers, bits, integer methods). The v0–v6 files are frozen. `Result`, `Iter` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v7 Specification.md` (`lughac spec` prints it): Lugha v7, in progress (milestones 27–28 done: `u32`, `u64`, `f32`; bit operators). `Language v7 Draft.md` is the approved plan (milestones 27–29: more numbers, bits, integer methods). The v0–v6 files are frozen. `Result`, `Iter` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
 
 ---
 
@@ -237,7 +237,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── ast/         — mod.rs (items, statements), types.rs (written types), expr.rs (expressions, ExprId, StructLiteral, Part),
 │   │                  pattern.rs (arms, nested patterns, guards), header.rs (imports, type parameters, bounds,
 │   │                  interfaces)
-│   ├── parser/      — mod.rs (parse, cursor, errors), recover.rs, describe.rs,
+│   ├── parser/      — mod.rs (parse, cursor, errors), recover.rs, describe.rs, operators.rs (operator tables, `>>` as two `>`),
 │   │                  expr.rs (Pratt), primary.rs, stmt.rs, item.rs, decl.rs (enum, impl, receivers),
 │   │                  pattern.rs (match, patterns, guards), generic.rs (type params, m.T / T<args>),
 │   │                  import.rs (import, pub), interface.rs (interfaces, bounds), closure.rs (closure
@@ -287,7 +287,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (dynamic calls, interface copies, type-pattern tests), defaults.rs (default instances, `?` boxing),
 │   │                  instances.rs (generic instances:
 │   │                  substitution, instance symbols),
-│   │                  swap.rs (swap: loads and crossed stores), iterators.rs (iterator loops: a hidden copy, `next` until `None`),
+│   │                  swap.rs (swap: loads and crossed stores), bits.rs (bit operators, the shift range check), iterators.rs (iterator loops: a hidden copy, `next` until `None`),
 │   │                  upcast.rs (between interfaces: table registry, derived tables, `lugha_up_` lookups)
 │   ├── modules/     — mod.rs (load: the main file and every import, one offset space; with_prelude), resolve.rs
 │   │                  (import paths, E0312/E0314/E0319), tests.rs (in-memory loading)
@@ -306,7 +306,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m27/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m28/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)

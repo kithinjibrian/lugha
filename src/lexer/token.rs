@@ -78,6 +78,16 @@ pub enum TokenKind {
     Percent,
     /// `?`, the postfix early-return operator (v4).
     Question,
+    // v7 bit operators; `>>` is two `Gt` tokens (see `parser/operators.rs`).
+    Amp,
+    AmpEq,
+    Pipe,
+    PipeEq,
+    Caret,
+    CaretEq,
+    Tilde,
+    Shl,
+    ShlEq,
     EqEq,
     BangEq,
     Lt,

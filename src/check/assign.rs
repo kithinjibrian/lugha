@@ -18,7 +18,13 @@ impl Checker {
             self.expr(value, None);
             return;
         }
-        if op != AssignOp::Assign && !target.is_numeric() && target != Type::Error {
+        // `&=` and the other bit forms need an integer (v7).
+        let fits = match op {
+            AssignOp::Assign => true,
+            AssignOp::Add | AssignOp::Sub | AssignOp::Mul | AssignOp::Div => target.is_numeric(),
+            _ => target.is_integer(),
+        };
+        if !fits && target != Type::Error {
             let span = Span::new(place.span.start, value.span.end);
             self.report(errors::bad_operands(op.symbol(), &[target], span));
             self.expr(value, None);

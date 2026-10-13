@@ -1,13 +1,14 @@
-# Lugha v7 Specification (in progress: milestone 27)
+# Lugha v7 Specification (in progress: milestones 27–28)
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestone 27, more numbers, is done; milestones 28–29 are next). It is built from the approved plan, `Language v7 Draft.md`, milestone by milestone. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v6 Specification.md` keeps v6 frozen.
+**Status:** in progress (milestones 27–28, more numbers and bits, are done; milestone 29 is next). It is built from the approved plan, `Language v7 Draft.md`, milestone by milestone. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v6 Specification.md` keeps v6 frozen.
 
 **v6.** This is v5 plus generic interfaces, iterators, `Self` in interfaces and converting between interfaces (milestones 23–26).
 
-**Changes since v6** (milestone 27):
+**Changes since v6** (milestones 27–28):
 - `u32`, `u64` and `f32` are numeric types: literals take them from context, arithmetic and overflow panics work at their widths, every numeric type casts to every other, and they print, interpolate and cross the C boundary (sections 2, 4, 5, 7–9).
+- Bit operators `&`, `|`, `^`, `~`, `<<` and `>>` on integers, with Rust's precedence (`flags & MASK == 0` is `(flags & MASK) == 0`), the compound forms `&=` `|=` `^=` `<<=` `>>=`, binary literals (`0b1010`), and a panic for a shift that is negative or at least the type's width (sections 2–5, 9).
 
 A valid v6 program is a valid v7 program unless it uses `u32`, `u64` or `f32` as a name: they are type keywords now, like `i32`.
 
@@ -110,7 +111,7 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 
 | Kind | Examples | Notes |
 | --- | --- | --- |
-| Integer | `42`, `1_000_000`, `0xFF` | Decimal or hex; `_` separators allowed between digits |
+| Integer | `42`, `1_000_000`, `0xFF`, `0b1010` | Decimal, hex or binary (v7); `_` separators allowed between digits |
 | Float | `3.14`, `2.0e-3` | Must have digits on both sides of the `.`; optional exponent |
 | String | `"hello\n"` | Double-quoted; escapes `\n` `\t` `\r` `\\` `\"` `\0` |
 | Boolean | `true`, `false` | Keywords |
@@ -118,7 +119,7 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 **Number details.**
 
 - `_` may appear only between two digits, and only in integers. `1__0`, `1_`, `0x_FF` and `1_0.5` are errors.
-- The hex prefix is lowercase `0x` followed by at least one hex digit, in either case. `0XFF` and `0x` are errors.
+- The hex prefix is lowercase `0x` followed by at least one hex digit, in either case. `0XFF` and `0x` are errors. The binary prefix (v7) is lowercase `0b` followed by at least one `0` or `1`: `0B1`, `0b` and `0b102` are errors.
 - Leading zeros are allowed and mean nothing special: `007` is 7.
 - A literal without a `.` is an integer. `2e5` is an error; write `2.0e5`.
 - An exponent is `e` or `E`, an optional sign, then at least one digit.
@@ -135,14 +136,14 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 
 | Code | Error | Example |
 | --- | --- | --- |
-| E0101 | Unexpected character | `@`, `#`, `é` outside a string, lone `&` |
+| E0101 | Unexpected character | `@`, `#`, `é` or `$` outside a string |
 | E0102 | Unterminated string | `"abc` at end of line or file |
 | E0103 | Unknown escape sequence | `"\q"` |
 | E0104 | Integer literal too large | `18446744073709551616` |
 | E0105 | Misplaced `_` in a number | `1__0`, `1_`, `0x_FF`, `1_0.5` |
 | E0106 | Number is missing digits | `0x`, `2.0e`, `2.0e+` |
 | E0107 | Float needs a fractional part | `2e5` (help: write `2.0e5`) |
-| E0108 | Invalid character in a number | `123abc`, `0XFF`, `0xFG` |
+| E0108 | Invalid character in a number | `123abc`, `0XFF`, `0xFG`, `0b102` |
 | E0109 | Float literal out of range | `1.0e999` |
 | E0110 | Source is not valid UTF-8 | A Latin-1 `é` byte; reported at the first bad byte |
 | E0111 | Bad interpolation in a string (v3) | `"a } b"`, `"{x"`, `"{}"` — write `{{`/`}}` for literal braces |
@@ -151,9 +152,12 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 
 ```
 +  -  *  /  %  ==  !=  <  <=  >  >=  &&  ||  !
-=  +=  -=  *=  /=
+&  |  ^  ~  <<                                  (v7)
+=  +=  -=  *=  /=  &=  |=  ^=  <<=              (v7: the bit forms)
 (  )  {  }  [  ]  ,  ;  :  .  ..  =>  ?
 ```
+
+`>>` and `>>=` (v7) are not tokens: the lexer gives two `>` (or `>` and `>=`), so `Option<Option<i64>>` closes both type-argument lists, and an expression reads `>` immediately followed by `>`, with nothing between, as a right shift (`>>=` likewise in an assignment). With a space between (`a > > b`), they stay two `>`, a parse error.
 
 `::` is lexed as a token only so the parser can reject it helpfully (E0207): Lugha writes `Shape.Circle`, not `Shape::Circle`.
 
@@ -202,7 +206,7 @@ stmt         = var_decl | while_stmt | for_stmt
              | expr [ assign_op expr ] ";" ;
 block_like   = if_expr | match_expr | block ;
 var_decl     = "let" [ "mut" ] IDENT [ ":" type ] "=" expr ";" ;
-assign_op    = "=" | "+=" | "-=" | "*=" | "/=" ;
+assign_op    = "=" | "+=" | "-=" | "*=" | "/=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ;   (* the bit forms: v7 *)
 
 if_expr      = "if" cond block [ "else" ( if_expr | block ) ] ;
 while_stmt   = "while" cond block ;
@@ -245,11 +249,17 @@ infix        = binop expr | "as" type ;
 | 2 | `&&` | Logical and, short-circuit |
 | 3 | `==` `!=` | Equality |
 | 4 | `<` `<=` `>` `>=` | Comparison |
-| 5 | `+` `-` | Additive |
-| 6 | `*` `/` `%` | Multiplicative |
-| 7 | `as` | Cast |
-| 8 | `-` `!` | Prefix unary |
-| 9 | call, `[]`, `.` | Postfix |
+| 5 | `\|` | Bitwise or (v7) |
+| 6 | `^` | Bitwise exclusive or (v7) |
+| 7 | `&` | Bitwise and (v7) |
+| 8 | `<<` `>>` | Shifts (v7) |
+| 9 | `+` `-` | Additive |
+| 10 | `*` `/` `%` | Multiplicative |
+| 11 | `as` | Cast |
+| 12 | `-` `!` `~` | Prefix unary |
+| 13 | call, `[]`, `.` | Postfix |
+
+The bit operators sit between comparisons and `+ -`, as in Rust, so `flags & MASK == 0` means `(flags & MASK) == 0` and `a + b << 2` means `(a + b) << 2`.
 
 **Assignment is a statement**, not an expression, so `a = b = c` and `if (x = 1)` are parse errors. The left side of an assignment must be a place expression: a variable, a field access, an index, or a chain of these (`pts[i].x`). The parser accepts any expression there; the type checker rejects non-places.
 
@@ -380,7 +390,10 @@ let e: f64 = 5;       // error: integer literal where f64 expected
 | `==` `!=` | Two values of the same type | `bool` |
 | `&&` `\|\|` | Two `bool` | `bool` |
 | `!` | `bool` | `bool` |
-| unary `-` | `i32`, `i64` or `f64` | Same type |
+| unary `-` | `i32`, `i64`, `f32` or `f64` | Same type |
+| `&` `\|` `^` | Two integers of the same type (v7) | That type |
+| `<<` `>>` | An integer, and an amount of the same type (v7) | That type |
+| `~` | An integer (v7) | Same type |
 
 **Equality on every type.** `==` and `!=` compare deeply:
 - **Primitives and strings:** as before.
@@ -532,7 +545,7 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 
 Evaluation is strictly left to right: operands, call arguments and struct-literal fields are evaluated in source order. The only exceptions are `&&` and `||`, which skip their right operand when the left decides the result.
 
-**Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way. Float arithmetic follows IEEE 754: overflow gives an infinity and division by zero gives an infinity or NaN, never a panic. Explicit casts are the one place values wrap: narrowing with `as` truncates (section 4).
+**Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way. Shifts (v7) lose the bits shifted out and never panic for overflow; `>>` copies the sign bit for `i32` and `i64` and fills with zeros for the unsigned types; a shift amount that is negative, or at least the type's width (8, 32 or 64), panics with `shift out of range` at the operator. `&=`, `|=`, `^=`, `<<=` and `>>=` mean `x = x op y` with the place evaluated once, as `+=` does, and need an integer. Float arithmetic follows IEEE 754: overflow gives an infinity and division by zero gives an infinity or NaN, never a panic. Explicit casts are the one place values wrap: narrowing with `as` truncates (section 4).
 
 **Method calls.** `x.m(a, b)` evaluates `x`, then `a`, then `b`; `xs.push(v)` evaluates the place `xs`, then `v`. For a `mut self` call the place `x` is evaluated once, before the arguments, like an assignment's place.
 
@@ -590,7 +603,7 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 
 **Expression statements.** Any expression followed by `;` is a statement, and its value is discarded. Discarding the result of a non-`void` call is allowed. Adding `;` after a would-be tail expression turns it into a statement, so `{ x * x; }` is a `void` block. When a value was expected, the checker reports this as "remove this semicolon" and points at it.
 
-**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), an out-of-range `slice` (`slice out of bounds: from F to T of a string of length L`, at the method name; v4), `split` with an empty separator (located in the prelude, `<prelude>:…`; v4), a negative repeat-literal count, too-deep recursion (`stack overflow`), and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. A stack overflow is the one panic without a location — it prints just `panic: stack overflow` — because the runtime can't tell which call went too deep. They cannot be caught.
+**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), a shift out of range (`shift out of range`; v7), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), an out-of-range `slice` (`slice out of bounds: from F to T of a string of length L`, at the method name; v4), `split` with an empty separator (located in the prelude, `<prelude>:…`; v4), a negative repeat-literal count, too-deep recursion (`stack overflow`), and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. A stack overflow is the one panic without a location — it prints just `panic: stack overflow` — because the runtime can't tell which call went too deep. They cannot be caught.
 
 **Intrinsics.** These names are built into the compiler, not declared in source. They accept arguments that ordinary functions can't, which is why they are special.
 
@@ -1717,6 +1730,23 @@ fun main() {
 }
 ```
 
+**Bits** (milestone 28). Prints `true`, `11`, `5`, `5`, `1024`, `-4`, `65280` on seven lines, exits with 0.
+
+```
+fun main() {
+    let flags: u32 = 0b1010;
+    println(flags & 0b0010 == 0b0010);
+    println(flags | 1);
+    println(flags ^ 0xf);
+    println(~flags & 0xf);
+    println(1 << 10);
+    println(-8 >> 1);
+    let mut m: u64 = 0xff;
+    m <<= 8;
+    println(m);
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1750,7 +1780,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 25 | `Self` (v6) | `Self` in interfaces, bounds-only interfaces (E0427) | The `Self` program in section 10 passes (done) |
 | 26 | Converting between interfaces (v6) | one interface value to another, and through `?` | The converting-between-interfaces program in section 10 passes (done: v6 complete) |
 | 27 | More numbers (v7) | `u32`, `u64`, `f32`: literals, arithmetic, casts, printing, externs | The more-numbers program in section 10 passes (done) |
-| 28 | Bits (v7, planned) | `& \| ^ ~ << >>`, the compound forms, `0b` literals, the shift panic | The bits program passes |
+| 28 | Bits (v7) | `& \| ^ ~ << >>`, the compound forms, `0b` literals, the shift panic | The bits program in section 10 passes (done) |
 | 29 | Integer methods (v7, planned) | `wrapping_add`/`sub`/`mul`, `count_ones`, `leading_zeros`, `trailing_zeros` | The hashing program passes |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.

@@ -10,26 +10,34 @@ use crate::span::Span;
 impl Lexer<'_> {
     /// Lexes a number starting at `start`, which holds an ASCII digit.
     pub(super) fn number(&mut self, start: usize) {
-        if self.byte_at(0) == Some(b'0') && self.byte_at(1) == Some(b'x') {
+        let radix = match (self.byte_at(0), self.byte_at(1)) {
+            (Some(b'0'), Some(b'x')) => Some(16),
+            // Binary literals (v7): `0b1010`.
+            (Some(b'0'), Some(b'b')) => Some(2),
+            _ => None,
+        };
+        if let Some(radix) = radix {
             self.pos += 2;
             self.skip_while(is_ident_byte);
-            self.hex(start);
+            self.radix(start, radix);
         } else {
             self.decimal(start);
         }
     }
 
-    fn hex(&mut self, start: usize) {
+    /// A hex (`radix` 16) or binary (2, v7) literal after its prefix.
+    fn radix(&mut self, start: usize, radix: u32) {
         let span = Span::new(start, self.pos);
         let body = &self.src[start + 2..self.pos];
+        let kind = if radix == 16 { "hex" } else { "binary" };
         let diagnostic = if body.is_empty() {
-            Diagnostic::error("E0106", "hex literal has no digits", span)
-        } else if let Some(c) = body.chars().find(|c| !c.is_ascii_hexdigit() && *c != '_') {
+            Diagnostic::error("E0106", format!("{kind} literal has no digits"), span)
+        } else if let Some(c) = body.chars().find(|c| !c.is_digit(radix) && *c != '_') {
             invalid_char(c, span)
         } else if !underscores_between_digits(body) {
             misplaced_underscore(span)
         } else {
-            match u64::from_str_radix(&body.replace('_', ""), 16) {
+            match u64::from_str_radix(&body.replace('_', ""), radix) {
                 Ok(value) => return self.push(TokenKind::Int(value), start),
                 Err(_) => too_large(span),
             }
@@ -150,8 +158,20 @@ mod tests {
 
     #[test]
     fn integers() {
-        let src = "0 42 007 1_000_000 0xFF 0xff 0xDEAD_BEEF 18446744073709551615";
-        let expected = [0, 42, 7, 1_000_000, 0xFF, 0xFF, 0xDEAD_BEEF, u64::MAX];
+        let src = "0 42 007 1_000_000 0xFF 0xff 0xDEAD_BEEF 18446744073709551615 0b1010 0b1_0 0b0";
+        let expected = [
+            0,
+            42,
+            7,
+            1_000_000,
+            0xFF,
+            0xFF,
+            0xDEAD_BEEF,
+            u64::MAX,
+            10,
+            2,
+            0,
+        ];
         assert_eq!(kinds(src), expected.map(Int));
     }
 
@@ -181,14 +201,16 @@ mod tests {
 
     #[test]
     fn misplaced_underscore_is_e0105() {
-        for src in ["1__0", "1_", "0x_FF", "1_0.5", "0xF__F", "1.0_5", "2.0e1_0"] {
+        for src in [
+            "1__0", "1_", "0x_FF", "1_0.5", "0xF__F", "1.0_5", "2.0e1_0", "0b_1",
+        ] {
             assert_eq!(errors(src), [("E0105", src)], "{src:?}");
         }
     }
 
     #[test]
     fn missing_digits_is_e0106() {
-        for src in ["0x", "2.0e", "2.0e+"] {
+        for src in ["0x", "0b", "2.0e", "2.0e+"] {
             assert_eq!(errors(src), [("E0106", src)], "{src:?}");
         }
     }
@@ -203,7 +225,7 @@ mod tests {
 
     #[test]
     fn letters_after_a_number_are_one_e0108() {
-        for src in ["123abc", "0XFF", "0xFG", "1.5x", "2else"] {
+        for src in ["123abc", "0XFF", "0xFG", "1.5x", "2else", "0b102", "0B1"] {
             assert_eq!(errors(src), [("E0108", src)], "{src:?}");
         }
     }

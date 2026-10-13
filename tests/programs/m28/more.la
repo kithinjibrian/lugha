@@ -1,0 +1,43 @@
+// Bit operators at every integer width (milestone 28).
+
+fun main() {
+    let a: u8 = 0b1100_1010;
+    println(a & 0x0f);
+    println(a | 1);
+    println(a ^ 0xff);
+    println(~a);
+    println(a >> 4);
+    println(a << 7);
+
+    let b: i32 = -16;
+    println(b >> 2);
+    println(b << 1);
+    println(~b);
+
+    let c: u32 = 0xdead_beef;
+    println(c >> 16);
+    println(c & 0xffff);
+    println(1 << 31 as u32);
+
+    let d: i64 = 1;
+    println(d << 63);
+    println((d << 63) >> 63);
+
+    let e: u64 = 0xff00_ff00_ff00_ff00;
+    println(e >> 8);
+    println(~e);
+
+    // compound assignments
+    let mut f: u32 = 0b1;
+    f <<= 4;
+    f |= 0b11;
+    f &= 0b10010;
+    f ^= 0b1;
+    f >>= 1;
+    println(f);
+
+    // precedence: shifts above &, & above ^, ^ above |, all above ==
+    println(1 + 2 << 3);
+    println(6 & 3 ^ 1 | 8);
+    println(5 & 4 == 4);
+}

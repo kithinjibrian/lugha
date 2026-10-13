@@ -5,7 +5,7 @@
 //! block's tail value.
 
 use super::{PResult, Parser, Reported};
-use crate::ast::{AssignOp, Block, Expr, ForIter, Stmt, StmtKind};
+use crate::ast::{Block, Expr, ForIter, Stmt, StmtKind};
 use crate::diagnostic::Diagnostic;
 use crate::lexer::TokenKind;
 use crate::span::Span;
@@ -106,8 +106,8 @@ impl Parser<'_> {
             }
             _ => {
                 let expr = self.expr()?;
-                if let Some(op) = assign_op(self.peek()) {
-                    let op_span = self.bump();
+                if let Some((op, width)) = self.assignment_operator() {
+                    let op_span = self.bump_n(width);
                     let value = self.expr()?;
                     self.expect(&TokenKind::Semi)?;
                     StmtKind::Assign {
@@ -181,17 +181,6 @@ impl Parser<'_> {
             body: self.block()?,
         })
     }
-}
-
-fn assign_op(kind: &TokenKind) -> Option<AssignOp> {
-    Some(match kind {
-        TokenKind::Eq => AssignOp::Assign,
-        TokenKind::PlusEq => AssignOp::Add,
-        TokenKind::MinusEq => AssignOp::Sub,
-        TokenKind::StarEq => AssignOp::Mul,
-        TokenKind::SlashEq => AssignOp::Div,
-        _ => return None,
-    })
 }
 
 #[cfg(test)]

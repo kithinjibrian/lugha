@@ -178,9 +178,9 @@ Done when the converting-between-interfaces program passes and the v6 spec is co
 Done when the more-numbers program passes.
 - [x] PRP-055: `u32`, `u64`, `f32`: literals, arithmetic, casts, printing, externs; `Language v7 Specification.md` begins; tagged `m27`
 
-### Milestone 28 — Bits
+### Milestone 28 — Bits ✅
 Done when the bits program passes.
-- [ ] `& | ^ ~ << >>`, compound forms, `0b` literals, the shift panic
+- [x] PRP-056: `& | ^ ~ << >>`, compound forms, `0b` literals, the shift panic; tagged `m28` at merge
 
 ### Milestone 29 — Integer methods
 Done when the hashing program passes and the v7 spec is complete.

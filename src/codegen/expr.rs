@@ -60,6 +60,13 @@ impl<'ctx> Lowerer<'ctx> {
                     self.arithmetic(BinOp::Sub, ty, zero, value, expr.span.start)
                 }
             }
+            ExprKind::Unary(UnOp::BitNot, operand) => {
+                let value = self.get(operand, &self.ty(expr))?.into_int_value();
+                self.builder
+                    .build_not(value, "bitnot")
+                    .expect(POSITIONED)
+                    .into()
+            }
             ExprKind::Unary(UnOp::Not, operand) => {
                 let value = self.get(operand, &Type::Bool)?.into_int_value();
                 self.builder

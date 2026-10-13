@@ -16,6 +16,15 @@ impl Lexer<'_> {
             ('!', Some(b'=')) => (BangEq, 2),
             ('&', Some(b'&')) => (AndAnd, 2),
             ('|', Some(b'|')) => (OrOr, 2),
+            ('<', Some(b'<')) if self.byte_at(2) == Some(b'=') => (ShlEq, 3),
+            ('<', Some(b'<')) => (Shl, 2),
+            ('&', Some(b'=')) => (AmpEq, 2),
+            ('|', Some(b'=')) => (PipeEq, 2),
+            ('^', Some(b'=')) => (CaretEq, 2),
+            ('&', _) => (Amp, 1),
+            ('|', _) => (Pipe, 1),
+            ('^', _) => (Caret, 1),
+            ('~', _) => (Tilde, 1),
             ('+', Some(b'=')) => (PlusEq, 2),
             ('-', Some(b'=')) => (MinusEq, 2),
             ('*', Some(b'=')) => (StarEq, 2),
@@ -52,16 +61,12 @@ impl Lexer<'_> {
     fn unexpected(&mut self, start: usize, c: char) {
         self.pos += c.len_utf8();
         let span = Span::new(start, self.pos);
-        let mut diagnostic =
-            Diagnostic::error("E0101", format!("unexpected character {c:?}"), span);
-        if let Some(fix) = match c {
-            '&' => Some("`&&`"),
-            '|' => Some("`||`"),
-            _ => None,
-        } {
-            diagnostic = diagnostic.with_help(format!("did you mean {fix}?"));
-        }
-        self.error(diagnostic);
+        // `&` and `|` are operators since v7, so no "did you mean" help remains.
+        self.error(Diagnostic::error(
+            "E0101",
+            format!("unexpected character {c:?}"),
+            span,
+        ));
     }
 }
 
@@ -100,5 +105,17 @@ mod tests {
             [Ident("a".into()), FatArrow, Ident("b".into())]
         );
         assert_eq!(kinds("==>"), [EqEq, Gt]);
+    }
+
+    #[test]
+    fn v7_bit_operators_lex_with_longest_match() {
+        assert_eq!(
+            kinds("& &= | |= ^ ^= ~ << <<= && ||"),
+            [
+                Amp, AmpEq, Pipe, PipeEq, Caret, CaretEq, Tilde, Shl, ShlEq, AndAnd, OrOr
+            ]
+        );
+        // `>>` stays two tokens so `Option<Option<i64>>` closes both lists.
+        assert_eq!(kinds(">> >>="), [Gt, Gt, Gt, GtEq]);
     }
 }

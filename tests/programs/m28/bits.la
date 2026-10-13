@@ -1,0 +1,14 @@
+// The v7 draft's §10 bits program (milestone 28).
+
+fun main() {
+    let flags: u32 = 0b1010;
+    println(flags & 0b0010 == 0b0010);
+    println(flags | 1);
+    println(flags ^ 0xf);
+    println(~flags & 0xf);
+    println(1 << 10);
+    println(-8 >> 1);
+    let mut m: u64 = 0xff;
+    m <<= 8;
+    println(m);
+}

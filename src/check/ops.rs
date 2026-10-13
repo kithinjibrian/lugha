@@ -28,10 +28,11 @@ impl Checker {
                 Type::Bool
             };
         }
-        let arithmetic = matches!(
-            op,
-            BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div | BinOp::Rem
-        );
+        let arithmetic = op.is_bitwise()
+            || matches!(
+                op,
+                BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div | BinOp::Rem
+            );
         // Only arithmetic passes the context's type to its operands; a comparison's `bool` doesn't.
         let outer = if arithmetic { expect } else { None };
         // Comparing passes any type between operands (`o == None`); arithmetic only numbers.
@@ -49,6 +50,8 @@ impl Checker {
                 // ordered, and a parameter has what its bounds give (v2 draft §4).
                 BinOp::Eq | BinOp::Ne => self.eq_ok(&l),
                 BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge => self.ord_ok(&l),
+                // Bits are for integers; a shift's amount has the value's type (v7).
+                _ if op.is_bitwise() => l.is_integer(),
                 _ => l.is_numeric(),
             };
         if !allowed && l != Type::Never {

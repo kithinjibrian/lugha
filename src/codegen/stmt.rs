@@ -110,6 +110,11 @@ fn compound_op(op: AssignOp) -> Option<BinOp> {
         AssignOp::Sub => Some(BinOp::Sub),
         AssignOp::Mul => Some(BinOp::Mul),
         AssignOp::Div => Some(BinOp::Div),
+        AssignOp::BitAnd => Some(BinOp::BitAnd),
+        AssignOp::BitOr => Some(BinOp::BitOr),
+        AssignOp::BitXor => Some(BinOp::BitXor),
+        AssignOp::Shl => Some(BinOp::Shl),
+        AssignOp::Shr => Some(BinOp::Shr),
     }
 }
 

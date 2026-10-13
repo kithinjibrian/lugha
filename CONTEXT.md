@@ -3285,21 +3285,45 @@ Branch: prp-055-more_numbers (merged into main)
 
 ---
 
-## SESSION 71 — 2026-10-13 — Bits (milestone 28) — open
+## SESSION 71 — 2026-10-13 — Bits (milestone 28) — closed
 Branch: prp-056-bits
+
+### WHAT WAS DONE
+- The user asked for milestones 28 and 29 "in one go": PRP-056 written as approved within the v7 draft, built, merged on green CI.
+- Lexer: bit-operator tokens, `0b` literals; `>>`/`>>=` read by the parser from touching `>` tokens (`parser/operators.rs`).
+- AST levels per the draft (Rust order), `~`, bit compound forms; checker rules; codegen `codegen/bits.rs` with the shift range panic.
+- Spec: §2 tokens and literals, §3 precedence, §4 operator table, §5 shifts and compound forms, panics list, the §10 bits program; milestone 28 done.
+
+### FILES CREATED OR MODIFIED
+- New: `src/parser/operators.rs`, `src/codegen/bits.rs`, `tests/programs/m28/` (`bits`, `more`, `shift_panic`, `e0404`).
+- Modified: `src/lexer/{punct,number,token,mod}.rs`, `src/parser/{expr,stmt,describe,mod}.rs`, `src/parser/sexp/mod.rs`, `src/ast/{expr,mod}.rs`, `src/check/{ops,expr,assign,numbers}.rs`, `src/codegen/{arith,expr,stmt,mod}.rs`, `tests/spec.rs`, the v7 spec.
+- Docs: PRP-056, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 67, CONTEXT.
+
+### TESTS WRITTEN
+- Lexer: operators by longest match, `>>` as two tokens, binary literals and their errors (E0105/E0106/E0108); the E0101 test no longer uses `&`/`|`.
+- Parser (`operators.rs`): precedence, `>>` pairing (and `a > > b` an error, `Option<Option<i64>>` fine), compound forms.
+- Checker (`numbers.rs`): bit operators' types and E0404 cases. Codegen (`bits.rs`): each instruction and `icmp uge`.
+- `tests/programs/m28/`; the §10 program from the spec. Earlier programs' IR byte-identical with `main`; `-O2` checked by hand (including the panic).
+
+### DECISIONS MADE
+- MEMORY 67.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m28`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 27 complete** (PRP-055, MEMORY 66): `u32`, `u64`, `f32` as keyword types. Tagged `m27`. `Language v7 Specification.md` (in progress) is what `lughac spec` prints; v6 is frozen.
+**Milestone 28 complete** (PRP-056, MEMORY 67): bit operators, compound forms, `0b` literals, the shift panic. Tag `m28` goes on the merge of PRP-056. `Language v7 Specification.md` (in progress) is what `lughac spec` prints.
 
-Next: **milestone 28, bits** — discovery and PRP-056. Scope (v7 draft decisions 3 and 5, §2 operators and `0b` literals, §3 precedence and `assign_op`, §4 "Bit operators", §5 compound forms, §9, §10 "Bits"):
-- lexer: `& | ^ ~ << >>` and `&= |= ^= <<= >>=` (a lone `&`/`|` is E0101 today), `0b` literals (E0105/E0106/E0108);
-- parser: Rust precedence (`<< >>` > `&` > `^` > `|` > comparisons), prefix `~`;
-- checker: integer operands of one type, shift amount of the shifted type, E0404 otherwise;
-- codegen: `and`/`or`/`xor`/`shl`/`lshr`/`ashr`, shift range check panicking `shift out of range` at the operator.
+Next: **milestone 29, integer methods** — PRP-057, completing v7 (tags `m29`, `v7`); the user asked for milestones 28–29 in one go. Scope (v7 draft decisions 2 and 4, §4 "Methods on integers", §9, §10 "Hashing"):
+- `a.wrapping_add(b)`, `wrapping_sub`, `wrapping_mul` (same type, `b` typed by `a`); `count_ones()`, `leading_zeros()`, `trailing_zeros()` → `i64`; other names on integers E0415; `(5).count_ones()` works (literal receiver `i64`);
+- codegen: plain `add/sub/mul`; `llvm.ctpop`/`ctlz`/`cttz` (`is_zero_poison` false) then `zext`/`trunc` to `i64`.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (295), `check/interfaces.rs` (299), `check/infer.rs` (297), `parser/expr.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292), `codegen/runtime.rs` (~295), `codegen/arith.rs` (277).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `parser/expr.rs` (~290), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/ops.rs` (~289), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
 
 See `TODO.md`.

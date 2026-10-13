@@ -1,8 +1,8 @@
 //! Expressions: Pratt loop, prefix, postfix and primary forms (spec §3).
 //!
-//! Binding is by the spec §3 levels: `||` 1 … `* / %` 6, `as` 7, prefix
-//! operators tighter, postfix tightest. Equality and comparison are
-//! non-associative.
+//! Binding is by the spec §3 levels: `||` 1 … `* / %` 10, `as` 11, prefix
+//! operators tighter, postfix tightest (the table is `operators.rs`).
+//! Equality and comparison are non-associative.
 
 use super::{PResult, Parser, Reported};
 use crate::ast::{BinOp, Expr, ExprKind, Ident, UnOp};
@@ -10,7 +10,7 @@ use crate::diagnostic::Diagnostic;
 use crate::lexer::TokenKind;
 
 /// Precedence level of `as`, above every binary operator.
-const CAST_LEVEL: u8 = 7;
+const CAST_LEVEL: u8 = 11;
 
 impl Parser<'_> {
     /// Parses an expression; struct literals are allowed.
@@ -38,7 +38,9 @@ impl Parser<'_> {
                 lhs = self.mk(start, ExprKind::Cast(Box::new(lhs), ty));
                 continue;
             }
-            let Some(op) = binop(self.peek()) else { break };
+            let Some((op, width)) = self.binary_operator() else {
+                break;
+            };
             if op.level() < min_level {
                 break;
             }
@@ -47,7 +49,7 @@ impl Parser<'_> {
             {
                 return Err(self.chained(prev, op));
             }
-            let op_span = self.bump();
+            let op_span = self.bump_n(width);
             let rhs = self.binary(op.level() + 1)?;
             lhs = self.mk(
                 start,
@@ -73,6 +75,7 @@ impl Parser<'_> {
         let op = match self.peek() {
             TokenKind::Minus => UnOp::Neg,
             TokenKind::Bang => UnOp::Not,
+            TokenKind::Tilde => UnOp::BitNot,
             _ => return self.postfix(),
         };
         let start = self.bump().start;
@@ -150,25 +153,6 @@ impl Parser<'_> {
         self.error(Diagnostic::error("E0207", message, at).with_help(help));
         Ok(ExprKind::Field(Box::new(base), member))
     }
-}
-
-fn binop(kind: &TokenKind) -> Option<BinOp> {
-    Some(match kind {
-        TokenKind::OrOr => BinOp::Or,
-        TokenKind::AndAnd => BinOp::And,
-        TokenKind::EqEq => BinOp::Eq,
-        TokenKind::BangEq => BinOp::Ne,
-        TokenKind::Lt => BinOp::Lt,
-        TokenKind::LtEq => BinOp::Le,
-        TokenKind::Gt => BinOp::Gt,
-        TokenKind::GtEq => BinOp::Ge,
-        TokenKind::Plus => BinOp::Add,
-        TokenKind::Minus => BinOp::Sub,
-        TokenKind::Star => BinOp::Mul,
-        TokenKind::Slash => BinOp::Div,
-        TokenKind::Percent => BinOp::Rem,
-        _ => return None,
-    })
 }
 
 #[cfg(test)]

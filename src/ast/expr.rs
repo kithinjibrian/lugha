@@ -71,6 +71,8 @@ pub enum UnOp {
     Neg,
     /// `!`
     Not,
+    /// `~`, bitwise not (v7).
+    BitNot,
 }
 
 /// Binary operators, lowest precedence first.
@@ -89,6 +91,12 @@ pub enum BinOp {
     Mul,
     Div,
     Rem,
+    /// v7 bit operators: `|`, `^`, `&`, `<<`, `>>`.
+    BitOr,
+    BitXor,
+    BitAnd,
+    Shl,
+    Shr,
 }
 
 impl BinOp {
@@ -109,10 +117,22 @@ impl BinOp {
             Mul => "*",
             Div => "/",
             Rem => "%",
+            BitOr => "|",
+            BitXor => "^",
+            BitAnd => "&",
+            Shl => "<<",
+            Shr => ">>",
         }
     }
 
-    /// Precedence level from the spec §3 table: 1 (`||`) to 6 (`* / %`).
+    /// `& | ^ << >>` (v7): integer operands of one type.
+    pub fn is_bitwise(self) -> bool {
+        use BinOp::*;
+        matches!(self, BitOr | BitXor | BitAnd | Shl | Shr)
+    }
+
+    /// Precedence level from the spec §3 table: 1 (`||`) to 10 (`* / %`);
+    /// the v7 bit operators sit between comparisons and `+ -`, as in Rust.
     pub fn level(self) -> u8 {
         use BinOp::*;
         match self {
@@ -120,8 +140,12 @@ impl BinOp {
             And => 2,
             Eq | Ne => 3,
             Lt | Le | Gt | Ge => 4,
-            Add | Sub => 5,
-            Mul | Div | Rem => 6,
+            BitOr => 5,
+            BitXor => 6,
+            BitAnd => 7,
+            Shl | Shr => 8,
+            Add | Sub => 9,
+            Mul | Div | Rem => 10,
         }
     }
 }

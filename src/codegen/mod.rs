@@ -8,6 +8,7 @@
 
 mod arith;
 mod array;
+mod bits;
 mod cast;
 mod closures;
 mod construct;

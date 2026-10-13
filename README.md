@@ -16,7 +16,7 @@ $ lughac run fib.la
 832040
 ```
 
-Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is complete (milestones 17–19), with v4.1 allowing string literals inside interpolations. v5, interface values, is complete (milestones 20–22), and v6, generic interfaces, iterators, `Self` and converting between interfaces, is complete (milestones 23–26). v7, numbers and bits, is in progress: milestone 27 adds `u32`, `u64` and `f32`. Today it has everything in v1.2:
+Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is complete (milestones 17–19), with v4.1 allowing string literals inside interpolations. v5, interface values, is complete (milestones 20–22), and v6, generic interfaces, iterators, `Self` and converting between interfaces, is complete (milestones 23–26). v7, numbers and bits, is in progress: milestones 27–28 add `u32`, `u64`, `f32` and the bit operators. Today it has everything in v1.2:
 - **Basic types:** integers (`i32`, `i64`, `u8`), `f64`, `bool` and immutable strings.
 - **Compound types:** growable arrays (`push`, `pop`, `clear`), structs, and enums with exhaustive `match`, including `Option<T>` and recursive enums.
 - **Behaviour:** methods in `impl` blocks, `if` expressions, loops and `for … of`, and `swap(a, b)` to exchange two places without copying.
@@ -41,6 +41,7 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **`Self` (v6, milestone 25):** `interface Ordered { fun less(self, other: Self): bool; }` is satisfied by `Money` with `fun less(self, other: Money): bool`, and `fun largest<T: Ordered>(xs: T[]): T` works on it; such an interface is a bound only (E0427 as a type).
 - **Converting between interfaces (v6, milestone 26):** a `Pet` value becomes a `Named` where one is expected when `Pet` declares everything `Named` does; the dog inside is still a `Dog` to a type pattern, and `?` converts interface errors the same way.
 - **More numbers (v7, milestone 27):** `u32`, `u64` and `f32`, as in `let h: u64 = 14695981039346656037;` and `-1 as u32`; an `f32` prints its own shortest form (`0.1`).
+- **Bits (v7, milestone 28):** `& | ^ ~ << >>` with Rust's precedence (`flags & MASK == 0`), `&=` and friends, `0b1010` literals; a shift by the width or more panics.
 
 Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v7 Specification.md`](docs/specs/Language%20v7%20Specification.md) (what `lughac spec` prints, in progress); the approved plan it is built from is [`Language v7 Draft.md`](docs/specs/Language%20v7%20Draft.md), and v6 is frozen in [`Language v6 Specification.md`](docs/specs/Language%20v6%20Specification.md).
 

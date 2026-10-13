@@ -97,6 +97,7 @@ impl<'ctx> Lowerer<'ctx> {
                 };
                 result.expect(POSITIONED).into()
             }
+            _ if op.is_bitwise() => self.bitwise(op, signed, a, b, at).into(),
             _ => unreachable!("only arithmetic operators reach here"),
         }
     }

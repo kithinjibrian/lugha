@@ -160,6 +160,11 @@ impl Checker {
                 let ok = ty == Type::Bool;
                 (ty, ok, "!")
             }
+            UnOp::BitNot => {
+                let ty = self.value(operand, expect);
+                let ok = ty.is_integer();
+                (ty, ok, "~")
+            }
         };
         if ok || matches!(ty, Type::Error | Type::Never) {
             return ty;

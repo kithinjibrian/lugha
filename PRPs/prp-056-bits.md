@@ -102,41 +102,41 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — lexer (`lexer/punct.rs`, `lexer/number.rs`):
-- [ ] The new operators lex with longest match, and `>>` lexes as `>` `>`.
-- [ ] `0b1010`, `0b1_0` and `0b0` lex; `0b`, `0b_1`, `0b102` and `0B1` give E0106, E0105, E0108 and E0108.
+- [x] The new operators lex with longest match, and `>>` lexes as `>` `>`.
+- [x] `0b1010`, `0b1_0` and `0b0` lex; `0b`, `0b_1`, `0b102` and `0B1` give E0106, E0105, E0108 and E0108.
 
 Unit tests — parser (`parser/operators.rs`):
-- [ ] **Precedence:**
+- [x] **Precedence:**
   - `a & b == c` is `(== (& a b) c)`;
   - `a + b << 2` is `(<< (+ a b) 2)`;
   - `a | b ^ c & d` is `(| a (^ b (& c d)))`;
   - `~a & b` is `(& (~ a) b)`.
-- [ ] **`>>`:** `x >> 1` is a shift, `a > > b` is a parse error, and `Option<Option<i64>>` still parses as a type.
-- [ ] **Compound forms:** `x >>= 2;` and the other compound forms parse.
+- [x] **`>>`:** `x >> 1` is a shift, `a > > b` is a parse error, and `Option<Option<i64>>` still parses as a type.
+- [x] **Compound forms:** `x >>= 2;` and the other compound forms parse.
 
 Unit tests — checker (`check/ops.rs` or a new `check/bits.rs`):
-- [ ] `u32 & u32` is `u32`, and a literal takes the other side's type.
-- [ ] E0404 on `bool`, the floats and mixed integer types.
-- [ ] `~` on an integer is fine, and `~true` is E0404.
+- [x] `u32 & u32` is `u32`, and a literal takes the other side's type.
+- [x] E0404 on `bool`, the floats and mixed integer types.
+- [x] `~` on an integer is fine, and `~true` is E0404.
 
 Unit tests — codegen (`codegen/bits.rs` or `arith.rs`):
-- [ ] `and`, `or`, `xor`, `shl`, `lshr` for unsigned and `ashr` for signed.
-- [ ] The shift check uses `icmp uge`.
+- [x] `and`, `or`, `xor`, `shl`, `lshr` for unsigned and `ashr` for signed.
+- [x] The shift check uses `icmp uge`.
 
 Acceptance — `tests/programs/m28/`:
-- [ ] `bits.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `bits.la`: the §10 program.
+- [x] `more.la`:
   - every operator at `u8`, `i32`, `u32`, `i64` and `u64`;
   - the compound forms;
   - shifting by the width minus one;
   - `>>` on negative numbers;
   - precedence cases.
-- [ ] `shift_panic.la`: `1 << 64` panics with exit 101.
-- [ ] `e0404.la`: reject golden.
-- [ ] The §10 program runs from the spec.
+- [x] `shift_panic.la`: `1 << 64` panics with exit 101.
+- [x] `e0404.la`: reject golden.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -144,10 +144,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m28/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The spec is at milestone 28; docs updated.
-- [ ] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m28/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The spec is at milestone 28; docs updated.
+- [x] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -156,3 +156,12 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m28/bits.la
 ```
+
+## AMENDMENTS (during build, session 71)
+
+- **`>>=` ends an expression:** the Pratt loop returns no operator for `>` touching `>=`, so the statement can read `>>=`. Without that, `f >>= 1` parsed as `f > (>= 1)`.
+- **The sexp form of `~x` is `(bitnot x)`.**
+- **The checker's tests** are in `check/numbers.rs`, which keeps `check/ops.rs` under 300 lines.
+- **Constant shift amounts:** the range check is folded away when the amount is a literal in range, so the codegen test uses a variable amount.
+- **`-O2`** was checked by hand for `m28/bits`, `m28/more` and the shift panic.
+- **No file splits.** Moving `binop` and `assign_op` into `parser/operators.rs` keeps `parser/expr.rs` and `parser/stmt.rs` under 300 lines.
