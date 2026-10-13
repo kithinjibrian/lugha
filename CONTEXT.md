@@ -2956,7 +2956,7 @@ Branch: prp-047-interface_value_compiling
 
 ## SESSION 60 — 2026-10-13 — Type patterns (milestone 21) — open
 
-Branch: main
+Branch: prp-048-type_patterns
 
 ---
 
