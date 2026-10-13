@@ -2725,7 +2725,7 @@ Branch: prp-042-results
 
 ## SESSION 54 — 2026-10-13 — Text and option helpers (milestone 18) — open
 
-Branch: main
+Branch: prp-043-text_helpers
 
 ---
 
