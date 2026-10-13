@@ -2850,6 +2850,12 @@ Branch: prp-045-nested_strings
 
 ---
 
+## SESSION 57 — 2026-10-13 — v5 direction — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v4.1 is released** (tag `v4.1`, on top of `m19` and `v4`):
