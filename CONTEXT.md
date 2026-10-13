@@ -2293,6 +2293,12 @@ Branch: prp-035-generic_checking
 
 ---
 
+## SESSION 45 — 2026-10-13 — Compiling generics (PRP-036) — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 11 is half done.** PRP-035 (merged, session 44, MEMORY 41) type-checks generics. `lughac check` accepts them, and `build`/`run`/`--emit=ir` stop at the gate before codegen.
