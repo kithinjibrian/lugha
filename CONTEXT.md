@@ -2723,6 +2723,12 @@ Branch: prp-042-results
 
 ---
 
+## SESSION 54 — 2026-10-13 — Text and option helpers (milestone 18) — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 17 is complete** (tag `m17`; MEMORY 50). `lughac spec` prints `Language v4 Specification.md` (in progress: milestone 17).
