@@ -186,6 +186,13 @@ Done when the bits program passes.
 Done when the hashing program passes and the v7 spec is complete.
 - [x] PRP-057: `wrapping_add`/`sub`/`mul`, `count_ones`, `leading_zeros`, `trailing_zeros`; v7 complete; tagged `m29` and `v7`
 
+## v8 (draft approved, session 73 — `docs/specs/Language v8 Draft.md`)
+
+### Milestone 30 — Packages
+Done when the packages programs pass and the v8 spec is complete.
+- [ ] PRP-058: `lugha.toml`, package imports and per-package manifests (E0320–E0323)
+- [ ] PRP-059: `public` and package visibility (E0313, E0318; E0317 retired)
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.

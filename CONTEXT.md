@@ -3345,23 +3345,46 @@ Branch: prp-057-integer_methods (merged into main)
 
 ---
 
-## SESSION 73 — 2026-10-13 — v8 direction — open
+## SESSION 73 — 2026-10-13 — v8 direction — closed
 Branch: main
+
+### WHAT WAS DONE
+- v8 discovery, five answers:
+  1. headline: packages (over the recommended `match` conveniences);
+  2. a manifest (`lugha.toml`) rather than a `packages/` folder + flag — after two rounds of explaining the difference;
+  3. format: a TOML subset read by lughac itself;
+  4. visibility: no keyword = package, `public` = other packages, `private` = module;
+  5. imports keep their syntax, a package/local-folder clash is an error; packages may have their own manifests, not transitive, one name = one folder.
+- Wrote `docs/specs/Language v8 Draft.md`, approved: milestone 30, codes E0320–E0323, E0317 retired, a §10 packages program and a rejected one.
+
+### FILES CREATED OR MODIFIED
+- New: `docs/specs/Language v8 Draft.md`.
+- Modified: MEMORY (decision 69, state), TODO (v8 milestone), CHANGELOG, CLAUDE.md (tree), CONTEXT.
+
+### TESTS WRITTEN
+- None (a design session).
+
+### DECISIONS MADE
+- MEMORY 69.
+
+### PENDING DECISIONS OPENED
+- None. The draft's §12 lists re-exports and a `--package` override.
+
+### STILL OPEN AT CLOSE
+- Nothing. Work is on `main`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v7 is complete** (milestones 27–29; PRP-055–057; MEMORY 65–68): `u32`, `u64`, `f32`; bit operators; integer methods. Tagged `m29` and `v7`. `Language v7 Specification.md` is what `lughac spec` prints; v0–v6 are frozen.
+**Lugha v8 draft approved** (`docs/specs/Language v8 Draft.md`, MEMORY 69): packages — milestone 30. `main` has v7 complete (tags `m29`, `v7`); `Language v7 Specification.md` is what `lughac spec` prints until milestone 30 starts `Language v8 Specification.md`.
 
-Next: **v8 direction — discovery** (one question at a time, recommended option first). Candidates are in the v7 spec's §11 out-of-scope list and §12 open questions:
-- packages with `public`;
-- or-patterns and `mut` bindings in `match`, `unwrap()`;
-- iterator helpers (`map`, `filter`, `collect` on `Iter<T>`), strings as iterators, `for n of mut c`;
-- `Self` outside interfaces, default methods on concrete types;
-- `i8`/`i16`/`u16`, rotations, checked/saturating methods, `parse_u64`; `%=`; unsigned indexes;
-- binary I/O, directories, streams and processes.
+Next: **milestone 30, packages** — discovery and PRP-058. Likely two PRPs (as milestones 20 and 23):
+1. **Loading and resolution:** `lugha.toml` parsing (E0321, E0322), package imports in `modules/resolve.rs` (E0320, E0323, `import geo;` → E0312), per-package manifests, module keys/symbols starting with the package name, diagnostics in `lugha.toml`; every non-`private` item visible across packages for now.
+2. **Visibility:** `public` allowed (retire E0317), package-level default visibility (E0313 across packages), E0318 for non-`public` types in `public` signatures; the §10 packages programs (the spec extractor must handle `# lugha.toml` and subfolder files).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292), `check/ops.rs` (~289), `parser/expr.rs` (~290).
+Relevant code: `src/modules/` (load, resolve), `src/check/visibility.rs` (E0313/E0317/E0318), `src/driver/source.rs` (source map), `tests/common/spec_programs.rs`.
+
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/array.rs` (295), `check/env.rs` (295), `check/visibility.rs` (294), `check/generics.rs` (294), `check/satisfy.rs` (294).
 
 See `TODO.md`.

@@ -1074,6 +1074,19 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 69. Lugha v8 direction (session 73)
+
+**Decision:** `docs/specs/Language v8 Draft.md` is approved: packages, as milestone 30 (possibly two PRPs: loading/resolution, then `public` visibility).
+- **Manifest:** `lugha.toml` next to the main file (and optionally in each package): blank lines, `#` comments, one `[packages]` table, `name = "path"` lines (identifier = double-quoted string, no escapes, paths relative to the manifest, `/`). Read by lughac (TOML subset, no new crate). Bad manifest E0321; missing folder E0322.
+- **Imports:** `import a.b.c;` in package P: if P's manifest lists `a`, load `b/c.la` from that package; else local as before. Package name also a local folder/file → E0320. `import geo;` alone → E0312 with help. One name = one folder across all manifests, else E0323. Not transitive: a package's manifest is seen only inside it.
+- **Visibility:** `private` = module; none = package; `public` = other packages. E0313 extended (message names the package); E0318 extended (non-`public` type in a `public` signature); E0317 retired.
+- **Symbols:** module paths starting with the package name (`lugha_fn_geo/shapes/circle`); no `main` in packages (E0304); cycles fine.
+- **The user chose a manifest over a `packages/` folder + flag** after asking for the difference twice — explain choices in concrete terms (what you type, where it lives).
+
+**Why:** the session 73 discovery: the user picked packages as v8's headline over the recommended `match` conveniences.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -1147,22 +1160,20 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- Lugha v8 (nothing planned; see the v7 spec's §11 out-of-scope list)
+- Lugha v8: draft approved (MEMORY 69), milestone 30 not started
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v7 is complete** (milestones 27–29; PRP-055–057; MEMORY 65–68): `u32`, `u64`, `f32`; bit operators; integer methods. Tagged `m29` and `v7`. `Language v7 Specification.md` is what `lughac spec` prints; v0–v6 are frozen.
+**Lugha v8 draft approved** (`docs/specs/Language v8 Draft.md`, MEMORY 69): packages — milestone 30. `main` has v7 complete (tags `m29`, `v7`); `Language v7 Specification.md` is what `lughac spec` prints until milestone 30 starts `Language v8 Specification.md`.
 
-Next: **v8 direction — discovery** (one question at a time, recommended option first). Candidates are in the v7 spec's §11 out-of-scope list and §12 open questions:
-- packages with `public`;
-- or-patterns and `mut` bindings in `match`, `unwrap()`;
-- iterator helpers (`map`, `filter`, `collect` on `Iter<T>`), strings as iterators, `for n of mut c`;
-- `Self` outside interfaces, default methods on concrete types;
-- `i8`/`i16`/`u16`, rotations, checked/saturating methods, `parse_u64`; `%=`; unsigned indexes;
-- binary I/O, directories, streams and processes.
+Next: **milestone 30, packages** — discovery and PRP-058. Likely two PRPs (as milestones 20 and 23):
+1. **Loading and resolution:** `lugha.toml` parsing (E0321, E0322), package imports in `modules/resolve.rs` (E0320, E0323, `import geo;` → E0312), per-package manifests, module keys/symbols starting with the package name, diagnostics in `lugha.toml`; every non-`private` item visible across packages for now.
+2. **Visibility:** `public` allowed (retire E0317), package-level default visibility (E0313 across packages), E0318 for non-`public` types in `public` signatures; the §10 packages programs (the spec extractor must handle `# lugha.toml` and subfolder files).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292), `check/ops.rs` (~289), `parser/expr.rs` (~290).
+Relevant code: `src/modules/` (load, resolve), `src/check/visibility.rs` (E0313/E0317/E0318), `src/driver/source.rs` (source map), `tests/common/spec_programs.rs`.
+
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/array.rs` (295), `check/env.rs` (295), `check/visibility.rs` (294), `check/generics.rs` (294), `check/satisfy.rs` (294).
 
 See `TODO.md`.
