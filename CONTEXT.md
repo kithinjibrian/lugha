@@ -2637,6 +2637,12 @@ Branch: prp-041-array_helpers
 
 ---
 
+## SESSION 52 — 2026-10-13 — v4 direction — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v3 is complete** (tags `m16` and `v3`). Milestones 13–16 are done:
