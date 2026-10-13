@@ -2246,9 +2246,9 @@ TODO.md (milestone 12), CHANGELOG.md, MEMORY.md (decision 40)
 
 ---
 
-## SESSION 44 — 2026-10-13 — Milestone 11 (generics) discovery — open
+## SESSION 44 — 2026-10-13 — Checking generics (PRP-035) — open
 
-Branch: main
+Branch: prp-035-generic_checking
 
 ---
 
