@@ -2587,7 +2587,7 @@ Branch: prp-040-closures
 
 ## SESSION 51 — 2026-10-13 — Array helpers (milestone 16) — open
 
-Branch: main
+Branch: prp-041-array_helpers
 
 ---
 
