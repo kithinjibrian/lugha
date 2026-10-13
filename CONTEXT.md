@@ -2819,6 +2819,12 @@ Branch: prp-044-input_output
 
 ---
 
+## SESSION 56 — 2026-10-13 — String literals inside interpolations — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v4 is complete** (tags `m19` and `v4`). Milestones 17–19 are done:
