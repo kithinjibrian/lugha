@@ -2889,6 +2889,12 @@ Branch: main
 
 ---
 
+## SESSION 58 — 2026-10-13 — Interface values (milestone 20) — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **The Lugha v5 draft is approved** (`docs/specs/Language v5 Draft.md`, MEMORY 54): interface values, milestones 20–22. v4.1 is the current release (tag `v4.1`).
