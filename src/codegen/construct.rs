@@ -14,7 +14,11 @@ impl<'ctx> Lowerer<'ctx> {
     /// The variant a call's callee constructs (`E.V(..)` or `Some(..)`), if it is one.
     pub(super) fn constructed_variant(&self, callee: &Expr) -> Option<String> {
         match &callee.kind {
-            ExprKind::Name(name) if name == "Some" && !self.functions.contains_key(name) => {
+            // `Ok`/`Err` build the prelude's `Result` (v4).
+            ExprKind::Name(name)
+                if matches!(name.as_str(), "Some" | "Ok" | "Err")
+                    && !self.functions.contains_key(name) =>
+            {
                 Some(name.clone())
             }
             ExprKind::Field(base, variant) if self.ty(base) == Type::Void => {

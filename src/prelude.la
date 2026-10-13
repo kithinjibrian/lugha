@@ -7,6 +7,10 @@
 // Every helper takes its array as an ordinary parameter, so the caller's
 // array never changes, and every array it returns is new.
 
+// Success or failure (v4 draft §4): `Ok` and `Err` are written without
+// `Result.` in programs, and `?` returns an `Err` early.
+enum Result<T, E> { Ok(T), Err(E) }
+
 // `f` applied to each element, in order.
 fun map<T, U>(xs: T[], f: fun(T): U): U[] {
     let mut out: U[] = [];

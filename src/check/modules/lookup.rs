@@ -47,6 +47,11 @@ impl Checker {
                 }
             },
         };
+        // `Result` is the prelude's unless a module declares its own (v4).
+        let key = match (module, self.prelude_type(&name.name)) {
+            (None, Some(prelude)) if self.named_type(&key).is_none() => prelude,
+            _ => key,
+        };
         if self.named_type(&key).is_none() {
             let shown = module.map_or_else(
                 || name.name.clone(),

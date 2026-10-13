@@ -121,9 +121,9 @@ Done when the array-helpers program passes and the v3 spec is complete.
 
 ## v4 (draft approved, session 52 — `docs/specs/Language v4 Draft.md`)
 
-### Milestone 17 — Results and `?`
+### Milestone 17 — Results and `?` ✅
 Done when the results program passes.
-- [ ] `Result<T, E>`, `Ok`/`Err`, the `?` operator (E0424)
+- [x] PRP-042: `Result<T, E>` in the prelude, `Ok`/`Err`, the `?` operator (E0424); `Language v4 Specification.md` begins
 
 ### Milestone 18 — Text and option helpers
 Done when the text-helpers program passes.
@@ -132,6 +132,7 @@ Done when the text-helpers program passes.
 ### Milestone 19 — Input and output
 Done when the reading-input program passes and the v4 spec is complete.
 - [ ] `read_line`, `read_file`, `write_file`, `append_file`, `eprint`/`eprintln`, `exit`; stdin and scratch directories in the runner
+- [ ] Fix the draft's §10 reading-input program: `Some(n) => total += n,` isn't valid Lugha (assignment is a statement; it needs `{ total += n; }`). Found in session 53.
 
 ## Found while working — needs a PRP
 

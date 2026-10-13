@@ -89,6 +89,7 @@ pub fn expr(expr: &Expr) -> String {
         ExprKind::Name(name) => name.clone(),
         ExprKind::Unary(UnOp::Neg, e) => list("neg", &[e]),
         ExprKind::Unary(UnOp::Not, e) => list("not", &[e]),
+        ExprKind::Try(e) => list("?", &[e]),
         ExprKind::Binary(op, _, l, r) => list(op.symbol(), &[l, r]),
         ExprKind::Cast(e, t) => format!("(as {} {})", self::expr(e), ty(t)),
         ExprKind::Call(callee, args) => {

@@ -1,0 +1,14 @@
+  halved once
+  halved twice
+ok 5
+  halved once
+  halved twice
+err 3 is odd
+ok 42
+err not a digit at 1
+err no character 1
+6
+none
+ok 104
+err 7 is odd
+ok 2

@@ -1,0 +1,40 @@
+struct Reading { label: string, value: Result<f64, string> }
+
+fun check_age(age: i64): Result<i64, string> = if age < 0 { Err("negative age {age}") } else { Ok(age) };
+
+fun pick<T>(ok: bool, x: T): Result<T, string> = if ok { Ok(x) } else { Err("not picked") };
+
+fun describe(r: Result<i64, string>): string = match r {
+    Ok(n) => "ok {n}",
+    Err(e) => "error: {e}",
+};
+
+fun main() {
+    println(describe(check_age(30)));
+    println(describe(check_age(-2)));
+    let a: Result<i64, string> = Ok(1);
+    println(a == Ok(1));
+    println(a == Err("x"));
+    let rs = [check_age(1), check_age(-1), check_age(3)];
+    let mut good = 0;
+    for r of rs {
+        match r {
+            Ok(_) => { good += 1; }
+            Err(_) => {}
+        }
+    }
+    println(good);
+    let r = Reading { label: "temp", value: Err("sensor offline") };
+    match r.value {
+        Ok(v) => println("{r.label} = {v}"),
+        Err(e) => println("{r.label}: {e}"),
+    }
+    match pick(true, "word") {
+        Ok(w) => println(w),
+        Err(e) => println(e),
+    }
+    match pick(false, 2.5) {
+        Ok(x) => println(x),
+        Err(e) => println(e),
+    }
+}

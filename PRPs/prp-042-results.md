@@ -131,43 +131,43 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — lexer and parser:
-- [ ] `?` lexes as `Question`.
-- [ ] `f(x)?`, `a?.b` and `xs[0]?` parse as postfix: `(? (call f x))`, `(. (? a) b)`.
-- [ ] `-x?` is `(- (? x))`.
+- [x] `?` lexes as `Question`.
+- [x] `f(x)?`, `a?.b` and `xs[0]?` parse as postfix: `(? (call f x))`, `(. (? a) b)`.
+- [x] `-x?` is `(- (? x))`.
 
 Unit tests — checker (a new `check/results.rs`):
-- [ ] **Construction:**
+- [x] **Construction:**
   - `let r: Result<i64, string> = Ok(1);` and `Err("x")` work;
   - `Ok(1)` alone is E0412;
   - `Err()` is E0416.
-- [ ] **Patterns:** `match r { Ok(n) => n, Err(_) => 0 }` checks, and a missing `Err` arm is E0417.
-- [ ] **Names:**
+- [x] **Patterns:** `match r { Ok(n) => n, Err(_) => 0 }` checks, and a missing `Err` arm is E0417.
+- [x] **Names:**
   - `struct Result {}` and `fun Ok() {}` are E0302;
   - `let Result = 1;` is E0311;
   - `Result<i64>` is E0418;
   - a message prints `Result<i64, string>`.
-- [ ] **`?` types:** `?` on `Result` in a `Result` function gives `T`, and on `Option` in an `Option` function gives `T`.
-- [ ] **E0424 for:**
+- [x] **`?` types:** `?` on `Result` in a `Result` function gives `T`, and on `Option` in an `Option` function gives `T`.
+- [x] **E0424 for:**
   - `?` on an `i64`;
   - `?` on an `Option` in a `Result` function;
   - different error types;
   - `?` in `main`;
   - `?` in a `void` function.
-- [ ] **`?` in closures:** with a written or expected return type it works; with an inferred one it is E0412.
-- [ ] **Equality:** `Result<i64, string>` values compare with `==`.
+- [x] **`?` in closures:** with a written or expected return type it works; with an inferred one it is E0412.
+- [x] **Equality:** `Result<i64, string>` values compare with `==`.
 
 Acceptance — `tests/programs/m17/` (run at `-O0` and `-O2`):
-- [ ] `results.la`: `Ok`/`Err` construction, `match`, `==`, results in arrays and structs, generic functions returning `Result<T, string>`.
-- [ ] `try.la`:
+- [x] `results.la`: `Ok`/`Err` construction, `match`, `==`, results in arrays and structs, generic functions returning `Result<T, string>`.
+- [x] `try.la`:
   - `?` on `Result` and `Option`, several in a row;
   - early return skips the rest (a `println` after `?` doesn't run on `Err`);
   - `?` in a method, in a generic function and in a closure;
   - `?` on a call result (`half(n)?`).
-- [ ] `e0424.la`: reject golden.
-- [ ] The §10 results program runs from the spec.
+- [x] `e0424.la`: reject golden.
+- [x] The §10 results program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes. Programs that use neither `Result` nor `?` give byte-identical IR.
+- [x] Every earlier test passes. Programs that use neither `Result` nor `?` give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -175,12 +175,12 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 results program and the `m17/` programs pass.
-- [ ] E0424 and the reused codes are reported as specified.
-- [ ] `lughac spec` prints `Language v4 Specification.md` (in progress: milestone 17); v3 is frozen.
-- [ ] CLAUDE.md, README, TODO, CHANGELOG and MEMORY are updated; tag `m17`.
-- [ ] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The §10 results program and the `m17/` programs pass.
+- [x] E0424 and the reused codes are reported as specified.
+- [x] `lughac spec` prints `Language v4 Specification.md` (in progress: milestone 17); v3 is frozen.
+- [x] CLAUDE.md, README, TODO, CHANGELOG and MEMORY are updated; tag `m17`.
+- [x] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -189,3 +189,15 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m17/try.la
 ```
+
+## AMENDMENTS (during build, session 53)
+
+- **Test corrections:**
+  - `xs.pop()?` on an immutable parameter is rightly E0501, so the tests copy into `let mut ys` first;
+  - an integer literal against `Result` gets the literal wording (E0401), so the message test uses `true`.
+- **E0424 help wording:** an `Option` in a `Result` function suggests `match` (`ok_or` arrives in milestone 18). Any other return type names it.
+- **Files:**
+  - E0424's constructor is in a new `check/errors/v4.rs`, because `errors/types.rs` would have passed 300 lines (new code only, no split);
+  - `construct` became `pub(super)`, and so did codegen's `load_payload`.
+- **CLAUDE.md fixed:** its specs line had never been updated when v3 completed.
+- **A draft bug found:** the v4 draft's milestone-19 example uses `Some(n) => total += n,`, which isn't valid Lugha (assignment is a statement). It is recorded in TODO and MEMORY 50, to be fixed by M19's PRP.

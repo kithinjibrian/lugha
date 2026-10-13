@@ -92,6 +92,7 @@ impl Walk<'_> {
             ExprKind::Block(block) => self.block(block),
             // A closure's own lets can move; captures never do (`Binding::Param`).
             ExprKind::Closure(c) => self.block(&c.body),
+            ExprKind::Try(e) => self.expr(e),
             ExprKind::Match(scrutinee, arms) => {
                 self.expr(scrutinee);
                 arms.iter().for_each(|arm| self.expr(&arm.body));

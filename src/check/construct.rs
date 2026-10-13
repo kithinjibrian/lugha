@@ -46,6 +46,9 @@ impl Checker {
         args: &[Expr],
         expect: Option<&Expect>,
     ) -> Option<Type> {
+        if let Some(ty) = self.result_construction(call, callee, args, expect) {
+            return Some(ty);
+        }
         if let ExprKind::Name(name) = &callee.kind
             && name == "Some"
             && self.local(name).is_none()
@@ -63,7 +66,7 @@ impl Checker {
     }
 
     /// `E.V` or `E.V(args)` at `at`, inferring a generic enum's arguments (PRP-035).
-    fn construct(
+    pub(super) fn construct(
         &mut self,
         (at, span): (&Expr, Span),
         name: &str,

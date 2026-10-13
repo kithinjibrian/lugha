@@ -2678,6 +2678,45 @@ Branch: main
 
 Branch: prp-042-results
 
+### WHAT WAS DONE
+
+- Discovery: `Result` is a prelude enum. PRP-042 written and approved.
+- Lexer and parser: `?` (`Question`), postfix `ExprKind::Try`.
+- Prelude: `enum Result<T, E> { Ok(T), Err(E) }`.
+- Checker:
+  - `check/results.rs`: names, bare `Ok`/`Err`, `?` typing, E0424 (in `errors/v4.rs`);
+  - `Display` strips `$prelude.`;
+  - built-in names reserved.
+- Codegen: `codegen/results.rs` (`?` branch and early return); `Ok`/`Err` construction.
+- Spec: `Language v4 Specification.md` created (in progress: milestone 17) and printed by `lughac spec`; v3 frozen; the draft's §12 conversion question resolved.
+
+### FILES CREATED OR MODIFIED
+
+- New:
+  - `src/check/results.rs`, `src/check/errors/v4.rs`, `src/codegen/results.rs`, `tests/programs/m17/`;
+  - `docs/specs/Language v4 Specification.md`, the PRP.
+- Modified:
+  - `src/prelude.la`, the lexer, parser and AST;
+  - the checker (`mod.rs`, `expr.rs`, `construct.rs`, `enums.rs`, `env.rs`, `types.rs`, `modules/lookup.rs`, `liveness/walk.rs`, `errors/mod.rs`);
+  - codegen (`expr.rs`, `construct.rs`, `equality.rs`, `mod.rs`);
+  - `src/lib.rs`, tests (`cli.rs`, `spec.rs`);
+  - docs: the specs, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (decision 50).
+
+### TESTS WRITTEN
+
+- Parser (4 `?` cases).
+- Checker (6): construction, patterns, names, `?` types, E0424, closures.
+- `m17/`: results, try, the e0424 golden.
+- The §10 results program.
+
+### DECISIONS MADE
+
+- MEMORY 50; PRP amendments.
+
+### PENDING DECISIONS OPENED
+
+- None. A bug in the v4 draft's M19 example is recorded in TODO.
+
 ---
 
 ## NEXT SESSION START POINT

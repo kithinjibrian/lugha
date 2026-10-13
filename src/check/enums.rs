@@ -8,7 +8,8 @@ use crate::ast::{Item, Program};
 use crate::span::Span;
 
 /// Built-in names a program can't define (v1 §2).
-pub(super) const BUILTIN_NAMES: [&str; 5] = ["Option", "Some", "None", "Eq", "Ord"];
+pub(super) const BUILTIN_NAMES: [&str; 8] =
+    ["Option", "Some", "None", "Eq", "Ord", "Result", "Ok", "Err"];
 
 /// A declared enum.
 pub(super) struct EnumInfo {
@@ -29,7 +30,7 @@ impl Checker {
             let key = self.key(name);
             if is_intrinsic(name) {
                 self.report(errors::reserved(name, e.name.span));
-            } else if BUILTIN_NAMES.contains(&name.as_str()) {
+            } else if BUILTIN_NAMES.contains(&name.as_str()) && !self.in_prelude() {
                 self.report(errors::builtin_name(name, e.name.span));
             } else if let Some(first) = self.type_span(&key) {
                 self.report(errors::duplicate(name, e.name.span, first));

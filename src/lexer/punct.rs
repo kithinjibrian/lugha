@@ -42,6 +42,7 @@ impl Lexer<'_> {
             (',', _) => (Comma, 1),
             (';', _) => (Semi, 1),
             (':', _) => (Colon, 1),
+            ('?', _) => (Question, 1),
             _ => return self.unexpected(start, c),
         };
         self.pos += len;
@@ -71,11 +72,11 @@ mod tests {
 
     #[test]
     fn operators_use_longest_match() {
-        let src = "<= >= == != && || += -= *= /= .. < > = ! + - * / % . ( ) { } [ ] , ; :";
+        let src = "<= >= == != && || += -= *= /= .. < > = ! + - * / % . ( ) { } [ ] , ; : ?";
         let expected = [
             LtEq, GtEq, EqEq, BangEq, AndAnd, OrOr, PlusEq, MinusEq, StarEq, SlashEq, DotDot, Lt,
             Gt, Eq, Bang, Plus, Minus, Star, Slash, Percent, Dot, LParen, RParen, LBrace, RBrace,
-            LBracket, RBracket, Comma, Semi, Colon,
+            LBracket, RBracket, Comma, Semi, Colon, Question,
         ];
         assert_eq!(kinds(src), expected);
         assert_eq!(

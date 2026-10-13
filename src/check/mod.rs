@@ -38,6 +38,7 @@ mod methods;
 mod modules;
 mod ops;
 mod patterns;
+mod results;
 mod satisfy;
 mod stmt;
 mod struct_literal;

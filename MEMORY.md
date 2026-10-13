@@ -798,9 +798,33 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 50. Results and `?` (PRP-042)
+
+**Decision:**
+- **`Result`:** `enum Result<T, E> { Ok(T), Err(E) }` lives in `src/prelude.la`, keyed `$prelude.Result` (`check::results::RESULT`). It is an ordinary generic enum (a discovery answer).
+- **Checker** (`check/results.rs`):
+  - `prelude_type` lets `type_key` resolve `Result` when no module declares it;
+  - `result_construction` handles bare `Ok`/`Err` (before `Some` in `construction`) through `construct`;
+  - `BUILTIN_NAMES` gains `Result`/`Ok`/`Err`, with `in_prelude` exempt, and `is_type_name` covers `Result`;
+  - `Type`'s `Display` strips `$prelude.`, so LLVM and table names are `Result<i64, string>`.
+- **`?`:**
+  - lexed as `Question`, parsed as postfix `ExprKind::Try`;
+  - `try_expr` checks it against `self.ret`, so a closure's `?` returns from the closure;
+  - E0412 if a closure's return type isn't known yet;
+  - E0424 (`errors/v4.rs`), with help for: not a `Result`/`Option`; `main` (owner `main`, no closure); an `Option` in a `Result` function; different `E`; any other return type.
+- **Codegen** (`codegen/results.rs`): the operand goes in a slot and its tag is compared. The failing branch builds the function's own `Err(payload)`/`None` and returns. The passing branch loads the payload. `constructed_variant` accepts `Ok`/`Err`.
+- **Spec:** `Language v4 Specification.md` starts (in progress: milestone 17) and is `lughac spec`; v3 is frozen.
+
+**Why:** It follows the session 53 discovery answer. A prelude enum reused patterns, exhaustiveness, `==`, layout and copies, so the compiler gained only names, construction, display and `?`.
+
+**Known draft bug:** the draft's §10 reading-input program writes `Some(n) => total += n,`, which isn't valid. It is fixed in M19's PRP (TODO).
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 17 complete**: PRP-042 `Result` and `?`; the v4 spec begins
 - **Milestone 16 complete — Lugha v3 complete**: PRP-041 array helpers in a Lugha prelude
 - **Milestone 15 complete**: PRP-040 closures
 - **Milestone 14 complete**: PRP-039 functions as values

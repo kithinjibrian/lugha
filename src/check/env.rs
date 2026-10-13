@@ -186,7 +186,7 @@ impl Checker {
     /// may use it (E0311).
     pub(super) fn is_type_name(&self, name: &str) -> bool {
         let key = self.key(name);
-        name == "Option"
+        matches!(name, "Option" | "Result")
             || self.structs.contains_key(&key)
             || self.enums.contains_key(&key)
             || self.interfaces.contains_key(&key)

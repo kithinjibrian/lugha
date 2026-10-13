@@ -1,0 +1,6 @@
+fun half(n: i64): Result<i64, string> = if n % 2 == 0 { Ok(n / 2) } else { Err("odd") };
+
+fun main() {
+    let h = half(3)?;
+    println(h);
+}

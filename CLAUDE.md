@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v3 Specification.md` (`lughac spec` prints it): Lugha v3, complete (milestones 13–16). `Language v3 Draft.md` is the approved plan it was built from. The v0, v1 and v2 files are frozen. The array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v4 Specification.md` (`lughac spec` prints it): v3 plus the v4 features landed so far, marked "in progress". `Language v4 Draft.md` is the approved v4 plan, folded in milestone by milestone (17–19). The v0–v3 files are frozen. `Result` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
 
 ---
 
@@ -227,7 +227,7 @@ pub fn parse_number(src: &str) -> i64 {
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
 │   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints), PRELUDE
-│   ├── prelude.la   — the array helpers (map, filter, fold, sort_by, any, all) in Lugha, module `$prelude`
+│   ├── prelude.la   — Result<T, E> and the array helpers (map, filter, fold, sort_by, any, all) in Lugha, module `$prelude`
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
@@ -258,8 +258,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  interface bounds, E0315, E0423), satisfy.rs (calls through bounds E0421, satisfaction
 │   │                  E0422), input.rs (args, parse_i64/f64, interpolation), fun_values.rs (function types
 │   │                  and values, calls of values), closures.rs (closure types, captures, E0511), helpers.rs
-│   │                  (xs.map(f) etc. as prelude calls), errors/ (mod.rs, names.rs E03xx, types.rs E04xx, places.rs E05xx/W01xx,
-│   │                  generics.rs milestone 11–12 codes)
+│   │                  (xs.map(f) etc. as prelude calls), results.rs (Ok/Err, `?`, E0424), errors/ (mod.rs, names.rs E03xx, types.rs E04xx, places.rs E05xx/W01xx,
+│   │                  generics.rs milestone 11–12 codes, v4.rs v4 codes)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
@@ -271,7 +271,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  indirect slots), matching.rs (match lowering, switch), patterns.rs (nested/guarded arms),
 │   │                  methods.rs (method symbols, receivers, calls), input.rs (interpolation, args, parsing),
 │   │                  fun_values.rs ({ code, env } values, lugha_ref_ wrappers, indirect calls), closures.rs
-│   │                  (environments, lugha_closure_ bodies),
+│   │                  (environments, lugha_closure_ bodies), results.rs (`?`: branch and early return),
 │   │                  instances.rs (generic instances:
 │   │                  substitution, instance symbols),
 │   │                  swap.rs (swap: loads and crossed stores)
@@ -291,15 +291,15 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── cli.rs       — the lughac binary: commands, emit, diagnostics, exit codes
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m16/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations (+ .args);
+│   ├── programs/    — m1/ … m17/, v1_1/, v1_2/: <name>.la + .stdout/.exit/.stderr expectations (+ .args);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args files),
 │                      execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
-│   └── specs/       — Language v3 Specification.md (the language definition, in progress, printed by `lughac spec`);
-│                      Language v3 Draft.md (approved v3 plan, milestones 13–16); Language v2 Draft.md (v2 plan);
-│                      Language v2, v1 (v1.2) and v0 Specification.md (frozen)
+│   └── specs/       — Language v4 Specification.md (the language definition, in progress, printed by `lughac spec`);
+│                      Language v4 Draft.md (approved v4 plan, milestones 17–19); v3 and v2 Drafts (past plans);
+│                      Language v3, v2, v1 (v1.2) and v0 Specification.md (frozen)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```
 
@@ -313,7 +313,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them; every one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (shared references, interface values, packages…) even partially. v3 is complete (milestones 13–16); any further language feature is v4 and needs an approved spec change first.
+5. **Never implement a §11 "out of scope" feature** (interface values, packages, bitwise operators…) even partially. v4's features (`Result` and `?`, text and option helpers, I/O) are built only through milestone PRPs 17–19 against the approved `Language v4 Draft.md`; anything beyond it needs a spec change first.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

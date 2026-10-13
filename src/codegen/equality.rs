@@ -189,7 +189,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Payload `index` of the enum at `slot`, through its pointer if indirect.
-    fn load_payload(
+    pub(super) fn load_payload(
         &self,
         ty: &Type,
         slot: PointerValue<'ctx>,

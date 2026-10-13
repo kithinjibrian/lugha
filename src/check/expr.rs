@@ -130,6 +130,7 @@ impl Checker {
             ExprKind::Str(_) => Type::String,
             ExprKind::Interp(parts) => self.interpolation(parts),
             ExprKind::Closure(c) => self.closure(expr, c, expect),
+            ExprKind::Try(inner) => self.try_expr(expr, inner),
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
             ExprKind::Index(base, _, index) => self.index(base, index),
             ExprKind::Field(base, field) => match self.variant_value(expr, (base, field), expect) {

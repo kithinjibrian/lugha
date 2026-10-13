@@ -104,6 +104,10 @@ impl Parser<'_> {
                     Err(field) => field,
                 },
                 TokenKind::ColonColon => self.colon_colon(expr)?,
+                TokenKind::Question => {
+                    self.bump();
+                    ExprKind::Try(Box::new(expr))
+                }
                 _ => return Ok(expr),
             };
             expr = self.mk(start, kind);
@@ -204,6 +208,11 @@ mod tests {
         assert_eq!(expr("f()"), "(call f)");
         assert_eq!(expr("pts[i].x"), "(. (index pts i) x)");
         assert_eq!(expr("-xs.len"), "(neg (. xs len))");
+        // `?` is postfix (v4): it binds like a call.
+        assert_eq!(expr("f(x)?"), "(? (call f x))");
+        assert_eq!(expr("a?.b"), "(. (? a) b)");
+        assert_eq!(expr("xs[0]?"), "(? (index xs 0))");
+        assert_eq!(expr("-x?"), "(neg (? x))");
     }
 
     #[test]

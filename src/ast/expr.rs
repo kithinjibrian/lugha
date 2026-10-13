@@ -26,6 +26,8 @@ pub enum ExprKind {
     Str(String),
     /// `"a {x} b"`: literal text and interpolated expressions in order (v3).
     Interp(Vec<Part>),
+    /// `e?`: the `Ok`/`Some` value, or an early return (v4).
+    Try(Box<Expr>),
     /// `fun(x) = e` or `fun(x: T): R { … }` (v3). Boxed: it is large and rare.
     Closure(Box<Closure>),
     Bool(bool),

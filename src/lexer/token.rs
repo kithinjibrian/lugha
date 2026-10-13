@@ -73,6 +73,8 @@ pub enum TokenKind {
     Star,
     Slash,
     Percent,
+    /// `?`, the postfix early-return operator (v4).
+    Question,
     EqEq,
     BangEq,
     Lt,

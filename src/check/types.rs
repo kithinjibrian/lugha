@@ -181,11 +181,15 @@ impl fmt::Display for Type {
                     ref ret => write!(f, ": {ret}"),
                 };
             }
+            // The prelude's types print without their module: `Result<i64, string>` (v4).
             Type::Struct(name, args) | Type::Enum(name, args) if !args.is_empty() => {
                 let args: Vec<String> = args.iter().map(ToString::to_string).collect();
+                let name = name.strip_prefix("$prelude.").unwrap_or(name);
                 return write!(f, "{name}<{}>", args.join(", "));
             }
-            Type::Struct(name, _) | Type::Enum(name, _) => name,
+            Type::Struct(name, _) | Type::Enum(name, _) => {
+                name.strip_prefix("$prelude.").unwrap_or(name)
+            }
             Type::Param(name) => name,
             Type::Option(inner) => return write!(f, "Option<{inner}>"),
             Type::Void => "void",

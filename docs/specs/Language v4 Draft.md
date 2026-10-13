@@ -212,7 +212,7 @@ fun main() {
 
 ## §12 Open questions — additions
 
-- [ ] **Error conversion with `?`:** v4 requires the same `E`. Proposed: keep it until interfaces can describe conversions.
+- [x] **Error conversion with `?`:** v4 requires the same `E`. Resolved (PRP-042): kept until interfaces can describe conversions.
 - [ ] **`lines()` and `\r`:** a trailing `\r` is stripped from each line, so Windows files read naturally. Proposed: yes.
 - [ ] **Very large files:** `read_file` reads the whole file into memory. Proposed: fine for v4; streaming waits.
 - [ ] **`exit` and buffered output:** stdout is flushed, and stderr is unbuffered. Proposed: yes.

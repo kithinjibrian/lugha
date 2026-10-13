@@ -2,7 +2,7 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** complete (milestones 13–16). It is built from the approved plan, `Language v3 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v2 Specification.md` keeps v2 frozen.
+**Status:** complete and frozen (milestones 13–16). It was built from the approved plan, `Language v3 Draft.md`. `Language v4 Specification.md` continues from it and is what `lughac spec` prints.
 
 **v2.** This is v1.2 plus deep `==` and string order, nested patterns and guards, modules with `private`, generics with `Eq`/`Ord` bounds, and interfaces as bounds (milestones 9–12).
 
