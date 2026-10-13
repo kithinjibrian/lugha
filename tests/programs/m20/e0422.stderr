@@ -1,0 +1,8 @@
+error[E0422]: `Dot` doesn't satisfy `Shape`
+   --> tests/programs/m20/e0422.la:13:20
+   |
+13 |     let s: Shape = Dot {};
+   |                    ^^^^^^
+   |
+   = help: no method `name`
+

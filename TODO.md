@@ -141,7 +141,8 @@ Done when the reading-input program passes and the v4 spec is complete.
 
 ### Milestone 20 — Interface values
 Done when the interface-values program passes.
-- [ ] PRP-046: interfaces as types, conversion at an expected interface type, dynamic calls, copies, `I` as a type argument (E0425); `Language v5 Specification.md` begins
+- [x] PRP-046: checking — interfaces as types, conversion at an expected interface type, calls, equality, E0425; `build`/`run` gated
+- [ ] PRP-047: compiling — dispatch tables, boxes, dynamic calls, copies; gate removed; `Language v5 Specification.md` begins; tag `m20`
 
 ### Milestone 21 — Type patterns
 Done when the type-patterns program passes.

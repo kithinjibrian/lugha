@@ -1,0 +1,9 @@
+// An interface with an associated function can be a bound, not a type.
+interface Factory {
+    fun make(): i64;
+    fun size(self): i64;
+}
+
+fun count(f: Factory): i64 = f.size();
+
+fun main() {}

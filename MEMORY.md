@@ -894,11 +894,27 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 55. Checking interface values (PRP-046)
+
+**Decision:**
+- **Milestone 20 is two PRPs** (session 58 discovery): 046 checks, 047 compiles. Between them a driver gate (`pipeline.rs::stop_gated`) stops `build`, `run` and `--emit=ir` with "not implemented yet: interface values (milestone 20)" (exit 2) when any recorded annotation `mentions_interface()`.
+- **`Type::Interface(key)`;** `InterfaceInfo.not_value` (the first associated function) decides E0425 at collection. `interface_type` resolves the name before `type_key` in `resolve_named`/`resolve_applied` (type arguments are E0418).
+- **Conversion in one place:** `Checker::expr` ends with `convert(expr, ty, expect)`. Where the expected type is `Interface(I)`, a satisfying type is recorded in `Checked.conversions` (ExprId → `Interface(I)`), the expression keeps its own type in `types`, and `I` is returned; otherwise E0422 via `satisfies`. Branches and tails convert by themselves. Fully bound call arguments already go through `expect_type`, so `infer.rs` needed no change.
+- **Calls:** `on_value` sends an `Interface` receiver to `through_interface` (`iface_calls.rs`), which records the callee `<key>.<method>`.
+- **Satisfaction:** an `Interface(I)` offers `I`'s declared items. **Equality:** `eq_ok` and `holds_fun` treat interface values like functions. **Copies:** `contains_array` is renamed `is_deep` and is true for interface values.
+- **Errors:** `errors/v5.rs` (E0425, E0403 interface-to-interface, and wrappers adding interface help to E0410, E0404 and E0409, leaving `errors/types.rs` at its size).
+- **Split (approved):** `arguments`/`unchecked` moved verbatim from `method_calls.rs` to `check/arguments.rs`.
+
+**Why:** a gate keeps every merged state honest while codegen catches up, as milestone 11 did (MEMORY 34).
+
+---
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 20, first half**: PRP-046 interface values type-checked (build gated)
 - **Lugha v4.1**: PRP-045 string literals inside interpolations
 - **Milestone 19 complete — Lugha v4 complete**: PRP-044 input and output
 - **Milestone 18 complete**: PRP-043 text and option helpers

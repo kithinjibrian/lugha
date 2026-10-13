@@ -33,6 +33,9 @@ pub enum Type {
     Option(Box<Type>),
     /// A function value, `fun(A, B): R`; `R` is `Void` for no result (v3).
     Fun(Vec<Type>, Box<Type>),
+    /// A value of an interface type, by the interface's key: some type that
+    /// satisfies it, chosen at run time (v5 draft §4).
+    Interface(String),
     /// No value: statements, blocks without a tail, `if` without `else`,
     /// functions without a return type.
     Void,
@@ -94,17 +97,35 @@ impl Type {
         }
     }
 
-    /// True for arrays and anything holding one: values that are deep-copied (spec §4).
+    /// True if an interface type appears anywhere in `self` (v5): in an
+    /// element, a payload, a type argument or a function type.
+    pub fn mentions_interface(&self) -> bool {
+        match self {
+            Type::Interface(_) => true,
+            Type::Array(inner) | Type::Option(inner) => inner.mentions_interface(),
+            Type::Struct(_, args) | Type::Enum(_, args) => {
+                args.iter().any(Type::mentions_interface)
+            }
+            Type::Fun(params, ret) => {
+                params.iter().any(Type::mentions_interface) || ret.mentions_interface()
+            }
+            _ => false,
+        }
+    }
+
+    /// True for arrays, interface values (v5) and anything holding one inline:
+    /// values that are deep-copied (spec §4).
     /// Terminates for valid programs: only an array can close a struct cycle (E0307).
     /// Enums and `Option` are false even with array payloads: payloads are
     /// immutable, so enum values share them and are never deep-copied (PRP-020).
-    pub fn contains_array(&self, structs: &Structs) -> bool {
+    pub fn is_deep(&self, structs: &Structs) -> bool {
         match self {
-            Type::Array(_) => true,
+            // An interface value's inside can change through `mut self` (v5).
+            Type::Array(_) | Type::Interface(_) => true,
             // Tables are keyed by the type as it prints: `Stack<i64>` (PRP-036).
             Type::Struct(..) => structs
                 .get(&self.to_string())
-                .is_some_and(|fields| fields.iter().any(|(_, ty)| ty.contains_array(structs))),
+                .is_some_and(|fields| fields.iter().any(|(_, ty)| ty.is_deep(structs))),
             _ => false,
         }
     }
@@ -190,7 +211,7 @@ impl fmt::Display for Type {
             Type::Struct(name, _) | Type::Enum(name, _) => {
                 name.strip_prefix("$prelude.").unwrap_or(name)
             }
-            Type::Param(name) => name,
+            Type::Param(name) | Type::Interface(name) => name,
             Type::Option(inner) => return write!(f, "Option<{inner}>"),
             Type::Void => "void",
             Type::Never => "never",

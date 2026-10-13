@@ -54,6 +54,8 @@ pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnu
         Type::Void | Type::Never | Type::Error => unreachable!("checked: {ty} is not a value type"),
         // The gate stops generic programs before codegen (PRP-035).
         Type::Param(_) => unreachable!("codegen never sees a type parameter"),
+        // The gate stops programs with interface values before codegen (PRP-046).
+        Type::Interface(_) => unreachable!("codegen never sees an interface value yet"),
     }
 }
 

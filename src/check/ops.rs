@@ -57,7 +57,7 @@ impl Checker {
                 .missing_bound(&l, ord)
                 .filter(|_| l == r && !arithmetic);
             let types = if l == r { vec![l] } else { vec![l, r] };
-            let d = errors::bad_operands(op.symbol(), &types, expr.span);
+            let d = errors::bad_operands_on(op.symbol(), &types, expr.span);
             self.report(errors::with_bound_help(d, wanted, ord));
             return Type::Error;
         }

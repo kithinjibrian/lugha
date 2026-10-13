@@ -2893,6 +2893,30 @@ Branch: main
 
 Branch: prp-046-interface_value_checking
 
+### WHAT WAS DONE
+- Discovery: milestone 20 is two PRPs (checking, then compiling). PRP-046 written and approved.
+- Approved split: `arguments`/`unchecked` moved verbatim from `check/method_calls.rs` to `check/arguments.rs`.
+- Checker: `Type::Interface`, E0425, conversion in `Checker::expr` (`Checked.conversions`), calls through interface values, satisfaction by interface values, no `==`, `is_deep` (renamed from `contains_array`).
+- Driver: the milestone 20 gate before codegen.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/{arguments,iface_values,iface_calls}.rs`, `src/check/errors/v5.rs`, `tests/interface_values.rs`, `tests/programs/m20/` (`e0425`, `e0422`).
+- Modified: `src/check/{types,mod,expr,interfaces,generics,satisfy,bounds,method_calls,access,ops,env,test_util}.rs`, `src/check/errors/mod.rs`, `src/check/modules/mod.rs`, `src/codegen/value.rs` (one `unreachable!` arm), `src/driver/pipeline.rs`; `is_deep` rename across codegen.
+- Docs: PRP-046, CLAUDE.md tree, CHANGELOG, TODO, MEMORY 55, CONTEXT.
+
+### TESTS WRITTEN
+- `check/iface_values.rs`: types, another module's interface, every conversion site, the recorded conversion, no conversion without an interface expected, E0422 (and another module's private method), type parameters converting.
+- `check/iface_calls.rs`: calls and callee keys, E0415/E0405/E0403, `mut self` places (E0501/E0502), fields (E0410 + help), equality (E0404/E0419), printing (E0403), extern (E0409), `is_deep`.
+- `check/interfaces.rs`: E0425 replaces the old E0305 test.
+- `tests/interface_values.rs`: `check` accepts the §10 program; `build`, `run`, `--emit=ir` stop at the gate.
+- `tests/programs/m20/e0425`, `e0422` reject goldens.
+
+### DECISIONS MADE
+- MEMORY 55.
+
+### PENDING DECISIONS OPENED
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

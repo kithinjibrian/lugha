@@ -127,10 +127,7 @@ impl<'ctx> Lowerer<'ctx> {
             .expect(POSITIONED);
         self.panic_if(negative, "negative array length", expr.span.start);
         let array = self.new_array(count, &element);
-        let (deep, size) = (
-            element.contains_array(&self.structs),
-            self.element_size(&element),
-        );
+        let (deep, size) = (element.is_deep(&self.structs), self.element_size(&element));
         self.count_loop(count, |this, i| {
             let fill = if deep {
                 this.deep_copy(value, &element)

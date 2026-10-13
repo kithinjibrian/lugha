@@ -101,26 +101,26 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (`check/iface_values.rs` unless noted):
-- [ ] **Types:** `let s: Shape = c;`, `Shape[]`, `Option<Shape>`, a struct field and an enum payload of type `Shape`, a `fun(Shape): f64`, and `shapes.Shape` from another module all check.
-- [ ] **Conversion sites:** a `let`, an argument (plain, method and generic call), a struct-literal field, array elements, `Some(c)` for `Option<Shape>`, `Ok(c)`, an assignment, `return`, a tail, and both branches of an `if` and a `match`.
-- [ ] **No conversion:** `let s = c;` keeps `Circle`; `[c, sq]` alone is E0403; `Circle[]` for `Shape[]` is E0403; a `Named` value for `Shape` is E0403.
-- [ ] **E0422:** converting an `i64`, and a type missing one method, name what's missing; another module's private method doesn't count.
-- [ ] **E0425** (`interfaces.rs`): an interface with `fun make(): i64;` used as a type; the same interface as a bound still works.
-- [ ] **Calls:** `s.area()` is `f64`; `s.size()` is E0415; wrong arity E0405; a wrong argument E0403; a `mut self` call on an immutable `s` is E0501 and on `mk_shape().grow(1.0)` E0502.
-- [ ] **Fields, equality, printing:** `s.r` is the no-field error with type-pattern help; `a == b` is E0404; `Shape` for `T: Eq` is E0419; `println(s)` and `"{s}"` are E0403.
-- [ ] **Generics:** `total_area<T: Shape>` called with a `Shape[]` checks; a `T: Shape` value converts to `Shape`.
-- [ ] **Copies:** `is_deep` is true for `Shape` and for a struct holding one (`types.rs`).
-- [ ] **E0409:** `extern fun f(s: Shape);`.
+- [x] **Types:** `let s: Shape = c;`, `Shape[]`, `Option<Shape>`, a struct field and an enum payload of type `Shape`, a `fun(Shape): f64`, and `shapes.Shape` from another module all check.
+- [x] **Conversion sites:** a `let`, an argument (plain, method and generic call), a struct-literal field, array elements, `Some(c)` for `Option<Shape>`, `Ok(c)`, an assignment, `return`, a tail, and both branches of an `if` and a `match`.
+- [x] **No conversion:** `let s = c;` keeps `Circle`; `[c, sq]` alone is E0403; `Circle[]` for `Shape[]` is E0403; a `Named` value for `Shape` is E0403.
+- [x] **E0422:** converting an `i64`, and a type missing one method, name what's missing; another module's private method doesn't count.
+- [x] **E0425** (`interfaces.rs`): an interface with `fun make(): i64;` used as a type; the same interface as a bound still works.
+- [x] **Calls:** `s.area()` is `f64`; `s.size()` is E0415; wrong arity E0405; a wrong argument E0403; a `mut self` call on an immutable `s` is E0501 and on `mk_shape().grow(1.0)` E0502.
+- [x] **Fields, equality, printing:** `s.r` is the no-field error with type-pattern help; `a == b` is E0404; `Shape` for `T: Eq` is E0419; `println(s)` and `"{s}"` are E0403.
+- [x] **Generics:** `total_area<T: Shape>` called with a `Shape[]` checks; a `T: Shape` value converts to `Shape`.
+- [x] **Copies:** `is_deep` is true for `Shape` and for a struct holding one (`types.rs`).
+- [x] **E0409:** `extern fun f(s: Shape);`.
 
 Driver / CLI (`tests/cli.rs`):
-- [ ] `check` on a valid interface-values program exits 0; `build`, `run` and `--emit=ir` exit 2 with the gate message.
+- [x] `check` on a valid interface-values program exits 0; `build`, `run` and `--emit=ir` exit 2 with the gate message.
 
 Acceptance — `tests/programs/m20/` (reject goldens; run cases come with PRP-047):
-- [ ] `e0425.la`: an interface with an associated function used as a type.
-- [ ] `e0422.la`: converting a type that lacks a method.
+- [x] `e0425.la`: an interface with an associated function used as a type.
+- [x] `e0422.la`: converting a type that lacks a method.
 
 Regression:
-- [ ] Every earlier test passes; programs without interface types give byte-identical IR. The old E0305 interface test becomes an E0425 test or a passing case.
+- [x] Every earlier test passes; programs without interface types give byte-identical IR. The old E0305 interface test becomes an E0425 test or a passing case.
 
 ## ROLLBACK PLAN
 
@@ -128,10 +128,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] `lughac check` accepts the §10 interface-values program; `build` stops at the gate.
-- [ ] Every test above passes.
-- [ ] No file over 300 lines (the split above only); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] `lughac check` accepts the §10 interface-values program; `build` stops at the gate.
+- [x] Every test above passes.
+- [x] No file over 300 lines (the split above only); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -140,3 +140,13 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo test --test cli interface   # check accepts the §10 program; build stops at the gate
 ```
+
+## AMENDMENTS (during build, session 58)
+
+- **No argument hint was needed in `infer.rs`:** an argument whose parameter type is fully bound already goes through `expect_type`, which reaches `convert`.
+- **One codegen line:** `codegen/value.rs::llvm_type` matches every `Type`, so it gained an `unreachable!` arm for `Interface`. The gate guarantees codegen never sees one.
+- **E0403 help for a mixed array** (`[c, sq]` with no annotation) was dropped: `check/array.rs` is at 297 lines, and the plain E0403 already points at the element that disagrees.
+- **Error wording lives in `errors/v5.rs`:** wrappers (`no_field_on`, `bad_operands_on`, `extern_value`) add the interface help, so `errors/types.rs` keeps its size. The field error is E0410 (the existing no-field code).
+- **`env.rs`** stayed at 300 lines: the extern check's `match` now builds the diagnostic and reports it once.
+- **Tests:** the gate test is in a new `tests/interface_values.rs` (`tests/cli.rs` is at 288 lines); `SHAPES` is shared through `check/test_util.rs`. The interface-values program is in that test, not in `tests/programs/` (it can't run until PRP-047).
+- **`interface_as_type`** (E0305) remains only for `m.Shape { … }`, a struct literal naming an interface.

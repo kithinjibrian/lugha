@@ -26,6 +26,8 @@ mod flow;
 mod fun_values;
 mod generics;
 mod helpers;
+mod iface_calls;
+mod iface_values;
 mod infer;
 mod input;
 mod instances;
@@ -88,6 +90,9 @@ pub struct Checked {
     pub used: Vec<Type>,
     /// The names each closure literal captures, in order of first mention (v3).
     pub captures: HashMap<ExprId, Vec<String>>,
+    /// Expressions converted to an interface value, with the interface type
+    /// (v5); the expression's own type stays in `types`.
+    pub conversions: HashMap<ExprId, Type>,
 }
 
 /// Type-checks `program`, a program of one file, returning the type table
@@ -128,6 +133,7 @@ impl Checker {
             interfaces: HashMap::new(),
             closures: Vec::new(),
             captures: HashMap::new(),
+            conversions: HashMap::new(),
             owner: String::new(),
             uses: Vec::new(),
             body_types: HashMap::new(),
@@ -213,6 +219,8 @@ pub(super) struct Checker {
     closures: Vec<closures::Frame>,
     /// See `Checked::captures`.
     captures: HashMap<ExprId, Vec<String>>,
+    /// See `Checked::conversions`.
+    conversions: HashMap<ExprId, Type>,
     /// The key of the function or method whose body is being checked.
     owner: String,
     /// Every generic call, with the body it is in (PRP-036).

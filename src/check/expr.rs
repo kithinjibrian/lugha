@@ -45,7 +45,8 @@ impl Checker {
     pub(super) fn expr(&mut self, expr: &Expr, expect: Option<&Expect>) -> Type {
         let ty = self.expr_kind(expr, expect);
         self.record(expr, ty.clone());
-        ty
+        // Where an interface is expected, the value becomes one (v5).
+        self.convert(expr, ty, expect)
     }
 
     /// Checks an expression used as a value: `void` is E0407 and becomes `Error`.

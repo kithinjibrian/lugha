@@ -148,6 +148,9 @@ impl Checker {
             name: name.to_string(),
             span,
         };
+        if let Some(ty) = self.interface_type(None, &ident, span) {
+            return ty;
+        }
         let Some(key) = self.type_key(None, &ident, span) else {
             return Type::Error;
         };
@@ -162,6 +165,9 @@ impl Checker {
     /// `m.T`, `T<args>` or `m.T<args>` (E0418 for the wrong count, E0419
     /// for an argument that doesn't meet its bound).
     pub(super) fn resolve_applied(&mut self, applied: &AppliedType, span: Span) -> Type {
+        if let Some(ty) = self.interface_type(applied.module.as_ref(), &applied.name, span) {
+            return self.no_type_args(ty, applied, span);
+        }
         let Some(key) = self.type_key(applied.module.as_ref(), &applied.name, span) else {
             return Type::Error;
         };

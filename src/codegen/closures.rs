@@ -83,7 +83,7 @@ impl<'ctx> Lowerer<'ctx> {
         for (i, (name, local)) in names.iter().zip(captured).enumerate() {
             let value = self.load(local, name);
             // A copy, as at any copy site: the closure may outlive the local.
-            let value = if local.ty.contains_array(&self.structs) {
+            let value = if local.ty.is_deep(&self.structs) {
                 self.deep_copy(value, &local.ty)
             } else {
                 value

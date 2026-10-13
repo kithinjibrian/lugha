@@ -112,6 +112,11 @@ impl Checker {
                 Some(m) => Some(m),
                 None => return self.unchecked(args),
             },
+            // `s.area()` on an interface value, dispatched at run time (v5).
+            Type::Interface(key) => match self.through_interface(call, key, name) {
+                Some(m) => Some(m),
+                None => return self.unchecked(args),
+            },
             _ => self
                 .method(receiver, &name.name)
                 .filter(|m| m.receiver.is_some()),

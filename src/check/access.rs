@@ -17,7 +17,7 @@ impl Checker {
                 self.field_type(&s, &args, name).expect("just found")
             }
             (ty, name) => {
-                self.report(errors::no_field(name, ty, field.span));
+                self.report(errors::no_field_on(name, ty, field.span));
                 Type::Error
             }
         }

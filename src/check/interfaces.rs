@@ -34,6 +34,9 @@ pub(super) struct InterfaceInfo {
     pub items: Vec<Requirement>,
     /// The interface's name in its declaration.
     pub span: Span,
+    /// Its first associated function, if any: such an interface can't be a
+    /// type (E0425, v5).
+    pub not_value: Option<String>,
 }
 
 impl Checker {
@@ -52,9 +55,11 @@ impl Checker {
                 self.report(errors::duplicate(name, span, first));
             } else {
                 self.register_item(&key, i.visibility);
+                let not_value = i.items.iter().find(|it| it.receiver.is_none());
                 let info = InterfaceInfo {
                     items: Vec::new(),
                     span,
+                    not_value: not_value.map(|it| it.name.name.clone()),
                 };
                 self.interfaces.insert(key, info);
             }
@@ -228,10 +233,18 @@ mod tests {
     }
 
     #[test]
-    fn an_interface_is_not_a_type() {
-        let src = format!("{SHAPE}fun f(s: Shape) {{}}\nfun main() {{}}");
-        assert_eq!(errors(&src), [("E0305", "Shape")]);
+    fn an_interface_with_associated_functions_is_not_a_type() {
+        ok(&format!("{SHAPE}fun f(s: Shape) {{}}\nfun main() {{}}"));
+        let factory = "interface Factory { fun make(): i64; fun size(self): i64; }\n";
+        let src = format!("{factory}fun f(x: Factory) {{}}\nfun main() {{}}");
+        assert_eq!(errors(&src), [("E0425", "Factory")]);
         let help = diagnostics(&src)[0].help.clone().expect("a help");
-        assert!(help.contains("<T: Shape>"), "{help}");
+        assert!(
+            help.contains("`make`") && help.contains("<T: Factory>"),
+            "{help}"
+        );
+        ok(&format!(
+            "{factory}fun g<T: Factory>(x: T): i64 = T.make();\nfun main() {{}}"
+        ));
     }
 }

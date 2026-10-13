@@ -59,6 +59,7 @@ pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<D
             enums,
             moves,
             callees: checker.callees,
+            conversions: checker.conversions,
             annotations: checker.annotations,
             instances: checker.instances,
             monos,

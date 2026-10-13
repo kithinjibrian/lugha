@@ -92,6 +92,19 @@ impl Checker {
                 Some(_) => return Offer::Mismatched,
                 None => return Offer::Missing,
             },
+            // An interface value offers what its interface declares (v5).
+            Type::Interface(key) => {
+                let items = self.interfaces.get(key).map(|i| i.items.as_slice());
+                return match items
+                    .unwrap_or_default()
+                    .iter()
+                    .find(|r| r.name == req.name)
+                {
+                    Some(item) if item.same(req) => Offer::Matches,
+                    Some(_) => Offer::Mismatched,
+                    None => Offer::Missing,
+                };
+            }
             Type::Struct(owner, args) | Type::Enum(owner, args) => {
                 let method = self.methods.get(owner).and_then(|m| m.get(&req.name));
                 match method {

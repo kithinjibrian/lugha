@@ -1,0 +1,8 @@
+error[E0425]: `Factory` can't be a type: it declares the associated function `make`
+  --> tests/programs/m20/e0425.la:7:14
+  |
+7 | fun count(f: Factory): i64 = f.size();
+  |              ^^^^^^^
+  |
+  = help: `make` has no `self`, so a `Factory` value couldn't call it; use it as a bound: `<T: Factory>`
+

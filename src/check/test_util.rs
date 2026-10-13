@@ -111,3 +111,11 @@ fn visit(block: &crate::ast::Block, name: &str, found: &mut Option<u32>) {
         }
     }
 }
+
+/// An interface whose items are all methods, and two types satisfying it
+/// (v5 draft §10), for the interface-value tests.
+pub const SHAPES: &str = "interface Shape { fun area(self): f64; fun grow(mut self, k: f64); }\n\
+    struct Circle { r: f64 }\n\
+    impl Circle { fun area(self): f64 = 3.0 * self.r * self.r; fun grow(mut self, k: f64) { self.r *= k; } }\n\
+    struct Square { side: f64 }\n\
+    impl Square { fun area(self): f64 = self.side * self.side; fun grow(mut self, k: f64) { self.side *= k; } }\n";

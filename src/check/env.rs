@@ -57,18 +57,18 @@ impl Checker {
                 ret_type = Type::Error;
             }
             if is_extern {
-                // Arrays can't cross the C boundary (spec §8).
+                // Only numbers and strings cross the C boundary (spec §8).
                 let annotations = declared.iter().map(|p| &p.ty).chain(ret);
                 for (annotation, ty) in annotations.zip(params.iter().chain([&ret_type])) {
-                    match ty {
-                        Type::Array(_) => self.report(errors::extern_array(annotation.span)),
-                        Type::Struct(_, _) => self.report(errors::extern_struct(annotation.span)),
-                        Type::Fun(..) => self.report(errors::extern_fun(annotation.span)),
-                        Type::Enum(_, _) | Type::Option(_) => {
-                            self.report(errors::extern_enum(annotation.span));
-                        }
-                        _ => {}
-                    }
+                    let at = annotation.span;
+                    let d = match ty {
+                        Type::Array(_) => errors::extern_array(at),
+                        Type::Struct(_, _) => errors::extern_struct(at),
+                        Type::Fun(..) | Type::Interface(_) => errors::extern_value(ty, at),
+                        Type::Enum(_, _) | Type::Option(_) => errors::extern_enum(at),
+                        _ => continue,
+                    };
+                    self.report(d);
                 }
             }
             self.type_params.clear();

@@ -47,7 +47,8 @@ impl Checker {
             Type::Struct(_, args) | Type::Enum(_, args) => {
                 !self.holds_fun(ty) && args.iter().all(|a| self.eq_ok(a))
             }
-            Type::Fun(..) => false,
+            // Neither do interface values (v5 draft §4).
+            Type::Fun(..) | Type::Interface(_) => false,
             _ => true,
         }
     }
@@ -75,15 +76,16 @@ impl Checker {
         }
     }
 
-    /// True if a value of `ty` holds a function somewhere: in a field, a
-    /// payload or an element, through any depth of structs and enums.
+    /// True if a value of `ty` holds a function or an interface value (v5)
+    /// somewhere: in a field, a payload or an element, through any depth of
+    /// structs and enums. Neither has `==`.
     pub(super) fn holds_fun(&self, ty: &Type) -> bool {
         self.holds_fun_in(ty, &mut Vec::new())
     }
 
     fn holds_fun_in(&self, ty: &Type, seen: &mut Vec<Type>) -> bool {
         let inner: Vec<Type> = match ty {
-            Type::Fun(..) => return true,
+            Type::Fun(..) | Type::Interface(_) => return true,
             Type::Array(inner) | Type::Option(inner) => return self.holds_fun_in(inner, seen),
             // Recursive types meet themselves again: one look is enough.
             Type::Struct(..) | Type::Enum(..) if seen.contains(ty) => return false,

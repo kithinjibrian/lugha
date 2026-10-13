@@ -27,7 +27,7 @@ impl<'ctx> Lowerer<'ctx> {
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         let value = self.get(expr, ty)?;
         let copies = aliasing(expr) && !self.moves.contains(&expr.id);
-        Ok(if ty.contains_array(&self.structs) && copies {
+        Ok(if ty.is_deep(&self.structs) && copies {
             self.deep_copy(value, ty)
         } else {
             value
@@ -46,13 +46,11 @@ impl<'ctx> Lowerer<'ctx> {
             // `None` is a constructor, not a local.
             .and_then(|name| self.scopes.find(name))
             .is_some_and(|local| !local.borrowed);
-        Ok(
-            if ty.contains_array(&self.structs) && aliasing(expr) && !moves {
-                self.deep_copy(value, ty)
-            } else {
-                value
-            },
-        )
+        Ok(if ty.is_deep(&self.structs) && aliasing(expr) && !moves {
+            self.deep_copy(value, ty)
+        } else {
+            value
+        })
     }
 
     /// A deep copy of `value`: arrays of plain elements by one allocation and
@@ -63,11 +61,11 @@ impl<'ctx> Lowerer<'ctx> {
         value: BasicValueEnum<'ctx>,
         ty: &Type,
     ) -> BasicValueEnum<'ctx> {
-        if !ty.contains_array(&self.structs) {
+        if !ty.is_deep(&self.structs) {
             return value;
         }
         if let Type::Array(element) = ty
-            && !element.contains_array(&self.structs)
+            && !element.is_deep(&self.structs)
         {
             return self.copy_flat(value.into_pointer_value(), element).into();
         }
@@ -140,7 +138,7 @@ impl<'ctx> Lowerer<'ctx> {
     fn copy_fields(&mut self, source: StructValue<'ctx>, name: &str) -> BasicValueEnum<'ctx> {
         let mut copy = source;
         for (index, (field, ty)) in self.structs[name].clone().iter().enumerate() {
-            if !ty.contains_array(&self.structs) {
+            if !ty.is_deep(&self.structs) {
                 continue;
             }
             let index = u32::try_from(index).expect("field count fits in u32");
