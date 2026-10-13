@@ -1,6 +1,6 @@
 ## FEATURE: Checking interface values — interfaces as types, conversion, dynamic calls.
 
-**Status:** approved 2026-10-13 — session 58
+**Status:** merged 2026-10-13 — session 58
 **Milestone:** 20 (first of two PRPs: **046 checking**, 047 compiling — dispatch tables, boxes, dynamic calls, copies, gate removed, `Language v5 Specification.md` begins, tag `m20`)
 **Spec:** `Language v5 Draft.md`:
 - decisions 1–3 and 7;

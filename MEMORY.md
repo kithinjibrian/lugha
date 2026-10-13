@@ -981,14 +981,15 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**The Lugha v5 draft is approved** (`docs/specs/Language v5 Draft.md`, MEMORY 54): interface values, milestones 20–22. v4.1 is the current release (tag `v4.1`).
+**Milestone 20, first half done** (PRP-046, MEMORY 55): `lughac check` accepts interface values; `build`, `run` and `--emit=ir` stop at the gate in `driver/pipeline.rs::stop_gated`. v4.1 is the current release; the v5 draft is approved (MEMORY 54).
 
-Next: **milestone 20, interface values** — discovery and PRP-046. Its scope (draft §4, §7, §9, §11):
-- interfaces as types (E0425 for one with associated functions);
-- conversion at an expected interface type (E0422 when unsatisfied);
-- dynamic calls, copies, `I` as a type argument;
-- `Language v5 Specification.md` begins, and `lughac spec` prints it.
+Next: **PRP-047, compiling interface values** — discovery and PRP. Its scope (v5 draft §7, §9, §10, §11):
+- two-word values: a `lugha_vt_<Type>.<Interface>` dispatch table (type identity, copy function, methods in declaration order) and a GC box (`lugha_rt_alloc`), primitives boxed too;
+- conversion at each `Checked.conversions` entry (no copy when the value is moved), `lugha_dyn_<Type>.<method>` wrappers, indirect calls for callees `<Interface>.<method>`, deep copies (`is_deep`);
+- tables only for converted pairs, so programs without interface values give byte-identical IR;
+- remove the gate and `codegen/value.rs`'s `unreachable!` arm; `tests/interface_values.rs` becomes a run test; the §10 interface-values program passes;
+- `Language v5 Specification.md` begins (and `lughac spec` prints it); CLAUDE.md rule 7 (new symbols), anti-patterns 4 and 5; tag `m20`.
 
-When symbols change, update CLAUDE.md architecture rule 7 (`lugha_vt_`, `lugha_dyn_`), anti-pattern 4 (the one named conversion) and anti-pattern 5 (v5).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/array.rs` (297), `check/infer.rs` (291), `codegen/control.rs` (292).
 
 See `TODO.md`.
