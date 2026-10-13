@@ -1,6 +1,6 @@
 ## FEATURE: Checking generics — type parameters, `Eq`/`Ord` bounds, inference, generic bodies checked once.
 
-**Status:** approved 2026-10-13 — session 44
+**Status:** merged 2026-10-13 — session 44
 **Milestone:** 11 (first of two PRPs: **035 checking**, 036 compiling — monomorphization, `Option<T>`, gate removed, spec folded)
 **Spec:** `Language v2 Draft.md`:
 - decisions 3–5;

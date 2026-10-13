@@ -649,14 +649,15 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 10 is complete** (tag `m10`). The v2 draft was amended in session 43 (MEMORY 40, `docs/decisions/generics.md`): generics stay **milestone 11**, and structural **interfaces** are a new **milestone 12**, after which the v2 spec is complete.
+**Milestone 11 is half done.** PRP-035 (merged, session 44, MEMORY 41) type-checks generics. `lughac check` accepts them, and `build`/`run`/`--emit=ir` stop at the gate before codegen.
 
-Next is **milestone 11, generics** (draft decisions 3–5; §3, §4, §6, §9; the generics program in §10). It covers:
-- type parameters on fun, struct, enum and methods (`impl Stack<T>`), with `Eq`/`Ord` bounds on the declaration (E0315 unknown bound, E0316 bad parameter name);
-- inference only (E0412 when undecided), bodies checked once, and E0419 for a bound not met at a use;
-- monomorphization with instance symbols (`lugha_fn_max<i64>`), E0420 for too-deep instantiation, and `Option<T>` as an ordinary generic enum;
-- `Eq`/`Ord` reserved.
+Next is **PRP-036, compiling generics**, which completes milestone 11 (tag `m11`):
+- monomorphization from `Checked.instances`, with instance symbols (`lugha_fn_max<i64>`);
+- E0420 for too-deep instantiation;
+- `Option<T>` as an ordinary generic enum;
+- the gate removed;
+- the generic rules folded into `Language v2 Specification.md`, and the §10 generics program running.
 
-The gate stops only generics. Start with discovery: it likely splits into PRPs (for example the checker's type parameters and inference, then monomorphization in codegen, then `Option` and the spec).
+Start with discovery. Then comes milestone 12, interfaces (MEMORY 40).
 
 See `TODO.md`.
