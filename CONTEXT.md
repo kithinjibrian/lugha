@@ -3285,6 +3285,11 @@ Branch: prp-055-more_numbers (merged into main)
 
 ---
 
+## SESSION 71 — 2026-10-13 — Bits (milestone 28) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 27 complete** (PRP-055, MEMORY 66): `u32`, `u64`, `f32` as keyword types. Tagged `m27`. `Language v7 Specification.md` (in progress) is what `lughac spec` prints; v6 is frozen.
