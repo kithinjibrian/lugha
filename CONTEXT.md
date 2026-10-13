@@ -3256,6 +3256,11 @@ Branch: main
 
 ---
 
+## SESSION 70 — 2026-10-13 — More numbers (milestone 27) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v7 draft approved** (`docs/specs/Language v7 Draft.md`, MEMORY 65): numbers and bits — milestones 27–29. `main` has v6 complete (tags `m26`, `v6`); `Language v6 Specification.md` is what `lughac spec` prints until milestone 27 starts `Language v7 Specification.md`.
