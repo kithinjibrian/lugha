@@ -2210,7 +2210,7 @@ CLAUDE.md (rule 7, tree, known issue), README.md, TODO.md, CHANGELOG.md, MEMORY.
 
 ---
 
-## SESSION 43 — 2026-10-13 — v2 interfaces amendment (milestone 12) — open
+## SESSION 43 — 2026-10-13 — v2 interfaces amendment (milestone 12) — closed
 
 Branch: main → v2-interfaces
 
@@ -2240,20 +2240,22 @@ TODO.md (milestone 12), CHANGELOG.md, MEMORY.md (decision 40)
 
 - None (`Self` and printing generic values are open questions in the draft's §12).
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `v2-interfaces` fast-forward merged into `main` and deleted.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 10 is complete** (tag `m10`): modules, `import`, per-module names, `private`/`public` (E0313/E0317/E0318), and module symbols `lugha_fn_a/b/f`. `lughac spec` prints the v2 spec, "in progress: milestone 11".
+**Milestone 10 is complete** (tag `m10`). The v2 draft was amended in session 43 (MEMORY 40, `docs/decisions/generics.md`): generics stay **milestone 11**, and structural **interfaces** are a new **milestone 12**, after which the v2 spec is complete.
 
-Next is **milestone 11, generics**, the last of v2 (draft decisions 3–5; draft §3, §4, §6, §9, §10 generics program). It covers:
-- type parameters on fun, struct, enum and methods (`impl Stack<T>`), with `Eq`/`Ord` bounds (E0315 unknown bound, E0316 bad parameter name);
-- inference only (E0412 when undecided), bodies checked once against their bounds, and E0419 for a bound not met at a use;
-- monomorphized codegen with instance symbols (`lugha_fn_max<i64>`), E0420 for too-deep instantiation, and `Option<T>` as an ordinary generic enum;
-- `Eq`/`Ord` as reserved built-in names (E0302).
+Next is **milestone 11, generics** (draft decisions 3–5; §3, §4, §6, §9; the generics program in §10). It covers:
+- type parameters on fun, struct, enum and methods (`impl Stack<T>`), with `Eq`/`Ord` bounds on the declaration (E0315 unknown bound, E0316 bad parameter name);
+- inference only (E0412 when undecided), bodies checked once, and E0419 for a bound not met at a use;
+- monomorphization with instance symbols (`lugha_fn_max<i64>`), E0420 for too-deep instantiation, and `Option<T>` as an ordinary generic enum;
+- `Eq`/`Ord` reserved.
 
-Generics are the only thing the gate still stops. When M11 lands, the full v2 spec drops "in progress", the gate goes, and the draft retires.
-
-Start with discovery: it likely splits into several PRPs (for example type parameters in the checker, then monomorphization, then `Option` and the spec).
+The gate stops only generics. Start with discovery: it likely splits into PRPs (for example the checker's type parameters and inference, then monomorphization in codegen, then `Option` and the spec).
 
 See `TODO.md`.
