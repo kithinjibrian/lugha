@@ -2397,26 +2397,53 @@ Branch: prp-037-interfaces
 
 ---
 
-## SESSION 47 — 2026-10-13 — v3 direction — open
+## SESSION 47 — 2026-10-13 — v3 direction — closed
 
 Branch: main
+
+### WHAT WAS DONE
+
+- v3 discovery, five answers:
+  1. headline: closures;
+  2. capture: by copy, read-only;
+  3. syntax: `fun` everywhere;
+  4. additions: args, parsing and interpolation;
+  5. helpers: built-in array methods, with interpolation in every string literal.
+- Wrote `docs/specs/Language v3 Draft.md`, approved: milestones 13–16, codes E0111, E0209, E0511, symbols `lugha_closure_*`/`lugha_ref_*`, and four §10 programs.
+
+### FILES CREATED OR MODIFIED
+
+- New: `docs/specs/Language v3 Draft.md`.
+- Modified: MEMORY (decision 44), TODO (v3 milestones), CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+
+- None (a design session).
+
+### DECISIONS MADE
+
+- MEMORY 44.
+
+### PENDING DECISIONS OPENED
+
+- None. The draft's §12 lists four minor open questions to settle in their milestone's PRP.
+
+### STILL OPEN AT CLOSE
+
+- Nothing. Work is on `main`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v2 is complete** (tags `m12` and `v2`). Milestones 9–12 are done:
-- patterns and equality;
-- modules;
-- generics (MEMORY 41, 42);
-- interfaces (MEMORY 43).
+**Lugha v2 is complete** (tag `v2`). **The v3 draft is approved** (session 47, MEMORY 44, `docs/specs/Language v3 Draft.md`).
 
-`Language v2 Specification.md` is final and is what `lughac spec` prints.
+Next is **milestone 13, input and interpolation**:
+- `args(): string[]`;
+- `parse_i64`/`parse_f64` returning `Option`;
+- string interpolation `"{x}"` in every string literal, with `{{`/`}}` for braces and E0111 for mistakes;
+- the "Arguments and interpolation" program in the draft's §10.
 
-There is no planned work. Possible next directions, each needing discovery, a spec change for v3 and a PRP:
-- the spec's §11 out-of-scope list: closures, shared references, interface values, `Self`, packages with `public`, explicit type arguments, `.len()`;
-- the draft's §12 open questions (printing generic values through a `Show`-style interface; `mut` bindings in `match`).
-
-Housekeeping is also possible.
+Start with discovery for its PRP (PRP-038). It likely needs a decision on how the lexer represents interpolated strings, and on whether `Language v3 Specification.md` starts now (as v2's did at M9).
 
 See `TODO.md`.

@@ -645,6 +645,31 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 44. Lugha v3 direction (session 47)
+
+**Decision:** `docs/specs/Language v3 Draft.md` is approved. It is a delta against the complete v2 spec, built as milestones 13–16.
+- **Headline:** closures.
+- **Function types:** `fun(A, B): R`.
+- **Functions as values:** named and associated functions are values; a generic one needs an expected type; methods with `self`, externs and intrinsics are not.
+- **Closure literals:** `fun(x) = e` and `fun(x: T): R { … }`, with parameter types inferred from an expected function type.
+- **Capture:** by copy and read-only (E0511 on assignment), so value semantics hold and there are no shared references.
+- **Equality:** functions have no `==`, so `T: Eq` now restricts.
+- **Practical additions:** `args()`, `parse_i64`/`parse_f64` returning `Option`, and interpolation `"{x}"` in every string literal, with `{{`/`}}` for braces (E0111).
+- **Built-in array methods:** `map`, `filter`, `fold`, `sort_by` (stable), `any`, `all`. Each takes `self` and returns a new value.
+- **Value layout:** `{ code, env }`, with the environment on the GC heap. Symbols are `lugha_closure_<fn>.<n>` and `lugha_ref_<fn>`.
+- **New codes:** E0111, E0209, E0511.
+- **Milestones:**
+  - M13: input and interpolation;
+  - M14: functions as values;
+  - M15: closures;
+  - M16: array helpers. When M16 is done, the v3 spec is complete.
+
+**Why:** Closures were the largest expressiveness gap: generic code could only compare with `<`, never take a custom order or callback. Copy capture keeps v2's "everything is a value" without a reference type. The small additions make real programs (input, readable output) practical.
+
+**Rules out (v3):** packages, interface values, shared references, closures that change their captures, bitwise operators and more integer types, or-patterns, `mut` match bindings, explicit type arguments.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -700,24 +725,20 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- Lugha v3 (nothing planned yet; see the spec's §11 out-of-scope list)
+- v3 milestones 13–16 (draft approved, session 47, MEMORY 44)
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v2 is complete** (tags `m12` and `v2`). Milestones 9–12 are done:
-- patterns and equality;
-- modules;
-- generics (MEMORY 41, 42);
-- interfaces (MEMORY 43).
+**Lugha v2 is complete** (tag `v2`). **The v3 draft is approved** (session 47, MEMORY 44, `docs/specs/Language v3 Draft.md`).
 
-`Language v2 Specification.md` is final and is what `lughac spec` prints.
+Next is **milestone 13, input and interpolation**:
+- `args(): string[]`;
+- `parse_i64`/`parse_f64` returning `Option`;
+- string interpolation `"{x}"` in every string literal, with `{{`/`}}` for braces and E0111 for mistakes;
+- the "Arguments and interpolation" program in the draft's §10.
 
-There is no planned work. Possible next directions, each needing discovery, a spec change for v3 and a PRP:
-- the spec's §11 out-of-scope list: closures, shared references, interface values, `Self`, packages with `public`, explicit type arguments, `.len()`;
-- the draft's §12 open questions (printing generic values through a `Show`-style interface; `mut` bindings in `match`).
-
-Housekeeping is also possible.
+Start with discovery for its PRP (PRP-038). It likely needs a decision on how the lexer represents interpolated strings, and on whether `Language v3 Specification.md` starts now (as v2's did at M9).
 
 See `TODO.md`.

@@ -101,6 +101,24 @@ Done when the generics program passes and the full v2 spec replaces v1 in `lugha
 Done when the interfaces program passes and the v2 spec is complete.
 - [x] PRP-037: `interface` declarations, interfaces as bounds, structural satisfaction (E0421, E0422, E0423); the v2 spec is complete
 
+## v3 (draft approved, session 47 — `docs/specs/Language v3 Draft.md`)
+
+### Milestone 13 — Input and interpolation
+Done when the arguments program passes.
+- [ ] `args()`, `parse_i64`, `parse_f64`, string interpolation (E0111)
+
+### Milestone 14 — Functions as values
+Done when the functions-as-values program passes.
+- [ ] Function types, named functions as values, calling values, no `==` on functions, `lugha_ref_*`
+
+### Milestone 15 — Closures
+Done when the closures program passes.
+- [ ] Closure literals, capture by copy (E0511), parameter inference, `lugha_closure_*`, closures in generic code
+
+### Milestone 16 — Array helpers
+Done when the array-helpers program passes and the v3 spec is complete.
+- [ ] `map`, `filter`, `fold`, `sort_by`, `any`, `all`
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.
