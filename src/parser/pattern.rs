@@ -11,7 +11,11 @@ impl Parser<'_> {
     pub(super) fn match_expr(&mut self) -> PResult<Expr> {
         self.nested(|p| {
             let start = p.bump().start;
-            let scrutinee = p.cond()?;
+            // `match s { c: Circle => … }`: the `{` opens the arms (v5).
+            let saved = std::mem::replace(&mut p.scrutinee, true);
+            let scrutinee = p.cond();
+            p.scrutinee = saved;
+            let scrutinee = scrutinee?;
             let open = p.expect(&TokenKind::LBrace)?;
             let mut arms = Vec::new();
             loop {
@@ -92,7 +96,16 @@ impl Parser<'_> {
         let kind = match self.peek().clone() {
             TokenKind::Ident(name) if name == "_" => {
                 self.bump();
-                PatternKind::Wildcard
+                match self.eat(&TokenKind::Colon) {
+                    true => PatternKind::Type(None, self.ty()?),
+                    false => PatternKind::Wildcard,
+                }
+            }
+            TokenKind::Ident(_) if matches!(self.peek_at(1), TokenKind::Colon) => {
+                // `c: Circle` (v5): a type pattern.
+                let name = self.ident("pattern")?;
+                self.bump();
+                PatternKind::Type(Some(name), self.ty()?)
             }
             TokenKind::Ident(_) => {
                 let name = self.ident("pattern")?;
@@ -188,6 +201,15 @@ mod tests {
             "{:?}",
             errors(&deep)
         );
+    }
+
+    #[test]
+    fn type_patterns_name_a_type_after_a_colon() {
+        assert_eq!(
+            expr("match s { c: Circle => 1, _: geo.Sq => 2, Some(x: Stack<i64>) => 3, _ => 4 }"),
+            "(match s (=> (: c Circle) 1) (=> (: _ (applied geo.Sq)) 2) (=> (Some (: x (applied Stack i64))) 3) (=> _ 4))"
+        );
+        assert_eq!(errors("fun t() { match s { c: => 1 } }")[0].0, "E0201");
     }
 
     #[test]

@@ -197,6 +197,7 @@ pub(super) fn show(pat: &Pat, top: bool) -> String {
             format!("{}{value}", if *negative { "-" } else { "" })
         }
         Pat::Ctor(Ctor::Str(text), _) => format!("{text:?}"),
+        Pat::Ctor(Ctor::Type(ty), _) => format!("_: {ty}"),
     }
 }
 

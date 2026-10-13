@@ -2,6 +2,8 @@
 //! a value's table, and copies through its copy slot. Building them is in
 //! `interfaces.rs`.
 
+use inkwell::IntPredicate;
+use inkwell::basic_block::BasicBlock;
 use inkwell::types::{BasicMetadataTypeEnum, BasicType};
 use inkwell::values::{BasicValueEnum, PointerValue, StructValue, ValueKind};
 
@@ -9,7 +11,7 @@ use super::CodegenError;
 use super::interfaces::SLOTS;
 use super::lower::{Lowerer, POSITIONED};
 use super::value::{Value, llvm_type};
-use crate::ast::Expr;
+use crate::ast::{Expr, Type as Annotation};
 use crate::check::Type;
 
 impl<'ctx> Lowerer<'ctx> {
@@ -94,6 +96,26 @@ impl<'ctx> Lowerer<'ctx> {
             ValueKind::Instruction(_) => Value::Void,
         })
     }
+
+    /// A type pattern `name: T` against interface value `pair`: continues
+    /// when the table's identity is `T`'s, else jumps to `next`. Gives the
+    /// box's value and `T`, for a binding (`_: T` ignores them).
+    pub(super) fn type_test(
+        &mut self,
+        pair: StructValue<'ctx>,
+        written: &Annotation,
+        next: BasicBlock<'ctx>,
+    ) -> (BasicValueEnum<'ctx>, Type) {
+        let ty = self.annotation_type(written);
+        let (table, boxed) = self.parts(pair);
+        let identity = self.slot(table, 0);
+        let same = self
+            .builder
+            .build_int_compare(IntPredicate::EQ, identity, self.type_id(&ty), "is.type")
+            .expect(POSITIONED);
+        self.or_next(same, next, "type.ok");
+        (self.load_element(boxed, &ty), ty)
+    }
 }
 
 #[cfg(test)]
@@ -123,6 +145,23 @@ mod tests {
         assert!(
             helper.contains("call ptr %"),
             "the copy slot is called: {ir}"
+        );
+    }
+
+    #[test]
+    fn type_patterns_compare_the_identity_slot() {
+        let ir = ir(&format!(
+            "{SHAPES}fun f(s: Shape): f64 = match s {{ c: Circle => c.r, _: Square => 1.0, _ => 0.0 }};\nfun main() {{ let n = f(Circle {{ r: 1.0 }}); }}"
+        ));
+        let f = body(&ir, "f");
+        assert!(
+            f.contains("icmp eq ptr") && f.contains("@lugha_type_Circle"),
+            "{f}"
+        );
+        assert!(f.contains("@lugha_type_Square"), "{f}");
+        assert!(
+            !f.contains("switch"),
+            "type patterns use the arm chain: {f}"
         );
     }
 }

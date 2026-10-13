@@ -144,9 +144,9 @@ Done when the interface-values program passes.
 - [x] PRP-046: checking — interfaces as types, conversion at an expected interface type, calls, equality, E0425; `build`/`run` gated
 - [x] PRP-047: compiling — dispatch tables, boxes, dynamic calls, copies; gate removed; `Language v5 Specification.md` begins; tag `m20`
 
-### Milestone 21 — Type patterns
+### Milestone 21 — Type patterns ✅
 Done when the type-patterns program passes.
-- [ ] `name: T` and `_: T` in `match`, exhaustiveness with `_` (E0426)
+- [x] PRP-048: `name: T` and `_: T` in `match`, exhaustiveness with `_` (E0426) — built while the user was away; merge held for review
 
 ### Milestone 22 — Default methods and error conversion
 Done when the errors-as-interfaces program passes and the v5 spec is complete.

@@ -88,6 +88,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Text helpers",
         "Reading input",
         "Interface values",
+        "Type patterns",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),
@@ -105,6 +106,10 @@ fn the_extractor_finds_every_section_10_program() {
     assert_eq!(find("Arguments and interpolation").args, ["21"]);
     assert_eq!(find("Reading input").stdin, "5\n7\nx\n");
     assert_eq!(find("Interface values").stdout, "16.0\n1.0\ncircle\n");
+    assert_eq!(
+        find("Type patterns").stdout,
+        "big circle\ncircle of radius 1.5\na square\n"
+    );
     assert_eq!(
         find("Calling C").stdout,
         "hello from libc\n1.4142135623730951\n"

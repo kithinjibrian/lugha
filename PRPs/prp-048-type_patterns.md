@@ -94,37 +94,37 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — parser (`parser/pattern.rs`):
-- [ ] `match s { c: Circle => 1, _: geo.Sq => 2, Some(x: Stack<i64>) => 3, _ => 4 }` parses to `(: c Circle)`, `(: _ (. geo Sq))`, `(Some (: x Stack<i64>))`.
+- [x] `match s { c: Circle => 1, _: geo.Sq => 2, Some(x: Stack<i64>) => 3, _ => 4 }` parses to `(: c Circle)`, `(: _ (. geo Sq))`, `(Some (: x Stack<i64>))`.
 
 Unit tests — checker (`check/type_patterns.rs`):
-- [ ] **Bindings:** `c: Circle => c.r` binds `c: Circle`, and `_: Square` binds nothing; nested `Some(c: Circle)` on an `Option<Shape>` works; guards see the binding.
-- [ ] **E0426:**
+- [x] **Bindings:** `c: Circle => c.r` binds `c: Circle`, and `_: Square` binds nothing; nested `Some(c: Circle)` on an `Option<Shape>` works; guards see the binding.
+- [x] **E0426:**
   - on an `i64`;
   - with an interface as the type;
   - with a type that doesn't satisfy (help lists what's missing);
   - with `Stack` without arguments;
   - with a type parameter.
-- [ ] **E0417:** a `match` on a `Shape` without `_`, whose witness is `_`.
-- [ ] **W0102:** a second unguarded `c: Circle` is unreachable; after a guarded one it isn't.
-- [ ] **Bindings are immutable:** `c.grow(1.0)` in the arm is E0501.
+- [x] **E0417:** a `match` on a `Shape` without `_`, whose witness is `_`.
+- [x] **W0102:** a second unguarded `c: Circle` is unreachable; after a guarded one it isn't.
+- [x] **Bindings are immutable:** `c.grow(1.0)` in the arm is E0501.
 
 Unit tests — codegen (`codegen/dispatch.rs`):
-- [ ] A type pattern loads slot 0 and compares it with `@lugha_type_Circle`.
-- [ ] A `match` with type patterns uses the arm chain, not a `switch`.
+- [x] A type pattern loads slot 0 and compares it with `@lugha_type_Circle`.
+- [x] A `match` with type patterns uses the arm chain, not a `switch`.
 
 Acceptance — `tests/programs/m21/` (run at `-O0`; `-O2` by hand, as for m20):
-- [ ] `describe.la`: the §10 program.
-- [ ] `nested.la`:
+- [x] `describe.la`: the §10 program.
+- [x] `nested.la`:
   - `Some(c: Circle)` and `None`;
   - an interface value in an array, matched in a loop;
   - a generic `Stack<i64>` pattern;
   - a type from another module (a directory case);
   - the bound value copied and changed while the original stays intact.
-- [ ] `e0426.la` and `e0417.la`: reject goldens.
-- [ ] The §10 type-patterns program runs from the spec.
+- [x] `e0426.la` and `e0417.la`: reject goldens.
+- [x] The §10 type-patterns program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes; programs without type patterns give byte-identical IR.
+- [x] Every earlier test passes; programs without type patterns give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -132,10 +132,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 type-patterns program and the `m21/` programs pass.
-- [ ] The spec is at milestone 21; docs updated.
-- [ ] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The §10 type-patterns program and the `m21/` programs pass.
+- [x] The spec is at milestone 21; docs updated.
+- [x] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -144,3 +144,10 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m21/describe.la
 ```
+
+## AMENDMENTS (during build, session 60)
+
+- **The `match` scrutinee and struct literals:** `match s { c: Circle => … }` first parsed as the misplaced struct literal `s { c: … }`. In a condition, the parser treats `Name { field:` as a struct literal so that it can report E0205. While parsing a `match` scrutinee, that heuristic is now off (`Parser.scrutinee`): there, `{ name:` always begins the arms. A struct literal written as a scrutinee without parentheses now gets a plain parse error instead of E0205. The spec says so in §4's type-pattern paragraph.
+- **`satisfy.rs`:** `satisfies` is split into `unmet` (the list of problems, without reporting) and the report. Type patterns use `unmet` for E0426's help.
+- **`m21/nested`** is a directory case (`main.la` + `geo.la`). `-O2` was checked by hand, as for m20.
+- **No file splits.**

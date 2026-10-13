@@ -160,6 +160,10 @@ fn pattern(pattern: &Pattern) -> String {
         }
         PatternKind::Str(text) => format!("{text:?}"),
         PatternKind::Bool(value) => value.to_string(),
+        PatternKind::Type(name, ty) => {
+            let name = name.as_ref().map_or("_", |n| n.name.as_str());
+            format!("(: {name} {})", self::ty(ty))
+        }
     }
 }
 

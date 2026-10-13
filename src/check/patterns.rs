@@ -20,6 +20,8 @@ pub(super) enum Ctor {
     /// The literal's value, and whether it is negative (`-0` isn't).
     Int(u64, bool),
     Str(String),
+    /// A type pattern's type, as it prints (v5): one of infinitely many.
+    Type(String),
 }
 
 impl Checker {
@@ -77,6 +79,9 @@ impl Checker {
             }
             PatternKind::Variant(name, slots) => {
                 self.variant_pattern(pattern, name, slots.as_deref(), ty, bindings)
+            }
+            PatternKind::Type(name, written) => {
+                self.type_pattern(pattern, name.as_ref(), written, ty, bindings)
             }
         }
     }

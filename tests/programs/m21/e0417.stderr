@@ -1,0 +1,8 @@
+error[E0417]: non-exhaustive match: `_` not covered
+   --> tests/programs/m21/e0417.la:11:24
+   |
+11 | fun f(s: Shape): f64 = match s {
+   |                        ^^^^^^^
+   |
+   = help: add the missing arms, or `_ => …`
+

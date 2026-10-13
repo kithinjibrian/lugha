@@ -155,7 +155,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// `lugha_type_<Type>`: a byte whose address identifies `ty` (v5 type patterns).
-    fn type_id(&self, ty: &Type) -> PointerValue<'ctx> {
+    pub(super) fn type_id(&self, ty: &Type) -> PointerValue<'ctx> {
         let name = format!("lugha_type_{}", symbol(&ty.to_string()));
         if let Some(global) = self.module.get_global(&name) {
             return global.as_pointer_value();

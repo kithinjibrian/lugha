@@ -65,6 +65,17 @@ impl Checker {
     /// has a visible method or associated function with the same name,
     /// receiver kind and types.
     pub(super) fn satisfies(&mut self, arg: &Type, key: &str, span: crate::span::Span) -> bool {
+        let problems = self.unmet(arg, key);
+        if problems.is_empty() || matches!(arg, Type::Error) {
+            return true;
+        }
+        self.report(errors::unsatisfied(arg, key, &problems, span));
+        false
+    }
+
+    /// What `arg` lacks to satisfy interface `key`, one entry per item:
+    /// empty when it satisfies it.
+    pub(super) fn unmet(&self, arg: &Type, key: &str) -> Vec<String> {
         let mut problems = Vec::new();
         for req in &self.interfaces[key].items {
             match self.offer(arg, req) {
@@ -75,11 +86,7 @@ impl Checker {
                 }
             }
         }
-        if problems.is_empty() || matches!(arg, Type::Error) {
-            return true;
-        }
-        self.report(errors::unsatisfied(arg, key, &problems, span));
-        false
+        problems
     }
 
     /// What `arg` offers for `req`: a parameter offers its bounds' items, a

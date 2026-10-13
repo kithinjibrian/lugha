@@ -1,0 +1,59 @@
+// Type patterns nested, in loops, on generic types and another module's types.
+import geo;
+
+interface Sized {
+    fun size(self): i64;
+    fun grow(mut self);
+}
+
+struct Box { n: i64 }
+
+impl Box {
+    fun size(self): i64 = self.n;
+    fun grow(mut self) { self.n += 1; }
+}
+
+struct Stack<T> { items: T[] }
+
+impl Stack<T> {
+    fun size(self): i64 = self.items.len;
+    fun grow(mut self) { self.items.clear(); }
+}
+
+fun name(s: Sized): string = match s {
+    b: Box if b.n > 9 => "big box",
+    b: Box => "box {b.n}",
+    _: Stack<i64> => "stack of numbers",
+    _: Stack<string> => "stack of strings",
+    c: geo.Crate => "crate of {c.size()}",
+    _ => "something",
+};
+
+fun first(o: Option<Sized>): string = match o {
+    Some(b: Box) => "some box {b.n}",
+    Some(other) => "some {other.size()}",
+    None => "none",
+};
+
+fun main() {
+    let things: Sized[] = [Box { n: 3 }, Box { n: 10 }, Stack { items: [1, 2] }, Stack { items: ["a"] }, geo.Crate { held: 4 }];
+    for t of things {
+        println(name(t));
+    }
+    println(first(Some(Box { n: 7 })));
+    println(first(Some(Stack { items: [1] })));
+    println(first(None));
+    // The bound value is a copy: changing it leaves the interface value alone.
+    let mut s: Sized = Box { n: 1 };
+    let copy = match s {
+        b: Box => b,
+        _ => Box { n: 0 },
+    };
+    s.grow();
+    let mut c = copy;
+    c.grow();
+    c.grow();
+    println(s.size());
+    println(copy.n);
+    println(c.n);
+}

@@ -33,7 +33,9 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn is_flat(&self, sty: &Type, arms: &[Arm]) -> bool {
         arms.iter().all(|arm| {
             let PatternKind::Variant(name, Some(slots)) = &arm.pattern.kind else {
-                return arm.guard.is_none();
+                // A type pattern tests a table, not a tag (v5).
+                let typed = matches!(arm.pattern.kind, PatternKind::Type(..));
+                return arm.guard.is_none() && !typed;
             };
             let (_, payloads) = self.variant(sty, &name.name);
             arm.guard.is_none()
@@ -105,7 +107,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Continues in a new block if `pass`, else jumps to `next`.
-    fn or_next(&self, pass: IntValue<'ctx>, next: BasicBlock<'ctx>, name: &str) {
+    pub(super) fn or_next(&self, pass: IntValue<'ctx>, next: BasicBlock<'ctx>, name: &str) {
         let ok = self.append(name);
         self.builder
             .build_conditional_branch(pass, ok, next)
@@ -167,6 +169,13 @@ impl<'ctx> Lowerer<'ctx> {
                             .into_pointer_value();
                     }
                     self.test(sub, Subject::At(address), payload, next, false);
+                }
+            }
+            PatternKind::Type(name, written) => {
+                let pair = self.load_subject(subject, ty).into_struct_value();
+                let (value, ty) = self.type_test(pair, written, next);
+                if let Some(name) = name {
+                    self.bind(name, value, &ty);
                 }
             }
             PatternKind::Str(text) => {

@@ -925,11 +925,23 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 57. Type patterns (PRP-048)
+
+**Decision:** built in session 60 while the user was away (pre-approved; merge held for review).
+- **Syntax:** `PatternKind::Type(Option<Ident>, Annotation)`; after `_` or a name, `:` starts a type. In a `match` scrutinee the parser's misplaced-struct-literal heuristic (`Name { field:` → E0205) is off (`Parser.scrutinee`), since `{ c:` begins an arm.
+- **Checker** (`check/type_patterns.rs`): only on interface values; `T` concrete (not an interface, not a type parameter — decision taken while away), generic `T` written with arguments (bare `Stack` is E0426, as the draft says, not E0418), and satisfying the interface (`satisfy.rs::unmet`, the non-reporting half of `satisfies`). `Ctor::Type(T as printed)` with no payloads: the usefulness algorithm needs no change (no finite signature, so `_` is required, witness `_`; repeats are W0102).
+- **Codegen** (`codegen/dispatch.rs::type_test`): load table slot 0, `icmp eq ptr` with `lugha_type_<T>`, then bind the box's value as a borrowed local; `is_flat` is false for type-pattern arms, so they use the arm chain.
+
+**Why:** the identity slot reserved in PRP-047 makes the test one pointer comparison; reusing `Ctor`/usefulness keeps exhaustiveness uniform.
+
+---
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 21 complete (branch, merge held)**: PRP-048 type patterns
 - **Milestone 20 complete**: PRP-046 checking and PRP-047 compiling interface values; v5 spec begins
 - **Lugha v4.1**: PRP-045 string literals inside interpolations
 - **Milestone 19 complete — Lugha v4 complete**: PRP-044 input and output

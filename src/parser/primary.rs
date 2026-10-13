@@ -78,8 +78,9 @@ impl Parser<'_> {
             return self.struct_lit(start, module, name).map(Some);
         }
         // `Name { field:` can't begin a block, so it must be a misplaced literal.
-        let looks_like_literal =
-            matches!(self.peek_at(1), TokenKind::Ident(_)) && self.peek_at(2) == &TokenKind::Colon;
+        let looks_like_literal = !self.scrutinee
+            && matches!(self.peek_at(1), TokenKind::Ident(_))
+            && self.peek_at(2) == &TokenKind::Colon;
         if !looks_like_literal {
             return Ok(None);
         }

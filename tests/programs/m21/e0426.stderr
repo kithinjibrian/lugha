@@ -1,0 +1,8 @@
+error[E0426]: `Dot` doesn't satisfy `Shape`, so this arm can never match
+  --> tests/programs/m21/e0426.la:8:5
+  |
+8 |     d: Dot => 0.0,
+  |     ^^^^^^
+  |
+  = help: no method `area`
+

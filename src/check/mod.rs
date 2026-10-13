@@ -48,6 +48,7 @@ mod stmt;
 mod struct_literal;
 mod structs;
 mod swap;
+mod type_patterns;
 mod types;
 mod usefulness;
 mod visibility;

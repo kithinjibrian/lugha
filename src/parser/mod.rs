@@ -62,6 +62,7 @@ pub fn parse_from(
         next_id: first,
         depth: 0,
         no_struct: false,
+        scrutinee: false,
         diagnostics: Vec::new(),
     };
     let (imports, items) = parser.program();
@@ -95,6 +96,9 @@ struct Parser<'t> {
     depth: u32,
     /// True while parsing a condition, where `Name {` ends the expression (spec §3).
     no_struct: bool,
+    /// True while parsing a `match` scrutinee, where `{ name:` starts an
+    /// arm with a type pattern rather than a misplaced struct literal (v5).
+    scrutinee: bool,
     diagnostics: Vec<Diagnostic>,
 }
 

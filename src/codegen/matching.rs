@@ -105,7 +105,7 @@ impl<'ctx> Lowerer<'ctx> {
     /// The `switch` case value a pattern stands for; `None` for `_`.
     pub(super) fn case_value(&self, sty: &Type, pattern: &PatternKind) -> Option<IntValue<'ctx>> {
         match pattern {
-            PatternKind::Wildcard | PatternKind::Str(_) => None,
+            PatternKind::Wildcard | PatternKind::Str(_) | PatternKind::Type(..) => None,
             PatternKind::Variant(name, _) => {
                 let (tag, _) = self.variant(sty, &name.name);
                 Some(self.context.i32_type().const_int(u64::from(tag), false))

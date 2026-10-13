@@ -2954,22 +2954,43 @@ Branch: prp-047-interface_value_compiling
 
 ---
 
-## SESSION 60 — 2026-10-13 — Type patterns (milestone 21) — open
+## SESSION 60 — 2026-10-13 — Type patterns (milestone 21) — closed
 
 Branch: prp-048-type_patterns
+
+### WHAT WAS DONE
+- The user went out and chose "build m21 and m22, hold merges": PRP-048 written as pre-approved, with the decisions taken while away listed in it.
+- Type patterns end to end: parser (`c: Circle`, `_: T`, scrutinee fix), checker (`check/type_patterns.rs`, E0426, `Ctor::Type`), codegen (`dispatch.rs::type_test`).
+- Spec: v5 at "in progress: milestone 21" (§3 grammar, §4 type patterns, E0426, §10 program, §11).
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/type_patterns.rs`, `tests/programs/m21/` (`describe`, `nested/` + `geo.la`, `e0426`, `e0417`).
+- Modified: `src/ast/pattern.rs`, `src/parser/{mod,pattern,primary}.rs`, `src/parser/sexp/mod.rs`, `src/check/{mod,patterns,usefulness,satisfy}.rs`, `src/check/errors/v5.rs`, `src/codegen/{patterns,matching,dispatch,interfaces}.rs`, `tests/spec.rs`, the v5 spec.
+- Docs: PRP-048, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 57, CONTEXT.
+
+### TESTS WRITTEN
+- Parser: type patterns in an arm and nested, `c:` with no type is E0201.
+- Checker: bindings, E0426 (five ways), E0417 needing `_`, W0102 unless guarded, immutable bindings.
+- Codegen: identity-slot comparison, the arm chain.
+- `tests/programs/m21/`; the §10 type-patterns program from the spec.
+
+### DECISIONS MADE
+- MEMORY 57 (pre-approved decisions 1–5 in PRP-048, for the user's review).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- **PRP-048 is not merged:** the branch `prp-048-type_patterns` waits for the user's review and merge; tag `m21` then.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 20 complete** (tag `m20`; PRP-046 and PRP-047, MEMORY 55–56): interface values check, compile and run. `Language v5 Specification.md` is in progress (milestone 20) and is what `lughac spec` prints; v4 (with v4.1) is frozen.
+**Milestone 21 built on branch `prp-048-type_patterns`, not merged** (the user is away; they chose "build m21 and m22, hold merges"). `main` is at milestone 20 (tag `m20`).
 
-Next: **milestone 21, type patterns** — discovery and PRP-048. Its scope (v5 draft §3, §4 "Type patterns", §9 E0426, §10 "Type patterns"):
-- `name: T` and `_: T` patterns in `match` on an interface value, nested and guarded;
-- a `_` arm required (E0417 with `_` as the witness); W0102 for a repeated unguarded type;
-- E0426 for a type pattern on a non-interface value, with an interface as `T`, or with a `T` that can't satisfy the interface;
-- codegen compares the table's identity slot (slot 0, `lugha_type_<Type>`) with the pattern type's, then binds the box's value (copied when stored).
+Next: **milestone 22, default methods and `?` error conversion** — PRP-049, pre-approved the same way, on a branch stacked on `prp-048-type_patterns`. Scope (v5 draft §3 `iface_item` bodies, §4 "Default methods" and "The `?` operator", §9, §10 "Errors as interfaces", §11): completes v5.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/array.rs` (297), `check/infer.rs` (291), `codegen/control.rs` (292), `check/usefulness.rs` (277), `check/matching.rs` (260), `codegen/patterns.rs` (261), `codegen/matching.rs` (253).
+On the user's return: review PRP-048 (and PRP-049) "Decisions taken while away", then merge in order and tag `m21`, `m22`, `v5`.
 
 See `TODO.md`.

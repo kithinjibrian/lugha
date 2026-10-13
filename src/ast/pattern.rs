@@ -39,4 +39,6 @@ pub enum PatternKind {
     Str(String),
     /// `true` or `false`.
     Bool(bool),
+    /// `name: T` or `_: T` (`None`): the interface value holds a `T` (v5).
+    Type(Option<Ident>, super::Type),
 }

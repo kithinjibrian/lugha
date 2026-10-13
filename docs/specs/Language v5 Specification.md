@@ -1,13 +1,14 @@
-# Lugha v5 Specification (in progress: milestone 20)
+# Lugha v5 Specification (in progress: milestone 21)
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestone 20 of 20–22). It is built from the approved plan, `Language v5 Draft.md`, one milestone at a time. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v4 Specification.md` keeps v4 (with v4.1) frozen.
+**Status:** in progress (milestones 20–21 of 20–22). It is built from the approved plan, `Language v5 Draft.md`, one milestone at a time. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v4 Specification.md` keeps v4 (with v4.1) frozen.
 
 **v4.** This is v3 plus `Result` and `?`, string and `Option`/`Result` helpers, and input and output (milestones 17–19); v4.1 allows string literals inside interpolations.
 
-**Changes since v4** (milestone 20):
+**Changes since v4** (milestones 20–21):
 - An interface whose items are all methods is a type: `let shapes: Shape[] = [c, sq];`. A value converts to it where an interface is expected, and a call on it runs the concrete type's method (sections 4, 7, 9).
+- A type pattern, `c: Circle => …` in a `match` on an interface value, matches when the value holds that type and binds it (sections 3–4).
 
 Every valid v4 program is a valid v5 program.
 
@@ -193,7 +194,8 @@ arm          = pattern [ "if" cond ] "=>" expr ;
 arm_sep      = "," | (* nothing, after an arm whose expr is a block *) ;
 pattern      = "_"
              | IDENT [ "(" pattern { "," pattern } [ "," ] ")" ]
-             | [ "-" ] INT | STRING | "true" | "false" ;
+             | [ "-" ] INT | STRING | "true" | "false"
+             | ( IDENT | "_" ) ":" type ;              (* `c: Circle` (v5) *)
 
 expr         = prefix { infix } ;            (* Pratt loop, see table *)
 prefix       = ( "-" | "!" ) prefix | postfix ;   (* binds tighter than infix *)
@@ -299,6 +301,7 @@ There is no null. Every string and array variable holds a valid object.
 **`match`.** `match e { pattern => value, … }` is an expression. A pattern is `_`, an integer, `bool` or string literal, or a variant written without the enum's name. A variant's payload slots are patterns too, so they nest: `Circle(r)`, `Rect(w, _)`, `Empty`, `Some(Circle(r))`, `Pair(1, Some("a"))`. Variant patterns need an enum or `Option` value and literal patterns a value of their type, at any depth (E0403); a variant needs one slot per payload (E0416). An arm may have a guard, `pattern if cond => value`: the guard runs after the pattern matches, with its bindings in scope, and must be `bool` (E0403); if it is false, matching continues with the next arm. The arms' values follow the rules of `if`/`else`: they must agree (E0403), and an arm that never finishes fits any type.
 
 - **Exhaustiveness.** A `match` must cover every value, counting only arms without guards. Otherwise it is E0417, which lists up to three missing cases as patterns (`Some(Rect(_, _))`, `None`) and then "and N more"; a missing variant with any payloads shows as its bare name at the top level (`Rect`). A `bool` is covered by `true` and `false`. Integers and strings, at the top level or inside a variant, always need a `_` or a binding.
+- **Type patterns** (v5). `name: T` matches when an interface value holds a `T`, and binds the value inside, as a `T`, to `name` (immutable, and copied when stored, like any `match` binding); `_: T` matches without binding. Guards and nesting work as for every pattern: `c: Circle if c.r > 1.0 =>`, `Some(c: Circle) =>`. `T` is a concrete type that satisfies the matched interface, written with its type arguments (`Stack<i64>`) and module (`geo.Crate`). A type pattern on a value that isn't an interface value, with an interface or a type parameter as `T`, with a generic `T` written without its arguments, or with a `T` that doesn't satisfy the interface (so the arm could never match) is E0426. The set of types is open, so a `match` on an interface value needs a `_` arm (E0417, with `_` as the missing case); a later arm that an earlier unguarded one covers is W0102. In a `match` scrutinee, `{ name:` begins the arms, never a struct literal.
 - **Unreachable arms.** An arm that no value can reach past the earlier unguarded arms is warning W0102: after `_`, after the same pattern, or after arms that together cover it (`Some(_)` and `None` before `Some(Empty)`).
 - **Bindings.** Payload names are immutable and borrowed, like `for … of` variables: storing or returning one copies it. Each is in scope in its own arm (guard and value) only. A binding that its arm never uses is warning W0103, which also catches a misspelled variant name that became a binding.
 
@@ -716,7 +719,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - Items of a module other than the main file put the module's path before their name, joined with `/`: function `area` of module `shapes.circle` is `lugha_fn_shapes/circle/area`, and its method `Circle.area` is `lugha_fn_shapes/circle/Circle.area`. A name contains neither `/` nor `.`, so a module function (`lugha_fn_a/b/c`) can't collide with a method (`lugha_fn_a/b.c`, method `c` of type `b` in module `a`).
 - A generic instance adds its type arguments as they print, with module paths joined by `/`: `lugha_fn_max<i64>`, `lugha_fn_a/b/max<a/b/Point>`. A method's go on its type, then its own: `lugha_fn_Stack<string>.push`, `lugha_fn_Stack<string>.tag<f64>`. `<` can't appear in a Lugha name, so instances can't collide with anything else.
 - A function used as a value (v3) is called through `lugha_ref_<symbol>`, a wrapper that takes an environment pointer first and calls `lugha_fn_<symbol>`: `lugha_ref_double`, `lugha_ref_max<i64>`, `lugha_ref_Point.at`. It is emitted once, when first needed.
-- An interface value's table (v5) is `lugha_vt_<Type>.<Interface>`, with names printed as in other symbols (`lugha_vt_Circle.Shape`, `lugha_vt_Stack<i64>.geo/Sized`), emitted once per pair a program converts. Its identity slot points at `lugha_type_<Type>`, its copy slot at `lugha_copy_<mangled type>_box` (`lugha_copy_6Circle_box`), and each method slot at the method itself: methods take their receiver as a pointer, so a call passes the box. Copying an interface value goes through `lugha_copy_<mangled interface>` (`lugha_copy_5Shape`). A program without interface values has none of these.
+- An interface value's table (v5) is `lugha_vt_<Type>.<Interface>`, with names printed as in other symbols (`lugha_vt_Circle.Shape`, `lugha_vt_Stack<i64>.geo/Sized`), emitted once per pair a program converts. Its identity slot points at `lugha_type_<Type>`, its copy slot at `lugha_copy_<mangled type>_box` (`lugha_copy_6Circle_box`), and each method slot at the method itself: methods take their receiver as a pointer, so a call passes the box. Copying an interface value goes through `lugha_copy_<mangled interface>` (`lugha_copy_5Shape`). A type pattern compares the table's identity slot with `lugha_type_<T>`. A program without interface values has none of these.
 - A closure's body (v3) is `lugha_closure_<enclosing>.<n>`: the enclosing function's symbol without its prefix, then the closure's number in that function from 0 (`lugha_closure_main.0`, `lugha_closure_main.0.0` for a closure inside it, `lugha_closure_max<i64>.0` in an instance). Its environment comes first, as for every function value's code.
 - The array helpers (v3) are generic functions of a prelude written in Lugha, bundled with the compiler and checked with every program, under the module path `$prelude`, which no program can name: `lugha_fn_$prelude/map<Person, string>`. Each is compiled only at the types a program uses.
 - An extern follows the visibility rules of section 6, and the same C function may be declared in several modules only with identical signatures (E0306); it is one symbol.
@@ -857,6 +860,7 @@ Name and type errors, reported by the checker:
 | E0423 | Two bounds declare one item differently | `T: Sized + Measured` where both declare `size` with different types (v2) |
 | E0424 | `?` where it can't return | `?` on an `i64`; in `main`; on an `Option` in a function returning `Result`; different error types (v4) |
 | E0425 | An interface with an associated function used as a type | `fun f(x: Factory)` where `Factory` declares `fun make(): Factory;` (v5) |
+| E0426 | A type pattern that can't apply | `c: Circle` on an `i64`; `s: Shape` (an interface); `d: Dot` when `Dot` doesn't satisfy the interface (v5) |
 | E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum, `Option`, function or interface parameters or returns (§8) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut` |
@@ -1396,6 +1400,40 @@ fun main() {
 }
 ```
 
+**Type patterns** (milestone 21). Prints `big circle` then `circle of radius 1.5` then `a square` on three lines, exits with 0.
+
+```
+interface Shape {
+    fun area(self): f64;
+}
+
+struct Circle { r: f64 }
+
+impl Circle {
+    fun area(self): f64 = 3.0 * self.r * self.r;
+}
+
+struct Square { side: f64 }
+
+impl Square {
+    fun area(self): f64 = self.side * self.side;
+}
+
+fun describe(s: Shape): string = match s {
+    c: Circle if c.r > 10.0 => "big circle",
+    c: Circle => "circle of radius {c.r}",
+    _: Square => "a square",
+    _ => "some shape",
+};
+
+fun main() {
+    let shapes: Shape[] = [Circle { r: 20.0 }, Circle { r: 1.5 }, Square { side: 2.0 }];
+    for s of shapes {
+        println(describe(s));
+    }
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1422,7 +1460,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 18 | Text and option helpers (v4) | string helpers, `join`, `Option`/`Result` helpers, built-in `slice` | The text-helpers program in section 10 passes (done) |
 | 19 | Input and output (v4) | `read_line`, `read_file`, `write_file`, `append_file`, `eprint`/`eprintln`, `exit` | The reading-input program in section 10 passes (done: v4 complete) |
 | 20 | Interface values (v5) | interfaces as types, conversion, dynamic calls, copies, `lugha_vt_*` (E0425) | The interface-values program in section 10 passes (done) |
-| 21 | Type patterns (v5) | `name: T` and `_: T` in `match` | The type-patterns program passes |
+| 21 | Type patterns (v5) | `name: T` and `_: T` in `match`, E0426 | The type-patterns program in section 10 passes (done) |
 | 22 | Default methods and error conversion (v5) | interface methods with bodies; `?` converting into an interface error | The errors-as-interfaces program passes |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.

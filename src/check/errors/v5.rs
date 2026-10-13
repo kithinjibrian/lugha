@@ -62,3 +62,16 @@ pub(in crate::check) fn extern_value(ty: &Type, span: Span) -> Diagnostic {
         _ => super::extern_fun(span),
     }
 }
+
+/// E0426: a type pattern that can't apply (v5 milestone 21).
+pub(in crate::check) fn bad_type_pattern(
+    message: String,
+    span: Span,
+    help: Option<String>,
+) -> Diagnostic {
+    let d = Diagnostic::error("E0426", message, span);
+    match help {
+        Some(help) => d.with_help(help),
+        None => d,
+    }
+}

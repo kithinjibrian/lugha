@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v5 Specification.md` (`lughac spec` prints it): Lugha v5, in progress (milestone 20 of 20–22: interface values). `Language v5 Draft.md` is the approved plan it is built from. The v0–v4 files are frozen. `Result` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v5 Specification.md` (`lughac spec` prints it): Lugha v5, in progress (milestones 20–21 of 20–22: interface values, type patterns). `Language v5 Draft.md` is the approved plan it is built from. The v0–v4 files are frozen. `Result` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
 
 ---
 
@@ -262,7 +262,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (xs.map(f) etc. as prelude calls), results.rs (Ok/Err, `?`, E0424), errors/ (mod.rs, names.rs E03xx, types.rs E04xx, places.rs E05xx/W01xx,
 │   │                  generics.rs milestone 11–12 codes, v4.rs v4 codes, v5.rs v5 codes),
 │   │                  iface_values.rs (interface types, E0425, conversion, Checked.conversions), iface_calls.rs
-│   │                  (calls on interface values), iface_tables.rs (Checked.interfaces, conversion reachability)
+│   │                  (calls on interface values), iface_tables.rs (Checked.interfaces, conversion reachability), type_patterns.rs
+│   │                  (`c: Circle` patterns, E0426)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
@@ -277,7 +278,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  wrappers, indirect calls), closures.rs
 │   │                  (environments, lugha_closure_ bodies), results.rs (`?`: branch and early return),
 │   │                  interfaces.rs (interface values: conversion, boxes, lugha_vt_ tables, box copies), dispatch.rs
-│   │                  (dynamic calls, interface copies),
+│   │                  (dynamic calls, interface copies, type-pattern tests),
 │   │                  instances.rs (generic instances:
 │   │                  substitution, instance symbols),
 │   │                  swap.rs (swap: loads and crossed stores)
@@ -298,7 +299,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m20/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m21/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)
