@@ -2295,7 +2295,7 @@ Branch: prp-035-generic_checking
 
 ## SESSION 45 — 2026-10-13 — Compiling generics (PRP-036) — open
 
-Branch: main
+Branch: prp-036-generic_compiling
 
 ---
 
