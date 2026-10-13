@@ -3345,6 +3345,11 @@ Branch: prp-057-integer_methods (merged into main)
 
 ---
 
+## SESSION 73 — 2026-10-13 — v8 direction — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v7 is complete** (milestones 27–29; PRP-055–057; MEMORY 65–68): `u32`, `u64`, `f32`; bit operators; integer methods. Tagged `m29` and `v7`. `Language v7 Specification.md` is what `lughac spec` prints; v0–v6 are frozen.
