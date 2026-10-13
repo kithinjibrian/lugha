@@ -300,7 +300,7 @@ pub fn parse_number(src: &str) -> i64 {
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
 │   └── specs/       — Language v4 Specification.md (the language definition, complete, printed by `lughac spec`);
-│                      Language v4 Draft.md (approved v4 plan, milestones 17–19); v3 and v2 Drafts (past plans);
+│                      Language v5 Draft.md (approved v5 plan, milestones 20–22); Language v4 Draft.md (approved v4 plan, milestones 17–19); v3 and v2 Drafts (past plans);
 │                      Language v3, v2, v1 (v1.2) and v0 Specification.md (frozen)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```

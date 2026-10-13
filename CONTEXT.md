@@ -2850,24 +2850,55 @@ Branch: prp-045-nested_strings
 
 ---
 
-## SESSION 57 — 2026-10-13 — v5 direction — open
+## SESSION 57 — 2026-10-13 — v5 direction — closed
 
 Branch: main
+
+### WHAT WAS DONE
+
+- PRP-045 (v4.1) merged and tagged in session 56; this session opened afterwards.
+- v5 discovery, six answers:
+  1. headline: interface values (interfaces only);
+  2. conversion implicit only at a written interface type;
+  3. interface values are values, copied like structs;
+  4. type patterns in `match` (`c: Circle =>`);
+  5. extras: `?` converting into an interface error, and default methods (`Self` and generic interfaces wait);
+  6. no `==` on interface values.
+- Wrote `docs/specs/Language v5 Draft.md`, approved: milestones 20–22, codes E0425 and E0426, three §10 programs.
+
+### FILES CREATED OR MODIFIED
+
+- New: `docs/specs/Language v5 Draft.md`.
+- Modified: MEMORY (decision 54), TODO (v5 milestones), CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+
+- None (a design session).
+
+### DECISIONS MADE
+
+- MEMORY 54.
+
+### PENDING DECISIONS OPENED
+
+- None. The draft's §12 lists three questions to settle in their milestone's PRP.
+
+### STILL OPEN AT CLOSE
+
+- Nothing. Work is on `main`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v4.1 is released** (tag `v4.1`, on top of `m19` and `v4`):
-- v4 (milestones 17–19): `Result` and `?`, text and option helpers, input and output (MEMORY 50–52);
-- v4.1: string literals and nested interpolations inside `{…}` (MEMORY 53).
+**The Lugha v5 draft is approved** (`docs/specs/Language v5 Draft.md`, MEMORY 54): interface values, milestones 20–22. v4.1 is the current release (tag `v4.1`).
 
-`Language v4 Specification.md` is what `lughac spec` prints.
+Next: **milestone 20, interface values** — discovery and PRP-046. Its scope (draft §4, §7, §9, §11):
+- interfaces as types (E0425 for one with associated functions);
+- conversion at an expected interface type (E0422 when unsatisfied);
+- dynamic calls, copies, `I` as a type argument;
+- `Language v5 Specification.md` begins, and `lughac spec` prints it.
 
-There is no planned work. Possible next directions, each needing discovery, a v5 spec change and a PRP:
-- the v4 spec's §11 out-of-scope list: interface values and dynamic dispatch, packages with `public`, bitwise operators and more integer types, or-patterns and `mut` match bindings, binary and directory I/O, error conversion in `?`;
-- open questions such as printing generic values.
-
-Housekeeping is also possible.
+When symbols change, update CLAUDE.md architecture rule 7 (`lugha_vt_`, `lugha_dyn_`), anti-pattern 4 (the one named conversion) and anti-pattern 5 (v5).
 
 See `TODO.md`.

@@ -879,6 +879,21 @@ Open questions live in `DECISIONS.md`, not here.
 
 **Why:** E0111 tripped real programs (sessions 48, 54, 55); the session 56 discovery chose a point release over starting v5.
 
+### 54. Lugha v5 direction (session 57)
+
+**Decision:** `docs/specs/Language v5 Draft.md` is approved: interface values, as milestones 20–22. Interfaces only; bits, packages and `match` additions wait.
+- **Types:** an interface whose items are all methods is a type (`Shape`, `Shape[]`, `Option<Shape>`); one with an associated function used as a type is E0425.
+- **Conversion:** implicit only where the expected type is exactly the interface — the one implicit conversion (spec §4 names it). Not inside other types (`Circle[]` isn't `Shape[]`), not interface to interface; no expected type, no conversion.
+- **Values:** an interface value holds its own deep copy; `mut self` calls change that copy. No `==` (E0404/E0419) and no printing. `Shape` satisfies the bound `Shape`.
+- **Type patterns:** `c: Circle =>` / `_: Square =>`, nested and guarded; `_` is required (E0417); misuse is E0426.
+- **Default methods:** interface methods with bodies, checked once with `self` as a bounded type parameter; callable through values and bounds, not on concrete types (E0415).
+- **`?`:** converts `E` into an interface `F` that `E` satisfies.
+- **Layout:** two words (dispatch table, GC box); primitives boxed too. Symbols `lugha_vt_<Type>.<Interface>`, `lugha_dyn_<Type>.<method>`; tables only for converted pairs.
+
+**Why:** the session 57 discovery: heterogeneous collections are the largest expressive gap, and interface errors resolve v4's `?` conversion question.
+
+---
+
 ---
 
 ## CURRENT PROJECT STATE
@@ -950,16 +965,14 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Lugha v4.1 is released** (tag `v4.1`, on top of `m19` and `v4`):
-- v4 (milestones 17–19): `Result` and `?`, text and option helpers, input and output (MEMORY 50–52);
-- v4.1: string literals and nested interpolations inside `{…}` (MEMORY 53).
+**The Lugha v5 draft is approved** (`docs/specs/Language v5 Draft.md`, MEMORY 54): interface values, milestones 20–22. v4.1 is the current release (tag `v4.1`).
 
-`Language v4 Specification.md` is what `lughac spec` prints.
+Next: **milestone 20, interface values** — discovery and PRP-046. Its scope (draft §4, §7, §9, §11):
+- interfaces as types (E0425 for one with associated functions);
+- conversion at an expected interface type (E0422 when unsatisfied);
+- dynamic calls, copies, `I` as a type argument;
+- `Language v5 Specification.md` begins, and `lughac spec` prints it.
 
-There is no planned work. Possible next directions, each needing discovery, a v5 spec change and a PRP:
-- the v4 spec's §11 out-of-scope list: interface values and dynamic dispatch, packages with `public`, bitwise operators and more integer types, or-patterns and `mut` match bindings, binary and directory I/O, error conversion in `?`;
-- open questions such as printing generic values.
-
-Housekeeping is also possible.
+When symbols change, update CLAUDE.md architecture rule 7 (`lugha_vt_`, `lugha_dyn_`), anti-pattern 4 (the one named conversion) and anti-pattern 5 (v5).
 
 See `TODO.md`.

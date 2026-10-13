@@ -137,6 +137,20 @@ Done when the reading-input program passes and the v4 spec is complete.
 ### v4.1 — Nested strings ✅
 - [x] PRP-045: string literals and nested interpolations inside `{…}`; E0111 keeps only real mistakes
 
+## v5 (draft approved, session 57 — `docs/specs/Language v5 Draft.md`)
+
+### Milestone 20 — Interface values
+Done when the interface-values program passes.
+- [ ] PRP-046: interfaces as types, conversion at an expected interface type, dynamic calls, copies, `I` as a type argument (E0425); `Language v5 Specification.md` begins
+
+### Milestone 21 — Type patterns
+Done when the type-patterns program passes.
+- [ ] `name: T` and `_: T` in `match`, exhaustiveness with `_` (E0426)
+
+### Milestone 22 — Default methods and error conversion
+Done when the errors-as-interfaces program passes and the v5 spec is complete.
+- [ ] interface methods with bodies; `?` converting into an interface error
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.
