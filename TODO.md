@@ -172,6 +172,20 @@ Done when the `Self` program passes.
 Done when the converting-between-interfaces program passes and the v6 spec is complete.
 - [x] PRP-054: `J` to `I` where `J` declares `I`'s items; through `?`; v6 complete; tagged `m26` and `v6`
 
+## v7 (draft approved, session 69 — `docs/specs/Language v7 Draft.md`)
+
+### Milestone 27 — More numbers
+Done when the more-numbers program passes.
+- [ ] `u32`, `u64`, `f32`: literals, arithmetic, casts, printing, externs
+
+### Milestone 28 — Bits
+Done when the bits program passes.
+- [ ] `& | ^ ~ << >>`, compound forms, `0b` literals, the shift panic
+
+### Milestone 29 — Integer methods
+Done when the hashing program passes and the v7 spec is complete.
+- [ ] `wrapping_add`/`sub`/`mul`, `count_ones`, `leading_zeros`, `trailing_zeros`
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.

@@ -1028,6 +1028,19 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 65. Lugha v7 direction (session 69)
+
+**Decision:** `docs/specs/Language v7 Draft.md` is approved: numbers and bits, as milestones 27–29. Packages, iterator helpers and `match` additions wait.
+- **Types:** `u32`, `u64`, `f32` (literals by expected type, E0402; unsigned negation E0404; every numeric cast under v0 rules; `f32` prints shortest round-trip; extern-safe). Indexes and lengths stay `i64`.
+- **Bit operators:** `& | ^ ~ << >>` on integers only, both operands one type (a shift amount has the shifted type); `>>` arithmetic on signed; a shift amount negative or ≥ width panics (`shift out of range`); compound `&= |= ^= <<= >>=`; binary literals `0b…`.
+- **Precedence (Rust):** `* / %` > `+ -` > `<< >>` > `&` > `^` > `|` > comparisons > `&&` > `||`; prefix `~`.
+- **Integer methods:** `wrapping_add/sub/mul` (same type), `count_ones`, `leading_zeros`, `trailing_zeros` (`i64`); others E0415.
+- **No new error codes.**
+
+**Why:** the session 69 discovery: after two interface releases, the largest gap is that hashes, checksums and flags can't be written.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -1098,21 +1111,18 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- Lugha v7 (nothing planned; see the v6 spec's §11 out-of-scope list)
+- Lugha v7: draft approved (MEMORY 65), milestones 27–29 not started
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v6 is complete** (milestones 23–26; PRP-050–054; MEMORY 59–64): generic interfaces, iterators, `Self` in interfaces, converting between interfaces. Tagged `m26` and `v6`. `Language v6 Specification.md` is what `lughac spec` prints; v0–v5 are frozen.
+**Lugha v7 draft approved** (`docs/specs/Language v7 Draft.md`, MEMORY 65): numbers and bits — milestones 27–29. `main` has v6 complete (tags `m26`, `v6`); `Language v6 Specification.md` is what `lughac spec` prints until milestone 27 starts `Language v7 Specification.md`.
 
-Next: **v7 direction — discovery** (one question at a time, recommended option first). Candidates are in the v6 spec's §11 out-of-scope list and §12 open questions:
-- `Self` outside interfaces (in `impl`), default methods called on concrete types;
-- packages with `public`;
-- bitwise operators, `u32`/`u64`/`f32`, wrapping arithmetic;
-- or-patterns and `mut` bindings in `match`, `unwrap()`;
-- iterator helpers (`map`, `filter`, `collect` on `Iter<T>`), strings as iterators, `for n of mut c`;
-- binary I/O, directories, streams and processes.
+Next: **milestone 27, more numbers** — discovery and PRP-055. Scope (v7 draft §2 type keywords, §4 "New numeric types", §7, §8, §9 runtime printing, §10 "More numbers"):
+- `u32`, `u64`, `f32` as types: lexer keywords, literal typing and ranges (E0402), unsigned negation E0404, casts between all numeric types, arithmetic with overflow panics at each width;
+- printing and interpolation (`lugha_rt_print_u64`, `lugha_rt_print_f32` with shortest round-trip), extern signatures;
+- codegen layout (4/8/4 bytes).
 
 Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
 
