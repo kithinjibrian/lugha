@@ -2344,6 +2344,12 @@ Branch: prp-036-generic_compiling
 
 ---
 
+## SESSION 46 — 2026-10-13 — Interfaces (milestone 12) — open
+
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 11 is complete** (tag `m11`). Generics are checked (PRP-035, MEMORY 41) and compiled (PRP-036, MEMORY 42), and the spec has their rules.
