@@ -1,6 +1,6 @@
 ## FEATURE: Loading packages — `lugha.toml`, package imports, per-package manifests (E0320–E0323); milestone 30, part 1.
 
-**Status:** approved 2026-10-14 — session 74. The user asked for milestone 30 "in one go": PRP-058 then PRP-059, each merged once CI is green.
+**Status:** merged 2026-10-14 — session 74. The user asked for milestone 30 "in one go": PRP-058 then PRP-059, each merged once CI is green.
 **Milestone:** 30, the first of two PRPs: **058 is loading and resolution**, and 059 is `public` and visibility (completes v8, tags `m30` and `v8`).
 **Spec:** `Language v8 Draft.md`:
 - decisions 2, 4 and 5, and the choices on paths, package modules, symbols and cycles;

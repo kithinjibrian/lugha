@@ -3376,7 +3376,7 @@ Branch: main
 ---
 
 ## SESSION 74 — 2026-10-14 — Loading packages (milestone 30, part 1) — closed
-Branch: prp-058-package_loading
+Branch: prp-058-package_loading (merged into main)
 
 ### WHAT WAS DONE
 - The user asked for milestone 30 "in one go": PRP-058 written as approved within the v8 draft, built, merged on green CI (no tag until PRP-059).
@@ -3403,7 +3403,7 @@ Branch: prp-058-package_loading
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged (no tag until PRP-059).
+- Nothing. PRP-058 merged into `main` (no tag until PRP-059).
 
 ---
 
