@@ -2723,7 +2723,7 @@ Branch: prp-042-results
 
 ---
 
-## SESSION 54 — 2026-10-13 — Text and option helpers (milestone 18) — open
+## SESSION 54 — 2026-10-13 — Text and option helpers (milestone 18) — closed
 
 Branch: prp-043-text_helpers
 
@@ -2768,17 +2768,26 @@ Branch: prp-043-text_helpers
 
 - None.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-043-text_helpers` fast-forward merged into `main` and deleted; tag `m18`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 17 is complete** (tag `m17`; MEMORY 50). `lughac spec` prints `Language v4 Specification.md` (in progress: milestone 17).
+**Milestone 18 is complete** (tag `m18`; MEMORY 51). `lughac spec` prints `Language v4 Specification.md` (in progress: milestone 18).
 
-Next is **milestone 18, text and option helpers** (`Language v4 Draft.md`: decision 4, §4 helper table, §9 prelude intrinsics, the §10 text-helpers program). It covers:
-- prelude methods on `string`: `lines`, `split`, `trim`, `contains`, `starts_with`, `ends_with`, `slice`, plus `join` on `string[]`;
-- prelude methods on `Option`/`Result`: `unwrap_or`, `ok_or`, `ok`, `map`, `map_err`, `is_*`;
-- compiler-internal intrinsics the prelude needs (for example `lugha_rt_str_slice`), which programs can't name.
+Next is **milestone 19, input and output**, the last v4 milestone (`Language v4 Draft.md`: decision 5, §5 intrinsics, §9 runtime and tests, the §10 reading-input program). It covers:
+- `read_line(): Option<string>`;
+- `read_file`, `write_file`, `append_file` returning `Result<…, string>`;
+- `eprint`/`eprintln`, which flush stdout first;
+- `exit(i32)`;
+- `<name>.stdin` for the runner, and a scratch directory for file-writing tests;
+- "Run with … on stdin" in the §10 extractor.
 
-Helper dispatch today exists only for array receivers (`check/helpers.rs`), so it needs to generalize by receiver type. Start with discovery for PRP-043.
+**Must also fix** (TODO): the draft's §10 reading-input program uses `Some(n) => total += n,`, which isn't valid.
+
+When this is done, the v4 spec is complete: tags `m19` and `v4`. Start with discovery for PRP-044.
 
 See `TODO.md`.

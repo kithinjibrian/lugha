@@ -1,6 +1,6 @@
 ## FEATURE: Text and option helpers — string, `string[]`, `Option` and `Result` methods.
 
-**Status:** approved 2026-10-13 — session 54
+**Status:** merged 2026-10-13 — session 54
 **Milestone:** 18 (one PRP)
 **Spec:** `Language v4 Draft.md`:
 - decision 4;
