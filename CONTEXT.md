@@ -3073,7 +3073,7 @@ Branch: main
 ---
 
 ## SESSION 64 — 2026-10-13 — Generic interfaces as bounds (milestone 23, part 1) — closed
-Branch: prp-050-generic_interface_bounds
+Branch: prp-050-generic_interface_bounds (merged into main)
 
 ### WHAT WAS DONE
 - Discovery: milestone 23 is two PRPs, bounds then values. PRP-050 written and approved.
@@ -3100,7 +3100,7 @@ Branch: prp-050-generic_interface_bounds
 - None.
 
 ### STILL OPEN AT CLOSE
-- PRP-050 waits for the user's merge OK.
+- Nothing. PRP-050 merged into `main`.
 
 ---
 

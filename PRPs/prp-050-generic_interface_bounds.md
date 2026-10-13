@@ -1,6 +1,6 @@
 ## FEATURE: Generic interfaces as bounds — `interface Source<T>`, `S: Source<T>`, with `T` inferred.
 
-**Status:** approved 2026-10-13 — session 64
+**Status:** merged 2026-10-13 — session 64
 **Milestone:** 23, the first of two PRPs: **050 is bounds**, 051 is generic interface values (which completes the milestone and adds the tag `m23`)
 **Spec:** `Language v6 Draft.md`:
 - decision 3;
