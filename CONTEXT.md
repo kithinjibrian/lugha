@@ -2436,7 +2436,7 @@ Branch: main
 
 ## SESSION 48 — 2026-10-13 — Input and interpolation (milestone 13) — open
 
-Branch: main
+Branch: prp-038-input_and_interpolation
 
 ---
 
