@@ -150,6 +150,9 @@ impl<'ctx> Lowerer<'ctx> {
         body: &Block,
     ) -> Result<(), CodegenError> {
         let array_type = self.ty(iter);
+        if !matches!(array_type, Type::Array(_)) {
+            return self.iterator_loop(var, iter, body);
+        }
         let element = element_of(&array_type);
         let array = self.get(iter, &array_type)?.into_pointer_value();
         let len = self.length(array);

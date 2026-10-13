@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v6 Specification.md` (`lughac spec` prints it): Lugha v6, in progress (milestone 23 done: generic interfaces, as bounds and as values). `Language v6 Draft.md` is the approved plan (milestones 23–26: generic interfaces, iterators, `Self`, converting between interfaces). The v0–v5 files are frozen. `Result` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v6 Specification.md` (`lughac spec` prints it): Lugha v6, in progress (milestones 23–24 done: generic interfaces, as bounds and as values; iterators). `Language v6 Draft.md` is the approved plan (milestones 23–26: generic interfaces, iterators, `Self`, converting between interfaces). The v0–v5 files are frozen. `Result`, `Iter` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
 
 ---
 
@@ -228,7 +228,7 @@ pub fn parse_number(src: &str) -> i64 {
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
 │   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints), PRELUDE
-│   ├── prelude.la   — Result<T, E>, the array helpers, and the string/Option/Result helpers in Lugha, module `$prelude`
+│   ├── prelude.la   — Result<T, E>, Iter<T> (v6), the array helpers, and the string/Option/Result helpers in Lugha, module `$prelude`
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
@@ -266,7 +266,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (`c: Circle` patterns, E0426), defaults.rs (default methods: `Self`, bodies, instances),
 │   │                  applied.rs (generic interfaces: `Applied`, items at arguments), bound_args.rs (bounds with
 │   │                  arguments, E0418/E0419), bound_infer.rs (inferring type arguments through bounds and
-│   │                  interface-typed parameters)
+│   │                  interface-typed parameters), iterators.rs (`for … of` over `next`, `Iter`, Checked.iterations)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
@@ -284,7 +284,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (dynamic calls, interface copies, type-pattern tests), defaults.rs (default instances, `?` boxing),
 │   │                  instances.rs (generic instances:
 │   │                  substitution, instance symbols),
-│   │                  swap.rs (swap: loads and crossed stores)
+│   │                  swap.rs (swap: loads and crossed stores), iterators.rs (iterator loops: a hidden copy, `next` until `None`)
 │   ├── modules/     — mod.rs (load: the main file and every import, one offset space; with_prelude), resolve.rs
 │   │                  (import paths, E0312/E0314/E0319), tests.rs (in-memory loading)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_PARTS, RUNTIME_SOURCE, RUNTIME_SYMBOLS, LinkError
@@ -302,7 +302,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m23/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m24/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)

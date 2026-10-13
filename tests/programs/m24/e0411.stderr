@@ -1,0 +1,8 @@
+error[E0411]: cannot iterate over `Stuck`
+   --> tests/programs/m24/e0411.la:10:15
+   |
+10 |     for n of (Stuck { n: 1 }) {
+   |               ^^^^^^^^^^^^^^
+   |
+   = help: `for … of` walks arrays and anything with `fun next(mut self): Option<T>`; for a string's bytes, use `for i in 0..s.len` with `s[i]`
+

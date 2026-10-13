@@ -254,3 +254,7 @@ fun result_is_ok<T, E>(r: Result<T, E>): bool = match r {
 };
 
 fun result_is_err<T, E>(r: Result<T, E>): bool = !result_is_ok(r);
+
+// Anything that can be stepped through (v6 draft §4): `for x of e` loops
+// over any `e` with this `next`, whether or not it names `Iter`.
+interface Iter<T> { fun next(mut self): Option<T>; }

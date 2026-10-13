@@ -123,7 +123,7 @@ pub(in crate::check) fn empty_array(span: Span) -> Diagnostic {
 
 pub(in crate::check) fn not_iterable(ty: &Type, span: Span) -> Diagnostic {
     Diagnostic::error("E0411", format!("cannot iterate over `{ty}`"), span).with_help(
-        "`for … of` walks arrays; use `for i in 0..s.len` with `s[i]` for a string's bytes",
+        "`for … of` walks arrays and anything with `fun next(mut self): Option<T>`; for a string's bytes, use `for i in 0..s.len` with `s[i]`",
     )
 }
 

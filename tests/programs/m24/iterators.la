@@ -1,0 +1,45 @@
+// The v6 draft's §10 iterators program (milestone 24).
+
+struct Count { n: i64, end: i64 }
+
+impl Count {
+    fun next(mut self): Option<i64> {
+        if self.n == self.end {
+            return None;
+        }
+        self.n += 1;
+        Some(self.n)
+    }
+}
+
+struct Fib { a: i64, b: i64, left: i64 }
+
+impl Fib {
+    fun next(mut self): Option<i64> {
+        if self.left == 0 {
+            return None;
+        }
+        self.left -= 1;
+        let a = self.a;
+        self.a = self.b;
+        self.b += a;
+        Some(a)
+    }
+}
+
+fun total(it: Iter<i64>): i64 {
+    let mut sum = 0;
+    for n of it {
+        sum += n;
+    }
+    sum
+}
+
+fun main() {
+    let c = Count { n: 0, end: 3 };
+    for n of c {
+        println(n);
+    }
+    println(c.n);
+    println(total(Fib { a: 0, b: 1, left: 10 }));
+}

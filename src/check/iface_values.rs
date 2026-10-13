@@ -21,6 +21,7 @@ impl Checker {
             None => self.key(&name.name),
             Some(m) => qualify(&self.imported(&m.name)?, &name.name),
         };
+        let key = self.or_prelude_interface(key, module, &name.name);
         let info = self.interfaces.get(&key)?;
         if let Some(item) = info.not_value.clone() {
             let shown = module.map_or_else(

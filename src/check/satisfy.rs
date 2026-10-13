@@ -23,7 +23,7 @@ impl Checker {
     }
 
     /// The item `name` that one of `param`'s bounds declares, with that bound.
-    fn bound_entry(&self, param: &str, name: &str) -> Option<(Requirement, Applied)> {
+    pub(super) fn bound_entry(&self, param: &str, name: &str) -> Option<(Requirement, Applied)> {
         let bounds = self.bounds(param);
         bounds.interfaces.into_iter().find_map(|a| {
             let req = self.items(&a).into_iter().find(|r| r.name == name)?;

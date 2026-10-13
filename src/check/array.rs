@@ -123,10 +123,8 @@ impl Checker {
         let element = match self.value(iter, None) {
             Type::Array(element) => *element,
             Type::Error | Type::Never => Type::Error,
-            other => {
-                self.report(errors::not_iterable(&other, iter.span));
-                Type::Error
-            }
+            // Anything with `next` (v6): the loop works on a copy, unguarded.
+            other => return self.iterator_loop(var, iter, &other, body),
         };
         let guard = self.place_path(iter);
         if let Some(path) = &guard {

@@ -33,7 +33,10 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// The table and the box of an interface value.
-    fn parts(&self, pair: StructValue<'ctx>) -> (PointerValue<'ctx>, PointerValue<'ctx>) {
+    pub(super) fn parts(
+        &self,
+        pair: StructValue<'ctx>,
+    ) -> (PointerValue<'ctx>, PointerValue<'ctx>) {
         let part = |i, name| {
             self.builder
                 .build_extract_value(pair, i, name)
@@ -46,7 +49,7 @@ impl<'ctx> Lowerer<'ctx> {
     /// The pointer in slot `index` of `table`. Every table starts with the
     /// identity and copy slots, so a two-pointer view reaches those; method
     /// slots use the interface's full table type.
-    fn slot(&self, table: PointerValue<'ctx>, index: u32) -> PointerValue<'ctx> {
+    pub(super) fn slot(&self, table: PointerValue<'ctx>, index: u32) -> PointerValue<'ctx> {
         let ptr = self.context.ptr_type(Default::default());
         let fields = vec![ptr.into(); index as usize + 1];
         let view = self.context.struct_type(&fields, false);

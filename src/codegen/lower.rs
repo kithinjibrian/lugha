@@ -13,7 +13,7 @@ use super::runtime::Constants;
 use super::scope::Scopes;
 use super::{CodegenError, ModuleSource, SourceInfo};
 use crate::ast::{ExprId, Item};
-use crate::check::{Checked, Enums, InterfaceShape, Structs, Type, Unit};
+use crate::check::{Checked, Enums, InterfaceShape, Iteration, Structs, Type, Unit};
 use crate::span::Span;
 
 /// Every builder call below happens after `position_at_end`, so a
@@ -58,6 +58,8 @@ pub(super) struct Lowerer<'ctx> {
     /// A generic interface's arguments at a call that may reach its
     /// default (`Checked::default_args`, v6).
     pub(super) default_args: HashMap<ExprId, Vec<Type>>,
+    /// Iterator loops (`Checked::iterations`, v6).
+    pub(super) iterations: HashMap<ExprId, Iteration>,
     /// Every interface's methods in order (`Checked::interfaces`).
     pub(super) interfaces: HashMap<String, InterfaceShape>,
     /// Closures emitted so far per enclosing symbol, for `lugha_closure_<f>.<n>`.
@@ -138,6 +140,7 @@ pub(super) fn lower<'ctx>(
         interfaces: checked.interfaces.clone(),
         try_conversions: checked.try_conversions.clone(),
         default_args: checked.default_args.clone(),
+        iterations: checked.iterations.clone(),
         closure_counts: HashMap::new(),
         function: None,
         ret: None,

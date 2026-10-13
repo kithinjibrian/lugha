@@ -160,9 +160,9 @@ Done when the generic-interfaces program passes.
 - [x] PRP-050: `interface I<T>`, bounds with arguments, inference through bounds; generic defaults; `Language v6 Specification.md` begins
 - [x] PRP-051: generic interface values (`Source<i64>`), tables `lugha_vt_Count.Source<i64>`, inference into `Source<T>` parameters; tagged `m23`
 
-### Milestone 24 — Iterators
+### Milestone 24 — Iterators ✅
 Done when the iterators program passes.
-- [ ] `Iter<T>` in the prelude; `for … of` over iterators
+- [x] PRP-052: `Iter<T>` in the prelude; `for … of` over iterators; tagged `m24` at merge
 
 ### Milestone 25 — `Self`
 Done when the `Self` program passes.

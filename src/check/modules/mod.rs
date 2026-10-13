@@ -63,6 +63,7 @@ pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<D
             conversions: checker.conversions,
             try_conversions: checker.try_conversions,
             default_args: checker.default_args,
+            iterations: checker.iterations,
             interfaces,
             annotations: checker.annotations,
             instances: checker.instances,

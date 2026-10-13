@@ -27,6 +27,7 @@ mod input;
 mod instances;
 mod interfaces;
 mod io;
+mod iterators;
 mod lower;
 mod matching;
 mod methods;

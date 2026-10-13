@@ -106,27 +106,27 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (`check/iterators.rs`):
-- [ ] **What iterates:**
+- [x] **What iterates:**
   - `for n of Count {…}` binds `n: i64`;
   - a generic `Repeat<string>` binds `string`;
   - an `Iter<i64>` value binds `i64`;
   - a program's own `Source<string>` value binds `string`;
   - `I: Iter<T>` in generic code binds `T`.
-- [ ] **E0411:**
+- [x] **E0411:**
   - an `i64`;
   - a struct without `next`;
   - a `next` without `mut self`, with a parameter, or returning `i64`;
 
   each with the help.
-- [ ] **The loop variable** is immutable (E0501), and assigning to `c` inside `for n of c` is fine (no E0507).
-- [ ] **Names:** a module's own `interface Iter { … }` hides the prelude's, and `Iter<i64>` resolves to the prelude's otherwise.
+- [x] **The loop variable** is immutable (E0501), and assigning to `c` inside `for n of c` is fine (no E0507).
+- [x] **Names:** a module's own `interface Iter { … }` hides the prelude's, and `Iter<i64>` resolves to the prelude's otherwise.
 
 Unit tests — codegen (`codegen/iterators.rs`):
-- [ ] A loop over `Count` calls `@lugha_fn_Count.next` with the slot's address, and a loop over an `Iter<i64>` value calls through a table slot.
+- [x] A loop over `Count` calls `@lugha_fn_Count.next` with the slot's address, and a loop over an `Iter<i64>` value calls through a table slot.
 
 Acceptance — `tests/programs/m24/`:
-- [ ] `iterators.la`: the §10 program.
-- [ ] `loops.la`:
+- [x] `iterators.la`: the §10 program.
+- [x] `loops.la`:
   - `break` and `continue`;
   - a nested loop over two iterators;
   - a generic `Repeat<T>`;
@@ -134,11 +134,11 @@ Acceptance — `tests/programs/m24/`:
   - a program's own `Source<i64>` value;
   - the iterator unchanged after the loop, and an iterator in an array (`for it of its { for n of it {…} }`);
   - a module that declares its own `Iter`.
-- [ ] `e0411.la`: reject golden.
-- [ ] The §10 iterators program runs from the spec.
+- [x] `e0411.la`: reject golden.
+- [x] The §10 iterators program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and programs without iterator loops give byte-identical IR (compared with `main`).
+- [x] Every earlier test passes, and programs without iterator loops give byte-identical IR (compared with `main`).
 
 ## ROLLBACK PLAN
 
@@ -146,10 +146,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 iterators program and the `m24/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The spec is at milestone 24; docs updated.
-- [ ] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 iterators program and the `m24/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The spec is at milestone 24; docs updated.
+- [x] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -158,3 +158,13 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m24/iterators.la
 ```
+
+## AMENDMENTS (during build, session 66)
+
+- **Struct literals in `for` headers need parentheses.** This is the existing E0205 rule, so the tests write `for n of (Count { … })`. The spec's §5 iterator paragraph says so.
+- **`Iter` sits at the end of `prelude.la`.** Declared next to `Result`, it shifted a prelude panic location that `m18/split_panic` expects.
+- **`check/array.rs`:** `for_of` hands a non-array to `iterators.rs::iterator_loop` in one line, which keeps `array.rs` under 300 lines.
+- **Visibility changes:** `bound_infer::offered`, `satisfy::bound_entry` and `dispatch.rs`'s `parts` and `slot` became `pub(super)`.
+- **A default `next` through a bound** (`I: Once`, where `Once` gives `next` a default) was checked by hand. It reaches `Iteration.default`.
+- **`-O2`** was checked by hand for `m24/iterators` and `m24/loops`.
+- **No file splits.**

@@ -994,9 +994,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 62. Iterators — milestone 24 (PRP-052)
+
+**Decision:** iterator loops are recognised by shape, not by name.
+- **Prelude:** `interface Iter<T> { fun next(mut self): Option<T>; }`, appended at the end of `prelude.la` (so prelude panic locations don't move). `Iter` resolves to `$prelude.Iter` in types and bounds unless the module declares something named `Iter` (`or_prelude_interface`, used by `interface_key` and `interface_type`).
+- **Checker** (`check/iterators.rs`): `for_of` hands a non-array to `iterator_loop`; `next_of` uses `offered(ty, "next")` and requires `mut self`, no parameters, an `Option<X>` result (else E0411 with the signature in the help). The loop variable is a `LoopVar`; no E0507 guard (the loop works on a copy). Reachability: a generic type's `next` (`used`), a type parameter's through its bound (`bound_used`, defaults included). `Checked.iterations[iter id] = Iteration { element, default }`, where `default` is the bound interface whose default `next` may apply.
+- **Codegen** (`codegen/iterators.rs`): `value_for_store` into a hidden slot, `next` called with the slot's address (own method, generic instance, or the bound default's instance) or through the table for an interface value (`dispatch.rs::parts`/`slot` made `pub(super)`); the payload of `Some` is an owned local.
+- **Struct literals in `for` headers need parentheses** (existing E0205 rule): `for n of (Count { … })`.
+
+**Why:** structural recognition means a module's own `Iter` never breaks loops, and every iterable shape reuses existing method lookup.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 24 complete**: PRP-052 iterators
 - **Milestone 23 complete**: PRP-050 generic interfaces as bounds, PRP-051 generic interface values
 - **Milestone 22 complete — Lugha v5 complete (branch, merge held)**: PRP-049 default methods and `?` conversion
 - **Milestone 21 complete (branch, merge held)**: PRP-048 type patterns
@@ -1058,22 +1071,23 @@ Open questions live in `DECISIONS.md`, not here.
 - v0 language spec reviewed and fixed
 
 ### In Progress
-- Nothing (milestone 24, iterators, is next)
+- Nothing (milestone 25, `Self`, is next)
 
 ### Not Started
-- Milestones 24–26 (v6 draft, MEMORY 59)
+- Milestones 25–26 (v6 draft, MEMORY 59)
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 23 complete** (PRP-050, PRP-051; MEMORY 60–61): generic interfaces as bounds and as values. `Language v6 Specification.md` (in progress) is what `lughac spec` prints. Tagged `m23`.
+**Milestone 24 complete** (PRP-052, MEMORY 62): iterators — `Iter<T>` in the prelude, `for x of e` over anything with `fun next(mut self): Option<T>`, on a copy. Tag `m24` goes on the merge of PRP-052. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
 
-Next: **milestone 24, iterators** — discovery and PRP-052. Scope (v6 draft §4 "Iterators", §5 desugaring, §10 "Iterators"):
-- the prelude declares `interface Iter<T> { fun next(mut self): Option<T>; }`; a module's own `Iter` hides it;
-- `for x of e` on a non-array that satisfies `Iter<T>` (structurally) or is an `Iter<T>` value: a hidden mutable copy of `e` (moved on last use), `next` until `None`, `x` immutable; `break`/`continue`; otherwise E0411;
-- codegen lowers the §5 desugaring (direct call for a concrete type, dynamic for a value).
+Next: **milestone 25, `Self`** — discovery and PRP-053. Scope (v6 draft decision 2, §4 "`Self`", §9 E0427, §10 "`Self`"):
+- `Self` in interface signatures and default bodies means the implementing type (it hides a type named `Self`); outside interfaces it stays E0305; an interface parameter named `Self` is already E0316;
+- satisfaction: `C` meets `fun less(self, other: Self): bool` with `fun less(self, other: C): bool` (`Stack<T>` for generic types); through a bound `T: Ordered`, `Self` is `T`; `T.zero()` for `fun zero(): Self`;
+- an interface mentioning `Self` beyond the receiver is a bound only: as a type it is the new **E0427**; an interface value satisfies a `Self` interface with `Self` replaced by that interface;
+- default bodies: today `SELF` is the hidden parameter and a written `Self` is E0305 (`resolve_named`); v6 lets it be written.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
 
 See `TODO.md`.

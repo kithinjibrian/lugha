@@ -37,6 +37,7 @@ mod infer;
 mod input;
 mod instances;
 mod interfaces;
+mod iterators;
 mod layouts;
 mod literal;
 mod liveness;
@@ -62,6 +63,7 @@ use std::collections::{HashMap, HashSet};
 pub use defaults::SELF;
 pub use iface_tables::{InterfaceMethod, InterfaceShape};
 pub use instances::Instance;
+pub use iterators::Iteration;
 pub use modules::{Unit, check_modules, qualify, symbol};
 pub use types::{Enums, Structs, Type, indirect_slot, slot_names_variant};
 
@@ -110,6 +112,9 @@ pub struct Checked {
     /// Calls through a bound whose callee may be a generic interface's
     /// default (v6): the interface's arguments, in the caller's parameters.
     pub default_args: HashMap<ExprId, Vec<Type>>,
+    /// Iterator loops (v6): the iterated expression's id, with what its
+    /// `next` yields.
+    pub iterations: HashMap<ExprId, Iteration>,
 }
 
 /// Type-checks `program`, a program of one file, returning the type table
@@ -153,6 +158,7 @@ impl Checker {
             conversions: HashMap::new(),
             try_conversions: HashMap::new(),
             default_args: HashMap::new(),
+            iterations: HashMap::new(),
             owner: String::new(),
             uses: Vec::new(),
             body_types: HashMap::new(),
@@ -244,6 +250,8 @@ pub(super) struct Checker {
     try_conversions: HashMap<ExprId, Type>,
     /// See `Checked::default_args`.
     default_args: HashMap<ExprId, Vec<Type>>,
+    /// See `Checked::iterations`.
+    iterations: HashMap<ExprId, Iteration>,
     /// The key of the function or method whose body is being checked.
     owner: String,
     /// Every generic call, with the body it is in (PRP-036).

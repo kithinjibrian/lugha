@@ -1,0 +1,93 @@
+// Iterator loops (milestone 24): anything with `fun next(mut self): Option<T>`.
+
+struct Count { n: i64, end: i64 }
+
+impl Count {
+    fun next(mut self): Option<i64> {
+        if self.n == self.end {
+            return None;
+        }
+        self.n += 1;
+        Some(self.n)
+    }
+}
+
+struct Repeat<T> { x: T, left: i64 }
+
+impl Repeat<T> {
+    fun next(mut self): Option<T> {
+        if self.left == 0 {
+            return None;
+        }
+        self.left -= 1;
+        Some(self.x)
+    }
+}
+
+interface Source<T> {
+    fun next(mut self): Option<T>;
+}
+
+// A type parameter iterates through its bound.
+fun join_all<I: Iter<string>>(it: I): string {
+    let mut out = "";
+    for s of it {
+        out = out + s;
+    }
+    out
+}
+
+fun sum<T, I: Iter<T>>(it: I, zero: T, add: fun(T, T): T): T {
+    let mut total = zero;
+    for x of it {
+        total = add(total, x);
+    }
+    total
+}
+
+fun main() {
+    // break and continue
+    for n of (Count { n: 0, end: 10 }) {
+        if n % 2 == 0 {
+            continue;
+        }
+        if n > 7 {
+            break;
+        }
+        print("{n} ");
+    }
+    println("");
+
+    // nested loops over two iterators
+    for a of (Count { n: 0, end: 2 }) {
+        for b of (Repeat { x: "*", left: a }) {
+            print(b);
+        }
+        println("|");
+    }
+
+    // generic iterators and type parameters
+    println(join_all(Repeat { x: "ab", left: 3 }));
+    println(sum(Count { n: 0, end: 4 }, 0, fun(a, b) { a + b }));
+
+    // a program's own interface value, and an iterator in an array
+    let src: Source<i64> = Count { n: 5, end: 7 };
+    for n of src {
+        print("{n} ");
+    }
+    println("");
+    let its: Iter<i64>[] = [Count { n: 0, end: 2 }, Repeat { x: 9, left: 2 }];
+    for it of its {
+        for n of it {
+            print("{n} ");
+        }
+    }
+    println("");
+
+    // the iterator is unchanged by the loop
+    let mut c = Count { n: 0, end: 2 };
+    for n of c {
+        c.end = 100;
+    }
+    println("{c.n} {c.end}");
+}

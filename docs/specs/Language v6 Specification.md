@@ -1,13 +1,14 @@
-# Lugha v6 Specification (in progress: milestone 23 done)
+# Lugha v6 Specification (in progress: milestones 23–24 done)
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestone 23, generic interfaces, is done; milestones 24–26 are next). It is built from the approved plan, `Language v6 Draft.md`, milestone by milestone. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v5 Specification.md` keeps v5 frozen.
+**Status:** in progress (milestones 23–24, generic interfaces and iterators, are done; milestones 25–26 are next). It is built from the approved plan, `Language v6 Draft.md`, milestone by milestone. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v5 Specification.md` keeps v5 frozen.
 
 **v5.** This is v4 plus interface values, type patterns, default methods and `?` converting into an interface error (milestones 20–22).
 
-**Changes since v5** (milestone 23):
+**Changes since v5** (milestones 23–24):
 - An interface may take type parameters, and a bound passes it arguments: `interface Source<T> { fun next(mut self): Option<T>; }`, `fun collect<T, S: Source<T>>(src: S): T[]`. A parameter that appears only in a bound's arguments is read off the concrete type's methods. A generic interface is a type too: `let s: Source<i64> = Count { n: 0, end: 3 };` (sections 3–4, 9).
+- The prelude declares `interface Iter<T> { fun next(mut self): Option<T>; }`, and `for x of e` loops over anything with that `next`, working on a copy of `e` (sections 4–5, 9).
 
 Every valid v5 program is a valid v6 program.
 
@@ -464,6 +465,7 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 **Interfaces.**
 - **Declaring one:** `interface Shape { fun area(self): f64; fun name(self): string; }` lists methods (with a `self` or `mut self` receiver) and associated functions (without one), each ending in `;`. Their signatures use concrete types and the interface's own type parameters (below), and no `Self`; an item has no type parameters of its own. An item name appears once (E0310).
 - **Generic interfaces** (v6): `interface Source<T> { fun next(mut self): Option<T>; }` takes type parameters as a struct does, with bounds (`interface Sorted<T: Ord>`); a parameter named like a type, twice, or `Self` is E0316. It is always written with its arguments, `Source<i64>`; a bare `Source` or the wrong number is E0418, and an argument that misses its parameter's bound is E0419. A type satisfies `Source<X>` when it satisfies the interface with `X` substituted, and a call through `S: Source<X>` is checked against the substituted signature. A generic interface is a type wherever a plain one is, written with its arguments (`Source<i64>`, `Source<T>[]`), and its values follow every rule of interface values below at those arguments: a value converts to `Source<i64>` when it satisfies `Source<i64>`, `s.next()` is checked against the substituted signature, and a `Source<i64>` is not a `Source<string>` (E0403).
+- **Iterators** (v6): the prelude declares `interface Iter<T> { fun next(mut self): Option<T>; }`. `Iter` is visible in every module, like `Result`, unless the module declares something named `Iter`, which it then means there. `for x of e` loops over any `e` that isn't an array and whose type has `next` with exactly that shape: a struct or enum with its own method, a type parameter whose bounds declare it, or an interface value (`Iter<i64>`, or a program's own `Source<i64>`). This is satisfaction of the prelude's `Iter<T>` by structure, so a loop works whether or not the program names `Iter`. Anything else is E0411 (section 5).
 - **Bounds with arguments** (v6): a bound's arguments may name the declaration's other type parameters, `fun collect<T, S: Source<T>>(src: S): T[]`. A parameter that no argument or expected type fixes is read off the methods of the type a bound parameter has: `collect(Count { … })` gives `S = Count`, then `T = i64` from `Count.next`, and this repeats until nothing new is learnt (`T` from `S`, `S` from `H: Holder<S>`). A parameter still unknown is E0412; one that the arguments fix differently fails the bound (E0422). The same holds for a parameter declared as an interface value: `fun count<T>(s: Source<T>): i64` called as `count(Count { … })` reads `T = i64` off `Count.next`, then converts the argument to `Source<i64>`.
 - **Default methods** (v5): a method may end in `= expr;` or a block instead of `;`. Its body is checked once, with `self` of a hidden type that has only the interface's items, so it can call them on `self` and nothing else (no fields, E0410; a written `Self` is an unknown type, E0305). A type satisfies the interface without the defaulted method; a method of its own by that name must match the signature (E0422), and is used instead of the default. A default is called through an interface value or a bound; on a concrete type without its own method it doesn't exist (E0415, with help naming the interface). Only methods take a default body; an associated function with one is E0201.
 - **Satisfying one:** a type satisfies `Shape` if, for every item, it has a method or associated function with the same name, the same receiver kind, and the same parameter and return types, visible where the bound is checked. No declaration is needed. A generic type's methods count with its type arguments substituted (`Stack<i64>` meets `fun size(self): i64` through `impl Stack<T>`); a method with type parameters of its own never matches. A type parameter satisfies an interface when its own bounds declare every item the same way. Primitives, strings, arrays and `Option` have no methods of their own, so they satisfy only an interface with no items.
@@ -556,6 +558,20 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 ```
 
 **for over an array.** `for x of xs { body }` binds each element in order. `xs` is evaluated once and is not copied. `x` is an immutable binding to the element, so assigning to `x` is an error; write `xs[i]` with a range loop to modify elements. The body may not assign to `xs` or any part of it, which is checked at compile time, so the loop always sees the array as it was when the loop started. Strings are not iterable in v0.
+
+**for over an iterator** (v6). `for x of e { body }`, where `e` isn't an array but has `fun next(mut self): Option<T>` (section 4), evaluates `e` once into a hidden mutable copy (moved instead when `e` is a local's last use), then calls `next` on that copy before each iteration: `Some(v)` runs the body with `x` bound to `v`, and `None` ends the loop. `x` is immutable and holds its own value. `break` ends the loop and `continue` goes to the next call of `next`. Because the loop works on a copy, `e` itself never changes, and the body may assign to it; looping twice over the same variable starts from the beginning both times. As in every `for` header, a struct literal needs parentheses: `for n of (Count { n: 0, end: 3 }) { … }`. It desugars to:
+
+```
+{
+    let mut $it = e;
+    while true {
+        match $it.next() {
+            Some(x) => { body }
+            None => { break; }
+        }
+    }
+}
+```
 
 **break and continue.** Apply to the innermost enclosing loop. Using either outside a loop is a compile error.
 
@@ -735,6 +751,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - A function used as a value (v3) is called through `lugha_ref_<symbol>`, a wrapper that takes an environment pointer first and calls `lugha_fn_<symbol>`: `lugha_ref_double`, `lugha_ref_max<i64>`, `lugha_ref_Point.at`. It is emitted once, when first needed.
 - An interface value's table (v5) is `lugha_vt_<Type>.<Interface>`, with names printed as in other symbols (`lugha_vt_Circle.Shape`, `lugha_vt_Stack<i64>.geo/Sized`), emitted once per pair a program converts. Its identity slot points at `lugha_type_<Type>`, its copy slot at `lugha_copy_<mangled type>_box` (`lugha_copy_6Circle_box`), and each method slot at the method itself: methods take their receiver as a pointer, so a call passes the box. Copying an interface value goes through `lugha_copy_<mangled interface>` (`lugha_copy_5Shape`). A generic interface (v6) prints with its arguments: `lugha_vt_Count.Source<i64>`, `lugha_copy_11Source<i64>`. A type pattern compares the table's identity slot with `lugha_type_<T>`.
 - A default method (v5) compiles once per type that uses it, through a table or a bound: `lugha_fn_<Interface>.<method><Type>` (`lugha_fn_Error.report<ParseError>`); that type's table slot and bound calls use it. A generic interface's default (v6) compiles once per type and interface arguments, the arguments printed on the interface: `lugha_fn_Source<i64>.skip<Count>`. A converted `?` error is boxed on the failure branch, like any conversion. A program without interface values has none of these.
+- An iterator loop (v6) stores the iterator in a hidden local and calls its `next` with that local's address: directly for a struct or enum (its own method, or a bound default's instance in a generic instance), and through the table for an interface value.
 - A closure's body (v3) is `lugha_closure_<enclosing>.<n>`: the enclosing function's symbol without its prefix, then the closure's number in that function from 0 (`lugha_closure_main.0`, `lugha_closure_main.0.0` for a closure inside it, `lugha_closure_max<i64>.0` in an instance). Its environment comes first, as for every function value's code.
 - The array helpers (v3) are generic functions of a prelude written in Lugha, bundled with the compiler and checked with every program, under the module path `$prelude`, which no program can name: `lugha_fn_$prelude/map<Person, string>`. Each is compiled only at the types a program uses.
 - An extern follows the visibility rules of section 6, and the same C function may be declared in several modules only with identical signatures (E0306); it is one symbol.
@@ -860,7 +877,7 @@ Name and type errors, reported by the checker:
 | E0406 | Not a function, or something that can't be a value | `let step = 2; step(1);`; `let a = Circle.area;` (a method), `let p = println;`, an extern (v3) |
 | E0407 | `void` used as a value | `let x = log();` where `log` returns nothing |
 | E0410 | No such field | `s.size` on a `string`; `(5).len`; `p.z` or `Point { z: 1.0 }` on a `Point` without `z` |
-| E0411 | Not indexable or not iterable | `n[0]` where `n` is an `i64`; `for c of "abc"` |
+| E0411 | Not indexable or not iterable | `n[0]` where `n` is an `i64`; `for c of "abc"`; a `for … of` over a type whose `next` isn't `fun next(mut self): Option<T>` (v6) |
 | E0412 | Cannot infer an array's element type, `None`'s type, or a type argument | `let xs = [];`, `let x = None;`, `let s = Stack.new();`, `let m = max;` — annotate it: `let xs: i64[] = [];` |
 | E0413 | Struct literal missing fields | `Point { x: 1.0 }` |
 | E0414 | Struct literal field given twice | `Point { x: 1.0, x: 2.0, y: 0.0 }` |
@@ -1543,6 +1560,54 @@ fun main() {
 }
 ```
 
+**Iterators** (milestone 24). Prints `1`, `2`, `3`, `0`, `88` on five lines, exits with 0.
+
+```
+struct Count { n: i64, end: i64 }
+
+impl Count {
+    fun next(mut self): Option<i64> {
+        if self.n == self.end {
+            return None;
+        }
+        self.n += 1;
+        Some(self.n)
+    }
+}
+
+struct Fib { a: i64, b: i64, left: i64 }
+
+impl Fib {
+    fun next(mut self): Option<i64> {
+        if self.left == 0 {
+            return None;
+        }
+        self.left -= 1;
+        let a = self.a;
+        self.a = self.b;
+        self.b += a;
+        Some(a)
+    }
+}
+
+fun total(it: Iter<i64>): i64 {
+    let mut sum = 0;
+    for n of it {
+        sum += n;
+    }
+    sum
+}
+
+fun main() {
+    let c = Count { n: 0, end: 3 };
+    for n of c {
+        println(n);
+    }
+    println(c.n);
+    println(total(Fib { a: 0, b: 1, left: 10 }));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1572,7 +1637,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 21 | Type patterns (v5) | `name: T` and `_: T` in `match`, E0426 | The type-patterns program in section 10 passes (done) |
 | 22 | Default methods and error conversion (v5) | interface methods with bodies, `lugha_fn_<I>.<m><T>`; `?` converting into an interface error | The errors-as-interfaces program in section 10 passes (done: v5 complete) |
 | 23 | Generic interfaces (v6) | `interface I<T>`, bounds with arguments, inference through bounds, generic interface values | The generic-interfaces program in section 10 passes (done) |
-| 24 | Iterators (v6, planned) | `Iter<T>` in the prelude, `for … of` over iterators | The iterators program passes |
+| 24 | Iterators (v6) | `Iter<T>` in the prelude, `for … of` over iterators | The iterators program in section 10 passes (done) |
 | 25 | `Self` (v6, planned) | `Self` in interfaces, bounds-only interfaces (E0427) | The `Self` program passes |
 | 26 | Converting between interfaces (v6, planned) | one interface value to another, and through `?` | The converting-between-interfaces program passes |
 

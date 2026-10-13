@@ -90,7 +90,7 @@ impl Checker {
     /// The signature `ty` offers for item `name`: a struct's or enum's
     /// visible, non-generic method at its type arguments, a parameter's
     /// bound item, or an interface value's item.
-    fn offered(&self, ty: &Type, name: &str) -> Option<Requirement> {
+    pub(super) fn offered(&self, ty: &Type, name: &str) -> Option<Requirement> {
         match ty {
             Type::Param(p) => self.bound_item(p, name),
             Type::Interface(..) => self

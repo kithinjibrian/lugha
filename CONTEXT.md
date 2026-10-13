@@ -3136,20 +3136,47 @@ Branch: prp-051-generic_interface_values (merged into main)
 
 ---
 
-## SESSION 66 — 2026-10-13 — Iterators (milestone 24) — open
+## SESSION 66 — 2026-10-13 — Iterators (milestone 24) — closed
 Branch: prp-052-iterators
+
+### WHAT WAS DONE
+- No interview: the v6 draft settles milestone 24. PRP-052 written and approved.
+- Prelude `Iter<T>` (at the end of the file), resolved unless a module declares its own `Iter`.
+- Checker `check/iterators.rs`: `for … of` over any `next(mut self): Option<T>`, E0411 help, `Checked.iterations`, reachability.
+- Codegen `codegen/iterators.rs`: hidden copy, direct or table call of `next`, `Some` payload bound per iteration.
+- Spec: §4 iterators, §5 loop and desugaring, §9, E0411 row, the §10 iterators program; milestone 24 done.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/iterators.rs`, `src/codegen/iterators.rs`, `tests/programs/m24/` (`iterators`, `loops`, `own/`, `e0411`).
+- Modified: `src/prelude.la`, `src/check/{array,interfaces,iface_values,bound_infer,satisfy,mod}.rs`, `src/check/modules/mod.rs`, `src/check/errors/types.rs`, `src/codegen/{array,dispatch,lower,mod}.rs`, `tests/spec.rs`, the v6 spec.
+- Docs: PRP-052, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 62, CONTEXT.
+
+### TESTS WRITTEN
+- Checker: what iterates (struct, generic, `Iter<i64>`, own `Source<string>`, `I: Iter<T>`), E0411 with help (four shapes), immutable loop variable and an unguarded iterator, a module's own `Iter`.
+- Codegen: direct `next` call on the hidden slot; a table call for an interface value.
+- `tests/programs/m24/`; the §10 program from the spec. A default `next` through a bound checked by hand. Earlier programs' IR byte-identical with `main`; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 62.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-052 waits for the user's merge OK; then tag `m24`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 23 complete** (PRP-050, PRP-051; MEMORY 60–61): generic interfaces as bounds and as values. `Language v6 Specification.md` (in progress) is what `lughac spec` prints. Tagged `m23`.
+**Milestone 24 complete** (PRP-052, MEMORY 62): iterators — `Iter<T>` in the prelude, `for x of e` over anything with `fun next(mut self): Option<T>`, on a copy. Tag `m24` goes on the merge of PRP-052. `Language v6 Specification.md` (in progress) is what `lughac spec` prints.
 
-Next: **milestone 24, iterators** — discovery and PRP-052. Scope (v6 draft §4 "Iterators", §5 desugaring, §10 "Iterators"):
-- the prelude declares `interface Iter<T> { fun next(mut self): Option<T>; }`; a module's own `Iter` hides it;
-- `for x of e` on a non-array that satisfies `Iter<T>` (structurally) or is an `Iter<T>` value: a hidden mutable copy of `e` (moved on last use), `next` until `None`, `x` immutable; `break`/`continue`; otherwise E0411;
-- codegen lowers the §5 desugaring (direct call for a concrete type, dynamic for a value).
+Next: **milestone 25, `Self`** — discovery and PRP-053. Scope (v6 draft decision 2, §4 "`Self`", §9 E0427, §10 "`Self`"):
+- `Self` in interface signatures and default bodies means the implementing type (it hides a type named `Self`); outside interfaces it stays E0305; an interface parameter named `Self` is already E0316;
+- satisfaction: `C` meets `fun less(self, other: Self): bool` with `fun less(self, other: C): bool` (`Stack<T>` for generic types); through a bound `T: Ordered`, `Self` is `T`; `T.zero()` for `fun zero(): Self`;
+- an interface mentioning `Self` beyond the receiver is a bound only: as a type it is the new **E0427**; an interface value satisfies a `Self` interface with `Self` replaced by that interface;
+- default bodies: today `SELF` is the hidden parameter and a written `Self` is E0305 (`resolve_named`); v6 lets it be written.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/infer.rs` (297), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/control.rs` (292).
 
 See `TODO.md`.

@@ -1,0 +1,31 @@
+// A module that declares its own `Iter` uses it; loops still work by shape.
+
+interface Iter {
+    fun size(self): i64;
+}
+
+struct Count { n: i64, end: i64 }
+
+impl Count {
+    fun next(mut self): Option<i64> {
+        if self.n == self.end {
+            return None;
+        }
+        self.n += 1;
+        Some(self.n)
+    }
+
+    fun size(self): i64 = self.end - self.n;
+}
+
+fun size_of<T: Iter>(x: T): i64 = x.size();
+
+fun main() {
+    let c = Count { n: 0, end: 3 };
+    println(size_of(c));
+    let mut total = 0;
+    for n of c {
+        total += n;
+    }
+    println(total);
+}
