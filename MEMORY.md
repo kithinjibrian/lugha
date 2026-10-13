@@ -951,6 +951,18 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 59. Lugha v6 direction (session 63)
+
+**Decision:** `docs/specs/Language v6 Draft.md` is approved: generic interfaces and `Self`, as milestones 23–26. Bits, packages and `match` additions wait.
+- **Generic interfaces:** `interface Source<T>`, bounds with arguments (`S: Source<T>`), bounded parameters checked at use (E0419), a bare `Source` is E0418. A parameter appearing only in a bound's arguments is inferred from the concrete type's methods (E0412 when nothing fixes it). They are value types too (`Source<i64>`, `lugha_vt_Count.Source<i64>`).
+- **Iterators:** the prelude's `interface Iter<T> { fun next(mut self): Option<T>; }`; `for x of e` on a non-array satisfying it loops over a hidden copy of `e` (moved on last use), so `e` never changes. A module's own `Iter` hides the prelude's.
+- **`Self`:** inside interfaces (signatures and default bodies) only; outside, E0305. An interface mentioning `Self` beyond the receiver is a bound only: used as a type it is E0427.
+- **Interface to interface:** `J` converts to `I` when `J` declares every item of `I` (defaults included) the same way; else E0422. The box keeps its concrete type (type patterns still see it). `?` converts the same way. Codegen: each `J` table gains a slot per target interface pointing at the derived table.
+
+**Why:** the session 63 discovery: finish the interface story begun in v5; iterators give generic interfaces an everyday use.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -1017,22 +1029,20 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- Lugha v6 (nothing planned; see the v5 spec's §11 out-of-scope list)
+- Lugha v6: draft approved (MEMORY 59), milestones 23–26 not started
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v5 is complete and merged** (tags `m21`, `m22`, `v5`; PRP-048 and PRP-049, MEMORY 57–58, approved by the user as built, including the decisions taken while away). `Language v5 Specification.md` is what `lughac spec` prints.
+**Lugha v6 draft approved** (`docs/specs/Language v6 Draft.md`, MEMORY 59): generic interfaces, iterators, `Self`, converting between interfaces — milestones 23–26. `main` has v5 complete (tags `m22`, `v5`); `Language v5 Specification.md` is what `lughac spec` prints until milestone 23 starts `Language v6 Specification.md`.
 
-Next: **v6 direction — discovery** (one question at a time, recommended option first). Candidates are in the v5 spec's §11 out-of-scope list and §12 open questions:
-- `Self` and generic interfaces;
-- packages;
-- bitwise operators and more integer types;
-- `match` additions and `unwrap()`;
-- binary I/O;
-- §12: defaults callable on concrete types, inline storage of small boxed values.
+Next: **milestone 23, generic interfaces** — discovery and PRP-050. Scope (v6 draft §3, §4 "Generic interfaces", §9 symbols, §10 "Generic interfaces"):
+- `interface I<T>` (bounded parameters, E0419 at use), `I` written without arguments is E0418;
+- bounds with arguments (`S: Source<T>`), and inference of `T` from the concrete type's methods (E0412);
+- generic interface values (`Source<i64>`), tables `lugha_vt_Count.Source<i64>`; defaults of generic interfaces `lugha_fn_Source<i64>.skip<Count>`;
+- likely two PRPs (checking, then compiling), as for milestone 20.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `codegen/control.rs` (292), `check/infer.rs` (291), `codegen/interfaces.rs` (266).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `codegen/control.rs` (292), `check/infer.rs` (291).
 
 See `TODO.md`.

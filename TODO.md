@@ -152,6 +152,25 @@ Done when the type-patterns program passes.
 Done when the errors-as-interfaces program passes and the v5 spec is complete.
 - [x] PRP-049: interface methods with bodies; `?` converting into an interface error — v5 complete; built while the user was away, merge held for review
 
+
+## v6 (draft approved, session 63 — `docs/specs/Language v6 Draft.md`)
+
+### Milestone 23 — Generic interfaces
+Done when the generic-interfaces program passes.
+- [ ] PRP-050: `interface I<T>`, bounds with arguments, inference through bounds, generic interface values
+
+### Milestone 24 — Iterators
+Done when the iterators program passes.
+- [ ] `Iter<T>` in the prelude; `for … of` over iterators
+
+### Milestone 25 — `Self`
+Done when the `Self` program passes.
+- [ ] `Self` in interface signatures and default bodies; bounds-only interfaces (E0427)
+
+### Milestone 26 — Converting between interfaces
+Done when the converting-between-interfaces program passes and the v6 spec is complete.
+- [ ] `J` to `I` where `J` declares `I`'s items; through `?`
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.
