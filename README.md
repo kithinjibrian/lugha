@@ -16,7 +16,7 @@ $ lughac run fib.la
 832040
 ```
 
-Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is complete (milestones 17–19), with v4.1 allowing string literals inside interpolations. v5, interface values, is complete (milestones 20–22). Today it has everything in v1.2:
+Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is complete (milestones 17–19), with v4.1 allowing string literals inside interpolations. v5, interface values, is complete (milestones 20–22), and v6, generic interfaces, is in progress (milestone 23). Today it has everything in v1.2:
 - **Basic types:** integers (`i32`, `i64`, `u8`), `f64`, `bool` and immutable strings.
 - **Compound types:** growable arrays (`push`, `pop`, `clear`), structs, and enums with exhaustive `match`, including `Option<T>` and recursive enums.
 - **Behaviour:** methods in `impl` blocks, `if` expressions, loops and `for … of`, and `swap(a, b)` to exchange two places without copying.
@@ -36,8 +36,9 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **Interface values (v5, milestone 20):** an interface is a type, so one array holds different shapes: `let shapes: Shape[] = [Circle { r: 1.0 }, Square { side: 2.0 }];`, and `s.area()` runs each one's own method. Interface values are values: copies are independent.
 - **Type patterns (v5, milestone 21):** `match s { c: Circle => c.r, _: Square => 1.0, _ => 0.0 }` gets the concrete value back out of an interface value.
 - **Default methods and error conversion (v5, milestone 22):** `fun report(self): string = "error: {self.message()}";` inside an interface, and `?` turning a `ParseError` into an `Error` in a function returning `Result<T, Error>`.
+- **Generic interfaces as bounds (v6, milestone 23):** `interface Source<T> { fun next(mut self): Option<T>; }` and `fun collect<T, S: Source<T>>(src: S): T[]`, where `collect(Count { … })` works out `T = i64` from `Count.next`.
 
-Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v5 Specification.md`](docs/specs/Language%20v5%20Specification.md) (what `lughac spec` prints); the approved plan it was built from is [`Language v5 Draft.md`](docs/specs/Language%20v5%20Draft.md).
+Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v6 Specification.md`](docs/specs/Language%20v6%20Specification.md) (what `lughac spec` prints, in progress); the approved plan it is built from is [`Language v6 Draft.md`](docs/specs/Language%20v6%20Draft.md), and v5 is frozen in [`Language v5 Specification.md`](docs/specs/Language%20v5%20Specification.md).
 
 ## Prerequisites
 

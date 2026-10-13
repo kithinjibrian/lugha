@@ -963,9 +963,28 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 60. Generic interfaces as bounds (PRP-050)
+
+**Decision:** milestone 23 is two PRPs: bounds (050), then values (051).
+- **Syntax:** `InterfaceDecl.type_params`, `Bound.args` (parsed like type arguments).
+- **Checker:**
+  - `check::applied::Applied { key, args }` replaces the key in `Bounds.interfaces`; `Checker::items(&Applied)` substitutes the interface's parameters; every reader of bound items goes through it (`bound_item`/`bound_entry`, `unmet`/`satisfies`, E0423, defaults).
+  - `InterfaceInfo.generics`: names in pass 1, bounds in the new pass `interface_params` (after `collect_enums`); items resolve with them in scope. `Self` as an interface parameter is E0316.
+  - Bound arguments resolve quietly in `bounds_of` (`quietly` truncates diagnostics) and are reported once by `check_bounds` → `bound_args` (E0418, E0419). `generics_with` puts the declaration's own and outer parameters in scope; structs and enums recompute their generics in pass 2, once every type is known. `renamed` renames bound arguments for `impl` parameter names.
+  - Inference: `bound_infer.rs::through_bounds`, called in `infer` before E0412, unifies each bound item with what the bound parameter's type offers, repeating until nothing new is bound.
+  - Defaults of a generic interface: generics `[Self: I<P…>, P…]`, `outer` 1 + n; instances `[concrete, X…]`; bound calls record the interface's arguments in `Checked.default_args`.
+  - A generic interface in a type position is E0418 ("can't be a value type yet", `errors/v6.rs`) until PRP-051.
+- **Codegen:** `instances.rs` `Source.interface` carries the declaration (subst `Self` then the interface's parameters; symbol `lugha_fn_Source<i64>.skip<Count>`); `default_method` substitutes `default_args`.
+- **Spec:** `Language v6 Specification.md` begins (in progress: milestone 23); v5 frozen.
+
+**Why:** a bound with arguments is all generic code needs; calls through bounds were already monomorphized, so values (tables) can follow separately.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 23, part 1**: PRP-050 generic interfaces as bounds; v6 spec begins
 - **Milestone 22 complete — Lugha v5 complete (branch, merge held)**: PRP-049 default methods and `?` conversion
 - **Milestone 21 complete (branch, merge held)**: PRP-048 type patterns
 - **Milestone 20 complete**: PRP-046 checking and PRP-047 compiling interface values; v5 spec begins
@@ -1026,23 +1045,23 @@ Open questions live in `DECISIONS.md`, not here.
 - v0 language spec reviewed and fixed
 
 ### In Progress
-- Nothing
+- Milestone 23: PRP-051 generic interface values next (PRP-050 bounds done)
 
 ### Not Started
-- Lugha v6: draft approved (MEMORY 59), milestones 23–26 not started
+- Milestones 24–26 (v6 draft, MEMORY 59)
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v6 draft approved** (`docs/specs/Language v6 Draft.md`, MEMORY 59): generic interfaces, iterators, `Self`, converting between interfaces — milestones 23–26. `main` has v5 complete (tags `m22`, `v5`); `Language v5 Specification.md` is what `lughac spec` prints until milestone 23 starts `Language v6 Specification.md`.
+**Milestone 23, part 1 done** (PRP-050, MEMORY 60): generic interfaces as bounds — `interface Source<T>`, `S: Source<T>`, inference through bounds, generic defaults. `Language v6 Specification.md` (in progress) is what `lughac spec` prints; v5 is frozen.
 
-Next: **milestone 23, generic interfaces** — discovery and PRP-050. Scope (v6 draft §3, §4 "Generic interfaces", §9 symbols, §10 "Generic interfaces"):
-- `interface I<T>` (bounded parameters, E0419 at use), `I` written without arguments is E0418;
-- bounds with arguments (`S: Source<T>`), and inference of `T` from the concrete type's methods (E0412);
-- generic interface values (`Source<i64>`), tables `lugha_vt_Count.Source<i64>`; defaults of generic interfaces `lugha_fn_Source<i64>.skip<Count>`;
-- likely two PRPs (checking, then compiling), as for milestone 20.
+Next: **PRP-051, generic interface values** (completes milestone 23, tag `m23`). Scope (v6 draft §4 "As a value type", §9, §10 "Generic interfaces"):
+- `Type::Interface` gains arguments (`Source<i64>`); lift the "can't be a value type yet" E0418 (`errors/v6.rs`, `iface_values.rs::no_type_args`);
+- conversion, dynamic calls and copies at the substituted signatures; `Checked.interfaces` per applied interface; tables `lugha_vt_Count.Source<i64>`, copies mangled with arguments;
+- type patterns and `?` conversion with generic interface types; default slots `lugha_fn_Source<i64>.skip<Count>`;
+- fold the §10 generic-interfaces program into the spec (it needs values).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `codegen/control.rs` (292), `check/infer.rs` (291).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/satisfy.rs` (294), `check/infer.rs` (293), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `codegen/control.rs` (292).
 
 See `TODO.md`.

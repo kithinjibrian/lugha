@@ -3,8 +3,8 @@
 
 use super::block;
 use crate::ast::{
-    FunDecl, Ident, InterfaceItem, Item, Param, Program, Type, TypeKind, TypeParam, Visibility,
-    VisibilityKind,
+    Bound, FunDecl, Ident, InterfaceItem, Item, Param, Program, Type, TypeKind, TypeParam,
+    Visibility, VisibilityKind,
 };
 
 /// Prints every import, then every item, one per line.
@@ -46,15 +46,22 @@ fn type_params(params: &[TypeParam]) -> String {
         .map(|p| match p.bounds.as_slice() {
             [] => p.name.name.clone(),
             bounds => {
-                let bounds: Vec<String> = bounds
-                    .iter()
-                    .map(|b| qualified(&b.module, &b.name))
-                    .collect();
+                let bounds: Vec<String> = bounds.iter().map(bound).collect();
                 format!("({} {})", p.name.name, bounds.join(" "))
             }
         })
         .collect();
     format!(" (type-params {})", list.join(" "))
+}
+
+/// `Shape`, `m.Shape`, or with arguments `(Source T)` (v6).
+fn bound(b: &Bound) -> String {
+    let name = qualified(&b.module, &b.name);
+    if b.args.is_empty() {
+        return name;
+    }
+    let args: Vec<String> = b.args.iter().map(ty).collect();
+    format!("({name} {})", args.join(" "))
 }
 
 /// `name`, or `module.name` (v2 draft §3).
@@ -123,9 +130,10 @@ fn item(item: &Item) -> String {
                 .map(|m| format!(" {}", m.default.as_ref().map_or_else(|| signature(m), fun)))
                 .collect();
             format!(
-                "({}interface {}{items})",
+                "({}interface {}{}{items})",
                 visibility(i.visibility),
-                i.name.name
+                i.name.name,
+                type_params(&i.type_params)
             )
         }
     }

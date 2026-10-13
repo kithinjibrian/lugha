@@ -13,11 +13,15 @@ use crate::check::Type;
 impl<'ctx> Lowerer<'ctx> {
     /// The default's instance a call through a bound reaches for a
     /// receiver of type `ty` without its own method (v5).
+    /// A generic interface's default takes the interface's arguments after
+    /// the receiver's type (v6).
     pub(super) fn default_method(&self, call: &Expr, ty: &Type) -> Option<Method<'ctx>> {
         let callee = self.callees.get(&call.id)?;
-        self.monos
-            .get(&instance_name(callee, std::slice::from_ref(ty)))
-            .cloned()
+        let own = self.default_args.get(&call.id).into_iter().flatten();
+        let args: Vec<Type> = std::iter::once(ty.clone())
+            .chain(own.map(|t| self.concrete(t)))
+            .collect();
+        self.monos.get(&instance_name(callee, &args)).cloned()
     }
 
     /// `value`, of concrete type `ty`, boxed as a value of interface `to`.
@@ -55,6 +59,24 @@ mod tests {
         assert!(
             ir.contains("define ptr @\"lugha_fn_Error.report<P>\"(ptr"),
             "the default compiles once for P: {ir}"
+        );
+    }
+
+    #[test]
+    fn a_generic_interfaces_default_compiles_per_type_and_argument() {
+        let ir = ir(
+            "interface Source<T> { fun next(mut self): Option<T>; fun skip(mut self): bool = match self.next() { Some(_) => true, None => false }; }\n\
+            struct Count { n: i64 }\nimpl Count { fun next(mut self): Option<i64> = Some(self.n); }\n\
+            fun drop<T, S: Source<T>>(s: S): bool { let mut t = s; t.skip() }\n\
+            fun main() { let b = drop(Count { n: 1 }); }",
+        );
+        assert!(
+            ir.contains("define i1 @\"lugha_fn_Source<i64>.skip<Count>\"(ptr"),
+            "{ir}"
+        );
+        assert!(
+            ir.contains("call i1 @\"lugha_fn_Source<i64>.skip<Count>\""),
+            "{ir}"
         );
     }
 }

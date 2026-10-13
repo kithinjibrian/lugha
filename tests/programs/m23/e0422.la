@@ -1,0 +1,17 @@
+// `Count` offers `Option<i64>`, so it doesn't satisfy `Source<string>`.
+
+interface Source<T> {
+    fun next(mut self): Option<T>;
+}
+
+struct Count { n: i64 }
+
+impl Count {
+    fun next(mut self): Option<i64> = Some(self.n);
+}
+
+fun words<S: Source<string>>(src: S): i64 = 0;
+
+fun main() {
+    println(words(Count { n: 1 }));
+}

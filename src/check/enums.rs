@@ -58,7 +58,10 @@ impl Checker {
             {
                 continue; // a duplicate, already reported
             }
-            self.type_params = self.enums[&key].generics.clone();
+            // Again now every type is known: bounds' arguments may name them (v6).
+            let generics = self.generics(&e.type_params);
+            self.enums.get_mut(&key).expect("collected").generics = generics.clone();
+            self.type_params = generics;
             self.check_params(&e.type_params, &[]);
             let mut variants: Vec<(String, Vec<Type>)> = Vec::new();
             for (i, v) in e.variants.iter().enumerate() {

@@ -2,6 +2,7 @@
 //! parameter's bounds (`s.area()`, `T.make(…)`, E0421) and whether a type
 //! argument satisfies an interface bound (E0422), structurally.
 
+use super::applied::Applied;
 use super::generics::subst;
 use super::interfaces::Requirement;
 use super::methods::Method;
@@ -17,11 +18,16 @@ enum Offer {
 
 impl Checker {
     /// The item `name` that one of `param`'s interface bounds declares.
-    fn bound_item(&self, param: &str, name: &str) -> Option<Requirement> {
+    pub(super) fn bound_item(&self, param: &str, name: &str) -> Option<Requirement> {
+        self.bound_entry(param, name).map(|(req, _)| req)
+    }
+
+    /// The item `name` that one of `param`'s bounds declares, with that bound.
+    fn bound_entry(&self, param: &str, name: &str) -> Option<(Requirement, Applied)> {
         let bounds = self.bounds(param);
-        bounds.interfaces.iter().find_map(|key| {
-            let items = &self.interfaces[key].items;
-            items.iter().find(|r| r.name == name).cloned()
+        bounds.interfaces.into_iter().find_map(|a| {
+            let req = self.items(&a).into_iter().find(|r| r.name == name)?;
+            Some((req, a))
         })
     }
 
@@ -35,7 +41,7 @@ impl Checker {
         name: &Ident,
         on_value: bool,
     ) -> Option<Method> {
-        let Some(req) = self.bound_item(param, &name.name) else {
+        let Some((req, applied)) = self.bound_entry(param, &name.name) else {
             self.report(errors::no_bound_declares(param, &name.name, name.span));
             return None;
         };
@@ -50,7 +56,7 @@ impl Checker {
             return None;
         }
         self.bound_used(call, param, &name.name);
-        self.default_callee(call, &req);
+        self.default_callee(call, &req, applied.args);
         Some(Method {
             receiver: req.receiver,
             params: req.params,
@@ -62,23 +68,29 @@ impl Checker {
         })
     }
 
-    /// E0422 unless `arg` satisfies interface `key`: every item it declares
+    /// E0422 unless `arg` satisfies `interface`: every item it declares
     /// has a visible method or associated function with the same name,
     /// receiver kind and types.
-    pub(super) fn satisfies(&mut self, arg: &Type, key: &str, span: crate::span::Span) -> bool {
-        let problems = self.unmet(arg, key);
+    pub(super) fn satisfies(
+        &mut self,
+        arg: &Type,
+        interface: &Applied,
+        span: crate::span::Span,
+    ) -> bool {
+        let problems = self.unmet(arg, interface);
         if problems.is_empty() || matches!(arg, Type::Error) {
             return true;
         }
-        self.report(errors::unsatisfied(arg, key, &problems, span));
+        let shown = interface.to_string();
+        self.report(errors::unsatisfied(arg, &shown, &problems, span));
         false
     }
 
-    /// What `arg` lacks to satisfy interface `key`, one entry per item:
-    /// empty when it satisfies it.
-    pub(super) fn unmet(&self, arg: &Type, key: &str) -> Vec<String> {
+    /// What `arg` lacks to satisfy `interface`, one entry per item: empty
+    /// when it satisfies it.
+    pub(super) fn unmet(&self, arg: &Type, interface: &Applied) -> Vec<String> {
         let mut problems = Vec::new();
-        for req in &self.interfaces[key].items {
+        for req in &self.items(interface) {
             match self.offer(arg, req) {
                 Offer::Matches => {}
                 Offer::Missing if req.default.is_some() => {}
@@ -103,12 +115,8 @@ impl Checker {
             },
             // An interface value offers what its interface declares (v5).
             Type::Interface(key) => {
-                let items = self.interfaces.get(key).map(|i| i.items.as_slice());
-                return match items
-                    .unwrap_or_default()
-                    .iter()
-                    .find(|r| r.name == req.name)
-                {
+                let items = self.items(&Applied::plain(key));
+                return match items.iter().find(|r| r.name == req.name) {
                     Some(item) if item.same(req) => Offer::Matches,
                     Some(_) => Offer::Mismatched,
                     None => Offer::Missing,

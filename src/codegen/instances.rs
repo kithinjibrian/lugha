@@ -14,7 +14,7 @@ use super::function::Signature;
 use super::lower::Lowerer;
 use super::methods::Method;
 use super::value::llvm_type;
-use crate::ast::{Expr, FunDecl, ImplDecl, Item};
+use crate::ast::{Expr, FunDecl, ImplDecl, InterfaceDecl, Item};
 use crate::check::{Instance, SELF, Type, Unit, qualify, symbol};
 
 /// Where an instance's code comes from.
@@ -22,9 +22,9 @@ struct Source<'a> {
     f: &'a FunDecl,
     /// The `impl` of a method, `None` for a function.
     owner: Option<(&'a ImplDecl, String)>,
-    /// The interface of a default method (v5), whose one type argument is
-    /// the receiver's type.
-    interface: Option<String>,
+    /// The interface of a default method (v5), by key: its type arguments
+    /// are the receiver's type, then the interface's own (v6).
+    interface: Option<(String, &'a InterfaceDecl)>,
 }
 
 /// `key<args>`: how an instance is named in `Lowerer::monos`.
@@ -144,9 +144,11 @@ impl<'ctx> Lowerer<'ctx> {
     fn enter(&mut self, source: &Source, args: &[Type]) {
         let outer = source.owner.iter().flat_map(|(i, _)| i.params.iter());
         let names = outer.chain(source.f.type_params.iter().map(|p| &p.name));
-        let hidden = source.interface.as_ref().map(|_| SELF.to_string());
+        let hidden = source.interface.iter().flat_map(|(_, i)| {
+            let own = i.type_params.iter().map(|p| p.name.name.clone());
+            std::iter::once(SELF.to_string()).chain(own)
+        });
         self.subst = hidden
-            .into_iter()
             .chain(names.map(|n| n.name.clone()))
             .zip(args.iter().cloned())
             .collect::<HashMap<_, _>>();
@@ -175,7 +177,7 @@ fn find<'a>(units: &[Unit<'a>], key: &str) -> Source<'a> {
                         return Source {
                             f,
                             owner: None,
-                            interface: Some(owner),
+                            interface: Some((owner, i)),
                         };
                     }
                 }
@@ -205,12 +207,16 @@ fn find<'a>(units: &[Unit<'a>], key: &str) -> Source<'a> {
 fn symbol_of(source: &Source, mono: &Instance) -> String {
     match &source.owner {
         // `lugha_fn_Error.report<ParseError>` (v5 draft §9).
-        None if let Some(interface) = &source.interface => format!(
-            "lugha_fn_{}.{}<{}>",
-            symbol(interface),
-            source.f.name.name,
-            symbol(&spelled(&mono.args))
-        ),
+        // `lugha_fn_Source<i64>.skip<Count>` for a generic interface (v6).
+        None if let Some((interface, _)) = &source.interface => {
+            let (receiver, own) = mono.args.split_at(1);
+            format!(
+                "lugha_fn_{}.{}<{}>",
+                symbol(&instance_name(interface, own)),
+                source.f.name.name,
+                symbol(&spelled(receiver))
+            )
+        }
         None => format!("lugha_fn_{}", symbol(&instance_name(&mono.key, &mono.args))),
         Some((i, owner)) => {
             let (outer, own) = mono.args.split_at(i.params.len());

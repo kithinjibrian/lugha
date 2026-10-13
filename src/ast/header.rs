@@ -22,13 +22,16 @@ pub struct TypeParam {
     pub bounds: Vec<Bound>,
 }
 
-/// A bound: `Eq`, `Ord`, or an interface, `Shape` or `m.Shape` (milestone 12).
+/// A bound: `Eq`, `Ord`, or an interface, `Shape`, `m.Shape` or, for a
+/// generic interface, `Source<T>` (milestone 12, v6).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Bound {
     /// `m` in `m.Shape`.
     pub module: Option<Ident>,
     pub name: Ident,
-    /// The whole bound, module included.
+    /// The interface's type arguments (v6); empty when none are written.
+    pub args: Vec<Type>,
+    /// The whole bound, module and arguments included.
     pub span: Span,
 }
 
@@ -38,6 +41,8 @@ pub struct InterfaceDecl {
     /// `private` or `public`, if written.
     pub visibility: Option<Visibility>,
     pub name: Ident,
+    /// Type parameters (v6), `interface Source<T>`; empty when none.
+    pub type_params: Vec<TypeParam>,
     /// Required methods and associated functions, in order.
     pub items: Vec<InterfaceItem>,
     /// From `interface` to the closing brace.

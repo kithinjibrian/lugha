@@ -50,6 +50,7 @@ impl Checker {
         for (e, want) in now.into_iter().chain(later).chain(closures) {
             failed |= self.input(e, want, &names, &mut bound);
         }
+        self.through_bounds(generics, &mut bound);
         let mut args = Vec::new();
         for g in generics {
             match bound.get(&g.name) {
@@ -122,7 +123,7 @@ fn substitute(ty: &Type, bound: &Bound) -> Type {
 
 /// True if `ty` mentions one of `names` not yet bound. Asked of the
 /// declared type, so a caller's own `T` is never taken for the callee's.
-fn unbound(ty: &Type, names: &[&str], bound: &Bound) -> bool {
+pub(super) fn unbound(ty: &Type, names: &[&str], bound: &Bound) -> bool {
     match ty {
         Type::Param(n) => names.contains(&n.as_str()) && !bound.contains_key(n),
         Type::Array(inner) | Type::Option(inner) => unbound(inner, names, bound),
@@ -138,7 +139,7 @@ fn unbound(ty: &Type, names: &[&str], bound: &Bound) -> bool {
 
 /// Binds the parameters among `names` that `declared` puts where `actual`
 /// has a type; the first binding wins, and a later mismatch is E0403.
-fn unify(declared: &Type, actual: &Type, names: &[&str], bound: &mut Bound) {
+pub(super) fn unify(declared: &Type, actual: &Type, names: &[&str], bound: &mut Bound) {
     match (declared, actual) {
         (_, Type::Error | Type::Never) => {}
         (Type::Param(n), _) if names.contains(&n.as_str()) => {

@@ -62,6 +62,7 @@ pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<D
             callees: checker.callees,
             conversions: checker.conversions,
             try_conversions: checker.try_conversions,
+            default_args: checker.default_args,
             interfaces,
             annotations: checker.annotations,
             instances: checker.instances,
@@ -93,10 +94,11 @@ impl Checker {
     /// Every pass of spec §6 over every module in turn, then every body.
     fn modules(&mut self, units: &[Unit]) {
         type Pass = fn(&mut Checker, &Program);
-        let passes: [Pass; 8] = [
+        let passes: [Pass; 9] = [
             Checker::collect_interfaces,
             Checker::collect_structs,
             Checker::collect_enums,
+            Checker::interface_params,
             Checker::resolve_structs,
             Checker::resolve_enums,
             Checker::resolve_interfaces,

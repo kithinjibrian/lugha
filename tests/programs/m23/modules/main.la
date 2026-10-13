@@ -1,0 +1,38 @@
+// Generic interfaces across modules (milestone 23).
+import geo;
+
+struct Down { n: i64 }
+
+impl Down {
+    fun next(mut self): Option<i64> {
+        if self.n == 0 {
+            return None;
+        }
+        self.n -= 1;
+        Some(self.n)
+    }
+}
+
+fun sum<S: geo.Source<i64>>(src: S): i64 {
+    let mut s = src;
+    let mut total = 0;
+    let mut more = true;
+    while more {
+        match s.next() {
+            Some(x) => { total += x; }
+            None => { more = false; }
+        }
+    }
+    total
+}
+
+fun size<T, S: geo.Source<T>>(src: S): i64 {
+    let mut s = src;
+    s.count()
+}
+
+fun main() {
+    println(sum(Down { n: 4 }));
+    println(size(Down { n: 4 }));
+    println(size(geo.Letters { s: "hello", at: 0 }));
+}

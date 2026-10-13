@@ -54,7 +54,11 @@ impl Checker {
         let Type::Interface(key) = to else {
             return false;
         };
-        if matches!(from, Type::Interface(_)) || !self.unmet(from, key).is_empty() {
+        if matches!(from, Type::Interface(_))
+            || !self
+                .unmet(from, &super::applied::Applied::plain(key))
+                .is_empty()
+        {
             return false;
         }
         self.try_conversions.insert(inner.id, to.clone());

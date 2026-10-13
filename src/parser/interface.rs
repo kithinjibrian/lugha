@@ -9,6 +9,7 @@ impl Parser<'_> {
     pub(super) fn interface_decl(&mut self) -> PResult<InterfaceDecl> {
         let start = self.bump().start;
         let name = self.ident("interface name")?;
+        let type_params = self.type_params()?;
         let open = self.expect(&TokenKind::LBrace)?;
         let mut items = Vec::new();
         while !self.at(&TokenKind::RBrace) {
@@ -24,6 +25,7 @@ impl Parser<'_> {
         Ok(InterfaceDecl {
             visibility: None,
             name,
+            type_params,
             items,
             span: Span::new(start, self.prev_end()),
         })
@@ -66,7 +68,7 @@ impl Parser<'_> {
         })
     }
 
-    /// `Eq`, `Ord`, `Shape` or `m.Shape`.
+    /// `Eq`, `Ord`, `Shape`, `m.Shape`, or with arguments, `Source<T>` (v6).
     pub(super) fn bound(&mut self) -> PResult<Bound> {
         let first = self.ident("bound name")?;
         let (module, name) = if self.eat(&TokenKind::Dot) {
@@ -74,9 +76,23 @@ impl Parser<'_> {
         } else {
             (None, first)
         };
+        let args = if self.at(&TokenKind::Lt) {
+            let open = self.bump();
+            if self.at(&TokenKind::Gt) {
+                return Err(self.expected("type"));
+            }
+            self.nested(|p| p.comma_list(open, TokenKind::Gt, |p| p.ty()))?
+        } else {
+            Vec::new()
+        };
         let start = module.as_ref().map_or(name.span.start, |m| m.span.start);
-        let span = Span::new(start, name.span.end);
-        Ok(Bound { module, name, span })
+        let span = Span::new(start, self.prev_end());
+        Ok(Bound {
+            module,
+            name,
+            args,
+            span,
+        })
     }
 }
 
@@ -113,6 +129,18 @@ mod tests {
                 "interface Shape { fun area(self): f64; fun name(self): string = \"s\"; fun big(self): bool { self.area() > 1.0 } }"
             ),
             "(interface Shape (fun area (self) f64) (fun name (self) string (block \"s\")) (fun big (self) bool (block (> (call (. self area)) 1.0))))"
+        );
+    }
+
+    #[test]
+    fn interfaces_take_type_parameters_and_bounds_arguments() {
+        assert_eq!(
+            program("interface Source<T: Eq> { fun next(mut self): Option<T>; }"),
+            "(interface Source (type-params (T Eq)) (fun next ((mut self)) (Option T)))"
+        );
+        assert_eq!(
+            program("fun f<T, S: Source<T> + geo.Sink<T[]>>(s: S) {}"),
+            "(fun f (type-params T (S (Source T) (geo.Sink T[]))) ((s S)) void (block))"
         );
     }
 

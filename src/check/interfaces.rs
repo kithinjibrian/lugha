@@ -2,9 +2,10 @@
 //! (`T: Shape`, `T: m.Shape + Eq`), E0315 and E0423 on bound lists.
 //! Satisfaction and calls through bounds are in `satisfy.rs`.
 
+use super::applied::Applied;
 use super::enums::BUILTIN_NAMES;
 use super::env::is_intrinsic;
-use super::generics::Bounds;
+use super::generics::{Bounds, Generic};
 use super::{Checker, Type, errors, qualify};
 use crate::ast::{Bound, Item, Program, TypeParam};
 use crate::span::Span;
@@ -32,6 +33,9 @@ impl Requirement {
 
 /// A declared interface.
 pub(super) struct InterfaceInfo {
+    /// Its type parameters (v6): names from pass 1, bounds from
+    /// `interface_params`.
+    pub generics: Vec<Generic>,
     /// Its items in order; empty until pass 2 resolves them.
     pub items: Vec<Requirement>,
     /// The interface's name in its declaration.
@@ -58,7 +62,12 @@ impl Checker {
             } else {
                 self.register_item(&key, i.visibility);
                 let not_value = i.items.iter().find(|it| it.receiver.is_none());
+                let generics = i.type_params.iter().map(|p| Generic {
+                    name: p.name.name.clone(),
+                    bounds: Bounds::default(),
+                });
                 let info = InterfaceInfo {
+                    generics: generics.collect(),
                     items: Vec::new(),
                     span,
                     not_value: not_value.map(|it| it.name.name.clone()),
@@ -68,10 +77,26 @@ impl Checker {
         }
     }
 
-    /// Pass 2: every item's signature, in concrete types only (no type
-    /// parameter is in scope), and E0310 for a name used twice.
+    /// Pass 1, once every type name is known: the bounds of each
+    /// interface's parameters (v6), which bounds elsewhere check against.
+    pub(super) fn interface_params(&mut self, program: &Program) {
+        for item in &program.items {
+            let Item::Interface(i) = item else { continue };
+            let key = self.key(&i.name.name);
+            if self
+                .interfaces
+                .get(&key)
+                .is_some_and(|info| info.span == i.name.span)
+            {
+                let generics = self.generics(&i.type_params);
+                self.interfaces.get_mut(&key).expect("just found").generics = generics;
+            }
+        }
+    }
+
+    /// Pass 2: every item's signature, in concrete types and the
+    /// interface's own parameters (v6), and E0310 for a name used twice.
     pub(super) fn resolve_interfaces(&mut self, program: &Program) {
-        self.type_params.clear();
         for item in &program.items {
             let Item::Interface(i) = item else { continue };
             let key = self.key(&i.name.name);
@@ -81,6 +106,12 @@ impl Checker {
                 .is_none_or(|info| info.span != i.name.span)
             {
                 continue; // a duplicate, already reported
+            }
+            self.type_params = self.interfaces[&key].generics.clone();
+            self.check_params(&i.type_params, &[]);
+            // `Self` is the implementing type in milestone 25's interfaces.
+            for p in i.type_params.iter().filter(|p| p.name.name == super::SELF) {
+                self.report(errors::bad_type_param(&p.name.name, p.name.span));
             }
             let mut items: Vec<Requirement> = Vec::new();
             for it in &i.items {
@@ -105,10 +136,12 @@ impl Checker {
             let info = self.interfaces.get_mut(&key).expect("collected in pass 1");
             info.items = items;
         }
+        self.type_params.clear();
     }
 
-    /// The bounds of `p` that name `Eq`, `Ord` or a known interface.
-    pub(super) fn bounds_of(&self, p: &TypeParam) -> Bounds {
+    /// The bounds of `p` that name `Eq`, `Ord` or a known interface, with
+    /// its arguments (v6) resolved quietly in the parameters in scope.
+    pub(super) fn bounds_of(&mut self, p: &TypeParam) -> Bounds {
         let mut bounds = Bounds::default();
         for b in &p.bounds {
             match (b.module.is_some(), b.name.name.as_str()) {
@@ -116,9 +149,10 @@ impl Checker {
                 (false, "Ord") => bounds.ord = true,
                 _ => {
                     if let Some(key) = self.interface_key(b)
-                        && !bounds.interfaces.contains(&key)
+                        && let Some(applied) = self.applied_bound(key, b)
+                        && !bounds.interfaces.contains(&applied)
                     {
-                        bounds.interfaces.push(key);
+                        bounds.interfaces.push(applied);
                     }
                 }
             }
@@ -144,7 +178,10 @@ impl Checker {
                 continue;
             }
             match self.interface_key(b) {
-                Some(key) => self.item_visible(&key, b.span),
+                Some(key) => {
+                    self.item_visible(&key, b.span);
+                    self.bound_args(&key, b);
+                }
                 None => {
                     let is_type = b.module.is_none() && self.is_type_name(&b.name.name);
                     self.report(errors::unknown_bound(&b.name.name, b.span, is_type));
@@ -155,17 +192,22 @@ impl Checker {
             return;
         };
         let span = Span::new(first.span.start, last.span.end);
-        let mut seen: Vec<(Requirement, String)> = Vec::new();
-        for key in self.bounds_of(p).interfaces {
-            for req in &self.interfaces[&key].items {
+        let mut seen: Vec<(Requirement, Applied)> = Vec::new();
+        for applied in self.bounds_of(p).interfaces {
+            for req in self.items(&applied) {
                 match seen.iter().find(|(r, _)| r.name == req.name) {
-                    Some((r, _)) if r.same(req) => {}
+                    Some((r, _)) if r.same(&req) => {}
                     Some((_, other)) => {
-                        let d = errors::clashing_bounds(other, &key, &req.name, span);
+                        let d = errors::clashing_bounds(
+                            &other.to_string(),
+                            &applied.to_string(),
+                            &req.name,
+                            span,
+                        );
                         self.report(d);
                         return;
                     }
-                    None => seen.push((req.clone(), key.clone())),
+                    None => seen.push((req, applied.clone())),
                 }
             }
         }

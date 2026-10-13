@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v5 Specification.md` (`lughac spec` prints it): Lugha v5, complete (milestones 20–22: interface values, type patterns, default methods and `?` error conversion). `Language v5 Draft.md` is the approved plan it was built from. The v0–v4 files are frozen. `Result` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v6 Specification.md` (`lughac spec` prints it): Lugha v6, in progress (milestone 23: generic interfaces as bounds so far). `Language v6 Draft.md` is the approved plan (milestones 23–26: generic interfaces, iterators, `Self`, converting between interfaces). The v0–v5 files are frozen. `Result` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
 
 ---
 
@@ -166,7 +166,7 @@ The language itself is defined by `docs/specs/Language v5 Specification.md` (`lu
 4. **Codegen never infers types.** It reads the checker's expression → type side table. *Why:* opaque pointers need the element type on every load/store/GEP (spec §9), and two type computations will disagree.
 5. **User-program errors are `Diagnostic` records, never panics or strings.** Each has a stable code from its stage's range (E01xx lex … E05xx, W01xx). New codes take the next unused number; a code is never reused or renumbered. Human and JSON output render from the same record. *Why:* spec §9; codes are a public contract.
 6. **Exit codes are 0 / 1 / 2.** 1 = the user's program has errors; 2 = bad CLI usage or internal compiler error. A `module.verify()` failure or a Rust panic inside lughac is exit 2, never 1. *Why:* spec §9; tools tell "your bug" from "our bug" by it.
-7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, items of a module other than the main file → the module path joined with `/` first (`lugha_fn_shapes/circle/area`, `lugha_fn_shapes/circle/Circle.area`), generic instances → the type arguments as they print, module paths with `/` (`lugha_fn_max<i64>`, `lugha_fn_Stack<string>.push`, `lugha_fn_a/b/max<a/b/Point>`), functions used as values → wrappers `lugha_ref_<symbol>` (v3), closure bodies → `lugha_closure_<enclosing>.<n>` (v3), interface dispatch tables → `lugha_vt_<Type>.<Interface>` with identities `lugha_type_<Type>` and box copies `lugha_copy_<type>_box` (v5), default methods → `lugha_fn_<Interface>.<method><Type>` (v5), runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, equality helpers → `lugha_eq_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
+7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, items of a module other than the main file → the module path joined with `/` first (`lugha_fn_shapes/circle/area`, `lugha_fn_shapes/circle/Circle.area`), generic instances → the type arguments as they print, module paths with `/` (`lugha_fn_max<i64>`, `lugha_fn_Stack<string>.push`, `lugha_fn_a/b/max<a/b/Point>`), functions used as values → wrappers `lugha_ref_<symbol>` (v3), closure bodies → `lugha_closure_<enclosing>.<n>` (v3), interface dispatch tables → `lugha_vt_<Type>.<Interface>` with identities `lugha_type_<Type>` and box copies `lugha_copy_<type>_box` (v5), default methods → `lugha_fn_<Interface>.<method><Type>` (v5; a generic interface's arguments go on the interface, `lugha_fn_Source<i64>.skip<Count>`, v6), runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, equality helpers → `lugha_eq_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
 8. **Generated code allocates only through `lugha_rt_alloc`.** Never emit calls to `malloc`. *Why:* Boehm can't see `malloc` memory and will free live objects.
 9. **Follow the milestone order (spec §11).** The lexer and parser cover the full §2–§3 syntax. The checker and codegen implement only the current milestone's subset; in milestones 1–2 treat every value as `i64`. *Why:* each milestone must end in a running program, while syntax is cheap to do once and fully specified.
 10. **The §10 programs are the acceptance tests.** Their stdout and exit codes must match exactly. *Why:* they define "conforming compiler".
@@ -260,10 +260,12 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  E0422), input.rs (args, parse_i64/f64, interpolation), fun_values.rs (function types
 │   │                  and values, calls of values), closures.rs (closure types, captures, E0511), helpers.rs
 │   │                  (xs.map(f) etc. as prelude calls), results.rs (Ok/Err, `?`, E0424), errors/ (mod.rs, names.rs E03xx, types.rs E04xx, places.rs E05xx/W01xx,
-│   │                  generics.rs milestone 11–12 codes, v4.rs v4 codes, v5.rs v5 codes),
+│   │                  generics.rs milestone 11–12 codes, v4.rs v4 codes, v5.rs v5 codes, v6.rs v6 diagnostics),
 │   │                  iface_values.rs (interface types, E0425, conversion, Checked.conversions), iface_calls.rs
 │   │                  (calls on interface values), iface_tables.rs (Checked.interfaces, conversion reachability), type_patterns.rs
-│   │                  (`c: Circle` patterns, E0426), defaults.rs (default methods: `Self`, bodies, instances)
+│   │                  (`c: Circle` patterns, E0426), defaults.rs (default methods: `Self`, bodies, instances),
+│   │                  applied.rs (generic interfaces: `Applied`, items at arguments, bound arguments E0418/E0419),
+│   │                  bound_infer.rs (inferring type arguments through bounds)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
@@ -299,15 +301,15 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m22/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m23/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
-│   └── specs/       — Language v5 Specification.md (the language definition, complete, printed by `lughac spec`);
+│   └── specs/       — Language v6 Specification.md (the language definition, in progress, printed by `lughac spec`);
 │                      Language v6 Draft.md (approved v6 plan, milestones 23–26); Language v5 Draft.md (approved v5 plan, milestones 20–22); Language v4 Draft.md (approved v4 plan, milestones 17–19); v3 and v2 Drafts (past plans);
-│                      Language v4, v3, v2, v1 (v1.2) and v0 Specification.md (frozen)
+│                      Language v5, v4, v3, v2, v1 (v1.2) and v0 Specification.md (frozen)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```
 
@@ -321,7 +323,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them, except the one it names: a value to an interface where one is expected (v5, recorded in `Checked.conversions`). Every other one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (`Self`, generic interfaces, packages, bitwise operators…) even partially. v5 is complete (milestones 20–22); any further language feature is v6 and needs an approved spec change first.
+5. **Never implement a §11 "out of scope" feature** (packages, bitwise operators, `Self` outside interfaces…) even partially, nor a v6 milestone ahead of its turn. v6 (milestones 23–26) follows `Language v6 Draft.md`; anything beyond it needs an approved spec change first.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

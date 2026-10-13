@@ -3072,21 +3072,48 @@ Branch: main
 
 ---
 
-## SESSION 64 — 2026-10-13 — Generic interfaces as bounds (milestone 23, part 1) — open
+## SESSION 64 — 2026-10-13 — Generic interfaces as bounds (milestone 23, part 1) — closed
 Branch: prp-050-generic_interface_bounds
+
+### WHAT WAS DONE
+- Discovery: milestone 23 is two PRPs, bounds then values. PRP-050 written and approved.
+- Parser: interface type parameters, bound arguments.
+- Checker: `Applied` interfaces in bounds, items at arguments, E0418/E0419 on bound arguments, the `interface_params` pass, inference through bounds, generic defaults (`Checked.default_args`), E0418 for a generic interface as a type (until PRP-051).
+- Codegen: default instances of generic interfaces (`lugha_fn_Source<i64>.skip<Count>`).
+- `Language v6 Specification.md` begins (in progress: milestone 23); v5 frozen.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/applied.rs`, `src/check/bound_infer.rs`, `src/check/errors/v6.rs`, `tests/programs/m23/` (`bounds`, `modules/`, `e0422`, `e0418`), `docs/specs/Language v6 Specification.md`.
+- Modified: `src/ast/header.rs`, `src/parser/{interface.rs,sexp/item.rs}`, `src/check/{interfaces,generics,methods,structs,enums,satisfy,bounds,defaults,instances,infer,iface_values,iface_tables,type_patterns,mod}.rs`, `src/check/{errors,modules}/mod.rs`, `src/codegen/{instances,defaults,lower}.rs`, `src/lib.rs`, `tests/cli.rs`.
+- Docs: PRP-050, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 60, CONTEXT.
+
+### TESTS WRITTEN
+- Parser: interface type parameters and bound arguments.
+- Checker (`applied.rs`): declarations, bounds (E0418, E0305, E0419, E0423), calls through bounds, satisfaction with substituted help, not-yet-a-type; (`bound_infer.rs`): inference from methods, chains, E0412, E0422, a caller's bound; (`defaults.rs`): generic defaults' instances and body typing.
+- Codegen (`defaults.rs`): `lugha_fn_Source<i64>.skip<Count>` defined and called.
+- `tests/programs/m23/`; `lughac spec` title. Earlier programs' IR compared with `main`: byte-identical. `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 60.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-050 waits for the user's merge OK.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v6 draft approved** (`docs/specs/Language v6 Draft.md`, MEMORY 59): generic interfaces, iterators, `Self`, converting between interfaces — milestones 23–26. `main` has v5 complete (tags `m22`, `v5`); `Language v5 Specification.md` is what `lughac spec` prints until milestone 23 starts `Language v6 Specification.md`.
+**Milestone 23, part 1 done** (PRP-050, MEMORY 60): generic interfaces as bounds — `interface Source<T>`, `S: Source<T>`, inference through bounds, generic defaults. `Language v6 Specification.md` (in progress) is what `lughac spec` prints; v5 is frozen.
 
-Next: **milestone 23, generic interfaces** — discovery and PRP-050. Scope (v6 draft §3, §4 "Generic interfaces", §9 symbols, §10 "Generic interfaces"):
-- `interface I<T>` (bounded parameters, E0419 at use), `I` written without arguments is E0418;
-- bounds with arguments (`S: Source<T>`), and inference of `T` from the concrete type's methods (E0412);
-- generic interface values (`Source<i64>`), tables `lugha_vt_Count.Source<i64>`; defaults of generic interfaces `lugha_fn_Source<i64>.skip<Count>`;
-- likely two PRPs (checking, then compiling), as for milestone 20.
+Next: **PRP-051, generic interface values** (completes milestone 23, tag `m23`). Scope (v6 draft §4 "As a value type", §9, §10 "Generic interfaces"):
+- `Type::Interface` gains arguments (`Source<i64>`); lift the "can't be a value type yet" E0418 (`errors/v6.rs`, `iface_values.rs::no_type_args`);
+- conversion, dynamic calls and copies at the substituted signatures; `Checked.interfaces` per applied interface; tables `lugha_vt_Count.Source<i64>`, copies mangled with arguments;
+- type patterns and `?` conversion with generic interface types; default slots `lugha_fn_Source<i64>.skip<Count>`;
+- fold the §10 generic-interfaces program into the spec (it needs values).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `codegen/control.rs` (292), `check/infer.rs` (291).
+Watch file sizes: `codegen/copy.rs` (300), `check/env.rs` (300), `check/satisfy.rs` (294), `check/infer.rs` (293), `parser/expr.rs` (298), `ast/mod.rs` (298), `check/errors/types.rs` (297), `check/array.rs` (297), `codegen/control.rs` (292).
 
 See `TODO.md`.

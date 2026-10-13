@@ -1,0 +1,8 @@
+error[E0422]: `Count` doesn't satisfy `Source<string>`
+   --> tests/programs/m23/e0422.la:16:13
+   |
+16 |     println(words(Count { n: 1 }));
+   |             ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: `next` should be `fun next(mut self): Option<string>`
+

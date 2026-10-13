@@ -1,0 +1,92 @@
+// Generic interfaces as bounds (milestone 23): `S: Source<T>` with `T`
+// inferred from the concrete type's methods, defaults per (type, T).
+
+interface Source<T> {
+    fun next(mut self): Option<T>;
+    fun skip(mut self): bool = self.next().is_some();
+}
+
+struct Count { n: i64, end: i64 }
+
+impl Count {
+    fun next(mut self): Option<i64> {
+        if self.n == self.end {
+            return None;
+        }
+        self.n += 1;
+        Some(self.n)
+    }
+}
+
+struct Words { xs: string[], at: i64 }
+
+impl Words {
+    fun next(mut self): Option<string> {
+        if self.at == self.xs.len {
+            return None;
+        }
+        self.at += 1;
+        Some(self.xs[self.at - 1])
+    }
+
+    // Its own `skip` replaces the default: it skips two words.
+    fun skip(mut self): bool {
+        self.at += 2;
+        self.at <= self.xs.len
+    }
+}
+
+struct Repeat<T> { x: T, left: i64 }
+
+impl Repeat<T> {
+    fun next(mut self): Option<T> {
+        if self.left == 0 {
+            return None;
+        }
+        self.left -= 1;
+        Some(self.x)
+    }
+}
+
+fun collect<T, S: Source<T>>(src: S): T[] {
+    let mut s = src;
+    let mut out: T[] = [];
+    let mut more = true;
+    while more {
+        match s.next() {
+            Some(x) => { out.push(x); }
+            None => { more = false; }
+        }
+    }
+    out
+}
+
+fun after_one<T, S: Source<T>>(src: S): T[] {
+    let mut s = src;
+    s.skip();
+    collect(s)
+}
+
+interface Holder<S> {
+    fun source(self): S;
+}
+
+struct Box { c: Count }
+
+impl Box {
+    fun source(self): Count = self.c;
+}
+
+// `T` comes from `S`, which comes from `H`.
+fun unpack<T, S: Source<T>, H: Holder<S>>(h: H): T[] = collect(h.source());
+
+fun main() {
+    let ns = collect(Count { n: 0, end: 3 });
+    println("{ns.len} {ns[0]} {ns[2]}");
+    println(collect(Words { xs: ["a", "b", "c"], at: 0 }).join("-"));
+    println(collect(Repeat { x: 1.5, left: 2 }).len);
+    println(after_one(Count { n: 0, end: 3 }).len);
+    println(after_one(Words { xs: ["a", "b", "c"], at: 0 }).join("-"));
+    println(after_one(Repeat { x: "r", left: 3 }).join(""));
+    println(unpack(Box { c: Count { n: 5, end: 7 } })[1]);
+}

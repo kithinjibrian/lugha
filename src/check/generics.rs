@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use super::applied::Applied;
 use super::{Checker, Type, errors};
 use crate::ast::{AppliedType, Ident, Item, TypeParam};
 use crate::span::Span;
@@ -10,7 +11,7 @@ use crate::span::Span;
 pub(crate) struct Bounds {
     pub eq: bool,
     pub ord: bool,
-    pub interfaces: Vec<String>,
+    pub interfaces: Vec<Applied>,
 }
 
 /// A declared type parameter: its name and bounds.
@@ -47,13 +48,23 @@ pub(super) fn params(generics: &[Generic]) -> Vec<Type> {
 }
 
 /// A declaration's parameters under the names an `impl` gives them
-/// (`impl Stack<U>`); bounds stay those of the declaration.
+/// (`impl Stack<U>`); bounds stay those of the declaration, their
+/// interface arguments renamed too (v6).
 pub(super) fn renamed(declared: &[Generic], names: &[Ident]) -> Vec<Generic> {
+    let to: Vec<Type> = names.iter().map(|n| Type::Param(n.name.clone())).collect();
     let named = declared.iter().zip(names);
     named
         .map(|(g, n)| Generic {
             name: n.name.clone(),
-            bounds: g.bounds.clone(),
+            bounds: Bounds {
+                interfaces: g
+                    .bounds
+                    .interfaces
+                    .iter()
+                    .map(|a| a.subst(declared, &to))
+                    .collect(),
+                ..g.bounds.clone()
+            },
         })
         .collect()
 }
@@ -94,14 +105,8 @@ impl Checker {
     /// Type parameters as written, before any checks: names and the
     /// bounds that name `Eq`, `Ord` or an interface (pass 1 needs them
     /// before every type is known; interfaces are collected first).
-    pub(super) fn generics(&self, params: &[TypeParam]) -> Vec<Generic> {
-        params
-            .iter()
-            .map(|p| Generic {
-                name: p.name.name.clone(),
-                bounds: self.bounds_of(p),
-            })
-            .collect()
+    pub(super) fn generics(&mut self, params: &[TypeParam]) -> Vec<Generic> {
+        self.generics_with(params, &[])
     }
 
     /// A function's parameters, now in scope for its signature (checked:
@@ -111,8 +116,8 @@ impl Checker {
             self.type_params.clear();
             return Vec::new();
         };
-        self.check_params(&f.type_params, &[]);
         self.type_params = self.generics(&f.type_params);
+        self.check_params(&f.type_params, &[]);
         self.type_params.clone()
     }
 
@@ -150,7 +155,12 @@ impl Checker {
             span,
         };
         if let Some(ty) = self.interface_type(None, &ident, span) {
-            return ty;
+            let applied = AppliedType {
+                module: None,
+                name: ident,
+                args: Vec::new(),
+            };
+            return self.no_type_args(ty, &applied, span);
         }
         let Some(key) = self.type_key(None, &ident, span) else {
             return Type::Error;

@@ -1,0 +1,9 @@
+// Generic interfaces are bounds only until milestone 23's second half.
+
+interface Source<T> {
+    fun next(mut self): Option<T>;
+}
+
+fun first(s: Source<i64>): i64 = 0;
+
+fun main() {}

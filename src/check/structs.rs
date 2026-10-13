@@ -60,7 +60,10 @@ impl Checker {
             {
                 continue; // a duplicate, already reported
             }
-            self.type_params = self.structs[&key].generics.clone();
+            // Again now every type is known: bounds' arguments may name them (v6).
+            let generics = self.generics(&s.type_params);
+            self.structs.get_mut(&key).expect("collected").generics = generics.clone();
+            self.type_params = generics;
             self.check_params(&s.type_params, &[]);
             let mut fields: Vec<(String, Type)> = Vec::new();
             for (i, field) in s.fields.iter().enumerate() {

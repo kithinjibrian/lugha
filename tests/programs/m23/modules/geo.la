@@ -1,0 +1,24 @@
+// An interface with a type parameter, used from the main file as `geo.Source<T>`.
+
+interface Source<T> {
+    fun next(mut self): Option<T>;
+    fun count(mut self): i64 {
+        let mut n = 0;
+        while self.next().is_some() {
+            n += 1;
+        }
+        n
+    }
+}
+
+struct Letters { s: string, at: i64 }
+
+impl Letters {
+    fun next(mut self): Option<u8> {
+        if self.at == self.s.len {
+            return None;
+        }
+        self.at += 1;
+        Some(self.s[self.at - 1])
+    }
+}

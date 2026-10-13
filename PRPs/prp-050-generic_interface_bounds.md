@@ -142,54 +142,54 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — parser (`parser/interface.rs`):
-- [ ] `interface Source<T: Eq> { fun next(mut self): Option<T>; }` and `fun f<T, S: Source<T> + geo.Sink<T[]>>(s: S)` parse and print.
+- [x] `interface Source<T: Eq> { fun next(mut self): Option<T>; }` and `fun f<T, S: Source<T> + geo.Sink<T[]>>(s: S)` parse and print.
 
 Unit tests — checker (new `check/bound_infer.rs`; `check/interfaces.rs` and `satisfy.rs` for the rest):
-- [ ] **Declarations:**
+- [x] **Declarations:**
   - items use the interface's parameters;
   - `interface I<T, T>` and `interface I<Self>` are E0316;
   - an unknown type in an item is E0305.
-- [ ] **Bounds:**
+- [x] **Bounds:**
   - `S: Source<i64>` and `S: Source<T>` check;
   - `S: Source` and `S: Source<i64, i64>` are E0418;
   - `S: Sorted<Point>`, with `interface Sorted<T: Ord>`, is E0419;
   - `S: Source<i64> + Source<string>` is E0423.
-- [ ] **Calls through bounds:** `s.next()` has type `Option<T>` with the bound's arguments, and `x.next()` with `S: Source<i64>` gives `Option<i64>`.
-- [ ] **Satisfaction:**
+- [x] **Calls through bounds:** `s.next()` has type `Option<T>` with the bound's arguments, and `x.next()` with `S: Source<i64>` gives `Option<i64>`.
+- [x] **Satisfaction:**
   - `Count` satisfies `Source<i64>`;
   - `Count` doesn't satisfy `Source<string>`: E0422, whose help shows the substituted signature;
   - a generic `Repeat<T>` satisfies `Source<T>` at each instance;
   - a parameter `U: Source<i64>` satisfies `Source<i64>`.
-- [ ] **Inference:**
+- [x] **Inference:**
   - `collect(Count {…})` gives `T = i64`;
   - inference chains (`T` from `S`, then `U` from `T`);
   - a parameter in no argument and no bound is E0412;
   - `first<T, S: Source<T>>(s: S, d: T)` called with `d = "x"` on a `Count` is E0422.
-- [ ] **Defaults:**
+- [x] **Defaults:**
   - a default of a generic interface checks with `self.next()` typed `Option<T>`;
   - a call through a bound reaches the instance `Source.skip` with `[Count, i64]`.
-- [ ] **Not yet a type:** `let s: Source<i64> = …` and `fun f(s: Source<i64>)` are E0418 with the "not a value type yet" message, and a bare `Source` is E0418.
+- [x] **Not yet a type:** `let s: Source<i64> = …` and `fun f(s: Source<i64>)` are E0418 with the "not a value type yet" message, and a bare `Source` is E0418.
 
 Unit tests — codegen (`codegen/instances.rs`):
-- [ ] A generic interface's default called through a bound defines `lugha_fn_Source<i64>.skip<Count>`.
+- [x] A generic interface's default called through a bound defines `lugha_fn_Source<i64>.skip<Count>`.
 
 Acceptance — `tests/programs/m23/`:
-- [ ] `bounds.la`:
+- [x] `bounds.la`:
   - `collect` over `Count` and `Words`;
   - a default method of a generic interface, overridden by one type and inherited by another;
   - a generic `Repeat<T>` source;
   - inference chained through two bounds.
-- [ ] `modules/` (a directory case): an interface `geo.Source<T>` from another module, used as `S: geo.Source<T>`.
-- [ ] Reject goldens:
+- [x] `modules/` (a directory case): an interface `geo.Source<T>` from another module, used as `S: geo.Source<T>`.
+- [x] Reject goldens:
   - `e0422.la`: `Count` passed where `S: Source<string>` is needed;
   - `e0418.la`: a generic interface as a value type.
 
 Spec and CLI:
-- [ ] `lughac spec` starts with `# Lugha v6 Specification` (`tests/cli.rs`).
-- [ ] The v5 §10 programs still pass through the new spec (`tests/spec.rs`).
+- [x] `lughac spec` starts with `# Lugha v6 Specification` (`tests/cli.rs`).
+- [x] The v5 §10 programs still pass through the new spec (`tests/spec.rs`).
 
 Regression:
-- [ ] Every earlier test passes, and programs without generic interfaces give byte-identical IR.
+- [x] Every earlier test passes, and programs without generic interfaces give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -197,10 +197,10 @@ Regression:
 - To abandon: delete the branch. `main` stays at v5.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The `m23/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] `Language v6 Specification.md` begins (in progress: milestone 23); docs updated.
-- [ ] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The `m23/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] `Language v6 Specification.md` begins (in progress: milestone 23); docs updated.
+- [x] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -209,3 +209,13 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m23/bounds.la
 ```
+
+## AMENDMENTS (during build, session 64)
+
+- **Struct and enum bounds are recomputed in pass 2.** Bound arguments can name types that pass 1 hasn't collected yet, so `bounds_of` resolves them quietly (`Checker::quietly`), and `resolve_structs`/`resolve_enums` rebuild their generics once every type is known. Interface parameter bounds come from a new pass, `interface_params`, after `collect_enums`.
+- **`Checked.default_args`** (a new side table): a bound call that may reach a generic interface's default records the interface's arguments, in the caller's parameters. Codegen substitutes them to name the instance. The callee key alone couldn't say which `Source<X>` instance to call.
+- **S-expressions:** interface parameters print as `(type-params …)`, as for structs: `(interface Source (type-params (T Eq)) …)`.
+- **`impl` parameter renaming** (`generics::renamed`) also renames bound arguments, so `impl W<A, B>` keeps `B: Source<A>`.
+- **New error constructor** `errors/v6.rs::generic_interface_value` (E0418), removed by PRP-051.
+- **`-O2`** was checked by hand for `m23/bounds`.
+- **No file splits.**

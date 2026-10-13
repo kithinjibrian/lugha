@@ -1,9 +1,11 @@
 //! Default methods (v5 draft §4, milestone 22): an interface method with a
 //! body is a generic method of the interface, `<Interface>.<method>`, with
-//! one hidden type parameter `Self` bounded by the interface. Its body is
-//! checked once; each type that uses it gets an instance.
+//! one hidden type parameter `Self` bounded by the interface, then the
+//! interface's own parameters (v6). Its body is checked once; each type
+//! (and argument list) that uses it gets an instance.
 
-use super::generics::{Bounds, Generic};
+use super::applied::Applied;
+use super::generics::{Bounds, Generic, params, subst};
 use super::instances::Instance;
 use super::interfaces::Requirement;
 use super::methods::Method;
@@ -15,12 +17,17 @@ pub const SELF: &str = "Self";
 
 impl Checker {
     /// Registers the default methods among `items` of interface `key` as its
-    /// methods, generic over `Self: key`, so bodies, calls and instances
-    /// work as for any generic method.
+    /// methods, generic over `Self: key<P…>` and then the interface's
+    /// parameters `P…`, so bodies, calls and instances work as for any
+    /// generic method.
     pub(super) fn register_defaults(&mut self, key: &str, items: &[Requirement]) {
+        let own = self.interface_generics(key);
         for r in items.iter().filter(|r| r.default.is_some()) {
             let bounds = Bounds {
-                interfaces: vec![key.to_string()],
+                interfaces: vec![Applied {
+                    key: key.to_string(),
+                    args: params(&own),
+                }],
                 ..Bounds::default()
             };
             let method = Method {
@@ -28,11 +35,15 @@ impl Checker {
                 params: r.params.clone(),
                 ret: r.ret.clone(),
                 span: r.span,
-                generics: vec![Generic {
-                    name: SELF.to_string(),
-                    bounds,
-                }],
-                outer: 1,
+                generics: [
+                    vec![Generic {
+                        name: SELF.to_string(),
+                        bounds,
+                    }],
+                    own.clone(),
+                ]
+                .concat(),
+                outer: 1 + own.len(),
                 key: format!("{key}.{}", r.name),
             };
             let methods = self.methods.entry(key.to_string()).or_default();
@@ -61,10 +72,15 @@ impl Checker {
 
     /// A call through a bound of a method that has a default: codegen falls
     /// back to the default's instance for a type without its own method.
-    pub(super) fn default_callee(&mut self, call: &Expr, req: &Requirement) {
+    /// `args` are the bound's interface arguments (v6), recorded for a
+    /// generic interface.
+    pub(super) fn default_callee(&mut self, call: &Expr, req: &Requirement, args: Vec<Type>) {
         if let Some(interface) = &req.default {
             let key = format!("{interface}.{}", req.name);
             self.callees.insert(call.id, key);
+            if !args.is_empty() {
+                self.default_args.insert(call.id, args);
+            }
         }
     }
 
@@ -88,10 +104,12 @@ impl Checker {
     }
 
     /// The default's instance a call of `name` through `param` reaches when
-    /// `param` is `concrete`, a type without its own `name`.
+    /// `generics` are `args` and `param` is `concrete`, a type without its
+    /// own `name`: its arguments are `concrete` and the bound's (v6).
     pub(super) fn default_target(
         &self,
         generics: &[Generic],
+        args: &[Type],
         param: &str,
         name: &str,
         concrete: &Type,
@@ -108,13 +126,14 @@ impl Checker {
             return None;
         }
         let bounds = &generics.iter().find(|g| g.name == param)?.bounds;
-        let interface = bounds.interfaces.iter().find(|key| {
-            let items = &self.interfaces[*key].items;
+        let interface = bounds.interfaces.iter().find(|a| {
+            let items = &self.interfaces[&a.key].items;
             items.iter().any(|r| r.name == name && r.default.is_some())
         })?;
+        let own = interface.args.iter().map(|a| subst(a, generics, args));
         Some(Instance {
-            key: format!("{interface}.{name}"),
-            args: vec![concrete.clone()],
+            key: format!("{}.{name}", interface.key),
+            args: std::iter::once(concrete.clone()).chain(own).collect(),
         })
     }
 }
@@ -208,5 +227,25 @@ mod tests {
             bound.contains(&"Error.report[Struct(\"Plain\", [])]".to_string()),
             "{bound:?}"
         );
+    }
+
+    #[test]
+    fn a_generic_interfaces_default_is_generic_over_its_parameters_too() {
+        let source = "interface Source<T> {\n\
+                fun next(mut self): Option<T>;\n\
+                fun first(mut self, d: T): T = match self.next() { Some(x) => x, None => d };\n\
+            }\n\
+            struct Count { n: i64 }\n\
+            impl Count { fun next(mut self): Option<i64> = Some(self.n); }\n\
+            fun pick<T, S: Source<T>>(s: S, d: T): T { let mut t = s; t.first(d) }\n";
+        let found = monos(&format!(
+            "{source}fun main() {{ let n = pick(Count {{ n: 1 }}, 0); }}"
+        ));
+        assert!(
+            found.contains(&"Source.first[Struct(\"Count\", []), I64]".to_string()),
+            "{found:?}"
+        );
+        let wrong = "interface Source<T> { fun next(mut self): Option<T>; fun bad(mut self): i64 = self.next(); }\nfun main() {}";
+        assert_eq!(errors(wrong), [("E0403", "self.next()")]);
     }
 }

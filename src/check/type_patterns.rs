@@ -40,7 +40,7 @@ impl Checker {
             Type::Interface(_) => Some((format!("`{found}` is an interface; {concrete}"), None)),
             Type::Param(_) => Some((format!("`{found}` is a type parameter; {concrete}"), None)),
             _ => {
-                let unmet = self.unmet(&found, key);
+                let unmet = self.unmet(&found, &super::applied::Applied::plain(key));
                 let message =
                     format!("`{found}` doesn't satisfy `{ty}`, so this arm can never match");
                 (!unmet.is_empty()).then(|| (message, Some(unmet.join("; "))))

@@ -8,10 +8,12 @@
 //! Depends on: ast, diagnostic, span.
 
 mod access;
+mod applied;
 mod arguments;
 mod array;
 mod assign;
 mod body;
+mod bound_infer;
 mod bounds;
 mod builtins;
 mod call;
@@ -104,6 +106,9 @@ pub struct Checked {
     /// The operands of `?` whose error converts to an interface error, with
     /// that interface type (v5).
     pub try_conversions: HashMap<ExprId, Type>,
+    /// Calls through a bound whose callee may be a generic interface's
+    /// default (v6): the interface's arguments, in the caller's parameters.
+    pub default_args: HashMap<ExprId, Vec<Type>>,
 }
 
 /// Type-checks `program`, a program of one file, returning the type table
@@ -146,6 +151,7 @@ impl Checker {
             captures: HashMap::new(),
             conversions: HashMap::new(),
             try_conversions: HashMap::new(),
+            default_args: HashMap::new(),
             owner: String::new(),
             uses: Vec::new(),
             body_types: HashMap::new(),
@@ -235,6 +241,8 @@ pub(super) struct Checker {
     conversions: HashMap<ExprId, Type>,
     /// See `Checked::try_conversions`.
     try_conversions: HashMap<ExprId, Type>,
+    /// See `Checked::default_args`.
+    default_args: HashMap<ExprId, Vec<Type>>,
     /// The key of the function or method whose body is being checked.
     owner: String,
     /// Every generic call, with the body it is in (PRP-036).

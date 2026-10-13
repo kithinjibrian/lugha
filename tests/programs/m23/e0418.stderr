@@ -1,0 +1,8 @@
+error[E0418]: generic interface `Source` can't be a value type yet
+  --> tests/programs/m23/e0418.la:7:14
+  |
+7 | fun first(s: Source<i64>): i64 = 0;
+  |              ^^^^^^^^^^^
+  |
+  = help: use it as a bound: `<S: Source<…>>`
+

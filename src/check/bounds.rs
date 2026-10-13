@@ -20,8 +20,10 @@ impl Checker {
                 self.report(errors::unmet_bound(arg, bound, span));
                 return false;
             }
-            for key in &g.bounds.interfaces {
-                if !self.satisfies(arg, key, span) {
+            for interface in &g.bounds.interfaces {
+                // A bound's arguments may name the other parameters (v6).
+                let interface = interface.subst(generics, args);
+                if !self.satisfies(arg, &interface, span) {
                     return false;
                 }
             }

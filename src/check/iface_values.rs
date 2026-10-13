@@ -33,15 +33,23 @@ impl Checker {
         Some(Type::Interface(key))
     }
 
-    /// `ty` for an interface written with type arguments: interfaces have
-    /// none in v5, so any is E0418.
+    /// `ty` for an interface written with type arguments: E0418 unless
+    /// their count is the interface's, and for a generic interface, which
+    /// isn't a value type yet (v6, PRP-051).
     pub(super) fn no_type_args(&mut self, ty: Type, applied: &AppliedType, span: Span) -> Type {
-        if applied.args.is_empty() || ty == Type::Error {
-            return ty;
+        let Type::Interface(key) = &ty else { return ty };
+        let expected = self.interface_generics(key).len();
+        let name = &applied.name.name;
+        if applied.args.len() != expected {
+            let d = errors::type_args(name, expected, applied.args.len(), span);
+            self.report(d);
+            return Type::Error;
         }
-        let d = errors::type_args(&applied.name.name, 0, applied.args.len(), span);
-        self.report(d);
-        Type::Error
+        if expected > 0 {
+            self.report(errors::generic_interface_value(name, span));
+            return Type::Error;
+        }
+        ty
     }
 
     /// The type `expr` has for its context, given `ty`, the type it was
@@ -67,7 +75,7 @@ impl Checker {
                 self.report(d);
                 Type::Error
             }
-            _ if self.satisfies(&ty, key, expr.span) => {
+            _ if self.satisfies(&ty, &super::applied::Applied::plain(key), expr.span) => {
                 self.conversions.insert(expr.id, wanted.clone());
                 self.conversion_uses(expr, &ty, key);
                 wanted.clone()
