@@ -2774,7 +2774,7 @@ Branch: prp-043-text_helpers
 
 ---
 
-## SESSION 55 — 2026-10-13 — Input and output (milestone 19) — open
+## SESSION 55 — 2026-10-13 — Input and output (milestone 19) — closed
 
 Branch: prp-044-input_output
 
@@ -2813,22 +2813,26 @@ Branch: prp-044-input_output
 
 - None.
 
+### STILL OPEN AT CLOSE
+
+- Nothing. Branch `prp-044-input_output` fast-forward merged into `main` and deleted; tags `m19` and `v4`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 18 is complete** (tag `m18`; MEMORY 51). `lughac spec` prints `Language v4 Specification.md` (in progress: milestone 18).
+**Lugha v4 is complete** (tags `m19` and `v4`). Milestones 17–19 are done:
+- `Result` and `?`;
+- text and option helpers;
+- input and output (MEMORY 50–52).
 
-Next is **milestone 19, input and output**, the last v4 milestone (`Language v4 Draft.md`: decision 5, §5 intrinsics, §9 runtime and tests, the §10 reading-input program). It covers:
-- `read_line(): Option<string>`;
-- `read_file`, `write_file`, `append_file` returning `Result<…, string>`;
-- `eprint`/`eprintln`, which flush stdout first;
-- `exit(i32)`;
-- `<name>.stdin` for the runner, and a scratch directory for file-writing tests;
-- "Run with … on stdin" in the §10 extractor.
+`Language v4 Specification.md` is final and is what `lughac spec` prints.
 
-**Must also fix** (TODO): the draft's §10 reading-input program uses `Some(n) => total += n,`, which isn't valid.
+There is no planned work. Possible next directions, each needing discovery, a v5 spec change and a PRP:
+- the v4 spec's §11 out-of-scope list: interface values and dynamic dispatch, packages with `public`, bitwise operators and more integer types, or-patterns and `mut` match bindings, binary and directory I/O, error conversion in `?`;
+- a recurring friction point: E0111 forbids string literals inside `{…}`, which tripped test writing in three milestones;
+- open questions such as printing generic values.
 
-When this is done, the v4 spec is complete: tags `m19` and `v4`. Start with discovery for PRP-044.
+Housekeeping is also possible.
 
 See `TODO.md`.

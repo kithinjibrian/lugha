@@ -1,6 +1,6 @@
 ## FEATURE: Input and output — stdin lines, text files, stderr and `exit`; v4 complete.
 
-**Status:** approved 2026-10-13 — session 55
+**Status:** merged 2026-10-13 — session 55
 **Milestone:** 19 (one PRP; completes milestone 19 and the v4 spec, tags `m19` and `v4`)
 **Spec:** `Language v4 Draft.md`:
 - decision 5;
