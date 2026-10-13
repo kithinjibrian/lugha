@@ -1,0 +1,19 @@
+fun main() {
+    let mut total = 0;
+    let mut bad: string[] = [];
+    let mut lines = 0;
+    while true {
+        match read_line() {
+            Some(line) => {
+                lines += 1;
+                match parse_i64(line.trim()) {
+                    Some(n) => { total += n; }
+                    None => { bad.push(line); }
+                }
+            }
+            None => { break; }
+        }
+    }
+    println("{lines} lines, total {total}");
+    println("bad: " + bad.join("|"));
+}

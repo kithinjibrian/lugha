@@ -129,10 +129,10 @@ Done when the results program passes.
 Done when the text-helpers program passes.
 - [x] PRP-043: string helpers, `join`, `Option`/`Result` helpers (prelude), built-in `slice`; prelude functions compile only when reached
 
-### Milestone 19 — Input and output
+### Milestone 19 — Input and output ✅
 Done when the reading-input program passes and the v4 spec is complete.
-- [ ] `read_line`, `read_file`, `write_file`, `append_file`, `eprint`/`eprintln`, `exit`; stdin and scratch directories in the runner
-- [ ] Fix the draft's §10 reading-input program: `Some(n) => total += n,` isn't valid Lugha (assignment is a statement; it needs `{ total += n; }`). Found in session 53.
+- [x] PRP-044: `read_line`, `read_file`, `write_file`, `append_file`, `eprint`/`eprintln`, `exit`; `.stdin` and `.scratch` in the runner — v4 complete
+- [x] Fix the draft's §10 reading-input program: `Some(n) => total += n,` isn't valid Lugha (assignment is a statement; it needs `{ total += n; }`). Found in session 53.
 
 ## Found while working — needs a PRP
 

@@ -167,7 +167,7 @@ fun main() {
 }
 ```
 
-**Reading input** (milestone 19). Run with `5`, `7` and `x` on three lines of stdin. Prints `12` then `skipped 1` on two lines, exits with 0.
+**Reading input** (milestone 19). Run with `5`, `7` and `x` on three lines of stdin. Prints `12` then `skipped 1` on two lines, exits with 0. (Corrected by PRP-044: assignment and `break` are statements, so these arms need braces.)
 
 ```
 fun main() {
@@ -176,10 +176,10 @@ fun main() {
     while true {
         match read_line() {
             Some(line) => match parse_i64(line.trim()) {
-                Some(n) => total += n,
-                None => skipped += 1,
+                Some(n) => { total += n; }
+                None => { skipped += 1; }
             },
-            None => break,
+            None => { break; }
         }
     }
     println(total);
@@ -214,5 +214,5 @@ fun main() {
 
 - [x] **Error conversion with `?`:** v4 requires the same `E`. Resolved (PRP-042): kept until interfaces can describe conversions.
 - [x] **`lines()` and `\r`:** a trailing `\r` is stripped from each line, so Windows files read naturally. Resolved (PRP-043): yes.
-- [ ] **Very large files:** `read_file` reads the whole file into memory. Proposed: fine for v4; streaming waits.
-- [ ] **`exit` and buffered output:** stdout is flushed, and stderr is unbuffered. Proposed: yes.
+- [x] **Very large files:** `read_file` reads the whole file into memory. Resolved (PRP-044): fine for v4; streaming waits.
+- [x] **`exit` and buffered output:** stdout is flushed, and stderr is unbuffered. Resolved (PRP-044): yes.

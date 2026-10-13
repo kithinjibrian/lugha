@@ -106,15 +106,20 @@ impl Checker {
         if name == "swap" {
             return self.swap(call, args);
         }
-        if super::input::INPUT.contains(&name) {
+        // `eprint`/`eprintln` follow the `print`/`println` rules below (v4).
+        if super::input::INPUT.contains(&name) && !name.starts_with("eprint") {
             return self.input_intrinsic(call, name, args);
         }
         let result = match name {
-            "print" | "println" => Type::Void,
+            "print" | "println" | "eprint" | "eprintln" => Type::Void,
             "to_string" => Type::String,
             _ => Type::Never,
         };
-        let allowed = if name == "println" { 0..=1 } else { 1..=1 };
+        let allowed = if name.ends_with("println") {
+            0..=1
+        } else {
+            1..=1
+        };
         if !allowed.contains(&args.len()) {
             self.report(errors::arity(name, 1, args.len(), call.span));
             self.unchecked_args(args);
@@ -125,7 +130,9 @@ impl Checker {
         };
         let ty = self.value(arg, None);
         let fits = match name {
-            "print" | "println" => ty.is_numeric() || matches!(ty, Type::Bool | Type::String),
+            "print" | "println" | "eprint" | "eprintln" => {
+                ty.is_numeric() || matches!(ty, Type::Bool | Type::String)
+            }
             "to_string" => ty.is_numeric() || ty == Type::Bool,
             _ => ty == Type::String,
         };

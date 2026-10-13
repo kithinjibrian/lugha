@@ -95,7 +95,7 @@ mod tests {
             name: name.to_string(),
             path: PathBuf::from(name),
             mode,
-            args: Vec::new(),
+            extras: Default::default(),
         }
     }
 

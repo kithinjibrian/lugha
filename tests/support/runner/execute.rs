@@ -8,30 +8,54 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use super::{Case, Mode, Outcome};
+use crate::support::fixture::Fixture;
 
 /// Runs `lughac run` (run mode) or `lughac check` (reject mode) on one case.
 ///
 /// The program path is passed relative to `workdir`, so diagnostics show
 /// `tests/programs/...` rather than an absolute path.
 pub fn run_case(lughac: &Path, workdir: &Path, case: &Case, timeout: Duration) -> Outcome {
+    let (cmd, _scratch) = case_command(lughac, workdir, case);
+    run_with_stdin(cmd, timeout, case.extras.stdin.as_deref())
+}
+
+/// The command for `case`, and the scratch directory it runs in, if any
+/// (PRP-044), which is removed when dropped: keep it until the run ends.
+fn case_command(lughac: &Path, workdir: &Path, case: &Case) -> (Command, Option<Fixture>) {
     let subcommand = match case.mode {
         Mode::Run { .. } => "run",
         Mode::Reject { .. } => "check",
     };
-    let arg = case.path.strip_prefix(workdir).unwrap_or(&case.path);
     let mut cmd = Command::new(lughac);
-    cmd.arg(subcommand).arg(arg).current_dir(workdir);
-    if !case.args.is_empty() {
-        cmd.arg("--").args(&case.args);
+    let scratch = case.extras.scratch.then(Fixture::new);
+    match &scratch {
+        Some(dir) => cmd.arg(subcommand).arg(&case.path).current_dir(dir.path()),
+        None => {
+            let arg = case.path.strip_prefix(workdir).unwrap_or(&case.path);
+            cmd.arg(subcommand).arg(arg).current_dir(workdir)
+        }
+    };
+    if !case.extras.args.is_empty() {
+        cmd.arg("--").args(&case.extras.args);
     }
-    run_command(cmd, timeout)
+    (cmd, scratch)
 }
 
-/// Runs `cmd` with null stdin, capturing stdout and stderr, killing it after `timeout`.
-pub fn run_command(mut cmd: Command, timeout: Duration) -> Outcome {
+/// Runs `cmd` with an empty stdin, capturing stdout and stderr, killing it after `timeout`.
+pub fn run_command(cmd: Command, timeout: Duration) -> Outcome {
+    run_with_stdin(cmd, timeout, None)
+}
+
+/// `run_command`, with `stdin` (if any) fed to the process.
+pub fn run_with_stdin(mut cmd: Command, timeout: Duration, stdin: Option<&[u8]>) -> Outcome {
     // Own process group, so a timeout also kills what it spawned (`lughac run`
     // starts the compiled program; a surviving child would hold the pipes open).
-    cmd.stdin(Stdio::null())
+    let input = if stdin.is_some() {
+        Stdio::piped()
+    } else {
+        Stdio::null()
+    };
+    cmd.stdin(input)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .process_group(0);
@@ -49,6 +73,14 @@ pub fn run_command(mut cmd: Command, timeout: Duration) -> Outcome {
             buf
         })
     };
+    if let (Some(bytes), Some(mut pipe)) = (stdin, child.stdin.take()) {
+        let bytes = bytes.to_vec();
+        // A thread, so a program that stops reading can't block the runner;
+        // a write error only means it stopped reading early.
+        thread::spawn(move || {
+            let _ = std::io::Write::write_all(&mut pipe, &bytes);
+        });
+    }
     let out = drain(child.stdout.take().map(|p| Box::new(p) as _));
     let err = drain(child.stderr.take().map(|p| Box::new(p) as _));
 
@@ -102,5 +134,39 @@ mod tests {
         let mut cmd = Command::new("sh");
         cmd.args(["-c", "printf out; printf err >&2; exit 3"]);
         assert_eq!(run_command(cmd, DEFAULT_TIMEOUT), exited("out", "err", 3));
+    }
+
+    #[test]
+    fn stdin_is_fed_to_the_process() {
+        let cmd = Command::new("cat");
+        let outcome = run_with_stdin(cmd, DEFAULT_TIMEOUT, Some(b"5\n7\n"));
+        assert_eq!(outcome, exited("5\n7\n", "", 0));
+    }
+
+    #[test]
+    fn a_scratch_case_runs_in_a_directory_that_is_removed() {
+        use crate::support::runner::{Case, Mode, args::Extras};
+        let case = Case {
+            name: "p.la".into(),
+            path: "/nonexistent/p.la".into(),
+            mode: Mode::Run {
+                stdout: Vec::new(),
+                stderr: None,
+                exit: 0,
+            },
+            extras: Extras {
+                scratch: true,
+                ..Extras::default()
+            },
+        };
+        let (cmd, scratch) = case_command(Path::new("lughac"), Path::new("."), &case);
+        let dir = cmd
+            .get_current_dir()
+            .expect("a scratch case sets its directory")
+            .to_path_buf();
+        assert!(dir.starts_with(std::env::temp_dir()), "{}", dir.display());
+        assert!(dir.exists());
+        drop(scratch);
+        assert!(!dir.exists(), "the scratch directory is removed");
     }
 }

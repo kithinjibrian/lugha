@@ -23,6 +23,7 @@ mod growth;
 mod heap;
 mod input;
 mod instances;
+mod io;
 mod lower;
 mod matching;
 mod methods;

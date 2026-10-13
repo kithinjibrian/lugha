@@ -135,13 +135,13 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (`check/input.rs`):
-- [ ] **Types:**
+- [x] **Types:**
   - `read_line()` is `Option<string>`;
   - `read_file("p")` is `Result<string, string>`;
   - `write_file("p", "t")` and `append_file` are `Result<i64, string>`;
   - `eprintln(1)` checks;
   - code after `exit(1)` gets W0101.
-- [ ] **Errors:**
+- [x] **Errors:**
   - `read_line(1)` is E0405;
   - `write_file(1, "t")` is E0403;
   - `exit("x")` is E0403;
@@ -149,24 +149,24 @@ Unit tests — checker (`check/input.rs`):
   - `fun exit() {}` is E0302.
 
 Runner (`tests/support/runner/`):
-- [ ] **Discovery:** `.stdin` and `.scratch` are found; beside a reject case, or orphaned, they are malformed.
-- [ ] **Running:** a `.stdin` case gets its input, and a `.scratch` case runs in a temp directory that is gone afterwards.
+- [x] **Discovery:** `.stdin` and `.scratch` are found; beside a reject case, or orphaned, they are malformed.
+- [x] **Running:** a `.stdin` case gets its input, and a `.scratch` case runs in a temp directory that is gone afterwards.
 
 Acceptance — `tests/programs/m19/` (run at `-O0` and `-O2`):
-- [ ] `sum.la` + `sum.stdin`: sums numbers, counts bad lines, and handles `\r\n` and a last line without `\n`.
-- [ ] `empty.la`: an empty stdin gives `None` at once.
-- [ ] `files.la` + `files.scratch`:
+- [x] `sum.la` + `sum.stdin`: sums numbers, counts bad lines, and handles `\r\n` and a last line without `\n`.
+- [x] `empty.la`: an empty stdin gives `None` at once.
+- [x] `files.la` + `files.scratch`:
   - `write_file`, `append_file`, then `read_file` back;
   - the byte counts;
   - a missing file gives `Err("No such file or directory")`;
   - `?` across the I/O calls in a helper returning `Result`.
-- [ ] `stderr.la`: `eprint`/`eprintln` with a `.stderr` golden, and stdout flushed first (the order is checked through a test of the runtime's flush; streams are captured apart).
-- [ ] `exit.la`: `exit(3)` after buffered `print` output gives exit code 3 with the output present.
-- [ ] `e0403.la`: reject golden (`write_file(1, "t")`).
-- [ ] The §10 reading-input program runs from the spec with its stdin.
+- [x] `stderr.la`: `eprint`/`eprintln` with a `.stderr` golden, and stdout flushed first (the order is checked through a test of the runtime's flush; streams are captured apart).
+- [x] `exit.la`: `exit(3)` after buffered `print` output gives exit code 3 with the output present.
+- [x] `e0403.la`: reject golden (`write_file(1, "t")`).
+- [x] The §10 reading-input program runs from the spec with its stdin.
 
 Regression:
-- [ ] Every earlier test passes; programs without I/O give byte-identical IR.
+- [x] Every earlier test passes; programs without I/O give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -174,10 +174,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 reading-input program and the `m19/` programs pass.
-- [ ] The spec is complete (no "in progress"); docs updated; tags `m19` and `v4`.
-- [ ] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
+- [x] The §10 reading-input program and the `m19/` programs pass.
+- [x] The spec is complete (no "in progress"); docs updated; tags `m19` and `v4`.
+- [x] No file over 300 lines (splits proposed first); no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass; CI green.
 
 ## VALIDATION
 ```bash
@@ -186,3 +186,11 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 printf '5\n7\nx\n' | cargo run -q -- run tests/programs/m19/sum.la
 ```
+
+## AMENDMENTS (during build, session 55)
+
+- **The draft had a second invalid arm:** `None => break,` (`break` is a statement), corrected with the rest to `None => { break; }`.
+- **`write_file(1, "t")`** is E0401 (an integer literal where a `string` is expected). The reject golden uses a variable (`write_file(path, …)` with `path: i64`) for E0403.
+- **`read_line` flushes stdout first,** so a prompt written with `print` shows before the program waits.
+- **Runner test:** the scratch test builds the command (`case_command`) and checks its directory instead of executing a freshly written script, which raced with other tests forking ("text file busy").
+- **No file splits;** the I/O codegen is in a new `codegen/io.rs`.

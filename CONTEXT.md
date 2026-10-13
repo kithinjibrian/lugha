@@ -2778,6 +2778,41 @@ Branch: prp-043-text_helpers
 
 Branch: prp-044-input_output
 
+### WHAT WAS DONE
+
+- Discovery: scratch directories are opt-in through `.scratch`. PRP-044 written and approved.
+- Checker: the I/O intrinsics' types (`input.rs`, `call.rs` for `eprint`).
+- Codegen: `codegen/io.rs`.
+- Runtime: read_line, read_file, write_file (with an append flag), eprint, exit in `input.c`.
+- Runner: `Extras` (`.args`, `.stdin`, `.scratch`), stdin piping, scratch directories.
+- Extractor: stdin from the §10 sentence.
+- Spec: v4 complete; the draft's §10 program corrected (two invalid arms) and its §12 questions resolved.
+
+### FILES CREATED OR MODIFIED
+
+- New: `src/codegen/io.rs`, `tests/programs/m19/`, the PRP.
+- Modified:
+  - the checker (`input.rs`, `call.rs`, `errors/types.rs`);
+  - codegen (`function.rs`, `input.rs`, `mod.rs`);
+  - `runtime/input.c`, `runtime/lugha_rt.c`, `src/link.rs`;
+  - the runner (`args.rs`, `discover.rs`, `execute.rs`, `mod.rs`, `report.rs`), `tests/common/spec_programs.rs`, `tests/spec.rs`, `tests/cli.rs`;
+  - docs: the specs, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (decision 52).
+
+### TESTS WRITTEN
+
+- Checker (2): I/O types and errors.
+- Runner (3): stdin and scratch discovery, stdin piping, scratch directory.
+- `m19/`: sum (+ `.stdin`), empty, files (+ `.scratch`), stderr, exit, and the e0403 golden.
+- The §10 reading-input program, with its stdin.
+
+### DECISIONS MADE
+
+- MEMORY 52; PRP amendments.
+
+### PENDING DECISIONS OPENED
+
+- None.
+
 ---
 
 ## NEXT SESSION START POINT

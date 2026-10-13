@@ -20,6 +20,9 @@ pub struct SpecProgram {
     pub stderr: Option<String>,
     /// Command-line arguments, from "Run as `prog a b`." (PRP-038).
     pub args: Vec<String>,
+    /// Standard input, from "Run with `a` and `b` on … stdin." (PRP-044):
+    /// each backticked item is one line.
+    pub stdin: String,
 }
 
 /// The text between the heading starting `start` and the next `## ` heading.
@@ -71,6 +74,18 @@ fn run_args(sentence: &str) -> Vec<String> {
         .collect()
 }
 
+/// "Run with `5`, `7` and `x` on three lines of stdin." → "5\n7\nx\n";
+/// empty when the sentence gives no stdin.
+fn run_stdin(sentence: &str) -> String {
+    let Some(start) = sentence.find("Run with ") else {
+        return String::new();
+    };
+    let rest = &sentence[start..];
+    let end = rest.find(" on ").expect("the stdin is followed by \" on\"");
+    let items: Vec<&str> = rest[..end].split('`').skip(1).step_by(2).collect();
+    items.iter().map(|line| format!("{line}\n")).collect()
+}
+
 /// "Prints `a` then `b` on two lines, exits with 0." → "a\nb\n".
 fn printed(sentence: &str) -> String {
     let Some(start) = sentence.find("Prints ") else {
@@ -115,6 +130,7 @@ pub fn section_10() -> Vec<SpecProgram> {
             exit: exit_code(sentence),
             stderr,
             args: run_args(sentence),
+            stdin: run_stdin(sentence),
         });
     }
     programs
@@ -159,6 +175,7 @@ pub fn milestone_2() -> SpecProgram {
         exit: exit_code(row),
         stderr: None,
         args: Vec::new(),
+        stdin: String::new(),
     }
 }
 

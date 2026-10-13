@@ -38,6 +38,22 @@ fn lughac(dir: &TempDir, args: &[&str]) -> Output {
         .expect("lughac runs")
 }
 
+/// `lughac` with `stdin` fed to the program it runs (PRP-044).
+fn lughac_with_stdin(dir: &TempDir, args: &[&str], stdin: &str) -> Output {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_lughac"))
+        .args(args)
+        .current_dir(&dir.0)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("lughac runs");
+    let mut pipe = child.stdin.take().expect("stdin is piped");
+    std::io::Write::write_all(&mut pipe, stdin.as_bytes()).expect("the program reads its stdin");
+    drop(pipe);
+    child.wait_with_output().expect("lughac finishes")
+}
+
 fn text(bytes: &[u8]) -> String {
     String::from_utf8_lossy(bytes).into_owned()
 }
@@ -70,6 +86,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Array helpers",
         "Results and `?`",
         "Text helpers",
+        "Reading input",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),
@@ -85,6 +102,7 @@ fn the_extractor_finds_every_section_10_program() {
     };
     assert_eq!(find("Hello world").stdout, "Hello, world!\n");
     assert_eq!(find("Arguments and interpolation").args, ["21"]);
+    assert_eq!(find("Reading input").stdin, "5\n7\nx\n");
     assert_eq!(
         find("Calling C").stdout,
         "hello from libc\n1.4142135623730951\n"
@@ -122,7 +140,7 @@ fn every_section_10_program_runs_as_stated() {
                 command.push("--");
                 command.extend(program.args.iter().map(String::as_str));
             }
-            let out = lughac(&dir, &command);
+            let out = lughac_with_stdin(&dir, &command, &program.stdin);
             assert_eq!(
                 text(&out.stdout),
                 program.stdout,

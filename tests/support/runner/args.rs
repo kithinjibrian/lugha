@@ -1,16 +1,43 @@
-//! Command-line arguments for a test program (PRP-038): an optional
-//! `<name>.args` beside a run case, one argument per line, passed to the
-//! program after `lughac run <file> --`.
+//! What a run case may have beside its expectations:
+//! - `<name>.args` (PRP-038): one argument per line, passed after `lughac run <file> --`;
+//! - `<name>.stdin` (PRP-044): fed to the program's stdin;
+//! - `<name>.scratch` (PRP-044, empty): run in a fresh temporary directory.
+
+use std::path::PathBuf;
 
 use super::Mode;
 
-/// `mode` with the arguments from its `.args` file, if it has one: only a
-/// run case takes arguments.
-pub fn with_args(mode: Mode, args: Option<Vec<u8>>) -> Result<(Mode, Vec<String>), String> {
-    match (args, &mode) {
-        (Some(_), Mode::Reject { .. }) => Err(".args beside a rejected program".into()),
-        (args, _) => Ok((mode, args.map_or_else(Vec::new, |a| parse_args(&a)))),
+/// A run case's arguments, stdin and scratch-directory request.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Extras {
+    pub args: Vec<String>,
+    /// `None` gives the program an empty stdin.
+    pub stdin: Option<Vec<u8>>,
+    pub scratch: bool,
+}
+
+/// `mode` with the extras its `files` give; only a run case takes any.
+pub fn extras(
+    mode: Mode,
+    files: &[PathBuf],
+    read: impl Fn(&PathBuf) -> Result<Vec<u8>, String>,
+) -> Result<(Mode, Extras), String> {
+    let mut extras = Extras::default();
+    for file in files {
+        let kind = file
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or_default();
+        if let Mode::Reject { .. } = mode {
+            return Err(format!(".{kind} beside a rejected program"));
+        }
+        match kind {
+            "args" => extras.args = parse_args(&read(file)?),
+            "stdin" => extras.stdin = Some(read(file)?),
+            _ => extras.scratch = true,
+        }
     }
+    Ok((mode, extras))
 }
 
 /// The arguments in an `.args` file: one per line, the last line's newline optional.
@@ -44,7 +71,7 @@ mod tests {
             .file("p.exit", "0")
             .file("p.args", "21\n");
         let case = discover(f.path()).unwrap().remove(0);
-        assert_eq!(case.args, ["21"]);
+        assert_eq!(case.extras.args, ["21"]);
 
         let f = Fixture::new();
         f.file("bad.la", "")
@@ -65,5 +92,34 @@ mod tests {
         let malformed = discover(f.path()).unwrap_err();
         assert_eq!(malformed[0].name, "lost.args");
         assert_eq!(malformed[0].reason, "no matching .la");
+    }
+
+    #[test]
+    fn stdin_and_scratch_belong_to_run_cases() {
+        let f = Fixture::new();
+        f.file("p.la", "")
+            .file("p.stdout", "")
+            .file("p.exit", "0")
+            .file("p.stdin", "5\n7\n")
+            .file("p.scratch", "");
+        let case = discover(f.path()).unwrap().remove(0);
+        assert_eq!(case.extras.stdin.as_deref(), Some(&b"5\n7\n"[..]));
+        assert!(case.extras.scratch);
+        let f = Fixture::new();
+        f.file("bad.la", "")
+            .file("bad.stderr", "e\n")
+            .file("bad.scratch", "");
+        let reasons: Vec<String> = discover(f.path())
+            .unwrap_err()
+            .into_iter()
+            .map(|m| m.reason)
+            .collect();
+        assert_eq!(reasons, [".scratch beside a rejected program"]);
+        let f = Fixture::new();
+        f.file("a.la", "")
+            .file("a.stdout", "")
+            .file("a.exit", "0")
+            .file("lost.stdin", "x");
+        assert_eq!(discover(f.path()).unwrap_err()[0].reason, "no matching .la");
     }
 }

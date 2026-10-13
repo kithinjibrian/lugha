@@ -151,6 +151,18 @@ impl<'ctx> Lowerer<'ctx> {
             if ["args", "parse_i64", "parse_f64"].contains(&name.as_str()) {
                 return self.input_intrinsic(name, args);
             }
+            const IO: [&str; 7] = [
+                "read_line",
+                "read_file",
+                "write_file",
+                "append_file",
+                "eprint",
+                "eprintln",
+                "exit",
+            ];
+            if IO.contains(&name.as_str()) {
+                return self.io_intrinsic(call, name, args);
+            }
             return self.intrinsic(call, name, args);
         };
         let values = self.arguments(args, &signature.params, signature.is_extern)?;

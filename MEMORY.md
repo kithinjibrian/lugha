@@ -843,9 +843,37 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 52. Input and output (PRP-044)
+
+**Decision:**
+- **Checker:**
+  - the seven I/O intrinsics join `input.rs`'s `INPUT` (so `is_intrinsic` covers them);
+  - `eprint`/`eprintln` reuse `call.rs`'s `print`/`println` rules;
+  - `exit(i32)` is `Never`;
+  - `read_file` and `write_file`/`append_file` return `Result<string|i64, string>`.
+- **Codegen** (`codegen/io.rs`):
+  - runtime functions return a flag and write through cleared out-slots, and `select` picks between the `Ok`/`Err` (or `Some`/`None`) values;
+  - `eprint` formats with `text_of`;
+  - `exit` calls `lugha_rt_exit`, then `unreachable` and a dead block.
+- **Runtime** (`runtime/input.c`):
+  - `read_line` uses `getline`, flushes stdout, strips `\n` then `\r`, and treats errors as end of input;
+  - files are opened in binary mode, with `strerror` messages, and a path with a NUL byte is refused;
+  - `eprint`/`exit` flush stdout first;
+  - `errno.h` joins the core's includes.
+- **Runner:**
+  - `args.rs::Extras { args, stdin, scratch }` from `<name>.args`/`.stdin`/`.scratch` (malformed beside a reject case);
+  - `execute.rs` pipes stdin from a thread, and `case_command` runs a scratch case in a `Fixture` temp dir with the absolute program path (a discovery answer).
+- **Extractor:** "Run with `a`, `b` … on … stdin." becomes stdin lines.
+- **The draft's §10 program** is corrected (`{ total += n; }`, `{ break; }`).
+
+**Why:** These follow the session 55 discovery answer. I/O failures as values fit `Result` and `?`, and only scratch cases change the runner's working directory.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 19 complete — Lugha v4 complete**: PRP-044 input and output
 - **Milestone 18 complete**: PRP-043 text and option helpers
 - **Milestone 17 complete**: PRP-042 `Result` and `?`; the v4 spec begins
 - **Milestone 16 complete — Lugha v3 complete**: PRP-041 array helpers in a Lugha prelude
@@ -904,7 +932,7 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- v4 milestones 17–19 (draft approved, session 52, MEMORY 49)
+- Lugha v5 (nothing planned; see the v4 spec's §11 out-of-scope list)
 
 ---
 

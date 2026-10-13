@@ -84,7 +84,7 @@ pub(in crate::check) fn not_function(name: &str, span: Span) -> Diagnostic {
 
 pub(in crate::check) fn intrinsic_argument(name: &str, found: Type, span: Span) -> Diagnostic {
     let expected = match name {
-        "print" | "println" => "a number, bool or string",
+        "print" | "println" | "eprint" | "eprintln" => "a number, bool or string",
         "to_string" => "a number or bool",
         _ => "a string",
     };

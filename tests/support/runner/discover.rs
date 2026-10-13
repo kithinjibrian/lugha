@@ -1,4 +1,5 @@
-//! Turns the files under a root folder into test cases (`.args` files: `args.rs`).
+//! Turns the files under a root folder into test cases (`.args`, `.stdin`
+//! and `.scratch`: `args.rs`).
 
 use std::collections::BTreeMap;
 use std::io;
@@ -12,7 +13,8 @@ struct Group {
     stdout: Option<PathBuf>,
     stderr: Option<PathBuf>,
     exit: Option<PathBuf>,
-    args: Option<PathBuf>,
+    /// `.args`, `.stdin` and `.scratch` files (`args.rs`).
+    extra: Vec<PathBuf>,
 }
 
 /// Finds every `.la` program under `root` and loads its expectations. A
@@ -48,7 +50,7 @@ pub fn discover(root: &Path) -> Result<Vec<Case>, Vec<Malformed>> {
             Some("stdout") => group.stdout = Some(rel),
             Some("stderr") => group.stderr = Some(rel),
             Some("exit") => group.exit = Some(rel),
-            Some("args") => group.args = Some(rel),
+            Some("args" | "stdin" | "scratch") => group.extra.push(rel),
             // Other files (notes, READMEs) are not part of any case.
             _ => {}
         }
@@ -67,9 +69,10 @@ pub fn discover(root: &Path) -> Result<Vec<Case>, Vec<Malformed>> {
             }
         }
         let Some(la) = &group.la else {
-            for orphan in [&group.stdout, &group.stderr, &group.exit, &group.args]
+            for orphan in [&group.stdout, &group.stderr, &group.exit]
                 .into_iter()
                 .flatten()
+                .chain(&group.extra)
             {
                 let reason = "no matching .la".to_string();
                 malformed.push(Malformed {
@@ -81,11 +84,11 @@ pub fn discover(root: &Path) -> Result<Vec<Case>, Vec<Malformed>> {
         };
         let name = rel_name(la);
         match load_mode(root, &group) {
-            Ok((mode, args)) => cases.push(Case {
+            Ok((mode, extras)) => cases.push(Case {
                 name,
                 path: root.join(la),
                 mode,
-                args,
+                extras,
             }),
             Err(reason) => malformed.push(Malformed { name, reason }),
         }
@@ -120,7 +123,7 @@ fn walk(root: &Path, dir: &Path, out: &mut Vec<PathBuf>) -> io::Result<()> {
     Ok(())
 }
 
-fn load_mode(root: &Path, group: &Group) -> Result<(Mode, Vec<String>), String> {
+fn load_mode(root: &Path, group: &Group) -> Result<(Mode, super::args::Extras), String> {
     let read = |rel: &PathBuf| {
         std::fs::read(root.join(rel)).map_err(|e| format!("cannot read {}: {e}", rel.display()))
     };
@@ -137,7 +140,7 @@ fn load_mode(root: &Path, group: &Group) -> Result<(Mode, Vec<String>), String> 
         }),
         (None, None, None) => Err("no .exit or .stderr file".into()),
     };
-    super::args::with_args(mode?, group.args.as_ref().map(read).transpose()?)
+    super::args::extras(mode?, &group.extra, read)
 }
 
 fn parse_exit(bytes: &[u8]) -> Result<i32, String> {

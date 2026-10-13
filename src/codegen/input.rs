@@ -45,7 +45,11 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// A number or `bool` as text, exactly as `to_string` gives it.
-    fn text_of(&mut self, ty: &Type, value: BasicValueEnum<'ctx>) -> BasicValueEnum<'ctx> {
+    pub(super) fn text_of(
+        &mut self,
+        ty: &Type,
+        value: BasicValueEnum<'ctx>,
+    ) -> BasicValueEnum<'ctx> {
         let suffix = match ty {
             Type::I32 => "i32",
             Type::I64 => "i64",

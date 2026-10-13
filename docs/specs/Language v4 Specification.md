@@ -1,17 +1,18 @@
-# Lugha v4 Specification (in progress: milestone 18)
+# Lugha v4 Specification
 
 Oct 13, 2026 · @kithinji
 
-**Status:** v4 is being built milestone by milestone (17–19). The plan is `Language v4 Draft.md`. This file describes exactly what `lughac` implements now, and is what `lughac spec` prints. `Language v3 Specification.md` keeps v3 frozen.
+**Status:** complete (milestones 17–19). It is built from the approved plan, `Language v4 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v3 Specification.md` keeps v3 frozen.
 
 **v3.** This is v2 plus command-line arguments and number parsing, string interpolation, functions as values, closures, and array helpers (milestones 13–16).
 
-**Changes since v3** (milestones 17–18):
+**Changes since v3** (milestones 17–19):
 - `Result<T, E>` is predeclared, with `Ok(x)` and `Err(e)` written without a prefix (section 4).
 - The postfix `?` gives a `Result`'s `Ok` value or an `Option`'s `Some` value, or returns the failure from the function at once (sections 2–4).
 - Strings have `lines`, `split`, `trim`, `contains`, `starts_with`, `ends_with` and `slice`, `string[]` has `join`, and `Option` and `Result` have `unwrap_or`, `ok_or`, `ok`, `map`, `map_err` and `is_*` (section 4).
+- Programs read stdin with `read_line`, read and write text files with `read_file`, `write_file` and `append_file`, write to stderr with `eprint`/`eprintln`, and stop with `exit(code)` (section 5).
 
-Every valid v3 program is a valid v4 program unless it defines something named `Result`, `Ok` or `Err`.
+Every valid v3 program is a valid v4 program unless it defines something named `Result`, `Ok` or `Err`, or a function named `read_line`, `read_file`, `write_file`, `append_file`, `eprint`, `eprintln` or `exit`.
 
 ## 1. Overview
 
@@ -539,6 +540,14 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 | `args()` | Nothing | Returns the program's command-line arguments as a new `string[]`; `args()[0]` is the program's path (v3) |
 | `parse_i64(s)` | `string` | `Some(n)` if `s` is an optional `-` followed by decimal digits and fits in `i64`, else `None`; no `+`, spaces, `_` or hex (v3) |
 | `parse_f64(s)` | `string` | `Some(x)` if `s` is an optional `-`, digits, an optional `.` and digits, and an optional exponent (`e`/`E`, optional sign, digits), else `None`; `"3"` gives `3.0`, while `".5"`, `"5."`, `"inf"` and `"nan"` give `None` (v3) |
+| `read_line()` | Nothing | `Option<string>`: the next line of stdin without its `\n` (and a `\r` before it); a last line without `\n` is still returned; `None` at the end of input (or on a read error). Stdout is flushed first, so a prompt shows (v4) |
+| `read_file(path)` | `string` | `Result<string, string>`: the whole file, or `Err` with the system's message, such as `"No such file or directory"` (v4) |
+| `write_file(path, text)` | `string`, `string` | `Result<i64, string>`: replaces the file's contents; `Ok` with the bytes written (v4) |
+| `append_file(path, text)` | `string`, `string` | `Result<i64, string>`: adds to the end, creating the file if needed (v4) |
+| `eprint(x)`, `eprintln(x)` | Like `print`, `println` | Writes to stderr, formatted as `print` does, after flushing stdout so a terminal shows output in program order (v4) |
+| `exit(code)` | `i32` | Flushes stdout and stops the program with exit code `code`; never returns, so code after it is unreachable (W0101) (v4) |
+
+**Files** (v4). Paths are relative to the current directory, exactly as given; a path containing a NUL byte is an `Err`. Files are read and written as bytes, with no newline translation, and a whole file is read into memory. Every failure is a value (`Err` or `None`), never a panic.
 
 **Interpolated strings** (v3). Each `{expr}` is evaluated left to right and formatted exactly as `print` would write it (floats as below); the parts are joined into one new `string`. Only numbers, `bool` and `string` interpolate; any other value is E0403, with help to convert it first.
 
@@ -744,6 +753,9 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_args()` | A new `string[]` of the program's arguments (v3) |
 | `lugha_rt_parse_i64(s, out)` / `lugha_rt_parse_f64(s, out)` | Parse `s` into `*out`; return 1, or 0 for `None` (v3) |
 | `lugha_rt_str_slice(s, from, to, file, line, col)` | `s.slice(from, to)`: a new string of those bytes, or the bounds panic (v4) |
+| `lugha_rt_read_line(out)` | `read_line()`: 1 and the line, or 0 at the end of input (v4) |
+| `lugha_rt_read_file(path, out, error)` / `lugha_rt_write_file(path, text, append, count, error)` | The file intrinsics: 1 and the value, or 0 and the C library's `strerror` message (v4) |
+| `lugha_rt_eprint(text, newline)` / `lugha_rt_exit(code)` | `eprint`/`eprintln` (values formatted first) and `exit`, each flushing stdout first (v4) |
 
 The runtime writes through C's `stdout` stream, so output from `print`/`println` and from libc functions such as `puts` appears in program order.
 
@@ -1298,6 +1310,26 @@ fun main() {
 }
 ```
 
+**Reading input** (milestone 19). Run with `5`, `7` and `x` on three lines of stdin. Prints `12` then `skipped 1` on two lines, exits with 0.
+
+```
+fun main() {
+    let mut total = 0;
+    let mut skipped = 0;
+    while true {
+        match read_line() {
+            Some(line) => match parse_i64(line.trim()) {
+                Some(n) => { total += n; }
+                None => { skipped += 1; }
+            },
+            None => { break; }
+        }
+    }
+    println(total);
+    println("skipped {skipped}");
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1322,6 +1354,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 16 | Array helpers (v3) | `map`, `filter`, `fold`, `sort_by`, `any`, `all`, from a Lugha prelude | The array-helpers program in section 10 passes (done: v3 complete) |
 | 17 | Results and `?` (v4) | `Result<T, E>` (in the prelude), `Ok`/`Err`, the `?` operator (E0424) | The results program in section 10 passes (done) |
 | 18 | Text and option helpers (v4) | string helpers, `join`, `Option`/`Result` helpers, built-in `slice` | The text-helpers program in section 10 passes (done) |
+| 19 | Input and output (v4) | `read_line`, `read_file`, `write_file`, `append_file`, `eprint`/`eprintln`, `exit` | The reading-input program in section 10 passes (done: v4 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

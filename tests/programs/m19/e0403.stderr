@@ -1,0 +1,6 @@
+error[E0403]: expected string, found i64
+  --> tests/programs/m19/e0403.la:3:30
+  |
+3 |     let written = write_file(path, "text");
+  |                              ^^^^ expected string
+
