@@ -2540,7 +2540,7 @@ Branch: prp-039-function_values
 
 ## SESSION 50 — 2026-10-13 — Closures (milestone 15) — open
 
-Branch: main
+Branch: prp-040-closures
 
 ---
 
