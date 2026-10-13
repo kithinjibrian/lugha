@@ -2346,7 +2346,7 @@ Branch: prp-036-generic_compiling
 
 ## SESSION 46 — 2026-10-13 — Interfaces (milestone 12) — open
 
-Branch: main
+Branch: prp-037-interfaces
 
 ---
 
