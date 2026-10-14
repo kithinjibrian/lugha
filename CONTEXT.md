@@ -3495,7 +3495,7 @@ Branch: prp-060-better_patterns (merged into main)
 ---
 
 ## SESSION 78 — 2026-10-14 — Unwrapping (milestone 32) — open
-Branch: main
+Branch: prp-061-unwrapping
 
 ---
 
