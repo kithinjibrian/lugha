@@ -4820,6 +4820,32 @@ Branch: prp-083-std_random (merged into main)
 
 ---
 
+## SESSION 115 — 2026-10-15 — Noted three numeric-code improvements — closed
+Branch: main
+
+### WHAT WAS DONE
+- After writing glowworm and firefly, the user asked how Lugha feels to program in; at their request, the three changes that would help numeric code most went into `TODO.md`:
+  - reading without copying;
+  - nested `mut self` calls whose arguments only read the receiver;
+  - converting any number to a `T: Num`.
+
+### FILES CREATED OR MODIFIED
+- `TODO.md`, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None (each needs its own discovery).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 54 complete** (PRP-083, MEMORY 104–105): `std.random`. Tagged `m54`. `Language v15 Specification.md` (in progress, milestones 51–54) is what `lughac spec` prints; v0–v14 are frozen. firefly uses `std.random`.

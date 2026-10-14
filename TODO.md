@@ -300,6 +300,19 @@ Done when the printing-anything program passes and the v12 spec is complete.
 
 ## v15 — later milestones, discovery paused (session 103)
 
+Found writing glowworm and firefly (session 115); each needs a discovery and a PRP. In order of value for numeric code:
+- [ ] **Read without copying.** `self.values[a]`, a `self` receiver, or passing an array to a function copies the whole array even when the code only reads it. That is the main performance risk for training real models. Options:
+  - read-only views for `self` receivers and indexing;
+  - extending move-on-last-use;
+  - copy-on-write.
+- [ ] **Nested `mut self` calls whose arguments only read the receiver.**
+  - **Today:** `g.tanh(g.add(a, b))` is E0508, so tape-style code needs one `let` per op.
+  - **Proposal:** allow it when the inner call finishes before the outer one changes the receiver, i.e. arguments evaluated first, then the outer `mut self` call. Model code would then read like PyTorch.
+  - **Must keep:** E0508's protection against real aliasing.
+- [ ] **Any number as a `T: Num`.**
+  - **Today:** only `0` and `1` are `T` literals, so generic code counts up by `1` to make `n` (glowworm's `arange` and `linspace`, firefly's mean).
+  - **Proposal:** a conversion such as `T.from_i64(n)` / `T.from_f64(x)`, or `n as T` under a numeric bound.
+
 - [ ] **Lazy std modules** (found in session 114): a std module's non-generic functions are compiled whenever it is imported (e.g. `from_os` in every `std.random` program), unlike the prelude, which compiles only what is reached. Make std lazy the same way; no visible change except smaller IR.
 
 - [ ] **`it.sum()` cleanup** (session 112, no language change): replace the ten `iter_sum_<type>` copies in `src/prelude/iter.la` and the per-type table in `check/iter_helpers.rs` with one `fun iter_sum<T: Num>(it: Iter<T>): T`. `["a"].iter().sum()` stays E0415; only the IR names change (`iter_sum<i64>`).
