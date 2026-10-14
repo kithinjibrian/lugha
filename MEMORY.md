@@ -1734,15 +1734,11 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestone 54 complete** (PRP-083, MEMORY 104–105): `std.random`. Tagged `m54`. `Language v15 Specification.md` (in progress, milestones 51–54) is what `lughac spec` prints; v0–v14 are frozen. firefly uses `std.random`.
+**Milestones 51–54 complete.** **Milestone 55 (copy-on-write arrays) is proposed:** decisions 22–24 in `Language v15 Draft.md`, PRP-084, and **DECISION-012 (open), which would supersede DECISION-010**. All wait for the user's explicit approval.
+- **On approval:** resolve DECISION-012 (mark 010 superseded), record MEMORY 106, branch `prp-084-copy_on_write`.
+- **Before changing code:** record the "before" timings (DECISION-010's benchmarks in `docs/decisions/decision-010/`, firefly's `./gpt data/names-32k.txt 6000 32 4 0.1` = 1 m 43 s, `./mlp`, glowworm).
+- **Then build** the four parts: share/own helpers, the cap flag, two-phase places, `for … of mut` by slot, and extern unsharing.
 
-The user is building glowworm (n-d arrays) and firefly (autograd, aiming at a tiny GPT) in Lugha. Next for firefly: a bigram character model.
-
-Lugha's `TODO.md` holds:
-- lazy std modules;
-- the `sum()` cleanup;
-- user-defined `Ord`;
-- `std.fs`/`std.env`/`std.process`;
-- Unicode follow-ups.
+This is a correctness-critical change to every array write path.
 
 See `TODO.md`.

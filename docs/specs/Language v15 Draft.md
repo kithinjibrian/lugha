@@ -1,6 +1,6 @@
 # Lugha v15 — Draft (delta against v14)
 
-**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
+**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) proposed in session 116. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
 **Base:** `Language v14 Specification.md`, complete (milestone 50). It stays the source of truth, and what `lughac spec` prints, until v15's first milestone starts `Language v15 Specification.md`. That file then grows milestone by milestone, and v14 is frozen.
 
 This draft lists only what changes, in the order of the v14 sections. Everything not mentioned keeps its v14 meaning.
@@ -181,6 +181,37 @@ fun main() {
   Both can be named only in bundled sources.
 - **Reproducibility:** for one seed, the sequence is the same on every platform and at `-O0` and `-O2`, and stays the same across compiler versions unless a spec change says otherwise.
 
+## Decisions behind milestone 55 (discovery, session 116)
+
+Measured in firefly's IR: the copies that cost are `let` bindings that only read, such as `let g = self.grads[i];` (18 deep-copy calls in `Graph.back` alone). Function arguments and receivers are already never copied (§4).
+
+22. **Arrays become copy-on-write.**
+    - A copy site no longer copies an array. It marks the array *shared* and shares it.
+    - The first write to a shared array copies it first. The copy is unshared, so later writes are free.
+    - The flag is sticky: an object once shared stays marked, so the other holder pays one more copy if it ever writes, and no reference counts are needed (Boehm keeps none).
+    - Programs behave exactly as before: every value is still independent. This reverses §12's "cost of array copies" decision (eager deep copies), which assumed copy-on-write needed reference counts.
+23. **Arrays passed to `extern` functions are unshared first** (copied if shared), so C code may write to them without breaking value semantics.
+24. **Success:**
+    - every existing test passes unchanged;
+    - new tests cover writing to shared arrays (directly, nested, in structs, through `push`/`pop`/`swap`/`for … of mut`/`mut self`, to C);
+    - firefly's and glowworm's timings are reported before and after. Speed is a goal, not a gate.
+
+**Choices made while writing milestone 55:**
+- **The flag is the top bit of the header's `cap` word,** so the header stays `{ i64 len; i64 cap }` (16 bytes) and capacity uses 62 bits. Everything that reads `cap` (`push`, `lugha_rt_array_grow`) masks it.
+- **Sharing at a copy site:**
+  - an array: mark it, keep the pointer;
+  - a struct (or interface box, closure capture) holding arrays: copy the struct's bytes and mark each array reachable without passing through another array.
+  
+  Arrays inside arrays are marked when their outer array is cloned, since that is when a second pointer to them appears.
+- **Cloning before a write** (`lugha_own_<type>`, one helper per array type, like the copy helpers): a shallow copy of the elements, with each array reachable from an element marked shared. The new array is unshared and full (`cap == len`).
+- **Writes reach their array through its slot, after the value is computed.**
+  - For `place = value` and `place op= value`, the place's index expressions run and are bounds-checked first, as §5 requires. Then the value is computed. Then, from the root outward, each array on the path is made unique (cloned and stored back if shared), and the element address is formed.
+  - The same applies to `push`, `pop`, `clear`, `swap`, a `mut self` receiver's writes, and `for … of mut`.
+  - So an array shared during the right-hand side (`xs[0] += { let c = xs; 1 }`) is never written through a stale pointer.
+- **`for x of mut xs`:** `x` names the element place `xs[k]`, not a raw pointer. Reading `x` loads the current element, and writing `x` makes `xs` unique first. Behaviour is as §5 specifies.
+- **Strings** are unchanged (immutable, shared). Enum payloads were already shared and never written.
+- **IR changes for every program that copies or writes arrays,** so the byte-identical-IR regression check doesn't apply to this milestone. Program output must be identical.
+
 ## §2–§5 — no changes for milestone 51
 
 ## §6 Functions and program structure — changes
@@ -206,6 +237,7 @@ fun main() {
 
 ## §10 Example programs — additions (v15 acceptance tests)
 
+- **M55:** a program printing the results of copies followed by writes — through every write path — showing every copy independent (the same output as v14), and a timing note for firefly's GPT.
 - **M54:** a seeded `Rng` printing a fixed sequence (the reproducibility test): `uniform`, `below`, `between`, `normal`, `chance`, `choice`, `shuffle`, and a `from_os()` generator whose values are only checked for range.
 - **M53:** `import std.math;` with `math.sqrt(2.0)`, `math.pow`, trigonometry, `math.floor`/`ceil`/`round`, `math.abs(-3)`, `math.max(2, 7)`, `math.clamp`, `math.pi()`, an `f32` instance, and a generic `hypot<T: Float>`.
 - **M52:** the Vec2 program above, plus a generic `add<T: Add>` over `i64`, `f64`, `string` and `Vec2`, `v * 2.0`, unary `-`, `+=`, and a generic `sum<T: Num>`.
@@ -219,6 +251,7 @@ fun main() {
 | 52 | Operator overloading | `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`; prelude `Add`…`Neg` and `Num` bounds; bounds on `impl` blocks; `0`/`1` as `T: Num` |
 | 53 | The std library and `std.math` | bundled `std.<module>` modules, `std` reserved, the `Float` bound, `std.math` (float functions via LLVM, `abs`/`min`/`max`/`clamp`, `pi`/`e`) |
 | 54 | `std.random` | xoshiro256\*\* `Rng`, `seeded`/`from_os`, `uniform`, `below`, `between`, `normal`, `chance`, `choice`, `shuffle` |
+| 55 | Copy-on-write arrays | copy sites share and mark arrays; the first write to a shared array clones it; writes reach arrays through their slots after the value is computed; arrays unshared before `extern` calls |
 
 Later v15 milestones (directories, processes, environment variables, Unicode follow-ups) are added when their discovery resumes; processes need a security review.
 

@@ -4846,22 +4846,44 @@ Branch: main
 
 ---
 
-## SESSION 116 — 2026-10-15 — Discovery: read without copying — open
+## SESSION 116 — 2026-10-15 — Discovery: read without copying (copy-on-write) — closed
 Branch: main
+
+### WHAT WAS DONE
+- Explained "read without copying". Corrected an earlier claim: arguments and receivers are already never copied (§4).
+- Measured firefly's IR: the costly copies are read-only `let` bindings from a container that is then modified (`Graph.back`: 18 copy calls). Static analysis can't remove these.
+- Discovery answers:
+  - copy-on-write (the user chose it over the recommended E0508 relaxation);
+  - unshare before extern C;
+  - success = tests plus timings, not gated.
+- Found that DECISION-010 rejected copy-on-write. Opened DECISION-012 to supersede it, with the new facts (a sticky flag needs no reference counts; firefly's read-then-modify shape) and what still holds (no gain for copy-then-write programs; a flag check on every write).
+- Added milestone 55 to `Language v15 Draft.md` (decisions 22–24, including the four hazards) and wrote PRP-084 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-084-copy_on_write.md`.
+- Modified: `docs/specs/Language v15 Draft.md`, DECISIONS.md (DECISION-012, open), CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: DECISION-012 is open until the user approves PRP-084.
+
+### PENDING DECISIONS OPENED
+- DECISION-012 (copy-on-write, superseding DECISION-010).
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-084 and DECISION-012.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 54 complete** (PRP-083, MEMORY 104–105): `std.random`. Tagged `m54`. `Language v15 Specification.md` (in progress, milestones 51–54) is what `lughac spec` prints; v0–v14 are frozen. firefly uses `std.random`.
+**Milestones 51–54 complete.** **Milestone 55 (copy-on-write arrays) is proposed:** decisions 22–24 in `Language v15 Draft.md`, PRP-084, and **DECISION-012 (open), which would supersede DECISION-010**. All wait for the user's explicit approval.
+- **On approval:** resolve DECISION-012 (mark 010 superseded), record MEMORY 106, branch `prp-084-copy_on_write`.
+- **Before changing code:** record the "before" timings (DECISION-010's benchmarks in `docs/decisions/decision-010/`, firefly's `./gpt data/names-32k.txt 6000 32 4 0.1` = 1 m 43 s, `./mlp`, glowworm).
+- **Then build** the four parts: share/own helpers, the cap flag, two-phase places, `for … of mut` by slot, and extern unsharing.
 
-The user is building glowworm (n-d arrays) and firefly (autograd, aiming at a tiny GPT) in Lugha. Next for firefly: a bigram character model.
-
-Lugha's `TODO.md` holds:
-- lazy std modules;
-- the `sum()` cleanup;
-- user-defined `Ord`;
-- `std.fs`/`std.env`/`std.process`;
-- Unicode follow-ups.
+This is a correctness-critical change to every array write path.
 
 See `TODO.md`.
