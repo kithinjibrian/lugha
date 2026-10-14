@@ -1,6 +1,6 @@
 # Lugha v15 — Draft (delta against v14)
 
-**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110). Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
+**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) proposed in session 113. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
 **Base:** `Language v14 Specification.md`, complete (milestone 50). It stays the source of truth, and what `lughac spec` prints, until v15's first milestone starts `Language v15 Specification.md`. That file then grows milestone by milestone, and v14 is frozen.
 
 This draft lists only what changes, in the order of the v14 sections. Everything not mentioned keeps its v14 meaning.
@@ -152,6 +152,35 @@ fun main() {
   - `T: Float` allows `0` and `1` as `T`, like `Num`; other literals stay E0401, so a generic float body writes `let half: T = 1; half / (half + half)`, or takes values as parameters.
 - **Where std modules come from:** the loader maps an import whose first segment is `std` to an embedded source, `src/std/<module>.la`, and gives the module path `std.<module>`, so symbols read `lugha_fn_std/math/sqrt<f64>`. Diagnostics inside std name the file `<std>/math.la`.
 
+## Decisions behind milestone 54 (discovery, session 113)
+
+19. **`std.random` uses xoshiro256\*\*,** seeded through splitmix64. It is not cryptographically secure, and the spec says so.
+20. **Seeding:**
+    - `random.seeded(seed: u64)` gives a repeatable stream;
+    - `random.from_os()` seeds from the operating system's entropy (`getrandom`), through a new runtime function;
+    - there is no global generator: a program makes an `Rng` and passes it around.
+21. **The API**, methods of `Rng` (all `mut self`):
+    - `next_u64()`, `uniform()`, `below(n)`, `between(lo, hi)`;
+    - `normal(mean, std)`, `chance(p)`;
+    - `choice(xs)`, an `Option` element;
+    - `shuffle(xs)`, which returns a shuffled copy, because arrays are values.
+
+**Choices made while writing milestone 54:**
+- **`uniform(): f64`, not `uniform<T: Float>()`.** With no arguments, `T` couldn't be inferred, so `rng.uniform()` alone would be E0412. `f32` users write `rng.uniform() as f32`. `normal<T: Float>(mean: T, std: T): T` stays generic, since its arguments decide `T`.
+- **Ranges:**
+  - `below(n)` is in `0..n`, and `between(lo, hi)` in `lo..hi`, half-open like `for i in lo..hi`;
+  - both are unbiased, by rejection;
+  - `n <= 0` or `lo >= hi` panics.
+- **`uniform()`** is in `[0, 1)`, with 53 random bits. `chance(p)` is `uniform() < p`. `normal` uses Box–Muller.
+- **`choice(xs)`** is `None` for an empty array.
+- **`shuffle(xs)`** is a Fisher–Yates shuffle, every order equally likely.
+- **Built-ins:**
+  - `$os.seed()` gives 64 bits of OS entropy. It calls the new runtime function `lugha_rt_os_seed` (`getrandom`, else `/dev/urandom`), which panics (`no randomness available from the operating system`) if both fail;
+  - `$float.from_f64(x)` converts to the float type its context expects.
+
+  Both can be named only in bundled sources.
+- **Reproducibility:** for one seed, the sequence is the same on every platform and at `-O0` and `-O2`, and stays the same across compiler versions unless a spec change says otherwise.
+
 ## §2–§5 — no changes for milestone 51
 
 ## §6 Functions and program structure — changes
@@ -177,6 +206,7 @@ fun main() {
 
 ## §10 Example programs — additions (v15 acceptance tests)
 
+- **M54:** a seeded `Rng` printing a fixed sequence (the reproducibility test): `uniform`, `below`, `between`, `normal`, `chance`, `choice`, `shuffle`, and a `from_os()` generator whose values are only checked for range.
 - **M53:** `import std.math;` with `math.sqrt(2.0)`, `math.pow`, trigonometry, `math.floor`/`ceil`/`round`, `math.abs(-3)`, `math.max(2, 7)`, `math.clamp`, `math.pi()`, an `f32` instance, and a generic `hypot<T: Float>`.
 - **M52:** the Vec2 program above, plus a generic `add<T: Add>` over `i64`, `f64`, `string` and `Vec2`, `v * 2.0`, unary `-`, `+=`, and a generic `sum<T: Num>`.
 - **M51:** a directory case: a package with `name` and `source = "src"`, and an `examples/` program with no manifest that imports it by name, run from the package's parent folder (`lughac run glowworm/examples/basics.la`).
@@ -188,6 +218,7 @@ fun main() {
 | 51 | Package layout | `[package] name` (E0327), `source`, the upward lookup and implicit package, E0328, the `..` path fix |
 | 52 | Operator overloading | `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`; prelude `Add`…`Neg` and `Num` bounds; bounds on `impl` blocks; `0`/`1` as `T: Num` |
 | 53 | The std library and `std.math` | bundled `std.<module>` modules, `std` reserved, the `Float` bound, `std.math` (float functions via LLVM, `abs`/`min`/`max`/`clamp`, `pi`/`e`) |
+| 54 | `std.random` | xoshiro256\*\* `Rng`, `seeded`/`from_os`, `uniform`, `below`, `between`, `normal`, `chance`, `choice`, `shuffle` |
 
 Later v15 milestones (directories, processes, environment variables, Unicode follow-ups) are added when their discovery resumes; processes need a security review.
 

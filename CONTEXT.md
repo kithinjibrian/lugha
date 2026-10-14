@@ -4752,19 +4752,44 @@ Branch: main
 
 ---
 
-## SESSION 113 — 2026-10-14 — Discovery: std.random — open
+## SESSION 113 — 2026-10-14 — Discovery: std.random — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user asked for random numbers from std (firefly carries its own xorshift).
+- Discovery answers:
+  - xoshiro256\*\* with splitmix64 seeding;
+  - `seeded(n)` plus `from_os()`, with no global generator;
+  - the API `next_u64`, `uniform`, `below`, `between`, `normal`, `chance`, `choice`, `shuffle`.
+- Added milestone 54 to `Language v15 Draft.md` and wrote PRP-083 (proposed). The PRP flags one change for sign-off: `uniform(): f64` instead of `uniform<T: Float>()`, because `T` can't be inferred with no arguments.
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-083-std_random.md`.
+- Modified: `docs/specs/Language v15 Draft.md`, CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- The discovery answers (MEMORY 104 on approval).
+
+### PENDING DECISIONS OPENED
+- Approval of milestone 54, including `uniform(): f64`.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval; then branch `prp-083-std_random`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 53 complete** (PRP-082, MEMORY 102–103): the std library and `std.math`. Tagged `m53`. `Language v15 Specification.md` (in progress, milestones 51–53) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines; the prelude lives in `src/prelude/`, std in `src/std/`.
+**Milestones 51–53 complete.** **Milestone 54 (`std.random`) is proposed:** decisions 19–21 in `Language v15 Draft.md`, and PRP-083, waiting for the user's approval, which includes the `uniform(): f64` change.
+- **On approval:** MEMORY 104, branch `prp-083-std_random`, then build:
+  - `src/std/random.la`;
+  - the `$float.from_f64` and `$os.seed` built-ins;
+  - `runtime/random.c` (`lugha_rt_os_seed`), registered in `RUNTIME_PARTS`, `RUNTIME_SOURCE` and `RUNTIME_SYMBOLS`.
+- **Then:** switch firefly (`~/Documents/kithinji/firefly`) to `std.random`. Tag `m54` goes on the merge.
 
-Next in v15 (`TODO.md`):
-- `std.fs` (directories), `std.env`, `std.process` (security review);
-- Unicode follow-ups.
-
-Each needs its discovery. glowworm can now use `std.math`.
+The user is building glowworm (n-d arrays) and firefly (autograd, aiming at a tiny GPT) in Lugha. The file-size limit is 500 lines.
 
 See `TODO.md`.
