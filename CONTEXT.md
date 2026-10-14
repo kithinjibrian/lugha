@@ -4266,7 +4266,7 @@ Branch: prp-075-unicode_text (merged into main)
 ---
 
 ## SESSION 98 — 2026-10-14 — Tuples (milestone 47) — open
-Branch: main
+Branch: prp-076-tuples
 
 ---
 
