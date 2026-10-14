@@ -1696,6 +1696,6 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 Next:
 - glowworm can now use `impl NdArray<T: Num>` and operators;
-- the rest of v15 (directories, processes, env, Unicode follow-ups) waits in `TODO.md` for its discovery to resume at the process API shape.
+- next in v15: a std library of bundled `std.<module>` modules, with no opt-out (agreed in session 109); directories, processes and env go in it as `std.fs`/`std.process`/`std.env`. See `TODO.md`; it starts with a discovery.
 
 See `TODO.md`.

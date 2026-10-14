@@ -4626,12 +4626,42 @@ Branch: prelude-folder (merged into main)
 
 ---
 
+## SESSION 109 — 2026-10-14 — Std library direction noted — closed
+Branch: main
+
+### WHAT WAS DONE
+- Discussed a standard library with the user. Direction:
+  - std is bundled Lugha modules imported as `std.<module>`;
+  - it is lazy, so it costs nothing unless imported;
+  - the prelude stays small;
+  - v15's directories, processes and env become `std.fs`, `std.process` and `std.env`;
+  - `std.math` comes first.
+- The user agreed: **no opt-out mechanism** (no `no_std`, no `deny` list for now).
+- Recorded in `TODO.md` (v15 later milestones).
+
+### FILES CREATED OR MODIFIED
+- `TODO.md`, CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- Std direction and "no opt-out" (to be confirmed in its discovery and draft).
+
+### PENDING DECISIONS OPENED
+- The std discovery (modules, layout, how intrinsics relate).
+
+### STILL OPEN AT CLOSE
+- Nothing.
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 52 complete** (PRP-081, MEMORY 100–101): operator overloading. Tagged `m52`. `Language v15 Specification.md` (in progress, milestones 51–52) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines. The prelude lives in `src/prelude/` (session 108).
 
 Next:
 - glowworm can now use `impl NdArray<T: Num>` and operators;
-- the rest of v15 (directories, processes, env, Unicode follow-ups) waits in `TODO.md` for its discovery to resume at the process API shape.
+- next in v15: a std library of bundled `std.<module>` modules, with no opt-out (agreed in session 109); directories, processes and env go in it as `std.fs`/`std.process`/`std.env`. See `TODO.md`; it starts with a discovery.
 
 See `TODO.md`.

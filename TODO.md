@@ -294,6 +294,10 @@ Done when the printing-anything program passes and the v12 spec is complete.
 
 ## v15 — later milestones, discovery paused (session 103)
 
+- [ ] **Std library first** (session 109): bundled Lugha modules imported as `std.<module>` (`import std.math;`), embedded in `lughac` like the prelude and loaded only when imported, so they cost nothing otherwise. `std` is a reserved package name, always available, versioned with the compiler. The prelude stays small; new features go in std modules. `std.math` comes first; the directories/processes/env items below become `std.fs`, `std.process` and `std.env`.
+  - **Agreed with the user: no opt-out mechanism** (no `no_std`, no `[package] deny` list). Lazy loading already makes std free when unused; a `deny` list for policy can be reconsidered later.
+  - Next step: a discovery, then a draft milestone and PRP.
+
 The user chose this scope; the discovery stopped after its first answer, so v15 starts by resuming it (one question at a time), then a draft spec, then PRPs.
 
 - [ ] **Directories:** `list_dir(path)`, `make_dir`, `remove_file`/`remove_dir`, `file_exists`/`is_dir`; returning `Result` like the file intrinsics. *(chosen)*
