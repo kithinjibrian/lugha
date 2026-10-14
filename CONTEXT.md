@@ -3805,7 +3805,7 @@ Branch: prp-066-package_versions (merged into main)
 ---
 
 ## SESSION 86 — 2026-10-14 — Re-exports (milestone 38) — open
-Branch: main
+Branch: prp-067-reexports
 
 ---
 
