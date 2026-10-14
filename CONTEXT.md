@@ -3551,6 +3551,9 @@ Branch: prp-062-conditional_patterns (merged into main)
 
 ---
 
+## SESSION 80 — 2026-10-14 — v10 direction — open
+Branch: main
+
 ## NEXT SESSION START POINT
 
 **Lugha v9 is complete** (milestones 31–33; PRP-060–062; MEMORY 72–75): or-patterns, `mut` bindings, `unwrap`/`expect`, `%=`, `if let`, `while let`, `let … else`. Tagged `m33` and `v9`. `Language v9 Specification.md` is what `lughac spec` prints; v0–v8 are frozen.
