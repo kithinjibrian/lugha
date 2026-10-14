@@ -1,6 +1,6 @@
 ## FEATURE: Copy-on-write arrays — copies share arrays until one side writes, with no change to any program's behaviour; milestone 55.
 
-**Status:** approved 2026-10-15 — session 117, with the milestone 55 additions and DECISION-012, "in one go"; built in session 117.
+**Status:** merged 2026-10-15 — session 117 (approved the same session, "in one go"); tag `m55`.
 **Milestone:** 55 (one PRP; tag `m55` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 22–24, the milestone 55 choices); spec §4 (Array copies), §5 (assignment order, `for … of mut`), §7 (heap layout), §9 (lowering), §12 ("Cost of array copies", reversed).
 
@@ -126,7 +126,7 @@ Regression:
 - [x] Timings recorded.
 - [x] The spec is at milestone 55; docs updated.
 - [x] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
