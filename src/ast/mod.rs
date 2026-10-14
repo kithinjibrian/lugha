@@ -242,6 +242,8 @@ pub enum AssignOp {
     Sub,
     Mul,
     Div,
+    /// `%=` (v9).
+    Rem,
     /// v7: `&=`, `|=`, `^=`, `<<=`, `>>=`.
     BitAnd,
     BitOr,
@@ -259,6 +261,7 @@ impl AssignOp {
             AssignOp::Sub => "-=",
             AssignOp::Mul => "*=",
             AssignOp::Div => "/=",
+            AssignOp::Rem => "%=",
             AssignOp::BitAnd => "&=",
             AssignOp::BitOr => "|=",
             AssignOp::BitXor => "^=",

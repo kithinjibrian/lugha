@@ -1,0 +1,6 @@
+// unwrap on an Err panics at the method name.
+
+fun main() {
+    let r: Result<i64, string> = Err("no");
+    println(r.unwrap());
+}

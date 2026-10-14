@@ -1,0 +1,25 @@
+// unwrap, expect and %= (milestone 32).
+
+struct P { x: i64 }
+
+fun main() {
+    let r: Result<string, i64> = Ok("fine");
+    println(r.unwrap());
+    println(Some(3).expect("three"));
+    let nested: Option<Option<i64>> = Some(Some(7));
+    println(nested.unwrap().unwrap());
+    let p = Some(P { x: 9 }).unwrap();
+    println(p.x);
+    let xs = Some([1, 2, 3]).expect("an array");
+    println(xs.len);
+
+    let mut a = 47;
+    a %= 10;
+    let mut b: u8 = 200;
+    b %= 7;
+    let mut c = 7.5;
+    c %= 2.0;
+    let mut ys = [10, 11, 12];
+    ys[1] %= 3;
+    println("{a} {b} {c} {ys[1]}");
+}

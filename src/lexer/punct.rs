@@ -29,6 +29,7 @@ impl Lexer<'_> {
             ('-', Some(b'=')) => (MinusEq, 2),
             ('*', Some(b'=')) => (StarEq, 2),
             ('/', Some(b'=')) => (SlashEq, 2),
+            ('%', Some(b'=')) => (PercentEq, 2),
             ('.', Some(b'.')) => (DotDot, 2),
             ('=', Some(b'>')) => (FatArrow, 2),
             (':', Some(b':')) => (ColonColon, 2),
@@ -115,6 +116,7 @@ mod tests {
                 Amp, AmpEq, Pipe, PipeEq, Caret, CaretEq, Tilde, Shl, ShlEq, AndAnd, OrOr
             ]
         );
+        assert_eq!(kinds("%= %"), [PercentEq, Percent]);
         // `>>` stays two tokens so `Option<Option<i64>>` closes both lists.
         assert_eq!(kinds(">> >>="), [Gt, Gt, Gt, GtEq]);
     }

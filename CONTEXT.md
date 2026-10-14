@@ -3494,17 +3494,43 @@ Branch: prp-060-better_patterns (merged into main)
 
 ---
 
-## SESSION 78 — 2026-10-14 — Unwrapping (milestone 32) — open
+## SESSION 78 — 2026-10-14 — Unwrapping (milestone 32) — closed
 Branch: prp-061-unwrapping
+
+### WHAT WAS DONE
+- Part of the user's "in one go": PRP-061 written as approved within the v9 draft, built, merged on green CI.
+- `unwrap`/`expect` built in (`check/builtins.rs`, `codegen/unwrap.rs`); `%=` through lexer, AST, parser, checker, codegen.
+- Spec: §2/§3 `%=`, helper table rows, panics list, §9, the §10 program; milestone 32 done.
+
+### FILES CREATED OR MODIFIED
+- New: `src/codegen/unwrap.rs`, `tests/programs/m32/` (`unwrap`, `more`, `err`).
+- Modified: `src/lexer/{token,punct}.rs`, `src/parser/{describe,operators}.rs`, `src/ast/mod.rs`, `src/check/{builtins,assign}.rs`, `src/codegen/{methods,runtime,stmt,mod}.rs`, `tests/spec.rs`, the v9 spec.
+- Docs: PRP-061, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 74, CONTEXT.
+
+### TESTS WRITTEN
+- Checker (`builtins.rs`): types on `Option`/`Result`, E0415/E0401/E0405, `%=` and E0404. Codegen (`unwrap.rs`): tag test and panic. Lexer: `%=`.
+- `tests/programs/m32/` (two panicking goldens, exit 101); the §10 program from the spec. 223 earlier programs' IR byte-identical; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 74.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m32`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 31 complete** (PRP-060, MEMORY 73): or-patterns and `mut` bindings. Tagged `m31`. `Language v9 Specification.md` (in progress) is what `lughac spec` prints; v8 is frozen.
+**Milestone 32 complete** (PRP-061, MEMORY 74): `unwrap`, `expect`, `%=`. Tag `m32` goes on the merge of PRP-061. `Language v9 Specification.md` (in progress) is what `lughac spec` prints.
 
-Next (the user's "in one go"): **milestone 32, unwrapping** — PRP-061: built-in `unwrap()` / `expect(msg)` on `Option` and `Result` (checker `builtins.rs`, codegen near `int_methods.rs`; panic `unwrap on None` / `unwrap on Err` / the message at the method name via `lugha_rt_panic`), `%=` (lexer `PercentEq`, `AssignOp::Rem`). Then **milestone 33** — PRP-062: `if let`, `while let`, `let … else` (E0429).
+Next (the user's "in one go"): **milestone 33, conditional patterns** — PRP-062, completing v9 (tags `m33`, `v9`). Scope (v9 draft decision 5 and its choices, §3 `if_expr`/`while_stmt`/`var_decl`, §5, E0429, §10 "Conditional patterns"):
+- parser: `if let p = cond block [else …]` (an expression; `else if let` chains), `while let p = cond block`, `let p = e else block;` (told apart from `let` by the pattern/`else`);
+- checker: one-arm pattern typing (`arm_pattern`, bindings incl. `mut`), bindings in scope in the then-block / loop body / rest of the block; `let … else` else block must have type `never` (E0429); no exhaustiveness;
+- codegen: one-arm tests via `codegen/patterns.rs::test` (or-patterns too), `next` = else / loop exit / else block.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/patterns.rs` (~290), `parser/stmt.rs` (~288).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~288), `codegen/control.rs` (292), `codegen/patterns.rs` (~290).
 
 See `TODO.md`.

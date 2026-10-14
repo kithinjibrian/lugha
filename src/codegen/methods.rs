@@ -131,6 +131,12 @@ impl<'ctx> Lowerer<'ctx> {
         if base_type == Type::String && name.name == "slice" {
             return self.string_slice(base, args, name.span.start).map(Some);
         }
+        // `o.unwrap()` and `r.expect(msg)` on `Option` and `Result` (v9).
+        if self.unwraps(&base_type, &name.name) {
+            return self
+                .unwrap_method(base, &base_type, &name.name, args, name.span.start)
+                .map(Some);
+        }
         // `x.wrapping_add(y)`, `x.count_ones()` and the rest (v7).
         if base_type.is_integer() {
             return self

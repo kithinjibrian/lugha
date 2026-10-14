@@ -90,31 +90,31 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (`check/builtins.rs`):
-- [ ] `unwrap` and `expect` types on `Option<i64>` and `Result<string, i64>`.
-- [ ] **Errors:**
+- [x] `unwrap` and `expect` types on `Option<i64>` and `Result<string, i64>`.
+- [x] **Errors:**
   - E0415 on `i64` and `string`;
   - E0403 for `expect(1)`;
   - E0405 for `unwrap(1)`.
-- [ ] `%=` on `i64` and `f64`; E0404 on a `string`.
+- [x] `%=` on `i64` and `f64`; E0404 on a `string`.
 
 Unit tests — codegen (`codegen/unwrap.rs`): `unwrap` compares the tag and calls `lugha_rt_panic` with `unwrap on None`.
 
 Unit tests — lexer: `%=` lexes.
 
 Acceptance — `tests/programs/m32/`:
-- [ ] `unwrap.la`: the §10 program, exit 101 with its stderr.
-- [ ] `more.la`:
+- [x] `unwrap.la`: the §10 program, exit 101 with its stderr.
+- [x] `more.la`:
   - `unwrap` on `Ok`;
   - `expect` on `Some`;
   - nested `Option<Option<i64>>`;
   - payloads that are structs and arrays;
   - `%=` on `i64`, `u8` and `f64`;
   - `%=` with a place (`xs[i] %= 3`).
-- [ ] `err.la`: `unwrap` on `Err` panics with `unwrap on Err`.
-- [ ] The §10 program runs from the spec (exit 101).
+- [x] `err.la`: `unwrap` on `Err` panics with `unwrap on Err`.
+- [x] The §10 program runs from the spec (exit 101).
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -122,10 +122,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m32/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The spec is at milestone 32; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m32/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The spec is at milestone 32; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -134,3 +134,9 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m32/more.la
 ```
+
+## AMENDMENTS (during build, session 78)
+
+- **`expect(1)` is E0401** (an integer literal where a `string` is expected), not E0403. A non-literal argument of another type is E0403.
+- **`-O2`** was checked by hand for `m32/more` and the panicking `m32/unwrap`.
+- **No file splits.**

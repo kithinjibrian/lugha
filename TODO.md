@@ -199,9 +199,9 @@ Done when the packages programs pass and the v8 spec is complete.
 Done when the or-patterns program passes.
 - [x] PRP-060: or-patterns (E0428), `mut` bindings; `Language v9 Specification.md` begins; tagged `m31`
 
-### Milestone 32 — Unwrapping
+### Milestone 32 — Unwrapping ✅
 Done when the unwrapping program passes.
-- [ ] `unwrap`, `expect`, `%=`
+- [x] PRP-061: `unwrap`, `expect`, `%=`; tagged `m32` at merge
 
 ### Milestone 33 — Conditional patterns
 Done when the conditional-patterns program passes and the v9 spec is complete.

@@ -1,0 +1,12 @@
+// The v9 draft's §10 unwrapping program (milestone 32).
+
+fun main() {
+    let n = parse_i64("42").unwrap();
+    let m = parse_i64("7").expect("need a number");
+    let mut x = n + m;
+    x %= 10;
+    println(x);
+    let r: Result<i64, string> = Ok(5);
+    println(r.unwrap());
+    println(parse_i64("x").expect("not a number"));
+}

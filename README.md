@@ -45,6 +45,7 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **Integer methods (v7, milestone 29):** `h.wrapping_mul(1099511628211)` and friends never panic; `x.count_ones()`, `leading_zeros()`, `trailing_zeros()` give an `i64`.
 - **Packages (v8, milestone 30):** a `lugha.toml` next to `main.la` lists package folders (`[packages]` / `geo = "libs/geo"`), and `import geo.shapes;` loads a package's module; a package can list its own packages, and other packages see only what it marks `public`.
 - **Better patterns (v9, milestone 31):** `Circle(r) | Square(r) => r * 2.0`, `"q" | "quit" => …`, and `Some(mut n) => { n += 1; … }` with the arm's own copy.
+- **Unwrapping (v9, milestone 32):** `parse_i64(s).unwrap()` and `.expect("need a number")` panic at the call on `None`/`Err`; `x %= 10`.
 
 Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v9 Specification.md`](docs/specs/Language%20v9%20Specification.md) (what `lughac spec` prints, in progress); the approved plan it is built from is [`Language v9 Draft.md`](docs/specs/Language%20v9%20Draft.md), and v8 is frozen in [`Language v8 Specification.md`](docs/specs/Language%20v8%20Specification.md).
 

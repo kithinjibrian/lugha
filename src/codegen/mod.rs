@@ -41,6 +41,7 @@ mod scope;
 mod stmt;
 mod structs;
 mod swap;
+mod unwrap;
 mod upcast;
 mod value;
 

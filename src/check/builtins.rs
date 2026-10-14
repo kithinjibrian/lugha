@@ -1,9 +1,11 @@
 //! The built-in methods: `push`, `pop` and `clear` on arrays (v1 §4,
-//! milestone 8), `slice` on strings (v4), and the wrapping and counting
-//! methods on integers (v7).
+//! milestone 8), `slice` on strings (v4), the wrapping and counting
+//! methods on integers (v7), and `unwrap`/`expect` on `Option` and
+//! `Result` (v9).
 
 use super::Type;
 use super::methods::Method;
+use super::results::RESULT;
 use crate::span::Span;
 
 /// `push`, `pop` and `clear` on an array (v1 §4, milestone 8), with a
@@ -14,6 +16,13 @@ pub(super) fn builtin(receiver: &Type, name: &str) -> Option<Method> {
         (Type::Array(element), "pop") => (Vec::new(), Type::Option(element.clone()), true),
         (Type::Array(_), "clear") => (Vec::new(), Type::Void, true),
         (Type::String, "slice") => (vec![Type::I64, Type::I64], Type::String, false),
+        // v9: the success payload, or a panic at the call.
+        (Type::Option(inner), "unwrap") => (Vec::new(), (**inner).clone(), false),
+        (Type::Option(inner), "expect") => (vec![Type::String], (**inner).clone(), false),
+        (Type::Enum(k, args), "unwrap") if k == RESULT => (Vec::new(), args[0].clone(), false),
+        (Type::Enum(k, args), "expect") if k == RESULT => {
+            (vec![Type::String], args[0].clone(), false)
+        }
         (int, "wrapping_add" | "wrapping_sub" | "wrapping_mul") if int.is_integer() => {
             (vec![int.clone()], int.clone(), false)
         }
@@ -112,5 +121,30 @@ mod tests {
             codes("let a: u32 = 1; let b: u64 = 2; let r = a.wrapping_add(b);"),
             ["E0403"]
         );
+    }
+
+    #[test]
+    fn option_and_result_unwrap_and_expect() {
+        use crate::check::Type;
+        use crate::check::test_util::let_type;
+        let at = |body: &str| let_type(&format!("fun main() {{ {body} }}"), "r");
+        assert_eq!(at("let o = Some(1); let r = o.unwrap();"), Type::I64);
+        assert_eq!(at("let o = Some(1.5); let r = o.expect(\"x\");"), Type::F64);
+        let res = "let x: Result<string, i64> = Ok(\"a\");";
+        assert_eq!(at(&format!("{res} let r = x.unwrap();")), Type::String);
+        assert_eq!(
+            at(&format!("{res} let r = x.expect(\"no\");")),
+            Type::String
+        );
+        let codes = |body: &str| {
+            let src = format!("fun main() {{ {body} }}");
+            errors(&src).into_iter().map(|(c, _)| c).collect::<Vec<_>>()
+        };
+        assert_eq!(codes("let n = 1; let r = n.unwrap();"), ["E0415"]);
+        assert_eq!(codes("let s = \"a\"; let r = s.expect(\"x\");"), ["E0415"]);
+        assert_eq!(codes("let o = Some(1); let r = o.expect(1);"), ["E0401"]);
+        assert_eq!(codes("let o = Some(1); let r = o.unwrap(1);"), ["E0405"]);
+        ok("fun main() { let mut a = 7; a %= 2; let mut f = 7.5; f %= 2.0; }");
+        assert_eq!(codes("let mut s = \"a\"; s %= 2;"), ["E0404"]);
     }
 }

@@ -89,6 +89,7 @@ fn symbol(kind: &TokenKind) -> &'static str {
         Star => "*",
         Slash => "/",
         Percent => "%",
+        PercentEq => "%=",
         Question => "?",
         Amp => "&",
         AmpEq => "&=",

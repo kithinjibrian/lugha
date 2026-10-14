@@ -1,13 +1,14 @@
-# Lugha v9 Specification (in progress: milestone 31)
+# Lugha v9 Specification (in progress: milestones 31–32)
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestone 31, or-patterns and `mut` bindings, is done; milestones 32–33 are next). It is built from the approved plan, `Language v9 Draft.md`, milestone by milestone. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v8 Specification.md` keeps v8 frozen.
+**Status:** in progress (milestones 31–32, or-patterns, `mut` bindings and unwrapping, are done; milestone 33 is next). It is built from the approved plan, `Language v9 Draft.md`, milestone by milestone. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v8 Specification.md` keeps v8 frozen.
 
 **v8.** This is v7 plus packages: a `lugha.toml` manifest, package imports, and `public` / package / `private` visibility (milestone 30).
 
-**Changes since v8** (milestone 31 so far):
+**Changes since v8** (milestones 31–32 so far):
 - A pattern may be alternatives, `Circle(r) | Square(r) => r * 2.0` or `"q" | "quit" => …`, nested anywhere; every alternative binds the same names at the same types (E0428). `mut name` makes a binding the arm's own copy, which the arm may change (sections 3–4).
+- `o.unwrap()` and `o.expect(msg)` on `Option` and `Result` give the value inside or panic at the call (`unwrap on None`, `unwrap on Err`, or `msg`); `x %= y` is the compound remainder (sections 2–5).
 
 Every valid v8 program is a valid v9 program.
 
@@ -169,7 +170,7 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 ```
 +  -  *  /  %  ==  !=  <  <=  >  >=  &&  ||  !
 &  |  ^  ~  <<                                  (v7)
-=  +=  -=  *=  /=  &=  |=  ^=  <<=              (v7: the bit forms)
+=  +=  -=  *=  /=  %=  &=  |=  ^=  <<=          (v7: the bit forms; v9: `%=`)
 (  )  {  }  [  ]  ,  ;  :  .  ..  =>  ?
 ```
 
@@ -222,7 +223,7 @@ stmt         = var_decl | while_stmt | for_stmt
              | expr [ assign_op expr ] ";" ;
 block_like   = if_expr | match_expr | block ;
 var_decl     = "let" [ "mut" ] IDENT [ ":" type ] "=" expr ";" ;
-assign_op    = "=" | "+=" | "-=" | "*=" | "/=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ;   (* the bit forms: v7 *)
+assign_op    = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ;   (* bit forms: v7; `%=`: v9 *)
 
 if_expr      = "if" cond block [ "else" ( if_expr | block ) ] ;
 while_stmt   = "while" cond block ;
@@ -480,6 +481,8 @@ They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (
 | `Result<T, E>` | `r.ok()` | `Option<T>` |
 | `Result<T, E>` | `r.map(f)`, `r.map_err(f)` | `Result<U, E>`, `Result<T, F>` |
 | `Result<T, E>` | `r.is_ok()`, `r.is_err()` | `bool` |
+| `Option<T>`, `Result<T, E>` | `x.unwrap()` (v9) | `T`: the `Some` or `Ok` value; otherwise panics (at the method name) with `unwrap on None` or `unwrap on Err` |
+| `Option<T>`, `Result<T, E>` | `x.expect(msg)` (v9) | `T`, as `unwrap`, but the panic's message is `msg`, a `string` evaluated even when it isn't needed |
 
 Strings are bytes: every position is a byte offset, and `slice` can cut a multi-byte character, giving a string of exactly those bytes. A closure argument is typed as for the array helpers (`o.map(fun(x) = "{x}")` is an `Option<string>`). `map` means the array, `Option` or `Result` helper according to the receiver. `parse_i64(s).ok_or("bad number")?` turns a missing value into an error and returns it. There is no `unwrap()`: handle a failure with `match`, `?` or `unwrap_or`.
 
@@ -566,7 +569,7 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 
 Evaluation is strictly left to right: operands, call arguments and struct-literal fields are evaluated in source order. The only exceptions are `&&` and `||`, which skip their right operand when the left decides the result.
 
-**Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way. Shifts (v7) lose the bits shifted out and never panic for overflow; `>>` copies the sign bit for `i32` and `i64` and fills with zeros for the unsigned types; a shift amount that is negative, or at least the type's width (8, 32 or 64), panics with `shift out of range` at the operator. `&=`, `|=`, `^=`, `<<=` and `>>=` mean `x = x op y` with the place evaluated once, as `+=` does, and need an integer.
+**Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way, including `%=` (v9), which panics on a zero divisor as `%` does. Shifts (v7) lose the bits shifted out and never panic for overflow; `>>` copies the sign bit for `i32` and `i64` and fills with zeros for the unsigned types; a shift amount that is negative, or at least the type's width (8, 32 or 64), panics with `shift out of range` at the operator. `&=`, `|=`, `^=`, `<<=` and `>>=` mean `x = x op y` with the place evaluated once, as `+=` does, and need an integer.
 
 **Methods on integers** (v7). Every integer type (`i32`, `i64`, `u8`, `u32`, `u64`) has six built-in methods:
 
@@ -637,7 +640,7 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 
 **Expression statements.** Any expression followed by `;` is a statement, and its value is discarded. Discarding the result of a non-`void` call is allowed. Adding `;` after a would-be tail expression turns it into a statement, so `{ x * x; }` is a `void` block. When a value was expected, the checker reports this as "remove this semicolon" and points at it.
 
-**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), a shift out of range (`shift out of range`; v7), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), an out-of-range `slice` (`slice out of bounds: from F to T of a string of length L`, at the method name; v4), `split` with an empty separator (located in the prelude, `<prelude>:…`; v4), a negative repeat-literal count, too-deep recursion (`stack overflow`), and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. A stack overflow is the one panic without a location — it prints just `panic: stack overflow` — because the runtime can't tell which call went too deep. They cannot be caught.
+**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), a shift out of range (`shift out of range`; v7), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), an out-of-range `slice` (`slice out of bounds: from F to T of a string of length L`, at the method name; v4), `split` with an empty separator (located in the prelude, `<prelude>:…`; v4), a negative repeat-literal count, too-deep recursion (`stack overflow`), `unwrap` on a `None` or an `Err` (`unwrap on None`, `unwrap on Err`) and `expect(msg)` likewise (message `msg`), each located at the method name (v9), and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. A stack overflow is the one panic without a location — it prints just `panic: stack overflow` — because the runtime can't tell which call went too deep. They cannot be caught.
 
 **Intrinsics.** These names are built into the compiler, not declared in source. They accept arguments that ordinary functions can't, which is why they are special.
 
@@ -837,6 +840,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - A default method (v5) compiles once per type that uses it, through a table or a bound: `lugha_fn_<Interface>.<method><Type>` (`lugha_fn_Error.report<ParseError>`); that type's table slot and bound calls use it. A generic interface's default (v6) compiles once per type and interface arguments, the arguments printed on the interface: `lugha_fn_Source<i64>.skip<Count>`. A converted `?` error is boxed on the failure branch, like any conversion. A program without interface values has none of these.
 - Converting a `J` value to `I` (v6) calls `lugha_up_<J>.<I>(table) -> table`, which compares the value's table with each `J` table the program has and returns the matching `I` table; its body is built after everything else, when every table is known. That `I` table is derived from the table the value was built with: `lugha_vt_<C>.<J>.<I>` has `C`'s identity and copy and, for each `I` item, the function `C`'s `J` table has, so methods behave as through `J`; derived tables keep the original interface (`<C>.<J>.<K>` for a chain) and converting back to it gives the original table. A program that never converts between interfaces has no `lugha_up_` functions and no derived tables. (The approved draft put one slot per target interface in each table instead; tables are emitted while lowering, before every conversion is known, so PRP-054 uses lookup functions.)
 - The v7 operators and methods: `& | ^` are `and`/`or`/`xor`; `<<` is `shl` and `>>` is `ashr` for `i32`/`i64` and `lshr` for the unsigned types, each after an `icmp uge` of the amount against the width that panics (`shift out of range`); `~x` is `xor x, -1`; the wrapping methods are plain `add`/`sub`/`mul`; the counting methods are `llvm.ctpop`, `llvm.ctlz` and `llvm.cttz` (zero not poison), widened to `i64`. A program that uses none of them has none of this code.
+- `unwrap` and `expect` (v9) are built in, not prelude functions, so their panic points at the caller: the value's tag is compared with `Some` or `Ok`, and a mismatch calls `lugha_rt_panic` with the message and the method name's location.
 - An or-pattern (v9) lowers in the arm chain: each alternative that fails tries the next, and every alternative stores a name's value into the arm's one local for it; a `match` with an or-pattern or a `mut` binding never uses the flat `switch`. A `mut` binding is a local of its own, deep-copied when its type is.
 - An iterator loop (v6) stores the iterator in a hidden local and calls its `next` with that local's address: directly for a struct or enum (its own method, or a bound default's instance in a generic instance), and through the table for an interface value.
 - A closure's body (v3) is `lugha_closure_<enclosing>.<n>`: the enclosing function's symbol without its prefix, then the closure's number in that function from 0 (`lugha_closure_main.0`, `lugha_closure_main.0.0` for a closure inside it, `lugha_closure_max<i64>.0` in an instance). Its environment comes first, as for every function value's code.
@@ -1895,6 +1899,21 @@ fun main() {
 }
 ```
 
+**Unwrapping** (milestone 32). Prints `9` then `5` on two lines, exits with 101 (the last `expect` panics with its message).
+
+```
+fun main() {
+    let n = parse_i64("42").unwrap();
+    let m = parse_i64("7").expect("need a number");
+    let mut x = n + m;
+    x %= 10;
+    println(x);
+    let r: Result<i64, string> = Ok(5);
+    println(r.unwrap());
+    println(parse_i64("x").expect("not a number"));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1932,7 +1951,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 29 | Integer methods (v7) | `wrapping_add`/`sub`/`mul`, `count_ones`, `leading_zeros`, `trailing_zeros` | The hashing program in section 10 passes (done: v7 complete) |
 | 30 | Packages (v8) | `lugha.toml`, package imports, per-package manifests, `public` and package visibility, E0320–E0323 | The packages program in section 10 passes (done: v8 complete) |
 | 31 | Better patterns (v9) | or-patterns (E0428), `mut` bindings | The or-patterns program in section 10 passes (done) |
-| 32 | Unwrapping (v9, planned) | `unwrap`, `expect`, `%=` | The unwrapping program passes |
+| 32 | Unwrapping (v9) | `unwrap`, `expect`, `%=` | The unwrapping program in section 10 passes (done) |
 | 33 | Conditional patterns (v9, planned) | `if let`, `while let`, `let … else` (E0429) | The conditional-patterns program passes |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.

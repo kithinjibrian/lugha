@@ -212,7 +212,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.call_panic(message, at);
     }
 
-    fn call_panic(&mut self, message: BasicValueEnum<'ctx>, at: usize) {
+    pub(super) fn call_panic(&mut self, message: BasicValueEnum<'ctx>, at: usize) {
         let file = self.file_name(at);
         let (line, col) = self.source.line_col(at);
         let i64_type = self.context.i64_type();

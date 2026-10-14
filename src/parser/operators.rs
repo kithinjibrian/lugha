@@ -78,6 +78,7 @@ fn assign_op(kind: &TokenKind) -> Option<AssignOp> {
         TokenKind::MinusEq => AssignOp::Sub,
         TokenKind::StarEq => AssignOp::Mul,
         TokenKind::SlashEq => AssignOp::Div,
+        TokenKind::PercentEq => AssignOp::Rem,
         TokenKind::AmpEq => AssignOp::BitAnd,
         TokenKind::PipeEq => AssignOp::BitOr,
         TokenKind::CaretEq => AssignOp::BitXor,

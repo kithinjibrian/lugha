@@ -99,6 +99,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Hashing",
         "Packages",
         "Or-patterns",
+        "Unwrapping",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),
