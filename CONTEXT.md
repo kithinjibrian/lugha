@@ -4846,6 +4846,11 @@ Branch: main
 
 ---
 
+## SESSION 116 — 2026-10-15 — Discovery: read without copying — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 54 complete** (PRP-083, MEMORY 104–105): `std.random`. Tagged `m54`. `Language v15 Specification.md` (in progress, milestones 51–54) is what `lughac spec` prints; v0–v14 are frozen. firefly uses `std.random`.
