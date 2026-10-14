@@ -1,6 +1,6 @@
 ## FEATURE: Package versions — `[package] version`, inline entries with requirements, E0324; milestone 37.
 
-**Status:** approved 2026-10-14 — session 85. This is part of the user's "in one go" (milestones 37–38), merged once CI is green.
+**Status:** merged 2026-10-14 — session 85. This is part of the user's "in one go" (milestones 37–38), merged once CI is green.
 **Milestone:** 37 (one PRP; tag `m37` at merge; `Language v11 Specification.md` begins)
 **Spec:** `Language v11 Draft.md`:
 - decisions 2–3, and the choices on versions, `[package]`, requirements, compatibility and E0324;

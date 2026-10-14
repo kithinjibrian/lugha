@@ -225,7 +225,7 @@ Done when the iterator-helpers program passes and the v10 spec is complete.
 
 ### Milestone 37 — Package versions ✅
 Done when the package-versions program passes.
-- [x] PRP-066: `[package]` versions, inline entries with requirements, E0324; `Language v11 Specification.md` begins; tagged `m37` at merge
+- [x] PRP-066: `[package]` versions, inline entries with requirements, E0324; `Language v11 Specification.md` begins; tagged `m37`
 
 ### Milestone 38 — Re-exports
 Done when the re-exports program passes and the v11 spec is complete.

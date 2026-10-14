@@ -3762,8 +3762,8 @@ Branch: main
 
 ---
 
-## SESSION 85 — 2026-10-14 — Package versions (milestone 37) — open
-Branch: prp-066-package_versions
+## SESSION 85 — 2026-10-14 — Package versions (milestone 37) — closed
+Branch: prp-066-package_versions (merged into main)
 
 ### WHAT WAS DONE
 - The user approved the v11 draft and asked for it "in one go". The draft is marked approved; MEMORY 80.
@@ -3800,13 +3800,13 @@ Branch: prp-066-package_versions
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m37`.
+- Nothing. PRP-066 merged into `main`, tagged `m37`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 37 complete** (PRP-066, MEMORY 81): package versions, E0324. Tag `m37` goes on the merge. `Language v11 Specification.md` (in progress) is what `lughac spec` prints; v0–v10 are frozen.
+**Milestone 37 complete** (PRP-066, MEMORY 81): package versions, E0324. Tagged `m37`. `Language v11 Specification.md` (in progress) is what `lughac spec` prints; v0–v10 are frozen.
 
 Next, under the user's "in one go" (MEMORY 80): **milestone 38, named imports and re-exports** (PRP-067, next session):
 - `import a.b { X, y };` binds the listed items in the file;
