@@ -3851,6 +3851,11 @@ Branch: prp-067-reexports (merged into main)
 
 ---
 
+## SESSION 87 — 2026-10-14 — v12 direction — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v11 is complete** (milestones 37–38; PRP-066–067; MEMORY 80–82):
