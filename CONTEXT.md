@@ -4102,6 +4102,11 @@ Branch: prp-072-more_iterator_helpers (merged into main)
 
 ---
 
+## SESSION 94 — 2026-10-14 — Format specifiers (milestone 44) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 43 complete** (PRP-072, MEMORY 89): more iterator helpers. Tagged `m43`. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
