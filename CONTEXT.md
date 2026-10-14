@@ -3627,6 +3627,11 @@ Branch: prp-063-self_everywhere (merged into main)
 
 ---
 
+## SESSION 82 — 2026-10-14 — More integers (milestone 35) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 34 complete** (PRP-063, MEMORY 77): `Self` in `impl` blocks, default methods on concrete types (E0430). Tagged `m34`. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
