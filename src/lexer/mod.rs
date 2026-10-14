@@ -7,6 +7,7 @@
 //!
 //! Depends on: span, diagnostic.
 
+mod format_spec;
 mod interp;
 mod number;
 mod punct;

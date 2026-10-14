@@ -26,6 +26,9 @@ pub enum TokenKind {
     StrMid(String),
     /// Text after the last interpolation's `}`, up to the closing `"`.
     StrEnd(String),
+    /// A format specifier, the raw text after an interpolation's
+    /// top-level `:` up to its `}` (v13).
+    FmtSpec(String),
     /// Identifier that is not a keyword.
     Ident(String),
 

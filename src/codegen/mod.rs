@@ -21,6 +21,7 @@ mod dispatch;
 mod enums;
 mod equality;
 mod expr;
+mod format;
 mod fun_values;
 mod function;
 mod growth;

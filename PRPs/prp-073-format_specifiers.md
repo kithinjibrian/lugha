@@ -99,8 +99,8 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — `src/format.rs`:
-- [ ] Parsing: every part, defaults, and each error.
-- [ ] `check`: precision, kind, `#` and `0` against the three value classes.
+- [x] Parsing: every part, defaults, and each error.
+- [x] `check`: precision, kind, `#` and `0` against the three value classes.
 
 Unit tests — lexer: `"{x:>5}"` lexes `StrStart`, `x`, `FmtSpec(">5")`, `StrEnd`; `"{f(a: 1)}"`-style colons inside parentheses don't start a spec.
 
@@ -109,8 +109,8 @@ Unit tests — parser: the sexp `(fmt x ">5")`.
 Unit tests — checker: E0431 for `{n:.2}` (int), `{f:x}`, `{s:05}`, `{n:#}`, `{n:q}`, `{n:2000}`; a struct with `{p:>20}` checks.
 
 Acceptance — `tests/programs/m44/`:
-- [ ] `format.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `format.la`: the §10 program.
+- [x] `more.la`:
   - every alignment with fill;
   - zero-padding of negatives and `#x`;
   - `X`, `o` and `b` on several widths;
@@ -120,11 +120,11 @@ Acceptance — `tests/programs/m44/`:
   - a value longer than its width;
   - a specifier on a string literal;
   - nested interpolations.
-- [ ] `e0431.la`: reject golden.
-- [ ] The §10 program runs from the spec.
+- [x] `e0431.la`: reject golden.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -132,10 +132,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m44/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The v13 spec is complete; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m44/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The v13 spec is complete; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -144,3 +144,12 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m44/format.la
 ```
+
+## AMENDMENTS (during build, session 94)
+
+- **The lexer's specifier code** is in a new file, `src/lexer/format_spec.rs`: adding it to `lexer/interp.rs` took that file to 326 lines. `interp.rs` keeps only the `parens` count and the `:` arm.
+- **`RUNTIME_SOURCE`** (a separate `concat!` in `link.rs`) also needed `format.c`, besides `RUNTIME_PARTS`; the first link failed without it.
+- **`0` is ignored when an alignment is given,** as the draft says: codegen passes `zero` only without one. `m44/more` checks `{7:>05}`.
+- **The checker's specifier tests** live in `check/input.rs`, and the parser's in `parser/conditional.rs`. No codegen unit test; the programs cover it.
+- **IR:** the 155 earlier programs that compile give byte-identical IR. `-O2` was checked by hand for both `m44` programs.
+- **No file splits.**

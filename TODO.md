@@ -252,8 +252,8 @@ Done when the printing-anything program passes and the v12 spec is complete.
 ### Milestone 43 — More iterator helpers ✅
 - [x] PRP-072: `zip` (`Pair`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`; tagged `m43`
 
-### Milestone 44 — Format specifiers
-- [ ] `"{x:spec}"`, E0431
+### Milestone 44 — Format specifiers ✅
+- [x] PRP-073: `"{x:spec}"`, E0431; v13 complete; tagged `m44` and `v13` at merge
 
 ## Found while working — needs a PRP
 

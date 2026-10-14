@@ -4105,19 +4105,66 @@ Branch: prp-072-more_iterator_helpers (merged into main)
 ## SESSION 94 — 2026-10-14 — Format specifiers (milestone 44) — open
 Branch: prp-073-format_specifiers
 
+### WHAT WAS DONE
+- PRP-073 written as approved under the "in one go" instruction, built and merged on green CI: format specifiers in interpolations, E0431, and the runtime fragment `format.c`.
+- **v13 spec complete:**
+  - status and changes summary;
+  - §3 grammar;
+  - §5 "Format specifiers";
+  - the E0431 row and the runtime table;
+  - §9;
+  - the §10 program, §11 row 44;
+  - §12.
+
+### FILES CREATED OR MODIFIED
+- New: `src/format.rs`, `src/lexer/format_spec.rs`, `src/codegen/format.rs`, `src/check/errors/v13.rs`, `runtime/format.c`, `tests/programs/m44/` (`format`, `more`, `e0431`), PRP-073.
+- Modified:
+  - `src/lib.rs`, `src/link.rs`;
+  - `src/lexer/{mod,token,interp}.rs`, `src/ast/{expr,mod}.rs`;
+  - `src/parser/{primary,describe,conditional}.rs`, `src/parser/sexp/mod.rs`;
+  - `src/check/{input}.rs`, `src/check/errors/mod.rs`;
+  - `src/codegen/{mod,input}.rs`;
+  - `tests/spec.rs`;
+  - the v13 spec.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 90, CONTEXT.
+
+### TESTS WRITTEN
+- **`format.rs`:** parsing, errors, and fitting.
+- **Lexer:** the `FmtSpec` token; colons inside parentheses.
+- **Parser:** `(fmt x ">5")`.
+- **Checker:** E0431 ×6, and valid specs on a struct, `u8` and `f64`.
+- **Programs:** `tests/programs/m44/`, and the §10 program from the spec.
+- **Regression:** 155 earlier programs give byte-identical IR; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 90.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tags `m44` and `v13`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 43 complete** (PRP-072, MEMORY 89): more iterator helpers. Tagged `m43`. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
+**Lugha v13 is complete** (milestones 41–44; PRP-070–073; MEMORY 86–90):
+- `Self` in declarations;
+- `for x of mut e`;
+- `zip`/`Pair`, `chain` and the other iterator helpers;
+- format specifiers (E0431).
 
-Next, under the user's "in one go" (MEMORY 86): **milestone 44, format specifiers** (PRP-073). It completes v13: tag `m44` and `v13`.
-- `"{x:[[fill]align][#][0][width][.precision][kind]}"`, split by the lexer at the first top-level `:`;
-- E0431;
-- `lugha_rt_fmt_int`, `lugha_rt_fmt_float`, `lugha_rt_pad`.
+Tags `m44` and `v13` go on the merge of PRP-073. `Language v13 Specification.md` is what `lughac spec` prints; v0–v12 are frozen.
+
+Next: **v14 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v13 spec §11 and §12):
+- a `format()` function, a debug form, parsing values from text;
+- tuples;
+- downloading packages, a lock file; whole-module re-exports and import aliases;
+- unsigned indexes; Unicode text; binary I/O.
 
 **Note:** `check/mod.rs` is at 300 lines. A new checker module needs a split proposal, or its `mod` line placed elsewhere.
 
-Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294).
+Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294), `parser/primary.rs` (~291).
 
 See `TODO.md`.

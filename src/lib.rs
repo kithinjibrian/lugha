@@ -3,14 +3,15 @@
 //! Compiles one `.la` source file to a native executable through the stages
 //! defined in spec §9: lex, parse, check, lower to LLVM IR, emit, link.
 //! The language itself is defined in `docs/specs/Language v13 Specification.md`
-//! (v12 plus the v13 features implemented so far; `Language v13 Draft.md`
-//! is the plan, and v12's file is frozen).
+//! (Lugha v13, complete; `Language v13 Draft.md` was the plan, and v12's
+//! file is frozen).
 
 pub mod ast;
 pub mod check;
 pub mod codegen;
 pub mod diagnostic;
 pub mod driver;
+pub mod format;
 pub mod lexer;
 pub mod link;
 pub mod modules;

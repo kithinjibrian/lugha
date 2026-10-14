@@ -22,10 +22,14 @@ impl<'ctx> Lowerer<'ctx> {
             let piece: BasicValueEnum<'ctx> = match part {
                 Part::Text(text) if text.is_empty() => continue,
                 Part::Text(text) => self.string_literal(text).into(),
-                Part::Expr(e) => {
+                Part::Expr(e, format) => {
                     let ty = self.ty(e);
                     let value = self.get(e, &ty)?;
-                    self.text(value, &ty)
+                    match format {
+                        // `{x:spec}` (v13).
+                        Some(f) => self.formatted(value, &ty, &f.text),
+                        None => self.text(value, &ty),
+                    }
                 }
             };
             joined = Some(match joined {

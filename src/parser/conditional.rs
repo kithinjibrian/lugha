@@ -124,4 +124,12 @@ mod tests {
             "(block (for x (of-mut xs) (block)))"
         );
     }
+
+    #[test]
+    fn interpolations_take_format_specifiers_v13() {
+        assert_eq!(
+            crate::parser::test_util::expr("\"{x:>5}!\""),
+            "(interp \"\" (fmt x \">5\") \"!\")"
+        );
+    }
 }

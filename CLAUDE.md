@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v13 Specification.md` (`lughac spec` prints it): Lugha v13, in progress (milestones 41–43 done: `Self` in struct and enum declarations; `for x of mut e`; `zip`/`Pair`, `chain` and the other iterator helpers). `Language v13 Draft.md` is the approved plan (milestones 41–44: `Self` in declarations, `for … of mut`, more iterator helpers, format specifiers). The v0–v12 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la` and `src/prelude_more.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v13 Specification.md` (`lughac spec` prints it): Lugha v13, complete (milestones 41–44: `Self` in declarations; `for x of mut e`; `zip`/`Pair`, `chain` and the other iterator helpers; format specifiers `"{x:spec}"`, E0431). `Language v13 Draft.md` is the approved plan it was built from. The v0–v12 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la` and `src/prelude_more.la`, loaded with every program.
 
 ---
 
@@ -223,8 +223,8 @@ pub fn parse_number(src: &str) -> i64 {
 ├── Cargo.toml       — package `lugha`, binary `lughac`
 ├── runtime/         — the C runtime, embedded in lughac (DECISION-009): lugha_rt.c (core: includes, types,
 │                      init, alloc, panics, strings), stack.c (overflow handler), print.c (formatting),
-│                      input.c (args, parse_i64/f64, stdin lines, files, stderr, exit); fragments joined in that
-│                      order into one lugha_rt.c (PRP-028)
+│                      input.c (args, parse_i64/f64, stdin lines, files, stderr, exit), format.c (format
+│                      specifiers, v13); fragments joined in that order into one lugha_rt.c (PRP-028)
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
 │   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints), PRELUDE
@@ -233,9 +233,10 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── prelude_more.la — `Pair`, `zip`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position` (v13), joined third
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
+│   ├── format.rs    — format specifiers (v13): `parse`, `check`, shared by the checker and codegen
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
 │   ├── lexer/       — mod.rs (lex, main loop), token.rs, punct.rs (operators), number.rs, string.rs,
-│   │                  interp.rs (string interpolation, E0111)
+│   │                  interp.rs (string interpolation, E0111), format_spec.rs (the `FmtSpec` token, v13)
 │   ├── ast/         — mod.rs (items, statements), types.rs (written types), expr.rs (expressions, ExprId, StructLiteral, Part),
 │   │                  pattern.rs (arms, nested patterns, guards), header.rs (imports, type parameters, bounds,
 │   │                  interfaces)
@@ -292,7 +293,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (dynamic calls, interface copies, type-pattern tests), defaults.rs (default instances, `?` boxing),
 │   │                  instances.rs (generic instances:
 │   │                  substitution, instance symbols),
-│   │                  swap.rs (swap: loads and crossed stores), bits.rs (bit operators, the shift range check), int_methods.rs (wrapping and counting methods), int_checked.rs (v10 checked/saturating/rotating methods, `I.MIN`/`I.MAX`), or_patterns.rs (alternatives in the arm chain, `mut` copies), show.rs (printing: `text`, `lugha_show_<type>` helpers), show_iface.rs (printing interface values by identity), unwrap.rs (`unwrap`/`expect`), conditional.rs (`if let`, `while let`, `let … else`), iterators.rs (iterator loops: a hidden copy, `next` until `None`),
+│   │                  swap.rs (swap: loads and crossed stores), bits.rs (bit operators, the shift range check), int_methods.rs (wrapping and counting methods), int_checked.rs (v10 checked/saturating/rotating methods, `I.MIN`/`I.MAX`), or_patterns.rs (alternatives in the arm chain, `mut` copies), format.rs (format specifiers → `lugha_rt_fmt_*`), show.rs (printing: `text`, `lugha_show_<type>` helpers), show_iface.rs (printing interface values by identity), unwrap.rs (`unwrap`/`expect`), conditional.rs (`if let`, `while let`, `let … else`), iterators.rs (iterator loops: a hidden copy, `next` until `None`),
 │   │                  upcast.rs (between interfaces: table registry, derived tables, `lugha_up_` lookups)
 │   ├── modules/     — mod.rs (load: the main file and every import, one offset space; with_prelude), resolve.rs
 │   │                  (import checks, E0312/E0314/E0319), manifest.rs (`lugha.toml`, E0321), inline.rs (inline
@@ -314,13 +315,13 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m43/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m44/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
-│   └── specs/       — Language v13 Specification.md (the language definition, in progress, printed by `lughac spec`);
+│   └── specs/       — Language v13 Specification.md (the language definition, complete, printed by `lughac spec`);
 │                      Language v13 Draft.md (approved v13 plan, milestones 41–44);
 │                      Language v12 Draft.md (approved v12 plan, milestones 39–40);
 │                      Language v11 Draft.md (approved v11 plan, milestones 37–38);
@@ -339,7 +340,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them, except the one it names: a value to an interface where one is expected (v5, recorded in `Checked.conversions`). Every other one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (a `format()` function, tuples, downloading packages…) even partially, nor a v13 milestone ahead of its turn. v13 (milestones 41–44) follows `Language v13 Draft.md`; anything beyond it needs an approved spec change first.
+5. **Never implement a §11 "out of scope" feature** (a `format()` function, tuples, downloading packages…) even partially. v13 is complete (milestones 41–44); any further language feature is v14 and needs an approved spec change first.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

@@ -2,7 +2,7 @@
 //! block-like `if` and `{ }` expressions (spec §3).
 
 use super::{PResult, Parser};
-use crate::ast::{Expr, ExprKind, Ident, Part, StructLiteral};
+use crate::ast::{Expr, ExprKind, FormatText, Ident, Part, StructLiteral};
 use crate::diagnostic::Diagnostic;
 use crate::lexer::TokenKind;
 use crate::span::Span;
@@ -185,7 +185,16 @@ impl Parser<'_> {
         let mut parts = vec![Part::Text(first)];
         loop {
             // Inside `{…}` a struct literal is fine: the braces delimit it.
-            parts.push(Part::Expr(self.with_struct_literals(true, |p| p.expr())?));
+            let e = self.with_struct_literals(true, |p| p.expr())?;
+            // `{x:>5}` (v13): the lexer gives the specifier as one token.
+            let format = match self.peek().clone() {
+                TokenKind::FmtSpec(text) => Some(FormatText {
+                    text,
+                    span: self.bump(),
+                }),
+                _ => None,
+            };
+            parts.push(Part::Expr(e, format));
             match self.peek().clone() {
                 TokenKind::StrMid(text) => {
                     self.bump();

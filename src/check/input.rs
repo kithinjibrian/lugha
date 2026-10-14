@@ -6,6 +6,7 @@ use super::expr::Expect;
 use super::results::RESULT;
 use super::{Checker, Type, errors};
 use crate::ast::{Expr, Part};
+use crate::format;
 
 /// The input and I/O intrinsics (v3, v4), checked here rather than in
 /// `call.rs` — except `eprint`/`eprintln`, which follow `print`'s rules.
@@ -53,12 +54,29 @@ impl Checker {
     /// and the whole is a `string`.
     pub(super) fn interpolation(&mut self, parts: &[Part]) -> Type {
         for part in parts {
-            let Part::Expr(e) = part else { continue };
+            let Part::Expr(e, format) = part else {
+                continue;
+            };
             let ty = self.value(e, None);
             if !super::printing::printable(&ty) && !matches!(ty, Type::Error | Type::Never) {
                 self.report(errors::not_interpolable(&ty, e.span));
             } else {
                 self.printed(e, &ty);
+            }
+            // `{x:spec}` (v13): the specifier must parse and fit `x`.
+            if let Some(f) = format
+                && !matches!(ty, Type::Error | Type::Never)
+            {
+                let class = if ty.is_integer() {
+                    format::Value::Int
+                } else if ty.is_float() {
+                    format::Value::Float
+                } else {
+                    format::Value::Other
+                };
+                if let Err(why) = format::parse(&f.text).and_then(|s| format::check(&s, class)) {
+                    self.report(errors::bad_format(why, f.span));
+                }
             }
         }
         Type::String
@@ -149,5 +167,26 @@ mod tests {
             [("E0407", "f()")]
         );
         assert_eq!(errors("fun exit() {}\nfun main() {}"), [("E0302", "exit")]);
+    }
+
+    #[test]
+    fn format_specifiers_fit_their_values_v13() {
+        let e = |body: &str| {
+            errors(&format!(
+                "struct P {{ x: i64 }}\nfun main() {{ let n = 1; let f = 2.5; {body} }}"
+            ))
+            .into_iter()
+            .map(|(c, t)| (c, t.to_string()))
+            .collect::<Vec<_>>()
+        };
+        assert_eq!(e("let t = \"{n:.2}\";")[0].0, "E0431");
+        assert_eq!(e("let t = \"{f:x}\";")[0].0, "E0431");
+        assert_eq!(e("let s = \"x\"; let t = \"{s:05}\";")[0].0, "E0431");
+        assert_eq!(e("let t = \"{n:#}\";")[0].0, "E0431");
+        assert_eq!(e("let t = \"{n:q}\";")[0].0, "E0431");
+        assert_eq!(e("let t = \"{n:2000}\";")[0].0, "E0431");
+        crate::check::test_util::ok(
+            "struct P { x: i64 }\nfun main() { let p = P { x: 1 }; let n: u8 = 3; let t = \"{p:>20} {n:#010b} {2.5:+<8.1}\"; }",
+        );
     }
 }

@@ -11,6 +11,9 @@ pub(super) struct Interp {
     string_start: usize,
     brace: usize,
     depth: usize,
+    /// Open `(` and `[` of its expression: a `:` inside them isn't a
+    /// format specifier's (v13).
+    parens: usize,
 }
 
 impl Lexer<'_> {
@@ -74,6 +77,7 @@ impl Lexer<'_> {
                         string_start,
                         brace,
                         depth: 0,
+                        parens: 0,
                     });
                     return;
                 }
@@ -96,6 +100,13 @@ impl Lexer<'_> {
         match c {
             '{' => interp.depth += 1,
             '}' if interp.depth > 0 => interp.depth -= 1,
+            '(' | '[' => interp.parens += 1,
+            ')' | ']' => interp.parens = interp.parens.saturating_sub(1),
+            // `{x:>5}` (v13): the rest, up to the `}`, is a format specifier.
+            ':' if interp.depth == 0 && interp.parens == 0 => {
+                self.format_spec();
+                return true;
+            }
             '}' => {
                 let string_start = interp.string_start;
                 self.interp.pop();

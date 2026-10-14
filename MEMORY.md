@@ -1402,9 +1402,30 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 90. Format specifiers — milestone 44, v13 complete (PRP-073)
+
+**Decision:** built under the user's "in one go" (milestones 41–44).
+- **Lexer:**
+  - `Interp` also counts `(`/`[` (`parens`);
+  - at depth 0, a `:` calls `format_spec` (`lexer/format_spec.rs`), which emits `TokenKind::FmtSpec(raw text)` up to the `}`, a newline or a `"`;
+  - an empty spec is still a token.
+- **AST and parser:** `Part::Expr(Expr, Option<FormatText { text, span }>)` (`FormatText` re-exported from `ast`); the parser takes a `FmtSpec` after the expression; the sexp is `(fmt e "spec")`.
+- **`src/format.rs`** (crate root, shared): `FormatSpec`, `parse` (width and precision ≤ 1024, ASCII non-brace fill, kinds `x X b o`) and `check` against `Value::{Int, Float, Other}`. The checker (`check/input.rs`) reports E0431 (`errors/v13.rs::bad_format`) at the spec span.
+- **Codegen (`codegen/format.rs::formatted`):**
+  - integers → `lugha_rt_fmt_int(i64 (sext/zext), bits, signed, kind, alt, fill, align, width, zero)`;
+  - floats → `lugha_rt_fmt_float(f64, is_f32, precision or -1, fill, align, width, zero)`;
+  - others → `lugha_rt_pad(text, fill, align, width)`;
+  - the default alignment is right for numbers; `zero` only when no alignment is given.
+- **Runtime:** `runtime/format.c`, joined fifth (`RUNTIME_PARTS` and `RUNTIME_SOURCE`); `RUNTIME_SYMBOLS` has 38 entries.
+
+**Why:** specifiers parse in one shared module, so the checker and codegen agree, and plain numeric arguments keep the runtime ABI simple.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 44 complete — Lugha v13 complete**: PRP-073 format specifiers
 - **Milestone 43 complete**: PRP-072 more iterator helpers
 - **Milestone 42 complete**: PRP-071 `for x of mut e`
 - **Milestone 41 complete**: PRP-070 `Self` in declarations; v13 spec begins
@@ -1495,15 +1516,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 43 complete** (PRP-072, MEMORY 89): more iterator helpers. Tagged `m43`. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
+**Lugha v13 is complete** (milestones 41–44; PRP-070–073; MEMORY 86–90):
+- `Self` in declarations;
+- `for x of mut e`;
+- `zip`/`Pair`, `chain` and the other iterator helpers;
+- format specifiers (E0431).
 
-Next, under the user's "in one go" (MEMORY 86): **milestone 44, format specifiers** (PRP-073). It completes v13: tag `m44` and `v13`.
-- `"{x:[[fill]align][#][0][width][.precision][kind]}"`, split by the lexer at the first top-level `:`;
-- E0431;
-- `lugha_rt_fmt_int`, `lugha_rt_fmt_float`, `lugha_rt_pad`.
+Tags `m44` and `v13` go on the merge of PRP-073. `Language v13 Specification.md` is what `lughac spec` prints; v0–v12 are frozen.
+
+Next: **v14 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v13 spec §11 and §12):
+- a `format()` function, a debug form, parsing values from text;
+- tuples;
+- downloading packages, a lock file; whole-module re-exports and import aliases;
+- unsigned indexes; Unicode text; binary I/O.
 
 **Note:** `check/mod.rs` is at 300 lines. A new checker module needs a split proposal, or its `mod` line placed elsewhere.
 
-Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294).
+Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294), `parser/primary.rs` (~291).
 
 See `TODO.md`.

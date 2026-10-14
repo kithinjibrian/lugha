@@ -2,14 +2,15 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 41–43 of 41–44). It is built from the approved plan, `Language v13 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v12 Specification.md` keeps v12 frozen.
+**Status:** complete (milestones 41–44). It is built from the approved plan, `Language v13 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v12 Specification.md` keeps v12 frozen.
 
 **v12.** This is v11 plus printing any value: the prelude's `Display` and `show`, built-in forms, and `unwrap on Err: <error>` (milestones 39–40).
 
-**Changes since v12** (milestones 41–43):
+**Changes since v12** (milestones 41–44):
 - In a struct's fields and an enum's payloads, `Self` is the type being declared: `struct Tree<T> { value: T, kids: Self[] }`, `enum List { Cons(i64, Self), Nil }` (section 4).
 - `for x of mut xs` makes `x` each element itself, so `x *= 2` changes `xs`; `for x of mut it` advances the iterator `it` itself, so a later loop resumes where a `break` left it (sections 3, 5).
 - Iterators gain `zip` (yielding the prelude's `Pair { first, second }`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max` and `position` (section 4).
+- An interpolation may end in a format specifier: `"{pi:.2}"`, `"{n:>6}"`, `"{n:05}"`, `"{n:#x}"`, `"{name:*^9}"`; a bad one is E0431 (sections 3, 5).
 
 Every valid v12 program is a valid v13 program.
 
@@ -294,7 +295,7 @@ primary      = INT | FLOAT | STRING | interpolated | closure | "true" | "false"
              | "(" expr ")"
              | "[" [ expr ( ";" expr | { "," expr } [ "," ] ) ] "]"
              | block_like ;
-interpolated = STRING_START expr { STRING_MID expr } STRING_END ;   (* "a {x} b {y} c" *)
+interpolated = STRING_START expr [ FMT_SPEC ] { STRING_MID expr [ FMT_SPEC ] } STRING_END ;   (* "a {x} b {y:>5} c" *)
 closure      = "fun" "(" [ cparam { "," cparam } [ "," ] ] ")" [ ":" type ] ( block | "=" expr ) ;   (* v3 *)
 cparam       = IDENT [ ":" type ] ;
 struct_init  = "{" [ IDENT ":" expr { "," IDENT ":" expr } [ "," ] ] "}" ;
@@ -784,6 +785,15 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 
 **Interpolated strings** (v3). Each `{expr}` is evaluated left to right and formatted exactly as `print` would write it (floats as below); the parts are joined into one new `string`. Any value interpolates (v12); only a `void` expression can't (E0407).
 
+**Format specifiers** (v13). An interpolation may end in `:` and a specifier, `{expr:spec}`, which changes how its value is written. The lexer splits the specifier off at the first `:` outside every `(`, `[` and `{` of the expression and outside strings, and takes everything up to the closing `}`; an expression that needs such a `:` goes in parentheses. A specifier is `[[fill]align][#][0][width][.precision][kind]`:
+- **`align`:** `<` left, `>` right, `^` centre (an odd gap's extra byte goes right). Without one, numbers align right and everything else left. **`fill`**, written before an alignment, is one ASCII character other than `{` and `}`; the default is a space.
+- **`width`:** at most 1024, counted in bytes. Shorter text is padded to it; longer text is never cut.
+- **`#`:** with a kind, prefixes `0x`, `0b` or `0o`. **`0`:** pads a number with zeros after its sign and prefix (`{-42:05}` is `-0042`, `{255:#06x}` is `0x00ff`), and is ignored when an alignment is given.
+- **`.precision`:** floats only, at most 1024: that many decimals, as C's `%.*f` (`{3.14159:.2}` is `3.14`). Without it a float prints as `print` writes it.
+- **`kind`:** integers only. `x` hex, `X` upper-case hex, `b` binary, `o` octal; a negative value prints its two's complement at its type's width (`{-1 as i8:b}` is `11111111`).
+- **Other values** take only fill, alignment and width, applied to the text `print` would write: `{p:>20}` right-aligns a struct.
+- **Errors:** an empty specifier, an unknown kind, trailing text, a width or precision over 1024, a non-ASCII or brace fill, precision on a non-float, a kind on a non-integer, `#` without a kind, or `0` on a non-number is E0431 at the specifier.
+
 `swap(a, b)` exchanges what two places hold, like `let t = a; a = b; b = t;` but without copying anything: swapping two arrays exchanges them in constant time, which makes double buffering cheap (`swap(ys, buf)`). Both arguments must be places of the same type (E0502, E0403), each following the assignment rules: the root is `let mut` (E0501), not inside a string (E0506), and not an array being iterated (E0507). The places are evaluated left to right, and elements are bounds-checked, before either is written. A place can't be swapped with a part of itself (E0509): `swap(n, n.kids[0])` would store `n` inside itself. Places that might be the same are fine, since swapping a place with itself changes nothing: `swap(xs[i], xs[j])`, `swap(p.a, p.b)` and `swap(a, a)` are all valid.
 
 Floats print as the shortest decimal that round-trips, in Lugha float-literal syntax: always a `.` with at least one digit on each side, so `2.0` prints as `2.0`, not `2`. Values with magnitude at or above `1e16`, or below `1e-5` and nonzero, use an exponent: `1.0e16`, `2.5e-7`. Infinities and NaN print as `inf`, `-inf` and `NaN`; `-0.0` prints as `-0.0`. `bool` prints as `true` or `false`. `u8` prints as a number, not a character. `u32` and `u64` print as unsigned decimals (v7). An `f32` prints by the same rules as the shortest decimal that reads back as the same `f32`, so `0.1` prints `0.1`, not the digits of its `f64` value.
@@ -974,6 +984,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - `Self` in `impl` blocks and in struct and enum declarations (v10, v13) is replaced by the parser with the type it stands for, so the checker and codegen see the type's own name.
 - `for x of mut e` (v13) works on `e`'s address: over an array, `x` is a local whose storage is the element itself (an `i1` occupies one byte, so `bool` elements alias too); over an iterator, `next` is called on `e`'s own storage instead of a hidden copy.
 - The v13 iterator helpers are Lugha in the prelude's third file, compiled only when reached like the others. `flat_map` keeps its current inner iterator in a 0- or 1-element array, so `next` steps it in place.
+- A format specifier (v13) is parsed once by the checker (E0431) and again by codegen, which passes its parts to `lugha_rt_fmt_int`, `lugha_rt_fmt_float` or `lugha_rt_pad`, from a runtime fragment `format.c`. Programs without specifiers give byte-identical IR.
 - Converting a `J` value to `I` (v6) calls `lugha_up_<J>.<I>(table) -> table`, which compares the value's table with each `J` table the program has and returns the matching `I` table; its body is built after everything else, when every table is known. That `I` table is derived from the table the value was built with: `lugha_vt_<C>.<J>.<I>` has `C`'s identity and copy and, for each `I` item, the function `C`'s `J` table has, so methods behave as through `J`; derived tables keep the original interface (`<C>.<J>.<K>` for a chain) and converting back to it gives the original table. A program that never converts between interfaces has no `lugha_up_` functions and no derived tables. (The approved draft put one slot per target interface in each table instead; tables are emitted while lowering, before every conversion is known, so PRP-054 uses lookup functions.)
 - The v7 operators and methods: `& | ^` are `and`/`or`/`xor`; `<<` is `shl` and `>>` is `ashr` for `i32`/`i64` and `lshr` for the unsigned types, each after an `icmp uge` of the amount against the width that panics (`shift out of range`); `~x` is `xor x, -1`; the wrapping methods are plain `add`/`sub`/`mul`; the counting methods are `llvm.ctpop`, `llvm.ctlz` and `llvm.cttz` (zero not poison), widened to `i64`. A program that uses none of them has none of this code.
 - The v10 integer methods: `checked_add/sub/mul` read the overflow flag of `llvm.{s,u}{add,sub,mul}.with.overflow` and select `None` or `Some`; `checked_div` divides by 1 instead when the divisor is 0 (or the operands are `MIN` and −1) and selects `None` then, so it never traps; `saturating_add/sub` are `llvm.{s,u}{add,sub}.sat`, and `saturating_mul` selects `MIN` or `MAX` on overflow; rotations are `llvm.fshl`/`llvm.fshr` of the value with itself, the `i64` count truncated to the width; `I.MIN`/`I.MAX` are constants.
@@ -1036,6 +1047,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_array_grow(array, elem_size)` | A copy of a full array with double the capacity (at least 4), for `push` |
 | `lugha_rt_print_*` / `lugha_rt_to_string_*` | One per primitive type (plus `lugha_rt_print_str`), for the intrinsics; `bool` and `u8` arguments are passed zero-extended to 32 bits; `u32` goes to the `u64` functions zero-extended (v7), as does `u16`, and `i8`/`i16` go to the `i64` ones sign-extended (v10) |
 | `lugha_rt_str_quote(s)` | `s` quoted and escaped, for strings inside a printed value (v12) |
+| `lugha_rt_fmt_int(v, bits, signed, kind, alt, fill, align, width, zero)` / `lugha_rt_fmt_float(v, f32, precision, fill, align, width, zero)` / `lugha_rt_pad(text, fill, align, width)` | Format specifiers (v13): an integer (sign- or zero-extended to `i64`), a float (as `f64`), or any other value's text, padded; all arguments are plain numbers |
 | `lugha_rt_print_newline()` | The newline `println` adds |
 | `lugha_rt_args()` | A new `string[]` of the program's arguments (v3) |
 | `lugha_rt_parse_i64(s, out)` / `lugha_rt_parse_u64(s, out)` / `lugha_rt_parse_f64(s, out)` | Parse `s` into `*out`; return 1, or 0 for `None` (v3; `u64` v10) |
@@ -1133,6 +1145,7 @@ Name and type errors, reported by the checker:
 | E0429 | A `let … else` whose `else` block can finish (v9) | `let Some(n) = o else { println("no"); };` |
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
 | E0430 | A default method that two visible interfaces supply (v10) | `c.describe()` where `Named` and `Shown` both default `describe` and `Circle` satisfies both |
+| E0431 | A bad format specifier (v13) | `"{n:.2}"` with `n: i64`; `"{x:q}"`; `"{f:x}"` with `f: f64`; `"{n:#}"`; `"{s:05}"` with `s: string`; `"{n:2000}"` |
 | E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum, `Option`, function or interface parameters or returns (§8) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut`; `for x of mut xs` where `xs` isn't (v13) |
@@ -2364,6 +2377,22 @@ fun main() {
 }
 ```
 
+**Format specifiers** (milestone 44). Prints `3.14`, `|    42|`, `|42    |`, `-0042`, `0xff`, `***ann***`, `11111111` on seven lines, exits with 0.
+
+```
+fun main() {
+    let pi = 3.14159;
+    let n = 42;
+    println("{pi:.2}");
+    println("|{n:6}|");
+    println("|{n:<6}|");
+    println("{-42:05}");
+    println("{255:#x}");
+    println("{"ann":*^9}");
+    println("{-1 as i8:b}");
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2413,6 +2442,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 41 | `Self` in declarations (v13) | `Self` in struct fields and enum payloads | The `Self`-in-declarations program in section 10 passes (done) |
 | 42 | `for … of mut` (v13) | iterators advanced in place; array elements as mutable aliases | The `for … of mut` program in section 10 passes (done) |
 | 43 | More iterator helpers (v13) | `zip` (`Pair`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position` | The more-helpers program in section 10 passes (done) |
+| 44 | Format specifiers (v13) | `"{x:spec}"`, E0431 | The format-specifiers program in section 10 passes (done: v13 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -2471,3 +2501,5 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [ ] **Re-exports and visibility levels** (v11). A re-export is always `public`. A package-level re-export (visible to the package's other modules only) could come later if packages need internal façades.
 - [ ] **A `show` of another shape** (v12) is ignored silently, so v11 programs stay valid. A later warning could point out `fun show(self): i64`.
 - [ ] **Module paths in printed names** (v12). A type prints with its bare name, so two modules' `Point`s look the same. A debug form could add the path.
+- [ ] **Width counts bytes** (v13). Text with multi-byte characters pads as if it were longer; this waits for a decision on Unicode text.
+- [ ] **Format specifiers at run time** (v13). A spec must be written in the string; a `format(spec, x)` function could come later.

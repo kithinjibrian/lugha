@@ -180,15 +180,24 @@ pub struct StructLiteral {
 pub enum Part {
     /// Literal text, escapes and `{{`/`}}` already decoded.
     Text(String),
-    /// A `{expr}`.
-    Expr(Expr),
+    /// A `{expr}`, or `{expr:spec}` with a format specifier (v13).
+    Expr(Expr, Option<FormatText>),
+}
+
+/// A format specifier as written after an interpolation's `:` (v13).
+#[derive(Debug, Clone, PartialEq)]
+pub struct FormatText {
+    /// The text after the `:`.
+    pub text: String,
+    /// From the `:` to the end of the text.
+    pub span: Span,
 }
 
 impl Part {
     /// The interpolated expression, or `None` for literal text.
     pub fn expr(&self) -> Option<&Expr> {
         match self {
-            Part::Expr(e) => Some(e),
+            Part::Expr(e, _) => Some(e),
             Part::Text(_) => None,
         }
     }

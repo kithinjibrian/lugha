@@ -1,0 +1,24 @@
+// Every alignment and fill, zero padding with signs and prefixes, the
+// integer kinds at several widths, f32 precision, a padded struct, text
+// longer than its width, and specifiers in nested interpolations.
+
+struct P { x: i64 }
+
+fun main() {
+    let n = 7;
+    println("[{n:<4}][{n:^5}][{n:>4}][{n:_<4}][{n:.^5}]");
+    println("{-7:06} {255:#06x} {255:08b} {255:#o}");
+    let big: u16 = 48879;
+    println("{big:X} {big:#x} {u64.MAX:x}");
+    let small: i8 = -2;
+    println("{small:x} {small:b}");
+    let f: f32 = 2.5;
+    println("{f:.3} {1.0 / 3.0:.4} {-1.5:08.2}");
+    println("{2.5:>8}|");
+    println("[{P { x: 1 }:>12}]");
+    println("[{"toolong":3}]");
+    let inner = "{n:03}";
+    println("<{inner:>6}>");
+    println("{"a":-^1}{"b":>2}");
+    println("{7:>05}|");
+}

@@ -96,7 +96,8 @@ pub fn expr(expr: &Expr) -> String {
                 .iter()
                 .map(|p| match p {
                     Part::Text(t) => format!("{t:?}"),
-                    Part::Expr(e) => self::expr(e),
+                    Part::Expr(e, None) => self::expr(e),
+                    Part::Expr(e, Some(f)) => format!("(fmt {} {:?})", self::expr(e), f.text),
                 })
                 .collect();
             format!("(interp {})", shown.join(" "))
