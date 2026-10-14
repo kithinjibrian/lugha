@@ -3627,8 +3627,8 @@ Branch: prp-063-self_everywhere (merged into main)
 
 ---
 
-## SESSION 82 — 2026-10-14 — More integers (milestone 35) — open
-Branch: prp-064-more_integers
+## SESSION 82 — 2026-10-14 — More integers (milestone 35) — closed
+Branch: prp-064-more_integers (merged into main)
 
 ### WHAT WAS DONE
 - PRP-064 written as approved under the "in one go" instruction, built and merged on green CI:
@@ -3677,13 +3677,13 @@ Branch: prp-064-more_integers
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m35`.
+- Nothing. PRP-064 merged into `main`, tagged `m35`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 35 complete** (PRP-064, MEMORY 78): `i8`/`i16`/`u16`, checked/saturating/rotating methods, `I.MIN`/`I.MAX`, `parse_u64`. Tag `m35` goes on the merge. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
+**Milestone 35 complete** (PRP-064, MEMORY 78): `i8`/`i16`/`u16`, checked/saturating/rotating methods, `I.MIN`/`I.MAX`, `parse_u64`. Tagged `m35`. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
 
 Next, under the user's "in one go" (MEMORY 76): **milestone 36, iterator helpers** (PRP-065, next session). It completes v10, tagged `m36` and `v10`.
 - Lazy prelude adapters `map`, `filter`, `take`, `skip`, `enumerate` (`Indexed<T>`);

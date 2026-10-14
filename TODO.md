@@ -215,7 +215,7 @@ Done when the `Self`-in-`impl` program passes.
 
 ### Milestone 35 — More integers ✅
 Done when the more-integers program passes.
-- [x] PRP-064: `i8`, `i16`, `u16`; `checked_*`, `saturating_*`, rotations, `MIN`/`MAX`; `parse_u64`; tagged `m35` at merge
+- [x] PRP-064: `i8`, `i16`, `u16`; `checked_*`, `saturating_*`, rotations, `MIN`/`MAX`; `parse_u64`; tagged `m35`
 
 ### Milestone 36 — Iterator helpers
 Done when the iterator-helpers program passes and the v10 spec is complete.

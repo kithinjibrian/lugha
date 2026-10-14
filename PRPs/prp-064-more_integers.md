@@ -1,6 +1,6 @@
 ## FEATURE: More integers — `i8`, `i16`, `u16`, checked and saturating methods, rotations, `MIN`/`MAX`, `parse_u64`; milestone 35.
 
-**Status:** approved 2026-10-14 — session 82. This is part of the user's "in one go" (milestones 34–36), merged once CI is green.
+**Status:** merged 2026-10-14 — session 82. This is part of the user's "in one go" (milestones 34–36), merged once CI is green.
 **Milestone:** 35 (one PRP; tag `m35` at merge)
 **Spec:** `Language v10 Draft.md`:
 - decision 6, and the choices on rotations, `checked_div`, `parse_u64` and `MIN`/`MAX`;

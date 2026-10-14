@@ -1277,7 +1277,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 35 complete** (PRP-064, MEMORY 78): `i8`/`i16`/`u16`, checked/saturating/rotating methods, `I.MIN`/`I.MAX`, `parse_u64`. Tag `m35` goes on the merge. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
+**Milestone 35 complete** (PRP-064, MEMORY 78): `i8`/`i16`/`u16`, checked/saturating/rotating methods, `I.MIN`/`I.MAX`, `parse_u64`. Tagged `m35`. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
 
 Next, under the user's "in one go" (MEMORY 76): **milestone 36, iterator helpers** (PRP-065, next session). It completes v10, tagged `m36` and `v10`.
 - Lazy prelude adapters `map`, `filter`, `take`, `skip`, `enumerate` (`Indexed<T>`);
