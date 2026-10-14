@@ -4335,6 +4335,11 @@ Branch: prp-077-format (merged into main)
 
 ---
 
+## SESSION 100 — 2026-10-14 — Import aliases and re-exports (milestone 49) — open
+Branch: prp-078-import_aliases
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 48 complete** (PRP-077, MEMORY 95): `format` with a literal template. Tagged `m48`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
