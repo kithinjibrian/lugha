@@ -1,6 +1,6 @@
 ## FEATURE: Operator overloading — `+ - * / %` and unary `-` through methods, prelude `Add`…`Neg` and `Num` bounds, bounds on `impl` blocks, `0`/`1` as `T: Num`; milestone 52.
 
-**Status:** approved 2026-10-14 — session 107, with the milestone 52 additions to `Language v15 Draft.md`. The user asked for it "in one go" and raised the file-size limit to 500 lines.
+**Status:** merged 2026-10-14 — session 107. Approved with the milestone 52 additions to `Language v15 Draft.md`. The user asked for it "in one go" and raised the file-size limit to 500 lines.
 **Milestone:** 52 (one PRP; tag `m52` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 8–13, the milestone 52 choices, §10 M52, §11 row 52).
 

@@ -4560,8 +4560,8 @@ Branch: main
 
 ---
 
-## SESSION 107 — 2026-10-14 — Operator overloading (milestone 52) — open
-Branch: prp-081-operator_overloading
+## SESSION 107 — 2026-10-14 — Operator overloading (milestone 52) — closed
+Branch: prp-081-operator_overloading (merged into main)
 
 ### WHAT WAS DONE
 - The user approved PRP-081 "in one go" and raised the file-size limit to 500 lines (CLAUDE.md). Built and merged on green CI:
@@ -4597,13 +4597,13 @@ Branch: prp-081-operator_overloading
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m52`.
+- Nothing. PRP-081 merged into `main`, tagged `m52`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 52 complete** (PRP-081, MEMORY 100–101): operator overloading. Tag `m52` goes on the merge. `Language v15 Specification.md` (in progress, milestones 51–52) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines.
+**Milestone 52 complete** (PRP-081, MEMORY 100–101): operator overloading. Tagged `m52`. `Language v15 Specification.md` (in progress, milestones 51–52) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines.
 
 Next:
 - glowworm can now use `impl NdArray<T: Num>` and operators;
