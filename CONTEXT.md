@@ -4037,14 +4037,51 @@ Branch: prp-070-self_in_declarations (merged into main)
 ## SESSION 92 — 2026-10-14 — `for … of mut` (milestone 42) — open
 Branch: prp-071-for_of_mut
 
+### WHAT WAS DONE
+- PRP-071 written as approved under the "in one go" instruction, built and merged on green CI: `for x of mut e` over arrays (elements aliased) and iterators (stepped in place).
+- **Spec:**
+  - §3 grammar, §5 "for over `mut`";
+  - the E0501, E0502, E0506 and E0507 rows;
+  - §9;
+  - the §10 program, §11 row 42.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/for_mut.rs`, `tests/programs/m42/` (`mut`, `more`, `e0501`), PRP-071.
+- Modified:
+  - `src/ast/mod.rs`;
+  - `src/parser/{stmt,conditional}.rs`, `src/parser/sexp/mod.rs`;
+  - `src/check/{mod,stmt}.rs`, `src/check/liveness/walk.rs`;
+  - `src/codegen/{stmt,array,iterators}.rs`;
+  - `tests/spec.rs`;
+  - the v13 spec.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 88, CONTEXT.
+
+### TESTS WRITTEN
+- **Parser:** `(of-mut xs)`.
+- **Checker:** elements, fields, `mut self`, iterators; E0501, E0502, E0506, E0507 ×2.
+- **Codegen:** no `alloca` for an aliased element.
+- **Programs:** `tests/programs/m42/`, and the §10 program from the spec.
+- **Regression:** 151 earlier programs give byte-identical IR; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 88.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m42`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 41 complete** (PRP-070, MEMORY 87): `Self` in declarations. Tagged `m41`. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
+**Milestone 42 complete** (PRP-071, MEMORY 88): `for x of mut e`. Tag `m42` goes on the merge. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
 
-Next, under the user's "in one go" (MEMORY 86): **milestone 42, `for … of mut`** (PRP-071), then M43 (more iterator helpers) and M44 (format specifiers, which completes v13).
+Next, under the user's "in one go" (MEMORY 86): **milestone 43, more iterator helpers** (PRP-072: `zip`/`Pair`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`), then M44 (format specifiers, which completes v13).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `codegen/runtime.rs` (~296), `check/array.rs` (~296), `check/env.rs` (295), `parser/stmt.rs` (~297), `parser/item.rs` (287).
+**Note:** `check/mod.rs` is at 300 lines. A new checker module needs a split proposal, or its `mod` line placed elsewhere.
+
+Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294), `codegen/array.rs` (293).
 
 See `TODO.md`.

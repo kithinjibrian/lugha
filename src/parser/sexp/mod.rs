@@ -69,6 +69,7 @@ fn stmt(stmt: &Stmt) -> String {
             let iter = match iter {
                 ForIter::Range(a, b) => format!("(range {} {})", expr(a), expr(b)),
                 ForIter::Array(xs) => format!("(of {})", expr(xs)),
+                ForIter::MutOf(xs) => format!("(of-mut {})", expr(xs)),
             };
             format!("(for {} {iter} {})", var.name, block(body))
         }

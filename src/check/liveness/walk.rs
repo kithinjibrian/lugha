@@ -63,7 +63,7 @@ impl Walk<'_> {
                         self.expr(start);
                         self.expr(end);
                     }
-                    ForIter::Array(xs) => self.expr(xs),
+                    ForIter::Array(xs) | ForIter::MutOf(xs) => self.expr(xs),
                 }
                 self.block(body);
                 self.loops.pop();

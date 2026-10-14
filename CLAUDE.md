@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v13 Specification.md` (`lughac spec` prints it): Lugha v13, in progress (milestone 41 done: `Self` in struct and enum declarations). `Language v13 Draft.md` is the approved plan (milestones 41–44: `Self` in declarations, `for … of mut`, more iterator helpers, format specifiers). The v0–v12 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la` and `src/prelude_iter.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v13 Specification.md` (`lughac spec` prints it): Lugha v13, in progress (milestones 41–42 done: `Self` in struct and enum declarations; `for x of mut e`). `Language v13 Draft.md` is the approved plan (milestones 41–44: `Self` in declarations, `for … of mut`, more iterator helpers, format specifiers). The v0–v12 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la` and `src/prelude_iter.la`, loaded with every program.
 
 ---
 
@@ -273,7 +273,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  numbers.rs (v7/v10 numeric types: `is_float`, `is_unsigned`, keyword types, `I.MIN`/`I.MAX`), slots.rs (enum payload slots),
 │   │                  or_patterns.rs (or-pattern alternatives and bindings E0428, `mut` bindings), conditional.rs
 │   │                  (`if let`, `while let`, `let … else`, E0429), concrete_defaults.rs (default methods on
-│   │                  concrete types, E0430), named_imports.rs (`import m { X }`, re-exports: aliases, `member`, E0318), printing.rs (what prints, `show` instances, `$print` uses), iter_helpers.rs (iterator helpers as prelude calls, prelude iterator type names)
+│   │                  concrete types, E0430), named_imports.rs (`import m { X }`, re-exports: aliases, `member`, E0318), printing.rs (what prints, `show` instances, `$print` uses), for_mut.rs (`for x of mut e`: place checks, E0501/E0502/E0506), iter_helpers.rs (iterator helpers as prelude calls, prelude iterator type names)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
@@ -313,7 +313,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m41/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m42/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)

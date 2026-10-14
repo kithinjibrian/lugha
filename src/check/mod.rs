@@ -29,6 +29,7 @@ mod env;
 mod errors;
 mod expr;
 mod flow;
+mod for_mut;
 mod fun_values;
 mod generics;
 mod helpers;

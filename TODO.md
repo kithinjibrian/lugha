@@ -246,8 +246,8 @@ Done when the printing-anything program passes and the v12 spec is complete.
 ### Milestone 41 — `Self` in declarations ✅
 - [x] PRP-070: `Self` in struct fields and enum payloads; `Language v13 Specification.md` begins; tagged `m41`
 
-### Milestone 42 — `for … of mut`
-- [ ] iterators advanced in place; array elements as mutable aliases
+### Milestone 42 — `for … of mut` ✅
+- [x] PRP-071: iterators advanced in place; array elements as mutable aliases; tagged `m42` at merge
 
 ### Milestone 43 — More iterator helpers
 - [ ] `zip` (`Pair`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`

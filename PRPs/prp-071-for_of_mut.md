@@ -82,30 +82,30 @@ None.
 Unit tests — parser: `for x of mut xs { }` prints `(for x (of-mut xs) …)`.
 
 Unit tests — checker (`check/for_mut.rs`):
-- [ ] **Allowed:**
+- [x] **Allowed:**
   - `x += 1` on an array element;
   - `x.n = 2` on a struct element;
   - a `mut self` call on `x`;
   - an iterator loop.
-- [ ] **E0501, E0502, E0506.**
-- [ ] **E0507:** `xs.push(1)` inside the loop; `it.next()` inside an iterator loop.
+- [x] **E0501, E0502, E0506.**
+- [x] **E0507:** `xs.push(1)` inside the loop; `it.next()` inside an iterator loop.
 
 Unit tests — codegen: an array `of mut` loop stores through the element's address (no copy of the element into its own slot).
 
 Acceptance — `tests/programs/m42/`:
-- [ ] `mut.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `mut.la`: the §10 program.
+- [x] `more.la`:
   - struct elements changed through a field and a `mut self` method;
   - `bool` elements;
   - `continue`/`break` inside an array loop (writes kept);
   - nested arrays (`for row of mut grid { for c of mut row { … } }`);
   - an iterator held in a struct field (`for x of mut s.it`);
   - an interface-typed iterator (`let mut it: Iter<i64> = …`) resumed.
-- [ ] `e0501.la`: reject golden.
-- [ ] The §10 program runs from the spec.
+- [x] `e0501.la`: reject golden.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -113,10 +113,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m42/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The spec is at milestone 42; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m42/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The spec is at milestone 42; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -125,3 +125,11 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m42/mut.la
 ```
+
+## AMENDMENTS (during build, session 92)
+
+- **The parser test** is in `parser/conditional.rs`, since `parser/stmt.rs` is at 296 lines.
+- **The codegen unit test** checks that the loop variable gets no `alloca` of its own; it is in `codegen/iterators.rs`, since `codegen/array.rs` is at 293 lines.
+- **`check/mod.rs`** is now at 300 lines, the limit. The next module needs a split proposal or another home.
+- **IR:** the 151 earlier programs that compile give byte-identical IR. `-O2` was checked by hand for both `m42` programs.
+- **No file splits.**

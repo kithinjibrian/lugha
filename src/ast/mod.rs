@@ -244,6 +244,9 @@ pub enum ForIter {
     Range(Expr, Expr),
     /// `of array`.
     Array(Expr),
+    /// `of mut place` (v13): an iterator advanced in place, or an array
+    /// whose elements the loop variable aliases.
+    MutOf(Expr),
 }
 
 /// `=`, `+=`, `-=`, `*=`, `/=`.

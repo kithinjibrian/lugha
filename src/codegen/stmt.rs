@@ -40,7 +40,12 @@ impl<'ctx> Lowerer<'ctx> {
                 var,
                 iter: ForIter::Array(iter),
                 body,
-            } => self.for_of(var, iter, body)?,
+            } => self.for_of(var, iter, body, false)?,
+            StmtKind::For {
+                var,
+                iter: ForIter::MutOf(iter),
+                body,
+            } => self.for_of(var, iter, body, true)?,
             StmtKind::Return(value) => {
                 self.return_stmt(value.as_ref())?;
                 return Ok(true);

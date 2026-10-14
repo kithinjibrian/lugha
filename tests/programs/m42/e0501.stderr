@@ -1,0 +1,10 @@
+error[E0501]: cannot loop with `mut` over `xs`: it is not mutable
+  --> tests/programs/m42/e0501.la:3:18
+  |
+2 |     let xs = [1, 2];
+  |         -- declared here
+3 |     for x of mut xs {
+  |                  ^^
+  |
+  = help: declare it with `let mut xs`
+

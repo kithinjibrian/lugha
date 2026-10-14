@@ -180,7 +180,10 @@ impl Parser<'_> {
             self.expect(&TokenKind::DotDot)?;
             ForIter::Range(first, head(self)?)
         } else if self.eat(&TokenKind::Of) {
-            ForIter::Array(head(self)?)
+            match self.eat(&TokenKind::Mut) {
+                true => ForIter::MutOf(head(self)?),
+                false => ForIter::Array(head(self)?),
+            }
         } else {
             return Err(self.expected("`in` or `of`"));
         };

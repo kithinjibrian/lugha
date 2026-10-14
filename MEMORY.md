@@ -1372,9 +1372,27 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 88. `for … of mut` — milestone 42 (PRP-071)
+
+**Decision:** built under the user's "in one go" (milestones 41–44).
+- **AST and parser:** `ForIter::MutOf(Expr)`, read when `mut` follows `of`; the sexp is `(of-mut e)`.
+- **Checker (`check/for_mut.rs`, `for_of_mut`):**
+  - **`loop_place`:** E0506 for a string, E0502 unless the expression is a name, field or element with a place path, E0501 unless its root is `let mut` or `mut self` (loop-worded message, help `let mut`). It also calls `changed`.
+  - **Guard:** `e`'s path goes on `iterating` (E0507 for changing it in the body).
+  - **Binding:** an array element is declared `Binding::Let { mutable: true }`; an iterator goes through `iterator_loop` as before.
+- **Codegen:** `for_of(…, in_place)` and `iterator_loop(…, in_place)`.
+  - **Arrays:** the local's `ptr` *is* the element address (no alloca, still `borrowed`). An `i1` load or store on the `i8` element byte is valid for 0/1, so `bool` aliases too.
+  - **Iterators:** `next` is called on `place_address(e).0`.
+- **Tests:** the parser test lives in `parser/conditional.rs`, since `parser/stmt.rs` is at 296 lines.
+
+**Why:** aliasing the element's address needs no write-back, so `break`, `continue` and `return` keep every write.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 42 complete**: PRP-071 `for x of mut e`
 - **Milestone 41 complete**: PRP-070 `Self` in declarations; v13 spec begins
 - **Milestone 40 complete — Lugha v12 complete**: PRP-069 printing anything
 - **Milestone 39 complete**: PRP-068 printing values (`Display`/`show`, built-in forms); v12 spec begins
@@ -1463,10 +1481,12 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 41 complete** (PRP-070, MEMORY 87): `Self` in declarations. Tagged `m41`. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
+**Milestone 42 complete** (PRP-071, MEMORY 88): `for x of mut e`. Tag `m42` goes on the merge. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
 
-Next, under the user's "in one go" (MEMORY 86): **milestone 42, `for … of mut`** (PRP-071), then M43 (more iterator helpers) and M44 (format specifiers, which completes v13).
+Next, under the user's "in one go" (MEMORY 86): **milestone 43, more iterator helpers** (PRP-072: `zip`/`Pair`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`), then M44 (format specifiers, which completes v13).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `codegen/runtime.rs` (~296), `check/array.rs` (~296), `check/env.rs` (295), `parser/stmt.rs` (~297), `parser/item.rs` (287).
+**Note:** `check/mod.rs` is at 300 lines. A new checker module needs a split proposal, or its `mod` line placed elsewhere.
+
+Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294), `codegen/array.rs` (293).
 
 See `TODO.md`.

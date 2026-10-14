@@ -116,4 +116,12 @@ mod tests {
         );
         assert!(!errors("fun f() { let Some(n) = o else { return; } }").is_empty());
     }
+
+    #[test]
+    fn for_of_mut_parses_v13() {
+        assert_eq!(
+            crate::parser::test_util::body("for x of mut xs { }"),
+            "(block (for x (of-mut xs) (block)))"
+        );
+    }
 }

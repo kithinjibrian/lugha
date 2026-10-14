@@ -2,12 +2,13 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestone 41 of 41–44). It is built from the approved plan, `Language v13 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v12 Specification.md` keeps v12 frozen.
+**Status:** in progress (milestones 41–42 of 41–44). It is built from the approved plan, `Language v13 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v12 Specification.md` keeps v12 frozen.
 
 **v12.** This is v11 plus printing any value: the prelude's `Display` and `show`, built-in forms, and `unwrap on Err: <error>` (milestones 39–40).
 
-**Changes since v12** (milestone 41):
+**Changes since v12** (milestones 41–42):
 - In a struct's fields and an enum's payloads, `Self` is the type being declared: `struct Tree<T> { value: T, kids: Self[] }`, `enum List { Cons(i64, Self), Nil }` (section 4).
+- `for x of mut xs` makes `x` each element itself, so `x *= 2` changes `xs`; `for x of mut it` advances the iterator `it` itself, so a later loop resumes where a `break` left it (sections 3, 5).
 
 Every valid v12 program is a valid v13 program.
 
@@ -265,7 +266,7 @@ assign_op    = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<
 if_expr      = "if" ( cond | "let" pattern "=" cond ) block [ "else" ( if_expr | block ) ] ;   (* if let (v9) *)
 while_stmt   = "while" ( cond | "let" pattern "=" cond ) block ;                            (* while let (v9) *)
 for_stmt     = "for" ( for_head | "(" for_head ")" ) block ;
-for_head     = IDENT ( "in" cond ".." cond | "of" cond ) ;
+for_head     = IDENT ( "in" cond ".." cond | "of" [ "mut" ] cond ) ;   (* `of mut`: v13 *)
 cond         = expr ;            (* parsed in no-struct-literal mode *)
 
 match_expr   = "match" cond "{" [ arm { arm_sep arm } [ "," ] ] "}" ;
@@ -704,6 +705,11 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 
 **for over an array.** `for x of xs { body }` binds each element in order. `xs` is evaluated once and is not copied. `x` is an immutable binding to the element, so assigning to `x` is an error; write `xs[i]` with a range loop to modify elements. The body may not assign to `xs` or any part of it, which is checked at compile time, so the loop always sees the array as it was when the loop started. Strings are not iterable in v0.
 
+**for over `mut`** (v13). `for x of mut e { body }` loops over `e` itself rather than a copy. `e` must be a variable, field or element (E0502) rooted in a `let mut` local or `mut self` (E0501); a string is E0506.
+- **Over an array,** `x` is each element in turn, not a copy: `x = v`, `x += 1`, `x.field = v` and `mut self` calls on `x` change the array. `x` is still a borrowed value, so storing or returning it copies.
+- **Over an iterator,** `next` is called on `e` itself, so after a `break` the iterator stands where the loop left it and a later loop resumes it. `x` is an immutable value, as without `mut`.
+- **Guard:** in either case the body may not assign to `e`, grow or shrink it, or call its `mut self` methods (E0507), since the loop is using it; it may read it.
+
 **for over a string** (v10). `for b of s { body }`, where `s` is a `string`, binds each byte of `s` in order, as a `u8`, like `for b of s.bytes()`; strings never change, so nothing in the body can disturb it.
 
 **for over an iterator** (v6). `for x of e { body }`, where `e` isn't an array but has `fun next(mut self): Option<T>` (section 4), evaluates `e` once into a hidden mutable copy (moved instead when `e` is a local's last use), then calls `next` on that copy before each iteration: `Some(v)` runs the body with `x` bound to `v`, and `None` ends the loop. `x` is immutable and holds its own value. `break` ends the loop and `continue` goes to the next call of `next`. Because the loop works on a copy, `e` itself never changes, and the body may assign to it; looping twice over the same variable starts from the beginning both times. As in every `for` header, a struct literal needs parentheses: `for n of (Count { n: 0, end: 3 }) { … }`. It desugars to:
@@ -956,6 +962,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - A default method (v5) compiles once per type that uses it, through a table or a bound: `lugha_fn_<Interface>.<method><Type>` (`lugha_fn_Error.report<ParseError>`); that type's table slot, bound calls and (v10) calls on the type itself use it. A generic interface's default (v6) compiles once per type and interface arguments, the arguments printed on the interface: `lugha_fn_Source<i64>.skip<Count>`. A converted `?` error is boxed on the failure branch, like any conversion. A program without interface values has none of these.
 - Printing a value that isn't a number, `bool` or `string` (v12) calls `lugha_show_<type>(value) -> string`, named like the copy helpers (`lugha_show_5Point`, `lugha_show_i64_arr`) and emitted once, only when used: it calls the type's `show`, or builds the built-in form with `lugha_rt_str_concat` and quotes strings with `lugha_rt_str_quote`. A generic type's `show` is listed as an instance wherever such a value is printed, inside other values and through type parameters too. An interface type's helper, built at the end of lowering, compares the value's identity slot with each concrete type the program has a table of for that interface and prints the box's value by its rules; dispatch tables are unchanged. A function value prints the literal `<fun>`. `unwrap()` on a `Result` builds its panic message in the failing branch from the error's text. Programs printing only numbers, `bool` and strings, and calling no `unwrap()` on a `Result`, give byte-identical IR.
 - `Self` in `impl` blocks and in struct and enum declarations (v10, v13) is replaced by the parser with the type it stands for, so the checker and codegen see the type's own name.
+- `for x of mut e` (v13) works on `e`'s address: over an array, `x` is a local whose storage is the element itself (an `i1` occupies one byte, so `bool` elements alias too); over an iterator, `next` is called on `e`'s own storage instead of a hidden copy.
 - Converting a `J` value to `I` (v6) calls `lugha_up_<J>.<I>(table) -> table`, which compares the value's table with each `J` table the program has and returns the matching `I` table; its body is built after everything else, when every table is known. That `I` table is derived from the table the value was built with: `lugha_vt_<C>.<J>.<I>` has `C`'s identity and copy and, for each `I` item, the function `C`'s `J` table has, so methods behave as through `J`; derived tables keep the original interface (`<C>.<J>.<K>` for a chain) and converting back to it gives the original table. A program that never converts between interfaces has no `lugha_up_` functions and no derived tables. (The approved draft put one slot per target interface in each table instead; tables are emitted while lowering, before every conversion is known, so PRP-054 uses lookup functions.)
 - The v7 operators and methods: `& | ^` are `and`/`or`/`xor`; `<<` is `shl` and `>>` is `ashr` for `i32`/`i64` and `lshr` for the unsigned types, each after an `icmp uge` of the amount against the width that panics (`shift out of range`); `~x` is `xor x, -1`; the wrapping methods are plain `add`/`sub`/`mul`; the counting methods are `llvm.ctpop`, `llvm.ctlz` and `llvm.cttz` (zero not poison), widened to `i64`. A program that uses none of them has none of this code.
 - The v10 integer methods: `checked_add/sub/mul` read the overflow flag of `llvm.{s,u}{add,sub,mul}.with.overflow` and select `None` or `Some`; `checked_div` divides by 1 instead when the divisor is 0 (or the operands are `MIN` and −1) and selects `None` then, so it never traps; `saturating_add/sub` are `llvm.{s,u}{add,sub}.sat`, and `saturating_mul` selects `MIN` or `MAX` on overflow; rotations are `llvm.fshl`/`llvm.fshr` of the value with itself, the `i64` count truncated to the width; `I.MIN`/`I.MAX` are constants.
@@ -1117,13 +1124,13 @@ Name and type errors, reported by the checker:
 | E0430 | A default method that two visible interfaces supply (v10) | `c.describe()` where `Named` and `Shown` both default `describe` and `Circle` satisfies both |
 | E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum, `Option`, function or interface parameters or returns (§8) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
-| E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut` |
-| E0502 | Assignment to something that isn't a place | `(a + b) = 3;` |
+| E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut`; `for x of mut xs` where `xs` isn't (v13) |
+| E0502 | Assignment to something that isn't a place | `(a + b) = 3;`; `for x of mut [1, 2]` (v13) |
 | E0503 | Missing return | a non-void function whose body can end without a value (§6); a stray `;` after the result gets a "remove this semicolon" label |
 | E0504 | `break` or `continue` outside a loop | |
 | E0505 | Block-like statement with a discarded value | `if big { 100 } else { 1 }` followed by more statements |
-| E0506 | Assignment into a string | `s[0] = 104;`, `s.len = 2;` — strings are immutable (§4) |
-| E0507 | Assignment to the array being iterated | `for x of xs { xs[0] = x; }`, or a `mut self` call or `swap` on it |
+| E0506 | Assignment into a string | `s[0] = 104;`, `s.len = 2;`, `for b of mut s` (v13) — strings are immutable (§4) |
+| E0507 | Assignment to the array being iterated | `for x of xs { xs[0] = x; }`, or a `mut self` call or `swap` on it; `it.next()` inside `for n of mut it` (v13) |
 | E0508 | Argument aliases a `mut self` receiver | `v.add(v)` where `add` takes `mut self` |
 | E0509 | A place swapped with a part of itself | `swap(n, n.kids[0])` |
 | E0510 | A statement changes what contains the place it writes | `xs[0] = { xs.push(2); 9 };` (§5) |
@@ -2304,6 +2311,32 @@ fun main() {
 }
 ```
 
+**`for … of mut`** (milestone 42). Prints `[2, 4, 6]`, `a b`, `c d` on three lines, exits with 0.
+
+```
+fun main() {
+    let mut xs = [1, 2, 3];
+    for x of mut xs {
+        x *= 2;
+    }
+    println(xs);
+    let mut words = ["a", "b", "--", "c", "d"].iter();
+    let mut first = "";
+    for w of mut words {
+        if w == "--" {
+            break;
+        }
+        first = first + w + " ";
+    }
+    println(first.trim());
+    let mut rest = "";
+    for w of mut words {
+        rest = rest + w + " ";
+    }
+    println(rest.trim());
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2351,6 +2384,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 39 | Printing values (v12) | `Display` and `show`, built-in forms, quoting, printing type parameters | The printing-values program in section 10 passes (done) |
 | 40 | Printing anything (v12) | interface and function values, `unwrap on Err: <error>` | The printing-anything program in section 10 passes (done: v12 complete) |
 | 41 | `Self` in declarations (v13) | `Self` in struct fields and enum payloads | The `Self`-in-declarations program in section 10 passes (done) |
+| 42 | `for … of mut` (v13) | iterators advanced in place; array elements as mutable aliases | The `for … of mut` program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

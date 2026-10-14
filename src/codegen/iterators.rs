@@ -26,6 +26,7 @@ impl<'ctx> Lowerer<'ctx> {
         var: &Ident,
         iter: &Expr,
         body: &Block,
+        in_place: bool,
     ) -> Result<(), CodegenError> {
         let ty = self.ty(iter);
         let info = self
@@ -35,9 +36,15 @@ impl<'ctx> Lowerer<'ctx> {
             .expect("checked: a loop over a non-array is an iterator loop");
         let element = self.concrete(&info.element);
         let option = Type::Option(Box::new(element.clone()));
-        let value = self.value_for_store(iter, &ty)?;
-        let slot = self.entry_alloca(&ty, "iter");
-        self.builder.build_store(slot, value).expect(POSITIONED);
+        // `of mut` (v13) steps the place itself; otherwise a hidden copy.
+        let slot = if in_place {
+            self.place_address(iter)?.0
+        } else {
+            let value = self.value_for_store(iter, &ty)?;
+            let slot = self.entry_alloca(&ty, "iter");
+            self.builder.build_store(slot, value).expect(POSITIONED);
+            slot
+        };
         let (next, body_block, exit) = (
             self.append("iter.next"),
             self.append("iter.body"),
@@ -181,5 +188,15 @@ mod tests {
         ));
         let main = body(&ir, "main");
         assert!(main.contains("call %\"Option<i64>\" %slot"), "{main}");
+    }
+
+    #[test]
+    fn of_mut_aliases_elements_and_steps_the_place_v13() {
+        let ir = ir("fun main() { let mut xs = [1, 2]; for x of mut xs { x += 1; } }");
+        let main = &ir[ir.find("@lugha_fn_main(").unwrap()..];
+        assert!(
+            !main.contains("%x = alloca"),
+            "the element is the variable: {main}"
+        );
     }
 }

@@ -109,6 +109,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Printing values",
         "Printing anything",
         "`Self` in declarations",
+        "`for … of mut`",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

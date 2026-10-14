@@ -148,12 +148,13 @@ impl<'ctx> Lowerer<'ctx> {
         var: &Ident,
         iter: &Expr,
         body: &Block,
+        in_place: bool,
     ) -> Result<(), CodegenError> {
         let array_type = self.ty(iter);
         // A string loops over its bytes like a `u8[]` (v10).
         let string = array_type == Type::String;
         if !string && !matches!(array_type, Type::Array(_)) {
-            return self.iterator_loop(var, iter, body);
+            return self.iterator_loop(var, iter, body, in_place);
         }
         let element = if string {
             Type::U8
@@ -196,9 +197,15 @@ impl<'ctx> Lowerer<'ctx> {
         } else {
             self.element_address(array, i, self.element_size(&element))
         };
-        let item = self.load_element(address, &element);
-        let slot = self.entry_alloca(&element, &var.name);
-        self.builder.build_store(slot, item).expect(POSITIONED);
+        // `of mut` (v13): the variable is the element itself.
+        let slot = if in_place {
+            address
+        } else {
+            let item = self.load_element(address, &element);
+            let slot = self.entry_alloca(&element, &var.name);
+            self.builder.build_store(slot, item).expect(POSITIONED);
+            slot
+        };
         // Borrowed: returning or storing it copies (spec §4, PRP-014).
         self.scopes.declare(
             &var.name,

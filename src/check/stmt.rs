@@ -71,6 +71,11 @@ impl Checker {
                 iter: ForIter::Array(iter),
                 body,
             } => self.for_of(var, iter, body),
+            StmtKind::For {
+                var,
+                iter: ForIter::MutOf(iter),
+                body,
+            } => self.for_of_mut(var, iter, body),
             StmtKind::Return(value) => {
                 self.return_stmt(value.as_ref(), stmt.span);
                 return true;
