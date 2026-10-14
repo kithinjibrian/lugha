@@ -4265,6 +4265,11 @@ Branch: prp-075-unicode_text (merged into main)
 
 ---
 
+## SESSION 98 — 2026-10-14 — Tuples (milestone 47) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 46 complete** (PRP-075, MEMORY 93): Unicode `char`. Tagged `m46`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
