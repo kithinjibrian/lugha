@@ -4685,8 +4685,8 @@ Branch: main
 
 ---
 
-## SESSION 111 — 2026-10-14 — The std library and std.math (milestone 53) — open
-Branch: prp-082-std_math
+## SESSION 111 — 2026-10-14 — The std library and std.math (milestone 53) — closed
+Branch: prp-082-std_math (merged into main)
 
 ### WHAT WAS DONE
 - The user approved PRP-082 "in one go"; built and merged on green CI:
@@ -4723,13 +4723,13 @@ Branch: prp-082-std_math
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m53`.
+- Nothing. PRP-082 merged into `main`, tagged `m53`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 53 complete** (PRP-082, MEMORY 102–103): the std library and `std.math`. Tag `m53` goes on the merge. `Language v15 Specification.md` (in progress, milestones 51–53) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines; the prelude lives in `src/prelude/`, std in `src/std/`.
+**Milestone 53 complete** (PRP-082, MEMORY 102–103): the std library and `std.math`. Tagged `m53`. `Language v15 Specification.md` (in progress, milestones 51–53) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines; the prelude lives in `src/prelude/`, std in `src/std/`.
 
 Next in v15 (`TODO.md`):
 - `std.fs` (directories), `std.env`, `std.process` (security review);

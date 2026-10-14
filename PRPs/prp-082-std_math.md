@@ -1,6 +1,6 @@
 ## FEATURE: The std library and `std.math` — bundled `std.<module>` modules, `std` reserved, the `Float` bound, and `std.math`; milestone 53.
 
-**Status:** approved 2026-10-14 — session 111, with the milestone 53 additions to `Language v15 Draft.md`, "in one go".
+**Status:** merged 2026-10-14 — session 111. Approved with the milestone 53 additions to `Language v15 Draft.md`, "in one go".
 **Milestone:** 53 (one PRP; tag `m53` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 14–18, the milestone 53 choices, §10 M53, §11 row 53).
 
