@@ -3997,7 +3997,12 @@ Branch: main
 - None.
 
 ### STILL OPEN AT CLOSE
-- The v13 draft awaits the user's approval.
+- The v13 draft awaits the user's approval (approved at the start of session 91).
+
+---
+
+## SESSION 91 — 2026-10-14 — `Self` in declarations (milestone 41) — open
+Branch: main
 
 ---
 
