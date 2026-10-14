@@ -97,16 +97,16 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — parser (`parser/import.rs`):
-- [ ] `import a.b { X, y };`, `public import a.b { X, };` parse.
-- [ ] E0201 for `public import a;`, `import a { };` and `import a { X`.
+- [x] `import a.b { X, y };`, `public import a.b { X, };` parse.
+- [x] E0201 for `public import a;`, `import a { };` and `import a { X`.
 
 Unit tests — checker (`check/named_imports.rs`, multi-module through `check_modules` test utilities):
-- [ ] **Named imports:** a type, a function, an enum and an interface work unqualified in the importing file.
-- [ ] **Re-exports:**
+- [x] **Named imports:** a type, a function, an enum and an interface work unqualified in the importing file.
+- [x] **Re-exports:**
   - `m.X` works from another module;
   - a chain of two re-exports works;
   - the re-exported type is the same type (a value passes to the original module's function).
-- [ ] **Errors:**
+- [x] **Errors:**
   - E0301 for an unknown name;
   - E0302 for a clash with a declaration;
   - E0314 for a name listed twice;
@@ -114,15 +114,15 @@ Unit tests — checker (`check/named_imports.rs`, multi-module through `check_mo
   - E0318 for re-exporting a non-`public` item.
 
 Acceptance — `tests/programs/m38/`:
-- [ ] `reexports/` (directory case): the §10 program.
-- [ ] `named/` (directory case):
+- [x] `reexports/` (directory case): the §10 program.
+- [x] `named/` (directory case):
   - named imports of a struct, a function, an enum (with a `match`) and an interface (as a bound) in one file;
   - a re-export chain across two packages.
-- [ ] `e0318/` (directory case): reject golden.
-- [ ] The §10 program runs from the spec.
+- [x] `e0318/` (directory case): reject golden.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -130,10 +130,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m38/` cases pass.
-- [ ] The v11 spec is complete; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m38/` cases pass.
+- [x] The v11 spec is complete; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -142,3 +142,12 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m38/reexports/main.la
 ```
+
+## AMENDMENTS (during build, session 86)
+
+- **An unclosed brace list is E0202** (unclosed delimiter), the parser's existing code, not E0201.
+- **E0318 for a re-export has its own wording:** "`helper` is not `public`, so it can't be re-exported". The v8 message talks about types.
+- **`parser/item.rs` got shorter:** the `private`/`public` before an import moved into `parser/import.rs`.
+- **`interfaces.rs::interface_key`** (no span, `&self`) follows aliases without the alias-visibility check. A bound written as `m.X` through another module's file-only name is then checked only for the target's own visibility.
+- **IR:** the 143 earlier programs that compile give byte-identical IR.
+- **No file splits.** `check/mod.rs` is at 298 lines.

@@ -1,0 +1,3 @@
+public struct Vec2 { public x: i64, public y: i64 }
+
+public fun add(a: Vec2, b: Vec2): Vec2 = Vec2 { x: a.x + b.x, y: a.y + b.y };

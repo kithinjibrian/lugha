@@ -1269,9 +1269,28 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 82. Named imports and re-exports — milestone 38, v11 complete (PRP-067)
+
+**Decision:** built under the user's "in one go" (milestones 37–38).
+- **AST and parser:**
+  - `Import` gains `items: Vec<Ident>` and `public: Option<Span>`;
+  - `parser/import.rs` has `import_visibility` (`private import` is E0201; `public` kept) and `import_with` (an optional `{ … }` list; `public` without names is E0201; an empty list is E0201, an unclosed one E0202);
+  - `item.rs::program` uses them;
+  - the sexp is `(public import a b (items X y))`.
+- **Checker (`check/named_imports.rs`):**
+  - **Registration:** `Checker::aliases` maps `qualify(module, X)` → `Alias { target, at, public }`. `named_imports` runs before every declaration pass: E0302 for a name the module declares, E0314 for one listed twice or named like an imported module. It registers a privacy record, `public` for re-exports and `private` otherwise.
+  - **Following:** `key()` follows aliases (at most 64 steps). `member(path, name)` replaces `qualify(imported, name)` at the `m.X` sites (lookup.rs ×3, construct.rs, iface_values.rs, fun_values.rs), checking the alias's own visibility first. `interfaces.rs::interface_key` uses `follow` (no span there).
+  - **Validation:** `check_named_imports`, after the declaration passes, reports E0301 for an unknown item, E0313 for one not visible here, and E0318 (its own wording) for a re-export of a non-`public` item.
+- **Codegen is unchanged:** keys are the declaring module's.
+
+**Why:** aliases resolved at the key level reach every name use without touching codegen, and keep symbols and IR byte-identical.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 38 complete — Lugha v11 complete**: PRP-067 named imports and re-exports
 - **Milestone 37 complete**: PRP-066 package versions (`[package]`, requirements, E0324); v11 spec begins
 - **Milestone 36 complete — Lugha v10 complete**: PRP-065 iterator helpers, `iter`/`bytes`/`range`, `for b of s`
 - **Milestone 35 complete**: PRP-064 `i8`/`i16`/`u16`, checked/saturating/rotating methods, `MIN`/`MAX`, `parse_u64`
@@ -1356,15 +1375,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 37 complete** (PRP-066, MEMORY 81): package versions, E0324. Tagged `m37`. `Language v11 Specification.md` (in progress) is what `lughac spec` prints; v0–v10 are frozen.
+**Lugha v11 is complete** (milestones 37–38; PRP-066–067; MEMORY 80–82):
+- package versions (`[package] version`, `{ path, version }` requirements, E0324);
+- named imports and re-exports (`import m { X }`, `public import m { X }`).
 
-Next, under the user's "in one go" (MEMORY 80): **milestone 38, named imports and re-exports** (PRP-067, next session):
-- `import a.b { X, y };` binds the listed items in the file;
-- `public import a.b { X, y };` makes them `public` items of the module (same items, symbols unchanged);
-- E0318 for a non-`public` item; E0201 for `public import` without braces.
+Tags `m38` and `v11` go on the merge of PRP-067. `Language v11 Specification.md` is what `lughac spec` prints; v0–v10 are frozen.
 
-It completes v11; tag `m38` and `v11`.
+Next: **v12 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v11 spec §11 and §12):
+- downloading packages, a lock file;
+- whole-module re-exports and import aliases, a `--package` flag;
+- `zip`/`chain` and the other iterator helpers, and a pair type;
+- `for n of mut c`, unsigned indexes;
+- `Self` in declarations and patterns;
+- a `Display`-like interface;
+- Unicode text;
+- binary I/O.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `check/instances.rs` (~291), `modules/tests.rs` (281).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `modules/tests.rs` (281).
 
 See `TODO.md`.

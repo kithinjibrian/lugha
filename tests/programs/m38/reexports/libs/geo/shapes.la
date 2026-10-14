@@ -1,0 +1,4 @@
+// Vec2 and add become part of geo.shapes (v11).
+public import mathx.vec { Vec2, add };
+
+public fun centre(a: Vec2, b: Vec2): Vec2 = add(a, b);

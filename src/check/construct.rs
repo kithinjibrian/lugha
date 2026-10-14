@@ -14,7 +14,10 @@ impl Checker {
         let key = match &expr.kind {
             ExprKind::Name(name) if self.local(name).is_none() => self.key(name),
             ExprKind::Field(base, e) => match &base.kind {
-                ExprKind::Name(m) => super::qualify(&self.imported(m)?, &e.name),
+                ExprKind::Name(m) => {
+                    let path = self.imported(m)?;
+                    self.member(&path, e)
+                }
                 _ => return None,
             },
             _ => return None,

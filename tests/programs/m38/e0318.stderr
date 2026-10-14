@@ -1,0 +1,8 @@
+error[E0318]: `helper` is not `public`, so it can't be re-exported
+  --> libs/geo/shapes.la:2:22
+  |
+2 | public import util { helper };
+  |                      ^^^^^^
+  |
+  = help: make it `public` where it is declared, or drop `public` from this import
+

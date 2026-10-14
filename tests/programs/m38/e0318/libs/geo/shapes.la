@@ -1,0 +1,2 @@
+// helper has no `public`, so it can't be re-exported.
+public import util { helper };

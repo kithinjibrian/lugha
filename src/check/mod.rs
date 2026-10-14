@@ -49,6 +49,7 @@ mod matching;
 mod method_calls;
 mod methods;
 mod modules;
+mod named_imports;
 mod numbers;
 mod ops;
 mod or_patterns;
@@ -163,6 +164,7 @@ impl Checker {
             package: None,
             imports: HashMap::new(),
             privacy: visibility::Privacy::default(),
+            aliases: named_imports::Aliases::new(),
             externs: HashMap::new(),
             callees: HashMap::new(),
             annotations: HashMap::new(),
@@ -246,6 +248,8 @@ pub(super) struct Checker {
     imports: HashMap<String, Vec<String>>,
     /// Who declares what, and what is `private`.
     privacy: visibility::Privacy,
+    /// Named imports and re-exports, by their key in their module (v11).
+    aliases: named_imports::Aliases,
     /// Every extern's C name: its signature and first declaration (E0306).
     externs: HashMap<String, (Vec<Type>, Type, Span)>,
     /// See `Checked::callees`.

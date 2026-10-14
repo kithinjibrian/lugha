@@ -1,0 +1,23 @@
+// Named items from a chain of re-exports, used without a module prefix:
+// a struct, a function, an enum in a match, and an interface as a bound.
+import geo.all { Vec2, add, Dir, Sized };
+
+struct Box { n: i64 }
+
+impl Box {
+    fun size(self): i64 = self.n;
+}
+
+fun big<T: Sized>(t: T): bool = t.size() > 1;
+
+fun name(d: Dir): string = match d {
+    Up => "up",
+    Down => "down",
+};
+
+fun main() {
+    let v: Vec2 = add(Vec2 { x: 1, y: 2 }, all.Vec2 { x: 10, y: 20 });
+    println(v.x + v.y);
+    println(name(Dir.Down));
+    println(big(Box { n: 3 }));
+}

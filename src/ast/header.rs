@@ -9,6 +9,10 @@ use crate::span::Span;
 pub struct Import {
     /// The path's segments in order; never empty.
     pub path: Vec<Ident>,
+    /// The names in `{ X, y }` after the path, in order (v11).
+    pub items: Vec<Ident>,
+    /// The `public` before a re-export, `public import m { X };` (v11).
+    pub public: Option<Span>,
     /// From `import` to the `;`.
     pub span: Span,
 }

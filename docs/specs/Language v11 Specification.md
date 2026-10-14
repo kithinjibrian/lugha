@@ -2,12 +2,13 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestone 37 of 37–38). It is built from the approved plan, `Language v11 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v10 Specification.md` keeps v10 frozen.
+**Status:** complete (milestones 37–38). It is built from the approved plan, `Language v11 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v10 Specification.md` keeps v10 frozen.
 
 **v10.** This is v9 plus `Self` in `impl` blocks, default methods on concrete types, `i8`/`i16`/`u16` with checked, saturating and rotating methods, and iterator helpers (milestones 34–36).
 
-**Changes since v10** (milestone 37):
+**Changes since v10** (milestones 37–38):
 - A package's `lugha.toml` may declare its version, `[package]` then `version = "1.4.0"`, and a manifest may require a compatible one, `geo = { path = "libs/geo", version = "1.2" }`; a version that doesn't meet it is E0324 (section 6).
+- `import a.b { X, y };` brings items into a file by name, and `public import a.b { X, y };` re-exports them as items of the module, so a program can use `shapes.Vec2` from a package it doesn't list (sections 3, 6).
 
 Every valid v10 program and manifest is valid in v11.
 
@@ -202,7 +203,7 @@ The grammar is LL(1) apart from expressions, which use Pratt parsing with the pr
 
 ```ebnf
 program      = { import } { item } EOF ;
-import       = "import" IDENT { "." IDENT } ";" ;
+import       = [ "public" ] "import" IDENT { "." IDENT } [ "{" IDENT { "," IDENT } [ "," ] "}" ] ";" ;   (* names and `public`: v11 *)
 item         = [ visibility ] ( fun_decl | extern_decl | struct_decl | enum_decl | interface_decl ) | impl_decl ;
 visibility   = "private" | "public" ;                (* `public`: v8, packages *)
 
@@ -317,7 +318,7 @@ The bit operators sit between comparisons and `+ -`, as in Rust, so `flags & MAS
 
 | Code | Error | Example |
 | --- | --- | --- |
-| E0201 | Unexpected token | `let x = 1 let y = 2;`, `let x = );`, a stray `;`, `let` at top level |
+| E0201 | Unexpected token | `let x = 1 let y = 2;`, `let x = );`, a stray `;`, `let` at top level; `public import a;` without names, `private import a;` (v11) |
 | E0202 | Unclosed delimiter | `(`, `[` or `{` still open at end of file |
 | E0203 | Chained comparison or equality | `a < b < c`, `a == b != c` |
 | E0204 | Assignment used as an expression | `a = b = c;`, `if (x = 1) {}`, `f(x = 1)` |
@@ -779,7 +780,12 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 - **Methods:** a method call on a value from another module (`c.area()`) works like any method call.
 - **Errors:** an unknown module name is E0301; an unknown function or type in a known module is E0301 or E0305.
 
-**Names.** Each module has its own namespace for functions, structs, enums, interfaces and externs, so two modules may each declare `Point`; duplicates within a module are a compile error. Intrinsics and the built-in names `Option`, `Some`, `None`, `Eq` and `Ord` are visible in every module, and no program may declare them (E0302). Methods live in their type's namespace, so a function `dist` and a method `Point.dist` can coexist. No local may be named like a type or an imported module (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then the module's own items, then imported module names. In messages a type from another module is shown with its full module path (`shapes.circle.Circle`); a main-file type keeps its bare name. `main` belongs in the main file (E0304 elsewhere).
+**Named imports and re-exports** (v11). An import may list items after its path:
+- **`import a.b { X, y };`** imports module `a.b` as before (binding `b`), and binds each listed name in this file to that module's item: a function, extern, struct, enum or interface, written without a prefix (`X { … }`, `y(1)`, `X.f()`, `X.V`, `T: X`). Each must be an item of the module (E0301) visible here (E0313). A listed name the file also declares is E0302; one listed twice, or named like an imported module, is E0314.
+- **`public import a.b { X, y };`** does the same, and makes `X` and `y` items of this module, visible to every package: a module that imports this one writes `m.X` and `m.y`, and may re-export them again. A re-exported item must itself be `public` (E0318). `public import a.b;` without names is E0201, and `private import` is E0201.
+- **Same items:** a named import is the item itself, not a copy: `shapes.Vec2` and `vec.Vec2` are one type, calls reach one function, and types print with the declaring module's path (`mathx.vec.Vec2`). A name imported without `public` is the file's own: another module writing `m.X` for it is E0313. Re-exports don't change manifests: a program uses `shapes.Vec2` without listing `mathx`, and still can't `import mathx.vec;` unless it lists `mathx` itself.
+
+**Names.** Each module has its own namespace for functions, structs, enums, interfaces and externs, so two modules may each declare `Point`; duplicates within a module are a compile error. Intrinsics and the built-in names `Option`, `Some`, `None`, `Eq` and `Ord` are visible in every module, and no program may declare them (E0302). Methods live in their type's namespace, so a function `dist` and a method `Point.dist` can coexist. No local may be named like a type or an imported module (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then the module's own items and named imports (v11), then imported module names. In messages a type from another module is shown with its full module path (`shapes.circle.Circle`); a main-file type keeps its bare name. `main` belongs in the main file (E0304 elsewhere).
 
 **Visibility.** Each function, extern, struct, enum, interface, method, associated function and struct field has one of three levels (v8):
 
@@ -909,6 +915,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - Variadic C functions such as `printf` cannot be declared in v0. Use the `print` and `println` intrinsics instead.
 - The extern name is used as the C symbol name unchanged. Lugha functions themselves are emitted with a `lugha_fn_` prefix, so they never collide with C symbols. Methods and associated functions are `lugha_fn_<Type>.<name>` (for example `lugha_fn_Point.dist`); `.` can't appear in a Lugha name, so these can't collide either.
 - A package's modules are named by paths that start with the package name (v8), so their symbols do too: function `area` of `geo`'s module `shapes` is `lugha_fn_geo/shapes/area`. Diagnostics in a `lugha.toml` name that file relative to the main file's folder (`lugha.toml`, `libs/geo/lugha.toml`).
+- Named imports and re-exports (v11) are resolved by the checker to the declaring module's items, so they add no symbols: `shapes.add` calls `lugha_fn_mathx/vec/add`.
 - Items of a module other than the main file put the module's path before their name, joined with `/`: function `area` of module `shapes.circle` is `lugha_fn_shapes/circle/area`, and its method `Circle.area` is `lugha_fn_shapes/circle/Circle.area`. A name contains neither `/` nor `.`, so a module function (`lugha_fn_a/b/c`) can't collide with a method (`lugha_fn_a/b.c`, method `c` of type `b` in module `a`).
 - A generic instance adds its type arguments as they print, with module paths joined by `/`: `lugha_fn_max<i64>`, `lugha_fn_a/b/max<a/b/Point>`. A method's go on its type, then its own: `lugha_fn_Stack<string>.push`, `lugha_fn_Stack<string>.tag<f64>`. `<` can't appear in a Lugha name, so instances can't collide with anything else.
 - A function used as a value (v3) is called through `lugha_ref_<symbol>`, a wrapper that takes an environment pointer first and calls `lugha_fn_<symbol>`: `lugha_ref_double`, `lugha_ref_max<i64>`, `lugha_ref_Point.at`. It is emitted once, when first needed.
@@ -1021,7 +1028,7 @@ Name and type errors, reported by the checker:
 | Code | Error | Example |
 | --- | --- | --- |
 | E0301 | Undefined name | `count + 1` with no `count` in scope; a call to an undefined function |
-| E0302 | Name defined more than once, or a function named like an intrinsic | two `fun area`; `fun println()` |
+| E0302 | Name defined more than once, or a function named like an intrinsic | two `fun area`; `fun println()`; `import vec { add };` in a file declaring `add` (v11) |
 | E0303 | No `main` function | |
 | E0304 | `main` with the wrong signature, generic, or outside the main file | `fun main(argc: i32): i32`; `fun main<T>()`; a `main` in a module (v2) |
 | E0305 | Unknown type name | `let p: Point = 1;` with no `Point` |
@@ -1032,12 +1039,12 @@ Name and type errors, reported by the checker:
 | E0310 | Method declared twice, or named like a field or variant | `impl P { fun x(self) {} }` where `P` has a field `x` |
 | E0311 | A local named like a type or an imported module | `let Shape = 3;`, `fun f(Point: i64)` |
 | E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` (v2) |
-| E0313 | An item, method or field not visible here | another module's `private` item: `range.helper()`, `r.lo`, `range.Range { lo: 1, hi: 5 }` (v2); another package's item without `public` (v8) |
-| E0314 | Import clash | `import a.util;` and `import b.util;` in one file; an import named like an item (v2) |
+| E0313 | An item, method or field not visible here | another module's `private` item: `range.helper()`, `r.lo`, `range.Range { lo: 1, hi: 5 }` (v2); another package's item without `public` (v8); `shapes.Vec2` when `shapes` imported `Vec2` without `public` (v11) |
+| E0314 | Import clash | `import a.util;` and `import b.util;` in one file; an import named like an item (v2); `import vec { add, add };` (v11) |
 | E0315 | Unknown bound | `fun f<T: Hash>(x: T)`; a struct as a bound (v2) |
 | E0316 | Bad type parameter name | `fun f<T, T>()`, a parameter named like a struct (v2) |
 | E0317 | Retired in v8 (was: `public` before packages existed); never reported, never reused | |
-| E0318 | A declaration exposing a less visible type | `private struct S {}` then `fun make(): S` (v2); `public fun a(): Inner` where `Inner` isn't `public` (v8) |
+| E0318 | A declaration exposing a less visible type | `private struct S {}` then `fun make(): S` (v2); `public fun a(): Inner` where `Inner` isn't `public` (v8); `public import util { helper };` where `helper` isn't `public` (v11) |
 | E0319 | The main file imported | a module writing `import main;` (v2) |
 | E0320 | A package name that is also a local folder or file (v8) | `geo` in `lugha.toml` while `geo/` sits next to `main.la` |
 | E0321 | A malformed `lugha.toml` (v8, v11) | `geo = libs/geo` (no quotes); `[deps]`; `geo` listed twice |
@@ -2137,6 +2144,44 @@ fun main() {
 }
 ```
 
+**Re-exports** (milestone 38). Prints `8`, exits with 0. The program lists only `geo`, and uses `mathx`'s `Vec2` and `add` through `geo.shapes`.
+
+```
+# lugha.toml
+[packages]
+geo = "libs/geo"
+```
+
+```
+# libs/geo/lugha.toml
+[packages]
+mathx = "../mathx"
+```
+
+```
+// libs/mathx/vec.la
+public struct Vec2 { public x: i64, public y: i64 }
+
+public fun add(a: Vec2, b: Vec2): Vec2 = Vec2 { x: a.x + b.x, y: a.y + b.y };
+```
+
+```
+// libs/geo/shapes.la
+public import mathx.vec { Vec2, add };
+
+public fun centre(a: Vec2, b: Vec2): Vec2 = add(a, b);
+```
+
+```
+// main.la
+import geo.shapes;
+
+fun main() {
+    let c = shapes.centre(shapes.Vec2 { x: 1, y: 2 }, shapes.Vec2 { x: 3, y: 4 });
+    println(shapes.add(c, c).x);
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2180,6 +2225,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 35 | More integers (v10) | `i8`, `i16`, `u16`; `checked_*`, `saturating_*`, rotations, `MIN`/`MAX`; `parse_u64` | The more-integers program in section 10 passes (done) |
 | 36 | Iterator helpers (v10) | `iter`, `bytes`, `range`, `for b of s`; lazy adapters and consumers | The iterator-helpers program in section 10 passes (done: v10 complete) |
 | 37 | Package versions (v11) | `[package]` versions, inline entries with requirements, E0324 | The package-versions program in section 10 passes (done) |
+| 38 | Re-exports (v11) | `import m { X }`, `public import m { X }` | The re-exports program in section 10 passes (done: v11 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -2236,3 +2282,4 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [ ] **`xs.iter()` copies the array** (v10). It follows the copy rules, so iterating a variable still used later costs a copy; move on last use avoids it otherwise. A borrowing iterator would need shared references.
 - [ ] **Unicode text** (v10). `bytes()` is the only way to iterate a string; iterating characters waits for a decision on text encoding.
 - [ ] **Checking the program's own version** (v11). The root package may declare a version that nothing reads. A later `lughac` could print it, or check it against a minimum `lughac` version.
+- [ ] **Re-exports and visibility levels** (v11). A re-export is always `public`. A package-level re-export (visible to the package's other modules only) could come later if packages need internal façades.

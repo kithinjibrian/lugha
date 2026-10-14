@@ -3,7 +3,7 @@
 
 use super::expr::Expect;
 use super::generics::{Generic, subst};
-use super::{Checker, Type, errors, qualify};
+use super::{Checker, Type, errors};
 use crate::ast::{Expr, ExprKind, Ident, Type as Annotation};
 
 impl Checker {
@@ -64,7 +64,7 @@ impl Checker {
         if let ExprKind::Name(m) = &base.kind
             && let Some(path) = self.imported(m)
         {
-            let key = qualify(&path, &name.name);
+            let key = self.member(&path, name);
             if !self.functions.contains_key(&key) {
                 return None;
             }

@@ -12,21 +12,12 @@ impl Parser<'_> {
     pub(super) fn program(&mut self) -> (Vec<Import>, Vec<Item>) {
         let mut imports = Vec::new();
         loop {
-            // `private import a;`: one error at the keyword, then the import.
-            if matches!(self.peek(), TokenKind::Private | TokenKind::Public)
-                && self.peek_at(1) == &TokenKind::Import
-            {
-                let at = self.bump();
-                self.error(Diagnostic::error(
-                    "E0201",
-                    "an import can't have a visibility",
-                    at,
-                ));
-            }
+            // `public import a.b { X };` re-exports; `private import` is E0201.
+            let public = self.import_visibility();
             if !self.at(&TokenKind::Import) {
                 break;
             }
-            match self.import() {
+            match self.import_with(public) {
                 Ok(import) => imports.push(import),
                 Err(_) => self.sync_item(),
             }

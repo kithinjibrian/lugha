@@ -111,6 +111,11 @@ impl Checker {
             Checker::collect,
             Checker::collect_methods,
         ];
+        // Named imports first, so every pass resolves through them (v11).
+        for unit in units {
+            self.enter(unit);
+            self.named_imports(unit);
+        }
         for pass in passes {
             for unit in units {
                 self.enter(unit);
@@ -120,6 +125,7 @@ impl Checker {
         for unit in units {
             self.enter(unit);
             self.visibility_rules(unit.program);
+            self.check_named_imports(unit);
         }
         if let Some((main, others)) = units.split_first() {
             self.enter(main);
@@ -155,7 +161,8 @@ impl Checker {
 
     /// The key of `name` declared in the current module.
     pub(super) fn key(&self, name: &str) -> String {
-        qualify(&self.module, name)
+        // A named import or re-export means the item it names (v11).
+        self.follow(qualify(&self.module, name))
     }
 
     /// The module imported as `name` here, unless a local shadows it.

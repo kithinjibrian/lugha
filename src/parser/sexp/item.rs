@@ -19,7 +19,15 @@ use crate::ast::{
 pub fn program(program: &Program) -> String {
     let imports = program.imports.iter().map(|i| {
         let path: Vec<&str> = i.path.iter().map(|s| s.name.as_str()).collect();
-        format!("(import {})", path.join(" "))
+        let public = if i.public.is_some() { "(public " } else { "(" };
+        let items: Vec<&str> = i.items.iter().map(|s| s.name.as_str()).collect();
+        // `(import a b (items X y))` for named items (v11).
+        let items = if items.is_empty() {
+            String::new()
+        } else {
+            format!(" (items {})", items.join(" "))
+        };
+        format!("{public}import {}{items})", path.join(" "))
     });
     imports
         .chain(program.items.iter().map(item))

@@ -3,7 +3,7 @@
 
 use super::applied::Applied;
 use super::expr::Expect;
-use super::{Checker, Type, errors, qualify};
+use super::{Checker, Type, errors};
 use crate::ast::{AppliedType, Expr, Ident};
 use crate::span::Span;
 
@@ -19,7 +19,10 @@ impl Checker {
     ) -> Option<Type> {
         let key = match module {
             None => self.key(&name.name),
-            Some(m) => qualify(&self.imported(&m.name)?, &name.name),
+            Some(m) => {
+                let path = self.imported(&m.name)?;
+                self.member(&path, name)
+            }
         };
         let key = self.or_prelude_interface(key, module, &name.name);
         let info = self.interfaces.get(&key)?;

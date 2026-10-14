@@ -227,9 +227,9 @@ Done when the iterator-helpers program passes and the v10 spec is complete.
 Done when the package-versions program passes.
 - [x] PRP-066: `[package]` versions, inline entries with requirements, E0324; `Language v11 Specification.md` begins; tagged `m37`
 
-### Milestone 38 — Re-exports
+### Milestone 38 — Re-exports ✅
 Done when the re-exports program passes and the v11 spec is complete.
-- [ ] `import m { X }`, `public import m { X }`
+- [x] PRP-067: `import m { X }`, `public import m { X }`; v11 complete; tagged `m38` and `v11` at merge
 
 ## Found while working — needs a PRP
 

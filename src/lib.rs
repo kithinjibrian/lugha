@@ -3,8 +3,8 @@
 //! Compiles one `.la` source file to a native executable through the stages
 //! defined in spec §9: lex, parse, check, lower to LLVM IR, emit, link.
 //! The language itself is defined in `docs/specs/Language v11 Specification.md`
-//! (v10 plus the v11 features implemented so far; `Language v11 Draft.md`
-//! is the plan, and v10's file is frozen).
+//! (Lugha v11, complete; `Language v11 Draft.md` was the plan, and v10's
+//! file is frozen).
 
 pub mod ast;
 pub mod check;

@@ -2,7 +2,6 @@
 //! `m.T { … }`, `m.T.f(…)`, `m.T.V`, plus the program-wide rules on externs
 //! and `main`.
 
-use super::qualify;
 use crate::ast::{Expr, ExprKind, Ident, Item, Program};
 use crate::check::expr::Expect;
 use crate::check::{Checker, Type, errors};
@@ -16,7 +15,10 @@ impl Checker {
         let key = match &expr.kind {
             ExprKind::Name(t) if self.local(t).is_none() => self.key(t),
             ExprKind::Field(base, t) => match &base.kind {
-                ExprKind::Name(m) => qualify(&self.imported(m)?, &t.name),
+                ExprKind::Name(m) => {
+                    let path = self.imported(m)?;
+                    self.member(&path, t)
+                }
                 _ => return None,
             },
             _ => return None,
@@ -37,7 +39,7 @@ impl Checker {
         let key = match module {
             None => self.key(&name.name),
             Some(m) => match self.imported(&m.name) {
-                Some(path) => qualify(&path, &name.name),
+                Some(path) => self.member(&path, name),
                 None => {
                     self.report(errors::unknown_type(
                         &format!("{}.{}", m.name, name.name),
@@ -88,7 +90,7 @@ impl Checker {
         // A module and a function name aren't values: `void` marks them.
         self.record(base, Type::Void);
         self.record(callee, Type::Void);
-        let key = qualify(&path, &f.name);
+        let key = self.member(&path, f);
         if !self.functions.contains_key(&key) {
             self.report(errors::undefined(&f.name, f.span));
             return Some(self.unchecked_args(args));

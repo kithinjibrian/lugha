@@ -9,16 +9,59 @@ use crate::lexer::TokenKind;
 use crate::span::Span;
 
 impl Parser<'_> {
-    /// `import a.b.c;`, at the current `import`.
+    /// `import a.b.c;` or `import a.b { X, y };` (v11), at the current `import`.
     pub(super) fn import(&mut self) -> PResult<Import> {
-        let start = self.bump().start;
+        self.import_with(None)
+    }
+
+    /// The `public` or `private` before an `import`, if any: `private` is
+    /// E0201, and `public` is kept for a re-export (v11).
+    pub(super) fn import_visibility(&mut self) -> Option<Span> {
+        let marked = matches!(self.peek(), TokenKind::Private | TokenKind::Public);
+        if !marked || self.peek_at(1) != &TokenKind::Import {
+            return None;
+        }
+        let public = self.at(&TokenKind::Public);
+        let at = self.bump();
+        if !public {
+            self.error(Diagnostic::error(
+                "E0201",
+                "an import can't be `private`",
+                at,
+            ));
+            return None;
+        }
+        Some(at)
+    }
+
+    /// An import after its optional `public`: only named items are
+    /// re-exported, so `public import a;` is E0201 (v11).
+    pub(super) fn import_with(&mut self, public: Option<Span>) -> PResult<Import> {
+        let start = public.map_or_else(|| self.span().start, |p| p.start);
+        self.bump();
         let mut path = vec![self.ident("module name")?];
         while self.eat(&TokenKind::Dot) {
             path.push(self.ident("module name")?);
         }
+        let items = if self.at(&TokenKind::LBrace) {
+            let open = self.bump();
+            if self.at(&TokenKind::RBrace) {
+                return Err(self.expected("item name"));
+            }
+            self.comma_list(open, TokenKind::RBrace, |p| p.ident("item name"))?
+        } else {
+            Vec::new()
+        };
         self.expect(&TokenKind::Semi)?;
+        if let Some(at) = public.filter(|_| items.is_empty()) {
+            let d = Diagnostic::error("E0201", "only named items can be re-exported", at)
+                .with_help("list them: `public import a.b { X, y };`");
+            self.error(d);
+        }
         Ok(Import {
             path,
+            items,
+            public,
             span: Span::new(start, self.prev_end()),
         })
     }
@@ -129,5 +172,22 @@ mod tests {
         );
         assert_eq!(errors("fun f(private x: i64) {}"), [("E0201", "private")]);
         assert_eq!(errors("public import a;"), [("E0201", "public")]);
+        assert_eq!(errors("private import a;"), [("E0201", "private")]);
+    }
+
+    #[test]
+    fn named_imports_and_re_exports_v11() {
+        assert_eq!(
+            program(
+                "import a.b { X, y };
+public import c { Z, };
+fun main() {}"
+            ),
+            "(import a b (items X y))
+(public import c (items Z))
+(fun main () void (block))"
+        );
+        assert_eq!(errors("import a { };"), [("E0201", "}")]);
+        assert_eq!(errors("import a { X"), [("E0202", "{")]);
     }
 }

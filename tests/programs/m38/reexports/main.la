@@ -1,0 +1,6 @@
+import geo.shapes;
+
+fun main() {
+    let c = shapes.centre(shapes.Vec2 { x: 1, y: 2 }, shapes.Vec2 { x: 3, y: 4 });
+    println(shapes.add(c, c).x);
+}
