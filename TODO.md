@@ -272,8 +272,8 @@ Done when the printing-anything program passes and the v12 spec is complete.
 ### Milestone 49 — Import aliases and re-exports ✅
 - [x] PRP-078: `as` on modules and items, `public import m [as v];`, `m.v.X`; tagged `m49`
 
-### Milestone 50 — Downloaded packages (needs a security review of its PRP)
-- [ ] git entries, cache, `lugha.lock`, `lughac update`, `--offline` (E0325, E0326)
+### Milestone 50 — Downloaded packages ✅
+- [x] PRP-079 (security design reviewed and approved): git entries, cache, `lugha.lock`, `lughac update`, `--offline` (E0325, E0326); v14 complete; tagged `m50` and `v14`
 
 ## Found while working — needs a PRP
 

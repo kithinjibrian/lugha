@@ -192,7 +192,12 @@ pub(crate) mod test_util {
             }
             None => Err(std::io::Error::from(std::io::ErrorKind::NotFound)),
         };
-        let loaded = load(Path::new("main.la"), &mut read).expect("files are readable");
+        let loaded = load(
+            Path::new("main.la"),
+            &mut read,
+            crate::modules::fetch::Fetcher::none(),
+        )
+        .expect("files are readable");
         assert!(loaded.diagnostics.is_empty(), "{:?}", loaded.diagnostics);
         loaded
     }

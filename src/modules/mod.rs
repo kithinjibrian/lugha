@@ -9,7 +9,11 @@
 //!
 //! Depends on: ast, lexer, parser, diagnostic, span.
 
+pub mod cache;
+pub mod fetch;
+pub mod git;
 mod inline;
+pub mod lock;
 pub mod manifest;
 mod packages;
 mod resolve;
@@ -23,6 +27,7 @@ use std::collections::VecDeque;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use self::fetch::Fetcher;
 use crate::ast::{Import, Program};
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
@@ -71,8 +76,10 @@ pub struct Loaded {
     pub modules: Vec<Module>,
     /// Errors and warnings from all modules, in the shared offset space.
     pub diagnostics: Vec<Diagnostic>,
-    /// Every manifest read (v8), in the same offset space.
+    /// Every manifest read (v8), in the same offset space; `lugha.lock` too (v14).
     pub manifests: Vec<ManifestFile>,
+    /// New text for `lugha.lock`, when the build changed it (v14).
+    pub lock: Option<String>,
 }
 
 /// Why a program couldn't be loaded at all — an internal error, not a
@@ -89,34 +96,44 @@ pub enum LoadError {
     /// The files together are larger than the offset space.
     #[error("the program's files are too large to load together")]
     TooLarge,
+    /// A git package needs the cache, and no cache folder is known (v14).
+    #[error("no cache for git packages: set `LUGHA_CACHE` or `HOME` to an absolute path")]
+    NoCache,
+    /// The package cache can't be written (v14).
+    #[error("cannot write the package cache: {0}")]
+    Cache(#[source] io::Error),
 }
 
-/// Loads `main` and every module it imports, reading files with `read`.
+/// Loads `main` and every module it imports, reading files with `read`
+/// and fetching git packages with `fetcher` (v14).
 ///
 /// # Errors
 ///
 /// [`LoadError::Io`] if the main file can't be read, or another file exists
 /// but can't be read; [`LoadError::TooLarge`] if the offsets overflow. A
 /// missing module, a clash and every lex or parse error are diagnostics in
-/// [`Loaded::diagnostics`] instead.
+/// [`Loaded::diagnostics`] instead. [`LoadError::NoCache`] or
+/// [`LoadError::Cache`] if a git package's cache can't be found or written.
 ///
 /// # Examples
 ///
 /// ```
 /// use std::path::Path;
 /// let mut read = |_: &Path| Ok(b"fun main() {}".to_vec());
-/// let loaded = lugha::modules::load(Path::new("main.la"), &mut read).unwrap();
+/// let none = lugha::modules::fetch::Fetcher::none();
+/// let loaded = lugha::modules::load(Path::new("main.la"), &mut read, none).unwrap();
 /// assert_eq!(loaded.modules.len(), 1);
 /// ```
-pub fn load(main: &Path, read: &mut Read<'_>) -> Result<Loaded, LoadError> {
+pub fn load(main: &Path, read: &mut Read<'_>, fetcher: Fetcher) -> Result<Loaded, LoadError> {
     let root = main.parent().unwrap_or(Path::new("")).to_path_buf();
     let mut loaded = Loaded {
         modules: Vec::new(),
         diagnostics: Vec::new(),
         manifests: Vec::new(),
+        lock: None,
     };
     let (mut base, mut next_id) = (0usize, 0u32);
-    let mut packages = packages::Packages::new(root);
+    let mut packages = packages::Packages::new(root, fetcher);
     // Every file ever queued, so each is read once, whoever imports it.
     let mut seen: Vec<PathBuf> = vec![main.to_path_buf()];
     // A module to read, its package, and the import that asked for it (`None` for main).
@@ -147,6 +164,11 @@ pub fn load(main: &Path, read: &mut Read<'_>) -> Result<Loaded, LoadError> {
         if let Some(program) = &module.program {
             next_id = program.expr_count;
             for import in &program.imports {
+                // E0325/E0326 already stop the build; keep one path per import.
+                if packages.unfetched(import) {
+                    module.imports.push(names(import));
+                    continue;
+                }
                 let (target, error) =
                     packages.resolve(import, &package, read, &mut base, &mut loaded)?;
                 module.imports.push(target.path.clone());
@@ -165,6 +187,7 @@ pub fn load(main: &Path, read: &mut Read<'_>) -> Result<Loaded, LoadError> {
         loaded.modules.push(module);
     }
     packages.check_versions(read, &mut base, &mut loaded)?;
+    loaded.lock = packages.fetcher.lock_text();
     Ok(loaded)
 }
 

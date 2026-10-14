@@ -135,7 +135,8 @@ cargo clippy --all-targets -- -D warnings     # lint
 
 cargo run -q -- build prog.la [-o out] [--emit=tokens|ast|ir] [-O0|-O2] [--diagnostics=human|json]
 cargo run -q -- run prog.la                   # exit code = the program's
-cargo run -q -- check prog.la                 # lex, parse, type-check
+cargo run -q -- check prog.la [--offline]     # lex, parse, type-check
+cargo run -q -- update prog.la                # re-resolve git packages, rewrite lugha.lock
 cargo run -q -- spec                          # print the bundled language spec
 ```
 
@@ -154,7 +155,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v14 Specification.md` (`lughac spec` prints it): Lugha v14, in progress (milestones 45–49 done: binary I/O, `to_bytes`, `string_from_utf8`, any-integer indexes; `char`, `'a'`, `chars()`; tuples; `format`; import aliases and whole-module re-exports; M50 waits for a security review). `Language v14 Draft.md` is the approved plan (milestones 45–50: bytes and indexes, `char`, tuples, `format`, import aliases and re-exports, git packages). The v0–v13 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la`, `src/prelude_more.la` and `src/prelude_text.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v14 Specification.md` (`lughac spec` prints it): Lugha v14, complete (milestones 45–50: binary I/O, `to_bytes`, `string_from_utf8`, any-integer indexes; `char`, `'a'`, `chars()`; tuples; `format`; import aliases and whole-module re-exports; git packages with `lugha.lock`, `lughac update` and `--offline`). `Language v14 Draft.md` is the approved plan it was built from. The v0–v13 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la`, `src/prelude_more.la` and `src/prelude_text.la`, loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -302,12 +303,16 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (import checks, E0312/E0314/E0319), manifest.rs (`lugha.toml`, E0321), inline.rs (inline
 │   │                  entries `{ path, version }`, v11), version.rs (versions, requirements, E0324), packages.rs
 │   │                  (manifests of a build, package imports, E0320/E0322/E0323, version checks), tests.rs
-│   │                  (in-memory loading), version_tests.rs (loading with versions)
+│   │                  (in-memory loading), version_tests.rs (loading with versions), git.rs (v14: URL checks, `ls-remote`
+│   │                  tags, the `Git` trait, `SystemGit` with fixed `-c` flags and env), cache.rs (cache root, escaped
+│   │                  folder names, scratch clones, install), lock.rs (`lugha.lock`, E0321), fetch.rs (`Fetcher`, `Mode`:
+│   │                  lock, cache, clone, E0325/E0326; fetch_tests.rs with a fake `Git`)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_PARTS, RUNTIME_SOURCE, RUNTIME_SYMBOLS, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes, Output), build.rs (build, --emit per module), guard.rs
 │                      (panics → internal error, exit 2), pipeline.rs (load all modules + the prelude, check, codegen),
 │                      source.rs (source map of all files, line_col),
-│                      render.rs (codespan, Report), json.rs (JSON lines)
+│                      render.rs (codespan, Report), json.rs (JSON lines), update.rs (v14: the fetcher, writing
+│                      `lugha.lock`, `lughac update`)
 ├── tests/
 │   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
 │   ├── spec.rs      — spec §10 acceptance: programs and expected results extracted from lugha::SPEC
@@ -317,6 +322,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── cli.rs       — the lughac binary: commands, emit, diagnostics, exit codes
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
+│   ├── git_packages.rs — git packages through lughac and a real `file://` repository (lock, offline, E0325/E0326)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
 │   ├── programs/    — m1/ … m49/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
@@ -344,7 +350,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them, except the one it names: a value to an interface where one is expected (v5, recorded in `Checked.conversions`). Every other one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (a package registry, full Unicode tables, streams…) even partially, nor a v14 milestone ahead of its turn. v14 (milestones 45–50) follows `Language v14 Draft.md`; M50 (git packages) waits for the user's security review of its PRP. Anything beyond needs an approved spec change first.
+5. **Never implement a §11 "out of scope" feature** (a package registry, `ssh` URLs, full Unicode tables, streams…) even partially. v14 is complete (milestones 45–50); any further language feature is v15 and needs an approved spec change first. Changes to how `git` runs (`modules/git.rs`) need the user's security review, as PRP-079 had.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

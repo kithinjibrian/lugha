@@ -7,6 +7,7 @@ use super::pipeline::{self, Failure, Front};
 use super::source::line_col;
 use super::{Emit, Output};
 use crate::codegen::OptLevel;
+use crate::modules::fetch::Mode;
 use crate::parser::sexp;
 
 pub(super) fn build(
@@ -14,16 +15,16 @@ pub(super) fn build(
     file: &Path,
     output: Option<&Path>,
     emit: Option<Emit>,
-    opt: OptLevel,
+    (opt, mode): (OptLevel, Mode),
 ) -> Result<u8, Failure> {
     if let Some(Emit::Tokens) = emit {
-        return tokens(out, file);
+        return tokens(out, file, mode);
     }
     // `--emit=ast` shows the tree even when it doesn't type-check.
     let front: Front = if let Some(Emit::Ast) = emit {
-        pipeline::parsed(file)?
+        pipeline::parsed(file, mode)?
     } else {
-        pipeline::front(file)?
+        pipeline::front(file, mode)?
     };
     out.diagnostics(&front.source, &front.warnings);
     match emit {
@@ -46,8 +47,8 @@ pub(super) fn build(
 
 /// `--emit=tokens`: each module's tokens, with lines and columns in its own
 /// file. Only lexing matters, so a module that doesn't parse still shows.
-fn tokens(out: &mut Output, file: &Path) -> Result<u8, Failure> {
-    let (source, loaded) = pipeline::loaded(file)?;
+fn tokens(out: &mut Output, file: &Path, mode: Mode) -> Result<u8, Failure> {
+    let (source, loaded) = pipeline::loaded(file, mode)?;
     let (lexing, other): (Vec<_>, Vec<_>) = loaded
         .diagnostics
         .into_iter()

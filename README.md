@@ -63,6 +63,7 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **Tuples (v14, milestone 47):** `fun divmod(a: i64, b: i64): (i64, i64)`, `let (q, r) = divmod(7, 2);`, `t.0`, `for (i, w) of xs.iter().zip(ws.iter())`, tuple patterns in `match`, `==` and `<`, printed `(1, "a")`.
 - **`format` (v14, milestone 48):** `format("{} has {:>4} items", name, n)` returns a `string`; the template is a literal checked when compiling.
 - **Import aliases and re-exports (v14, milestone 49):** `import a.util as u1;`, `import shapes.vec { Vec2 as V };`, and `public import shapes.vec;` so that importers write `shapes.vec.Vec2`.
+- **Git packages (v14, milestone 50):** `geo = { git = "https://example.org/geo.git", version = "1.4" }` in `lugha.toml` fetches the newest matching `vX.Y.Z` tag into a per-user cache and pins its commit in `lugha.lock`; `lughac update` refreshes it and `--offline` never fetches.
 
 Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v14 Specification.md`](docs/specs/Language%20v14%20Specification.md) (what `lughac spec` prints, in progress); the approved plan it is built from is [`Language v14 Draft.md`](docs/specs/Language%20v14%20Draft.md), and v13 is frozen in [`Language v13 Specification.md`](docs/specs/Language%20v13%20Specification.md).
 
@@ -71,6 +72,7 @@ Everything is a value: assigning an array, struct or enum gives you your own cop
 - **Rust** via [rustup](https://rustup.rs). The toolchain version is pinned in `rust-toolchain.toml`, and rustup installs it on first build.
 - **LLVM 21** development files. It must be major version 21, and it is linked dynamically.
 - **Boehm GC** development files and a **C compiler** (`cc`). `lughac` links every program with them.
+- **git**, only for programs whose `lugha.toml` lists git packages (v14).
 
 On Ubuntu 26.04:
 
@@ -93,6 +95,8 @@ cargo install --path .         # or put lughac on your PATH
 | `lughac run prog.la [-- args…]` | Build to a temporary file and run it, passing `args` to it; the exit code is the program's |
 | `lughac check prog.la` | Lex, parse and type-check only |
 | `lughac spec` | Print the language spec bundled with this compiler |
+| `lughac update prog.la` | Fetch each git package's newest matching tag and rewrite `lugha.lock` |
+| `--offline` | On `build`, `run` and `check`: never run `git`; git packages must be locked and cached |
 | `lughac build --emit=tokens\|ast\|ir prog.la` | Print an intermediate stage and stop |
 
 `build`, `run` and `check` take `--diagnostics=human|json` (human is the default). `build` and `run` take `-O0` (default) or `-O2`.

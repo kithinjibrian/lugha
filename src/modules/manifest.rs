@@ -4,7 +4,7 @@
 //! v11 adds a `[package]` table with the package's `version`, and inline
 //! entries `name = { path = "…", version = "…" }` with a requirement.
 
-use super::inline;
+use super::inline::{self, Place};
 use super::version::{Requirement, Version};
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
@@ -17,8 +17,11 @@ pub const MANIFEST: &str = "lugha.toml";
 pub struct Entry {
     /// The package name, an identifier.
     pub name: String,
-    /// The path as written, relative to the manifest's folder.
+    /// The path as written, relative to the manifest's folder; empty for
+    /// a git entry.
     pub path: String,
+    /// A git entry's URL (v14).
+    pub git: Option<String>,
     /// The version it requires, if any (v11).
     pub requirement: Option<Requirement>,
     /// The whole line, in the shared offset space.
@@ -89,13 +92,18 @@ pub fn parse(text: &str, base: usize) -> (Manifest, Vec<Diagnostic>) {
             _ => Err("an entry needs the `[packages]` table first".to_string()),
         };
         match entry {
-            Ok((name, path, requirement)) => {
+            Ok((name, place, requirement)) => {
+                let (path, git) = match place {
+                    Place::Path(path) => (path, None),
+                    Place::Git(url) => (String::new(), Some(url)),
+                };
                 if entries.iter().any(|e| e.name == name) {
                     errors.push(malformed(format!("`{name}` is listed twice"), span));
                 } else {
                     entries.push(Entry {
                         name,
                         path,
+                        git,
                         requirement,
                         span,
                     });
@@ -137,7 +145,7 @@ fn strip_comment(line: &str) -> &str {
 
 /// `name = "path"` or `name = { path = "…", version = "…" }` (v11), or why
 /// the line isn't one.
-fn entry(code: &str) -> Result<(String, String, Option<Requirement>), String> {
+fn entry(code: &str) -> Result<(String, Place, Option<Requirement>), String> {
     const SHAPE: &str = "expected `name = \"path\"`";
     let (name, value) = code.split_once('=').ok_or(SHAPE)?;
     let name = name.trim();
@@ -151,8 +159,8 @@ fn entry(code: &str) -> Result<(String, String, Option<Requirement>), String> {
     }
     let value = value.trim();
     if value.starts_with('{') {
-        let (path, requirement) = inline::parse(value)?;
-        return Ok((name.to_string(), path, requirement));
+        let (place, requirement) = inline::parse(value)?;
+        return Ok((name.to_string(), place, requirement));
     }
     let path = value
         .strip_prefix('"')
@@ -162,7 +170,7 @@ fn entry(code: &str) -> Result<(String, String, Option<Requirement>), String> {
     if path.is_empty() {
         return Err(format!("`{name}` has an empty path"));
     }
-    Ok((name.to_string(), path.to_string(), None))
+    Ok((name.to_string(), Place::Path(path.to_string()), None))
 }
 
 fn malformed(why: String, span: Span) -> Diagnostic {

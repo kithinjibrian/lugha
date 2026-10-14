@@ -12,10 +12,12 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use super::render::Report;
 use super::source::Source;
+use super::update;
 use crate::check::{self, Checked};
 use crate::codegen::{self, CodegenError, OptLevel};
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::link;
+use crate::modules::fetch::Mode;
 use crate::modules::{self, Loaded, Module};
 
 /// Why a command stopped.
@@ -37,15 +39,20 @@ pub(super) struct Front {
     pub checked: Option<Checked>,
 }
 
-/// Loads `path` and every module it imports. A file that can't be read is
-/// internal; mistakes in the program come back as diagnostics.
-pub(super) fn loaded(path: &Path) -> Result<(Source, Loaded), Failure> {
+/// Loads `path` and every module it imports, fetching git packages as
+/// `mode` allows and writing a changed `lugha.lock` (v14). A file that
+/// can't be read is internal; mistakes in the program come back as diagnostics.
+pub(super) fn loaded(path: &Path, mode: Mode) -> Result<(Source, Loaded), Failure> {
     let name = path.display().to_string();
     let mut read = |file: &Path| std::fs::read(file);
-    match modules::load(path, &mut read) {
+    match modules::load(path, &mut read, update::fetcher(mode)) {
         Ok(loaded) => {
             let root = path.parent().unwrap_or(Path::new(""));
-            Ok((Source::of(&name, root, &loaded), loaded))
+            let source = Source::of(&name, root, &loaded);
+            if let Some(text) = &loaded.lock {
+                update::write_lock(path, text, &source)?;
+            }
+            Ok((source, loaded))
         }
         Err(error) => {
             let report = Report::internal(error.to_string(), None);
@@ -58,8 +65,8 @@ pub(super) fn loaded(path: &Path) -> Result<(Source, Loaded), Failure> {
 }
 
 /// Loads, lexes and parses every module — everything `--emit=ast` needs.
-pub(super) fn parsed(path: &Path) -> Result<Front, Failure> {
-    let (source, loaded) = loaded(path)?;
+pub(super) fn parsed(path: &Path, mode: Mode) -> Result<Front, Failure> {
+    let (source, loaded) = loaded(path, mode)?;
     if loaded
         .diagnostics
         .iter()
@@ -76,8 +83,8 @@ pub(super) fn parsed(path: &Path) -> Result<Front, Failure> {
 }
 
 /// Reads, lexes, parses and type-checks `path` (spec §9 stages 1–3).
-pub(super) fn front(path: &Path) -> Result<Front, Failure> {
-    let mut front = parsed(path)?;
+pub(super) fn front(path: &Path, mode: Mode) -> Result<Front, Failure> {
+    let mut front = parsed(path, mode)?;
     // The prelude's array helpers (v3) are checked and compiled with every program.
     let mut prelude_errors = Vec::new();
     modules::with_prelude(&mut front.modules, &mut prelude_errors);

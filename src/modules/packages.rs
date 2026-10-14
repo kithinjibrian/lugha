@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::io;
 use std::path::{Component, Path, PathBuf};
 
+use super::fetch::Fetcher;
 use super::manifest::{self, MANIFEST};
 use super::version::{self, Requirement, Version};
 use super::{LoadError, Loaded, ManifestFile, Read, import_path_span, names};
@@ -37,11 +38,18 @@ pub(super) struct Packages {
     /// Every requirement of every manifest read: the package, the
     /// requirement, and its entry's line (v11).
     required: Vec<(String, Requirement, Span)>,
+    /// Fetches git entries (v14).
+    pub(super) fetcher: Fetcher,
+    /// Git packages that couldn't be fetched: their imports are skipped,
+    /// since E0325 or E0326 already says why (v14).
+    unfetched: Vec<String>,
 }
 
 impl Packages {
-    pub(super) fn new(root: PathBuf) -> Packages {
+    pub(super) fn new(root: PathBuf, fetcher: Fetcher) -> Packages {
         Packages {
+            fetcher,
+            unfetched: Vec::new(),
             root,
             folders: HashMap::new(),
             listed: HashMap::new(),
@@ -90,8 +98,21 @@ impl Packages {
             base: start,
             text,
         });
+        // The root's lock (v14), before any git entry needs it.
+        if package.is_none() {
+            self.fetcher.read_lock(&self.root, read, base, loaded)?;
+        }
         for entry in manifest.entries {
-            let target = normalized(&folder.join(&entry.path));
+            let target = match &entry.git {
+                None => normalized(&folder.join(&entry.path)),
+                Some(url) => match self.fetcher.folder(&entry, url, loaded)? {
+                    Some(folder) => folder,
+                    None => {
+                        self.unfetched.push(entry.name);
+                        continue;
+                    }
+                },
+            };
             if !exists(read, &target) {
                 let d = Diagnostic::error(
                     "E0322",
@@ -123,7 +144,8 @@ impl Packages {
                 loaded.diagnostics.push(clash(&entry.name, entry.span));
             }
             self.folders.insert(entry.name.clone(), target);
-            if let Some(requirement) = entry.requirement {
+            // A git entry's tag already meets its requirement (v14).
+            if let Some(requirement) = entry.requirement.filter(|_| entry.git.is_none()) {
                 self.required
                     .push((entry.name.clone(), requirement, entry.span));
             }
@@ -154,6 +176,11 @@ impl Packages {
             }
         }
         Ok(())
+    }
+
+    /// True if `import` names a git package that couldn't be fetched (v14).
+    pub(super) fn unfetched(&self, import: &Import) -> bool {
+        self.unfetched.contains(&import.path[0].name)
     }
 
     /// True if `package`'s own folder has a folder `name` or a file `name.la`.

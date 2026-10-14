@@ -2,16 +2,17 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 45–49 of 45–50). It is built from the approved plan, `Language v14 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v13 Specification.md` keeps v13 frozen.
+**Status:** complete (milestones 45–50). It was built from the approved plan, `Language v14 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v13 Specification.md` keeps v13 frozen.
 
 **v13.** This is v12 plus `Self` in declarations, `for … of mut`, more iterator helpers and format specifiers (milestones 41–44).
 
-**Changes since v13** (milestones 45–49):
+**Changes since v13** (milestones 45–50):
 - Binary I/O: `read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes`; `s.to_bytes()`; `string_from_utf8(bytes)`, which rejects invalid UTF-8. An index may be of any integer type (sections 4–5).
 - `char`, a Unicode scalar value: `'a'`, `'é'`, `'\u{1F600}'`; `s.chars()` and `s.char_count()`; `c as u32`, `n as char`, `char_from(n)`; classification and case for ASCII and Latin-1 (sections 2–5).
 - Tuples: `(A, B)` types and `(a, b)` values, `t.0`, patterns `(p, q)` in `match`, `if let`, `let (a, b) = t;` and `for (i, w) of …`; element-wise `==`, lexicographic `<`, printed `(1, "a")`. `zip` yields tuples, and `Pair` is gone (sections 3–5).
 - `format("{} has {:>4} items", name, n)` returns a `string`: a literal template whose holes `{}` and `{:spec}` take the further arguments in order (E0432; sections 2, 5).
 - Imports take `as`: `import a.util as u1;` binds the module as `u1`, and `import a.b { X as Y };` binds the item as `Y`. `public import a.b [as v];` re-exports the whole module, which files importing this one reach as `m.v.X` (sections 3, 6).
+- Git packages: a manifest entry `name = { git = "https://…", version = "1.2" }` fetches the newest matching `vX.Y.Z` tag with the system `git` into a per-user cache, and `lugha.lock` pins its commit; `lughac update` re-resolves, and `--offline` never runs `git` (E0325, E0326; sections 6, 9).
 
 A valid v13 program is a valid v14 program unless it uses `Pair` or `zip`'s `Pair` fields (`zip` yields tuples now: `p.first` is `p.0`), uses `char` as a name (a type keyword now), or declares a function named `format`, `read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes` or `string_from_utf8`, which are now intrinsics.
 
@@ -866,7 +867,16 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
   [packages]
   geo = { path = "libs/geo", version = "1.2" }
   ```
-- **Versions** (v11). A version is `MAJOR.MINOR.PATCH`: three decimal numbers without leading zeros (`0` itself is fine) and without suffixes. A requirement is `MAJOR`, `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`, the missing parts 0, and it accepts the compatible versions: those at or above it that keep every part up to its first non-zero written part (its last written part when all are 0). So `"1.2"` accepts 1.2.0 up to, but not including, 2.0.0; `"0.3"` accepts 0.3.x; `"0.0.4"` accepts only 0.0.4; `"0"` accepts 0.x.y. Once every module is loaded, each requirement in every manifest read is checked against the listed package's declared version; a package that no module imports has its manifest read for this. A version that doesn't meet a requirement, or a package that declares none, is E0324 at the requirement's line, naming the range and the version found. The program's own `[package]` version is allowed and unchecked. Packages stay local folders: nothing is downloaded and there is no lock file.
+- **Versions** (v11). A version is `MAJOR.MINOR.PATCH`: three decimal numbers without leading zeros (`0` itself is fine) and without suffixes. A requirement is `MAJOR`, `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`, the missing parts 0, and it accepts the compatible versions: those at or above it that keep every part up to its first non-zero written part (its last written part when all are 0). So `"1.2"` accepts 1.2.0 up to, but not including, 2.0.0; `"0.3"` accepts 0.3.x; `"0.0.4"` accepts only 0.0.4; `"0"` accepts 0.x.y. Once every module is loaded, each requirement in every manifest read is checked against the listed package's declared version; a package that no module imports has its manifest read for this. A version that doesn't meet a requirement, or a package that declares none, is E0324 at the requirement's line, naming the range and the version found. The program's own `[package]` version is allowed and unchecked. A git entry's version is its tag's, so its requirement isn't checked against the package's `[package]` version.
+- **Git packages** (v14). An entry `name = { git = "URL", version = "R" }` names a package in a git repository; `path` and `git` are exclusive, and `git` needs `version`.
+  - **URLs:** only `https://host/…` and `file:///…`. A URL with a user name or password, whitespace or control characters, or another scheme (`ssh://`, `git@host:…`, `git://`, `ext::…`) is E0321: credentials belong in git's own credential helper, never in a manifest.
+  - **Resolving:** lughac runs `git ls-remote --tags` and takes the highest tag `vMAJOR.MINOR.PATCH` that `R` accepts, clones it (`--depth 1`, no submodules) into a scratch folder of the cache, and moves it into place as `<cache>/git/<escaped URL>/<commit>`, without its `.git`. A package's own git entries are resolved the same way. Packages from git otherwise behave like folder packages.
+  - **The cache** is `$LUGHA_CACHE`, else `$XDG_CACHE_HOME/lugha`, else `$HOME/.cache/lugha`, each used only when it is an absolute path; with none, lughac stops with an internal error. A folder in place is used as is.
+  - **`lugha.lock`**, next to the main file, records each git package's URL, version and commit in the manifest's subset (a `[locked]` table of `name = { git = "…", version = "…", commit = "<40 hex digits>" }`). lughac writes it when a build resolves something new, through a temporary file and a rename; commit it with the program. A locked entry whose requirement still accepts its version is used exactly: from the cache, or cloned again at its tag, whose `HEAD` must be the locked commit (E0326 otherwise, with help to run `lughac update`). A malformed lock line is E0321.
+  - **Commands:** `lughac update prog.la` ignores the lock, re-resolves every git package, and rewrites the lock. `--offline` on `build`, `run` and `check` runs no `git`: a package not locked and cached is E0325.
+  - **Failures:** no `git`, a failing `git` command (with the first lines of its message), no matching tag, or a malformed commit is E0325 at the entry.
+  - **How `git` runs:** from an argument list, never a shell, with `--` before every URL and folder, and with `GIT_TERMINAL_PROMPT=0` (no password prompts), `GIT_ALLOW_PROTOCOL=https:file`, a low-speed timeout, hooks off (`core.hooksPath=/dev/null`), `core.fsmonitor=false`, `submodule.recurse=false` and `core.symlinks=false`, so a symlink in a package is checked out as a plain file holding its target's name and a package can't make lughac read files outside it. The tag lughac clones is rebuilt from the parsed version. The user's own git configuration (proxies, credential helpers) still applies.
+  - **What runs:** lughac only reads a package's `.la` files and `lugha.toml`; nothing in a package runs while building. A built program runs a package's code, `extern` calls included, like any code. lughac trusts git's commit ids and does no hashing of its own, and it can't protect against a package that is malicious when run, a compromised host, or a repository too large for the disk.
 - **Imports.** In `import a.b.c;` written in a module of package P (the program itself is the root package): if P's manifest lists `a`, the import loads `b/c.la` from `a`'s folder, and the module is `a.b.c`; otherwise it loads `a/b/c.la` from P's own folder, as before. So inside package `geo`, `import util.names;` is geo's own `geo.util.names`, and a program's `util.names` is a different module. `import geo;` naming only a package is E0312, with help to name a module.
 - **Not transitive.** A package's manifest is seen only by that package's modules: a program that wants `mathx` lists it itself, even if a package it uses lists `mathx` too.
 - **One name, one folder.** Across all the manifests of a build, a package name must mean one folder (compared after resolving `.` and `..`), or it is E0323 at the later entry. Because the root package's modules have no package prefix, no package name may also be a folder or `.la` file in the main file's folder, and inside a package a listed name may not also be one of that package's own folders or files: either is E0320.
@@ -1120,6 +1130,8 @@ The C `main(argc, argv)` emitted by the compiler calls `lugha_rt_init(argc, argv
 | `lughac run prog.la [-- args…]` | Build to a temporary file and run it, passing `args` to the program (v3) |
 | `lughac check prog.la` | Lex, parse and type-check only; no codegen or linking (type checking from milestone 3) |
 | `lughac spec` | Print the LLM-ready spec bundled with this compiler version |
+| `lughac update prog.la` | Re-resolve every git package to its newest matching tag and rewrite `lugha.lock` (v14) |
+| `--offline` | On `build`, `run` and `check`: run no `git`; every git package must be locked and cached (v14) |
 | `lughac build --emit=tokens\|ast\|ir prog.la` | Print an intermediate stage and stop; with several modules, `tokens` and `ast` print each after a `; module <name>` line (`main` for the main file) |
 | `--diagnostics=human\|json` | Diagnostic format for `build`, `run` and `check`; `human` is the default |
 | `-O0` / `-O2` | Optimization level; `-O0` is the default |
@@ -1165,9 +1177,11 @@ Name and type errors, reported by the checker:
 | E0318 | A declaration exposing a less visible type | `private struct S {}` then `fun make(): S` (v2); `public fun a(): Inner` where `Inner` isn't `public` (v8); `public import util { helper };` where `helper` isn't `public` (v11) |
 | E0319 | The main file imported | a module writing `import main;` (v2) |
 | E0320 | A package name that is also a local folder or file (v8) | `geo` in `lugha.toml` while `geo/` sits next to `main.la` |
-| E0321 | A malformed `lugha.toml` (v8, v11) | `geo = libs/geo` (no quotes); `[deps]`; `geo` listed twice |
+| E0321 | A malformed `lugha.toml` (v8, v11) or `lugha.lock` (v14) | `geo = libs/geo` (no quotes); `[deps]`; `geo` listed twice; `{ git = "ssh://h/g", version = "1" }`; `{ git = "https://me:pw@h/g", version = "1" }`; `git` without `version`; a lock commit that isn't 40 hex digits |
 | E0322 | A manifest path that doesn't exist (v8) | `geo = "libs/goe"` with no such folder |
 | E0323 | One package name for two folders (v8) | two manifests list `mathx` with different folders |
+| E0325 | A git package that can't be fetched (v14) | no `git`; a URL that fails; no tag meeting `version`; `--offline` with the package not locked and cached |
+| E0326 | A git package that doesn't match `lugha.lock` (v14) | the locked tag now gives another commit |
 | E0324 | A package version that doesn't meet a requirement, or a requirement on a package without a version (v11) | `geo = { path = "libs/geo", version = "1.2" }` when geo's `lugha.toml` says `version = "2.0.0"`, or nothing |
 | E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
 | E0402 | Integer literal out of range for its type | `let b: u8 = 256;` |
@@ -2656,6 +2670,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 47 | Tuples (v14) | tuple types and values, `t.0`, patterns, `let`/`for` destructuring (E0433), `zip` → tuples, `Pair` removed | The tuples program in section 10 passes (done) |
 | 48 | `format` (v14) | template `format(…)` (E0432) | The format program in section 10 passes (done) |
 | 49 | Import aliases and re-exports (v14) | `as` on modules and items, `public import m [as v];`, `m.v.X` | The import-aliases program in section 10 passes (done) |
+| 50 | Git packages (v14) | git entries, the cache, `lugha.lock`, `lughac update`, `--offline` (E0325, E0326) | A program using a `file://` repository is fetched, locked, built `--offline`, and a moved tag is caught (`tests/git_packages.rs`; done: v14 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -2676,7 +2691,7 @@ fun main(): i32 {
 
 **Out of scope for v14** (for later, roughly in order):
 - a separate debug form, parsing values back from text, one-element tuples;
-- downloading packages (git or a registry), a cache, and a lock file; two versions of one package in a build; full version ranges and pre-release versions;
+- a package registry, `ssh` URLs, branches or commits as requirements; two versions of one package in a build; full version ranges and pre-release versions;
 - re-export chains (`m.v.w.X`), glob imports, and a `--package` flag;
 - directories, streams and processes;
 - shared references and closures that change their captures;
@@ -2712,6 +2727,7 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [ ] **Checking the program's own version** (v11). The root package may declare a version that nothing reads. A later `lughac` could print it, or check it against a minimum `lughac` version.
 - [ ] **Re-exports and visibility levels** (v11). A re-export is always `public`. A package-level re-export (visible to the package's other modules only) could come later if packages need internal façades.
 - [ ] **A `show` of another shape** (v12) is ignored silently, so v11 programs stay valid. A later warning could point out `fun show(self): i64`.
+- [ ] **Git packages and `extern`** (v14). A downloaded package may declare `extern` C functions, which a built program calls like any code. A later version could list a package's externs at `lughac update`, so users see what a package can call.
 - [ ] **Module paths in printed names** (v12). A type prints with its bare name, so two modules' `Point`s look the same. A debug form could add the path.
 - [ ] **Width counts bytes** (v13). Text with multi-byte characters pads as if it were longer; this waits for a decision on Unicode text.
 - [ ] **Format specifiers at run time** (v13). A spec must be written in the string. v14's `format` keeps that rule: its template is a literal, checked when compiling.

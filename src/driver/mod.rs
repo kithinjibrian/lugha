@@ -13,6 +13,7 @@ mod json;
 mod pipeline;
 mod render;
 mod source;
+mod update;
 
 use std::ffi::OsString;
 use std::io::Write;
@@ -26,6 +27,7 @@ use self::render::Report;
 use self::source::Source;
 use crate::codegen::OptLevel;
 use crate::diagnostic::Diagnostic;
+use crate::modules::fetch::Mode;
 
 /// Runs `lughac` with the process's arguments and standard streams.
 pub fn main() -> ExitCode {
@@ -73,17 +75,29 @@ where
             output,
             emit,
             options,
-        } => build::build(&mut out, file, output.as_deref(), *emit, options.opt),
+        } => build::build(
+            &mut out,
+            file,
+            output.as_deref(),
+            *emit,
+            (options.opt, options.mode()),
+        ),
         Command::Run {
             file,
             options,
             args,
-        } => pipeline::front(file).and_then(|front| {
+        } => pipeline::front(file, options.mode()).and_then(|front| {
             out.diagnostics(&front.source, &front.warnings);
             pipeline::run(&front, options.opt, args)
         }),
-        Command::Check { file, .. } => pipeline::front(file).map(|front| {
-            out.diagnostics(&front.source, &front.warnings);
+        Command::Check { file, offline, .. } => {
+            pipeline::front(file, offline_mode(*offline)).map(|front| {
+                out.diagnostics(&front.source, &front.warnings);
+                0
+            })
+        }
+        Command::Update { file, .. } => update::update(file).map(|(source, warnings)| {
+            out.diagnostics(&source, &warnings);
             0
         }),
         Command::Spec => Ok(spec(out.stdout, out.stderr)),
@@ -140,6 +154,17 @@ enum Command {
         /// Diagnostic format
         #[arg(long, value_enum, default_value = "human")]
         diagnostics: Format,
+        /// Run no `git`: every git package must be locked and cached (v14)
+        #[arg(long)]
+        offline: bool,
+    },
+    /// Fetch every git package's newest matching tag and rewrite `lugha.lock`
+    Update {
+        /// Source file
+        file: PathBuf,
+        /// Diagnostic format
+        #[arg(long, value_enum, default_value = "human")]
+        diagnostics: Format,
     },
     /// Print the LLM-ready spec bundled with this compiler version
     Spec,
@@ -166,7 +191,9 @@ impl Command {
     fn format(&self) -> Format {
         match self {
             Command::Build { options, .. } | Command::Run { options, .. } => options.diagnostics,
-            Command::Check { diagnostics, .. } => *diagnostics,
+            Command::Check { diagnostics, .. } | Command::Update { diagnostics, .. } => {
+                *diagnostics
+            }
             Command::Spec => Format::Human,
         }
     }
@@ -176,7 +203,8 @@ impl Command {
         match self {
             Command::Build { file, .. }
             | Command::Run { file, .. }
-            | Command::Check { file, .. } => Some(file.display().to_string()),
+            | Command::Check { file, .. }
+            | Command::Update { file, .. } => Some(file.display().to_string()),
             Command::Spec => None,
         }
     }
@@ -190,6 +218,23 @@ struct Options {
     /// Optimisation level: 0 or 2
     #[arg(short = 'O', value_name = "LEVEL", default_value = "0", value_parser = opt_level)]
     opt: OptLevel,
+    /// Run no `git`: every git package must be locked and cached (v14)
+    #[arg(long)]
+    offline: bool,
+}
+
+impl Options {
+    fn mode(&self) -> Mode {
+        offline_mode(self.offline)
+    }
+}
+
+/// How a build may fetch git packages: never with `--offline`.
+fn offline_mode(offline: bool) -> Mode {
+    Mode {
+        offline,
+        update: false,
+    }
 }
 
 #[derive(Clone, Copy, ValueEnum)]

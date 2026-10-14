@@ -1526,11 +1526,23 @@ Open questions live in `DECISIONS.md`, not here.
 
 **Why:** dotted module idents ("m.v") reuse every `Option<Ident>` module slot in the AST, so three-part names needed no new AST shapes.
 
+### 97. Git packages — milestone 50 (PRP-079)
+
+**Decision:** the user reviewed PRP-079's security design and approved it as written (session 102).
+- **Manifest:** `inline.rs` reads `{ key = "value" }` generically (`pairs`, `get`); an entry's `Place` is `Path` or `Git`; `Entry.git: Option<String>`. URLs: `https://host/…` without user info, or `file:///…` (`git::check_url`).
+- **`modules/git.rs`:** the `Git` trait (`ls_remote`, `clone_tag`, `head`); `SystemGit` runs `git` from argument lists with `CONFIG` (`-c` hooksPath=/dev/null, fsmonitor=false, symlinks=false, submodule.recurse=false) and `ENV` (`GIT_TERMINAL_PROMPT=0`, `GIT_ALLOW_PROTOCOL=https:file`, low-speed timeout); `--` before every URL and folder; stderr trimmed to 10 lines.
+- **`cache.rs`:** root from `LUGHA_CACHE`/`XDG_CACHE_HOME`/`HOME` (absolute only); `<root>/git/<escape(url)>/<commit>`; clones go to `<root>/tmp/clone-…` and are installed by rename after removing `.git`.
+- **`lock.rs`, `fetch.rs`:** `Fetcher { git, root, mode, lock, used }`; locked entries are used exactly (E0326 if a fresh clone's HEAD differs); unlocked ones take the highest matching tag; `--offline` runs no `git` (E0325). `Loaded.lock` is the new lock text, written by `driver/update.rs` (temp file + rename).
+- **Driver:** `Mode { offline, update }` flows through `pipeline::{loaded, parsed, front}`; `lughac update`; `--offline` on build/run/check.
+
+**Why:** the security rules live in one file (`git.rs`) with tests that check them as data; the loader stays testable without `git`.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 50 complete — Lugha v14 complete**: PRP-079 git packages
 - **Milestone 49 complete**: PRP-078 import aliases and whole-module re-exports
 - **Milestone 48 complete**: PRP-077 `format`
 - **Milestone 47 complete**: PRP-076 tuples
@@ -1627,10 +1639,10 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestones 45–49 complete and tagged** (`m45` … `m49`; MEMORY 92–96). `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Lugha v14 is complete** (milestones 45–50; MEMORY 91–97). Milestone 50 (PRP-079, git packages) passed the user's security review. Tags `m50` and `v14` go on the merge. `Language v14 Specification.md` (complete) is what `lughac spec` prints; v0–v13 are frozen.
 
-**PRP-079 (git packages, milestone 50) is proposed and waits for the user's security review.** Do not write code until they approve it, or approve it with changes (update the PRP first). Once approved: branch `prp-079-git_packages`, commit "Add approved PRP-079 git packages", build. Tags `m50` and `v14` go on the merge.
+Next: any further language feature is v15 and starts with a discovery and an approved draft. Changes to how `git` runs need a security review.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `modules/tests.rs` (292); the loader work in M50 goes in new files.
+Watch file sizes: `modules/mod.rs` (300), `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `modules/tests.rs` (293).
 
 See `TODO.md`.

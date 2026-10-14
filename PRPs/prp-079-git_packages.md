@@ -174,28 +174,28 @@ Unit tests — `inline.rs`/`manifest.rs`: git entries; each E0321 (`ssh://`, `gi
 Unit tests — `lock.rs`: parse and write round-trip; E0321 for a bad line or a non-hex commit.
 
 Unit tests — `cache.rs`:
-- [ ] The escape is injective (`a/b` vs `a_b` vs `a_2Fb`) and never yields `/`, `..` or NUL.
-- [ ] The root comes from the variables in order, and a relative value is skipped.
+- [x] The escape is injective (`a/b` vs `a_b` vs `a_2Fb`) and never yields `/`, `..` or NUL.
+- [x] The root comes from the variables in order, and a relative value is skipped.
 
 Unit tests — `git.rs`:
-- [ ] Parsing `ls-remote` output: tags kept, others ignored, peeled `^{}` refs ignored.
-- [ ] The command lines built: `--`, the `-c` flags and the environment, checked as data without running `git`.
+- [x] Parsing `ls-remote` output: tags kept, others ignored, peeled `^{}` refs ignored.
+- [x] The command lines built: `--`, the `-c` flags and the environment, checked as data without running `git`.
 
 Unit tests — the loader with a fake `Fetch`:
-- [ ] Resolution picks the highest matching tag.
-- [ ] The lock is used when present.
-- [ ] E0326 for a moved tag.
-- [ ] Offline: E0325 when not cached.
-- [ ] Transitive git entries.
+- [x] Resolution picks the highest matching tag.
+- [x] The lock is used when present.
+- [x] E0326 for a moved tag.
+- [x] Offline: E0325 when not cached.
+- [x] Transitive git entries.
 
 Integration — new `tests/git_packages.rs` (needs `git`, as CI has). It makes a `file://` repository in a temp folder with tags `v1.0.0` and `v1.1.0`, then:
-- [ ] builds and runs a program using it, checks `lugha.lock`'s commit, then builds again `--offline` with the same cache;
-- [ ] moves the tag and expects E0326; runs `lughac update` and expects the new commit;
-- [ ] E0325 for a requirement no tag meets;
-- [ ] a symlink in the repository is checked out as a plain file.
+- [x] builds and runs a program using it, checks `lugha.lock`'s commit, then builds again `--offline` with the same cache;
+- [x] moves the tag and expects E0326; runs `lughac update` and expects the new commit;
+- [x] E0325 for a requirement no tag meets;
+- [x] a symlink in the repository is checked out as a plain file.
 
 Regression:
-- [ ] Every earlier test passes, and programs without git entries load exactly as before (no `git` run, no lock written).
+- [x] Every earlier test passes, and programs without git entries load exactly as before (no `git` run, no lock written).
 
 ## ROLLBACK PLAN
 
@@ -203,10 +203,10 @@ Regression:
 - To abandon: delete the branch. The cache is per-user and can be deleted.
 
 ## ACCEPTANCE CRITERIA
-- [ ] `tests/git_packages.rs` passes locally and in CI.
-- [ ] The spec is complete for v14; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] `tests/git_packages.rs` passes locally and in CI.
+- [x] The spec is complete for v14; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -215,3 +215,14 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo test --test git_packages
 ```
+
+## AMENDMENTS (during build, session 102)
+
+- **Commits come from the clone,** not from `ls-remote`: `--refs` gives an annotated tag's own id, so the commit is always `rev-parse HEAD` of the fresh clone. `ls-remote` only lists the tags.
+- **`modules::load` takes a `Fetcher`** (`Fetcher::none()` for no git packages: a git entry is then E0325), rather than a second `load_with`, which kept `modules/mod.rs` at 300 lines without a split.
+- **An unfetched package's imports are skipped,** so E0325/E0326 isn't followed by an E0312 for each import of it.
+- **The lock is rewritten only when its entries change**: comments and order don't count, and a failed build never writes it.
+- **A git entry's requirement isn't checked against its `[package]` version** (E0324): the tag already met it, and a repository need not declare one.
+- **§10:** the M50 program needs a repository, so it lives in `tests/git_packages.rs` and §11's row points there; the spec's §6 describes git packages and their security rules for users.
+- **Tests:** `modules/fetch_tests.rs` (a fake `Git` in real temporary folders) and `tests/git_packages.rs` (the system `git`, a `file://` repository with tags and a symlink).
+- **IR:** the 168 earlier programs that compile give byte-identical IR.

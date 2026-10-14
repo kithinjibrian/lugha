@@ -4401,14 +4401,44 @@ Branch: main
 ## SESSION 102 — 2026-10-14 — Git packages (milestone 50) — open
 Branch: prp-079-git_packages
 
+### WHAT WAS DONE
+- The user approved PRP-079's security design as written; built and merged on green CI:
+  - git manifest entries (`https://` and `file://` only, no credentials);
+  - the per-user cache, `lugha.lock`, `lughac update`, `--offline`;
+  - E0325, E0326.
+- **Spec (now complete):** status, changes, §6 "Git packages" with the security rules, the CLI table, the E0321/E0325/E0326 rows, §11 row 50, the out-of-scope list, §12.
+
+### FILES CREATED OR MODIFIED
+- New: `src/modules/{git,cache,lock,fetch,fetch_tests}.rs`, `src/driver/update.rs`, `tests/git_packages.rs`.
+- Modified:
+  - `src/modules/{mod,inline,manifest,packages,tests}.rs`;
+  - `src/driver/{mod,pipeline,build}.rs`, `src/check/modules/mod.rs`;
+  - the v14 spec.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 97, PRP-079 amendments, CONTEXT.
+
+### TESTS WRITTEN
+- **Unit:** URL rules, tag parsing, the `-c` flags and environment, cache escaping and roots, lock round-trip and E0321, inline git entries.
+- **Loader (fake git):** highest tag, lock pinning, E0326 and `update`, E0325 (no tag, offline, missing repository), transitive git packages.
+- **Integration:** `tests/git_packages.rs` with a real `file://` repository: fetch, lock, `--offline`, the symlink checked out as a plain file, a moved tag (E0326) and `lughac update`, E0325.
+- **Regression:** 168 earlier programs give byte-identical IR.
+
+### DECISIONS MADE
+- MEMORY 97.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tags `m50` and `v14`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 45–49 complete and tagged** (`m45` … `m49`; MEMORY 92–96). `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Lugha v14 is complete** (milestones 45–50; MEMORY 91–97). Milestone 50 (PRP-079, git packages) passed the user's security review. Tags `m50` and `v14` go on the merge. `Language v14 Specification.md` (complete) is what `lughac spec` prints; v0–v13 are frozen.
 
-**PRP-079 (git packages, milestone 50) is proposed and waits for the user's security review.** Do not write code until they approve it, or approve it with changes (update the PRP first). Once approved: branch `prp-079-git_packages`, commit "Add approved PRP-079 git packages", build. Tags `m50` and `v14` go on the merge.
+Next: any further language feature is v15 and starts with a discovery and an approved draft. Changes to how `git` runs need a security review.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `modules/tests.rs` (292); the loader work in M50 goes in new files.
+Watch file sizes: `modules/mod.rs` (300), `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `modules/tests.rs` (293).
 
 See `TODO.md`.
