@@ -4528,6 +4528,11 @@ Branch: prp-080-package_layout (merged into main)
 
 ---
 
+## SESSION 106 — 2026-10-14 — Discovery: operator overloading — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 51 complete** (PRP-080, MEMORY 98–99): package layout. Tagged `m51`. `Language v15 Specification.md` (in progress) is what `lughac spec` prints; v0–v14 are frozen.
