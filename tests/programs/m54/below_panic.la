@@ -1,0 +1,7 @@
+import std.random;
+
+fun main() {
+    let mut rng = random.seeded(1);
+    println(rng.below(3) < 3);
+    println(rng.below(0));
+}

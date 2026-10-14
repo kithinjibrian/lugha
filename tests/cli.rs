@@ -316,3 +316,27 @@ fn std_math_lowers_to_llvm_float_intrinsics() {
     assert!(ir.contains("lugha_fn_std/math/sqrt<f64>"), "{ir}");
     assert!(!ir.contains("declare double @sqrt"), "{ir}");
 }
+
+#[test]
+fn std_random_seeds_from_the_runtime_only_through_from_os() {
+    // v15: `from_os()` calls `lugha_rt_os_seed`; a program using `seeded`
+    // never reaches it (std's `from_os` is compiled, but `main` doesn't call it).
+    let os =
+        "import std.random;\nfun main() { let mut r = random.from_os(); let x = r.uniform(); }\n";
+    let fixed =
+        "import std.random;\nfun main() { let mut r = random.seeded(3); let x = r.uniform(); }\n";
+    let dir = TempDir::with(&[("os.la", os.as_bytes()), ("fixed.la", fixed.as_bytes())]);
+    let ir = |file: &str| text(&lughac(&dir.0, &["build", "--emit=ir", file]).stdout);
+    assert!(
+        ir("os.la").contains("call i64 @lugha_rt_os_seed()"),
+        "{}",
+        ir("os.la")
+    );
+    let fixed_ir = ir("fixed.la");
+    let main = &fixed_ir[fixed_ir.find("define void @lugha_fn_main").expect("main")..];
+    let main = &main[..main.find("\n}").expect("main ends")];
+    assert!(
+        !main.contains("from_os") && !main.contains("lugha_rt_os_seed"),
+        "{main}"
+    );
+}

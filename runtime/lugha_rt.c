@@ -21,9 +21,11 @@
 #define _GNU_SOURCE
 
 #include <errno.h>
+#include <fcntl.h>
 #include <gc.h>
 #include <pthread.h>
 #include <signal.h>
+#include <sys/random.h>
 #include <unistd.h>
 #include <inttypes.h>
 #include <math.h>

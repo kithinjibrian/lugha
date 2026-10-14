@@ -2,17 +2,18 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 51–53 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
+**Status:** in progress (milestones 51–54 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
 
 **v14.** This is v13 plus binary I/O, `char`, tuples, `format`, import aliases and whole-module re-exports, and git packages (milestones 45–50).
 
-**Changes since v14** (milestones 51–53):
+**Changes since v14** (milestones 51–54):
 - A package's `[package]` table may give its `name`, checked against the key a manifest lists it under (E0327), and its `source`, the folder its modules start in: with `source = "src"`, `src/array.la` of package `glowworm` is `glowworm.array` (section 6).
 - A program with no `lugha.toml` beside its main file uses the nearest one above it, looking no further than a folder with `.git` or the home folder; when that manifest names a package, the program imports it by that name, so `glowworm/examples/basics.la` writes `import glowworm.array;` with no manifest of its own (section 6).
 - A file imported as two modules is E0328 (section 6).
 - A manifest path such as `".."` resolves when the main file is given with a folder (`lughac run example/main.la`); v14 reported E0322.
 - Operator overloading: `a + b` on a struct, enum or interface value calls `a.add(b)`, and likewise `-` `sub`, `*` `mul`, `/` `div`, `%` `rem` and unary `-` `neg`, for a method of the operator's shape; `a += b` is `a = a.add(b)`. The prelude's `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` and `Num` are bounds that the numbers (and `string`, for `Add`) satisfy, so `fun add<T: Add>(a: T, b: T): T = a + b;` works for numbers, strings and your own types; `0` and `1` are values of a `T: Num`. An `impl` block may bound its parameters, `impl Grid<T: Num> { … }` (sections 3–5).
 - A standard library: `import std.math;` loads a module bundled with `lughac`, only when imported. `std.math` has `sqrt`, `pow`, `exp`, `ln`, `log10`, `sin`, `cos`, `tan`, `atan2`, `floor`, `ceil` and `round` for any `T: Float` (`f32` or `f64`, a new prelude bound), `abs`, `min`, `max` and `clamp`, and `pi()` and `e()`. `std` is a reserved package name (sections 4, 6, "The standard library").
+- `std.random`: `random.seeded(42)` or `random.from_os()` makes a generator (xoshiro256\*\*, not cryptographically secure) with `uniform`, `below`, `between`, `normal`, `chance`, `choice` and `shuffle` ("The standard library").
 
 Every valid v14 program and package is a valid v15 one: a module's own type or interface named `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` or `Num` still means its own, as for `Iter`.
 
@@ -914,7 +915,7 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 - **Loading.** Every file is read once, so packages may import each other. A package has no main file; `main` in one is E0304, and importing the program's main file is E0319, as for any module.
 - **Visibility.** Another package sees only what is `public` (below).
 
-**The standard library** (v15). Version 15 has one module.
+**The standard library** (v15). Version 15 has two modules, `std.math` and `std.random`.
 
 `std.math` (milestone 53). The float functions take and return any `T: Float` (`f32` or `f64`) and follow IEEE 754: they never panic, `sqrt(-1.0)` is `NaN`, `ln(0.0)` is `-inf` and `pow(0.0, -1.0)` is `inf`.
 
@@ -932,6 +933,22 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 | `clamp<T: Ord>(x, lo, hi)` | `x` limited to `lo..=hi`; panics (`clamp: the lower bound is above the upper bound`) when `lo > hi` |
 
 An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math.sqrt(2)` is E0419.
+
+`std.random` (milestone 54). A `random.Rng` is a pseudo-random generator, xoshiro256\*\* (Blackman and Vigna) seeded through splitmix64. It is fast and statistically strong but **not cryptographically secure**: never use it for keys, tokens, passwords or anything an attacker must not predict. There is no global generator: a program makes one and passes it where it's needed; every method takes `mut self`, so the generator must be `let mut`.
+
+| Function or method | Result |
+| --- | --- |
+| `seeded(seed: u64): Rng` | a generator whose numbers depend only on `seed`: one seed gives one sequence on every platform, at `-O0` and `-O2`, and in every v15 compiler |
+| `from_os(): Rng` | a generator seeded with 64 bits from the operating system (`getrandom`, else `/dev/urandom`), different on every run; panics with `no randomness available from the operating system` if both fail |
+| `r.next_u64(): u64` | the next 64 random bits |
+| `r.uniform(): f64` | uniform in [0, 1), with 53 random bits; for `f32`, `r.uniform() as f32` |
+| `r.below(n: i64): i64` | uniform in `0..n`, without bias; panics unless `n > 0` |
+| `r.between(lo: i64, hi: i64): i64` | uniform in `lo..hi`, half-open like `for i in lo..hi`; panics unless `lo < hi` |
+| `r.normal<T: Float>(mean: T, std: T): T` | a normal (Gaussian) value, by Box–Muller, in the arguments' type |
+| `r.chance(p: f64): bool` | `true` with probability `p` |
+| `r.choice<T>(xs: T[]): Option<T>` | a uniformly chosen element, `None` for an empty array |
+| `r.shuffle<T>(xs: T[]): T[]` | a copy of `xs` in a uniformly random order (Fisher–Yates); `xs` is unchanged |
+
 
 **Using another module.** `import shapes.circle;` binds the name `circle` in that file only.
 - **Calls:** `circle.area(c)` calls function `area` of the module.
@@ -1092,6 +1109,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - The v13 iterator helpers are Lugha in the prelude's third file, compiled only when reached like the others. `flat_map` keeps its current inner iterator in a 0- or 1-element array, so `next` steps it in place.
 - A format specifier (v13) is parsed once by the checker (E0431) and again by codegen, which passes its parts to `lugha_rt_fmt_int`, `lugha_rt_fmt_float` or `lugha_rt_pad`, from a runtime fragment `format.c`. Programs without specifiers give byte-identical IR.
 - `format` (v14) splits its template into text and holes in the checker and again in codegen, then lowers like an interpolated string with the arguments as its parts. Programs without `format` give byte-identical IR.
+- `std.random` (v15) is Lugha code except `$os.seed()`, which calls the runtime's `lugha_rt_os_seed() -> u64`, and `$float.from_f64(x)`, which is a no-op at `f64` and `fptrunc` at `f32`; both built-ins can be named only in bundled sources.
 - A std module (v15) is embedded in `lughac` (`lugha::STD`) and joins the program's offset space like a file when imported; its items' symbols carry its path, `lugha_fn_std/math/sqrt<f64>`. A `$float.<op>` built-in at `f32` or `f64` lowers to LLVM's intrinsic at that width (`llvm.sqrt.f64`, `llvm.log` for `ln`, `llvm.round`, `llvm.atan2`, …), so `std.math` makes no call into libm. Programs that import nothing from `std` give byte-identical IR.
 - An overloaded operator (v15) lowers to a call of the method, `lugha_fn_Vec2.add(self, other)` with a pointer to a copy of the left operand as for any `self` method, or through the interface's table for an interface value. A generic body's operator on `T` is lowered per instance: at a number or string type it is the built-in operator, so `add<i64>` is a plain checked `add`; at a struct or enum type, the method call. A `0` or `1` of type `T` is the instance's constant (`0.0` at `f64`). Programs without overloaded operators give byte-identical IR.
 - An index (v14) is evaluated at its own integer type and sign- or zero-extended to `i64` before the bounds check, so an `i64` index lowers exactly as before.
@@ -1159,6 +1177,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_array_grow(array, elem_size)` | A copy of a full array with double the capacity (at least 4), for `push` |
 | `lugha_rt_print_*` / `lugha_rt_to_string_*` | One per primitive type (plus `lugha_rt_print_str`), for the intrinsics; `bool` and `u8` arguments are passed zero-extended to 32 bits; `u32` goes to the `u64` functions zero-extended (v7), as does `u16`, and `i8`/`i16` go to the `i64` ones sign-extended (v10) |
 | `lugha_rt_str_quote(s)` | `s` quoted and escaped, for strings inside a printed value (v12) |
+| `lugha_rt_os_seed()` | 64 bits of OS entropy for `std.random`'s `from_os()` (v15): `getrandom`, else `/dev/urandom`, else a panic |
 | `lugha_rt_fmt_int(v, bits, signed, kind, alt, fill, align, width, zero)` / `lugha_rt_fmt_float(v, f32, precision, fill, align, width, zero)` / `lugha_rt_pad(text, fill, align, width)` | Format specifiers (v13): an integer (sign- or zero-extended to `i64`), a float (as `f64`), or any other value's text, padded; all arguments are plain numbers |
 | `lugha_rt_print_newline()` | The newline `println` adds |
 | `lugha_rt_args()` | A new `string[]` of the program's arguments (v3) |
@@ -2726,6 +2745,26 @@ fun main() {
 }
 ```
 
+**Random numbers** (milestone 54). Prints `1546998764402558742`, `0.3789802506626686`, `6`, `13`, `0.3834617912676943`, `false`, `Some("red")`, `[1, 3, 5, 2, 4]` on eight lines, exits with 0. The first two values match the reference xoshiro256\*\* with splitmix64 seeding.
+
+```
+// std.random (v15): a seeded generator gives the same numbers on every
+// run and platform, which this program's expected output pins down.
+import std.random;
+
+fun main() {
+    let mut rng = random.seeded(42);
+    println(rng.next_u64());
+    println(rng.uniform());
+    println(rng.below(6) + 1);
+    println(rng.between(10, 20));
+    println(rng.normal(0.0, 1.0));
+    println(rng.chance(0.5));
+    println(rng.choice(["red", "green", "blue"]));
+    println(rng.shuffle([1, 2, 3, 4, 5]));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2785,6 +2824,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 51 | Package layout (v15) | `[package] name` (E0327) and `source`, the program's manifest from a parent folder and its implicit package, E0328, the `..` path fix | A library with `source = "src"` and an `examples/` program run from any folder (`tests/package_layout.rs`; done) |
 | 52 | Operator overloading (v15) | `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, compound assignment, the prelude's `Add`…`Neg` and `Num` bounds, `0`/`1` as `T: Num`, bounds on `impl` blocks | The operator-overloading program in section 10 passes (done) |
 | 53 | The std library and `std.math` (v15) | bundled `std.<module>` modules, `std` reserved, `$` built-ins in bundled sources, the `Float` bound, `std.math` | The standard-library program in section 10 passes (done) |
+| 54 | `std.random` (v15) | a xoshiro256\*\* `Rng`: `seeded`, `from_os`, `uniform`, `below`, `between`, `normal`, `chance`, `choice`, `shuffle`; runtime `lugha_rt_os_seed` | The random-numbers program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

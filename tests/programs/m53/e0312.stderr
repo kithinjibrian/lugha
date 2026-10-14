@@ -4,5 +4,5 @@ error[E0312]: module `std.maths` not found
 1 | import std.maths;
   |        ^^^^^^^^^
   |
-  = help: the standard library's modules are `std.math`
+  = help: the standard library's modules are `std.math`, `std.random`
 

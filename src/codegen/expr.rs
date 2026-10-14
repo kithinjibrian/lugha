@@ -101,6 +101,8 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Call(callee, args) if let Some(op) = crate::check::float_op(callee) => {
                 self.float_call(expr, op, args)?
             }
+            // `$os.seed()` in `std.random` (v15).
+            ExprKind::Call(callee, _) if crate::check::os_op(callee).is_some() => self.os_seed(),
             ExprKind::Call(callee, args) if matches!(self.ty(callee), Type::Fun(..)) => {
                 return self.call_value(callee, args);
             }

@@ -1,0 +1,113 @@
+// std.random (v15, milestone 54): `import std.random;`, then
+//
+//     let mut rng = random.seeded(42);    // the same numbers on every run
+//     let mut rng = random.from_os();     // seeded from the operating system
+//     rng.uniform()  rng.below(6)  rng.normal(0.0, 1.0)  rng.shuffle(xs)
+//
+// The generator is xoshiro256** (Blackman and Vigna), seeded through
+// splitmix64. It is fast and statistically strong, but NOT
+// cryptographically secure: never use it for keys, tokens or passwords.
+import std.math;
+
+// A random number generator; make one and pass it where it's needed.
+public struct Rng { s0: u64, s1: u64, s2: u64, s3: u64 }
+
+// A generator whose numbers depend only on `seed`: one seed, one sequence,
+// on every platform and at every optimisation level.
+public fun seeded(seed: u64): Rng {
+    let (a, x0) = splitmix(seed);
+    let (b, x1) = splitmix(a);
+    let (c, x2) = splitmix(b);
+    let (_, x3) = splitmix(c);
+    Rng { s0: x0, s1: x1, s2: x2, s3: x3 }
+}
+
+// A generator seeded from the operating system's entropy: different on
+// every run. Panics if the system has no randomness to give.
+public fun from_os(): Rng = seeded($os.seed());
+
+// splitmix64: the next state after `state`, and an output that spreads
+// any seed (zero included) over all 64 bits.
+fun splitmix(state: u64): (u64, u64) {
+    let next = state.wrapping_add(0x9E3779B97F4A7C15);
+    let mut z = next;
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58476D1CE4E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D049BB133111EB);
+    (next, z ^ (z >> 31))
+}
+
+impl Rng {
+    // The next 64 random bits.
+    public fun next_u64(mut self): u64 {
+        let result = self.s1.wrapping_mul(5).rotate_left(7).wrapping_mul(9);
+        let t = self.s1 << 17;
+        self.s2 ^= self.s0;
+        self.s3 ^= self.s1;
+        self.s1 ^= self.s2;
+        self.s0 ^= self.s3;
+        self.s2 ^= t;
+        self.s3 = self.s3.rotate_left(45);
+        result
+    }
+
+    // Uniform in [0, 1), with 53 random bits. For `f32`: `rng.uniform() as f32`.
+    public fun uniform(mut self): f64 = (self.next_u64() >> 11) as f64 / 9007199254740992.0;
+
+    // A uniform integer in `0..n`, without bias; panics unless `n > 0`.
+    public fun below(mut self, n: i64): i64 {
+        if n <= 0 {
+            panic("below: n must be positive, not {n}");
+        }
+        let bound = n as u64;
+        // Draws under `threshold` would favour small results: redraw them.
+        let threshold = (0 as u64).wrapping_sub(bound) % bound;
+        while true {
+            let r = self.next_u64();
+            if r >= threshold {
+                return (r % bound) as i64;
+            }
+        }
+        panic("unreachable")
+    }
+
+    // A uniform integer in `lo..hi`; panics unless `lo < hi`.
+    public fun between(mut self, lo: i64, hi: i64): i64 {
+        if lo >= hi {
+            panic("between: the range {lo}..{hi} is empty");
+        }
+        lo + self.below(hi - lo)
+    }
+
+    // A normal (Gaussian) value with mean `mean` and deviation `std`, in
+    // the type of its arguments (`f32` or `f64`), by Box–Muller.
+    public fun normal<T: Float>(mut self, mean: T, std: T): T {
+        let u = 1.0 - self.uniform();
+        let v = self.uniform();
+        let z = math.sqrt(-2.0 * math.ln(u)) * math.cos(2.0 * math.pi() * v);
+        let z: T = $float.from_f64(z);
+        mean + std * z
+    }
+
+    // `true` with probability `p` (`0.0` never, `1.0` always).
+    public fun chance(mut self, p: f64): bool = self.uniform() < p;
+
+    // A uniformly chosen element, or `None` for an empty array.
+    public fun choice<T>(mut self, xs: T[]): Option<T> {
+        if xs.len == 0 {
+            return None;
+        }
+        Some(xs[self.below(xs.len)])
+    }
+
+    // A copy of `xs` in a uniformly random order (Fisher–Yates).
+    public fun shuffle<T>(mut self, xs: T[]): T[] {
+        let mut out = xs;
+        let mut i = out.len - 1;
+        while i > 0 {
+            let j = self.below(i + 1);
+            swap(out[i], out[j]);
+            i -= 1;
+        }
+        out
+    }
+}

@@ -81,7 +81,7 @@ use std::collections::HashMap;
 
 pub use checked::Checked;
 pub use defaults::SELF;
-pub use float_ops::float_op;
+pub use float_ops::{float_op, os_op};
 pub use iface_tables::{InterfaceMethod, InterfaceShape};
 pub use instances::Instance;
 pub use iterators::Iteration;

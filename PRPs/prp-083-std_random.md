@@ -95,23 +95,23 @@ None (`getrandom` is in glibc since 2.25; the `/dev/urandom` fallback covers old
 ## TESTS TO WRITE
 
 Unit tests:
-- [ ] **Checker:** `$float.from_f64` typing against expected `f32`, `f64` and `T: Float`; `std.random` method types.
-- [ ] **Codegen:** `$os.seed()` calls `lugha_rt_os_seed`.
-- [ ] **Link:** `RUNTIME_SYMBOLS` lists it.
+- [x] **Checker:** `$float.from_f64` typing against expected `f32`, `f64` and `T: Float`; `std.random` method types.
+- [x] **Codegen:** `$os.seed()` calls `lugha_rt_os_seed`.
+- [x] **Link:** `RUNTIME_SYMBOLS` lists it.
 
 Acceptance — `tests/programs/m54/`:
-- [ ] `random.la`: the §10 program with a fixed seed. The exact output is the reproducibility test; the first values are checked against a reference xoshiro256\*\* implementation.
-- [ ] `more.la`:
+- [x] `random.la`: the §10 program with a fixed seed. The exact output is the reproducibility test; the first values are checked against a reference xoshiro256\*\* implementation.
+- [x] `more.la`:
   - `between` bounds over many draws;
   - `normal` at `f32`;
   - `chance(0.0)`/`chance(1.0)`;
   - `choice([])`;
   - `shuffle` keeps every element;
   - a `from_os()` generator's draws checked only for range.
-- [ ] `below_panic.la`: `below(0)` panics.
+- [x] `below_panic.la`: `below(0)` panics.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -119,11 +119,11 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The `m54/` programs pass at `-O0`, and at `-O2` with identical output.
-- [ ] The spec is at milestone 54; docs updated.
-- [ ] firefly uses `std.random`, and XOR and the gradient check still pass.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The `m54/` programs pass at `-O0`, and at `-O2` with identical output.
+- [x] The spec is at milestone 54; docs updated.
+- [x] firefly uses `std.random`, and XOR and the gradient check still pass.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -132,3 +132,13 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m54/random.la
 ```
+
+## AMENDMENTS (during build, session 114)
+
+- **Built-ins:** `$os.seed` is typed in `check/float_ops.rs` (`os_op`, `os_call`) and lowered in `codegen/float_ops.rs` (`os_seed`), next to the `$float` ones. The checker method for `$float.from_f64` is `convert_from_f64` (clippy's naming rule).
+- **Runtime:** the core's include rule keeps `<sys/random.h>` and `<fcntl.h>` in `runtime/lugha_rt.c`; `random.c` uses the core's `die`.
+- **Reproducibility:** `tests/programs/m54/random.stdout`'s first two values were checked against an independent Python xoshiro256\*\*/splitmix64; `-O2` output is identical.
+- **std is compiled eagerly:** importing `std.random` compiles `from_os` even if unused (its IR calls `lugha_rt_os_seed`). Harmless, since the runtime is always linked; "lazy std modules" is noted in `TODO.md`.
+- **`m53/e0312.stderr`** now lists `std.math`, `std.random`.
+- **firefly:** `src/random.la` is a thin wrapper (a struct around `std.random`'s `Rng`), since firefly can't add methods to std's type and free functions can't mutate a generator. XOR and the gradient check pass.
+- **IR:** the 174 earlier programs give byte-identical IR.

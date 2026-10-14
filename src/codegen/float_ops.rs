@@ -9,6 +9,7 @@ use super::CodegenError;
 use super::lower::{Lowerer, POSITIONED};
 use super::value::llvm_type;
 use crate::ast::Expr;
+use crate::check::Type;
 
 /// The LLVM intrinsic behind built-in `op`.
 fn intrinsic_name(op: &str) -> String {
@@ -26,6 +27,19 @@ impl<'ctx> Lowerer<'ctx> {
         args: &[Expr],
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         let ty = self.ty(call);
+        // `$float.from_f64(x)` (v15): an `f64` at the call's float width.
+        if op == "from_f64" {
+            let value = self.get(&args[0], &Type::F64)?.into_float_value();
+            if ty == Type::F64 {
+                return Ok(value.into());
+            }
+            let f32_type = self.context.f32_type();
+            let narrowed = self
+                .builder
+                .build_float_trunc(value, f32_type, "to_f32")
+                .expect(POSITIONED);
+            return Ok(narrowed.into());
+        }
         let mut values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len());
         for arg in args {
             values.push(self.get(arg, &ty)?.into());
@@ -42,6 +56,19 @@ impl<'ctx> Lowerer<'ctx> {
         match site.try_as_basic_value() {
             ValueKind::Basic(value) => Ok(value),
             ValueKind::Instruction(_) => unreachable!("float intrinsics return a float"),
+        }
+    }
+
+    /// `$os.seed()` (v15): the runtime's 64 bits of OS entropy.
+    pub(super) fn os_seed(&mut self) -> BasicValueEnum<'ctx> {
+        let function = self.runtime("lugha_rt_os_seed", &[], Some(Type::U64));
+        let site = self
+            .builder
+            .build_call(function, &[], "seed")
+            .expect(POSITIONED);
+        match site.try_as_basic_value() {
+            ValueKind::Basic(value) => value,
+            ValueKind::Instruction(_) => unreachable!("lugha_rt_os_seed returns a u64"),
         }
     }
 }

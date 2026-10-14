@@ -1620,11 +1620,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why `uniform(): f64`:** with no arguments, `uniform<T: Float>()` can't infer `T` (E0412 on every bare call); the user approved the change.
 
+### 105. `std.random` — milestone 54 (PRP-083)
+
+**Decision:** built as approved (MEMORY 104).
+- **`src/std/random.la`:** `Rng { s0..s3 }`, `splitmix`, xoshiro256\*\* `next_u64`, the rejection loop in `below`.
+- **Built-ins:** `$float.from_f64` (expected float type; fptrunc at f32) and `$os.seed` (`lugha_rt_os_seed`); `os_op` lives next to `float_op`.
+- **Runtime:** `runtime/random.c` (`getrandom`, `/dev/urandom`, `die`); `RUNTIME_SYMBOLS` has 47 entries.
+- **Follow-up:** std modules compile eagerly (noted in TODO).
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 54 complete**: PRP-083 `std.random`
 - **Milestone 53 complete**: PRP-082 the std library and `std.math`
 - **Milestone 52 complete**: PRP-081 operator overloading
 - **Milestone 51 complete**: PRP-080 package layout; v15 spec begins
@@ -1725,13 +1734,15 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–53 complete.** **Milestone 54 (`std.random`) is proposed:** decisions 19–21 in `Language v15 Draft.md`, and PRP-083, waiting for the user's approval, which includes the `uniform(): f64` change.
-- **On approval:** MEMORY 104, branch `prp-083-std_random`, then build:
-  - `src/std/random.la`;
-  - the `$float.from_f64` and `$os.seed` built-ins;
-  - `runtime/random.c` (`lugha_rt_os_seed`), registered in `RUNTIME_PARTS`, `RUNTIME_SOURCE` and `RUNTIME_SYMBOLS`.
-- **Then:** switch firefly (`~/Documents/kithinji/firefly`) to `std.random`. Tag `m54` goes on the merge.
+**Milestone 54 complete** (PRP-083, MEMORY 104–105): `std.random`. Tag `m54` goes on the merge. `Language v15 Specification.md` (in progress, milestones 51–54) is what `lughac spec` prints; v0–v14 are frozen. firefly uses `std.random`.
 
-The user is building glowworm (n-d arrays) and firefly (autograd, aiming at a tiny GPT) in Lugha. The file-size limit is 500 lines.
+The user is building glowworm (n-d arrays) and firefly (autograd, aiming at a tiny GPT) in Lugha. Next for firefly: a bigram character model.
+
+Lugha's `TODO.md` holds:
+- lazy std modules;
+- the `sum()` cleanup;
+- user-defined `Ord`;
+- `std.fs`/`std.env`/`std.process`;
+- Unicode follow-ups.
 
 See `TODO.md`.

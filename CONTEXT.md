@@ -4784,17 +4784,53 @@ Branch: main
 ## SESSION 114 — 2026-10-14 — std.random (milestone 54) — open
 Branch: prp-083-std_random
 
+### WHAT WAS DONE
+- The user approved PRP-083 with `uniform(): f64`. Built and merged on green CI:
+  - `std.random`, a xoshiro256\*\* `Rng` with `seeded`/`from_os`, `next_u64`, `uniform`, `below`, `between`, `normal`, `chance`, `choice` and `shuffle`;
+  - the `$float.from_f64` and `$os.seed` built-ins;
+  - `runtime/random.c`.
+- firefly now uses `std.random` (a thin wrapper keeps `rng.normals(shape, scale)`); XOR and the gradient check pass.
+- **Spec:** status, changes, a `std.random` section and table, §9 and the runtime table, the §10 program, §11 row 54.
+
+### FILES CREATED OR MODIFIED
+- New:
+  - `src/std/random.la`, `runtime/random.c`;
+  - `tests/programs/m54/` (`random`, `more`, `below_panic`).
+- Modified:
+  - `src/lib.rs`, `src/link.rs`, `runtime/lugha_rt.c`;
+  - `src/check/{float_ops,expr,mod}.rs`, `src/codegen/{float_ops,expr}.rs`;
+  - `tests/cli.rs`, `tests/spec.rs`, `tests/programs/m53/e0312.stderr`, the v15 spec and draft.
+- In firefly: `src/random.la`, `README.md`.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 104–105, PRP-083 amendments, CONTEXT.
+
+### TESTS WRITTEN
+- **Checker:** `std.random` typing, E0419 for `normal(0, 1)`; `$os` not lexable in programs.
+- **CLI:** `from_os` calls `lugha_rt_os_seed`, and seeded `main` doesn't.
+- **Programs:** `tests/programs/m54/`, checked against a Python reference; the §10 program from the spec.
+- **Regression:** 174 earlier programs give byte-identical IR; `-O2` output identical.
+
+### DECISIONS MADE
+- MEMORY 104, 105.
+
+### PENDING DECISIONS OPENED
+- None (lazy std modules noted in TODO).
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m54`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–53 complete.** **Milestone 54 (`std.random`) is proposed:** decisions 19–21 in `Language v15 Draft.md`, and PRP-083, waiting for the user's approval, which includes the `uniform(): f64` change.
-- **On approval:** MEMORY 104, branch `prp-083-std_random`, then build:
-  - `src/std/random.la`;
-  - the `$float.from_f64` and `$os.seed` built-ins;
-  - `runtime/random.c` (`lugha_rt_os_seed`), registered in `RUNTIME_PARTS`, `RUNTIME_SOURCE` and `RUNTIME_SYMBOLS`.
-- **Then:** switch firefly (`~/Documents/kithinji/firefly`) to `std.random`. Tag `m54` goes on the merge.
+**Milestone 54 complete** (PRP-083, MEMORY 104–105): `std.random`. Tag `m54` goes on the merge. `Language v15 Specification.md` (in progress, milestones 51–54) is what `lughac spec` prints; v0–v14 are frozen. firefly uses `std.random`.
 
-The user is building glowworm (n-d arrays) and firefly (autograd, aiming at a tiny GPT) in Lugha. The file-size limit is 500 lines.
+The user is building glowworm (n-d arrays) and firefly (autograd, aiming at a tiny GPT) in Lugha. Next for firefly: a bigram character model.
+
+Lugha's `TODO.md` holds:
+- lazy std modules;
+- the `sum()` cleanup;
+- user-defined `Ord`;
+- `std.fs`/`std.env`/`std.process`;
+- Unicode follow-ups.
 
 See `TODO.md`.

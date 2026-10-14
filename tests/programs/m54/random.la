@@ -1,0 +1,15 @@
+// std.random (v15): a seeded generator gives the same numbers on every
+// run and platform, which this program's expected output pins down.
+import std.random;
+
+fun main() {
+    let mut rng = random.seeded(42);
+    println(rng.next_u64());
+    println(rng.uniform());
+    println(rng.below(6) + 1);
+    println(rng.between(10, 20));
+    println(rng.normal(0.0, 1.0));
+    println(rng.chance(0.5));
+    println(rng.choice(["red", "green", "blue"]));
+    println(rng.shuffle([1, 2, 3, 4, 5]));
+}

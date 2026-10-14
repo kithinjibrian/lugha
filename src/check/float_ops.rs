@@ -27,10 +27,19 @@ pub const FLOAT_OPS: [(&str, usize); 12] = [
 /// The built-in `callee` names, `sqrt` for `$float.sqrt`; `None` for any
 /// other callee.
 pub fn float_op(callee: &Expr) -> Option<&str> {
+    builtin_op(callee, "$float")
+}
+
+/// The `$os` built-in `callee` names, `seed` for `$os.seed` (v15).
+pub fn os_op(callee: &Expr) -> Option<&str> {
+    builtin_op(callee, "$os")
+}
+
+fn builtin_op<'e>(callee: &'e Expr, namespace: &str) -> Option<&'e str> {
     let ExprKind::Field(base, name) = &callee.kind else {
         return None;
     };
-    matches!(&base.kind, ExprKind::Name(n) if n == "$float").then_some(name.name.as_str())
+    matches!(&base.kind, ExprKind::Name(n) if n == namespace).then_some(name.name.as_str())
 }
 
 impl Checker {
@@ -45,6 +54,10 @@ impl Checker {
         self.record(callee, Type::Void);
         if let ExprKind::Field(base, _) = &callee.kind {
             self.record(base, Type::Void);
+        }
+        // `$float.from_f64(x)`: an `f64` as the float type expected (v15).
+        if op == "from_f64" {
+            return self.convert_from_f64(call, args, expect);
         }
         let Some(&(_, arity)) = FLOAT_OPS.iter().find(|(name, _)| *name == op) else {
             let d = Diagnostic::error("E0415", format!("no float built-in `{op}`"), callee.span);
@@ -72,6 +85,51 @@ impl Checker {
     }
 }
 
+impl Checker {
+    /// `$float.from_f64(x)`: `x` an `f64`, the result the float type the
+    /// context expects (`f32`, `f64` or a `T: Float`).
+    fn convert_from_f64(&mut self, call: &Expr, args: &[Expr], expect: Option<&Expect>) -> Type {
+        if args.len() != 1 {
+            self.report(errors::arity("from_f64", 1, args.len(), call.span));
+            return self.unchecked_args(args);
+        }
+        self.expect_type(&args[0], &Expect::of(Type::F64));
+        let target = expect.map(|e| e.ty.clone());
+        match target {
+            Some(ty) if ty.is_float() || matches!(&ty, Type::Param(p) if self.has_float(p)) => ty,
+            _ => {
+                let d =
+                    Diagnostic::error("E0412", "from_f64 needs an expected float type", call.span);
+                self.report(d);
+                Type::Error
+            }
+        }
+    }
+
+    /// `$os.seed()`: 64 bits of entropy from the operating system (v15).
+    pub(super) fn os_call(
+        &mut self,
+        call: &Expr,
+        (callee, op): (&Expr, &str),
+        args: &[Expr],
+    ) -> Type {
+        self.record(callee, Type::Void);
+        if let ExprKind::Field(base, _) = &callee.kind {
+            self.record(base, Type::Void);
+        }
+        if op != "seed" || !args.is_empty() {
+            let d = Diagnostic::error(
+                "E0415",
+                format!("no `$os` built-in `{op}` with these arguments"),
+                call.span,
+            );
+            self.report(d);
+            return self.unchecked_args(args);
+        }
+        Type::U64
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::check::modules::test_util::prelude_codes;
@@ -94,7 +152,25 @@ mod tests {
     }
 
     #[test]
+    fn std_random_is_typed_by_its_arguments() {
+        let none: [&str; 0] = [];
+        let found = prelude_codes(&[(
+            "main.la",
+            "import std.random;\nfun main() { let mut r = random.seeded(1); \
+             let x: f32 = r.normal(0.0, 1.0); let y = r.normal(0.0, 1.0); let u = r.uniform(); \
+             let n = r.below(3); let c = r.choice([1, 2]); let s = r.shuffle([\"a\"]); }\n",
+        )]);
+        assert_eq!(found, none);
+        let found = prelude_codes(&[(
+            "main.la",
+            "import std.random;\nfun main() { let mut r = random.seeded(1); let z = r.normal(0, 1); }\n",
+        )]);
+        assert_eq!(found, ["E0419"]);
+    }
+
+    #[test]
     fn programs_cannot_name_the_built_ins() {
         assert!(crate::lexer::lex("fun main() { let r = $float.sqrt(2.0); }").is_err());
+        assert!(crate::lexer::lex("fun main() { let r = $os.seed(); }").is_err());
     }
 }
