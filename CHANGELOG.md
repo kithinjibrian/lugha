@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Changed
+- The prelude moved into `src/prelude/`: `prelude.la` is `core.la`, and `prelude_iter.la`, `prelude_more.la`, `prelude_text.la` and `prelude_ops.la` are `iter.la`, `more.la`, `text.la` and `ops.la`; `lugha::PRELUDE` and compiled programs are unchanged
 - `Checked` moved verbatim from `check/mod.rs` into `check/checked.rs` (approved split; `check/mod.rs` had reached 300 lines).
 - Checker housekeeping: function bodies moved to `check/body.rs` and the array built-in methods to `check/builtins.rs`, keeping `stmt.rs` and `method_calls.rs` well under 300 lines
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged

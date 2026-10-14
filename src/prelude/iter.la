@@ -1,5 +1,5 @@
 
-// Iterator helpers (v10 draft §4, milestone 36), joined after `prelude.la`
+// Iterator helpers (v10 draft §4, milestone 36), joined after `core.la`
 // into the one prelude module. `xs.iter()`, `s.bytes()` and `range(a, b)`
 // make iterators; `it.map(f)` and the other adapters wrap one lazily, so
 // nothing runs until a loop or a consumer (`it.sum()`, …) pulls values.

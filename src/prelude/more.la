@@ -1,6 +1,6 @@
 
 // More iterator helpers (v13 draft §5, milestone 43), joined after
-// `prelude_iter.la` into the one prelude module. Like v10's, each adapter
+// `iter.la` into the one prelude module. Like v10's, each adapter
 // wraps its iterators as `Iter<T>` values and runs only when pulled.
 
 // `a`'s and `b`'s values in step, as tuples, ending with the shorter:

@@ -4604,11 +4604,31 @@ Branch: prp-081-operator_overloading (merged into main)
 ## SESSION 108 — 2026-10-14 — Move the prelude into src/prelude/ — open
 Branch: prelude-folder
 
+### WHAT WAS DONE
+- At the user's request, moved the five prelude files into `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), with `git mv`, so history follows them.
+- Updated `src/lib.rs` (`PRELUDE`), the files' own "joined after" comments (each kept on its line, so prelude line numbers and panic locations don't move), and the CLAUDE.md tree and STACK line. Merged on green CI.
+
+### FILES CREATED OR MODIFIED
+- Moved: `src/prelude*.la` → `src/prelude/*.la`.
+- Modified: `src/lib.rs`, CLAUDE.md, CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- None needed: a move. The full suite passes, and 171 programs give byte-identical IR.
+
+### DECISIONS MADE
+- None (housekeeping; the spec's "the prelude's third file" wording stays true).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 52 complete** (PRP-081, MEMORY 100–101): operator overloading. Tagged `m52`. `Language v15 Specification.md` (in progress, milestones 51–52) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines.
+**Milestone 52 complete** (PRP-081, MEMORY 100–101): operator overloading. Tagged `m52`. `Language v15 Specification.md` (in progress, milestones 51–52) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines. The prelude lives in `src/prelude/` (session 108).
 
 Next:
 - glowworm can now use `impl NdArray<T: Num>` and operators;

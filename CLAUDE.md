@@ -155,7 +155,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v15 Specification.md` (`lughac spec` prints it): Lugha v15, in progress (milestones 51–52 done: package layout — `[package] name` and `source`, the program's manifest from a parent folder and its implicit package, E0327, E0328; operator overloading — `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, the prelude's `Add`…`Neg` and `Num` bounds, bounds on `impl` blocks). `Language v15 Draft.md` is the approved plan; the rest of v15 (directories, processes, env, Unicode follow-ups) is planned in `TODO.md`. The v0–v14 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la`, `src/prelude_more.la`, `src/prelude_text.la` and `src/prelude_ops.la`, loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
+The language itself is defined by `docs/specs/Language v15 Specification.md` (`lughac spec` prints it): Lugha v15, in progress (milestones 51–52 done: package layout — `[package] name` and `source`, the program's manifest from a parent folder and its implicit package, E0327, E0328; operator overloading — `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, the prelude's `Add`…`Neg` and `Num` bounds, bounds on `impl` blocks). `Language v15 Draft.md` is the approved plan; the rest of v15 (directories, processes, env, Unicode follow-ups) is planned in `TODO.md`. The v0–v14 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -230,11 +230,12 @@ pub fn parse_number(src: &str) -> i64 {
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
 │   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints), PRELUDE
-│   ├── prelude.la   — Result<T, E>, Iter<T> (v6), the array helpers, and the string/Option/Result helpers in Lugha, module `$prelude`
-│   ├── prelude_iter.la — the iterator sources, adapters and consumers (v10) and `Display` (v12), joined after prelude.la into the one `$prelude`
-│   ├── prelude_more.la — `zip` (yielding tuples, v14), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position` (v13), joined third
-│   ├── prelude_text.la — `Chars` (UTF-8 decoding), `char_count`, `char_from`, Latin-1 classification and case (v14), joined fourth
-│   ├── prelude_ops.la — the operator bounds `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` and `Num` (v15), joined fifth
+│   ├── prelude/     — the prelude in Lugha, joined in this order into the one module `$prelude` (`lugha::PRELUDE`):
+│   │                  core.la (Result<T, E>, Iter<T> (v6), the array helpers, the string/Option/Result helpers),
+│   │                  iter.la (iterator sources, adapters and consumers, v10; `Display`, v12), more.la (`zip` yielding
+│   │                  tuples, `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`, v13), text.la
+│   │                  (`Chars`, `char_count`, `char_from`, Latin-1 classification and case, v14), ops.la (the
+│   │                  operator bounds `Add`…`Neg` and `Num`, v15)
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
 │   ├── format.rs    — format specifiers (v13): `parse`, `check`, shared by the checker and codegen

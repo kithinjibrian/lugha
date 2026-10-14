@@ -1692,7 +1692,7 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestone 52 complete** (PRP-081, MEMORY 100–101): operator overloading. Tagged `m52`. `Language v15 Specification.md` (in progress, milestones 51–52) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines.
+**Milestone 52 complete** (PRP-081, MEMORY 100–101): operator overloading. Tagged `m52`. `Language v15 Specification.md` (in progress, milestones 51–52) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines. The prelude lives in `src/prelude/` (session 108).
 
 Next:
 - glowworm can now use `impl NdArray<T: Num>` and operators;

@@ -23,11 +23,11 @@ pub mod template;
 /// program (v3 draft §4, PRP-041), then the iterator helpers (v10, v13),
 /// one module from five files (Unicode text, v14; operator bounds, v15).
 pub const PRELUDE: &str = concat!(
-    include_str!("prelude.la"),
-    include_str!("prelude_iter.la"),
-    include_str!("prelude_more.la"),
-    include_str!("prelude_text.la"),
-    include_str!("prelude_ops.la")
+    include_str!("prelude/core.la"),
+    include_str!("prelude/iter.la"),
+    include_str!("prelude/more.la"),
+    include_str!("prelude/text.la"),
+    include_str!("prelude/ops.la")
 );
 
 /// The language specification this compiler implements, embedded verbatim;

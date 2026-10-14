@@ -1,6 +1,6 @@
 
 // Unicode text (v14 draft §5, milestone 46), joined after
-// `prelude_more.la` into the one prelude module: a string's characters,
+// `more.la` into the one prelude module: a string's characters,
 // `char_from`, and classification and case for ASCII and Latin-1.
 
 // A string's characters, decoded from UTF-8: `s.chars()`. Any invalid

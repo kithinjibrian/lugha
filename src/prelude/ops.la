@@ -1,6 +1,6 @@
 
 // Operator bounds (v15 draft decisions 10–13, milestone 52), joined after
-// `prelude_text.la` into the one prelude module. `a + b` on a struct or
+// `text.la` into the one prelude module. `a + b` on a struct or
 // enum calls its `add` method; a type parameter allows `+` when bounded by
 // `Add` or `Num`. The numbers satisfy every one of these as built-ins and
 // `string` satisfies `Add`; other types satisfy the single-operator ones
