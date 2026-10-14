@@ -16,6 +16,8 @@ mod inline;
 pub mod lock;
 pub mod manifest;
 mod packages;
+mod parse;
+mod paths;
 mod resolve;
 #[cfg(test)]
 mod tests;
@@ -31,7 +33,6 @@ use self::fetch::Fetcher;
 use crate::ast::{Import, Program};
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
-use crate::{lexer, parser};
 
 /// One loaded source file.
 #[derive(Debug, Clone)]
@@ -152,7 +153,8 @@ pub fn load(main: &Path, read: &mut Read<'_>, fetcher: Fetcher) -> Result<Loaded
             }
             Err(source) => return Err(LoadError::Io { path: file, source }),
         };
-        let mut module = parse_module(path, file, (base, next_id), bytes, &mut loaded.diagnostics);
+        let mut module =
+            parse::parse_module(path, file, (base, next_id), bytes, &mut loaded.diagnostics);
         module.package = package.clone();
         // One byte of gap, so a span at a file's very end isn't the next file's start.
         base = base
@@ -208,83 +210,8 @@ pub fn with_prelude(modules: &mut Vec<Module>, diagnostics: &mut Vec<Diagnostic>
     let path = vec![PRELUDE_PATH.to_string()];
     let bytes = crate::PRELUDE.as_bytes().to_vec();
     let file = PathBuf::from("<prelude>");
-    let module = parse_module(path, file, (base, first_id), bytes, diagnostics);
+    let module = parse::parse_module(path, file, (base, first_id), bytes, diagnostics);
     modules.push(module);
-}
-
-/// Decodes, lexes and parses one file at `base`, numbering its expressions
-/// from `first_id`, and moves its diagnostics into the shared offset space.
-fn parse_module(
-    path: Vec<String>,
-    file: PathBuf,
-    (base, first_id): (usize, u32),
-    bytes: Vec<u8>,
-    diagnostics: &mut Vec<Diagnostic>,
-) -> Module {
-    let text = match String::from_utf8(bytes) {
-        Ok(text) => text,
-        Err(error) => {
-            let valid = error.utf8_error().valid_up_to();
-            let mut bytes = error.into_bytes();
-            bytes.truncate(valid);
-            let at = Span::new(base + valid, base + valid);
-            diagnostics.push(
-                Diagnostic::error("E0110", "source is not valid UTF-8", at)
-                    .with_help("save the file as UTF-8"),
-            );
-            let text = String::from_utf8(bytes).expect("bytes before valid_up_to are UTF-8");
-            return Module {
-                path,
-                file,
-                base,
-                text,
-                program: None,
-                package: None,
-                imports: Vec::new(),
-            };
-        }
-    };
-    let program = match lexer::lex(&text) {
-        Err(errors) => {
-            diagnostics.extend(errors.into_iter().map(|d| shift(d, base)));
-            None
-        }
-        Ok((mut tokens, warnings)) => {
-            diagnostics.extend(warnings.into_iter().map(|d| shift(d, base)));
-            for token in &mut tokens {
-                token.span = Span::new(token.span.start + base, token.span.end + base);
-            }
-            // The parser's spans all come from these tokens, so they are already shifted.
-            match parser::parse_from(&tokens, first_id) {
-                Ok((program, warnings)) => {
-                    diagnostics.extend(warnings);
-                    Some(program)
-                }
-                Err(errors) => {
-                    diagnostics.extend(errors);
-                    None
-                }
-            }
-        }
-    };
-    Module {
-        path,
-        file,
-        base,
-        text,
-        program,
-        package: None,
-        imports: Vec::new(),
-    }
-}
-
-/// `d` moved by `base` bytes.
-fn shift(mut d: Diagnostic, base: usize) -> Diagnostic {
-    d.span = Span::new(d.span.start + base, d.span.end + base);
-    for label in &mut d.labels {
-        label.span = Span::new(label.span.start + base, label.span.end + base);
-    }
-    d
 }
 
 /// An import's segments as strings.
