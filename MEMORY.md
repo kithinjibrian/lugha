@@ -1566,6 +1566,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** the user's `glowworm` library wanted `glowworm.array` from `src/` and manifest-free examples.
 
+### 100. Operator overloading — milestone 52 planned (session 106, approved session 107)
+
+**Decision:** the user's goal is that `a + b` / `a * b` on their `Vec2` run (`Language v15 Draft.md` decisions 8–13):
+- `+ - * / %` and unary `-` map to `add`/`sub`/`mul`/`div`/`rem`/`neg`. Opt-in is structural, with a shape: plain `self`, one parameter (none for `neg`), and a result; any one right-hand type.
+- The prelude has `Add`…`Neg` and `Num` bounds, satisfied built-in by numbers (and `string` for `Add`).
+- `impl NdArray<T: Num>` bounds.
+- `0`/`1` as `T: Num`.
+
+**Also:** the user raised the file-size limit from 300 to 500 lines (CLAUDE.md, session 107), and asked for M52 "in one go".
+
 ---
 
 ## CURRENT PROJECT STATE
