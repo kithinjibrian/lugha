@@ -1287,6 +1287,25 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 83. Lugha v12 direction (sessions 87–88)
+
+**Decision:** `docs/specs/Language v12 Draft.md` is approved: every value prints, built "in one go".
+- **M39 printing values:**
+  - the prelude's `interface Display { fun show(self): string; }`; a struct's or enum's own `fun show(self): string` (any visibility) is used, and a `show` of another signature is ignored;
+  - otherwise the built-in form: `Point { x: 1, y: 2 }`, `Circle(2.0)`/`Empty`, `[1, 2]`, `Some(x)`/`None`, `Ok`/`Err`; bare type names, no generic arguments;
+  - strings are quoted and escaped only inside built-in forms;
+  - generic `T` prints without a bound;
+  - lowering: `lugha_show_<type>` helpers, emitted only when used, and the runtime's `lugha_rt_str_quote`.
+- **M40 printing anything:**
+  - interface values print by their concrete type, through an identity chain at the print site (tables unchanged);
+  - function values print as `<fun>`;
+  - `unwrap` on `Err` panics with `unwrap on Err: <error>`.
+- **New codes:** none (E0403 shrinks).
+
+**Why:** the session 87 discovery; the user took every recommendation.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
