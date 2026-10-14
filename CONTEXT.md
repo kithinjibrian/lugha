@@ -4528,19 +4528,50 @@ Branch: prp-080-package_layout (merged into main)
 
 ---
 
-## SESSION 106 — 2026-10-14 — Discovery: operator overloading — open
+## SESSION 106 — 2026-10-14 — Discovery: operator overloading — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user set the goal: their Vec2 program with `a + b` and `a * b` runs in v15.
+- Discovery answers:
+  - arithmetic operators plus unary `-`, via `add`/`sub`/`mul`/`div`/`rem`/`neg`;
+  - any one right-hand type;
+  - prelude `Add`…`Neg` and `Num` bounds in the same milestone;
+  - `impl` bounds in the same milestone, written `impl NdArray<T: Num>`;
+  - structural opt-in with shape rules;
+  - `0`/`1` as `T: Num`, and `Num` for built-in numbers only.
+- Added milestone 52 to `Language v15 Draft.md` (decisions 8–13 and choices) and wrote PRP-081 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-081-operator_overloading.md`.
+- Modified: `docs/specs/Language v15 Draft.md`, CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- The discovery answers (MEMORY 100 on approval).
+
+### PENDING DECISIONS OPENED
+- Approval of the milestone 52 draft additions and PRP-081.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval; then branch `prp-081-operator_overloading`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 51 complete** (PRP-080, MEMORY 98–99): package layout. Tagged `m51`. `Language v15 Specification.md` (in progress) is what `lughac spec` prints; v0–v14 are frozen.
+**Milestone 51 complete** (package layout), tagged `m51`. **Milestone 52 (operator overloading) is proposed:** draft additions in `Language v15 Draft.md` (decisions 8–13) and PRP-081, waiting for the user's approval. On approval:
+- record MEMORY 100;
+- branch `prp-081-operator_overloading`;
+- commit "Add approved PRP-081 operator overloading";
+- build with new code in `check/operators.rs`, `check/impl_bounds.rs`, `codegen/operators.rs` and `src/prelude_ops.la`.
 
-Next:
-- move the user's `glowworm` repository (`~/Documents/kithinji/glowworm`, uncommitted rearrangement) to `name`/`source = "src"`/`examples/`, once they want it;
-- the rest of v15 (directories, processes, env, Unicode follow-ups) waits in `TODO.md` for its discovery to resume at the process API shape.
+Stop and propose a split if a hook would push `satisfy.rs`, `interfaces.rs`, `instances.rs` or `generics.rs` over 300 lines. Tag `m52` goes on the merge.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `modules/tests.rs` (293).
+The rest of v15 (directories, processes, env, Unicode follow-ups) waits in `TODO.md`.
+
+Watch file sizes: `check/interfaces.rs` (300), `check/visibility.rs` (300), `codegen/copy.rs` (300), `check/env.rs` (299), `check/satisfy.rs` (298), `check/instances.rs` (298), `parser/primary.rs` (298), `check/generics.rs` (294), `check/ops.rs` (292).
 
 See `TODO.md`.
