@@ -1,6 +1,6 @@
 ## FEATURE: Downloaded packages — `{ git = "URL", version = "R" }` manifest entries, a cache, `lugha.lock`, `lughac update`, `--offline` (E0325, E0326); milestone 50.
 
-**Status:** approved 2026-10-14 — session 102. Proposed in session 101; the user reviewed the security design and approved it as written.
+**Status:** merged 2026-10-14 — session 102. Proposed in session 101; the user reviewed the security design and approved it as written.
 **Milestone:** 50 (one PRP; tags `m50` and `v14` at merge)
 **Spec:** `Language v14 Draft.md`:
 - decision 5, and the choices on downloaded packages;

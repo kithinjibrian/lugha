@@ -4398,8 +4398,8 @@ Branch: main
 
 ---
 
-## SESSION 102 — 2026-10-14 — Git packages (milestone 50) — open
-Branch: prp-079-git_packages
+## SESSION 102 — 2026-10-14 — Git packages (milestone 50) — closed
+Branch: prp-079-git_packages (merged into main)
 
 ### WHAT WAS DONE
 - The user approved PRP-079's security design as written; built and merged on green CI:
@@ -4429,13 +4429,13 @@ Branch: prp-079-git_packages
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tags `m50` and `v14`.
+- Nothing. PRP-079 merged into `main`, tagged `m50` and `v14`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v14 is complete** (milestones 45–50; MEMORY 91–97). Milestone 50 (PRP-079, git packages) passed the user's security review. Tags `m50` and `v14` go on the merge. `Language v14 Specification.md` (complete) is what `lughac spec` prints; v0–v13 are frozen.
+**Lugha v14 is complete** (milestones 45–50; MEMORY 91–97). Milestone 50 (PRP-079, git packages) passed the user's security review. Tagged `m50` and `v14`. `Language v14 Specification.md` (complete) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next: any further language feature is v15 and starts with a discovery and an approved draft. Changes to how `git` runs need a security review.
 

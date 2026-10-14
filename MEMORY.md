@@ -1639,7 +1639,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Lugha v14 is complete** (milestones 45–50; MEMORY 91–97). Milestone 50 (PRP-079, git packages) passed the user's security review. Tags `m50` and `v14` go on the merge. `Language v14 Specification.md` (complete) is what `lughac spec` prints; v0–v13 are frozen.
+**Lugha v14 is complete** (milestones 45–50; MEMORY 91–97). Milestone 50 (PRP-079, git packages) passed the user's security review. Tagged `m50` and `v14`. `Language v14 Specification.md` (complete) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next: any further language feature is v15 and starts with a discovery and an approved draft. Changes to how `git` runs need a security review.
 
