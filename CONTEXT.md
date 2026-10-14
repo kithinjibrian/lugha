@@ -3551,20 +3551,44 @@ Branch: prp-062-conditional_patterns (merged into main)
 
 ---
 
-## SESSION 80 — 2026-10-14 — v10 direction — open
+## SESSION 80 — 2026-10-14 — v10 direction — closed
 Branch: main
+
+### WHAT WAS DONE
+- v10 discovery, five questions, each answered with the recommended option:
+  - lazy iterator helpers;
+  - the focused helper set;
+  - the sources `iter`, `bytes` and `range`;
+  - full `Self` in `impl` blocks, plus default methods on concrete types;
+  - integer types with methods and `MIN`/`MAX`.
+- Wrote `docs/specs/Language v10 Draft.md` (proposed): milestones 34–36, E0430, three §10 programs.
+
+### FILES CREATED OR MODIFIED
+- New: `docs/specs/Language v10 Draft.md`.
+- CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (design only).
+
+### DECISIONS MADE
+- None recorded yet; the v10 MEMORY decision follows approval of the draft.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The v10 draft awaits the user's approval.
 
 ## NEXT SESSION START POINT
 
-**Lugha v9 is complete** (milestones 31–33; PRP-060–062; MEMORY 72–75): or-patterns, `mut` bindings, `unwrap`/`expect`, `%=`, `if let`, `while let`, `let … else`. Tagged `m33` and `v9`. `Language v9 Specification.md` is what `lughac spec` prints; v0–v8 are frozen.
+**Lugha v9 is complete** (milestones 31–33; PRP-060–062; MEMORY 72–75). Tagged `m33` and `v9`. `Language v9 Specification.md` is what `lughac spec` prints; v0–v8 are frozen.
 
-Next: **v10 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v9 spec §11 and §12):
-- iterator helpers (`map`, `filter`, `collect` on `Iter<T>`), strings as iterators, `for n of mut c`;
-- `Self` outside interfaces, default methods on concrete types;
-- `i8`/`i16`/`u16`, rotations, checked/saturating methods, `parse_u64`, unsigned indexes;
-- package versions, re-exports, a `--package` flag;
-- a `Display`-like interface (printing structs, errors in `unwrap`);
-- binary I/O, directories, streams and processes.
+Next: **approve `docs/specs/Language v10 Draft.md`** (proposed in session 80). It holds three milestones:
+- M34: `Self` in `impl` blocks, and default methods on concrete types (E0430);
+- M35: `i8`/`i16`/`u16`, `checked_*`/`saturating_*`, rotations, `MIN`/`MAX`, `parse_u64`;
+- M36: lazy iterator helpers (`map`, `filter`, `take`, `skip`, `enumerate`; `collect`, `count`, `fold`, `any`, `all`, `find`, `sum`), with `xs.iter()`, `s.bytes()`, `for b of s` and `range(a, b)`.
+
+Once it is approved: record a MEMORY decision for v10, then write PRP-063 for M34.
 
 Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `codegen/patterns.rs` (~290).
 
