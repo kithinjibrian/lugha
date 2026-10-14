@@ -141,21 +141,17 @@ pub fn expr(expr: &Expr) -> String {
                 .unwrap_or_default();
             format!("(if {} {}{otherwise})", self::expr(cond), block(then))
         }
-        ExprKind::IfLet {
-            pattern: p,
-            scrutinee,
-            then,
-            else_,
-        } => {
-            let otherwise = else_
+        ExprKind::IfLet(parts) => {
+            let otherwise = parts
+                .else_
                 .as_ref()
                 .map(|e| format!(" {}", self::expr(e)))
                 .unwrap_or_default();
             format!(
                 "(if-let {} {} {}{otherwise})",
-                pattern(p),
-                self::expr(scrutinee),
-                block(then)
+                pattern(&parts.pattern),
+                self::expr(&parts.scrutinee),
+                block(&parts.then)
             )
         }
         ExprKind::Block(b) => block(b),

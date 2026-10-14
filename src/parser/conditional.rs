@@ -2,7 +2,7 @@
 //! and `let … else`, each a pattern tested against one value.
 
 use super::{PResult, Parser};
-use crate::ast::{Expr, ExprKind, Pattern, PatternKind, StmtKind};
+use crate::ast::{Expr, ExprKind, IfLet, Pattern, PatternKind, StmtKind};
 use crate::lexer::TokenKind;
 
 impl Parser<'_> {
@@ -14,15 +14,13 @@ impl Parser<'_> {
         let scrutinee = self.cond()?;
         let then = self.block()?;
         let else_ = self.else_part()?;
-        Ok(self.mk(
-            start,
-            ExprKind::IfLet {
-                pattern: Box::new(pattern),
-                scrutinee: Box::new(scrutinee),
-                then,
-                else_,
-            },
-        ))
+        let parts = IfLet {
+            pattern,
+            scrutinee,
+            then,
+            else_,
+        };
+        Ok(self.mk(start, ExprKind::IfLet(Box::new(parts))))
     }
 
     /// `else { … }` or `else if …`, if there is one.

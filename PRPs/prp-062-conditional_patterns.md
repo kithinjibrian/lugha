@@ -145,3 +145,4 @@ cargo run -q -- run tests/programs/m33/conditional.la
 - **`if_expr`'s merging** became `Checker::join_branches`, shared with `if let`; `matching::unused` became `pub(super)`, so `if let` and `while let` warn about unused bindings (W0103). `let … else` doesn't, since its bindings live on in the block.
 - **`-O2`** was checked by hand for `m33/conditional` and `m33/more`.
 - **No file splits.**
+- **`ExprKind::IfLet(Box<IfLet>)`:** the first CI run overflowed the 2 MB test stack in `deep_nesting_is_e0206_not_a_stack_overflow`, because the inline `IfLet` fields grew `Expr` from 88 to 96 bytes and the recursive-descent parser's frames with it. Boxing the whole payload returns `Expr` to 88 bytes; the test passes with `RUST_MIN_STACK=2097152`.

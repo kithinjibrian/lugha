@@ -12,7 +12,7 @@ mod header;
 mod pattern;
 mod types;
 
-pub use expr::{BinOp, Closure, Expr, ExprId, ExprKind, Part, StructLiteral, UnOp};
+pub use expr::{BinOp, Closure, Expr, ExprId, ExprKind, IfLet, Part, StructLiteral, UnOp};
 pub use header::{
     Bound, Field, Import, InterfaceDecl, InterfaceItem, TypeParam, Visibility, VisibilityKind,
 };

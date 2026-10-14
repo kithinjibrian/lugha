@@ -58,13 +58,9 @@ pub enum ExprKind {
         then: Block,
         else_: Option<Box<Expr>>,
     },
-    /// `if let pattern = scrutinee { then } [else …]` (v9).
-    IfLet {
-        pattern: Box<super::Pattern>,
-        scrutinee: Box<Expr>,
-        then: Block,
-        else_: Option<Box<Expr>>,
-    },
+    /// `if let pattern = scrutinee { then } [else …]` (v9), boxed whole
+    /// so `Expr` stays as small as before (the parser recurses on it).
+    IfLet(Box<IfLet>),
     /// A block used as an expression.
     Block(Block),
     /// `match scrutinee { arms }` (v1).
@@ -196,4 +192,13 @@ impl Part {
             Part::Text(_) => None,
         }
     }
+}
+
+/// The parts of an `if let` (v9).
+#[derive(Debug, Clone, PartialEq)]
+pub struct IfLet {
+    pub pattern: super::Pattern,
+    pub scrutinee: Expr,
+    pub then: Block,
+    pub else_: Option<Box<Expr>>,
 }

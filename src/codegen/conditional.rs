@@ -7,7 +7,7 @@ use super::control::Loop;
 use super::lower::{Lowerer, POSITIONED};
 use super::patterns::Subject;
 use super::value::{Value, llvm_type};
-use crate::ast::{Block, Expr, Pattern};
+use crate::ast::{Block, Expr, IfLet, Pattern};
 use crate::check::Type;
 
 impl<'ctx> Lowerer<'ctx> {
@@ -32,12 +32,10 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn if_let(
         &mut self,
         expr: &Expr,
-        pattern: &Pattern,
-        scrutinee: &Expr,
-        then: &Block,
-        else_: Option<&Expr>,
+        parts: &IfLet,
     ) -> Result<Value<'ctx>, CodegenError> {
-        let (subject, sty) = self.subject_of(scrutinee)?;
+        let (pattern, then, else_) = (&parts.pattern, &parts.then, parts.else_.as_deref());
+        let (subject, sty) = self.subject_of(&parts.scrutinee)?;
         let rty = self.ty(expr);
         let result = (!matches!(rty, Type::Void | Type::Never))
             .then(|| self.entry_alloca(&rty, "iflet.value"));

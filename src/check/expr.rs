@@ -126,12 +126,7 @@ impl Checker {
             ExprKind::If { cond, then, else_ } => {
                 self.if_expr(expr, cond, then, else_.as_deref(), expect)
             }
-            ExprKind::IfLet {
-                pattern,
-                scrutinee,
-                then,
-                else_,
-            } => self.if_let(expr, pattern, scrutinee, then, else_.as_deref(), expect),
+            ExprKind::IfLet(parts) => self.if_let(expr, parts, expect),
             ExprKind::Block(block) => self.block(block, expect),
             ExprKind::Match(scrutinee, arms) => self.match_expr(expr, scrutinee, arms, expect),
             ExprKind::Str(_) => Type::String,

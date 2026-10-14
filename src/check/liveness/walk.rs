@@ -102,15 +102,10 @@ impl Walk<'_> {
                 self.block(then);
                 else_.iter().for_each(|e| self.expr(e));
             }
-            ExprKind::IfLet {
-                scrutinee,
-                then,
-                else_,
-                ..
-            } => {
-                self.expr(scrutinee);
-                self.block(then);
-                else_.iter().for_each(|e| self.expr(e));
+            ExprKind::IfLet(parts) => {
+                self.expr(&parts.scrutinee);
+                self.block(&parts.then);
+                parts.else_.iter().for_each(|e| self.expr(e));
             }
             ExprKind::Block(block) => self.block(block),
             // A closure's own lets can move; captures never do (`Binding::Param`).

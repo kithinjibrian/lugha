@@ -5,7 +5,7 @@
 use super::expr::Expect;
 use super::patterns::Bindings;
 use super::{Binding, Checker, Type, errors};
-use crate::ast::{Block, Expr, Pattern};
+use crate::ast::{Block, Expr, IfLet, Pattern};
 
 impl Checker {
     /// `pattern` against `scrutinee`'s type, giving its bindings.
@@ -30,16 +30,9 @@ impl Checker {
 
     /// `if let pattern = scrutinee { then } [else …]`: like `if`, with the
     /// bindings in scope in `then` only.
-    pub(super) fn if_let(
-        &mut self,
-        expr: &Expr,
-        pattern: &Pattern,
-        scrutinee: &Expr,
-        then: &Block,
-        else_: Option<&Expr>,
-        expect: Option<&Expect>,
-    ) -> Type {
-        let bindings = self.tested(pattern, scrutinee);
+    pub(super) fn if_let(&mut self, expr: &Expr, parts: &IfLet, expect: Option<&Expect>) -> Type {
+        let (then, else_) = (&parts.then, parts.else_.as_deref());
+        let bindings = self.tested(&parts.pattern, &parts.scrutinee);
         self.push();
         self.declare_bindings(&bindings);
         let then_ty = match else_ {

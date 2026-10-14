@@ -105,12 +105,7 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::If { cond, then, else_ } => {
                 return self.if_expr(expr, cond, then, else_.as_deref());
             }
-            ExprKind::IfLet {
-                pattern,
-                scrutinee,
-                then,
-                else_,
-            } => return self.if_let(expr, pattern, scrutinee, then, else_.as_deref()),
+            ExprKind::IfLet(parts) => return self.if_let(expr, parts),
             ExprKind::Block(block) => return self.block(block),
             ExprKind::Match(scrutinee, arms) => return self.match_expr(expr, scrutinee, arms),
             ExprKind::Str(text) => self.string_literal(text).into(),
