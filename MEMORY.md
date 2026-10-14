@@ -1609,6 +1609,17 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 - **Codegen:** `codegen/float_ops.rs` lowers to `llvm.<op>` (with `ln` → `log`) at the call's float type.
 - **Tests:** `check::modules::test_util::prelude_codes` checks in-memory modules with the prelude.
 
+### 104. `std.random` — milestone 54 planned (session 113, approved session 114)
+
+**Decision:**
+- **Generator:** xoshiro256\*\* in Lugha (`src/std/random.la`), seeded by splitmix64.
+- **Seeding:** `seeded(u64)` and `from_os()` (runtime `lugha_rt_os_seed` via `getrandom`, falling back to `/dev/urandom`); no global generator.
+- **Methods (`mut self`):** `next_u64`, `uniform(): f64`, `below`/`between` (half-open, unbiased by rejection, panic on empty), `normal<T: Float>(mean, std)`, `chance`, `choice` (`Option`), `shuffle` (returns a copy).
+- **New built-ins:** `$float.from_f64`, `$os.seed`.
+- **Not cryptographically secure.**
+
+**Why `uniform(): f64`:** with no arguments, `uniform<T: Float>()` can't infer `T` (E0412 on every bare call); the user approved the change.
+
 ---
 
 ## CURRENT PROJECT STATE
