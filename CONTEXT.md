@@ -4491,6 +4491,11 @@ Branch: main
 
 ---
 
+## SESSION 105 — 2026-10-14 — Package layout (milestone 51) — open
+Branch: prp-080-package_layout
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v14 is complete** (milestones 45–50), tagged `v14`. **v15's draft (`docs/specs/Language v15 Draft.md`) and PRP-080 (package layout, milestone 51) are proposed** (session 104) and wait for the user's approval. The approval also covers the splits of `modules/mod.rs` (parse_module → `parse.rs`) and `modules/packages.rs` (paths helpers → `paths.rs`). On approval:
