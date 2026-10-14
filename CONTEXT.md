@@ -4458,6 +4458,11 @@ Branch: main
 
 ---
 
+## SESSION 104 — 2026-10-14 — Discovery: package name and source folder — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v14 is complete** (milestones 45–50; MEMORY 91–97), tagged `m50` and `v14`. `Language v14 Specification.md` (complete) is what `lughac spec` prints; v0–v13 are frozen.
