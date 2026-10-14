@@ -1433,7 +1433,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Lugha v12 is complete** (milestones 39–40; PRP-068–069; MEMORY 83–85): every value prints, through `show` (the prelude's `Display`) or a built-in form; interface values by their contents, functions as `<fun>`, and `unwrap on Err: <error>`. Tags `m40` and `v12` go on the merge of PRP-069. `Language v12 Specification.md` is what `lughac spec` prints; v0–v11 are frozen.
+**Lugha v12 is complete** (milestones 39–40; PRP-068–069; MEMORY 83–85): every value prints, through `show` (the prelude's `Display`) or a built-in form; interface values by their contents, functions as `<fun>`, and `unwrap on Err: <error>`. Tagged `m40` and `v12`. `Language v12 Specification.md` is what `lughac spec` prints; v0–v11 are frozen.
 
 Next: **v13 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v12 spec §11 and §12):
 - format specifiers (`{x:.2}`, padding), a debug form;

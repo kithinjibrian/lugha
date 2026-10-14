@@ -1,6 +1,6 @@
 ## FEATURE: Printing anything — interface and function values, `unwrap on Err: <error>`; milestone 40, v12 complete.
 
-**Status:** approved 2026-10-14 — session 89. This is the last part of the user's "in one go" (milestones 39–40), merged once CI is green.
+**Status:** merged 2026-10-14 — session 89. This is the last part of the user's "in one go" (milestones 39–40), merged once CI is green.
 **Milestone:** 40 (one PRP; completes v12; tags `m40` and `v12` at merge)
 **Spec:** `Language v12 Draft.md`:
 - decision 4, and the choices on interface values and `unwrap`;

@@ -3926,8 +3926,8 @@ Branch: prp-068-printing_values (merged into main)
 
 ---
 
-## SESSION 89 — 2026-10-14 — Printing anything (milestone 40) — open
-Branch: prp-069-printing_anything
+## SESSION 89 — 2026-10-14 — Printing anything (milestone 40) — closed
+Branch: prp-069-printing_anything (merged into main)
 
 ### WHAT WAS DONE
 - PRP-069 written as approved under the "in one go" instruction, built and merged on green CI:
@@ -3966,13 +3966,13 @@ Branch: prp-069-printing_anything
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tags `m40` and `v12`.
+- Nothing. PRP-069 merged into `main`, tagged `m40` and `v12`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v12 is complete** (milestones 39–40; PRP-068–069; MEMORY 83–85): every value prints, through `show` (the prelude's `Display`) or a built-in form; interface values by their contents, functions as `<fun>`, and `unwrap on Err: <error>`. Tags `m40` and `v12` go on the merge of PRP-069. `Language v12 Specification.md` is what `lughac spec` prints; v0–v11 are frozen.
+**Lugha v12 is complete** (milestones 39–40; PRP-068–069; MEMORY 83–85): every value prints, through `show` (the prelude's `Display`) or a built-in form; interface values by their contents, functions as `<fun>`, and `unwrap on Err: <error>`. Tagged `m40` and `v12`. `Language v12 Specification.md` is what `lughac spec` prints; v0–v11 are frozen.
 
 Next: **v13 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v12 spec §11 and §12):
 - format specifiers (`{x:.2}`, padding), a debug form;

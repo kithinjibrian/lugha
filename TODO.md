@@ -239,7 +239,7 @@ Done when the printing-values program passes.
 
 ### Milestone 40 — Printing anything ✅
 Done when the printing-anything program passes and the v12 spec is complete.
-- [x] PRP-069: interface and function values printed directly, `unwrap on Err: <error>`; v12 complete; tagged `m40` and `v12` at merge
+- [x] PRP-069: interface and function values printed directly, `unwrap on Err: <error>`; v12 complete; tagged `m40` and `v12`
 
 ## Found while working — needs a PRP
 
