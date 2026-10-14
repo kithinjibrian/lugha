@@ -1628,6 +1628,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 - **Runtime:** `runtime/random.c` (`getrandom`, `/dev/urandom`, `die`); `RUNTIME_SYMBOLS` has 47 entries.
 - **Follow-up:** std modules compile eagerly (noted in TODO).
 
+### 106. Copy-on-write arrays planned — supersedes MEMORY 20 / DECISION-010 (session 116, approved session 117)
+
+**Decision (DECISION-012):**
+- **Sharing:** copy sites share arrays and set a sticky `shared` flag (the top bit of `cap`); the first write to a shared array clones it (`lugha_own_<type>`).
+- **Writes:** they reach arrays through their slots, after the right-hand side; `for … of mut` goes by slot and index.
+- **C:** externs get unshared arrays.
+- **Unchanged:** move on last use stays. Program output never changes.
+
+**Why:** a sticky flag needs no reference counts (DECISION-010's main cost), and firefly's read-then-modify bindings (`let g = self.grads[i];`) can't be removed statically. Copy-then-write programs gain nothing and pay a flag check per write; timings are recorded either way.
+
 ---
 
 ## CURRENT PROJECT STATE

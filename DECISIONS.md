@@ -14,22 +14,7 @@ Questions about the *language* are answered by `docs/specs/Language v0 Specifica
 
 ## OPEN — Requires human input before implementation
 
-### DECISION-012 — Copy-on-write arrays (would supersede DECISION-010)
-
-**Status:** open, proposed with PRP-084 (session 116). The user chose copy-on-write in discovery; their approval of PRP-084 resolves this.
-**Raised:** 2026-10-15 — Session 116
-
-**Question:** Reverse DECISION-010 (eager deep copies) for copy-on-write arrays with a sticky "shared" flag?
-
-**New facts since DECISION-010:**
-- **No reference counts needed.** A sticky flag in the header's `cap` word makes copy-on-write correct without reference counting, which was 010's main cost. An object once shared stays marked, so the other holder pays at most one extra copy when it writes.
-- **A new code shape that pays.** In firefly (an autograd library written in Lugha), the dominant copies are read-only `let` bindings from a container that is then modified (`let g = self.grads[i];`, 18 copy calls in one function). Static analysis can't remove them, since the container changes while the binding is live, but copy-on-write makes them free.
-
-**What still holds from DECISION-010:**
-- programs that copy and then immediately write (`life`, `sort`, `matmul`) save nothing;
-- every array write now pays a flag check (expected: a few percent).
-
-**Proposed outcome:** adopt copy-on-write as milestone 55 (PRP-084); keep move on last use; report before/after timings, including 010's benchmarks if they're still in `docs/decisions/decision-010.md`.
+None.
 
 ---
 
@@ -189,9 +174,31 @@ None.
 
 ---
 
-### DECISION-010 — Cost of array copies
+### DECISION-012 — Copy-on-write arrays (would supersede DECISION-010)
 
 **Status:** resolved
+**Resolved:** 2026-10-15 — Session 117 (the user approved PRP-084)
+**Raised:** 2026-10-15 — Session 116
+
+**Question:** Reverse DECISION-010 (eager deep copies) for copy-on-write arrays with a sticky "shared" flag?
+
+**New facts since DECISION-010:**
+- **No reference counts needed.** A sticky flag in the header's `cap` word makes copy-on-write correct without reference counting, which was 010's main cost. An object once shared stays marked, so the other holder pays at most one extra copy when it writes.
+- **A new code shape that pays.** In firefly (an autograd library written in Lugha), the dominant copies are read-only `let` bindings from a container that is then modified (`let g = self.grads[i];`, 18 copy calls in one function). Static analysis can't remove them, since the container changes while the binding is live, but copy-on-write makes them free.
+
+**What still holds from DECISION-010:**
+- programs that copy and then immediately write (`life`, `sort`, `matmul`) save nothing;
+- every array write now pays a flag check (expected: a few percent).
+
+**Outcome:** adopt copy-on-write as milestone 55 (PRP-084); keep move on last use; report before/after timings, including 010's benchmarks if they're still in `docs/decisions/decision-010.md`.
+
+**Copied to MEMORY.md:** yes (MEMORY 106)
+
+---
+
+### DECISION-010 — Cost of array copies
+
+**Status:** resolved — superseded by DECISION-012 (session 117)
 **Raised:** 2026-10-09 — Session 1 (from spec §12)
 **Resolved:** 2026-10-09 — Session 21
 

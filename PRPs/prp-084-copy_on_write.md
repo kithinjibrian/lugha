@@ -1,11 +1,11 @@
 ## FEATURE: Copy-on-write arrays — copies share arrays until one side writes, with no change to any program's behaviour; milestone 55.
 
-**Status:** proposed 2026-10-15 — session 116, with the milestone 55 additions to `Language v15 Draft.md`. Waiting for the user's approval.
+**Status:** approved 2026-10-15 — session 117, with the milestone 55 additions and DECISION-012, "in one go".
 **Milestone:** 55 (one PRP; tag `m55` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 22–24, the milestone 55 choices); spec §4 (Array copies), §5 (assignment order, `for … of mut`), §7 (heap layout), §9 (lowering), §12 ("Cost of array copies", reversed).
 
 **Decisions:**
-- this reverses **DECISION-010** / MEMORY 20 (eager copies, copy-on-write rejected), through **DECISION-012** (open; resolved by approving this PRP);
+- this reverses **DECISION-010** / MEMORY 20 (eager copies, copy-on-write rejected), through **DECISION-012** (resolved in session 117);
 - keeps MEMORY 22 (move on last use, PRP-018);
 - extends MEMORY 16 (array value semantics, PRP-014).
 
