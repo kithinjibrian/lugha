@@ -3523,7 +3523,7 @@ Branch: prp-061-unwrapping (merged into main)
 ---
 
 ## SESSION 79 — 2026-10-14 — Conditional patterns (milestone 33) — open
-Branch: main
+Branch: prp-062-conditional_patterns
 
 ---
 
