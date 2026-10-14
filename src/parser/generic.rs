@@ -81,6 +81,12 @@ impl Parser<'_> {
         } else {
             Vec::new()
         };
+        if module.is_none()
+            && args.is_empty()
+            && let Some(kind) = self.self_type(&name)
+        {
+            return Ok(kind);
+        }
         Ok(if module.is_none() && args.is_empty() {
             TypeKind::Named(name.name)
         } else {

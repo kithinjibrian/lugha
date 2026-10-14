@@ -49,6 +49,19 @@ impl Parser<'_> {
         };
         let params = self.impl_params()?;
         let open = self.expect(&TokenKind::LBrace)?;
+        // `Self` means this type throughout the block (v10).
+        let methods = self.in_impl(&ty, &params, |p| p.impl_methods(open))?;
+        Ok(ImplDecl {
+            module,
+            ty,
+            params,
+            methods,
+            span: Span::new(start, self.prev_end()),
+        })
+    }
+
+    /// The methods of an `impl` up to and including its `}`.
+    fn impl_methods(&mut self, open: Span) -> PResult<Vec<FunDecl>> {
         let mut methods = Vec::new();
         while !self.at(&TokenKind::RBrace) {
             let visibility = self.visibility();
@@ -63,13 +76,7 @@ impl Parser<'_> {
             methods.push(method);
         }
         self.bump();
-        Ok(ImplDecl {
-            module,
-            ty,
-            params,
-            methods,
-            span: Span::new(start, self.prev_end()),
-        })
+        Ok(methods)
     }
 
     /// `fun name(params): ret body`; in an `impl`, the parameters may start

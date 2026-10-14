@@ -53,6 +53,7 @@ impl Parser<'_> {
     /// After an identifier: a struct literal if `{` follows and literals are
     /// allowed; E0205 for an unparenthesised literal in a condition.
     fn name_or_struct(&mut self, start: usize, name: Ident) -> PResult<Expr> {
+        let name = self.self_name(name);
         match self.struct_lit_after(start, None, name.clone())? {
             Some(literal) => Ok(literal),
             None => Ok(self.mk(start, ExprKind::Name(name.name))),

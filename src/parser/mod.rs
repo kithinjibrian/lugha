@@ -20,6 +20,7 @@ mod operators;
 mod pattern;
 mod primary;
 mod recover;
+mod self_type;
 pub mod sexp;
 mod stmt;
 #[cfg(test)]
@@ -65,6 +66,7 @@ pub fn parse_from(
         depth: 0,
         no_struct: false,
         scrutinee: false,
+        impl_self: None,
         diagnostics: Vec::new(),
     };
     let (imports, items) = parser.program();
@@ -101,6 +103,8 @@ struct Parser<'t> {
     /// True while parsing a `match` scrutinee, where `{ name:` starts an
     /// arm with a type pattern rather than a misplaced struct literal (v5).
     scrutinee: bool,
+    /// The type and parameters of the `impl` being read: what `Self` means (v10).
+    impl_self: Option<(Ident, Vec<Ident>)>,
     diagnostics: Vec<Diagnostic>,
 }
 

@@ -110,10 +110,10 @@ mod tests {
         ));
         assert_eq!(codes("fun f(x: Self) {}"), ["E0305"]);
         assert_eq!(codes("struct S { me: Self }"), ["E0305"]);
-        assert_eq!(
-            codes("impl Money { fun me(self): Self = self; }"),
-            ["E0305"]
-        );
+        // v10: inside an `impl`, `Self` is the type itself.
+        ok(&format!(
+            "{ORD}impl Money {{ fun me(self): Self = self; }}\nfun main() {{}}"
+        ));
     }
 
     #[test]

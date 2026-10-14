@@ -125,6 +125,14 @@ impl Checker {
                 .method(receiver, &name.name)
                 .filter(|m| m.receiver.is_some()),
         };
+        // A default method on a struct or enum without its own (v10).
+        let found = match found {
+            None => match self.concrete_default(call, receiver, name) {
+                Some(None) => return self.unchecked(args),
+                found => found.flatten(),
+            },
+            found => found,
+        };
         let Some(m) = found else {
             let help = self
                 .method(receiver, &name.name)

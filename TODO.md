@@ -207,6 +207,20 @@ Done when the unwrapping program passes.
 Done when the conditional-patterns program passes and the v9 spec is complete.
 - [x] PRP-062: `if let`, `while let`, `let … else` (E0429); v9 complete; tagged `m33` and `v9`
 
+## v10 (draft approved, session 81 — `docs/specs/Language v10 Draft.md`)
+
+### Milestone 34 — `Self` everywhere ✅
+Done when the `Self`-in-`impl` program passes.
+- [x] PRP-063: `Self` in `impl` blocks, default methods on concrete types (E0430); `Language v10 Specification.md` begins; tagged `m34` at merge
+
+### Milestone 35 — More integers
+Done when the more-integers program passes.
+- [ ] `i8`, `i16`, `u16`; `checked_*`, `saturating_*`, rotations, `MIN`/`MAX`; `parse_u64`
+
+### Milestone 36 — Iterator helpers
+Done when the iterator-helpers program passes and the v10 spec is complete.
+- [ ] `iter`, `bytes`, `range`, `for b of s`; the adapters and consumers
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.

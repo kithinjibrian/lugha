@@ -97,37 +97,37 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — parser (`parser/self_type.rs`):
-- [ ] In `impl Point`:
+- [x] In `impl Point`:
   - `fun o(): Self = Self { x: 0 };` prints with `Point` in both places;
   - `Self.origin()` and `Self.Red` print as `Point.origin()` and `Point.Red`.
-- [ ] In `impl Stack<T>`, `fun f(self, o: Self): Self[]` gives `Stack<T>` types.
-- [ ] Outside an `impl`, `Self` stays `Self`.
+- [x] In `impl Stack<T>`, `fun f(self, o: Self): Self[]` gives `Stack<T>` types.
+- [x] Outside an `impl`, `Self` stays `Self`.
 
 Unit tests — checker (`check/concrete_defaults.rs`):
-- [ ] **Allowed:**
+- [x] **Allowed:**
   - a default called on a struct and on an enum;
   - the type's own method wins;
   - a generic interface's default, its arguments read off the type.
-- [ ] **E0430:** two interfaces with the same default.
-- [ ] **E0415:**
+- [x] **E0430:** two interfaces with the same default.
+- [x] **E0415:**
   - an interface the type doesn't satisfy;
   - an `i64` receiver.
-- [ ] **`Self` in an `impl`:** checks as the type; E0305 in a struct declaration.
+- [x] **`Self` in an `impl`:** checks as the type; E0305 in a struct declaration.
 
 Acceptance — `tests/programs/m34/`:
-- [ ] `self.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `self.la`: the §10 program.
+- [x] `more.la`:
   - `Self` in a generic `impl Stack<T>`;
   - `Self` in closures and arrays inside methods;
   - `Self.Variant` with payloads;
   - a default from a generic interface on a concrete type;
   - a default called on `self` inside an `impl`;
   - a default that calls another default.
-- [ ] `e0430.la`: reject golden.
-- [ ] The §10 program runs from the spec.
+- [x] `e0430.la`: reject golden.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -135,10 +135,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m34/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] `Language v10 Specification.md` begins; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m34/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] `Language v10 Specification.md` begins; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -147,3 +147,15 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m34/self.la
 ```
+
+## AMENDMENTS (during build, session 81)
+
+- **Two earlier tests asserted the old rule:**
+  - `check/defaults.rs`: a default on a concrete type was E0415;
+  - `check/self_type.rs`: `Self` in an `impl` was E0305.
+
+  They now assert the v10 behaviour. The `m22/e0415.la` golden now has `Sq.area` return `i64`, so `Sq` no longer satisfies `Shape`, and its stderr is unchanged.
+- **`read_off`** in `check/bound_infer.rs` became `pub(super)`.
+- **A rejected program has no `.exit` file,** only `.stderr`.
+- **IR:** the 133 earlier programs that compile give byte-identical IR. `-O2` was checked by hand for `m34/self` and `m34/more`.
+- **No file splits.**

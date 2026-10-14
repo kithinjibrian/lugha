@@ -3584,18 +3584,59 @@ Branch: main
 ## SESSION 81 — 2026-10-14 — `Self` everywhere (milestone 34) — open
 Branch: prp-063-self_everywhere
 
+### WHAT WAS DONE
+- The user approved the v10 draft and asked for milestones 34–36 "in one go". The draft is marked approved; MEMORY 76.
+- PRP-063 written as approved under that instruction, built and merged on green CI:
+  - `Self` in `impl` blocks, as parser sugar (`parser/self_type.rs`);
+  - default methods on concrete types (`check/concrete_defaults.rs`, E0430 in `errors/v10.rs`).
+- `Language v10 Specification.md` begins: the changes summary, §4 (`Self` in `impl` blocks, defaults on concrete types), §9, E0430, the §10 program, §11 row 34, the v10 out-of-scope list, and the §12 v5 question decided.
+
+### FILES CREATED OR MODIFIED
+- New: `src/parser/self_type.rs`, `src/check/concrete_defaults.rs`, `src/check/errors/v10.rs`, `tests/programs/m34/` (`self`, `more`, `e0430`), `docs/specs/Language v10 Specification.md`, PRP-063.
+- Modified:
+  - `src/parser/{mod,decl,primary,generic}.rs`;
+  - `src/check/{mod,method_calls,bound_infer,defaults,self_type}.rs`, `src/check/errors/mod.rs`;
+  - `src/lib.rs`;
+  - `tests/{cli,spec}.rs`, `tests/programs/m22/e0415.la`;
+  - the v10 draft (status).
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 76–77, CONTEXT.
+
+### TESTS WRITTEN
+- **Parser:**
+  - `Self` in types, literals, calls and variants;
+  - a generic `impl`'s `Self<T>`;
+  - `Self` untouched outside an `impl`.
+- **Checker:**
+  - defaults on structs and enums;
+  - the type's own method wins;
+  - a generic interface's default;
+  - E0430;
+  - E0415 when the type doesn't satisfy the interface or isn't a struct or enum;
+  - `Self` checks in an `impl`, and is E0305 in a struct declaration.
+- **Programs:** `tests/programs/m34/`, and the §10 program from the spec.
+- **Regression:** 133 earlier programs give byte-identical IR; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 76 (v10 direction), 77 (milestone 34).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m34`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v9 is complete** (milestones 31–33; PRP-060–062; MEMORY 72–75). Tagged `m33` and `v9`. `Language v9 Specification.md` is what `lughac spec` prints; v0–v8 are frozen.
+**Milestone 34 complete** (PRP-063, MEMORY 77): `Self` in `impl` blocks, default methods on concrete types (E0430). Tag `m34` goes on the merge. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
 
-Next: **approve `docs/specs/Language v10 Draft.md`** (proposed in session 80). It holds three milestones:
-- M34: `Self` in `impl` blocks, and default methods on concrete types (E0430);
-- M35: `i8`/`i16`/`u16`, `checked_*`/`saturating_*`, rotations, `MIN`/`MAX`, `parse_u64`;
-- M36: lazy iterator helpers (`map`, `filter`, `take`, `skip`, `enumerate`; `collect`, `count`, `fold`, `any`, `all`, `find`, `sum`), with `xs.iter()`, `s.bytes()`, `for b of s` and `range(a, b)`.
+Next, under the user's "in one go" (MEMORY 76): **milestone 35, more integers** (PRP-064, next session):
+- `i8`/`i16`/`u16` keyword types;
+- `checked_*`/`saturating_*` methods, rotations, `I.MIN`/`I.MAX`;
+- `parse_u64` (`lugha_rt_parse_u64`).
 
-Once it is approved: record a MEMORY decision for v10, then write PRP-063 for M34.
+Then **milestone 36, iterator helpers** (PRP-065), which completes v10.
 
 Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `codegen/patterns.rs` (~290).
 

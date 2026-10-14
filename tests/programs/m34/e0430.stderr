@@ -1,0 +1,8 @@
+error[E0430]: `describe` on `P` is a default method of both `Named` and `Shown`
+   --> tests/programs/m34/e0430.la:17:24
+   |
+17 |     println(P { x: 1 }.describe());
+   |                        ^^^^^^^^
+   |
+   = help: call it through a value or bound of the one you mean: `let x: Named = …;` or `T: Named`
+

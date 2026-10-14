@@ -66,7 +66,7 @@ impl Checker {
     }
 
     /// Unifies each item of `applied` with what `concrete` offers for it.
-    fn read_off(
+    pub(super) fn read_off(
         &self,
         applied: &Applied,
         concrete: &Type,

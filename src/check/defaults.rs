@@ -202,8 +202,12 @@ mod tests {
     }
 
     #[test]
-    fn a_default_isnt_a_method_of_the_concrete_type() {
-        let body = "fun f() { let p = Plain { text: \"p\" }; let s = p.report(); }";
+    fn a_default_is_a_method_only_of_types_that_satisfy_it() {
+        // v10: `Plain` satisfies `Error`, so the default applies to it directly.
+        ok(&format!(
+            "{ERR}fun main() {{ let p = Plain {{ text: \"p\" }}; let s: string = p.report(); }}"
+        ));
+        let body = "struct Mute {}\nfun f() { let p = Mute {}; let s = p.report(); }";
         assert_eq!(e(body), [("E0415", "report".into())]);
         let src = format!("{ERR}{body}\nfun main() {{}}");
         let help = diagnostics(&src)[0].help.clone().unwrap_or_default();
