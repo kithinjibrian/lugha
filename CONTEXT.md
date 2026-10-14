@@ -3523,10 +3523,11 @@ Branch: prp-061-unwrapping (merged into main)
 ---
 
 ## SESSION 79 — 2026-10-14 — Conditional patterns (milestone 33) — closed
-Branch: prp-062-conditional_patterns
+Branch: prp-062-conditional_patterns (merged into main)
 
 ### WHAT WAS DONE
 - Last part of the user's "in one go" for v9: PRP-062 written as approved within the v9 draft, built, merged on green CI.
+- The first CI run overflowed the 2 MB test stack in the parser's deep-nesting test: inline `IfLet` fields grew `Expr` from 88 to 96 bytes. Fixed by `ExprKind::IfLet(Box<IfLet>)`; CI green.
 - Native `IfLet`/`WhileLet`/`LetElse` (boxed), parsed in `parser/conditional.rs`, checked in `check/conditional.rs` (E0429), lowered in `codegen/conditional.rs`; liveness and sexp updated.
 - Spec complete: §3 grammar, §5 conditional patterns, §9, E0429, the §10 program, §11, §12.
 
@@ -3546,13 +3547,13 @@ Branch: prp-062-conditional_patterns
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tags `m33` and `v9`.
+- Nothing. PRP-062 merged into `main`, tagged `m33` and `v9`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v9 is complete** (milestones 31–33; PRP-060–062; MEMORY 72–75): or-patterns, `mut` bindings, `unwrap`/`expect`, `%=`, `if let`, `while let`, `let … else`. Tags `m33` and `v9` go on the merge of PRP-062. `Language v9 Specification.md` is what `lughac spec` prints; v0–v8 are frozen.
+**Lugha v9 is complete** (milestones 31–33; PRP-060–062; MEMORY 72–75): or-patterns, `mut` bindings, `unwrap`/`expect`, `%=`, `if let`, `while let`, `let … else`. Tagged `m33` and `v9`. `Language v9 Specification.md` is what `lughac spec` prints; v0–v8 are frozen.
 
 Next: **v10 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v9 spec §11 and §12):
 - iterator helpers (`map`, `filter`, `collect` on `Iter<T>`), strings as iterators, `for n of mut c`;

@@ -1,6 +1,6 @@
 ## FEATURE: Conditional patterns — `if let`, `while let`, `let … else` (E0429); milestone 33, v9 complete.
 
-**Status:** approved 2026-10-14 — session 79. This is the last part of the user's "in one go" (milestones 31–33), merged once CI is green.
+**Status:** merged 2026-10-14 — session 79. This is the last part of the user's "in one go" (milestones 31–33), merged once CI is green.
 **Milestone:** 33 (one PRP; completes v9; tags `m33` and `v9` at merge)
 **Spec:** `Language v9 Draft.md`:
 - decision 5, and its choices on `if let` and `let … else`;

@@ -1229,7 +1229,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Lugha v9 is complete** (milestones 31–33; PRP-060–062; MEMORY 72–75): or-patterns, `mut` bindings, `unwrap`/`expect`, `%=`, `if let`, `while let`, `let … else`. Tags `m33` and `v9` go on the merge of PRP-062. `Language v9 Specification.md` is what `lughac spec` prints; v0–v8 are frozen.
+**Lugha v9 is complete** (milestones 31–33; PRP-060–062; MEMORY 72–75): or-patterns, `mut` bindings, `unwrap`/`expect`, `%=`, `if let`, `while let`, `let … else`. Tagged `m33` and `v9`. `Language v9 Specification.md` is what `lughac spec` prints; v0–v8 are frozen.
 
 Next: **v10 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v9 spec §11 and §12):
 - iterator helpers (`map`, `filter`, `collect` on `Iter<T>`), strings as iterators, `for n of mut c`;
