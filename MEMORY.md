@@ -1343,6 +1343,27 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 86. Lugha v13 direction (sessions 90–91)
+
+**Decision:** `docs/specs/Language v13 Draft.md` is approved: four conveniences, built "in one go".
+- **M41 `Self` in declarations:** in struct fields and enum payloads, `Self` is the declared type with its parameters (parser sugar, as in `impl`s).
+- **M42 `for x of mut e`:**
+  - on an iterator place (rooted in `let mut`, E0501), `next` is called on `e` itself, so loops resume;
+  - on an array place, `x` aliases each element (assignments and `mut self` calls write through);
+  - E0507 for changing `e`/`xs` in the body; E0506 on strings.
+- **M43 helpers:** `zip` (prelude `Pair<A, B> { public first, public second }`), `chain`, `take_while`, `skip_while`, `flat_map` (`f` returns an iterator), `min`/`max` (`Ord`, `Option<T>`), `position` (`Option<i64>`).
+- **M44 format specifiers:**
+  - `"{x:[[fill]align][#][0][width][.precision][kind]}"`, split at the first top-level `:`;
+  - precision for floats only, kinds `x X b o` for integers only (two's complement at the type's width), `#` only with a kind, `0` only for numbers, width ≤ 1024 and in bytes;
+  - fill, align and width also for any value's text;
+  - E0431 for anything else;
+  - lowering: `lugha_rt_fmt_int`, `lugha_rt_fmt_float`, `lugha_rt_pad`.
+- **New code:** E0431.
+
+**Why:** the session 90 discovery; the user took every recommendation.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
