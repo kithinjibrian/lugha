@@ -4752,6 +4752,11 @@ Branch: main
 
 ---
 
+## SESSION 113 — 2026-10-14 — Discovery: std.random — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 53 complete** (PRP-082, MEMORY 102–103): the std library and `std.math`. Tagged `m53`. `Language v15 Specification.md` (in progress, milestones 51–53) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines; the prelude lives in `src/prelude/`, std in `src/std/`.
