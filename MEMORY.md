@@ -1588,6 +1588,14 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** reusing method calls keeps instances and dispatch in one place; per-instance lowering makes `add<i64>` a plain checked add.
 
+### 102. The std library and `std.math` — milestone 53 planned (session 110, approved session 111)
+
+**Decision** (`Language v15 Draft.md` decisions 14–18):
+- **Std:** `std.<module>` modules in Lugha (`src/std/`), embedded in `lughac`, loaded only when imported, with no opt-out. `std` is reserved (E0321 for a manifest entry, E0320 for a local `std/` or `std.la`; E0312 for an unknown module).
+- **`std.math`:** `pi()`/`e()` as functions. The float functions are generic over a new built-in `Float` bound (`f32`, `f64`; implies `Num`'s operators), lowered to LLVM float intrinsics through `$float.<op>` built-ins that only bundled sources can name. `abs<T: Num>`, `min`/`max`/`clamp<T: Ord>`.
+
+**Why `Float`, not `Num`:** an integer `sqrt` would truncate, and a Lugha body can't cast `T` (the user asked; session 110).
+
 ---
 
 ## CURRENT PROJECT STATE
