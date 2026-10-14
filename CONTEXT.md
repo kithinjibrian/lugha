@@ -3804,6 +3804,11 @@ Branch: prp-066-package_versions (merged into main)
 
 ---
 
+## SESSION 86 — 2026-10-14 — Re-exports (milestone 38) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 37 complete** (PRP-066, MEMORY 81): package versions, E0324. Tagged `m37`. `Language v11 Specification.md` (in progress) is what `lughac spec` prints; v0–v10 are frozen.
