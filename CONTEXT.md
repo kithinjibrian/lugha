@@ -3681,6 +3681,11 @@ Branch: prp-064-more_integers (merged into main)
 
 ---
 
+## SESSION 83 — 2026-10-14 — Iterator helpers (milestone 36) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 35 complete** (PRP-064, MEMORY 78): `i8`/`i16`/`u16`, checked/saturating/rotating methods, `I.MIN`/`I.MAX`, `parse_u64`. Tagged `m35`. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
