@@ -3522,6 +3522,11 @@ Branch: prp-061-unwrapping (merged into main)
 
 ---
 
+## SESSION 79 — 2026-10-14 — Conditional patterns (milestone 33) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 32 complete** (PRP-061, MEMORY 74): `unwrap`, `expect`, `%=`. Tagged `m32`. `Language v9 Specification.md` (in progress) is what `lughac spec` prints.
