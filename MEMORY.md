@@ -1627,10 +1627,10 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 49 complete** (PRP-078, MEMORY 96): import aliases and whole-module re-exports. Tagged `m49`. Milestones 45–49, the user's "in one go", are all done. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestones 45–49 complete and tagged** (`m45` … `m49`; MEMORY 92–96). `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
-Next: **M50 (git packages) needs the user's security review of its PRP before any code.** Write PRP-079 from the draft's "Downloaded packages" choices (`{ git = "URL", version }`, `https://`/`file://` only, the system `git` through argument lists with no shell, `GIT_TERMINAL_PROMPT=0`, hooks off, a cache under `$LUGHA_CACHE`/`$XDG_CACHE_HOME/lugha`/`$HOME/.cache/lugha`, `lugha.lock`, `lughac update`, `--offline`, E0325/E0326) and present it for review. Tag `v14` goes on M50's merge.
+**PRP-079 (git packages, milestone 50) is proposed and waits for the user's security review.** Do not write code until they approve it, or approve it with changes (update the PRP first). Once approved: branch `prp-079-git_packages`, commit "Add approved PRP-079 git packages", build. Tags `m50` and `v14` go on the merge.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `codegen/runtime.rs` (297), `parser/stmt.rs` (297).
+Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `modules/tests.rs` (292); the loader work in M50 goes in new files.
 
 See `TODO.md`.

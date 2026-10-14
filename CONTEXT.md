@@ -4373,17 +4373,37 @@ Branch: prp-078-import_aliases (merged into main)
 
 ---
 
-## SESSION 101 — 2026-10-14 — Git packages PRP for security review (milestone 50) — open
+## SESSION 101 — 2026-10-14 — Git packages PRP for security review (milestone 50) — closed
 Branch: main
+
+### WHAT WAS DONE
+- Milestones 45–49 are all merged and tagged (`m45` … `m49`); the user's "in one go" is complete.
+- PRP-079 (git packages, milestone 50) written as **proposed**, with its security design spelled out, and presented to the user for the security review the v14 draft requires. No code was written.
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-079-git_packages.md`.
+- Modified: CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None; PRP-079's security design awaits the user's review.
+
+### PENDING DECISIONS OPENED
+- PRP-079's security design (user review).
+
+### STILL OPEN AT CLOSE
+- PRP-079 awaits approval; build it on branch `prp-079-git_packages` once approved.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 49 complete** (PRP-078, MEMORY 96): import aliases and whole-module re-exports. Tagged `m49`. Milestones 45–49, the user's "in one go", are all done. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestones 45–49 complete and tagged** (`m45` … `m49`; MEMORY 92–96). `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
-Next: **M50 (git packages) needs the user's security review of its PRP before any code.** Write PRP-079 from the draft's "Downloaded packages" choices (`{ git = "URL", version }`, `https://`/`file://` only, the system `git` through argument lists with no shell, `GIT_TERMINAL_PROMPT=0`, hooks off, a cache under `$LUGHA_CACHE`/`$XDG_CACHE_HOME/lugha`/`$HOME/.cache/lugha`, `lugha.lock`, `lughac update`, `--offline`, E0325/E0326) and present it for review. Tag `v14` goes on M50's merge.
+**PRP-079 (git packages, milestone 50) is proposed and waits for the user's security review.** Do not write code until they approve it, or approve it with changes (update the PRP first). Once approved: branch `prp-079-git_packages`, commit "Add approved PRP-079 git packages", build. Tags `m50` and `v14` go on the merge.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `codegen/runtime.rs` (297), `parser/stmt.rs` (297).
+Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `modules/tests.rs` (292); the loader work in M50 goes in new files.
 
 See `TODO.md`.
