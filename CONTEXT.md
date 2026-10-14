@@ -4685,6 +4685,11 @@ Branch: main
 
 ---
 
+## SESSION 111 — 2026-10-14 — The std library and std.math (milestone 53) — open
+Branch: prp-082-std_math
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–52 complete** (`m51`, `m52`). **Milestone 53 (the std library and `std.math`) is proposed:** decisions 14–18 in `Language v15 Draft.md`, and PRP-082, waiting for the user's approval.
