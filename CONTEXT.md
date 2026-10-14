@@ -4002,7 +4002,7 @@ Branch: main
 ---
 
 ## SESSION 91 — 2026-10-14 — `Self` in declarations (milestone 41) — open
-Branch: main
+Branch: prp-070-self_in_declarations
 
 ---
 
