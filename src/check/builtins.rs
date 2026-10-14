@@ -16,6 +16,7 @@ pub(super) fn builtin(receiver: &Type, name: &str) -> Option<Method> {
         (Type::Array(element), "pop") => (Vec::new(), Type::Option(element.clone()), true),
         (Type::Array(_), "clear") => (Vec::new(), Type::Void, true),
         (Type::String, "slice") => (vec![Type::I64, Type::I64], Type::String, false),
+        (Type::String, "to_bytes") => (Vec::new(), Type::Array(Box::new(Type::U8)), false),
         // v9: the success payload, or a panic at the call.
         (Type::Option(inner), "unwrap") => (Vec::new(), (**inner).clone(), false),
         (Type::Option(inner), "expect") => (vec![Type::String], (**inner).clone(), false),

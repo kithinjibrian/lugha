@@ -1,7 +1,6 @@
 //! Field access and indexing (spec §4): `.len` and elements of strings and
 //! arrays, and struct fields.
 
-use super::expr::Expect;
 use super::{Checker, Type, errors};
 use crate::ast::{Expr, ExprKind, Ident};
 
@@ -37,7 +36,11 @@ impl Checker {
     /// `base[index]`: a string's byte (`u8`) or an array's element; the index is an `i64`.
     pub(super) fn index(&mut self, base: &Expr, index: &Expr) -> Type {
         let ty = self.value(base, None);
-        self.expect_type(index, &Expect::of(Type::I64));
+        // Any integer type indexes (v14); a bare literal is an `i64`.
+        let at = self.value(index, None);
+        if !at.is_integer() && !matches!(at, Type::Error | Type::Never) {
+            self.report(errors::mismatch(Type::I64, at, index.span, None));
+        }
         match ty {
             Type::Error | Type::Never => Type::Error,
             Type::String => Type::U8,
@@ -79,10 +82,11 @@ mod tests {
         );
         assert_eq!(
             errors("fun main() { let s = \"ab\"; let b = s[1.5]; }"),
-            [("E0401", "1.5")]
+            [("E0403", "1.5")]
         );
         assert_eq!(
-            errors("fun main() { let s = \"ab\"; let k: i32 = 0; let b = s[k]; }"),
+            // v14: any integer indexes; a `bool` doesn't.
+            errors("fun main() { let s = \"ab\"; let k = true; let b = s[k]; }"),
             [("E0403", "k")]
         );
     }
@@ -117,6 +121,31 @@ mod tests {
         assert_eq!(
             errors("fun main() { let o = \"a\" + 1; }"),
             [("E0404", "\"a\" + 1")]
+        );
+    }
+
+    #[test]
+    fn any_integer_indexes_and_bytes_v14() {
+        use crate::check::test_util::ok;
+        ok(
+            "fun main() { let xs = [1, 2]; let a: u8 = 0; let b: u32 = 1; let c: i32 = 0; let d: u64 = 1;\n\
+            let n = xs[a] + xs[b] + xs[c] + xs[d]; let s = \"ab\"; let e: u16 = 1; let y = s[e]; }",
+        );
+        assert_eq!(
+            errors("fun main() { let xs = [1]; let f = 0.5; let n = xs[f]; }"),
+            [("E0403", "f")]
+        );
+        assert_eq!(
+            let_type("fun main() { let b = \"hé\".to_bytes(); }", "b"),
+            Type::Array(Box::new(Type::U8))
+        );
+        assert_eq!(
+            let_type("fun main() { let r = read_stdin_bytes(); }", "r"),
+            Type::Array(Box::new(Type::U8))
+        );
+        assert_eq!(
+            errors("fun read_bytes(p: string): i64 = 1;\nfun main() {}"),
+            [("E0302", "read_bytes")]
         );
     }
 }

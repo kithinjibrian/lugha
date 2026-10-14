@@ -47,6 +47,65 @@ impl<'ctx> Lowerer<'ctx> {
                     error,
                 )))
             }
+            // v14: bytes, like their text versions.
+            "read_bytes" => {
+                let path = self.get(&args[0], &Type::String)?;
+                let bytes = Type::Array(Box::new(Type::U8));
+                let (data, error) = (self.out_slot(&bytes), self.out_slot(&Type::String));
+                let params = [Type::String, Type::String, Type::String];
+                let ok = self.call_flag(
+                    "lugha_rt_read_bytes",
+                    &params,
+                    &[path, data.into(), error.into()],
+                );
+                Ok(Value::Val(self.result(call, ok, (data, &bytes), error)))
+            }
+            "write_bytes" | "append_bytes" => {
+                let path = self.get(&args[0], &Type::String)?;
+                let bytes = Type::Array(Box::new(Type::U8));
+                let data = self.get(&args[1], &bytes)?;
+                let (count, error) = (self.out_slot(&Type::I64), self.out_slot(&Type::String));
+                let append = self
+                    .context
+                    .i32_type()
+                    .const_int(u64::from(name == "append_bytes"), false);
+                let params = [
+                    Type::String,
+                    Type::String,
+                    Type::I32,
+                    Type::String,
+                    Type::String,
+                ];
+                let values = [path, data, append.into(), count.into(), error.into()];
+                let ok = self.call_flag("lugha_rt_write_bytes", &params, &values);
+                Ok(Value::Val(self.result(
+                    call,
+                    ok,
+                    (count, &Type::I64),
+                    error,
+                )))
+            }
+            "read_stdin_bytes" => Ok(Value::Val(self.call_runtime_value(
+                "lugha_rt_read_stdin_bytes",
+                &[],
+                &[],
+            ))),
+            "string_from_utf8" => {
+                let data = self.get(&args[0], &Type::Array(Box::new(Type::U8)))?;
+                let (text, error) = (self.out_slot(&Type::String), self.out_slot(&Type::String));
+                let params = [Type::String, Type::String, Type::String];
+                let ok = self.call_flag(
+                    "lugha_rt_utf8_check",
+                    &params,
+                    &[data, text.into(), error.into()],
+                );
+                Ok(Value::Val(self.result(
+                    call,
+                    ok,
+                    (text, &Type::String),
+                    error,
+                )))
+            }
             "write_file" | "append_file" => {
                 let path = self.get(&args[0], &Type::String)?;
                 let text = self.get(&args[1], &Type::String)?;
@@ -169,5 +228,17 @@ impl<'ctx> Lowerer<'ctx> {
         self.builder
             .build_select(flag, yes, no, "chosen")
             .expect(POSITIONED)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn narrow_indexes_widen_by_signedness_v14() {
+        let ir = crate::codegen::test_util::ir(
+            "fun main() { let xs = [1, 2]; let a: u8 = 1; let b: i32 = 0; let n = xs[a] + xs[b]; }",
+        );
+        assert!(ir.contains("zext i8"), "{ir}");
+        assert!(ir.contains("sext i32"), "{ir}");
     }
 }

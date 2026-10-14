@@ -135,6 +135,12 @@ impl<'ctx> Lowerer<'ctx> {
                 ValueKind::Instruction(_) => Value::Void,
             }));
         }
+        // `s.to_bytes()` (v14).
+        if base_type == Type::String && name.name == "to_bytes" {
+            let s = self.get(base, &Type::String)?;
+            let bytes = self.call_runtime_value("lugha_rt_str_to_bytes", &[Type::String], &[s]);
+            return Ok(Some(Value::Val(bytes)));
+        }
         if base_type == Type::String && name.name == "slice" {
             return self.string_slice(base, args, name.span.start).map(Some);
         }

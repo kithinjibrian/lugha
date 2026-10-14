@@ -1,0 +1,6 @@
+wrote 4
+[104, 105, 0, 255]
+6
+Ok("héllo")
+Err("invalid UTF-8 at byte 1")
+195 169 104

@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v13 Specification.md` (`lughac spec` prints it): Lugha v13, complete (milestones 41–44: `Self` in declarations; `for x of mut e`; `zip`/`Pair`, `chain` and the other iterator helpers; format specifiers `"{x:spec}"`, E0431). `Language v13 Draft.md` is the approved plan it was built from. The v0–v12 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la` and `src/prelude_more.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v14 Specification.md` (`lughac spec` prints it): Lugha v14, in progress (milestone 45 done: binary I/O, `to_bytes`, `string_from_utf8`, any-integer indexes). `Language v14 Draft.md` is the approved plan (milestones 45–50: bytes and indexes, `char`, tuples, `format`, import aliases and re-exports, git packages). The v0–v13 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la` and `src/prelude_more.la`, loaded with every program.
 
 ---
 
@@ -224,7 +224,8 @@ pub fn parse_number(src: &str) -> i64 {
 ├── runtime/         — the C runtime, embedded in lughac (DECISION-009): lugha_rt.c (core: includes, types,
 │                      init, alloc, panics, strings), stack.c (overflow handler), print.c (formatting),
 │                      input.c (args, parse_i64/f64, stdin lines, files, stderr, exit), format.c (format
-│                      specifiers, v13); fragments joined in that order into one lugha_rt.c (PRP-028)
+│                      specifiers, v13), bytes.c (binary I/O, UTF-8 check, v14); fragments joined in that order
+│                      into one lugha_rt.c (PRP-028)
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
 │   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints), PRELUDE
@@ -246,7 +247,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  import.rs (import, pub), interface.rs (interfaces, bounds), closure.rs (closure
 │   │                  literals, E0209), sexp/ (mod.rs exprs,
 │   │                  item.rs items and types), test_util.rs
-│   ├── check/       — mod.rs (check, Checked), test_util.rs, types.rs, env.rs (globals, main, scopes),
+│   ├── check/       — mod.rs (check), checked.rs (the `Checked` output), test_util.rs, types.rs, env.rs (globals, main, scopes),
 │   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), body.rs (function bodies), stmt.rs,
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
 │   │                  (fields, indexing), array.rs (literals, for … of, E0507 guard), structs.rs
@@ -315,18 +316,19 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m44/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m45/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
-│   └── specs/       — Language v13 Specification.md (the language definition, complete, printed by `lughac spec`);
+│   └── specs/       — Language v14 Specification.md (the language definition, in progress, printed by `lughac spec`);
+│                      Language v14 Draft.md (approved v14 plan, milestones 45–50);
 │                      Language v13 Draft.md (approved v13 plan, milestones 41–44);
 │                      Language v12 Draft.md (approved v12 plan, milestones 39–40);
 │                      Language v11 Draft.md (approved v11 plan, milestones 37–38);
 │                      Language v10 Draft.md (approved v10 plan, milestones 34–36); Language v9 Draft.md (approved v9 plan, milestones 31–33); Language v8 Draft.md (approved v8 plan, milestone 30); Language v7 Draft.md (approved v7 plan, milestones 27–29); Language v6 Draft.md (approved v6 plan, milestones 23–26); Language v5 Draft.md (approved v5 plan, milestones 20–22); Language v4 Draft.md (approved v4 plan, milestones 17–19); v3 and v2 Drafts (past plans);
-│                      Language v12, v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1 (v1.2) and v0 Specification.md (frozen)
+│                      Language v13, v12, v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1 (v1.2) and v0 Specification.md (frozen)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```
 
@@ -340,7 +342,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them, except the one it names: a value to an interface where one is expected (v5, recorded in `Checked.conversions`). Every other one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (a `format()` function, tuples, downloading packages…) even partially. v13 is complete (milestones 41–44); any further language feature is v14 and needs an approved spec change first.
+5. **Never implement a §11 "out of scope" feature** (a package registry, full Unicode tables, streams…) even partially, nor a v14 milestone ahead of its turn. v14 (milestones 45–50) follows `Language v14 Draft.md`; M50 (git packages) waits for the user's security review of its PRP. Anything beyond needs an approved spec change first.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

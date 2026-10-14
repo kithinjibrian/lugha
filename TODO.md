@@ -255,6 +255,26 @@ Done when the printing-anything program passes and the v12 spec is complete.
 ### Milestone 44 — Format specifiers ✅
 - [x] PRP-073: `"{x:spec}"`, E0431; v13 complete; tagged `m44` and `v13`
 
+## v14 (draft approved, session 96 — `docs/specs/Language v14 Draft.md`)
+
+### Milestone 45 — Bytes and indexes ✅
+- [x] PRP-074: binary I/O, `to_bytes`, `string_from_utf8`, `read_stdin_bytes`, any-integer indexes; `Language v14 Specification.md` begins; tagged `m45` at merge
+
+### Milestone 46 — Unicode text
+- [ ] `char`, `'a'`, `chars()`, `char_count()`, casts, `char_from`, classification and case (E0112)
+
+### Milestone 47 — Tuples
+- [ ] tuple types and values, `t.0`, patterns, `zip` → tuples, `Pair` removed (E0433)
+
+### Milestone 48 — `format`
+- [ ] template `format(…)` (E0432)
+
+### Milestone 49 — Import aliases and re-exports
+- [ ] `as` on modules and items, `public import m;`, `m.v.X`
+
+### Milestone 50 — Downloaded packages (needs a security review of its PRP)
+- [ ] git entries, cache, `lugha.lock`, `lughac update`, `--offline` (E0325, E0326)
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.

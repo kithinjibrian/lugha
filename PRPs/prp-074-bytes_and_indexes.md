@@ -84,25 +84,25 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker:
-- [ ] The intrinsics' types; `to_bytes`; E0302 for a user `read_bytes`.
-- [ ] An index of type `u8`, `u32`, `i32` or `u64` checks; an `f64` or `bool` index is E0403.
+- [x] The intrinsics' types; `to_bytes`; E0302 for a user `read_bytes`.
+- [x] An index of type `u8`, `u32`, `i32` or `u64` checks; an `f64` or `bool` index is E0403.
 
 Unit tests — codegen: a `u8` index is zero-extended (`zext i8`) and an `i32` index sign-extended before the bounds check.
 
 Acceptance — `tests/programs/m45/`:
-- [ ] `bytes.la` (with a `.scratch` folder): the §10 program.
-- [ ] `more.la`:
+- [x] `bytes.la` (with a `.scratch` folder): the §10 program.
+- [x] `more.la`:
   - an empty file;
   - every UTF-8 error kind;
   - `append_bytes`;
   - a negative `i32` index panicking;
   - a string index with a `u16`.
-- [ ] `stdin.la` with `.stdin`: `read_stdin_bytes` length.
-- [ ] `index_panic.la`: `xs[-1 as i32]` panics with exit 101.
-- [ ] The §10 program runs from the spec.
+- [x] `stdin.la` with `.stdin`: `read_stdin_bytes` length.
+- [x] `index_panic.la`: `xs[-1 as i32]` panics with exit 101.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -110,10 +110,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m45/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] `Language v14 Specification.md` begins; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m45/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] `Language v14 Specification.md` begins; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -122,3 +122,14 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m45/bytes.la
 ```
+
+## AMENDMENTS (during build, session 96)
+
+- **The approved split of `check/mod.rs`** was committed directly to `main`, before this branch: a slip in procedure, with no behaviour change, and checked by the full suite.
+- **`widen_index`** lives in `codegen/cast.rs`: adding it to `codegen/heap.rs` took that file to 309 lines.
+- **Two earlier `check/access.rs` tests changed:**
+  - `s[1.5]` is now E0403 (the index is checked without an expected type);
+  - an `i32` index is now valid, so its error case uses a `bool`.
+- **The runtime fragment** also had to be added to `RUNTIME_SOURCE`, as in milestone 44.
+- **IR:** the 157 earlier programs that compile give byte-identical IR. `-O2` was checked by hand for `m45/bytes` and `m45/more`.
+- **No other file splits.**

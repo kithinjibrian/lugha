@@ -4186,20 +4186,56 @@ Branch: main
 ## SESSION 96 — 2026-10-14 — Bytes and indexes (milestone 45) — open
 Branch: prp-074-bytes_and_indexes
 
+### WHAT WAS DONE
+- The user approved the v14 draft and the `check/mod.rs` split, building milestones 45–49 "in one go" and pausing before M50 for a security review. MEMORY 91.
+- **The split:** `Checked` moved into `check/checked.rs`, committed straight to `main` (a slip, recorded).
+- PRP-074 written as approved under that instruction, built and merged on green CI:
+  - binary I/O;
+  - `to_bytes`;
+  - `string_from_utf8` (strict);
+  - `read_stdin_bytes`;
+  - any-integer indexes.
+- `Language v14 Specification.md` begins.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/checked.rs`, `runtime/bytes.c`, `tests/programs/m45/` (`bytes`, `more`, `stdin`, `index_panic`), `docs/specs/Language v14 Specification.md`, PRP-074.
+- Modified:
+  - `src/check/{mod,input,builtins,access}.rs`;
+  - `src/codegen/{io,function,heap,cast,methods}.rs`;
+  - `src/link.rs`, `src/lib.rs`;
+  - `tests/{cli,spec}.rs`;
+  - the v14 draft.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 91–92, CONTEXT.
+
+### TESTS WRITTEN
+- **Checker:** integer indexes, E0403, the byte intrinsics' types, E0302.
+- **Codegen:** `zext i8` / `sext i32` indexes.
+- **Programs:** `tests/programs/m45/`, and the §10 program from the spec.
+- **Regression:** 157 earlier programs give byte-identical IR; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 91 (v14 direction), 92 (milestone 45).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m45`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v13 is complete** (milestones 41–44; PRP-070–073; MEMORY 86–90). Tagged `m44` and `v13`. `Language v13 Specification.md` is what `lughac spec` prints; v0–v12 are frozen.
+**Milestone 45 complete** (PRP-074, MEMORY 92): bytes and indexes. Tag `m45` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
-Next: **approve `docs/specs/Language v14 Draft.md`** (proposed in session 95) and the `check/mod.rs` split (move `Checked` into `check/checked.rs`). The milestones:
-- M45: bytes and indexes;
-- M46: Unicode `char`;
-- M47: tuples (`zip` → tuples, `Pair` removed);
-- M48: `format` templates;
-- M49: import aliases and whole-module re-exports;
-- M50: git packages and `lugha.lock`, whose PRP needs a security review before building.
+Next, under the user's "in one go" (MEMORY 91), the remaining milestones:
+- M46: Unicode `char` (PRP-075, next session);
+- M47: tuples;
+- M48: `format`;
+- M49: imports.
 
-Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294), `parser/primary.rs` (~291), `lexer/interp.rs` (290).
+Then stop for the user's security review of M50 (git packages).
+
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `codegen/heap.rs` (295), `check/array.rs` (~294), `parser/primary.rs` (~291), `lexer/interp.rs` (290).
 
 See `TODO.md`.

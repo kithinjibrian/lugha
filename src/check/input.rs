@@ -10,7 +10,7 @@ use crate::format;
 
 /// The input and I/O intrinsics (v3, v4), checked here rather than in
 /// `call.rs` — except `eprint`/`eprintln`, which follow `print`'s rules.
-pub(super) const INPUT: [&str; 11] = [
+pub(super) const INPUT: [&str; 16] = [
     "args",
     "parse_i64",
     "parse_u64",
@@ -22,12 +22,19 @@ pub(super) const INPUT: [&str; 11] = [
     "eprint",
     "eprintln",
     "exit",
+    // v14: bytes.
+    "read_bytes",
+    "write_bytes",
+    "append_bytes",
+    "read_stdin_bytes",
+    "string_from_utf8",
 ];
 
 impl Checker {
     /// `args()`, `parse_i64(s)`, `parse_f64(s)`, or an I/O intrinsic.
     pub(super) fn input_intrinsic(&mut self, call: &Expr, name: &str, args: &[Expr]) -> Type {
         let result = |t: Type| Type::Enum(RESULT.to_string(), vec![t, Type::String]);
+        let bytes = || Type::Array(Box::new(Type::U8));
         let (params, ret) = match name {
             "args" => (Vec::new(), Type::Array(Box::new(Type::String))),
             "parse_i64" => (vec![Type::String], Type::Option(Box::new(Type::I64))),
@@ -36,6 +43,10 @@ impl Checker {
             "read_line" => (Vec::new(), Type::Option(Box::new(Type::String))),
             "read_file" => (vec![Type::String], result(Type::String)),
             "write_file" | "append_file" => (vec![Type::String, Type::String], result(Type::I64)),
+            "read_bytes" => (vec![Type::String], result(bytes())),
+            "write_bytes" | "append_bytes" => (vec![Type::String, bytes()], result(Type::I64)),
+            "read_stdin_bytes" => (Vec::new(), bytes()),
+            "string_from_utf8" => (vec![bytes()], result(Type::String)),
             // `exit` never returns (v4 draft §5).
             _ => (vec![Type::I32], Type::Never),
         };

@@ -1451,9 +1451,31 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 92. Bytes and indexes — milestone 45 (PRP-074)
+
+**Decision:** built under the user's "in one go" (milestones 45–49).
+- **Housekeeping:** the approved split came first — `Checked` moved verbatim to `check/checked.rs` (committed directly to `main` before the branch, a slip).
+- **Checker:**
+  - `INPUT` has 16 entries (`read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes`, `string_from_utf8`);
+  - `builtins.rs` gains `(String, "to_bytes") → u8[]`;
+  - `access.rs::index` accepts any integer index (`value(index, None)`, E0403 via `mismatch` otherwise). `s[1.5]` is now E0403 rather than E0401.
+- **Codegen:**
+  - `io.rs` lowers the five like `read_file`/`write_file` (out-slots, `result`), and `function.rs`'s `IO` list has 12 entries;
+  - `methods.rs` lowers `to_bytes` to `lugha_rt_str_to_bytes`;
+  - `heap.rs::element_place` widens the index with `cast.rs::widen_index` (sext/zext), so `i64` IR is unchanged.
+- **Runtime:** `runtime/bytes.c`, joined sixth in both `RUNTIME_PARTS` and `RUNTIME_SOURCE`.
+  - Read and write reuse `lugha_rt_read_file`/`lugha_rt_write_file` (`string_of`);
+  - `utf8_step` is strict;
+  - `RUNTIME_SYMBOLS` has 43 entries.
+
+**Why:** reusing the v4 file paths keeps error messages and path checks identical.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 45 complete**: PRP-074 bytes and indexes; v14 spec begins
 - **Milestone 44 complete — Lugha v13 complete**: PRP-073 format specifiers
 - **Milestone 43 complete**: PRP-072 more iterator helpers
 - **Milestone 42 complete**: PRP-071 `for x of mut e`
@@ -1545,16 +1567,16 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Lugha v13 is complete** (milestones 41–44; PRP-070–073; MEMORY 86–90). Tagged `m44` and `v13`. `Language v13 Specification.md` is what `lughac spec` prints; v0–v12 are frozen.
+**Milestone 45 complete** (PRP-074, MEMORY 92): bytes and indexes. Tag `m45` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
-Next: **approve `docs/specs/Language v14 Draft.md`** (proposed in session 95) and the `check/mod.rs` split (move `Checked` into `check/checked.rs`). The milestones:
-- M45: bytes and indexes;
-- M46: Unicode `char`;
-- M47: tuples (`zip` → tuples, `Pair` removed);
-- M48: `format` templates;
-- M49: import aliases and whole-module re-exports;
-- M50: git packages and `lugha.lock`, whose PRP needs a security review before building.
+Next, under the user's "in one go" (MEMORY 91), the remaining milestones:
+- M46: Unicode `char` (PRP-075, next session);
+- M47: tuples;
+- M48: `format`;
+- M49: imports.
 
-Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294), `parser/primary.rs` (~291), `lexer/interp.rs` (290).
+Then stop for the user's security review of M50 (git packages).
+
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `codegen/heap.rs` (295), `check/array.rs` (~294), `parser/primary.rs` (~291), `lexer/interp.rs` (290).
 
 See `TODO.md`.

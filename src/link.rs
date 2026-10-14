@@ -14,16 +14,17 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// The runtime's source files, in the order they are joined: the core first,
 /// since it holds every `#include`, then the fragments that rely on it.
-pub const RUNTIME_PARTS: [(&str, &str); 5] = [
+pub const RUNTIME_PARTS: [(&str, &str); 6] = [
     ("lugha_rt.c", include_str!("../runtime/lugha_rt.c")),
     ("stack.c", include_str!("../runtime/stack.c")),
     ("print.c", include_str!("../runtime/print.c")),
     ("input.c", include_str!("../runtime/input.c")),
     ("format.c", include_str!("../runtime/format.c")),
+    ("bytes.c", include_str!("../runtime/bytes.c")),
 ];
 
 /// Every runtime function codegen may call; `lugha_rt.c` defines them all.
-pub const RUNTIME_SYMBOLS: [&str; 38] = [
+pub const RUNTIME_SYMBOLS: [&str; 43] = [
     "lugha_rt_init",
     "lugha_rt_read_line",
     "lugha_rt_read_file",
@@ -54,6 +55,11 @@ pub const RUNTIME_SYMBOLS: [&str; 38] = [
     "lugha_rt_fmt_int",
     "lugha_rt_fmt_float",
     "lugha_rt_pad",
+    "lugha_rt_read_bytes",
+    "lugha_rt_write_bytes",
+    "lugha_rt_read_stdin_bytes",
+    "lugha_rt_str_to_bytes",
+    "lugha_rt_utf8_check",
     "lugha_rt_print_newline",
     "lugha_rt_to_string_i32",
     "lugha_rt_to_string_i64",
@@ -72,6 +78,7 @@ pub const RUNTIME_SOURCE: &str = concat!(
     include_str!("../runtime/print.c"),
     include_str!("../runtime/input.c"),
     include_str!("../runtime/format.c"),
+    include_str!("../runtime/bytes.c"),
 );
 
 /// Why linking failed.

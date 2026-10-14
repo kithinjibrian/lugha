@@ -112,6 +112,7 @@ fn the_extractor_finds_every_section_10_program() {
         "`for … of mut`",
         "More iterator helpers",
         "Format specifiers",
+        "Bytes and indexes",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

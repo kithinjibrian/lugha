@@ -249,7 +249,10 @@ impl<'ctx> Lowerer<'ctx> {
             array => element_of(array),
         };
         let object = self.get(base, &base_type)?.into_pointer_value();
-        let i = self.get(index, &Type::I64)?.into_int_value();
+        // Any integer type indexes (v14): widened to `i64` by its signedness.
+        let index_type = self.ty(index);
+        let i = self.get(index, &index_type)?.into_int_value();
+        let i = self.widen_index(i, &index_type);
         let len = self.length(object);
         self.bounds_check(len, i, at);
         let header = if base_type == Type::String {

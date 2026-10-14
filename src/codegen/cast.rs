@@ -4,7 +4,7 @@
 //! NaN becoming 0 (`llvm.fptosi.sat` / `llvm.fptoui.sat`, spec §9).
 
 use inkwell::intrinsics::Intrinsic;
-use inkwell::values::{BasicValueEnum, ValueKind};
+use inkwell::values::{BasicValueEnum, IntValue, ValueKind};
 
 use super::CodegenError;
 use super::lower::{Lowerer, POSITIONED};
@@ -82,6 +82,22 @@ impl<'ctx> Lowerer<'ctx> {
                 .into()
             }
         })
+    }
+}
+
+impl<'ctx> Lowerer<'ctx> {
+    /// An index of integer type `ty` as the `i64` the bounds check takes.
+    pub(super) fn widen_index(&self, i: IntValue<'ctx>, ty: &Type) -> IntValue<'ctx> {
+        let i64_type = self.context.i64_type();
+        if i.get_type().get_bit_width() == 64 {
+            return i;
+        }
+        let widened = if is_signed(ty) {
+            self.builder.build_int_s_extend(i, i64_type, "index")
+        } else {
+            self.builder.build_int_z_extend(i, i64_type, "index")
+        };
+        widened.expect(POSITIONED)
     }
 }
 
