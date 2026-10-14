@@ -4560,6 +4560,11 @@ Branch: main
 
 ---
 
+## SESSION 107 — 2026-10-14 — Operator overloading (milestone 52) — open
+Branch: prp-081-operator_overloading
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 51 complete** (package layout), tagged `m51`. **Milestone 52 (operator overloading) is proposed:** draft additions in `Language v15 Draft.md` (decisions 8–13) and PRP-081, waiting for the user's approval. On approval:
