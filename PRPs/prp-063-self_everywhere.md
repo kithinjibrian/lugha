@@ -1,6 +1,6 @@
 ## FEATURE: `Self` everywhere — `Self` in `impl` blocks, and default methods on concrete types (E0430); milestone 34.
 
-**Status:** approved 2026-10-14 — session 81. This is part of the user's "in one go" (milestones 34–36), merged once CI is green.
+**Status:** merged 2026-10-14 — session 81. This is part of the user's "in one go" (milestones 34–36), merged once CI is green.
 **Milestone:** 34 (one PRP; tag `m34` at merge; `Language v10 Specification.md` begins)
 **Spec:** `Language v10 Draft.md`:
 - decisions 1 and 5, and the choices on `Self` and on default methods;

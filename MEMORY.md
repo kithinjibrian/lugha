@@ -1253,7 +1253,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 34 complete** (PRP-063, MEMORY 77): `Self` in `impl` blocks, default methods on concrete types (E0430). Tag `m34` goes on the merge. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
+**Milestone 34 complete** (PRP-063, MEMORY 77): `Self` in `impl` blocks, default methods on concrete types (E0430). Tagged `m34`. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
 
 Next, under the user's "in one go" (MEMORY 76): **milestone 35, more integers** (PRP-064, next session):
 - `i8`/`i16`/`u16` keyword types;

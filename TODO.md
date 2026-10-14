@@ -211,7 +211,7 @@ Done when the conditional-patterns program passes and the v9 spec is complete.
 
 ### Milestone 34 — `Self` everywhere ✅
 Done when the `Self`-in-`impl` program passes.
-- [x] PRP-063: `Self` in `impl` blocks, default methods on concrete types (E0430); `Language v10 Specification.md` begins; tagged `m34` at merge
+- [x] PRP-063: `Self` in `impl` blocks, default methods on concrete types (E0430); `Language v10 Specification.md` begins; tagged `m34`
 
 ### Milestone 35 — More integers
 Done when the more-integers program passes.
