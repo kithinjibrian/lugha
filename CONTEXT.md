@@ -3970,6 +3970,11 @@ Branch: prp-069-printing_anything (merged into main)
 
 ---
 
+## SESSION 90 — 2026-10-14 — v13 direction — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v12 is complete** (milestones 39–40; PRP-068–069; MEMORY 83–85): every value prints, through `show` (the prelude's `Display`) or a built-in form; interface values by their contents, functions as `<fun>`, and `unwrap on Err: <error>`. Tagged `m40` and `v12`. `Language v12 Specification.md` is what `lughac spec` prints; v0–v11 are frozen.
