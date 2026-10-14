@@ -3682,7 +3682,7 @@ Branch: prp-064-more_integers (merged into main)
 ---
 
 ## SESSION 83 — 2026-10-14 — Iterator helpers (milestone 36) — open
-Branch: main
+Branch: prp-065-iterator_helpers
 
 ---
 
