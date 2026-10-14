@@ -4601,8 +4601,8 @@ Branch: prp-081-operator_overloading (merged into main)
 
 ---
 
-## SESSION 108 — 2026-10-14 — Move the prelude into src/prelude/ — open
-Branch: prelude-folder
+## SESSION 108 — 2026-10-14 — Move the prelude into src/prelude/ — closed
+Branch: prelude-folder (merged into main)
 
 ### WHAT WAS DONE
 - At the user's request, moved the five prelude files into `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), with `git mv`, so history follows them.
@@ -4622,7 +4622,7 @@ Branch: prelude-folder
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged.
+- Nothing. Merged into `main`.
 
 ---
 
