@@ -125,7 +125,7 @@ impl Parser<'_> {
     #[inline(never)]
     fn member(&mut self, start: usize, base: Expr) -> PResult<Result<Expr, ExprKind>> {
         self.bump();
-        let member = self.ident("field name")?;
+        let member = self.member_name()?;
         if let ExprKind::Name(module) = &base.kind {
             let module = Ident {
                 name: module.clone(),

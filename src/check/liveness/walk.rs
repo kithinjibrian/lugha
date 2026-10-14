@@ -52,7 +52,9 @@ impl Walk<'_> {
             }
             StmtKind::LetElse { init, else_, .. } => {
                 self.expr(init);
-                self.block(else_);
+                if let Some(e) = else_ {
+                    self.block(e);
+                }
             }
             StmtKind::For { iter, body, .. } => {
                 // The bounds and the iterated array are evaluated once, but
@@ -82,7 +84,9 @@ impl Walk<'_> {
 
     fn expr(&mut self, expr: &Expr) {
         match &expr.kind {
-            ExprKind::Array(elements) => elements.iter().for_each(|e| self.store(e)),
+            ExprKind::Array(elements) | ExprKind::Tuple(elements) => {
+                elements.iter().for_each(|e| self.store(e))
+            }
             ExprKind::StructLit(lit) => lit.fields.iter().for_each(|(_, e)| self.store(e)),
             ExprKind::Unary(_, e) | ExprKind::Cast(e, _) | ExprKind::Field(e, _) => self.expr(e),
             ExprKind::Binary(_, _, a, b) | ExprKind::Index(a, _, b) | ExprKind::Repeat(a, b) => {

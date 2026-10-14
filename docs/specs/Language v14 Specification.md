@@ -2,22 +2,23 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 45–46 of 45–50). It is built from the approved plan, `Language v14 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v13 Specification.md` keeps v13 frozen.
+**Status:** in progress (milestones 45–47 of 45–50). It is built from the approved plan, `Language v14 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v13 Specification.md` keeps v13 frozen.
 
 **v13.** This is v12 plus `Self` in declarations, `for … of mut`, more iterator helpers and format specifiers (milestones 41–44).
 
-**Changes since v13** (milestones 45–46):
+**Changes since v13** (milestones 45–47):
 - Binary I/O: `read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes`; `s.to_bytes()`; `string_from_utf8(bytes)`, which rejects invalid UTF-8. An index may be of any integer type (sections 4–5).
 - `char`, a Unicode scalar value: `'a'`, `'é'`, `'\u{1F600}'`; `s.chars()` and `s.char_count()`; `c as u32`, `n as char`, `char_from(n)`; classification and case for ASCII and Latin-1 (sections 2–5).
+- Tuples: `(A, B)` types and `(a, b)` values, `t.0`, patterns `(p, q)` in `match`, `if let`, `let (a, b) = t;` and `for (i, w) of …`; element-wise `==`, lexicographic `<`, printed `(1, "a")`. `zip` yields tuples, and `Pair` is gone (sections 3–5).
 
-A valid v13 program is a valid v14 program unless it uses `char` as a name (a type keyword now), or declares a function named `read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes` or `string_from_utf8`, which are now intrinsics.
+A valid v13 program is a valid v14 program unless it uses `Pair` or `zip`'s `Pair` fields (`zip` yields tuples now: `p.first` is `p.0`), uses `char` as a name (a type keyword now), or declares a function named `read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes` or `string_from_utf8`, which are now intrinsics.
 
 **v12.** This is v11 plus printing any value: the prelude's `Display` and `show`, built-in forms, and `unwrap on Err: <error>` (milestones 39–40).
 
 **Changes in v13 since v12** (milestones 41–44):
 - In a struct's fields and an enum's payloads, `Self` is the type being declared: `struct Tree<T> { value: T, kids: Self[] }`, `enum List { Cons(i64, Self), Nil }` (section 4).
 - `for x of mut xs` makes `x` each element itself, so `x *= 2` changes `xs`; `for x of mut it` advances the iterator `it` itself, so a later loop resumes where a `break` left it (sections 3, 5).
-- Iterators gain `zip` (yielding the prelude's `Pair { first, second }`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max` and `position` (section 4).
+- Iterators gain `zip` (yielding the prelude's `Pair { first, second }` in v13; a tuple since v14), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max` and `position` (section 4).
 - An interpolation may end in a format specifier: `"{pi:.2}"`, `"{n:>6}"`, `"{n:05}"`, `"{n:#x}"`, `"{name:*^9}"`; a bad one is E0431 (sections 3, 5).
 
 Every valid v12 program was a valid v13 program.
@@ -259,6 +260,7 @@ base_type    = "i32" | "i64" | "u8" | "f64" | "bool" | "string"
              | "u32" | "u64" | "f32"                (* v7 *)
              | "i8" | "i16" | "u16"                 (* v10 *)
              | "char"                               (* v14 *)
+             | "(" type "," type { "," type } [ "," ] ")"   (* a tuple (v14) *)
              | IDENT [ "." IDENT ] [ "<" type { "," type } [ "," ] ">" ]
              | "fun" "(" [ type { "," type } [ "," ] ] ")" [ ":" type ]   (* a function type (v3) *)
              | "(" type ")" ;                  (* `(fun(i64): i64)[]` is an array of functions *)
@@ -272,13 +274,13 @@ stmt         = var_decl | while_stmt | for_stmt
              | expr [ assign_op expr ] ";" ;
 block_like   = if_expr | match_expr | block ;
 var_decl     = "let" [ "mut" ] IDENT [ ":" type ] "=" expr ";"
-             | "let" pattern "=" expr "else" block ";" ;      (* let-else (v9) *)
+             | "let" pattern "=" expr [ "else" block ] ";" ; (* let-else (v9); without else, irrefutable (v14) *)
 assign_op    = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ;   (* bit forms: v7; `%=`: v9 *)
 
 if_expr      = "if" ( cond | "let" pattern "=" cond ) block [ "else" ( if_expr | block ) ] ;   (* if let (v9) *)
 while_stmt   = "while" ( cond | "let" pattern "=" cond ) block ;                            (* while let (v9) *)
 for_stmt     = "for" ( for_head | "(" for_head ")" ) block ;
-for_head     = IDENT ( "in" cond ".." cond | "of" [ "mut" ] cond ) ;   (* `of mut`: v13 *)
+for_head     = ( IDENT | "(" pattern "," pattern { "," pattern } ")" ) ( "in" cond ".." cond | "of" [ "mut" ] cond ) ;   (* `of mut`: v13; a tuple pattern: v14 *)
 cond         = expr ;            (* parsed in no-struct-literal mode *)
 
 match_expr   = "match" cond "{" [ arm { arm_sep arm } [ "," ] ] "}" ;
@@ -290,15 +292,17 @@ alternative  = "_"
              | [ "-" ] INT | STRING | "true" | "false"
              | ( IDENT | "_" ) ":" type               (* `c: Circle` (v5) *)
              | "mut" IDENT [ ":" type ]               (* a mutable binding (v9) *)
-             | "(" pattern ")" ;
+             | "(" pattern ")"
+             | "(" pattern "," pattern { "," pattern } [ "," ] ")" ;   (* a tuple (v14) *)
 
 expr         = prefix { infix } ;            (* Pratt loop, see table *)
 prefix       = ( "-" | "!" ) prefix | postfix ;   (* binds tighter than infix *)
 postfix      = primary { call | index | member | "?" } ;   (* `read(p)?` (v4) *)
 call         = "(" [ expr { "," expr } [ "," ] ] ")" ;
 index        = "[" expr "]" ;
-member       = "." IDENT ;
+member       = "." ( IDENT | INT ) ;          (* `t.0` (v14) *)
 primary      = INT | FLOAT | CHAR | STRING | interpolated | closure | "true" | "false"
+             | "(" expr "," expr { "," expr } [ "," ] ")"   (* a tuple (v14) *)
              | IDENT [ "." IDENT ] [ struct_init ]  (* `m.T { … }` *)
              | "self"
              | int_type "." IDENT                 (* `i16.MAX` (v10) *)
@@ -636,7 +640,10 @@ Evaluation is strictly left to right: operands, call arguments and struct-litera
 
 **Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way, including `%=` (v9), which panics on a zero divisor as `%` does. Shifts (v7) lose the bits shifted out and never panic for overflow; `>>` copies the sign bit for `i32` and `i64` and fills with zeros for the unsigned types; a shift amount that is negative, or at least the type's width (8, 32 or 64), panics with `shift out of range` at the operator. `&=`, `|=`, `^=`, `<<=` and `>>=` mean `x = x op y` with the place evaluated once, as `+=` does, and need an integer.
 
-**`Pair`** (v13). The prelude declares `struct Pair<A, B> { public first: A, public second: B }`, what `zip` yields. Programs may build and print it like any struct: `Pair { first: 1, second: "a" }`.
+**Tuples** (v14). `(A, B, …)` is a tuple type of two or more elements, and `(a, b, …)` a tuple value; `(x)` is just `x`, and `(a,)` is E0201. A tuple is a value like a struct whose fields are named `0`, `1`, …: `t.0` reads an element and `t.0 = v` changes one in a `let mut` tuple (an index past the end is E0410), and `t.1.0` reaches into a nested tuple. Assigning, passing and returning copy it by the copy rules. `==` compares element-wise; `<`, `<=`, `>` and `>=` compare lexicographically, the first unequal element deciding, and need every element `Ord` (E0404 otherwise), so a tuple of `Ord` elements is `Ord`. Functions can return several values: `fun divmod(a: i64, b: i64): (i64, i64) = (a / b, a % b);`. A tuple prints as `(1, "a")`, its strings quoted. `Pair` (v13) is gone: `zip` yields tuples.
+- **Patterns:** `(p, q, …)` matches a tuple element by element, nesting like any pattern; bare names inside it bind. A tuple has one constructor, so `match` checks exhaustiveness through its elements (E0417, W0102).
+- **Destructuring:** `let (q, r) = divmod(7, 2);` and `for (i, w) of xs.iter().zip(ws.iter()) { … }` bind each element. Their patterns must match every value (bindings, `_`, `mut`, and tuples of those); anything that could fail is E0433, with help to use `let … else` or `match`. `let mut (x, y)` is not a thing: write `let (mut x, mut y)`.
+
 
 **Iterator sources and helpers** (v10). These make and use iterators, the values `for … of` steps through (`Iter<T>`, above):
 
@@ -661,7 +668,7 @@ Every iterator `it` that yields `T` (a value whose type has `fun next(mut self):
 | `it.any(f)`, `it.all(f)` | `bool` | whether some or every value passes `f`, stopping at the first that decides |
 | `it.find(f)` | `Option<T>` | the first value `f` is true for |
 | `it.sum()` | `T` | the total, for a number type `T` only (E0415 otherwise) |
-| `a.zip(b)` (v13) | `Zip<A, B>`, yielding `Pair<A, B>` | `a`'s and `b`'s values side by side, ending with the shorter |
+| `a.zip(b)` (v13) | `Zip<A, B>`, yielding `(A, B)` (a `Pair<A, B>` before v14) | `a`'s and `b`'s values side by side, ending with the shorter |
 | `a.chain(b)` (v13) | `Chain<T>` | `a`'s values, then `b`'s (`b` must yield `T`, E0422 otherwise) |
 | `it.take_while(f)` (v13) | `TakeWhile<T>` | values while `f` holds; after the first that fails, nothing more is pulled |
 | `it.skip_while(f)` (v13) | `SkipWhile<T>` | every value from the first `f` fails for |
@@ -673,7 +680,7 @@ Every iterator `it` that yields `T` (a value whose type has `fun next(mut self):
 - **Copies:** a helper takes its iterator by copy, as `for … of` does, so `let m = it.map(f);` leaves `it` unchanged; `xs.iter()` holds its own copy of `xs`.
 - **Arguments:** closures are typed from the receiver as for the array helpers, and `take`/`skip` take an `i64`, a negative one taking or skipping nothing. Arrays keep their eager helpers: `xs.map(f)` is an array, `xs.iter().map(f)` an iterator.
 - **Panics:** `sum` uses `+`, so it panics on overflow, located in the prelude.
-- **Names:** these are Lugha in the prelude. `range` and the types `ArrayIter`, `Bytes`, `Range`, `Map`, `Filter`, `Take`, `Skip`, `Enumerate` and `Indexed`, and (v13) `Pair`, `Zip`, `Chain`, `TakeWhile`, `SkipWhile` and `FlatMap`, are visible in every module, like `Result`, unless the module declares the name; they print with their module, `$prelude.Map<i64, string>`.
+- **Names:** these are Lugha in the prelude. `range` and the types `ArrayIter`, `Bytes`, `Range`, `Map`, `Filter`, `Take`, `Skip`, `Enumerate` and `Indexed`, and (v13) `Zip`, `Chain`, `TakeWhile`, `SkipWhile` and `FlatMap`, are visible in every module, like `Result`, unless the module declares the name; they print with their module, `$prelude.Map<i64, string>`.
 
 **Methods on integers** (v7, v10). Every integer type (`i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`) has these built-in methods:
 
@@ -1012,6 +1019,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - A format specifier (v13) is parsed once by the checker (E0431) and again by codegen, which passes its parts to `lugha_rt_fmt_int`, `lugha_rt_fmt_float` or `lugha_rt_pad`, from a runtime fragment `format.c`. Programs without specifiers give byte-identical IR.
 - An index (v14) is evaluated at its own integer type and sign- or zero-extended to `i64` before the bounds check, so an `i64` index lowers exactly as before.
 - A `char` (v14) is an LLVM `i32`, compared unsigned. An integer `as char` selects U+FFFD unless the value, widened to `i64`, is a scalar value. `chars()`, `char_count()`, `char_from` and the classification and case methods are Lugha in the prelude's fourth file.
+- A tuple type (v14) is the generic struct `$tuple<n>` with fields `0`, `1`, …, so it lowers as a struct: an LLVM named struct spelt as the type prints, `%"(i64, string)"`, with struct copy, equality and print helpers, and symbols such as `lugha_fn_max<(i64, i64)>`. `<` calls one `lugha_cmp_<type>(a, b) -> i32` helper per tuple type. A tuple pattern tests each field's address, with no tag. `for (i, w) of e` becomes a loop over a hidden variable whose body starts `let (i, w) = …;`.
 - Converting a `J` value to `I` (v6) calls `lugha_up_<J>.<I>(table) -> table`, which compares the value's table with each `J` table the program has and returns the matching `I` table; its body is built after everything else, when every table is known. That `I` table is derived from the table the value was built with: `lugha_vt_<C>.<J>.<I>` has `C`'s identity and copy and, for each `I` item, the function `C`'s `J` table has, so methods behave as through `J`; derived tables keep the original interface (`<C>.<J>.<K>` for a chain) and converting back to it gives the original table. A program that never converts between interfaces has no `lugha_up_` functions and no derived tables. (The approved draft put one slot per target interface in each table instead; tables are emitted while lowering, before every conversion is known, so PRP-054 uses lookup functions.)
 - The v7 operators and methods: `& | ^` are `and`/`or`/`xor`; `<<` is `shl` and `>>` is `ashr` for `i32`/`i64` and `lshr` for the unsigned types, each after an `icmp uge` of the amount against the width that panics (`shift out of range`); `~x` is `xor x, -1`; the wrapping methods are plain `add`/`sub`/`mul`; the counting methods are `llvm.ctpop`, `llvm.ctlz` and `llvm.cttz` (zero not poison), widened to `i64`. A program that uses none of them has none of this code.
 - The v10 integer methods: `checked_add/sub/mul` read the overflow flag of `llvm.{s,u}{add,sub,mul}.with.overflow` and select `None` or `Some`; `checked_div` divides by 1 instead when the divisor is 0 (or the operands are `MIN` and −1) and selects `None` then, so it never traps; `saturating_add/sub` are `llvm.{s,u}{add,sub}.sat`, and `saturating_mul` selects `MIN` or `MAX` on overflow; rotations are `llvm.fshl`/`llvm.fshr` of the value with itself, the `i64` count truncated to the width; `I.MIN`/`I.MAX` are constants.
@@ -1172,6 +1180,7 @@ Name and type errors, reported by the checker:
 | E0426 | A type pattern that can't apply | `c: Circle` on an `i64`; `s: Shape` (an interface); `d: Dot` when `Dot` doesn't satisfy the interface (v5) |
 | E0427 | An interface that uses `Self` used as a type | `let xs: Ordered[] = …;` where `Ordered` declares `fun less(self, other: Self): bool;` (v6) |
 | E0429 | A `let … else` whose `else` block can finish (v9) | `let Some(n) = o else { println("no"); };` |
+| E0433 | A pattern that must match every value but might not (v14) | `let (1, x) = t;`, `let Some(n) = o;` without `else`, `for (Some(a), b) of …` |
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
 | E0430 | A default method that two visible interfaces supply (v10) | `c.describe()` where `Named` and `Shown` both default `describe` and `Circle` satisfies both |
 | E0431 | A bad format specifier (v13) | `"{n:.2}"` with `n: i64`; `"{x:q}"`; `"{f:x}"` with `f: f64`; `"{n:#}"`; `"{s:05}"` with `s: string`; `"{n:2000}"` |
@@ -2390,7 +2399,7 @@ fun main() {
 }
 ```
 
-**More iterator helpers** (milestone 43). Prints `[Pair { first: 1, second: "a" }, Pair { first: 2, second: "b" }]`, `[1, 2, 3, 4]`, `[1, 2]`, `[3, 1]`, `[0, 0, 1, 0, 1, 2]`, `Some(1)`, `Some(9)`, `Some(2)` on eight lines, exits with 0.
+**More iterator helpers** (milestone 43). Prints `[(1, "a"), (2, "b")]`, `[1, 2, 3, 4]`, `[1, 2]`, `[3, 1]`, `[0, 0, 1, 0, 1, 2]`, `Some(1)`, `Some(9)`, `Some(2)` on eight lines, exits with 0.
 
 ```
 fun main() {
@@ -2470,6 +2479,40 @@ fun main() {
 }
 ```
 
+**Tuples** (milestone 47). Prints `3 2`, `0: ann`, `1: bo`, `(1, "a", 2.5)`, `a`, `big two`, `true`, `Some((1, 9))`, `(1, [2]) (1, [9])`, `true`, `7` on 11 lines, exits with 0.
+
+```
+fun divmod(a: i64, b: i64): (i64, i64) = (a / b, a % b);
+
+fun main() {
+    let (q, r) = divmod(17, 5);
+    println("{q} {r}");
+    let names = ["ann", "bo"];
+    for (i, w) of range(0, 2).zip(names.iter()) {
+        println("{i}: {w}");
+    }
+    let t = (1, "a", 2.5);
+    println(t);
+    println(t.1);
+    let label = match (q > 2, r) {
+        (true, 2) => "big two",
+        (true, _) => "big",
+        (false, _) => "small",
+    };
+    println(label);
+    println((1, "b") < (1, "c"));
+    println([(2, 1), (1, 9)].iter().min());
+    let mut p = (1, [2]);
+    let copy = p;
+    p.1[0] = 9;
+    println("{copy} {p}");
+    println((1, 2) == (1, 2));
+    if let (Some(a), b) = (Some(3), 4) {
+        println(a + b);
+    }
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2518,10 +2561,11 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 40 | Printing anything (v12) | interface and function values, `unwrap on Err: <error>` | The printing-anything program in section 10 passes (done: v12 complete) |
 | 41 | `Self` in declarations (v13) | `Self` in struct fields and enum payloads | The `Self`-in-declarations program in section 10 passes (done) |
 | 42 | `for … of mut` (v13) | iterators advanced in place; array elements as mutable aliases | The `for … of mut` program in section 10 passes (done) |
-| 43 | More iterator helpers (v13) | `zip` (`Pair`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position` | The more-helpers program in section 10 passes (done) |
+| 43 | More iterator helpers (v13) | `zip` (`Pair`; tuples since v14), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position` | The more-helpers program in section 10 passes (done) |
 | 44 | Format specifiers (v13) | `"{x:spec}"`, E0431 | The format-specifiers program in section 10 passes (done: v13 complete) |
 | 45 | Bytes and indexes (v14) | binary file I/O, `to_bytes`, `string_from_utf8`, `read_stdin_bytes`, any-integer indexes | The bytes-and-indexes program in section 10 passes (done) |
 | 46 | Unicode text (v14) | `char`, `'a'`, `chars()`, `char_count()`, casts, `char_from`, classification and case (E0112) | The Unicode-text program in section 10 passes (done) |
+| 47 | Tuples (v14) | tuple types and values, `t.0`, patterns, `let`/`for` destructuring (E0433), `zip` → tuples, `Pair` removed | The tuples program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -2541,7 +2585,7 @@ fun main(): i32 {
 ```
 
 **Out of scope for v14** (for later, roughly in order):
-- a `format()` function, a separate debug form, parsing values back from text, and tuples;
+- a separate debug form, parsing values back from text, one-element tuples;
 - downloading packages (git or a registry), a cache, and a lock file; two versions of one package in a build; full version ranges and pre-release versions;
 - whole-module re-exports (`public import m;`), import aliases, and a `--package` flag;
 - directories, streams and processes;

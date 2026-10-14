@@ -46,6 +46,7 @@ mod show_iface;
 mod stmt;
 mod structs;
 mod swap;
+mod tuples;
 mod unwrap;
 mod upcast;
 mod value;

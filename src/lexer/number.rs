@@ -10,6 +10,16 @@ use crate::span::Span;
 impl Lexer<'_> {
     /// Lexes a number starting at `start`, which holds an ASCII digit.
     pub(super) fn number(&mut self, start: usize) {
+        // `t.0.1` (v14): after a `.`, digits are a tuple index, never a float.
+        if matches!(
+            self.tokens.last().map(|t| &t.kind),
+            Some(super::TokenKind::Dot)
+        ) {
+            self.skip_while(|b| b.is_ascii_digit());
+            if let Ok(n) = self.src[start..self.pos].parse::<u64>() {
+                return self.push(super::TokenKind::Int(n), start);
+            }
+        }
         let radix = match (self.byte_at(0), self.byte_at(1)) {
             (Some(b'0'), Some(b'x')) => Some(16),
             // Binary literals (v7): `0b1010`.

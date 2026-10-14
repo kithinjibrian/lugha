@@ -36,6 +36,10 @@ impl Parser<'_> {
         if self.at(&TokenKind::LParen) {
             let open = self.bump();
             let inner = self.nested(|p| p.ty())?;
+            // `(A, B)` (v14): a tuple type.
+            if self.at(&TokenKind::Comma) {
+                return self.tuple_type(open, inner);
+            }
             self.close(open, &TokenKind::RParen)?;
             return Ok(inner.kind);
         }

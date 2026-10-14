@@ -64,7 +64,10 @@ fn stmt(stmt: &Stmt) -> String {
             pattern: p,
             init,
             else_,
-        } => format!("(let-else {} {} {})", pattern(p), expr(init), block(else_)),
+        } => match else_ {
+            Some(e) => format!("(let-else {} {} {})", pattern(p), expr(init), block(e)),
+            None => format!("(let-pat {} {})", pattern(p), expr(init)),
+        },
         StmtKind::For { var, iter, body } => {
             let iter = match iter {
                 ForIter::Range(a, b) => format!("(range {} {})", expr(a), expr(b)),
@@ -136,6 +139,7 @@ pub fn expr(expr: &Expr) -> String {
             format!("(struct-lit {}{fields})", qualified(&lit.module, &lit.name))
         }
         ExprKind::Array(elements) => list("array", &elements.iter().collect::<Vec<_>>()),
+        ExprKind::Tuple(elements) => list("tuple", &elements.iter().collect::<Vec<_>>()),
         ExprKind::Repeat(value, count) => list("repeat", &[value, count]),
         ExprKind::If { cond, then, else_ } => {
             let otherwise = else_
@@ -201,6 +205,10 @@ fn pattern(pattern: &Pattern) -> String {
             format!("(| {})", parts.join(" "))
         }
         PatternKind::Mut(inner) => format!("(mut {})", self::pattern(inner)),
+        PatternKind::Tuple(elements) => {
+            let shown: Vec<String> = elements.iter().map(self::pattern).collect();
+            format!("(tuple {})", shown.join(" "))
+        }
     }
 }
 

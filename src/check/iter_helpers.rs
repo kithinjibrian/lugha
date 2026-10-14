@@ -36,7 +36,7 @@ const HELPERS: [&str; 20] = [
 ];
 
 /// The prelude structs a program may name (v10), unless it declares the name.
-pub(super) const ITER_TYPES: [&str; 16] = [
+pub(super) const ITER_TYPES: [&str; 15] = [
     "ArrayIter",
     "Bytes",
     "Range",
@@ -47,7 +47,6 @@ pub(super) const ITER_TYPES: [&str; 16] = [
     "Enumerate",
     "Indexed",
     // v13
-    "Pair",
     "Zip",
     "Chain",
     "TakeWhile",
@@ -222,7 +221,7 @@ mod tests {
     fn the_v13_helpers_have_their_types() {
         assert_eq!(
             ty("let r = xs.iter().zip([\"a\"].iter()).find(fun(p) = true);"),
-            "Option<$prelude.Pair<i64, string>>"
+            "Option<(i64, string)>"
         );
         assert_eq!(
             ty(

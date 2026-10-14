@@ -1,0 +1,29 @@
+fun divmod(a: i64, b: i64): (i64, i64) = (a / b, a % b);
+
+fun main() {
+    let (q, r) = divmod(17, 5);
+    println("{q} {r}");
+    let names = ["ann", "bo"];
+    for (i, w) of range(0, 2).zip(names.iter()) {
+        println("{i}: {w}");
+    }
+    let t = (1, "a", 2.5);
+    println(t);
+    println(t.1);
+    let label = match (q > 2, r) {
+        (true, 2) => "big two",
+        (true, _) => "big",
+        (false, _) => "small",
+    };
+    println(label);
+    println((1, "b") < (1, "c"));
+    println([(2, 1), (1, 9)].iter().min());
+    let mut p = (1, [2]);
+    let copy = p;
+    p.1[0] = 9;
+    println("{copy} {p}");
+    println((1, 2) == (1, 2));
+    if let (Some(a), b) = (Some(3), 4) {
+        println(a + b);
+    }
+}

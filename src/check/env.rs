@@ -139,6 +139,10 @@ impl Checker {
             // `m.T`, `T<args>`, `m.T<args>` (PRP-034, PRP-035).
             TypeKind::Applied(applied) => self.resolve_applied(applied, ty.span),
             TypeKind::Fun(params, ret) => self.resolve_fun(params, ret.as_deref()),
+            TypeKind::Tuple(written) => {
+                let types = written.iter().map(|t| self.resolve(t)).collect();
+                self.tuple_type(types)
+            }
             primitive => Type::primitive(primitive).expect("every other kind is a keyword type"),
         }
     }

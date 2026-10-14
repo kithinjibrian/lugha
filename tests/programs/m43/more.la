@@ -1,6 +1,7 @@
 // Edges of the v13 helpers: uneven zips, empty chains, predicates that
 // never or always hold, empty inner iterators, string and tied extremes,
-// a missing position, a Pair the program builds, and laziness.
+// a missing position, a tuple built by the program (v14: `zip` yields
+// tuples, not `Pair`), and laziness.
 
 struct Naturals { n: i64 }
 
@@ -25,9 +26,9 @@ fun main() {
     println(none.iter().max());
     println([2, 1, 1].iter().position(fun(n) = n == 1));
     println([2, 1].iter().position(fun(n) = n > 5));
-    let p = Pair { first: "x", second: 1.5 };
+    let p = ("x", 1.5);
     println(p);
-    println(p.second);
+    println(p.1);
     let ends = (Naturals { n: 0 }).zip(["a", "b", "c"].iter());
-    println(ends.map(fun(p) = p.first).sum());
+    println(ends.map(fun(p) = p.0).sum());
 }

@@ -56,10 +56,11 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **Printing anything (v12, milestone 40):** interface values print as their contents, function values as `<fun>`, and `r.unwrap()` on an `Err` panics with `unwrap on Err: <the error>`.
 - **`Self` in declarations (v13, milestone 41):** `struct Tree<T> { value: T, kids: Self[] }` and `enum List { Cons(i64, Self), Nil }`.
 - **`for … of mut` (v13, milestone 42):** `for x of mut xs { x *= 2; }` changes the array, and `for w of mut words { … break; }` leaves the iterator where it stopped.
-- **More iterator helpers (v13, milestone 43):** `a.zip(b)` (yielding `Pair { first, second }`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max` and `position`.
+- **More iterator helpers (v13, milestone 43):** `a.zip(b)` (yielding `Pair { first, second }`, tuples since v14), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max` and `position`.
 - **Format specifiers (v13, milestone 44):** `"{pi:.2}"`, `"{n:>6}"`, `"{n:05}"`, `"{n:#x}"`, `"{name:*^9}"`.
 - **Bytes and indexes (v14, milestone 45):** `read_bytes`/`write_bytes`/`append_bytes`/`read_stdin_bytes`, `s.to_bytes()`, `string_from_utf8(bytes)` (checked), and `xs[i]` with `i` of any integer type.
 - **Unicode text (v14, milestone 46):** a `char` type with `'é'` literals, `s.chars()`, `s.char_count()`, `c as u32`, `char_from(n)`, and `is_alphabetic`/`to_upper`-style methods for ASCII and Latin-1.
+- **Tuples (v14, milestone 47):** `fun divmod(a: i64, b: i64): (i64, i64)`, `let (q, r) = divmod(7, 2);`, `t.0`, `for (i, w) of xs.iter().zip(ws.iter())`, tuple patterns in `match`, `==` and `<`, printed `(1, "a")`.
 
 Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v14 Specification.md`](docs/specs/Language%20v14%20Specification.md) (what `lughac spec` prints, in progress); the approved plan it is built from is [`Language v14 Draft.md`](docs/specs/Language%20v14%20Draft.md), and v13 is frozen in [`Language v13 Specification.md`](docs/specs/Language%20v13%20Specification.md).
 

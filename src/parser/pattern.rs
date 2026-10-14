@@ -126,6 +126,9 @@ impl Parser<'_> {
         if self.at(&TokenKind::LParen) {
             let open = self.bump();
             let inner = self.pattern()?;
+            if self.at(&TokenKind::Comma) {
+                return self.tuple_pattern(start, open, inner);
+            }
             self.close(open, &TokenKind::RParen)?;
             return Ok(inner);
         }

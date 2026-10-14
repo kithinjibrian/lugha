@@ -22,6 +22,8 @@ pub struct Expr {
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExprKind {
     Int(u64),
+    /// `(a, b, …)`, two or more elements (v14).
+    Tuple(Vec<Expr>),
     /// A `char` literal's code point (v14).
     Char(u32),
     Float(f64),

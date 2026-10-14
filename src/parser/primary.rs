@@ -35,6 +35,9 @@ impl Parser<'_> {
             TokenKind::LParen => {
                 let open = self.bump();
                 let inner = self.expr()?;
+                if self.at(&TokenKind::Comma) {
+                    return self.tuple_literal(start, open, inner);
+                }
                 self.close(open, &TokenKind::RParen)?;
                 return Ok(inner);
             }

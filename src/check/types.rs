@@ -197,6 +197,10 @@ impl fmt::Display for Type {
                 if !args.is_empty() =>
             {
                 let args: Vec<String> = args.iter().map(ToString::to_string).collect();
+                // A tuple prints as written, `(i64, string)` (v14).
+                if name.starts_with("$tuple") {
+                    return write!(f, "({})", args.join(", "));
+                }
                 let name = match self {
                     Type::Struct(..) => name,
                     _ => name.strip_prefix("$prelude.").unwrap_or(name),

@@ -1494,11 +1494,24 @@ Open questions live in `DECISIONS.md`, not here.
 
 **Why:** decoding in Lugha needs no new runtime surface. Printing needs UTF-8 encoding, which is cheap in C.
 
+### 94. Tuples — milestone 47 (PRP-076)
+
+**Decision:** built under the user's "in one go" (milestones 45–49).
+- **Representation:** `(A, B, …)` is the generic struct `$tuple<n>` (fields `0`, `1`, …, parameters `T0…`), registered by `check/tuples.rs::tuple_type` on first use. Layout, copies, `==`, `t.0`, instances and printing reuse the struct paths. `Type` prints it `(A, B)`, so LLVM names read `%"(i64, string)"`.
+- **Lexer:** a number right after `.` lexes as an integer only (`t.0.1`).
+- **Parser:** `parser/tuples.rs`. `(a,)` is E0201. `let (…) = e;` is `LetElse { else_: None }`. `for (i, w) of e` becomes a hidden `$item<offset>` loop variable plus a `let` at the top of the body.
+- **Checker:** tuple patterns give `Pat::Ctor(Variant(0, "()"), …)`, and `variants_of` gives tuples the one variant `"()"`, so E0417/W0102 work unchanged. A `let` without `else` or a `for` destructuring must be irrefutable (E0433, `errors/v14.rs`). `<` needs every element `Ord`.
+- **Codegen:** `codegen/tuples.rs`: `insertvalue` literals; patterns test each field's address (no tag; `is_flat` excludes them); `<` calls `lugha_cmp_<mangle>(a, b) -> i32`.
+- **Prelude:** `Zip` yields `(A, B)`; `Pair` is removed (a planned v13 break), `ITER_TYPES` has 15 entries.
+
+**Why:** reusing generic structs gives tuples every struct feature for a few hundred lines; the one-variant trick keeps exhaustiveness in one place.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 47 complete**: PRP-076 tuples
 - **Milestone 46 complete**: PRP-075 Unicode `char`
 - **Milestone 45 complete**: PRP-074 bytes and indexes; v14 spec begins
 - **Milestone 44 complete — Lugha v13 complete**: PRP-073 format specifiers
@@ -1592,15 +1605,14 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 46 complete** (PRP-075, MEMORY 93): Unicode `char`. Tagged `m46`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 47 complete** (PRP-076, MEMORY 94): tuples; `zip` yields `(A, B)`, `Pair` removed. Tag `m47` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next, under the user's "in one go" (MEMORY 91), the remaining milestones:
-- M47: tuples (PRP-076: `zip` → tuples, `Pair` removed, E0433);
-- M48: `format`;
-- M49: imports.
+- M48: `format` (PRP-077: a template literal, E0432);
+- M49: imports (PRP-078: `as`, `public import m [as v];`).
 
 Then stop for the user's security review of M50 (git packages).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `codegen/runtime.rs` (297), `parser/stmt.rs` (296), `codegen/heap.rs` (295), `check/array.rs` (~294), `parser/primary.rs` (~292), `lexer/interp.rs` (290), `check/ops.rs` (~293).
+Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/env.rs` (299), `check/interfaces.rs` (299), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `codegen/runtime.rs` (297), `parser/stmt.rs` (297), `parser/primary.rs` (295).
 
 See `TODO.md`.

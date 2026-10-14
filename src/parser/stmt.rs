@@ -167,14 +167,14 @@ impl Parser<'_> {
 
     fn for_stmt(&mut self) -> PResult<StmtKind> {
         self.bump();
-        let open = if self.at(&TokenKind::LParen) {
+        let open = if self.header_paren() {
             Some(self.bump())
         } else {
             None
         };
         // Inside the optional parentheses struct literals are allowed again.
         let head = |p: &mut Self| if open.is_some() { p.expr() } else { p.cond() };
-        let var = self.ident("loop variable")?;
+        let (var, destructure) = self.loop_var()?;
         let iter = if self.eat(&TokenKind::In) {
             let first = head(self)?;
             self.expect(&TokenKind::DotDot)?;
@@ -190,10 +190,11 @@ impl Parser<'_> {
         if let Some(open) = open {
             self.close(open, &TokenKind::RParen)?;
         }
+        let body = self.block()?;
         Ok(StmtKind::For {
             var,
             iter,
-            body: self.block()?,
+            body: self.destructured(destructure, body),
         })
     }
 }

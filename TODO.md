@@ -263,8 +263,8 @@ Done when the printing-anything program passes and the v12 spec is complete.
 ### Milestone 46 — Unicode text ✅
 - [x] PRP-075: `char`, `'a'`, `chars()`, `char_count()`, casts, `char_from`, classification and case (E0112); tagged `m46`
 
-### Milestone 47 — Tuples
-- [ ] tuple types and values, `t.0`, patterns, `zip` → tuples, `Pair` removed (E0433)
+### Milestone 47 — Tuples ✅
+- [x] PRP-076: tuple types and values, `t.0`, patterns, `let`/`for` destructuring, `zip` → tuples, `Pair` removed (E0433); tagged `m47`
 
 ### Milestone 48 — `format`
 - [ ] template `format(…)` (E0432)

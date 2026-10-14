@@ -105,14 +105,17 @@ impl<'ctx> Lowerer<'ctx> {
         &mut self,
         pattern: &Pattern,
         init: &Expr,
-        else_: &Block,
+        else_: Option<&Block>,
     ) -> Result<(), CodegenError> {
         let (subject, sty) = self.subject_of(init)?;
         let otherwise = self.append("letelse.else");
         self.test(pattern, subject, &sty, otherwise, true);
         let matched = self.current_block();
         self.builder.position_at_end(otherwise);
-        self.block(else_)?;
+        // Without `else` (v14) the checker proved the pattern always matches.
+        if let Some(else_) = else_ {
+            self.block(else_)?;
+        }
         if self.current_block().get_terminator().is_none() {
             self.builder.build_unreachable().expect(POSITIONED);
         }

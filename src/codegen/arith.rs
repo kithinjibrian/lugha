@@ -39,6 +39,10 @@ impl<'ctx> Lowerer<'ctx> {
             ty,
             Type::Struct(_, _) | Type::Enum(_, _) | Type::Option(_) | Type::Array(_)
         );
+        // `<` on tuples (v14): element by element.
+        if crate::check::tuple_elements(&ty).is_some() && !matches!(op, BinOp::Eq | BinOp::Ne) {
+            return Ok(self.tuple_order(op, a, b, &ty).into());
+        }
         if composite && matches!(op, BinOp::Eq | BinOp::Ne) {
             let equal = self.equal(a, b, &ty);
             return Ok(if op == BinOp::Eq {

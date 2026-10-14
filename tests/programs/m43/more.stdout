@@ -1,5 +1,5 @@
 1
-[Pair { first: true, second: 7 }]
+[(true, 7)]
 0
 [5, 6]
 0
@@ -9,6 +9,6 @@ Some("pear")
 None
 Some(1)
 None
-Pair { first: "x", second: 1.5 }
+("x", 1.5)
 1.5
 6

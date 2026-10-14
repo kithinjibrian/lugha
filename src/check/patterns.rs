@@ -67,6 +67,7 @@ impl Checker {
                 .flat_map(|(pats, _)| pats)
                 .collect(),
             PatternKind::Mut(inner) => self.mut_pattern(inner, ty, bindings, top),
+            PatternKind::Tuple(given) => self.tuple_pattern(pattern, given, ty, bindings),
             PatternKind::Variant(name, slots) if !self.binds(pattern, ty, top) => {
                 self.variant_pattern(pattern, name, slots.as_deref(), ty, bindings)
             }

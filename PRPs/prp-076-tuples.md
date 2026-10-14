@@ -100,20 +100,20 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — parser:
-- [ ] `(a, b)` and `(i64, string)`; `t.0.1`; `(x, _)` patterns; `let (a, b) = t;`; `for (i, w) of xs { }` desugared.
-- [ ] E0201 for `(a,)`.
+- [x] `(a, b)` and `(i64, string)`; `t.0.1`; `(x, _)` patterns; `let (a, b) = t;`; `for (i, w) of xs { }` desugared.
+- [x] E0201 for `(a,)`.
 
 Unit tests — checker (`check/tuples.rs`):
-- [ ] **Types:** literal types, `t.1` types, a tuple return, generic `max<(i64, i64)>`.
-- [ ] **E0433** for `let (1, x) = t;`.
-- [ ] **E0417** for `match (true, 1) { (true, _) => 1 }`.
-- [ ] **E0404** for `<` on a tuple holding an array.
+- [x] **Types:** literal types, `t.1` types, a tuple return, generic `max<(i64, i64)>`.
+- [x] **E0433** for `let (1, x) = t;`.
+- [x] **E0417** for `match (true, 1) { (true, _) => 1 }`.
+- [x] **E0404** for `<` on a tuple holding an array.
 
 Unit tests — codegen: `%"(i64, string)"`; `lugha_cmp_` for `<`.
 
 Acceptance — `tests/programs/m47/`:
-- [ ] `tuples.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `tuples.la`: the §10 program.
+- [x] `more.la`:
   - nested tuples;
   - tuples in arrays, structs, `Option` and enums;
   - `t.0 = v`;
@@ -124,12 +124,12 @@ Acceptance — `tests/programs/m47/`:
   - `if let (Some(a), b) = …`;
   - generic functions over tuples;
   - `zip` and `enumerate` together.
-- [ ] `e0433.la`: reject golden.
-- [ ] **Updated:** `m43/helpers` and `m43/more` (`zip` yields tuples).
-- [ ] The §10 programs run from the spec.
+- [x] `e0433.la`: reject golden.
+- [x] **Updated:** `m43/helpers` and `m43/more` (`zip` yields tuples).
+- [x] The §10 programs run from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR, except `zip` users.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR, except `zip` users.
 
 ## ROLLBACK PLAN
 
@@ -137,10 +137,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m47/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The spec is at milestone 47; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m47/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The spec is at milestone 47; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -149,3 +149,9 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m47/tuples.la
 ```
+
+## AMENDMENTS (during build, session 98)
+
+- **IR:** earlier programs give byte-identical IR except `zip` users (`m43/helpers`) and the two `m46` programs. Those differ only in the line numbers of panics inside `prelude_text.la`, which is joined after `prelude_more.la`, now two lines shorter without `Pair`; nothing else changes. `-O2` was checked by hand for both `m47` run programs.
+- **`let … else` without `else`:** the parser gives `StmtKind::LetElse { else_: None }` for any `let` whose target is a tuple pattern, so destructuring shares the `let … else` path; a failed test there is `unreachable` (E0433 makes it impossible).
+- **No file splits:** the new code is in new files (`parser/tuples.rs`, `check/tuples.rs`, `check/errors/v14.rs`, `codegen/tuples.rs`).

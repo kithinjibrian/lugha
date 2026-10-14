@@ -223,7 +223,7 @@ pub enum StmtKind {
     LetElse {
         pattern: Box<Pattern>,
         init: Expr,
-        else_: Box<Block>,
+        else_: Option<Box<Block>>,
     },
     /// `for var in a..b { body }` or `for var of xs { body }`
     For {

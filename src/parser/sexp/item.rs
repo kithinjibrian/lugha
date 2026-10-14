@@ -210,6 +210,10 @@ pub(super) fn ty(ty: &Type) -> String {
         TypeKind::Named(name) => name.clone(),
         TypeKind::Array(element) => format!("{}[]", self::ty(element)),
         TypeKind::Option(inner) => format!("(Option {})", self::ty(inner)),
+        TypeKind::Tuple(elements) => {
+            let shown: Vec<String> = elements.iter().map(self::ty).collect();
+            format!("(tuple {})", shown.join(" "))
+        }
         TypeKind::Fun(params, ret) => {
             let params: Vec<String> = params.iter().map(self::ty).collect();
             let ret = ret.as_deref().map_or_else(|| "void".to_string(), self::ty);

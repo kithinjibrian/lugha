@@ -25,6 +25,7 @@ pub mod sexp;
 mod stmt;
 #[cfg(test)]
 mod test_util;
+mod tuples;
 
 use crate::ast::{Expr, ExprId, ExprKind, Ident, Program};
 use crate::diagnostic::Diagnostic;

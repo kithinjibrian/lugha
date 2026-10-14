@@ -94,6 +94,10 @@ impl Checker {
                 ("None".into(), Vec::new()),
                 ("Some".into(), vec![(**inner).clone()]),
             ]),
+            // A tuple has one constructor, its elements the payloads (v14).
+            Type::Struct(key, args) if key.starts_with(super::tuples::TUPLE) => {
+                Some(vec![("()".into(), args.clone())])
+            }
             _ => None,
         }
     }

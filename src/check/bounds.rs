@@ -59,6 +59,10 @@ impl Checker {
     pub(super) fn ord_ok(&self, ty: &Type) -> bool {
         match ty {
             Type::Param(n) => self.bounds(n).ord,
+            // A tuple orders lexicographically when every element does (v14).
+            Type::Struct(key, args) if key.starts_with(super::tuples::TUPLE) => {
+                args.iter().all(|a| self.ord_ok(a))
+            }
             _ => ty.is_numeric() || matches!(ty, Type::String | Type::Char),
         }
     }

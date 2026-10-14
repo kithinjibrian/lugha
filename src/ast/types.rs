@@ -40,6 +40,8 @@ pub enum TypeKind {
     /// `m.T`, `T<args>` or `m.T<args>` (v2 draft §3). Boxed to keep `Type`,
     /// and so `Expr` (through casts), small for the parser's recursion.
     Applied(Box<AppliedType>),
+    /// `(A, B, …)`, two or more elements (v14).
+    Tuple(Vec<Type>),
     /// `fun(A, B): R`; no return type means `void` (v3 draft §3).
     Fun(Vec<Type>, Option<Box<Type>>),
 }

@@ -107,7 +107,7 @@ impl<'ctx> Lowerer<'ctx> {
         match pattern {
             PatternKind::Wildcard | PatternKind::Str(_) | PatternKind::Type(..) => None,
             // Never in a flat match: `is_flat` sends these to the arm chain (v9).
-            PatternKind::Or(_) | PatternKind::Mut(_) => None,
+            PatternKind::Or(_) | PatternKind::Mut(_) | PatternKind::Tuple(_) => None,
             PatternKind::Variant(name, _) => {
                 let (tag, _) = self.variant(sty, &name.name);
                 Some(self.context.i32_type().const_int(u64::from(tag), false))

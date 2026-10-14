@@ -37,7 +37,10 @@ impl<'ctx> Lowerer<'ctx> {
                 // and `mut` bindings go arm by arm too (v9).
                 let typed = matches!(
                     arm.pattern.kind,
-                    PatternKind::Type(..) | PatternKind::Or(_) | PatternKind::Mut(_)
+                    PatternKind::Type(..)
+                        | PatternKind::Or(_)
+                        | PatternKind::Mut(_)
+                        | PatternKind::Tuple(_)
                 );
                 return arm.guard.is_none() && !typed;
             };
@@ -140,6 +143,7 @@ impl<'ctx> Lowerer<'ctx> {
             PatternKind::Wildcard => {}
             PatternKind::Or(alternatives) => self.test_or(alternatives, subject, ty, next, top),
             PatternKind::Mut(inner) => self.test_mut(inner, subject, ty, next, top),
+            PatternKind::Tuple(given) => self.test_tuple(given, subject, ty, next),
             PatternKind::Variant(name, None)
                 if !top && !slot_names_variant(self.variants_of(ty).as_deref(), &name.name) =>
             {

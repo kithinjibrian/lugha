@@ -4268,19 +4268,53 @@ Branch: prp-075-unicode_text (merged into main)
 ## SESSION 98 — 2026-10-14 — Tuples (milestone 47) — open
 Branch: prp-076-tuples
 
+### WHAT WAS DONE
+- PRP-076 written as approved under the "in one go" instruction, built and merged on green CI:
+  - tuple types `(A, B)` and values, `t.0` reads and writes;
+  - tuple patterns in `match`, `if let`, `let` and `for (i, w) of …` (E0433 for refutable `let`/`for` patterns);
+  - `==`, `<` (`lugha_cmp_<type>`), printing `(1, "a")`;
+  - `zip` yields tuples; `Pair` removed.
+- **Spec:** grammar, "Tuples", the zip row, E0433, §9, the §10 "Tuples" program, §11 row 47, the changes summary and compatibility.
+
+### FILES CREATED OR MODIFIED
+- New: `src/parser/tuples.rs`, `src/check/tuples.rs`, `src/check/errors/v14.rs`, `src/codegen/tuples.rs`, `tests/programs/m47/` (`tuples`, `more`, `e0433`), PRP-076.
+- Modified:
+  - `src/lexer/number.rs`, `src/ast/{expr,types,pattern,mod}.rs`;
+  - `src/parser/{mod,primary,expr,generic,pattern,conditional,stmt}.rs`, `src/parser/sexp/{mod,item}.rs`;
+  - `src/check/{mod,types,env,expr,stmt,patterns,enums,conditional,bounds,iter_helpers}.rs`, `src/check/errors/mod.rs`, `src/check/liveness/walk.rs`;
+  - `src/codegen/{mod,expr,arith,conditional,matching,patterns,show,stmt}.rs`;
+  - `src/prelude_more.la`, `tests/programs/m43/`, `tests/spec.rs`;
+  - the v14 spec.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 94, CONTEXT.
+
+### TESTS WRITTEN
+- **Parser:** tuple types, literals, `t.0.1`, patterns, destructuring, E0201.
+- **Checker:** tuple types, generic `max` over tuples, E0433, E0417, E0404, E0410.
+- **Codegen:** `%"(i64, string)"`, `lugha_cmp_`.
+- **Programs:** `tests/programs/m47/`, updated `m43/helpers` and `m43/more`, and the §10 program from the spec.
+- **Regression:** earlier programs give byte-identical IR except `zip` users and panic line numbers in `prelude_text.la` (PRP amendments); `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 94.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m47`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 46 complete** (PRP-075, MEMORY 93): Unicode `char`. Tagged `m46`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 47 complete** (PRP-076, MEMORY 94): tuples; `zip` yields `(A, B)`, `Pair` removed. Tag `m47` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next, under the user's "in one go" (MEMORY 91), the remaining milestones:
-- M47: tuples (PRP-076: `zip` → tuples, `Pair` removed, E0433);
-- M48: `format`;
-- M49: imports.
+- M48: `format` (PRP-077: a template literal, E0432);
+- M49: imports (PRP-078: `as`, `public import m [as v];`).
 
 Then stop for the user's security review of M50 (git packages).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `codegen/runtime.rs` (297), `parser/stmt.rs` (296), `codegen/heap.rs` (295), `check/array.rs` (~294), `parser/primary.rs` (~292), `lexer/interp.rs` (290), `check/ops.rs` (~293).
+Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/env.rs` (299), `check/interfaces.rs` (299), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `codegen/runtime.rs` (297), `parser/stmt.rs` (297), `parser/primary.rs` (295).
 
 See `TODO.md`.

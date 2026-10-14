@@ -30,7 +30,7 @@ impl<'ctx> Lowerer<'ctx> {
                 pattern,
                 init,
                 else_,
-            } => self.let_else(pattern, init, else_)?,
+            } => self.let_else(pattern, init, else_.as_deref())?,
             StmtKind::For {
                 var,
                 iter: ForIter::Range(start, end),

@@ -68,13 +68,16 @@ impl Parser<'_> {
 
     /// `else { … };` after a `let`'s initialiser.
     pub(super) fn let_else_rest(&mut self, pattern: Pattern, init: Expr) -> PResult<StmtKind> {
-        self.expect(&TokenKind::Else)?;
-        let else_ = self.block()?;
+        // Without `else` (v14) the pattern must always match (E0433).
+        let else_ = match self.eat(&TokenKind::Else) {
+            true => Some(Box::new(self.block()?)),
+            false => None,
+        };
         self.expect(&TokenKind::Semi)?;
         Ok(StmtKind::LetElse {
             pattern: Box::new(pattern),
             init,
-            else_: Box::new(else_),
+            else_,
         })
     }
 

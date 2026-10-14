@@ -174,6 +174,10 @@ impl<'ctx> Lowerer<'ctx> {
     /// `Name { f: v, … }`, or `Name {}`.
     fn show_fields(&mut self, value: BasicValueEnum<'ctx>, ty: &Type) -> BasicValueEnum<'ctx> {
         let fields = self.structs[&ty.to_string()].clone();
+        // A tuple prints as `(a, b)` (v14).
+        if crate::check::tuple_elements(ty).is_some() {
+            return self.show_tuple(value, &fields);
+        }
         if fields.is_empty() {
             return self.string_literal(&format!("{} {{}}", bare(ty))).into();
         }

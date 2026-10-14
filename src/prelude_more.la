@@ -3,21 +3,19 @@
 // `prelude_iter.la` into the one prelude module. Like v10's, each adapter
 // wraps its iterators as `Iter<T>` values and runs only when pulled.
 
-// Two values side by side: what `a.zip(b)` yields.
-struct Pair<A, B> { public first: A, public second: B }
-
-// `a`'s and `b`'s values in step, ending with the shorter: `a.zip(b)`.
+// `a`'s and `b`'s values in step, as tuples, ending with the shorter:
+// `a.zip(b)` (a tuple since v14; v13 yielded a `Pair` struct).
 struct Zip<A, B> { a: Iter<A>, b: Iter<B> }
 
 impl Zip<A, B> {
-    fun next(mut self): Option<Pair<A, B>> {
+    fun next(mut self): Option<(A, B)> {
         let Some(x) = self.a.next() else {
             return None;
         };
         let Some(y) = self.b.next() else {
             return None;
         };
-        Some(Pair { first: x, second: y })
+        Some((x, y))
     }
 }
 

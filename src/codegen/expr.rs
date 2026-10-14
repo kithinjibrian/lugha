@@ -131,6 +131,7 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Field(base, field) => self.field(base, field)?,
             ExprKind::StructLit(lit) => self.struct_literal(expr, &lit.fields)?,
             ExprKind::Array(elements) => self.array_literal(expr, elements)?,
+            ExprKind::Tuple(elements) => self.tuple_literal(expr, elements)?,
             ExprKind::Repeat(value, count) => self.repeat(expr, value, count)?,
         };
         Ok(Value::Val(value))

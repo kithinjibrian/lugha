@@ -1,0 +1,16 @@
+error[E0433]: this pattern doesn't match every value
+  --> tests/programs/m47/e0433.la:3:9
+  |
+3 |     let Some(n) = o;
+  |         ^^^^^^^
+  |
+  = help: use `let … else { … };`, or `match`, for a pattern that can fail
+
+error[E0433]: this pattern doesn't match every value
+  --> tests/programs/m47/e0433.la:4:9
+  |
+4 |     for (1, x) of [(1, 2)] {
+  |         ^^^^^^
+  |
+  = help: use `let … else { … };`, or `match`, for a pattern that can fail
+

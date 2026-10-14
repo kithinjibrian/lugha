@@ -63,11 +63,22 @@ impl Checker {
 
     /// `let pattern = init else { … };`: the `else` block must leave
     /// (E0429); the bindings stay in scope for the rest of the block.
-    pub(super) fn let_else(&mut self, pattern: &Pattern, init: &Expr, else_: &Block) {
-        let bindings = self.tested(pattern, init);
-        let ty = self.block(else_, None);
-        if !matches!(ty, Type::Never | Type::Error) {
-            self.report(errors::let_else_finishes(else_.span));
+    pub(super) fn let_else(&mut self, pattern: &Pattern, init: &Expr, else_: Option<&Block>) {
+        let ty = self.value(init, None);
+        let mut bindings = Bindings::new();
+        let pats = self.arm_pattern(pattern, &ty, &mut bindings);
+        match else_ {
+            Some(else_) => {
+                let finished = self.block(else_, None);
+                if !matches!(finished, Type::Never | Type::Error) {
+                    self.report(errors::let_else_finishes(else_.span));
+                }
+            }
+            // `let (a, b) = t;` (v14): the pattern must always match (E0433).
+            None => {
+                let pats: Vec<_> = pats.into_iter().map(|(p, _)| p).collect();
+                self.always_matches(&pats, &ty, pattern.span);
+            }
         }
         self.declare_bindings(&bindings);
     }
