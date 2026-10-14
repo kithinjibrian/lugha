@@ -4034,8 +4034,8 @@ Branch: prp-070-self_in_declarations (merged into main)
 
 ---
 
-## SESSION 92 — 2026-10-14 — `for … of mut` (milestone 42) — open
-Branch: prp-071-for_of_mut
+## SESSION 92 — 2026-10-14 — `for … of mut` (milestone 42) — closed
+Branch: prp-071-for_of_mut (merged into main)
 
 ### WHAT WAS DONE
 - PRP-071 written as approved under the "in one go" instruction, built and merged on green CI: `for x of mut e` over arrays (elements aliased) and iterators (stepped in place).
@@ -4070,13 +4070,13 @@ Branch: prp-071-for_of_mut
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m42`.
+- Nothing. PRP-071 merged into `main`, tagged `m42`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 42 complete** (PRP-071, MEMORY 88): `for x of mut e`. Tag `m42` goes on the merge. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
+**Milestone 42 complete** (PRP-071, MEMORY 88): `for x of mut e`. Tagged `m42`. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
 
 Next, under the user's "in one go" (MEMORY 86): **milestone 43, more iterator helpers** (PRP-072: `zip`/`Pair`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`), then M44 (format specifiers, which completes v13).
 

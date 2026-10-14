@@ -1,6 +1,6 @@
 ## FEATURE: `for … of mut` — iterators advanced in place, array elements as mutable aliases; milestone 42.
 
-**Status:** approved 2026-10-14 — session 92. This is part of the user's "in one go" (milestones 41–44), merged once CI is green.
+**Status:** merged 2026-10-14 — session 92. This is part of the user's "in one go" (milestones 41–44), merged once CI is green.
 **Milestone:** 42 (one PRP; tag `m42` at merge)
 **Spec:** `Language v13 Draft.md`:
 - decision 4, and the choices on `for x of mut e`;

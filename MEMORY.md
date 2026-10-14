@@ -1481,7 +1481,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 42 complete** (PRP-071, MEMORY 88): `for x of mut e`. Tag `m42` goes on the merge. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
+**Milestone 42 complete** (PRP-071, MEMORY 88): `for x of mut e`. Tagged `m42`. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
 
 Next, under the user's "in one go" (MEMORY 86): **milestone 43, more iterator helpers** (PRP-072: `zip`/`Pair`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`), then M44 (format specifiers, which completes v13).
 
