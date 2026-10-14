@@ -51,6 +51,12 @@ impl<'ctx> Lowerer<'ctx> {
                 let local = self.scopes.lookup(name);
                 self.load(&local, name)
             }
+            // `-v` on a struct, enum or interface value calls `neg` (v15).
+            ExprKind::Unary(UnOp::Neg, operand)
+                if let Some(value) = self.operator(expr, "neg", operand, None)? =>
+            {
+                value
+            }
             ExprKind::Unary(UnOp::Neg, operand) => {
                 let ty = self.ty(expr);
                 let value = self.get(operand, &ty)?;
@@ -81,6 +87,13 @@ impl<'ctx> Lowerer<'ctx> {
             }
             ExprKind::Binary(op @ (BinOp::And | BinOp::Or), _, lhs, rhs) => {
                 self.short_circuit(*op, lhs, rhs)?
+            }
+            // `a + b` on a struct, enum or interface value calls `add` (v15).
+            ExprKind::Binary(op, _, lhs, rhs)
+                if let Some(name) = super::arith::method_of(*op)
+                    && let Some(value) = self.operator(expr, name, lhs, Some(rhs))? =>
+            {
+                value
             }
             ExprKind::Binary(op, op_span, lhs, rhs) => self.binary(*op, op_span.start, lhs, rhs)?,
             ExprKind::Cast(inner, _) => self.cast(expr, inner)?,
@@ -157,6 +170,21 @@ impl<'ctx> Lowerer<'ctx> {
                     return self.context.f32_type().const_float(single).into();
                 }
                 self.context.f64_type().const_float(value).into()
+            }
+            // `0` or `1` as a `T: Num` that is a float here (v15).
+            ExprKind::Int(value) if self.ty(literal).is_float() => {
+                #[allow(clippy::cast_precision_loss)] // only `0` and `1` reach here
+                let value = if negate {
+                    -(value as f64)
+                } else {
+                    value as f64
+                };
+                let float = if self.ty(literal) == Type::F32 {
+                    self.context.f32_type()
+                } else {
+                    self.context.f64_type()
+                };
+                float.const_float(value).into()
             }
             ExprKind::Int(value) => {
                 // Two's complement at the target width: the bits of -v, truncated by LLVM.

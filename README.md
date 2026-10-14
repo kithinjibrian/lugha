@@ -65,6 +65,7 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **Import aliases and re-exports (v14, milestone 49):** `import a.util as u1;`, `import shapes.vec { Vec2 as V };`, and `public import shapes.vec;` so that importers write `shapes.vec.Vec2`.
 - **Git packages (v14, milestone 50):** `geo = { git = "https://example.org/geo.git", version = "1.4" }` in `lugha.toml` fetches the newest matching `vX.Y.Z` tag into a per-user cache and pins its commit in `lugha.lock`; `lughac update` refreshes it and `--offline` never fetches.
 - **Package layout (v15, milestone 51):** a library's `lugha.toml` can say `[package] name = "glowworm"` and `source = "src"`, so `src/array.la` is `glowworm.array`; a program inside the package (`examples/basics.la`) imports it by name with no manifest of its own.
+- **Operator overloading (v15, milestone 52):** give a struct `fun add(self, o: Vec2): Vec2` and `a + b` calls it (likewise `sub`, `mul`, `div`, `rem`, `neg`); `fun add<T: Add>(a: T, b: T): T = a + b;` works for numbers, strings and your types; `impl Grid<T: Num> { … }` does element arithmetic.
 
 Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v15 Specification.md`](docs/specs/Language%20v15%20Specification.md) (what `lughac spec` prints, in progress); the approved plan it is built from is [`Language v15 Draft.md`](docs/specs/Language%20v15%20Draft.md), and v14 is frozen in [`Language v14 Specification.md`](docs/specs/Language%20v14%20Specification.md).
 

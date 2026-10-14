@@ -1,0 +1,16 @@
+error[E0419]: `string` doesn't satisfy `Num`
+   --> tests/programs/m52/e0419.la:17:13
+   |
+17 |     let t = g.total();
+   |             ^^^^^^^^^
+   |
+   = help: only the number types are `Num` (v15)
+
+error[E0419]: `string` doesn't satisfy `Num`
+   --> tests/programs/m52/e0419.la:18:13
+   |
+18 |     let n = sum(["b"]);
+   |             ^^^^^^^^^^
+   |
+   = help: only the number types are `Num` (v15)
+

@@ -36,7 +36,21 @@ impl Checker {
         // Only arithmetic passes the context's type to its operands; a comparison's `bool` doesn't.
         let outer = if arithmetic { expect } else { None };
         // Comparing passes any type between operands (`o == None`); arithmetic only numbers.
-        let (l, r) = self.operands(lhs, rhs, outer, !arithmetic);
+        let (l, r) = match super::operators::method_of(op) {
+            // `a + b` on a struct, enum or `T` calls `a.add(b)` (v15).
+            Some(name) if !defers(lhs) => {
+                let mark = self.changes_mark();
+                let l = self.value(lhs, outer);
+                if super::operators::overloaded(&l) {
+                    let at = Span::new(lhs.span.end, rhs.span.start);
+                    let parts = (op.symbol(), name, at);
+                    return self.operator_call(expr, parts, (lhs, &l), Some(rhs), mark);
+                }
+                let r = self.second_operand(&l, lhs, rhs, outer, false);
+                (l, r)
+            }
+            _ => self.operands(lhs, rhs, outer, !arithmetic),
+        };
         let (l, r) = match (l, r) {
             (Type::Error, _) | (_, Type::Error) => return Type::Error,
             (Type::Never, ty) | (ty, Type::Never) => (ty.clone(), ty),
@@ -81,6 +95,20 @@ impl Checker {
         let swap = defers(lhs) && !defers(rhs);
         let (first, second) = if swap { (rhs, lhs) } else { (lhs, rhs) };
         let a = self.value(first, outer);
+        let b = self.second_operand(&a, first, second, outer, any);
+        if swap { (b, a) } else { (a, b) }
+    }
+
+    /// The second of two operands, after the first, `first` of type `a`.
+    pub(super) fn second_operand(
+        &mut self,
+        a: &Type,
+        first: &Expr,
+        second: &Expr,
+        outer: Option<&Expect>,
+        any: bool,
+    ) -> Type {
+        let a = a.clone();
         let expect = match outer {
             Some(outer) if defers(first) => Some(outer.clone()),
             // Both sides need a type from context (`None == None`): the
@@ -88,8 +116,12 @@ impl Checker {
             _ if a == Type::Error && defers(second) => Some(Expect::of(Type::Error)),
             _ => from_operand(&a, first.span, second, any),
         };
-        let b = self.value(second, expect.as_ref());
-        if swap { (b, a) } else { (a, b) }
+        // `0` and `1` facing a `T: Num` are `T` (v15).
+        let expect = match &a {
+            Type::Param(p) if is_literal(second) && self.has_num(p) => Some(Expect::of(a.clone())),
+            _ => expect,
+        };
+        self.value(second, expect.as_ref())
     }
 }
 

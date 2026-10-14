@@ -289,6 +289,9 @@ Done when the printing-anything program passes and the v12 spec is complete.
 ### Milestone 51 — Package layout ✅
 - [x] PRP-080: `[package] name` (E0327) and `source`, the program's manifest from a parent folder and its implicit package, E0328, the `..` path fix; tagged `m51`
 
+### Milestone 52 — Operator overloading ✅
+- [x] PRP-081: `+ - * / %` and unary `-` through methods, `Add`…`Neg` and `Num` bounds, `0`/`1` as `T: Num`, `impl` bounds; tagged `m52`
+
 ## v15 — later milestones, discovery paused (session 103)
 
 The user chose this scope; the discovery stopped after its first answer, so v15 starts by resuming it (one question at a time), then a draft spec, then PRPs.

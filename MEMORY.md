@@ -1576,11 +1576,24 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Also:** the user raised the file-size limit from 300 to 500 lines (CLAUDE.md, session 107), and asked for M52 "in one go".
 
+### 101. Operator overloading — milestone 52 (PRP-081)
+
+**Decision:** built as approved (MEMORY 100).
+- **Checker (`check/operators.rs`):**
+  - `binary`/`unary`/`assign` route a struct/enum/interface/`T` left operand to `operator_call`. It checks the method shape (`operator_method`: plain `self`, arity, a result; `T` through `bound_entry`), then calls `on_value(expr, …)` with the operator expression as the call. E0404 otherwise, with shape or bound help.
+  - `builtin_operator` lets numbers (and `string` for `Add`) satisfy `$prelude.Add`…`Num` in `unmet`. `Num` is for numbers only (E0419 in `meets_bounds`), and `has_num` gives `==`, `<` and `0`/`1` literals.
+- **`check/impl_bounds.rs`:** `impl_generics` merges an `impl`'s bounds into the renamed generics; `ImplDecl.params` is `Vec<TypeParam>`.
+- **Codegen (`codegen/operators.rs`):** `operator` (struct/enum → `operator_on`; interface → `method_call` with a synthetic callee) and compound assignment; numbers and strings fall through to the built-ins. An `Int` literal at a float type is a float constant.
+- **Prelude:** `src/prelude_ops.la` (fifth file); `is_operator_bound` adds the names to `or_prelude_interface`.
+
+**Why:** reusing method calls keeps instances and dispatch in one place; per-instance lowering makes `add<i64>` a plain checked add.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 52 complete**: PRP-081 operator overloading
 - **Milestone 51 complete**: PRP-080 package layout; v15 spec begins
 - **Milestone 50 complete — Lugha v14 complete**: PRP-079 git packages
 - **Milestone 49 complete**: PRP-078 import aliases and whole-module re-exports
@@ -1679,16 +1692,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestone 51 complete** (package layout), tagged `m51`. **Milestone 52 (operator overloading) is proposed:** draft additions in `Language v15 Draft.md` (decisions 8–13) and PRP-081, waiting for the user's approval. On approval:
-- record MEMORY 100;
-- branch `prp-081-operator_overloading`;
-- commit "Add approved PRP-081 operator overloading";
-- build with new code in `check/operators.rs`, `check/impl_bounds.rs`, `codegen/operators.rs` and `src/prelude_ops.la`.
+**Milestone 52 complete** (PRP-081, MEMORY 100–101): operator overloading. Tag `m52` goes on the merge. `Language v15 Specification.md` (in progress, milestones 51–52) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines.
 
-Stop and propose a split if a hook would push `satisfy.rs`, `interfaces.rs`, `instances.rs` or `generics.rs` over 300 lines. Tag `m52` goes on the merge.
-
-The rest of v15 (directories, processes, env, Unicode follow-ups) waits in `TODO.md`.
-
-Watch file sizes: `check/interfaces.rs` (300), `check/visibility.rs` (300), `codegen/copy.rs` (300), `check/env.rs` (299), `check/satisfy.rs` (298), `check/instances.rs` (298), `parser/primary.rs` (298), `check/generics.rs` (294), `check/ops.rs` (292).
+Next:
+- glowworm can now use `impl NdArray<T: Num>` and operators;
+- the rest of v15 (directories, processes, env, Unicode follow-ups) waits in `TODO.md` for its discovery to resume at the process API shape.
 
 See `TODO.md`.

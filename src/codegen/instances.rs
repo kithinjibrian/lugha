@@ -142,7 +142,10 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// Makes `args` the types of `source`'s parameters: the `impl`'s, then its own.
     fn enter(&mut self, source: &Source, args: &[Type]) {
-        let outer = source.owner.iter().flat_map(|(i, _)| i.params.iter());
+        let outer = source
+            .owner
+            .iter()
+            .flat_map(|(i, _)| i.params.iter().map(|p| &p.name));
         let names = outer.chain(source.f.type_params.iter().map(|p| &p.name));
         let hidden = source.interface.iter().flat_map(|(_, i)| {
             let own = i.type_params.iter().map(|p| p.name.name.clone());

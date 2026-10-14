@@ -230,6 +230,18 @@ impl<'ctx> Lowerer<'ctx> {
     }
 }
 
+/// The method an overloadable operator calls (v15): `+` is `add`.
+pub(super) fn method_of(op: BinOp) -> Option<&'static str> {
+    Some(match op {
+        BinOp::Add => "add",
+        BinOp::Sub => "sub",
+        BinOp::Mul => "mul",
+        BinOp::Div => "div",
+        BinOp::Rem => "rem",
+        _ => return None,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use crate::codegen::test_util::ir;

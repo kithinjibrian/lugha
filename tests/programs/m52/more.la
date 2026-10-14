@@ -1,0 +1,79 @@
+// Operators on enums, interface values and a generic struct whose `impl`
+// is bounded, a right-hand operand of another type, unary `-`, `+=`, and
+// strings and numbers through generic bounds.
+enum Money { Cents(i64), Free }
+
+impl Money {
+    fun add(self, o: Money): Money = match (self, o) {
+        (Cents(a), Cents(b)) => Money.Cents(a + b),
+        (Cents(a), Free) => Money.Cents(a),
+        (Free, m) => m,
+    };
+}
+
+// A tiny NdArray: element arithmetic needs `T: Num` on the impl.
+struct Grid<T> { data: T[] }
+
+impl Grid<T: Num> {
+    fun add(self, o: Grid<T>): Grid<T> {
+        let mut out = self;
+        for i in 0..self.data.len {
+            out.data[i] = self.data[i] + o.data[i];
+        }
+        out
+    }
+    fun mul(self, k: T): Grid<T> {
+        let mut out = self;
+        for i in 0..self.data.len {
+            out.data[i] = self.data[i] * k;
+        }
+        out
+    }
+    fun neg(self): Grid<T> {
+        let mut out = self;
+        for i in 0..self.data.len {
+            out.data[i] = -self.data[i];
+        }
+        out
+    }
+    fun total(self): T {
+        let mut s: T = 0;
+        for x of self.data {
+            s += x;
+        }
+        s
+    }
+}
+
+impl Grid<T> {
+    fun size(self): i64 = self.data.len;
+}
+
+interface Scaled { fun mul(self, k: f64): Scaled; fun show(self): string; }
+
+struct Len { m: f64 }
+
+impl Len {
+    fun mul(self, k: f64): Scaled = Len { m: self.m * k };
+    fun show(self): string = "{self.m}m";
+}
+
+fun twice<T: Add>(x: T): T = x + x;
+
+fun main() {
+    println(Money.Cents(150) + Money.Free + Money.Cents(25));
+    let g = Grid { data: [1, 2, 3] };
+    let h = (g + g) * 10;
+    println(h.data);
+    println((-h).total());
+    let mut f = Grid { data: [0.5, 1.5] };
+    f += Grid { data: [1.0, 1.0] };
+    f *= 2.0;
+    println(f.data);
+    println(Grid { data: ["a", "b"] }.size());
+    let s: Scaled = Len { m: 1.5 };
+    println((s * 2.0).show());
+    println(twice("ab"));
+    println(twice(21));
+    println(twice(Money.Cents(7)));
+}

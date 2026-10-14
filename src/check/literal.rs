@@ -29,6 +29,12 @@ impl Checker {
                 self.report(errors::wrong_literal(true, ty, expr.span, reason));
                 Type::Error
             }
+            // `0` and `1` are any `T: Num` (v15): each instance makes them its type.
+            (ExprKind::Int(value), Some(Type::Param(p)))
+                if !negated && *value <= 1 && self.has_num(&p) =>
+            {
+                Type::Param(p)
+            }
             // Only integer types hold integer literals: not f64, bool or string.
             (ExprKind::Int(_), Some(ty)) if !ty.is_integer() => {
                 self.report(errors::wrong_literal(false, ty, expr.span, reason));

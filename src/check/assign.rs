@@ -18,6 +18,14 @@ impl Checker {
             self.expr(value, None);
             return;
         }
+        // `a += b` on a struct, enum or `T` is `a = a.add(b)` (v15).
+        if let Some(name) = super::operators::method_of_assign(op)
+            && super::operators::overloaded(&target)
+        {
+            self.operator_assign((op.symbol(), name), (place, &target), value, mark);
+            self.no_change_inside(&[place], PlaceUse::Assign, mark);
+            return;
+        }
         // `&=` and the other bit forms need an integer (v7).
         let fits = match op {
             AssignOp::Assign => true,

@@ -64,15 +64,9 @@ impl Parser<'_> {
 
     /// The type's parameters in an `impl` header, `<T, U>`, without bounds:
     /// those come from the type's declaration (v2 draft §3).
-    pub(super) fn impl_params(&mut self) -> PResult<Vec<Ident>> {
-        if !self.at(&TokenKind::Lt) {
-            return Ok(Vec::new());
-        }
-        let open = self.bump();
-        if self.at(&TokenKind::Gt) {
-            return Err(self.expected("type parameter name"));
-        }
-        self.comma_list(open, TokenKind::Gt, |p| p.ident("type parameter name"))
+    pub(super) fn impl_params(&mut self) -> PResult<Vec<TypeParam>> {
+        // The same syntax as a function's, bounds included (v15).
+        self.type_params()
     }
 
     /// `Name`, `m.Name`, or `m.v.Name` through a re-exported module (v14),

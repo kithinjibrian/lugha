@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use super::generics::{Generic, params, renamed, with_args};
+use super::generics::{Generic, params, with_args};
 use super::{Checker, Type, errors};
 use crate::ast::{Item, Program};
 use crate::span::Span;
@@ -47,7 +47,7 @@ impl Checker {
                 self.report(d);
                 continue;
             }
-            let outer = renamed(&declared, &i.params);
+            let outer = self.impl_generics(&declared, &i.params);
             for f in &i.methods {
                 let name = &f.name.name;
                 let own = self.generics_with(&f.type_params, &outer);

@@ -21,6 +21,15 @@ impl Checker {
                 return false;
             }
             for interface in &g.bounds.interfaces {
+                // Only the numbers are `Num`: E0419, like `Ord` (v15).
+                if interface.key == "$prelude.Num"
+                    && self
+                        .builtin_operator(arg, &interface.key)
+                        .is_some_and(|p| !p.is_empty())
+                {
+                    self.report(errors::unmet_bound(arg, "Num", span));
+                    return false;
+                }
                 // A bound's arguments may name the other parameters (v6).
                 let interface = interface.subst(generics, args);
                 if !self.satisfies(arg, &interface, span) {
@@ -43,7 +52,8 @@ impl Checker {
     /// without `Eq` (v2 draft §4).
     pub(super) fn eq_ok(&self, ty: &Type) -> bool {
         match ty {
-            Type::Param(n) => self.bounds(n).eq,
+            // `Num` gives `==` and `<` too (v15).
+            Type::Param(n) => self.bounds(n).eq || self.has_num(n),
             Type::Array(inner) | Type::Option(inner) => self.eq_ok(inner),
             // A function anywhere inside has no `==` (v3 draft §4).
             Type::Struct(_, args) | Type::Enum(_, args) => {
@@ -58,7 +68,7 @@ impl Checker {
     /// True if `<` works on `ty`: numbers, strings, and parameters with `Ord`.
     pub(super) fn ord_ok(&self, ty: &Type) -> bool {
         match ty {
-            Type::Param(n) => self.bounds(n).ord,
+            Type::Param(n) => self.bounds(n).ord || self.has_num(n),
             // A tuple orders lexicographically when every element does (v14).
             Type::Struct(key, args) if key.starts_with(super::tuples::TUPLE) => {
                 args.iter().all(|a| self.ord_ok(a))

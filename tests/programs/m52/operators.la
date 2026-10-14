@@ -1,0 +1,30 @@
+// Operator overloading (v15): `+` calls `add`, `*` calls `mul`, and
+// generic code uses `+` through the prelude's `Add` and `Num` bounds.
+struct Vec2 { x: f64, y: f64 }
+
+impl Vec2 {
+    fun add(self, o: Vec2): Vec2 = Vec2 { x: self.x + o.x, y: self.y + o.y };
+    fun mul(self, o: Vec2): Vec2 = Vec2 { x: self.x * o.x, y: self.y * o.y };
+}
+
+fun add<T: Add>(a: T, b: T): T = a + b;
+
+fun sum<T: Num>(xs: T[]): T {
+    let mut s: T = 0;
+    for x of xs {
+        s += x;
+    }
+    s
+}
+
+fun main() {
+    let a = Vec2 { x: 1.0, y: 2.0 };
+    let b = Vec2 { x: 3.0, y: 4.0 };
+    println(a + b);
+    println(a * b);
+    println(add(5, 10));
+    println(add("glow", "worm"));
+    println(add(a, b));
+    println(sum([1, 2, 3]));
+    println(sum([0.5, 0.25]));
+}

@@ -4563,20 +4563,50 @@ Branch: main
 ## SESSION 107 — 2026-10-14 — Operator overloading (milestone 52) — open
 Branch: prp-081-operator_overloading
 
+### WHAT WAS DONE
+- The user approved PRP-081 "in one go" and raised the file-size limit to 500 lines (CLAUDE.md). Built and merged on green CI:
+  - operators on structs, enums and interface values through `add`/`sub`/`mul`/`div`/`rem`/`neg`;
+  - compound assignment;
+  - the prelude's operator bounds and `Num`;
+  - `0`/`1` as `T: Num`;
+  - bounds on `impl` blocks.
+- The user's goal program runs: `Vec2 { x: 4.0, y: 6.0 }`, `Vec2 { x: 3.0, y: 8.0 }`.
+- **Spec:** status, changes, compatibility, the `impl_decl` grammar, the operator bounds and `impl` bounds in §4, "Operator overloading" in §5, §9, the E0404/E0419 rows, the §10 program, §11 row 52.
+
+### FILES CREATED OR MODIFIED
+- New:
+  - `src/check/{operators,operators_tests,impl_bounds}.rs`, `src/codegen/operators.rs`, `src/prelude_ops.la`;
+  - `tests/programs/m52/` (`operators`, `more`, `overflow`, `e0404`, `e0419`).
+- Modified:
+  - `src/ast/mod.rs`, `src/parser/{generic,decl}.rs`, `src/parser/sexp/item.rs`;
+  - `src/check/{mod,ops,expr,assign,literal,bounds,satisfy,method_calls,methods,iterators}.rs`, `src/check/errors/generics.rs`;
+  - `src/codegen/{mod,expr,stmt,arith,instances}.rs`;
+  - `src/lib.rs`, `tests/cli.rs`, `tests/spec.rs`, the v15 spec and draft.
+- Docs: CLAUDE.md (limit, tree, STACK), README, CHANGELOG, TODO, MEMORY 100–101, PRP-081 amendments, CONTEXT.
+
+### TESTS WRITTEN
+- **Checker:** operator types, `v * 2.0`, `-v`, `+=`, `add<T: Add>` over numbers, strings and `Vec2`, `sum<T: Num>`, every error; `impl` bounds and E0419.
+- **Codegen:** method calls for `+`, `-`, `+=`; `add<i64>` stays a built-in checked add (`tests/cli.rs`).
+- **Programs:** `tests/programs/m52/`, and the §10 program from the spec.
+- **Regression:** 168 earlier programs give byte-identical IR; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 100, 101.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m52`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 51 complete** (package layout), tagged `m51`. **Milestone 52 (operator overloading) is proposed:** draft additions in `Language v15 Draft.md` (decisions 8–13) and PRP-081, waiting for the user's approval. On approval:
-- record MEMORY 100;
-- branch `prp-081-operator_overloading`;
-- commit "Add approved PRP-081 operator overloading";
-- build with new code in `check/operators.rs`, `check/impl_bounds.rs`, `codegen/operators.rs` and `src/prelude_ops.la`.
+**Milestone 52 complete** (PRP-081, MEMORY 100–101): operator overloading. Tag `m52` goes on the merge. `Language v15 Specification.md` (in progress, milestones 51–52) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines.
 
-Stop and propose a split if a hook would push `satisfy.rs`, `interfaces.rs`, `instances.rs` or `generics.rs` over 300 lines. Tag `m52` goes on the merge.
-
-The rest of v15 (directories, processes, env, Unicode follow-ups) waits in `TODO.md`.
-
-Watch file sizes: `check/interfaces.rs` (300), `check/visibility.rs` (300), `codegen/copy.rs` (300), `check/env.rs` (299), `check/satisfy.rs` (298), `check/instances.rs` (298), `parser/primary.rs` (298), `check/generics.rs` (294), `check/ops.rs` (292).
+Next:
+- glowworm can now use `impl NdArray<T: Num>` and operators;
+- the rest of v15 (directories, processes, env, Unicode follow-ups) waits in `TODO.md` for its discovery to resume at the process API shape.
 
 See `TODO.md`.

@@ -117,6 +117,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Tuples",
         "Format",
         "Import aliases",
+        "Operator overloading",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

@@ -19,6 +19,11 @@ pub struct Iteration {
     pub default: Option<(String, Vec<Type>)>,
 }
 
+/// The prelude's operator bounds (v15).
+pub(super) fn is_operator_bound(name: &str) -> bool {
+    matches!(name, "Add" | "Sub" | "Mul" | "Div" | "Rem" | "Neg" | "Num")
+}
+
 impl Checker {
     /// `key`, the interface a bare `name` would mean here, or the prelude's
     /// `Iter` when the module declares nothing by that name (v6).
@@ -29,9 +34,11 @@ impl Checker {
         name: &str,
     ) -> String {
         let declared = self.interfaces.contains_key(&key) || self.named_type(&key).is_some();
-        // `Iter` (v6) and `Display` (v12) are the prelude's interfaces.
+        // `Iter` (v6), `Display` (v12) and the operator bounds (v15) are the
+        // prelude's interfaces.
         let prelude = format!("$prelude.{name}");
-        let known = matches!(name, "Iter" | "Display") && self.interfaces.contains_key(&prelude);
+        let known = (matches!(name, "Iter" | "Display") || is_operator_bound(name))
+            && self.interfaces.contains_key(&prelude);
         if module.is_none() && known && !declared {
             return prelude;
         }

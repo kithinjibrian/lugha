@@ -134,12 +134,7 @@ fn item(item: &Item) -> String {
         }
         Item::Impl(i) => {
             let methods: String = i.methods.iter().map(|m| format!(" {}", fun(m))).collect();
-            let params = if i.params.is_empty() {
-                String::new()
-            } else {
-                let names: Vec<&str> = i.params.iter().map(|p| p.name.as_str()).collect();
-                format!(" (type-params {})", names.join(" "))
-            };
+            let params = type_params(&i.params);
             format!("(impl {}{params}{methods})", qualified(&i.module, &i.ty))
         }
         Item::Interface(i) => {

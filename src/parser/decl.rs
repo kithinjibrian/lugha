@@ -54,7 +54,8 @@ impl Parser<'_> {
         let params = self.impl_params()?;
         let open = self.expect(&TokenKind::LBrace)?;
         // `Self` means this type throughout the block (v10).
-        let methods = self.in_impl(&ty, &params, |p| p.impl_methods(open))?;
+        let names: Vec<Ident> = params.iter().map(|p| p.name.clone()).collect();
+        let methods = self.in_impl(&ty, &names, |p| p.impl_methods(open))?;
         Ok(ImplDecl {
             module,
             ty,

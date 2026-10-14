@@ -1,0 +1,24 @@
+
+// Operator bounds (v15 draft decisions 10–13, milestone 52), joined after
+// `prelude_text.la` into the one prelude module. `a + b` on a struct or
+// enum calls its `add` method; a type parameter allows `+` when bounded by
+// `Add` or `Num`. The numbers satisfy every one of these as built-ins and
+// `string` satisfies `Add`; other types satisfy the single-operator ones
+// by having the method, and only the numbers satisfy `Num`.
+
+interface Add { fun add(self, other: Self): Self; }
+interface Sub { fun sub(self, other: Self): Self; }
+interface Mul { fun mul(self, other: Self): Self; }
+interface Div { fun div(self, other: Self): Self; }
+interface Rem { fun rem(self, other: Self): Self; }
+interface Neg { fun neg(self): Self; }
+
+// All of the arithmetic, `0` and `1` as values, `==` and `<`: the numbers.
+interface Num {
+    fun add(self, other: Self): Self;
+    fun sub(self, other: Self): Self;
+    fun mul(self, other: Self): Self;
+    fun div(self, other: Self): Self;
+    fun rem(self, other: Self): Self;
+    fun neg(self): Self;
+}

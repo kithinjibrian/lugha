@@ -286,3 +286,18 @@ fn generics_run() {
     let ir = text(&lughac(&dir.0, &["build", "--emit=ir", "g.la"]).stdout);
     assert!(ir.contains("define i64 @\"lugha_fn_id<i64>\"(i64"), "{ir}");
 }
+
+#[test]
+fn number_instances_of_operator_bounds_keep_the_built_in_operator() {
+    // v15: `add<i64>` through `T: Add` is a checked `add` with no call.
+    let src = "fun add<T: Add>(a: T, b: T): T = a + b;\nfun main() { let n = add(1, 2); }\n";
+    let dir = TempDir::with(&[("add.la", src.as_bytes())]);
+    let out = lughac(&dir.0, &["build", "--emit=ir", "add.la"]);
+    let ir = text(&out.stdout);
+    let body = &ir[ir
+        .find("define i64 @\"lugha_fn_add<i64>\"")
+        .expect("an i64 instance")..];
+    let body = &body[..body.find("\n}").expect("the body ends")];
+    assert!(body.contains("llvm.sadd.with.overflow.i64"), "{ir}");
+    assert!(!body.contains("call i64 @lugha_fn_"), "{ir}");
+}

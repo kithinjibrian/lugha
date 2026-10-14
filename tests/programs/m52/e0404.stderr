@@ -1,0 +1,22 @@
+error[E0404]: cannot apply `+` to T
+  --> tests/programs/m52/e0404.la:7:26
+  |
+7 | fun double<T>(x: T): T = x + x;
+  |                          ^^^^^
+  |
+  = help: add a bound that allows it, such as `T: Num` or `T: Add`
+
+error[E0404]: cannot apply `+` to Set
+   --> tests/programs/m52/e0404.la:11:13
+   |
+11 |     let t = s + 1;
+   |             ^^^^^
+   |
+   = help: for an operator, `add` must be `fun add(self, other: …): …`: a plain `self` and a result
+
+error[E0404]: cannot apply `-` to string
+   --> tests/programs/m52/e0404.la:12:13
+   |
+12 |     let u = "a" - "b";
+   |             ^^^^^^^^^
+

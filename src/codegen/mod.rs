@@ -36,6 +36,7 @@ mod iterators;
 mod lower;
 mod matching;
 mod methods;
+mod operators;
 mod or_patterns;
 mod patterns;
 mod results;

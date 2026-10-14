@@ -80,7 +80,7 @@ impl Checker {
         }
     }
 
-    fn on_value(
+    pub(super) fn on_value(
         &mut self,
         call: &Expr,
         (base, receiver): (&Expr, &Type),

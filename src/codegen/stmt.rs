@@ -101,6 +101,12 @@ impl<'ctx> Lowerer<'ctx> {
         let (address, ty, element) = self.place_address(place)?;
         let new = match compound_op(op) {
             None => self.value_for_store(value, &ty)?,
+            // `a += b` on a struct or enum: `a = a.add(b)` (v15).
+            Some(op) if matches!(ty, Type::Struct(..) | Type::Enum(..)) => {
+                let current = self.load_element(address, &ty);
+                let name = super::arith::method_of(op).expect("compound operators are arithmetic");
+                self.operator_on(place, (current, &ty), name, std::slice::from_ref(value))?
+            }
             Some(op) => {
                 // `x op= e` reads `x` once, then evaluates `e` (spec §5).
                 // Compound operators need a numeric type, which has no `bool` widening.

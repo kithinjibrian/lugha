@@ -155,8 +155,9 @@ pub struct ImplDecl {
     pub module: Option<Ident>,
     /// The type the methods belong to.
     pub ty: Ident,
-    /// The type's parameters, `impl Stack<T>` (v2 draft §3).
-    pub params: Vec<Ident>,
+    /// The type's parameters, `impl Stack<T>` (v2 draft §3), with bounds
+    /// for every method of the block, `impl NdArray<T: Num>` (v15).
+    pub params: Vec<TypeParam>,
     /// Methods and associated functions in order.
     pub methods: Vec<FunDecl>,
     /// From `impl` to the closing brace.

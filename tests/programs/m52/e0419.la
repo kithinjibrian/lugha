@@ -1,0 +1,19 @@
+struct Grid<T> { data: T[] }
+
+impl Grid<T: Num> {
+    fun total(self): T {
+        let mut s: T = 0;
+        for x of self.data {
+            s += x;
+        }
+        s
+    }
+}
+
+fun sum<T: Num>(xs: T[]): T = Grid { data: xs }.total();
+
+fun main() {
+    let g = Grid { data: ["a"] };
+    let t = g.total();
+    let n = sum(["b"]);
+}

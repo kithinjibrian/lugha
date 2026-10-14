@@ -2,17 +2,18 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestone 51 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
+**Status:** in progress (milestones 51–52 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
 
 **v14.** This is v13 plus binary I/O, `char`, tuples, `format`, import aliases and whole-module re-exports, and git packages (milestones 45–50).
 
-**Changes since v14** (milestone 51):
+**Changes since v14** (milestones 51–52):
 - A package's `[package]` table may give its `name`, checked against the key a manifest lists it under (E0327), and its `source`, the folder its modules start in: with `source = "src"`, `src/array.la` of package `glowworm` is `glowworm.array` (section 6).
 - A program with no `lugha.toml` beside its main file uses the nearest one above it, looking no further than a folder with `.git` or the home folder; when that manifest names a package, the program imports it by that name, so `glowworm/examples/basics.la` writes `import glowworm.array;` with no manifest of its own (section 6).
 - A file imported as two modules is E0328 (section 6).
 - A manifest path such as `".."` resolves when the main file is given with a folder (`lughac run example/main.la`); v14 reported E0322.
+- Operator overloading: `a + b` on a struct, enum or interface value calls `a.add(b)`, and likewise `-` `sub`, `*` `mul`, `/` `div`, `%` `rem` and unary `-` `neg`, for a method of the operator's shape; `a += b` is `a = a.add(b)`. The prelude's `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` and `Num` are bounds that the numbers (and `string`, for `Add`) satisfy, so `fun add<T: Add>(a: T, b: T): T = a + b;` works for numbers, strings and your own types; `0` and `1` are values of a `T: Num`. An `impl` block may bound its parameters, `impl Grid<T: Num> { … }` (sections 3–5).
 
-Every valid v14 program and package is a valid v15 one.
+Every valid v14 program and package is a valid v15 one: a module's own type or interface named `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` or `Num` still means its own, as for `Iter`.
 
 **Changes in v14 since v13** (milestones 45–50):
 
@@ -259,7 +260,7 @@ extern_decl  = "extern" "fun" IDENT "(" [ params ] ")" [ ":" type ] ";" ;
 struct_decl  = "struct" IDENT [ type_params ] "{" [ field { "," field } [ "," ] ] "}" ;
 field        = [ visibility ] IDENT ":" type ;
 enum_decl    = "enum" IDENT [ type_params ] "{" [ variant { "," variant } [ "," ] ] "}" ;
-impl_decl    = "impl" IDENT [ "<" IDENT { "," IDENT } ">" ] "{" { [ visibility ] method } "}" ;
+impl_decl    = "impl" IDENT [ type_params ] "{" { [ visibility ] method } "}" ;   (* bounds: v15 *)
 method       = "fun" IDENT [ type_params ] "(" [ receiver [ "," params ] | params ] ")" [ ":" type ] fun_body ;
 type_params  = "<" type_param { "," type_param } [ "," ] ">" ;
 type_param   = IDENT [ ":" bound { "+" bound } ] ;
@@ -587,8 +588,9 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 **Generic declarations.** `fun`, `struct`, `enum` and methods can take type parameters.
 - **Scope:** a type parameter is a type inside its declaration (fields, payloads, signature and body), and a method also sees its `impl`'s parameters. It may not be named like a type, a module or another parameter of the same declaration, nor a method's like its `impl`'s (E0316).
 - **Bounds:** `T: Eq`, `T: Ord`, interfaces (below), or several (`T: Shape + Eq`). Anything else is E0315. `Ord` doesn't imply `Eq`; write both if both are used.
+- **Operator bounds** (v15): the prelude's interfaces `Add`, `Sub`, `Mul`, `Div`, `Rem` (each `fun op(self, other: Self): Self;`), `Neg` (`fun neg(self): Self;`) and `Num` (all six). `T: Add` allows `a + b` and `a.add(b)` on `T`, and so on; `T: Num` allows every arithmetic operator, `==` and `<`, and the literals `0` and `1` as values of `T` (`let mut s: T = 0;`; other literals are E0401). The numbers satisfy all of them as built-ins and `string` satisfies `Add`; other types satisfy the single-operator ones by having the method, and only the numbers satisfy `Num` (E0419). They are visible in every module unless the module declares the name, like `Iter`. Through a bound, each instance uses the built-in operator at a number or string type, panics included, and calls the method otherwise.
 - **What a bare `T` allows:** being stored, moved, copied, passed, returned and put in arrays, structs and enums. `==` needs `T: Eq`, `<` needs `T: Ord`, and a method call needs an interface bound that declares it. Using `==` or `<` without its bound is E0404, with help suggesting the bound.
-- **What `T` never allows:** arithmetic, casts, `.len`, or indexing. Those need a concrete type. A `T` prints (v12), each instance by its concrete type's rules.
+- **What `T` never allows:** arithmetic without an operator bound (v15), casts, `.len`, or indexing. Those need a concrete type or a bound. A `T` prints (v12), each instance by its concrete type's rules.
 - **Checked once:** a generic body is checked once, with its parameters abstract, so every instance compiles.
 
 **Using a generic.**
@@ -605,7 +607,8 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 - **Bounds with arguments** (v6): a bound's arguments may name the declaration's other type parameters, `fun collect<T, S: Source<T>>(src: S): T[]`. A parameter that no argument or expected type fixes is read off the methods of the type a bound parameter has: `collect(Count { … })` gives `S = Count`, then `T = i64` from `Count.next`, and this repeats until nothing new is learnt (`T` from `S`, `S` from `H: Holder<S>`). A parameter still unknown is E0412; one that the arguments fix differently fails the bound (E0422). The same holds for a parameter declared as an interface value: `fun count<T>(s: Source<T>): i64` called as `count(Count { … })` reads `T = i64` off `Count.next`, then converts the argument to `Source<i64>`.
 - **`Self` in `impl` blocks** (v10): inside `impl T { … }`, in signatures and bodies, `Self` is `T` as written there, with the `impl`'s parameters: `Point`, or `Stack<T>` in `impl Stack<T>`. It can be written wherever `T` can: as a type (`other: Self`, `: Self`, `Self[]`, `Option<Self>`), as a struct literal's name (`Self { x: 0, y: 0 }`), and before `.` for an associated call or a variant (`Self.origin()`, `Self.Red`). In a struct's field types and an enum's payload types (v13), `Self` is likewise the type being declared, with its parameters: `struct Tree<T> { value: T, kids: Self[] }` means `kids: Tree<T>[]`, and `enum List { Cons(i64, Self), Nil }` is recursive as if `List` were written; a struct holding `Self` directly is E0307, as for its own name. In a function outside these, `Self` is an unknown type (E0305).
 - **Default methods** (v5): a method may end in `= expr;` or a block instead of `;`. Its body is checked once, with `self` of a hidden type that has only the interface's items, so it can call them on `self` and nothing else (no fields, E0410). `Self` names that hidden type (v6), so a default can take and return it: `fun max(self, other: Self): Self = if self.less(other) { other } else { self };`. A type satisfies the interface without the defaulted method; a method of its own by that name must match the signature (E0422), and is used instead of the default. A default is called through an interface value, a bound, or (v10) directly on a struct or enum without its own method by that name: `c.describe()` uses the default of the one interface visible at the call (declared in the calling module, in a module it imports, or in the prelude, and not hidden by its visibility) that supplies `describe` and that `c`'s type satisfies, a generic interface at the arguments the type's methods give it. None is E0415, with help naming an interface; two or more is E0430, naming two of them. Numbers, strings, arrays and `Option` have no `impl` blocks, so a default is never called on them directly. Only methods take a default body; an associated function with one is E0201.
-- **Satisfying one:** a type satisfies `Shape` if, for every item, it has a method or associated function with the same name, the same receiver kind, and the same parameter and return types, visible where the bound is checked. No declaration is needed. A generic type's methods count with its type arguments substituted (`Stack<i64>` meets `fun size(self): i64` through `impl Stack<T>`); a method with type parameters of its own never matches. A type parameter satisfies an interface when its own bounds declare every item the same way. Primitives, strings, arrays and `Option` have no methods of their own, so they satisfy only an interface with no items.
+- **Satisfying one:** a type satisfies `Shape` if, for every item, it has a method or associated function with the same name, the same receiver kind, and the same parameter and return types, visible where the bound is checked. No declaration is needed. A generic type's methods count with its type arguments substituted (`Stack<i64>` meets `fun size(self): i64` through `impl Stack<T>`); a method with type parameters of its own never matches. A type parameter satisfies an interface when its own bounds declare every item the same way. Primitives, strings, arrays and `Option` have no methods of their own, so they satisfy only an interface with no items, except the prelude's operator bounds, which the numbers (and `string`, for `Add`) satisfy as built-ins (v15).
+- **Bounds on `impl` blocks** (v15): `impl Grid<T: Num> { … }` writes bounds on the block's parameters with a function's syntax, and every method of the block has them, added to the type's own. A type may have several `impl` blocks with different bounds, such as `impl Grid<T: Num>` for arithmetic and `impl Grid<T>` for the rest; a method defined in two blocks is E0310 as before. A bounded method used on an instance that misses the bound is E0419: `Grid { data: ["a"] }.total()`.
 - **Using one as a bound:** `fun total<T: Shape>(xs: T[]): f64`, combined freely with `Eq`, `Ord` and other interfaces (`T: Shape + Eq`), or from another module (`T: shapes.Shape`). In the body, `x.area()` and, for an associated item, `T.make(…)` are allowed when some bound declares them, and are checked against its signature. Calling something no bound declares is E0421, with help suggesting a bound. Two bounds of one parameter may declare the same name only with the same signature; otherwise the bound list is E0423.
 - **At a use:** a type argument that doesn't satisfy an interface bound is E0422, which names each missing or mismatched item.
 - **Names and visibility:** interfaces share their module's item namespace (E0302) and follow the visibility rules of section 6. Through a bound, each instance calls the concrete type's own method, so there is no dispatch at run time.
@@ -655,6 +658,13 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 ## 5. Expressions and statements
 
 Evaluation is strictly left to right: operands, call arguments and struct-literal fields are evaluated in source order. The only exceptions are `&&` and `||`, which skip their right operand when the left decides the result.
+
+**Operator overloading** (v15). `a op b` where `a` is a struct, enum or interface value calls a method of `a`'s type: `+` `add`, `-` `sub`, `*` `mul`, `/` `div`, `%` `rem`, and unary `-a` `neg`.
+- **Shape:** the method qualifies when it has a plain `self` receiver (not `mut self`), exactly one parameter (none for `neg`) and a result. No declaration is needed, as for interfaces. A method of that name with another shape doesn't make an operator, so a set's `fun add(mut self, x: i64)` leaves `set + 1` an error.
+- **Types:** `b` is checked against the method's parameter (E0403; a literal of the wrong kind, E0401) and the result has the method's return type, so `fun mul(self, k: f64): Vec2` makes `v * 2.0` a `Vec2`. Each type has one method per operator; the left operand decides, so `2.0 * v` is E0404.
+- **Compound assignment:** `a += b` is `a = a.add(b)`, the place evaluated once; the method's result must have the place's type (E0403).
+- **Missing:** an operator on a type without a fitting method is E0404, with help naming the shape when a method of that name exists. Numbers and strings keep the built-in operators, and have no methods to call: `5.add(3)` is E0415.
+- **Unchanged:** `==`, `!=`, `<` and the others, `&&`/`||`, the bit operators and indexing are not overloadable.
 
 **Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way, including `%=` (v9), which panics on a zero divisor as `%` does. Shifts (v7) lose the bits shifted out and never panic for overflow; `>>` copies the sign bit for `i32` and `i64` and fills with zeros for the unsigned types; a shift amount that is negative, or at least the type's width (8, 32 or 64), panics with `shift out of range` at the operator. `&=`, `|=`, `^=`, `<<=` and `>>=` mean `x = x op y` with the place evaluated once, as `+=` does, and need an integer.
 
@@ -1060,6 +1070,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - The v13 iterator helpers are Lugha in the prelude's third file, compiled only when reached like the others. `flat_map` keeps its current inner iterator in a 0- or 1-element array, so `next` steps it in place.
 - A format specifier (v13) is parsed once by the checker (E0431) and again by codegen, which passes its parts to `lugha_rt_fmt_int`, `lugha_rt_fmt_float` or `lugha_rt_pad`, from a runtime fragment `format.c`. Programs without specifiers give byte-identical IR.
 - `format` (v14) splits its template into text and holes in the checker and again in codegen, then lowers like an interpolated string with the arguments as its parts. Programs without `format` give byte-identical IR.
+- An overloaded operator (v15) lowers to a call of the method, `lugha_fn_Vec2.add(self, other)` with a pointer to a copy of the left operand as for any `self` method, or through the interface's table for an interface value. A generic body's operator on `T` is lowered per instance: at a number or string type it is the built-in operator, so `add<i64>` is a plain checked `add`; at a struct or enum type, the method call. A `0` or `1` of type `T` is the instance's constant (`0.0` at `f64`). Programs without overloaded operators give byte-identical IR.
 - An index (v14) is evaluated at its own integer type and sign- or zero-extended to `i64` before the bounds check, so an `i64` index lowers exactly as before.
 - A `char` (v14) is an LLVM `i32`, compared unsigned. An integer `as char` selects U+FFFD unless the value, widened to `i64`, is a scalar value. `chars()`, `char_count()`, `char_from` and the classification and case methods are Lugha in the prelude's fourth file.
 - A tuple type (v14) is the generic struct `$tuple<n>` with fields `0`, `1`, …, so it lowers as a struct: an LLVM named struct spelt as the type prints, `%"(i64, string)"`, with struct copy, equality and print helpers, and symbols such as `lugha_fn_max<(i64, i64)>`. `<` calls one `lugha_cmp_<type>(a, b) -> i32` helper per tuple type. A tuple pattern tests each field's address, with no tag. `for (i, w) of e` becomes a loop over a hidden variable whose body starts `let (i, w) = …;`.
@@ -1206,7 +1217,7 @@ Name and type errors, reported by the checker:
 | E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
 | E0402 | Integer literal out of range for its type | `let b: u8 = 256;` |
 | E0403 | Type mismatch | `let n: i32 = ok;` where `ok` is `bool`; `if`/`else` of different types |
-| E0404 | Operator applied to invalid operand types | `true + 1`, `-u` where `u` is `u8`, `u16`, `u32` or `u64`; `a == b` on a `T` without `Eq` (with help to declare it) |
+| E0404 | Operator applied to invalid operand types | `true + 1`, `-u` where `u` is `u8`, `u16`, `u32` or `u64`; `a == b` on a `T` without `Eq` (with help to declare it); `s + 1` where `s`'s type has no `add` of the operator shape, `a + a` on a `T` without `Add` or `Num` (v15) |
 | E0405 | Wrong number of arguments | `add(1)` for `fun add(a: i64, b: i64)` |
 | E0406 | Not a function, or something that can't be a value | `let step = 2; step(1);`; `let a = Circle.area;` (a method), `let p = println;`, an extern (v3) |
 | E0407 | `void` used as a value | `let x = log();` where `log` returns nothing |
@@ -1219,7 +1230,7 @@ Name and type errors, reported by the checker:
 | E0416 | Wrong number of payloads | `Shape.Rect(1.0)`, `Rect(w) => …` |
 | E0417 | Non-exhaustive `match` | `match s { Circle(r) => r }` with more variants; an integer `match` without `_` |
 | E0418 | Wrong number of type arguments | `Stack<i64, i64>`, a bare `Stack` as a parameter type (v2) |
-| E0419 | Type argument doesn't satisfy its bound | `largest([[1]])`: `i64[]` is not `Ord` (v2) |
+| E0419 | Type argument doesn't satisfy its bound | `largest([[1]])`: `i64[]` is not `Ord` (v2); `sum(["a"])` with `T: Num`, or a method of an `impl Grid<T: Num>` on a `Grid<string>` (v15) |
 | E0420 | Generic instantiation too deep | `fun f<T>(x: T) { f([x]); }`; `struct S<T> { xs: S<T[]>[] }` (v2) |
 | E0421 | A method no bound declares | `s.perimeter()` in `fun f<T: Shape>(s: T)` (v2) |
 | E0422 | A type argument, or a converted value, doesn't satisfy an interface | `total_area([1, 2])`: `i64` has no method `area` (v2); `let s: Shape = 1;` (v5); a `Named` value where a `Pet` is expected, without `sound` (v6) |
@@ -2635,6 +2646,41 @@ fun main() {
 }
 ```
 
+**Operator overloading** (milestone 52). Prints `Vec2 { x: 4.0, y: 6.0 }`, `Vec2 { x: 3.0, y: 8.0 }`, `15`, `glowworm`, `Vec2 { x: 4.0, y: 6.0 }`, `6`, `0.75` on seven lines, exits with 0.
+
+```
+// Operator overloading (v15): `+` calls `add`, `*` calls `mul`, and
+// generic code uses `+` through the prelude's `Add` and `Num` bounds.
+struct Vec2 { x: f64, y: f64 }
+
+impl Vec2 {
+    fun add(self, o: Vec2): Vec2 = Vec2 { x: self.x + o.x, y: self.y + o.y };
+    fun mul(self, o: Vec2): Vec2 = Vec2 { x: self.x * o.x, y: self.y * o.y };
+}
+
+fun add<T: Add>(a: T, b: T): T = a + b;
+
+fun sum<T: Num>(xs: T[]): T {
+    let mut s: T = 0;
+    for x of xs {
+        s += x;
+    }
+    s
+}
+
+fun main() {
+    let a = Vec2 { x: 1.0, y: 2.0 };
+    let b = Vec2 { x: 3.0, y: 4.0 };
+    println(a + b);
+    println(a * b);
+    println(add(5, 10));
+    println(add("glow", "worm"));
+    println(add(a, b));
+    println(sum([1, 2, 3]));
+    println(sum([0.5, 0.25]));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2692,6 +2738,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 49 | Import aliases and re-exports (v14) | `as` on modules and items, `public import m [as v];`, `m.v.X` | The import-aliases program in section 10 passes (done) |
 | 50 | Git packages (v14) | git entries, the cache, `lugha.lock`, `lughac update`, `--offline` (E0325, E0326) | A program using a `file://` repository is fetched, locked, built `--offline`, and a moved tag is caught (`tests/git_packages.rs`; done: v14 complete) |
 | 51 | Package layout (v15) | `[package] name` (E0327) and `source`, the program's manifest from a parent folder and its implicit package, E0328, the `..` path fix | A library with `source = "src"` and an `examples/` program run from any folder (`tests/package_layout.rs`; done) |
+| 52 | Operator overloading (v15) | `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, compound assignment, the prelude's `Add`…`Neg` and `Num` bounds, `0`/`1` as `T: Num`, bounds on `impl` blocks | The operator-overloading program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

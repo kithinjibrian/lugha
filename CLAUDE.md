@@ -155,7 +155,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v15 Specification.md` (`lughac spec` prints it): Lugha v15, in progress (milestone 51 done: package layout — `[package] name` and `source`, the program's manifest from a parent folder and its implicit package, E0327, E0328). `Language v15 Draft.md` is the approved plan; the rest of v15 (directories, processes, env, Unicode follow-ups) is planned in `TODO.md`. The v0–v14 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la`, `src/prelude_more.la` and `src/prelude_text.la`, loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
+The language itself is defined by `docs/specs/Language v15 Specification.md` (`lughac spec` prints it): Lugha v15, in progress (milestones 51–52 done: package layout — `[package] name` and `source`, the program's manifest from a parent folder and its implicit package, E0327, E0328; operator overloading — `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, the prelude's `Add`…`Neg` and `Num` bounds, bounds on `impl` blocks). `Language v15 Draft.md` is the approved plan; the rest of v15 (directories, processes, env, Unicode follow-ups) is planned in `TODO.md`. The v0–v14 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la`, `src/prelude_more.la`, `src/prelude_text.la` and `src/prelude_ops.la`, loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -234,6 +234,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── prelude_iter.la — the iterator sources, adapters and consumers (v10) and `Display` (v12), joined after prelude.la into the one `$prelude`
 │   ├── prelude_more.la — `zip` (yielding tuples, v14), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position` (v13), joined third
 │   ├── prelude_text.la — `Chars` (UTF-8 decoding), `char_count`, `char_from`, Latin-1 classification and case (v14), joined fourth
+│   ├── prelude_ops.la — the operator bounds `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` and `Num` (v15), joined fifth
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
 │   ├── format.rs    — format specifiers (v13): `parse`, `check`, shared by the checker and codegen
@@ -279,7 +280,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  numbers.rs (v7/v10 numeric types: `is_float`, `is_unsigned`, keyword types, `I.MIN`/`I.MAX`), slots.rs (enum payload slots),
 │   │                  or_patterns.rs (or-pattern alternatives and bindings E0428, `mut` bindings), conditional.rs
 │   │                  (`if let`, `while let`, `let … else`, E0429), concrete_defaults.rs (default methods on
-│   │                  concrete types, E0430), named_imports.rs (`import m { X }`, re-exports: aliases, `member`, E0318), printing.rs (what prints, `show` instances, `$print` uses), for_mut.rs (`for x of mut e`: place checks, E0501/E0502/E0506), iter_helpers.rs (iterator helpers as prelude calls, prelude iterator type names), tuples.rs (tuples as `$tuple<n>` structs, patterns, E0433, v14), templates.rs (`format`: holes against arguments, E0432, v14), reexports.rs (`as`, whole-module re-exports: `module_path`, `member_through`, `m.v.X`, v14)
+│   │                  concrete types, E0430), named_imports.rs (`import m { X }`, re-exports: aliases, `member`, E0318), printing.rs (what prints, `show` instances, `$print` uses), for_mut.rs (`for x of mut e`: place checks, E0501/E0502/E0506), iter_helpers.rs (iterator helpers as prelude calls, prelude iterator type names), tuples.rs (tuples as `$tuple<n>` structs, patterns, E0433, v14), templates.rs (`format`: holes against arguments, E0432, v14), operators.rs (v15: operators as method calls, built-in satisfaction of the operator bounds, `Num`; operators_tests.rs), impl_bounds.rs (v15: bounds on `impl` blocks), reexports.rs (`as`, whole-module re-exports: `module_path`, `member_through`, `m.v.X`, v14)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
@@ -297,7 +298,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (dynamic calls, interface copies, type-pattern tests), defaults.rs (default instances, `?` boxing),
 │   │                  instances.rs (generic instances:
 │   │                  substitution, instance symbols),
-│   │                  swap.rs (swap: loads and crossed stores), bits.rs (bit operators, the shift range check), int_methods.rs (wrapping and counting methods), int_checked.rs (v10 checked/saturating/rotating methods, `I.MIN`/`I.MAX`), or_patterns.rs (alternatives in the arm chain, `mut` copies), format.rs (format specifiers → `lugha_rt_fmt_*`), show.rs (printing: `text`, `lugha_show_<type>` helpers), show_iface.rs (printing interface values by identity), unwrap.rs (`unwrap`/`expect`), conditional.rs (`if let`, `while let`, `let … else`), iterators.rs (iterator loops: a hidden copy, `next` until `None`), tuples.rs (tuple literals, patterns, printing, `lugha_cmp_` order),
+│   │                  swap.rs (swap: loads and crossed stores), bits.rs (bit operators, the shift range check), int_methods.rs (wrapping and counting methods), int_checked.rs (v10 checked/saturating/rotating methods, `I.MIN`/`I.MAX`), or_patterns.rs (alternatives in the arm chain, `mut` copies), format.rs (format specifiers → `lugha_rt_fmt_*`), show.rs (printing: `text`, `lugha_show_<type>` helpers), show_iface.rs (printing interface values by identity), unwrap.rs (`unwrap`/`expect`), conditional.rs (`if let`, `while let`, `let … else`), iterators.rs (iterator loops: a hidden copy, `next` until `None`), tuples.rs (tuple literals, patterns, printing, `lugha_cmp_` order), operators.rs (v15: operator method calls; numbers keep the built-in operators),
 │   │                  upcast.rs (between interfaces: table registry, derived tables, `lugha_up_` lookups)
 │   ├── modules/     — mod.rs (load: the main file and every import, one offset space; with_prelude), resolve.rs
 │   │                  (import checks, E0312/E0314/E0319), manifest.rs (`lugha.toml`, E0321), inline.rs (inline
@@ -328,7 +329,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── git_packages.rs — git packages through lughac and a real `file://` repository (lock, offline, E0325/E0326)
 │   ├── package_layout.rs — package layout through lughac: `source`, `examples/` by name, the `$HOME` bound, E0327/E0328
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m49/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m52/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)

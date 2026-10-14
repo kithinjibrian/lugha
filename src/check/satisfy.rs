@@ -93,6 +93,10 @@ impl Checker {
     /// What `arg` lacks to satisfy `interface`, one entry per item: empty
     /// when it satisfies it.
     pub(super) fn unmet(&self, arg: &Type, interface: &Applied) -> Vec<String> {
+        // The numbers and `string` meet the prelude's operator bounds as built-ins (v15).
+        if let Some(problems) = self.builtin_operator(arg, &interface.key) {
+            return problems;
+        }
         let mut problems = Vec::new();
         for req in &self.items_for(interface, arg) {
             match self.offer(arg, req) {

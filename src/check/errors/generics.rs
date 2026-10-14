@@ -79,6 +79,8 @@ pub(in crate::check) fn type_args(
 pub(in crate::check) fn unmet_bound(ty: &Type, bound: &str, span: Span) -> Diagnostic {
     let help = if bound == "Ord" {
         "only numbers, strings and parameters with `Ord` are ordered"
+    } else if bound == "Num" {
+        "only the number types are `Num` (v15)"
     } else {
         "a type parameter needs `Eq` before `==` works on it"
     };

@@ -119,26 +119,26 @@ None.
 Unit tests — parser: `impl NdArray<T: Num>` and its sexp; plain `impl Stack<T>` unchanged.
 
 Unit tests — checker (`check/operators.rs`, `check/impl_bounds.rs`):
-- [ ] The Vec2 operators' types; `v * 2.0` with `fun mul(self, k: f64)`; `-v`; `+=`.
-- [ ] `add<T: Add>` over `i64`, `f64`, `string` and `Vec2`.
-- [ ] `sum<T: Num>` with `0`.
-- [ ] Each error above, including a `mut self` `add` not enabling `+`.
-- [ ] A bounded `impl` method on `NdArray<string>` (E0419) while an unbounded block's methods still work.
+- [x] The Vec2 operators' types; `v * 2.0` with `fun mul(self, k: f64)`; `-v`; `+=`.
+- [x] `add<T: Add>` over `i64`, `f64`, `string` and `Vec2`.
+- [x] `sum<T: Num>` with `0`.
+- [x] Each error above, including a `mut self` `add` not enabling `+`.
+- [x] A bounded `impl` method on `NdArray<string>` (E0419) while an unbounded block's methods still work.
 
 Unit tests — codegen: `Vec2 + Vec2` calls `lugha_fn_Vec2.add`; `add<i64>` uses the built-in checked `add` with no call.
 
 Acceptance — `tests/programs/m52/`:
-- [ ] `operators.la`: the §10 program, starting with the objective.
-- [ ] `more.la`:
+- [x] `operators.la`: the §10 program, starting with the objective.
+- [x] `more.la`:
   - an enum with `add`;
   - a generic struct with a bounded `impl` and element arithmetic (a tiny NdArray);
   - `string` through `T: Add`;
   - overflow still panicking through `add<i64>`.
-- [ ] `e0404.la` and `e0419.la`: reject goldens.
-- [ ] The §10 program runs from the spec.
+- [x] `e0404.la` and `e0419.la`: reject goldens.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -146,11 +146,11 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The objective's program prints exactly `Vec2 { x: 4.0, y: 6.0 }` and `Vec2 { x: 3.0, y: 8.0 }`.
-- [ ] The `m52/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The spec is at milestone 52; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The objective's program prints exactly `Vec2 { x: 4.0, y: 6.0 }` and `Vec2 { x: 3.0, y: 8.0 }`.
+- [x] The `m52/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The spec is at milestone 52; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -159,3 +159,14 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m52/operators.la
 ```
+
+## AMENDMENTS (during build, session 107)
+
+- **The operator is the method call's id.** The checker calls the method-call core (`on_value`, now `pub(super)`) with the operator expression as the call, so instances, bound uses and `callees` need nothing new. There is no `Checked.operators`: codegen decides by the operand's concrete type, so a `T` body is a built-in operator at numbers and strings and a method call at structs and enums.
+- **Codegen** calls the method directly for structs and enums (`operator_on`, a pointer to a copy as the receiver; for `+=` the place is loaded once), and through `method_call` with a synthetic callee for interface values.
+- **A literal facing a `T: Num` operand** (`a - b > 0`) takes type `T` (`second_operand` in `ops.rs`, split out of `operands`).
+- **E0315 for a bounded `impl` of a non-generic type** isn't needed: such an `impl` has parameters the type lacks, which is E0418 as before.
+- **`Num`'s E0419** has its own help ("only the number types are `Num`").
+- **Unsigned numbers satisfy `Neg` and `Num`:** `-x` at `u8` is a checked `0 - x`, so it panics unless `x` is 0.
+- **File-size limit:** raised to 500 lines by the user; no file needed splitting.
+- **IR:** the 168 earlier programs that compile give byte-identical IR. `-O2` was checked by hand for `m52/operators` and `m52/more`.
