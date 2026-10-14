@@ -1146,6 +1146,18 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 76. Lugha v10 direction (sessions 80–81)
+
+**Decision:** `docs/specs/Language v10 Draft.md` is approved: three independent milestones, built "in one go".
+- **M34 `Self` everywhere:** in `impl T` blocks `Self` is `T` with its parameters, as a type, in struct literals (`Self { … }`), associated calls (`Self.f()`) and variants (`Self.Red`); still E0305 in struct/enum declarations. A default method is callable on a concrete type when exactly one visible interface (calling module, its imports, the prelude) supplies it and the type satisfies it; own method wins; none → E0415, several → E0430.
+- **M35 more integers:** keyword types `i8`, `i16`, `u16`; on every integer type `checked_add/sub/mul/div` (`Option`), `saturating_add/sub/mul`, `rotate_left/right(n: i64)` modulo the width, `I.MIN`/`I.MAX` (E0415 for other names and floats); `parse_u64` (`lugha_rt_parse_u64`).
+- **M36 iterator helpers:** lazy prelude adapters `map`, `filter`, `take`, `skip`, `enumerate` (`Indexed<T> { i, value }`) and consumers `collect`, `count`, `fold`, `any`, `all`, `find`, `sum` on anything `for … of` iterates (own methods win; arrays keep eager v3 helpers); sources `xs.iter()`, `s.bytes()`, `range(a, b)`, and `for b of s` over bytes. Prelude type names are shadowable like `Iter`.
+- **New code:** E0430.
+
+**Why:** the session 80 discovery; the user took every recommendation.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working

@@ -3577,7 +3577,9 @@ Branch: main
 - None.
 
 ### STILL OPEN AT CLOSE
-- The v10 draft awaits the user's approval.
+- The v10 draft awaits the user's approval (approved at the start of session 81).
+
+---
 
 ## SESSION 81 — 2026-10-14 — `Self` everywhere (milestone 34) — open
 Branch: main

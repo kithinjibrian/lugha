@@ -1,6 +1,6 @@
 # Lugha v10 — Draft (delta against v9)
 
-**Status:** proposed 2026-10-14 — session 80
+**Status:** approved 2026-10-14 — session 81 (proposed in session 80). The user asked for milestones 34–36 "in one go".
 **Base:** `Language v9 Specification.md`, complete (milestone 33). It stays the source of truth, and what `lughac spec` prints, until v10's first milestone starts `Language v10 Specification.md`. That file then grows milestone by milestone, and v9 is frozen.
 
 This draft lists only what changes, in the order of the v9 sections. Everything not mentioned keeps its v9 meaning. A valid v9 program stays valid in v10 unless it uses `i8`, `i16` or `u16` as a name: they become type keywords, as `u32` did in v7. Everything else v10 adds was an error before:
