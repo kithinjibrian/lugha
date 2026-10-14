@@ -96,28 +96,28 @@ None.
 Unit tests — `package_table.rs`: `name`, `source`, each E0321.
 
 Unit tests — `layout.rs`:
-- [ ] The lookup stops at a manifest, at `.git`, and at the home folder.
-- [ ] A manifest found beside `.git` is used.
+- [x] The lookup stops at a manifest, at `.git`, and at the home folder.
+- [x] A manifest found beside `.git` is used.
 
 Unit tests — the loader (in memory):
-- [ ] `source` for a path package.
-- [ ] E0327 with its help.
-- [ ] The implicit package from `examples/`, and its `[packages]`.
-- [ ] E0328.
-- [ ] `example/..` resolves.
-- [ ] E0320 for the implicit name.
-- [ ] The E0322 for a missing `source`.
+- [x] `source` for a path package.
+- [x] E0327 with its help.
+- [x] The implicit package from `examples/`, and its `[packages]`.
+- [x] E0328.
+- [x] `example/..` resolves.
+- [x] E0320 for the implicit name.
+- [x] The E0322 for a missing `source`.
 
 Integration — `tests/package_layout.rs` (`lughac` in a temp folder):
-- [ ] The objective's layout, run from the parent folder and from inside `examples/`.
-- [ ] A program with its own `lugha.toml` listing the package by path: `import glowworm.array;`.
-- [ ] A manifest above `$HOME` (set in the test) is not used.
-- [ ] E0327 and E0328 from the CLI.
+- [x] The objective's layout, run from the parent folder and from inside `examples/`.
+- [x] A program with its own `lugha.toml` listing the package by path: `import glowworm.array;`.
+- [x] A manifest above `$HOME` (set in the test) is not used.
+- [x] E0327 and E0328 from the CLI.
 
 Spec §10: the M51 program needs a main file under `examples/`, which the spec extractor's `main.la` convention can't express, so `tests/package_layout.rs` is its acceptance test and §11's row points there. This is as for M50.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -125,11 +125,11 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] `tests/package_layout.rs` passes.
-- [ ] glowworm's layout works with `source = "src"` and `examples/`.
-- [ ] The spec is at milestone 51; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] `tests/package_layout.rs` passes.
+- [x] glowworm's layout works with `source = "src"` and `examples/`.
+- [x] The spec is at milestone 51; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -138,3 +138,12 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo test --test package_layout
 ```
+
+## AMENDMENTS (during build, session 105)
+
+- **`load` takes a `LoadEnv`** (`layout.rs`: the fetcher, the home folder and the absolute current folder), replacing the fetcher argument. `LoadEnv::plain()` is no git, no home, and `/` as the current folder. The lookup walks parents lexically through `..` and compares absolute forms against `$HOME`.
+- **The implicit package** is inserted as the root manifest's first `[packages]` entry, with path `.` and the manifest's start as its span, so E0320, E0322 and E0323 treat it like a listed one.
+- **`layout()` lives in `layout.rs`** (an `impl Packages` there), keeping `packages.rs` at 278 lines; `Packages::folder`, `sources` and `listed_at` are `pub(super)` for it.
+- **A missing `source` folder** is E0322 at the package's listing, or at the start of the root's manifest for the implicit package.
+- **`lugha.lock`** stays next to the main file, as in v14, even when the manifest is found in a parent folder.
+- **IR:** the 168 earlier programs that compile give byte-identical IR.

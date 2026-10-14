@@ -155,7 +155,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v14 Specification.md` (`lughac spec` prints it): Lugha v14, complete (milestones 45–50: binary I/O, `to_bytes`, `string_from_utf8`, any-integer indexes; `char`, `'a'`, `chars()`; tuples; `format`; import aliases and whole-module re-exports; git packages with `lugha.lock`, `lughac update` and `--offline`). `Language v14 Draft.md` is the approved plan it was built from. The v0–v13 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la`, `src/prelude_more.la` and `src/prelude_text.la`, loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
+The language itself is defined by `docs/specs/Language v15 Specification.md` (`lughac spec` prints it): Lugha v15, in progress (milestone 51 done: package layout — `[package] name` and `source`, the program's manifest from a parent folder and its implicit package, E0327, E0328). `Language v15 Draft.md` is the approved plan; the rest of v15 (directories, processes, env, Unicode follow-ups) is planned in `TODO.md`. The v0–v14 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la`, `src/prelude_more.la` and `src/prelude_text.la`, loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -306,7 +306,10 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (in-memory loading), version_tests.rs (loading with versions), git.rs (v14: URL checks, `ls-remote`
 │   │                  tags, the `Git` trait, `SystemGit` with fixed `-c` flags and env), cache.rs (cache root, escaped
 │   │                  folder names, scratch clones, install), lock.rs (`lugha.lock`, E0321), fetch.rs (`Fetcher`, `Mode`:
-│   │                  lock, cache, clone, E0325/E0326; fetch_tests.rs with a fake `Git`)
+│   │                  lock, cache, clone, E0325/E0326; fetch_tests.rs with a fake `Git`), parse.rs (one module: decode, lex,
+│   │                  parse), paths.rs (`exists`, `normalized`, E0320), package_table.rs (v15: `[package]` version, name,
+│   │                  source), layout.rs (v15: `LoadEnv`, the bounded manifest lookup, `name`/`source`, the implicit
+│   │                  package, E0327/E0328; layout_tests.rs)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_PARTS, RUNTIME_SOURCE, RUNTIME_SYMBOLS, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes, Output), build.rs (build, --emit per module), guard.rs
 │                      (panics → internal error, exit 2), pipeline.rs (load all modules + the prelude, check, codegen),
@@ -323,6 +326,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── git_packages.rs — git packages through lughac and a real `file://` repository (lock, offline, E0325/E0326)
+│   ├── package_layout.rs — package layout through lughac: `source`, `examples/` by name, the `$HOME` bound, E0327/E0328
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
 │   ├── programs/    — m1/ … m49/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
@@ -330,13 +334,13 @@ pub fn parse_number(src: &str) -> i64 {
 │                      execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
-│   └── specs/       — Language v14 Specification.md (the language definition, in progress, printed by `lughac spec`);
-│                      Language v14 Draft.md (approved v14 plan, milestones 45–50);
+│   └── specs/       — Language v15 Specification.md (the language definition, in progress, printed by `lughac spec`);
+│                      Language v15 Draft.md (approved v15 plan, milestone 51 so far); Language v14 Draft.md (approved v14 plan, milestones 45–50);
 │                      Language v13 Draft.md (approved v13 plan, milestones 41–44);
 │                      Language v12 Draft.md (approved v12 plan, milestones 39–40);
 │                      Language v11 Draft.md (approved v11 plan, milestones 37–38);
 │                      Language v10 Draft.md (approved v10 plan, milestones 34–36); Language v9 Draft.md (approved v9 plan, milestones 31–33); Language v8 Draft.md (approved v8 plan, milestone 30); Language v7 Draft.md (approved v7 plan, milestones 27–29); Language v6 Draft.md (approved v6 plan, milestones 23–26); Language v5 Draft.md (approved v5 plan, milestones 20–22); Language v4 Draft.md (approved v4 plan, milestones 17–19); v3 and v2 Drafts (past plans);
-│                      Language v13, v12, v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1 (v1.2) and v0 Specification.md (frozen)
+│                      Language v14, v13, v12, v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1 (v1.2) and v0 Specification.md (frozen)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```
 
@@ -350,7 +354,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them, except the one it names: a value to an interface where one is expected (v5, recorded in `Checked.conversions`). Every other one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (a package registry, `ssh` URLs, full Unicode tables, streams…) even partially. v14 is complete (milestones 45–50); any further language feature is v15 and needs an approved spec change first. Changes to how `git` runs (`modules/git.rs`) need the user's security review, as PRP-079 had.
+5. **Never implement a §11 "out of scope" feature** (a package registry, `ssh` URLs, a default entry point, full Unicode tables, streams…) even partially, nor a v15 feature that `Language v15 Draft.md` doesn't plan yet: the rest of v15 waits for its discovery. Changes to how `git` runs (`modules/git.rs`) need the user's security review, as PRP-079 had.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

@@ -30,8 +30,14 @@ pub(super) struct Target {
 pub(super) struct Packages {
     /// The main file's folder: the root package.
     root: PathBuf,
+    /// Where the root's `lugha.toml` is: `root`, or a parent (v15).
+    manifest_folder: PathBuf,
     /// The folder of every package named in any manifest, with the entry.
     folders: HashMap<String, PathBuf>,
+    /// Each package's module root, its folder joined with `source` (v15),
+    /// once its manifest is read; and where it was first listed.
+    pub(super) sources: HashMap<String, PathBuf>,
+    pub(super) listed_at: HashMap<String, Span>,
     /// The names each package's manifest lists (`None` is the root's).
     listed: HashMap<Option<String>, Vec<String>>,
     /// Each package's declared version, once its manifest is read (v11).
@@ -47,8 +53,11 @@ pub(super) struct Packages {
 }
 
 impl Packages {
-    pub(super) fn new(root: PathBuf, fetcher: Fetcher) -> Packages {
+    pub(super) fn new(root: PathBuf, manifest_folder: PathBuf, fetcher: Fetcher) -> Packages {
         Packages {
+            manifest_folder,
+            sources: HashMap::new(),
+            listed_at: HashMap::new(),
             fetcher,
             unfetched: Vec::new(),
             root,
@@ -59,11 +68,24 @@ impl Packages {
         }
     }
 
-    /// The folder of `package`; the root's for `None`.
-    fn folder(&self, package: &Option<String>) -> PathBuf {
+    /// The folder of `package`'s manifest; the root's for `None`.
+    pub(super) fn folder(&self, package: &Option<String>) -> PathBuf {
+        match package {
+            None => self.manifest_folder.clone(),
+            Some(name) => self.folders[name].clone(),
+        }
+    }
+
+    /// Where `package`'s modules start: the main file's folder for `None`,
+    /// else the package's folder and its `source` (v15).
+    fn module_root(&self, package: &Option<String>) -> PathBuf {
         match package {
             None => self.root.clone(),
-            Some(name) => self.folders[name].clone(),
+            Some(name) => self
+                .sources
+                .get(name)
+                .unwrap_or(&self.folders[name])
+                .clone(),
         }
     }
 
@@ -87,9 +109,12 @@ impl Packages {
             Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
             Err(source) => return Err(LoadError::Io { path: file, source }),
         };
-        let (manifest, errors) = manifest::parse(&text, *base);
+        let (mut manifest, errors) = manifest::parse(&text, *base);
         loaded.diagnostics.extend(errors);
-        self.versions.insert(package.clone(), manifest.version);
+        let at = Span::new(*base, *base);
+        self.layout(package, (&mut manifest, at), read, loaded);
+        self.versions
+            .insert(package.clone(), manifest.package.version);
         let start = *base;
         *base = start
             .checked_add(text.len() + 1)
@@ -145,6 +170,9 @@ impl Packages {
                 loaded.diagnostics.push(clash(&entry.name, entry.span));
             }
             self.folders.insert(entry.name.clone(), target);
+            self.listed_at
+                .entry(entry.name.clone())
+                .or_insert(entry.span);
             // A git entry's tag already meets its requirement (v14).
             if let Some(requirement) = entry.requirement.filter(|_| entry.git.is_none()) {
                 self.required
@@ -186,7 +214,7 @@ impl Packages {
 
     /// True if `package`'s own folder has a folder `name` or a file `name.la`.
     fn local(&self, read: &mut Read<'_>, package: &Option<String>, name: &str) -> bool {
-        let folder = self.folder(package);
+        let folder = self.module_root(package);
         exists(read, &folder.join(name)) || exists(read, &folder.join(format!("{name}.la")))
     }
 
@@ -210,7 +238,7 @@ impl Packages {
         if !listed {
             let mut path: Vec<String> = package.iter().cloned().collect();
             path.extend(written.iter().cloned());
-            let mut file = self.folder(package);
+            let mut file = self.module_root(package);
             file.extend(&written);
             file.set_extension("la");
             let package = package.clone();
@@ -224,7 +252,10 @@ impl Packages {
             ));
         }
         let at = import_path_span(import);
-        let mut file = self.folders[first].clone();
+        // The manifest first: its `source` decides where the file is (v15).
+        let first_package = Some(first.clone());
+        self.read_manifest(&first_package, read, base, loaded)?;
+        let mut file = self.module_root(&first_package);
         file.extend(&written[1..]);
         file.set_extension("la");
         let target = Target {
@@ -242,7 +273,6 @@ impl Packages {
         if package.is_some() && self.local(read, package, first) {
             return Ok((target, Some(clash(first, at))));
         }
-        self.read_manifest(&Some(first.clone()), read, base, loaded)?;
         Ok((target, None))
     }
 }

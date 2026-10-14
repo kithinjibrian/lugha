@@ -5,7 +5,8 @@
 //! entries `name = { path = "…", version = "…" }` with a requirement.
 
 use super::inline::{self, Place};
-use super::version::{Requirement, Version};
+use super::package_table::PackageTable;
+use super::version::Requirement;
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
 
@@ -33,8 +34,8 @@ pub struct Entry {
 pub struct Manifest {
     /// The `[packages]` entries, in order.
     pub entries: Vec<Entry>,
-    /// The `[package]` table's version (v11).
-    pub version: Option<Version>,
+    /// The `[package]` table: version (v11), name and source (v15).
+    pub package: PackageTable,
 }
 
 /// Which table the lines belong to.
@@ -49,7 +50,7 @@ enum Table {
 /// every line outside the subset.
 pub fn parse(text: &str, base: usize) -> (Manifest, Vec<Diagnostic>) {
     let (mut entries, mut errors): (Vec<Entry>, Vec<Diagnostic>) = (Vec::new(), Vec::new());
-    let mut version: Option<Version> = None;
+    let mut package = PackageTable::default();
     let (mut table, mut seen) = (Table::None, Vec::new());
     let mut start = 0;
     for raw in text.split_inclusive('\n') {
@@ -77,12 +78,8 @@ pub fn parse(text: &str, base: usize) -> (Manifest, Vec<Diagnostic>) {
             continue;
         }
         if table == Table::Package {
-            match package_line(code) {
-                Ok(_) if version.is_some() => {
-                    errors.push(malformed("`version` is given twice".to_string(), span));
-                }
-                Ok(v) => version = Some(v),
-                Err(why) => errors.push(malformed(why, span)),
+            if let Err(why) = package.line(code) {
+                errors.push(malformed(why, span));
             }
             continue;
         }
@@ -112,26 +109,7 @@ pub fn parse(text: &str, base: usize) -> (Manifest, Vec<Diagnostic>) {
             Err(why) => errors.push(malformed(why, span)),
         }
     }
-    (Manifest { entries, version }, errors)
-}
-
-/// The `[package]` table's one line, `version = "1.4.0"` (v11).
-fn package_line(code: &str) -> Result<Version, String> {
-    let (key, value) = code
-        .split_once('=')
-        .ok_or("expected `version = \"1.4.0\"`")?;
-    if key.trim() != "version" {
-        return Err(format!(
-            "`[package]` holds only `version`, not `{}`",
-            key.trim()
-        ));
-    }
-    let text = value
-        .trim()
-        .strip_prefix('"')
-        .and_then(|v| v.strip_suffix('"'))
-        .ok_or("the version must be one double-quoted string")?;
-    Version::parse(text)
+    (Manifest { entries, package }, errors)
 }
 
 /// `line` without its comment.
@@ -251,12 +229,12 @@ mod tests {
         let (manifest, found) = parse(text, 0);
         assert!(found.is_empty(), "{found:?}");
         assert_eq!(
-            manifest.version.map(|v| v.to_string()),
+            manifest.package.version.map(|v| v.to_string()),
             Some("1.4.0".into())
         );
         assert_eq!(manifest.entries[0].requirement.map(|r| r.parts), Some(2));
         let package = "[package]\n";
-        for bad in ["name = \"geo\"", "version = 1.4.0", "version = \"1.4\""] {
+        for bad in ["author = \"geo\"", "version = 1.4.0", "version = \"1.4\""] {
             assert_eq!(errors(&format!("{package}{bad}")), [bad], "{bad}");
         }
         assert_eq!(errors("[package]\n[package]"), ["[package]"]);

@@ -30,8 +30,9 @@ pub(super) fn exists(read: &mut Read<'_>, path: &Path) -> bool {
     }
 }
 
-/// `path` with `.` and `..` resolved lexically, as written.
-pub(super) fn normalized(path: &Path) -> PathBuf {
+/// `path` with `.` and `..` resolved lexically, as written; `.` when
+/// nothing is left (v15: `example/..` was an empty path, a bug).
+pub(crate) fn normalized(path: &Path) -> PathBuf {
     let mut out = PathBuf::new();
     for part in path.components() {
         match part {
@@ -43,6 +44,9 @@ pub(super) fn normalized(path: &Path) -> PathBuf {
             }
             other => out.push(other),
         }
+    }
+    if out.as_os_str().is_empty() {
+        out.push(".");
     }
     out
 }

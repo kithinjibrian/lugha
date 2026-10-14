@@ -2,7 +2,7 @@
 //! command loads with, writing `lugha.lock`, and `lughac update`.
 
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use super::pipeline::{self, Failure};
 use super::render::Report;
@@ -10,12 +10,23 @@ use super::source::Source;
 use crate::diagnostic::Severity;
 use crate::modules::fetch::{Fetcher, Mode};
 use crate::modules::git::SystemGit;
+use crate::modules::layout::LoadEnv;
 use crate::modules::{cache, lock::LOCK};
 
-/// The fetcher for a command: the system `git` and the user's cache.
-pub(super) fn fetcher(mode: Mode) -> Fetcher {
+/// What a command loads with: the system `git`, the user's cache, and
+/// the home and current folders that bound the manifest lookup (v15).
+pub(super) fn env(mode: Mode) -> LoadEnv {
     let root = cache::root(|name| std::env::var_os(name));
-    Fetcher::new(Box::new(SystemGit), root, mode)
+    // Without a current folder the lookup can't go up: `/` stops it at once.
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("/"));
+    let home = std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .filter(|h| h.is_absolute());
+    LoadEnv {
+        fetcher: Fetcher::new(Box::new(SystemGit), root, mode),
+        home,
+        cwd,
+    }
 }
 
 /// Writes `text` as the lock next to `main`: a temporary file, then a

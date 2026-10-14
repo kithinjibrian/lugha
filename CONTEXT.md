@@ -4494,18 +4494,48 @@ Branch: main
 ## SESSION 105 — 2026-10-14 — Package layout (milestone 51) — open
 Branch: prp-080-package_layout
 
+### WHAT WAS DONE
+- The user approved the v15 draft, PRP-080 and the two splits; built and merged on green CI:
+  - `[package] name` (E0327) and `source`;
+  - the bounded upward manifest lookup and the implicit package;
+  - E0328;
+  - the `..` path fix.
+- Split `modules/mod.rs` (→ `parse.rs`) and `modules/packages.rs` (→ `paths.rs`), verbatim, as approved.
+- **Spec:** `Language v15 Specification.md` begins from v14's (v14 frozen); `lughac spec` prints it. Status, changes, the `[package]` lines, §6 "Package layout", the E0321/E0327/E0328 rows, §11 row 51, out of scope, §12.
+
+### FILES CREATED OR MODIFIED
+- New: `src/modules/{parse,paths,package_table,layout,layout_tests}.rs`, `tests/package_layout.rs`, `docs/specs/Language v15 Specification.md`.
+- Modified:
+  - `src/modules/{mod,packages,manifest,tests,fetch_tests}.rs`;
+  - `src/driver/{pipeline,update}.rs`, `src/check/modules/mod.rs`;
+  - `src/lib.rs`, `tests/cli.rs`.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 98–99, PRP-080 amendments, CONTEXT.
+
+### TESTS WRITTEN
+- **Unit:** the `[package]` lines and each E0321; the lookup's stops.
+- **Loader:** the implicit package, `source` and E0327 through a listing, E0322, E0328, the `..` fix, E0320.
+- **Integration:** `tests/package_layout.rs`: run from the parent and from `examples/`, a user listing by path, E0327, the `$HOME` bound, E0328.
+- **Regression:** 168 earlier programs give byte-identical IR.
+
+### DECISIONS MADE
+- MEMORY 98 (the v15 draft), MEMORY 99 (M51).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m51`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v14 is complete** (milestones 45–50), tagged `v14`. **v15's draft (`docs/specs/Language v15 Draft.md`) and PRP-080 (package layout, milestone 51) are proposed** (session 104) and wait for the user's approval. The approval also covers the splits of `modules/mod.rs` (parse_module → `parse.rs`) and `modules/packages.rs` (paths helpers → `paths.rs`). On approval:
-- record MEMORY 98 (the draft);
-- branch `prp-080-package_layout`;
-- commit "Add approved PRP-080 package layout" with the draft marked approved;
-- build. Tag `m51` goes on the merge.
+**Milestone 51 complete** (PRP-080, MEMORY 98–99): package layout. Tag `m51` goes on the merge. `Language v15 Specification.md` (in progress) is what `lughac spec` prints; v0–v14 are frozen.
 
-The rest of v15 (directories, processes, env, Unicode follow-ups) stays in `TODO.md` with its discovery paused at the process API shape. The user's `glowworm` repository (`~/Documents/kithinji/glowworm`) is waiting for M51 to use `source = "src"` and `examples/`; its working copy has uncommitted layout changes.
+Next:
+- move the user's `glowworm` repository (`~/Documents/kithinji/glowworm`, uncommitted rearrangement) to `name`/`source = "src"`/`examples/`, once they want it;
+- the rest of v15 (directories, processes, env, Unicode follow-ups) waits in `TODO.md` for its discovery to resume at the process API shape.
 
-Watch file sizes: `modules/mod.rs` (300), `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `modules/packages.rs` (285).
+Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `modules/tests.rs` (293).
 
 See `TODO.md`.

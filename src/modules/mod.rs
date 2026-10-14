@@ -13,11 +13,13 @@ pub mod cache;
 pub mod fetch;
 pub mod git;
 mod inline;
+pub mod layout;
 pub mod lock;
 pub mod manifest;
+pub mod package_table;
 mod packages;
 mod parse;
-mod paths;
+pub(crate) mod paths;
 mod resolve;
 #[cfg(test)]
 mod tests;
@@ -29,7 +31,7 @@ use std::collections::VecDeque;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use self::fetch::Fetcher;
+use self::layout::LoadEnv;
 use crate::ast::{Import, Program};
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
@@ -121,12 +123,13 @@ pub enum LoadError {
 /// ```
 /// use std::path::Path;
 /// let mut read = |_: &Path| Ok(b"fun main() {}".to_vec());
-/// let none = lugha::modules::fetch::Fetcher::none();
-/// let loaded = lugha::modules::load(Path::new("main.la"), &mut read, none).unwrap();
+/// let env = lugha::modules::layout::LoadEnv::plain();
+/// let loaded = lugha::modules::load(Path::new("main.la"), &mut read, env).unwrap();
 /// assert_eq!(loaded.modules.len(), 1);
 /// ```
-pub fn load(main: &Path, read: &mut Read<'_>, fetcher: Fetcher) -> Result<Loaded, LoadError> {
+pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, LoadError> {
     let root = main.parent().unwrap_or(Path::new("")).to_path_buf();
+    let manifest_folder = layout::manifest_folder(&root, read, &env);
     let mut loaded = Loaded {
         modules: Vec::new(),
         diagnostics: Vec::new(),
@@ -134,9 +137,10 @@ pub fn load(main: &Path, read: &mut Read<'_>, fetcher: Fetcher) -> Result<Loaded
         lock: None,
     };
     let (mut base, mut next_id) = (0usize, 0u32);
-    let mut packages = packages::Packages::new(root, fetcher);
-    // Every file ever queued, so each is read once, whoever imports it.
-    let mut seen: Vec<PathBuf> = vec![main.to_path_buf()];
+    let mut packages = packages::Packages::new(root, manifest_folder, env.fetcher);
+    // Every file ever queued, with its module path, so each is read once
+    // whoever imports it, and only under one name (E0328, v15).
+    let mut seen: Vec<(PathBuf, Vec<String>)> = vec![(paths::normalized(main), Vec::new())];
     // A module to read, its package, and the import that asked for it (`None` for main).
     type Pending = (Vec<String>, PathBuf, Option<String>, Option<Span>);
     let mut queue: VecDeque<Pending> = VecDeque::new();
@@ -179,10 +183,19 @@ pub fn load(main: &Path, read: &mut Read<'_>, fetcher: Fetcher) -> Result<Loaded
                     loaded.diagnostics.push(d);
                     continue;
                 }
-                if !seen.contains(&target.file) {
-                    seen.push(target.file.clone());
-                    let at = Some(import_path_span(import));
-                    queue.push_back((target.path, target.file, target.package, at));
+                let file = paths::normalized(&target.file);
+                match seen.iter().find(|(f, _)| *f == file) {
+                    Some((_, first)) if *first != target.path => {
+                        let at = import_path_span(import);
+                        let d = layout::two_names(&target.file, first, &target.path, at);
+                        loaded.diagnostics.push(d);
+                    }
+                    Some(_) => {}
+                    None => {
+                        seen.push((file, target.path.clone()));
+                        let at = Some(import_path_span(import));
+                        queue.push_back((target.path, target.file, target.package, at));
+                    }
                 }
             }
         }

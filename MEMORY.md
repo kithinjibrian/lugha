@@ -1551,11 +1551,27 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** found setting up the user's `glowworm` library: `glowworm.src.array` was unwanted, and examples needed a manifest of their own.
 
+### 99. Package layout — milestone 51 (PRP-080)
+
+**Decision:** built as approved (with the splits of `modules/mod.rs` into `parse.rs` and `modules/packages.rs` into `paths.rs`).
+- **`package_table.rs`:** `[package]` `version`/`name`/`source`; `Manifest.package: PackageTable`.
+- **`layout.rs`:**
+  - `LoadEnv { fetcher, home, cwd }` is `load`'s third argument;
+  - `manifest_folder` is the bounded upward lookup (manifest, `.git`, `$HOME`, top);
+  - `Packages::layout` checks E0327, sets `sources` (module roots) and inserts the implicit package as the root manifest's first entry;
+  - `two_names` gives E0328.
+- **`packages.rs`:** `folder` (the manifest's) vs `module_root` (with `source`); `resolve` reads a package's manifest before building its file path.
+- **`mod.rs`:** `seen` maps normalized files to module paths (E0328).
+- **`paths::normalized`:** gives `.` instead of an empty path.
+
+**Why:** the user's `glowworm` library wanted `glowworm.array` from `src/` and manifest-free examples.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 51 complete**: PRP-080 package layout; v15 spec begins
 - **Milestone 50 complete — Lugha v14 complete**: PRP-079 git packages
 - **Milestone 49 complete**: PRP-078 import aliases and whole-module re-exports
 - **Milestone 48 complete**: PRP-077 `format`
@@ -1653,14 +1669,12 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Lugha v14 is complete** (milestones 45–50), tagged `v14`. **v15's draft (`docs/specs/Language v15 Draft.md`) and PRP-080 (package layout, milestone 51) are proposed** (session 104) and wait for the user's approval. The approval also covers the splits of `modules/mod.rs` (parse_module → `parse.rs`) and `modules/packages.rs` (paths helpers → `paths.rs`). On approval:
-- record MEMORY 98 (the draft);
-- branch `prp-080-package_layout`;
-- commit "Add approved PRP-080 package layout" with the draft marked approved;
-- build. Tag `m51` goes on the merge.
+**Milestone 51 complete** (PRP-080, MEMORY 98–99): package layout. Tag `m51` goes on the merge. `Language v15 Specification.md` (in progress) is what `lughac spec` prints; v0–v14 are frozen.
 
-The rest of v15 (directories, processes, env, Unicode follow-ups) stays in `TODO.md` with its discovery paused at the process API shape. The user's `glowworm` repository (`~/Documents/kithinji/glowworm`) is waiting for M51 to use `source = "src"` and `examples/`; its working copy has uncommitted layout changes.
+Next:
+- move the user's `glowworm` repository (`~/Documents/kithinji/glowworm`, uncommitted rearrangement) to `name`/`source = "src"`/`examples/`, once they want it;
+- the rest of v15 (directories, processes, env, Unicode follow-ups) waits in `TODO.md` for its discovery to resume at the process API shape.
 
-Watch file sizes: `modules/mod.rs` (300), `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `modules/packages.rs` (285).
+Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `modules/tests.rs` (293).
 
 See `TODO.md`.

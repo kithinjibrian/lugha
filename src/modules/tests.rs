@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use super::fetch::Fetcher;
+use super::layout::LoadEnv;
 use super::{LoadError, Loaded, load};
 
 /// Loads `dir/main.la` from `files` (paths relative to `dir`).
@@ -22,7 +22,7 @@ pub(super) fn run(files: &[(&str, &[u8])]) -> Result<Loaded, LoadError> {
         }
         None => Err(io::Error::from(io::ErrorKind::NotFound)),
     };
-    load(Path::new("dir/main.la"), &mut read, Fetcher::none())
+    load(Path::new("dir/main.la"), &mut read, LoadEnv::plain())
 }
 
 fn ok(files: &[(&str, &[u8])]) -> Loaded {
@@ -169,7 +169,7 @@ fn errors_in_imported_files_point_into_them() {
 fn unreadable_files_are_internal() {
     let mut read = |_: &Path| Err(io::Error::from(io::ErrorKind::PermissionDenied));
     assert!(matches!(
-        load(Path::new("main.la"), &mut read, Fetcher::none()),
+        load(Path::new("main.la"), &mut read, LoadEnv::plain()),
         Err(LoadError::Io { .. })
     ));
 }

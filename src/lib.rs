@@ -2,9 +2,9 @@
 //!
 //! Compiles one `.la` source file to a native executable through the stages
 //! defined in spec §9: lex, parse, check, lower to LLVM IR, emit, link.
-//! The language itself is defined in `docs/specs/Language v14 Specification.md`
-//! (v13 plus the v14 features implemented so far; `Language v14 Draft.md`
-//! is the plan, and v13's file is frozen).
+//! The language itself is defined in `docs/specs/Language v15 Specification.md`
+//! (v14 plus the v15 features implemented so far; `Language v15 Draft.md`
+//! is the plan, and v14's file is frozen).
 
 pub mod ast;
 pub mod check;
@@ -31,4 +31,4 @@ pub const PRELUDE: &str = concat!(
 
 /// The language specification this compiler implements, embedded verbatim;
 /// `lughac spec` prints it (spec §9, "LLM-ready spec").
-pub const SPEC: &str = include_str!("../docs/specs/Language v14 Specification.md");
+pub const SPEC: &str = include_str!("../docs/specs/Language v15 Specification.md");

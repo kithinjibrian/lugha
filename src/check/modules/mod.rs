@@ -195,7 +195,7 @@ pub(crate) mod test_util {
         let loaded = load(
             Path::new("main.la"),
             &mut read,
-            crate::modules::fetch::Fetcher::none(),
+            crate::modules::layout::LoadEnv::plain(),
         )
         .expect("files are readable");
         assert!(loaded.diagnostics.is_empty(), "{:?}", loaded.diagnostics);

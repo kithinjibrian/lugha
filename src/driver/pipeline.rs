@@ -45,7 +45,7 @@ pub(super) struct Front {
 pub(super) fn loaded(path: &Path, mode: Mode) -> Result<(Source, Loaded), Failure> {
     let name = path.display().to_string();
     let mut read = |file: &Path| std::fs::read(file);
-    match modules::load(path, &mut read, update::fetcher(mode)) {
+    match modules::load(path, &mut read, update::env(mode)) {
         Ok(loaded) => {
             let root = path.parent().unwrap_or(Path::new(""));
             let source = Source::of(&name, root, &loaded);

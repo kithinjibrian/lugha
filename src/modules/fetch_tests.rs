@@ -9,6 +9,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use super::{Fetcher, Mode};
 use crate::modules::git::Git;
+use crate::modules::layout::LoadEnv;
 use crate::modules::{Loaded, cache, load};
 
 /// Tags of one repository: version → (commit, files).
@@ -101,7 +102,11 @@ fn build(dir: &Path, cache: &Path, repos: HashMap<String, Repo>, mode: Mode) -> 
     };
     let fetcher = Fetcher::new(Box::new(git), Some(cache.to_path_buf()), mode);
     let mut read = |p: &Path| std::fs::read(p);
-    let loaded = load(&dir.join("main.la"), &mut read, fetcher).unwrap();
+    let env = LoadEnv {
+        fetcher,
+        ..LoadEnv::plain()
+    };
+    let loaded = load(&dir.join("main.la"), &mut read, env).unwrap();
     (loaded, calls.get())
 }
 
