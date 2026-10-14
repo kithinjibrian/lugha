@@ -3628,7 +3628,7 @@ Branch: prp-063-self_everywhere (merged into main)
 ---
 
 ## SESSION 82 — 2026-10-14 — More integers (milestone 35) — open
-Branch: main
+Branch: prp-064-more_integers
 
 ---
 
