@@ -3763,7 +3763,7 @@ Branch: main
 ---
 
 ## SESSION 85 — 2026-10-14 — Package versions (milestone 37) — open
-Branch: main
+Branch: prp-066-package_versions
 
 ---
 
