@@ -1,6 +1,6 @@
 # Lugha v11 — Draft (delta against v10)
 
-**Status:** proposed 2026-10-14 — session 84
+**Status:** approved 2026-10-14 — session 85 (proposed in session 84). The user asked for milestones 37–38 "in one go".
 **Base:** `Language v10 Specification.md`, complete (milestone 36). It stays the source of truth, and what `lughac spec` prints, until v11's first milestone starts `Language v11 Specification.md`. That file then grows milestone by milestone, and v10 is frozen.
 
 This draft lists only what changes, in the order of the v10 sections. Everything not mentioned keeps its v10 meaning. Every valid v10 program and `lugha.toml` stay valid in v11, because everything v11 adds was an error before:

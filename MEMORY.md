@@ -1225,6 +1225,26 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 80. Lugha v11 direction (sessions 84–85)
+
+**Decision:** `docs/specs/Language v11 Draft.md` is approved: package versions and re-exports, built "in one go".
+- **M37 package versions:**
+  - a package's `lugha.toml` may have `[package]` with `version = "MAJOR.MINOR.PATCH"`;
+  - a manifest entry may be `name = { path = "…", version = "R" }`, a Cargo-compatible requirement (`"1.2"` = >=1.2.0, <2.0.0; the first non-zero part is kept);
+  - a mismatch, or a requirement on an unversioned package, is E0324; malformed text is E0321;
+  - packages stay local: no network, no lock file.
+- **M38 named imports and re-exports:**
+  - `import a.b { X, y };` binds the module and the listed items in the file;
+  - `public import a.b { X, y };` also makes them items of the module, `public`, the same items (no copies; symbols unchanged);
+  - a re-exported item must be `public` (E0318);
+  - errors: E0313 not visible, E0301/E0305 unknown, E0302/E0314 clashes;
+  - `public import` without braces is E0201.
+- **New code:** E0324.
+
+**Why:** the session 84 discovery; the user took every recommendation.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
