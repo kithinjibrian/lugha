@@ -3494,6 +3494,11 @@ Branch: prp-060-better_patterns (merged into main)
 
 ---
 
+## SESSION 78 — 2026-10-14 — Unwrapping (milestone 32) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 31 complete** (PRP-060, MEMORY 73): or-patterns and `mut` bindings. Tagged `m31`. `Language v9 Specification.md` (in progress) is what `lughac spec` prints; v8 is frozen.
