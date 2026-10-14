@@ -3467,7 +3467,7 @@ Branch: main
 ---
 
 ## SESSION 77 — 2026-10-14 — Better patterns (milestone 31) — open
-Branch: main
+Branch: prp-060-better_patterns
 
 ---
 
