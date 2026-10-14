@@ -3466,6 +3466,11 @@ Branch: main
 
 ---
 
+## SESSION 77 — 2026-10-14 — Better patterns (milestone 31) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v9 draft approved** (`docs/specs/Language v9 Draft.md`, MEMORY 72): `match` and conveniences — milestones 31–33. `main` has v8 complete (tags `m30`, `v8`); `Language v8 Specification.md` is what `lughac spec` prints until milestone 31 starts `Language v9 Specification.md`.
