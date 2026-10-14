@@ -9,11 +9,15 @@
 //!
 //! Depends on: ast, lexer, parser, diagnostic, span.
 
+mod inline;
 pub mod manifest;
 mod packages;
 mod resolve;
 #[cfg(test)]
 mod tests;
+pub mod version;
+#[cfg(test)]
+mod version_tests;
 
 use std::collections::VecDeque;
 use std::io;
@@ -160,6 +164,7 @@ pub fn load(main: &Path, read: &mut Read<'_>) -> Result<Loaded, LoadError> {
         }
         loaded.modules.push(module);
     }
+    packages.check_versions(read, &mut base, &mut loaded)?;
     Ok(loaded)
 }
 

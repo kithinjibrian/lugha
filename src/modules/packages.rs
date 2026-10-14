@@ -1,15 +1,18 @@
 //! Packages (v8 draft §6, PRP-058): the manifests of a build, which folder
 //! each package name means, and where an import points from a module of a
-//! given package (E0312, E0320, E0322, E0323).
+//! given package (E0312, E0320, E0322, E0323), and whether each package's
+//! version meets what the manifests require (E0324, v11).
 
 use std::collections::HashMap;
 use std::io;
 use std::path::{Component, Path, PathBuf};
 
 use super::manifest::{self, MANIFEST};
+use super::version::{self, Requirement, Version};
 use super::{LoadError, Loaded, ManifestFile, Read, import_path_span, names};
 use crate::ast::Import;
 use crate::diagnostic::Diagnostic;
+use crate::span::Span;
 
 /// Where an import leads.
 pub(super) struct Target {
@@ -29,6 +32,11 @@ pub(super) struct Packages {
     folders: HashMap<String, PathBuf>,
     /// The names each package's manifest lists (`None` is the root's).
     listed: HashMap<Option<String>, Vec<String>>,
+    /// Each package's declared version, once its manifest is read (v11).
+    versions: HashMap<Option<String>, Option<Version>>,
+    /// Every requirement of every manifest read: the package, the
+    /// requirement, and its entry's line (v11).
+    required: Vec<(String, Requirement, Span)>,
 }
 
 impl Packages {
@@ -37,6 +45,8 @@ impl Packages {
             root,
             folders: HashMap::new(),
             listed: HashMap::new(),
+            versions: HashMap::new(),
+            required: Vec::new(),
         }
     }
 
@@ -68,8 +78,9 @@ impl Packages {
             Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
             Err(source) => return Err(LoadError::Io { path: file, source }),
         };
-        let (entries, errors) = manifest::parse(&text, *base);
+        let (manifest, errors) = manifest::parse(&text, *base);
         loaded.diagnostics.extend(errors);
+        self.versions.insert(package.clone(), manifest.version);
         let start = *base;
         *base = start
             .checked_add(text.len() + 1)
@@ -79,7 +90,7 @@ impl Packages {
             base: start,
             text,
         });
-        for entry in entries {
+        for entry in manifest.entries {
             let target = normalized(&folder.join(&entry.path));
             if !exists(read, &target) {
                 let d = Diagnostic::error(
@@ -112,8 +123,35 @@ impl Packages {
                 loaded.diagnostics.push(clash(&entry.name, entry.span));
             }
             self.folders.insert(entry.name.clone(), target);
+            if let Some(requirement) = entry.requirement {
+                self.required
+                    .push((entry.name.clone(), requirement, entry.span));
+            }
             let listed = self.listed.get_mut(package).expect("inserted above");
             listed.push(entry.name);
+        }
+        Ok(())
+    }
+
+    /// E0324 for every requirement its package's version doesn't meet,
+    /// after every module is loaded (v11). A required package that nothing
+    /// imported has its manifest read now, which may add requirements.
+    pub(super) fn check_versions(
+        &mut self,
+        read: &mut Read<'_>,
+        base: &mut usize,
+        loaded: &mut Loaded,
+    ) -> Result<(), LoadError> {
+        let mut next = 0;
+        while let Some((name, requirement, span)) = self.required.get(next).cloned() {
+            next += 1;
+            let package = Some(name.clone());
+            self.read_manifest(&package, read, base, loaded)?;
+            let found = self.versions.get(&package).copied().flatten();
+            if !found.is_some_and(|v| requirement.matches(&v)) {
+                let d = version::unmet(&name, &requirement, found.as_ref(), span);
+                loaded.diagnostics.push(d);
+            }
         }
         Ok(())
     }
@@ -182,7 +220,7 @@ impl Packages {
 }
 
 /// E0320 at `at`: `name` is a package and a local folder or file.
-fn clash(name: &str, at: crate::span::Span) -> Diagnostic {
+fn clash(name: &str, at: Span) -> Diagnostic {
     Diagnostic::error(
         "E0320",
         format!("`{name}` is both a package and a local module"),

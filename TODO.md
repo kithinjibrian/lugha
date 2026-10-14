@@ -221,6 +221,16 @@ Done when the more-integers program passes.
 Done when the iterator-helpers program passes and the v10 spec is complete.
 - [x] PRP-065: `iter`, `bytes`, `range`, `for b of s`; the adapters and consumers; v10 complete; tagged `m36` and `v10`
 
+## v11 (draft approved, session 85 — `docs/specs/Language v11 Draft.md`)
+
+### Milestone 37 — Package versions ✅
+Done when the package-versions program passes.
+- [x] PRP-066: `[package]` versions, inline entries with requirements, E0324; `Language v11 Specification.md` begins; tagged `m37` at merge
+
+### Milestone 38 — Re-exports
+Done when the re-exports program passes and the v11 spec is complete.
+- [ ] `import m { X }`, `public import m { X }`
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.

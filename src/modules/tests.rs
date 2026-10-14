@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use super::{LoadError, Loaded, load};
 
 /// Loads `dir/main.la` from `files` (paths relative to `dir`).
-fn run(files: &[(&str, &[u8])]) -> Result<Loaded, LoadError> {
+pub(super) fn run(files: &[(&str, &[u8])]) -> Result<Loaded, LoadError> {
     let table: HashMap<PathBuf, Vec<u8>> = files
         .iter()
         .map(|(p, bytes)| (Path::new("dir").join(p), bytes.to_vec()))
@@ -29,7 +29,7 @@ fn ok(files: &[(&str, &[u8])]) -> Loaded {
 }
 
 /// `(code, text the span covers)`, looking the offset up in the right module.
-fn codes(loaded: &Loaded) -> Vec<(&'static str, String)> {
+pub(super) fn codes(loaded: &Loaded) -> Vec<(&'static str, String)> {
     loaded
         .diagnostics
         .iter()

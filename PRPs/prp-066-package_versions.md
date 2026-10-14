@@ -78,34 +78,34 @@ None. The TOML subset is still parsed by hand.
 ## TESTS TO WRITE
 
 Unit tests — `modules/version.rs`:
-- [ ] **Versions:** `1.4.0`, `0.0.0`; not `1.4`, `01.2.3`, `1.2.3-beta`, `1..2`, or a part too large.
-- [ ] **Requirements:**
+- [x] **Versions:** `1.4.0`, `0.0.0`; not `1.4`, `01.2.3`, `1.2.3-beta`, `1..2`, or a part too large.
+- [x] **Requirements:**
   - `"1.2"` matches 1.2.0 and 1.9.9, not 1.1.9 or 2.0.0;
   - `"0.3"` matches 0.3.5, not 0.4.0;
   - `"0.0.4"` matches only 0.0.4;
   - `"0"` matches 0.9.0, not 1.0.0.
 
 Unit tests — `modules/inline.rs` and `manifest.rs`:
-- [ ] `{ path = "a", version = "1.2" }` and `{ version = "1", path = "a" }` parse.
-- [ ] E0321 for:
+- [x] `{ path = "a", version = "1.2" }` and `{ version = "1", path = "a" }` parse.
+- [x] E0321 for:
   - a missing path, an unknown key, a key twice, a bad requirement, a missing `}`;
   - a `[package]` without a version, with another key, twice, or with a bad version.
 
 Unit tests — `modules/tests.rs` (in-memory loading):
-- [ ] A matching requirement loads cleanly.
-- [ ] E0324 for:
+- [x] A matching requirement loads cleanly.
+- [x] E0324 for:
   - a mismatch;
   - a missing version;
   - a required package that is never imported but mismatches.
-- [ ] A requirement on a missing folder gives only E0322.
+- [x] A requirement on a missing folder gives only E0322.
 
 Acceptance — `tests/programs/m37/`:
-- [ ] `versions/` (directory case): the §10 program.
-- [ ] `e0324/` (directory case): reject golden for a mismatch.
-- [ ] The §10 program text is in the spec.
+- [x] `versions/` (directory case): the §10 program.
+- [x] `e0324/` (directory case): reject golden for a mismatch.
+- [x] The §10 program text is in the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -113,10 +113,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m37/` cases pass.
-- [ ] `Language v11 Specification.md` begins; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m37/` cases pass.
+- [x] `Language v11 Specification.md` begins; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -125,3 +125,11 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m37/versions/main.la
 ```
+
+## AMENDMENTS (during build, session 85)
+
+- **Loader tests:** they are in `modules/version_tests.rs`, since `modules/tests.rs` is at 281 lines. `run` and `codes` there became `pub(super)`.
+- **The E0321 help text** now names the inline entry and `[package]` forms, so `m30/e0321.stderr` was regenerated (one line).
+- **A required package's manifest is read only if its folder passed E0322/E0323:** requirements are recorded after those checks.
+- **IR:** the 142 earlier programs that compile give byte-identical IR.
+- **No file splits.**

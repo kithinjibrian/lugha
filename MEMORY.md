@@ -1245,9 +1245,34 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 81. Package versions — milestone 37 (PRP-066)
+
+**Decision:** built under the user's "in one go" (milestones 37–38).
+- **`modules/version.rs`:**
+  - `Version` (three numbers, no leading zeros, `u64` overflow is an error);
+  - `Requirement { base, parts }`, where `ceiling()` bumps the first non-zero written part (else the last written one) and `matches` = `base <= v < ceiling`;
+  - `unmet` builds E0324, naming the range (`>= 1.2.0, < 2.0.0`) and the version found.
+- **`modules/inline.rs`:** parses `{ path = "…", version = "…" }` by hand (quoted values, either order, trailing comma, `path` required).
+- **`modules/manifest.rs`:**
+  - `parse` returns `Manifest { entries, version }`;
+  - a `Table` state takes `[packages]` and `[package]`, each at most once and in either order;
+  - `[package]` takes only `version = "…"`;
+  - `Entry.requirement`.
+- **`modules/packages.rs`:**
+  - `read_manifest` records `versions[package]`, and pushes `required` for entries that passed E0322/E0323;
+  - `check_versions`, called at the end of `load`, reads any required package's manifest not yet read (which may add requirements, hence an index loop) and reports E0324.
+- **Tests:** `modules/version_tests.rs` uses `tests.rs`'s `run`/`codes` (now `pub(super)`).
+- **Goldens:** E0321's help mentions the new forms (`m30/e0321.stderr` updated).
+- **Spec:** `Language v11 Specification.md` begins.
+
+**Why:** checking after loading sees every manifest, including those of packages nothing imports. Keeping the version logic in its own files leaves `manifest.rs` and `packages.rs` small.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 37 complete**: PRP-066 package versions (`[package]`, requirements, E0324); v11 spec begins
 - **Milestone 36 complete — Lugha v10 complete**: PRP-065 iterator helpers, `iter`/`bytes`/`range`, `for b of s`
 - **Milestone 35 complete**: PRP-064 `i8`/`i16`/`u16`, checked/saturating/rotating methods, `MIN`/`MAX`, `parse_u64`
 - **Milestone 34 complete**: PRP-063 `Self` in `impl` blocks, default methods on concrete types (E0430); v10 spec begins
@@ -1331,14 +1356,15 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Lugha v10 is complete** (milestones 34–36; PRP-063–065; MEMORY 76–79). Tagged `m36` and `v10`. `Language v10 Specification.md` is what `lughac spec` prints; v0–v9 are frozen.
+**Milestone 37 complete** (PRP-066, MEMORY 81): package versions, E0324. Tag `m37` goes on the merge. `Language v11 Specification.md` (in progress) is what `lughac spec` prints; v0–v10 are frozen.
 
-Next: **approve `docs/specs/Language v11 Draft.md`** (proposed in session 84):
-- M37: package versions: `[package] version = "1.4.0"`, `geo = { path = "…", version = "1.2" }`, E0324;
-- M38: named imports and re-exports, `import m { X }` and `public import m { X }`.
+Next, under the user's "in one go" (MEMORY 80): **milestone 38, named imports and re-exports** (PRP-067, next session):
+- `import a.b { X, y };` binds the listed items in the file;
+- `public import a.b { X, y };` makes them `public` items of the module (same items, symbols unchanged);
+- E0318 for a non-`public` item; E0201 for `public import` without braces.
 
-Once it is approved: record a MEMORY decision for v11, then write PRP-066 for M37.
+It completes v11; tag `m38` and `v11`.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `check/instances.rs` (~291).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `check/instances.rs` (~291), `modules/tests.rs` (281).
 
 See `TODO.md`.

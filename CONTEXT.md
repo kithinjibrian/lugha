@@ -3765,18 +3765,56 @@ Branch: main
 ## SESSION 85 — 2026-10-14 — Package versions (milestone 37) — open
 Branch: prp-066-package_versions
 
+### WHAT WAS DONE
+- The user approved the v11 draft and asked for it "in one go". The draft is marked approved; MEMORY 80.
+- PRP-066 written as approved under that instruction, built and merged on green CI:
+  - `[package]` versions;
+  - inline entries with compatible requirements;
+  - E0324, checked after loading.
+- `Language v11 Specification.md` begins: the changes summary, §6 manifest and versions, the E0321 and E0324 rows, the §10 program (multi-file, with a nested `lugha.toml`), §11 row 37, the v11 out-of-scope list, and a §12 question.
+
+### FILES CREATED OR MODIFIED
+- New: `src/modules/{version,inline,version_tests}.rs`, `tests/programs/m37/` (`versions/`, `e0324/`), `docs/specs/Language v11 Specification.md`, PRP-066.
+- Modified:
+  - `src/modules/{mod,manifest,packages,tests}.rs`;
+  - `src/lib.rs`;
+  - `tests/{cli,spec}.rs`, `tests/programs/m30/e0321.stderr`;
+  - the v11 draft (status).
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 80–81, CONTEXT.
+
+### TESTS WRITTEN
+- **Versions and requirements:** parsing, and the compatible rule at every edge.
+- **Inline entries:** both key orders, and every E0321 shape.
+- **Manifests:** `[package]`, a second table, a bad version.
+- **Loading:**
+  - a compatible version loads;
+  - a mismatch, a missing version, and an unimported required package are E0324;
+  - a missing folder is only E0322.
+- **Programs:** `tests/programs/m37/`, and the §10 program from the spec.
+- **Regression:** 142 earlier programs give byte-identical IR.
+
+### DECISIONS MADE
+- MEMORY 80 (v11 direction), 81 (milestone 37).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m37`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v10 is complete** (milestones 34–36; PRP-063–065; MEMORY 76–79). Tagged `m36` and `v10`. `Language v10 Specification.md` is what `lughac spec` prints; v0–v9 are frozen.
+**Milestone 37 complete** (PRP-066, MEMORY 81): package versions, E0324. Tag `m37` goes on the merge. `Language v11 Specification.md` (in progress) is what `lughac spec` prints; v0–v10 are frozen.
 
-Next: **approve `docs/specs/Language v11 Draft.md`** (proposed in session 84):
-- M37: package versions: `[package] version = "1.4.0"`, `geo = { path = "…", version = "1.2" }`, E0324;
-- M38: named imports and re-exports, `import m { X }` and `public import m { X }`.
+Next, under the user's "in one go" (MEMORY 80): **milestone 38, named imports and re-exports** (PRP-067, next session):
+- `import a.b { X, y };` binds the listed items in the file;
+- `public import a.b { X, y };` makes them `public` items of the module (same items, symbols unchanged);
+- E0318 for a non-`public` item; E0201 for `public import` without braces.
 
-Once it is approved: record a MEMORY decision for v11, then write PRP-066 for M37.
+It completes v11; tag `m38` and `v11`.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `check/instances.rs` (~291).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `check/instances.rs` (~291), `modules/tests.rs` (281).
 
 See `TODO.md`.

@@ -4,5 +4,5 @@ error[E0321]: bad `lugha.toml` line: the path of `geo` must be one double-quoted
 2 | geo = libs/geo
   | ^^^^^^^^^^^^^^
   |
-  = help: a manifest holds `[packages]` and lines like `geo = "libs/geo"`
+  = help: a manifest holds `[packages]` with lines like `geo = "libs/geo"` or `geo = { path = "libs/geo", version = "1.2" }`, and `[package]` with `version = "1.4.0"`
 

@@ -104,6 +104,7 @@ fn the_extractor_finds_every_section_10_program() {
         "`Self` in `impl` blocks",
         "More integers",
         "Iterator helpers",
+        "Package versions",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),
