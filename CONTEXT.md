@@ -4305,6 +4305,11 @@ Branch: prp-076-tuples (merged into main)
 
 ---
 
+## SESSION 99 — 2026-10-14 — format (milestone 48) — open
+Branch: prp-077-format
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 47 complete** (PRP-076, MEMORY 94): tuples; `zip` yields `(A, B)`, `Pair` removed. Tagged `m47`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
