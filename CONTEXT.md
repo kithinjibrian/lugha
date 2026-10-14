@@ -3733,6 +3733,11 @@ Branch: prp-065-iterator_helpers (merged into main)
 
 ---
 
+## SESSION 84 — 2026-10-14 — v11 direction — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v10 is complete** (milestones 34–36; PRP-063–065; MEMORY 76–79):
