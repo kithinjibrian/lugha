@@ -1463,7 +1463,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 41 complete** (PRP-070, MEMORY 87): `Self` in declarations. Tag `m41` goes on the merge. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
+**Milestone 41 complete** (PRP-070, MEMORY 87): `Self` in declarations. Tagged `m41`. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
 
 Next, under the user's "in one go" (MEMORY 86): **milestone 42, `for … of mut`** (PRP-071), then M43 (more iterator helpers) and M44 (format specifiers, which completes v13).
 

@@ -4001,8 +4001,8 @@ Branch: main
 
 ---
 
-## SESSION 91 — 2026-10-14 — `Self` in declarations (milestone 41) — open
-Branch: prp-070-self_in_declarations
+## SESSION 91 — 2026-10-14 — `Self` in declarations (milestone 41) — closed
+Branch: prp-070-self_in_declarations (merged into main)
 
 ### WHAT WAS DONE
 - The user approved the v13 draft and asked for it "in one go". The draft is marked approved; MEMORY 86.
@@ -4030,13 +4030,13 @@ Branch: prp-070-self_in_declarations
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m41`.
+- Nothing. PRP-070 merged into `main`, tagged `m41`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 41 complete** (PRP-070, MEMORY 87): `Self` in declarations. Tag `m41` goes on the merge. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
+**Milestone 41 complete** (PRP-070, MEMORY 87): `Self` in declarations. Tagged `m41`. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
 
 Next, under the user's "in one go" (MEMORY 86): **milestone 42, `for … of mut`** (PRP-071), then M43 (more iterator helpers) and M44 (format specifiers, which completes v13).
 

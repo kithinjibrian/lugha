@@ -244,7 +244,7 @@ Done when the printing-anything program passes and the v12 spec is complete.
 ## v13 (draft approved, session 91 — `docs/specs/Language v13 Draft.md`)
 
 ### Milestone 41 — `Self` in declarations ✅
-- [x] PRP-070: `Self` in struct fields and enum payloads; `Language v13 Specification.md` begins; tagged `m41` at merge
+- [x] PRP-070: `Self` in struct fields and enum payloads; `Language v13 Specification.md` begins; tagged `m41`
 
 ### Milestone 42 — `for … of mut`
 - [ ] iterators advanced in place; array elements as mutable aliases

@@ -1,6 +1,6 @@
 ## FEATURE: `Self` in declarations — `Self` in struct fields and enum payloads; milestone 41.
 
-**Status:** approved 2026-10-14 — session 91. This is part of the user's "in one go" (milestones 41–44), merged once CI is green.
+**Status:** merged 2026-10-14 — session 91. This is part of the user's "in one go" (milestones 41–44), merged once CI is green.
 **Milestone:** 41 (one PRP; tag `m41` at merge; `Language v13 Specification.md` begins)
 **Spec:** `Language v13 Draft.md`:
 - decision 1, and the choice on `Self` in declarations;
