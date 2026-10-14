@@ -3758,7 +3758,12 @@ Branch: main
 - None.
 
 ### STILL OPEN AT CLOSE
-- The v11 draft awaits the user's approval.
+- The v11 draft awaits the user's approval (approved at the start of session 85).
+
+---
+
+## SESSION 85 — 2026-10-14 — Package versions (milestone 37) — open
+Branch: main
 
 ---
 
