@@ -1,0 +1,1 @@
+public struct Menu { public name: string, public items: Self[] }

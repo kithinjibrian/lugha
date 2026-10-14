@@ -16,7 +16,7 @@ $ lughac run fib.la
 832040
 ```
 
-Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is complete (milestones 17–19), with v4.1 allowing string literals inside interpolations. v5, interface values, is complete (milestones 20–22), and v6, generic interfaces, iterators, `Self` and converting between interfaces, is complete (milestones 23–26). v7, numbers and bits, is complete (milestones 27–29: `u32`, `u64`, `f32`, the bit operators and integer methods), v8, packages, is complete (milestone 30), v9, `match` conveniences, is complete (milestones 31–33), v10, `Self` everywhere, more integers and iterator helpers, is complete (milestones 34–36), v11, package versions and re-exports, is complete (milestones 37–38), and v12, printing any value, is complete (milestones 39–40). Today it has everything in v1.2:
+Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is complete (milestones 17–19), with v4.1 allowing string literals inside interpolations. v5, interface values, is complete (milestones 20–22), and v6, generic interfaces, iterators, `Self` and converting between interfaces, is complete (milestones 23–26). v7, numbers and bits, is complete (milestones 27–29: `u32`, `u64`, `f32`, the bit operators and integer methods), v8, packages, is complete (milestone 30), v9, `match` conveniences, is complete (milestones 31–33), v10, `Self` everywhere, more integers and iterator helpers, is complete (milestones 34–36), v11, package versions and re-exports, is complete (milestones 37–38), v12, printing any value, is complete (milestones 39–40), and v13 is in progress (milestone 41 done). Today it has everything in v1.2:
 - **Basic types:** integers (`i32`, `i64`, `u8`), `f64`, `bool` and immutable strings.
 - **Compound types:** growable arrays (`push`, `pop`, `clear`), structs, and enums with exhaustive `match`, including `Option<T>` and recursive enums.
 - **Behaviour:** methods in `impl` blocks, `if` expressions, loops and `for … of`, and `swap(a, b)` to exchange two places without copying.
@@ -54,8 +54,9 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **Re-exports (v11, milestone 38):** `import mathx.vec { Vec2, add };` brings items into a file, and `public import mathx.vec { Vec2 };` lets users of your package write `shapes.Vec2` without listing `mathx`.
 - **Printing values (v12, milestone 39):** `println(Point { x: 1, y: 2 })` prints `Point { x: 1, y: 2 }`; arrays, enums and `Option` print too, and a type's own `fun show(self): string` overrides the form.
 - **Printing anything (v12, milestone 40):** interface values print as their contents, function values as `<fun>`, and `r.unwrap()` on an `Err` panics with `unwrap on Err: <the error>`.
+- **`Self` in declarations (v13, milestone 41):** `struct Tree<T> { value: T, kids: Self[] }` and `enum List { Cons(i64, Self), Nil }`.
 
-Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v12 Specification.md`](docs/specs/Language%20v12%20Specification.md) (what `lughac spec` prints); the approved plan it is built from is [`Language v12 Draft.md`](docs/specs/Language%20v12%20Draft.md), and v11 is frozen in [`Language v11 Specification.md`](docs/specs/Language%20v11%20Specification.md).
+Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v13 Specification.md`](docs/specs/Language%20v13%20Specification.md) (what `lughac spec` prints, in progress); the approved plan it is built from is [`Language v13 Draft.md`](docs/specs/Language%20v13%20Draft.md), and v12 is frozen in [`Language v12 Specification.md`](docs/specs/Language%20v12%20Specification.md).
 
 ## Prerequisites
 

@@ -109,7 +109,8 @@ mod tests {
             }}\nfun main() {{}}"
         ));
         assert_eq!(codes("fun f(x: Self) {}"), ["E0305"]);
-        assert_eq!(codes("struct S { me: Self }"), ["E0305"]);
+        // v13: `Self` in a declaration is the declared type, so this recurses.
+        assert_eq!(codes("struct S { me: Self }"), ["E0307"]);
         // v10: inside an `impl`, `Self` is the type itself.
         ok(&format!(
             "{ORD}impl Money {{ fun me(self): Self = self; }}\nfun main() {{}}"

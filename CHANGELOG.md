@@ -13,6 +13,7 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- `Self` in declarations: in struct fields and enum payloads, `Self` is the type being declared, with its parameters (`kids: Self[]`, `Cons(i64, Self)`). `lughac spec` now prints `Language v13 Specification.md` (in progress); v12's file is frozen — **milestone 41 complete**
 - Printing anything: interface values print as the value inside them, function values as `<fun>`, and `unwrap()` on an `Err` panics with `unwrap on Err: ` and the error printed — **milestone 40 complete, Lugha v12 complete**
 - Printing values: `print`, `println`, `eprint`, `eprintln`, `to_string` and `"{x}"` accept structs, enums, arrays, `Option`, `Result` and type parameters — through the type's own `fun show(self): string` (the prelude's `Display`), or a built-in form (`Point { x: 1, y: 2 }`, `Circle(1.5)`, `[Some(1), None]`) with the strings inside quoted (`lugha_rt_str_quote`). `lughac spec` now prints `Language v12 Specification.md` (in progress); v11's file is frozen — **milestone 39 complete**
 - Named imports and re-exports: `import a.b { X, y };` brings items into a file by name, and `public import a.b { X, y };` makes them `public` items of the module (the same items: one type, one symbol); a non-`public` item can't be re-exported (E0318) — **milestone 38 complete, Lugha v11 complete**

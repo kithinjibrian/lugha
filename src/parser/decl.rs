@@ -2,7 +2,7 @@
 //! `self` receiver (v1 draft §3).
 
 use super::{PResult, Parser};
-use crate::ast::{Block, EnumDecl, FunDecl, ImplDecl, Param, Receiver, Variant};
+use crate::ast::{Block, EnumDecl, FunDecl, Ident, ImplDecl, Param, Receiver, Variant};
 use crate::diagnostic::Diagnostic;
 use crate::lexer::TokenKind;
 use crate::span::Span;
@@ -14,19 +14,23 @@ impl Parser<'_> {
         let name = self.ident("enum name")?;
         let type_params = self.type_params()?;
         let open = self.expect(&TokenKind::LBrace)?;
-        let variants = self.comma_list(open, TokenKind::RBrace, |p| {
-            let name = p.ident("variant name")?;
-            let payloads = if p.at(&TokenKind::LParen) {
-                let open = p.bump();
-                p.comma_list(open, TokenKind::RParen, |p| p.ty())?
-            } else {
-                Vec::new()
-            };
-            let span = Span::new(name.span.start, p.prev_end());
-            Ok(Variant {
-                name,
-                payloads,
-                span,
+        // `Self` in a payload is this enum (v13), as in its `impl`.
+        let params: Vec<Ident> = type_params.iter().map(|p| p.name.clone()).collect();
+        let variants = self.in_impl(&name, &params, |this| {
+            this.comma_list(open, TokenKind::RBrace, |p| {
+                let name = p.ident("variant name")?;
+                let payloads = if p.at(&TokenKind::LParen) {
+                    let open = p.bump();
+                    p.comma_list(open, TokenKind::RParen, |p| p.ty())?
+                } else {
+                    Vec::new()
+                };
+                let span = Span::new(name.span.start, p.prev_end());
+                Ok(Variant {
+                    name,
+                    payloads,
+                    span,
+                })
             })
         })?;
         Ok(EnumDecl {

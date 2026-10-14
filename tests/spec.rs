@@ -108,6 +108,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Re-exports",
         "Printing values",
         "Printing anything",
+        "`Self` in declarations",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

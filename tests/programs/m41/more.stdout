@@ -1,0 +1,4 @@
+2
+Chain { value: 1, rest: [Chain { value: 2, rest: [] }] }
+sub
+Menu { name: "top", items: [Menu { name: "sub", items: [] }] }

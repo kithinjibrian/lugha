@@ -1,7 +1,7 @@
 //! Top-level items and types (spec §3, §6, §8; v2 draft §3).
 
 use super::{PResult, Parser};
-use crate::ast::{ExternDecl, Field, Import, Item, Param, StructDecl, Type, TypeKind};
+use crate::ast::{ExternDecl, Field, Ident, Import, Item, Param, StructDecl, Type, TypeKind};
 use crate::diagnostic::Diagnostic;
 use crate::lexer::TokenKind;
 use crate::span::Span;
@@ -90,13 +90,17 @@ impl Parser<'_> {
         let name = self.ident("struct name")?;
         let type_params = self.type_params()?;
         let open = self.expect(&TokenKind::LBrace)?;
-        let fields = self.comma_list(open, TokenKind::RBrace, |p| {
-            let visibility = p.visibility();
-            let Param { name, ty } = p.param("field name")?;
-            Ok(Field {
-                visibility,
-                name,
-                ty,
+        // `Self` in a field is this struct (v13), as in its `impl`.
+        let params: Vec<Ident> = type_params.iter().map(|p| p.name.clone()).collect();
+        let fields = self.in_impl(&name, &params, |this| {
+            this.comma_list(open, TokenKind::RBrace, |p| {
+                let visibility = p.visibility();
+                let Param { name, ty } = p.param("field name")?;
+                Ok(Field {
+                    visibility,
+                    name,
+                    ty,
+                })
             })
         })?;
         Ok(StructDecl {

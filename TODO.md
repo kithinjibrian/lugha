@@ -241,6 +241,20 @@ Done when the printing-values program passes.
 Done when the printing-anything program passes and the v12 spec is complete.
 - [x] PRP-069: interface and function values printed directly, `unwrap on Err: <error>`; v12 complete; tagged `m40` and `v12`
 
+## v13 (draft approved, session 91 — `docs/specs/Language v13 Draft.md`)
+
+### Milestone 41 — `Self` in declarations ✅
+- [x] PRP-070: `Self` in struct fields and enum payloads; `Language v13 Specification.md` begins; tagged `m41` at merge
+
+### Milestone 42 — `for … of mut`
+- [ ] iterators advanced in place; array elements as mutable aliases
+
+### Milestone 43 — More iterator helpers
+- [ ] `zip` (`Pair`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`
+
+### Milestone 44 — Format specifiers
+- [ ] `"{x:spec}"`, E0431
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.

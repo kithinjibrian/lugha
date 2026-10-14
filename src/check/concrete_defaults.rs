@@ -180,8 +180,10 @@ mod tests {
             enum L { Red, Green }\n\
             impl L { fun flip(self): Self = match self { Red => Self.Green, Green => Self.Red }; }\n\
             fun main() { let p: P = P.o().up(); let l: L = L.Red.flip(); }");
+        // v13: `Self` in a declaration is the declared type.
+        ok("struct N { kids: Self[] }\nfun main() {}");
         assert_eq!(
-            errors("struct N { kids: Self[] }\nfun main() {}"),
+            errors("fun f(): Self = 1;\nfun main() {}"),
             [("E0305", "Self")]
         );
     }

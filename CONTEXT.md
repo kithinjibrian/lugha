@@ -4004,20 +4004,42 @@ Branch: main
 ## SESSION 91 — 2026-10-14 — `Self` in declarations (milestone 41) — open
 Branch: prp-070-self_in_declarations
 
+### WHAT WAS DONE
+- The user approved the v13 draft and asked for it "in one go". The draft is marked approved; MEMORY 86.
+- PRP-070 written as approved under that instruction, built and merged on green CI: `Self` in struct fields and enum payloads, as parser sugar.
+- `Language v13 Specification.md` begins: the changes summary, §4 `Self`, §9, the §10 program, §11 row 41, and the v13 out-of-scope list.
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m41/` (`self`, `more/`), `docs/specs/Language v13 Specification.md`, PRP-070.
+- Modified:
+  - `src/parser/{item,decl,self_type}.rs`, `src/check/{self_type,concrete_defaults}.rs`;
+  - `src/lib.rs`, `tests/{cli,spec}.rs`;
+  - the v13 draft.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 86–87, CONTEXT.
+
+### TESTS WRITTEN
+- **Parser:** `Self` in structs, enums and generic structs.
+- **Checker:** E0307 for a struct holding `Self`; E0305 outside declarations.
+- **Programs:** `tests/programs/m41/`, and the §10 program from the spec.
+- **Regression:** 149 earlier programs give byte-identical IR.
+
+### DECISIONS MADE
+- MEMORY 86 (v13 direction), 87 (milestone 41).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m41`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v12 is complete** (milestones 39–40; PRP-068–069; MEMORY 83–85). Tagged `m40` and `v12`. `Language v12 Specification.md` is what `lughac spec` prints; v0–v11 are frozen.
+**Milestone 41 complete** (PRP-070, MEMORY 87): `Self` in declarations. Tag `m41` goes on the merge. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
 
-Next: **approve `docs/specs/Language v13 Draft.md`** (proposed in session 90):
-- M41: `Self` in declarations;
-- M42: `for … of mut`;
-- M43: more iterator helpers (`zip`/`Pair`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`);
-- M44: format specifiers (E0431).
+Next, under the user's "in one go" (MEMORY 86): **milestone 42, `for … of mut`** (PRP-071), then M43 (more iterator helpers) and M44 (format specifiers, which completes v13).
 
-Once it is approved: record a MEMORY decision for v13, then write PRP-070 for M41.
-
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `codegen/runtime.rs` (~296), `check/array.rs` (~296), `check/env.rs` (295), `parser/stmt.rs` (~297).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `codegen/runtime.rs` (~296), `check/array.rs` (~296), `check/env.rs` (295), `parser/stmt.rs` (~297), `parser/item.rs` (287).
 
 See `TODO.md`.

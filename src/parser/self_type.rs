@@ -95,12 +95,24 @@ mod tests {
     #[test]
     fn outside_an_impl_self_stays_self() {
         assert_eq!(
-            program("struct N { kids: Self[] }\nfun f(): Self = Self { x: 0 };"),
-            "(struct N (kids Self[]))\n(fun f () Self (block (struct-lit Self (x 0))))"
+            program("fun f(): Self = Self { x: 0 };"),
+            "(fun f () Self (block (struct-lit Self (x 0))))"
         );
         assert_eq!(
             program("impl P { fun f() {} }\nfun g(): Self = Self.x;"),
             "(impl P (fun f () void (block)))\n(fun g () Self (block (. Self x)))"
+        );
+    }
+
+    #[test]
+    fn self_is_the_declared_type_in_declarations_v13() {
+        assert_eq!(
+            program("struct N { kids: Self[] }\nenum L { C(i64, Self), E }"),
+            "(struct N (kids N[]))\n(enum L (C i64 L) E)"
+        );
+        assert_eq!(
+            program("struct T<A> { k: Option<Self> }"),
+            "(struct T (type-params A) (k (Option (applied T A))))"
         );
     }
 }

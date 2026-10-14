@@ -1364,9 +1364,18 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 87. `Self` in declarations — milestone 41 (PRP-070)
+
+**Decision:** built under the user's "in one go" (milestones 41–44). `struct_decl` (`parser/item.rs`) and `enum_decl` (`parser/decl.rs`) read their bodies inside `Parser::in_impl(name, type parameter names)`, so `Self` becomes the declared type (`T<P…>` for a generic one) exactly as in `impl` blocks. The checker and codegen are unchanged. Two tests changed: `struct S { me: Self }` is now E0307 (recursive), and `struct N { kids: Self[] }` checks.
+
+**Why:** reusing v10's parser sugar made it a two-line change with byte-identical IR.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 41 complete**: PRP-070 `Self` in declarations; v13 spec begins
 - **Milestone 40 complete — Lugha v12 complete**: PRP-069 printing anything
 - **Milestone 39 complete**: PRP-068 printing values (`Display`/`show`, built-in forms); v12 spec begins
 - **Milestone 38 complete — Lugha v11 complete**: PRP-067 named imports and re-exports
@@ -1454,16 +1463,10 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Lugha v12 is complete** (milestones 39–40; PRP-068–069; MEMORY 83–85). Tagged `m40` and `v12`. `Language v12 Specification.md` is what `lughac spec` prints; v0–v11 are frozen.
+**Milestone 41 complete** (PRP-070, MEMORY 87): `Self` in declarations. Tag `m41` goes on the merge. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
 
-Next: **approve `docs/specs/Language v13 Draft.md`** (proposed in session 90):
-- M41: `Self` in declarations;
-- M42: `for … of mut`;
-- M43: more iterator helpers (`zip`/`Pair`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`);
-- M44: format specifiers (E0431).
+Next, under the user's "in one go" (MEMORY 86): **milestone 42, `for … of mut`** (PRP-071), then M43 (more iterator helpers) and M44 (format specifiers, which completes v13).
 
-Once it is approved: record a MEMORY decision for v13, then write PRP-070 for M41.
-
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `codegen/runtime.rs` (~296), `check/array.rs` (~296), `check/env.rs` (295), `parser/stmt.rs` (~297).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `codegen/runtime.rs` (~296), `check/array.rs` (~296), `check/env.rs` (295), `parser/stmt.rs` (~297), `parser/item.rs` (287).
 
 See `TODO.md`.

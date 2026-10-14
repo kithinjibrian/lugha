@@ -60,21 +60,21 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — parser (`parser/self_type.rs`):
-- [ ] `struct N { kids: Self[] }` prints with `N`; `struct T<A> { k: Self[] }` with `(applied T A)`; `enum L { C(i64, Self), E }` with `L`.
-- [ ] A function outside these declarations keeps `Self`.
+- [x] `struct N { kids: Self[] }` prints with `N`; `struct T<A> { k: Self[] }` with `(applied T A)`; `enum L { C(i64, Self), E }` with `L`.
+- [x] A function outside these declarations keeps `Self`.
 
 Unit tests — checker: `struct S { me: Self }` is E0307; `fun f(): Self` is E0305.
 
 Acceptance — `tests/programs/m41/`:
-- [ ] `self.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `self.la`: the §10 program.
+- [x] `more.la`:
   - a generic enum with `Self`;
   - `Option<Self>` in a struct;
   - `Self` in a struct of another module used through `m.T`.
-- [ ] The §10 program runs from the spec.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -82,10 +82,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m41/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] `Language v13 Specification.md` begins; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m41/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] `Language v13 Specification.md` begins; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -94,3 +94,10 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m41/self.la
 ```
+
+## AMENDMENTS (during build, session 91)
+
+- **`m41/more`** is a directory case: module `geo` with `Menu { items: Self[] }`.
+- **A struct field of `Option<Self>`** would be E0307 (`Option` is stored inline), so `more` uses `Self[]`. The bare `Tree.Leaf` needs a type annotation, as for any generic enum.
+- **IR:** the 149 earlier programs that compile give byte-identical IR. `-O2` was checked by hand for both `m41` programs.
+- **No file splits.**
