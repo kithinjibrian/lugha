@@ -1,6 +1,6 @@
 # Lugha v15 — Draft (delta against v14)
 
-**Status:** proposed 2026-10-14 — session 104. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
+**Status:** approved 2026-10-14 — session 105 (proposed in session 104). Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
 **Base:** `Language v14 Specification.md`, complete (milestone 50). It stays the source of truth, and what `lughac spec` prints, until v15's first milestone starts `Language v15 Specification.md`. That file then grows milestone by milestone, and v14 is frozen.
 
 This draft lists only what changes, in the order of the v14 sections. Everything not mentioned keeps its v14 meaning.

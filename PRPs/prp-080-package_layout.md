@@ -1,6 +1,6 @@
 ## FEATURE: Package layout — `[package] name` (E0327) and `source`, programs inside a package using it by name, one file one module (E0328), and the `..` manifest path fix; milestone 51.
 
-**Status:** proposed 2026-10-14 — session 104, with `Language v15 Draft.md`. Waiting for the user's approval of both, and of the two file splits below.
+**Status:** approved 2026-10-14 — session 105, with `Language v15 Draft.md` and the two file splits below.
 **Milestone:** 51 (one PRP; tag `m51` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 1–7, the choices, §6, E0327, E0328, §10, §11 row 51).
 

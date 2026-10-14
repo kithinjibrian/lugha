@@ -1537,6 +1537,20 @@ Open questions live in `DECISIONS.md`, not here.
 
 **Why:** the security rules live in one file (`git.rs`) with tests that check them as data; the loader stays testable without `git`.
 
+### 98. v15 draft — package layout first (session 104, approved session 105)
+
+**Decision:** v15 starts with M51, package layout (`Language v15 Draft.md`):
+- `[package] name` is optional and checked against listing keys (E0327);
+- `source = "src"` is explicit;
+- a program without a manifest beside its main file looks upward for one, stopping at the first `lugha.toml`, a `.git` or `$HOME`, and a found `name` gives an implicit package;
+- the file argument stays required;
+- a file reached as two modules is E0328;
+- `example/..` folds to `.` (bug fix).
+
+The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md`, with its discovery paused.
+
+**Why:** found setting up the user's `glowworm` library: `glowworm.src.array` was unwanted, and examples needed a manifest of their own.
+
 ---
 
 ## CURRENT PROJECT STATE
