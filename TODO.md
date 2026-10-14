@@ -284,6 +284,30 @@ Done when the printing-anything program passes and the v12 spec is complete.
 
 - [x] (PRP-029) `check/stmt.rs` (294) and `check/method_calls.rs` (285) were close to 300 lines. Bodies and array built-ins moved to `body.rs` and `builtins.rs`.
 
+## After v14 — noted, not scheduled (session 103)
+
+v15 takes system access and the Unicode follow-ups; everything else left at v14's close waits here. Each needs a discovery and an approved spec change.
+
+- [ ] **Shared references and closures that change their captures.** The biggest remaining change to the memory model; it would also let `xs.iter()` borrow instead of copying. A version of its own.
+- [ ] **A separate debug form, and parsing values back from text.** Also: module paths in printed type names, so two modules' `Point`s print differently.
+- [ ] **One-element tuples.**
+- [ ] **Packages, more:**
+  - a registry;
+  - `ssh` URLs;
+  - branches or commits as requirements;
+  - two versions of one package in a build;
+  - full version ranges and pre-release versions.
+- [ ] **Imports, more:** re-export chains (`m.v.w.X`), glob imports, a `--package` flag, and package-level (not `public`) re-exports.
+- [ ] **Explicit type arguments and `.len()`.**
+- [ ] **Format specifiers chosen at run time.**
+- [ ] **Listing a git package's `extern` functions at `lughac update`.** Needs a security review, like PRP-079.
+- [ ] **Checking the program's own `[package]` version,** e.g. against a minimum `lughac` version.
+- [ ] **Interfaces implemented once per type argument (`From<T>`).** Needs overloading by type.
+- [ ] **Literal patterns on `f64`.**
+- [ ] **Warnings:** an irrefutable `if let`, and a `show` of the wrong shape.
+- [ ] **Small values stored inline in interface values** (an optimisation only).
+- [ ] **Spec housekeeping:** tick §12 entries that later versions settled: `%=` and `mut` bindings (v9), re-exports (v11), iterating a copy / `for … of mut` (v13), Unicode text (v14).
+
 ## Ideas — noted, not scheduled
 
 - [x] Move on last use: store a dead local's array without copying it (`grid = next`, `ps[i] = p`) — PRP-018.
