@@ -4035,7 +4035,7 @@ Branch: prp-070-self_in_declarations (merged into main)
 ---
 
 ## SESSION 92 — 2026-10-14 — `for … of mut` (milestone 42) — open
-Branch: main
+Branch: prp-071-for_of_mut
 
 ---
 
