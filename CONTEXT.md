@@ -3970,23 +3970,48 @@ Branch: prp-069-printing_anything (merged into main)
 
 ---
 
-## SESSION 90 — 2026-10-14 — v13 direction — open
+## SESSION 90 — 2026-10-14 — v13 direction — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user chose v13 = format specifiers, `zip`/`chain` iterator helpers, `for n of mut c`, and `Self` in declarations.
+- Discovery, three questions, each answered with the recommended option:
+  - Rust-style core format specifiers;
+  - the full helper set with `Pair`;
+  - `for … of mut` on iterators and arrays.
+
+  `Self` in declarations needed no question.
+- Wrote `docs/specs/Language v13 Draft.md` (proposed): milestones 41–44, E0431.
+
+### FILES CREATED OR MODIFIED
+- New: `docs/specs/Language v13 Draft.md`.
+- CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (design only).
+
+### DECISIONS MADE
+- None recorded yet; the v13 MEMORY decision follows approval of the draft.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The v13 draft awaits the user's approval.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v12 is complete** (milestones 39–40; PRP-068–069; MEMORY 83–85): every value prints, through `show` (the prelude's `Display`) or a built-in form; interface values by their contents, functions as `<fun>`, and `unwrap on Err: <error>`. Tagged `m40` and `v12`. `Language v12 Specification.md` is what `lughac spec` prints; v0–v11 are frozen.
+**Lugha v12 is complete** (milestones 39–40; PRP-068–069; MEMORY 83–85). Tagged `m40` and `v12`. `Language v12 Specification.md` is what `lughac spec` prints; v0–v11 are frozen.
 
-Next: **v13 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v12 spec §11 and §12):
-- format specifiers (`{x:.2}`, padding), a debug form;
-- downloading packages, a lock file; whole-module re-exports and import aliases;
-- `zip`/`chain` and the other iterator helpers, and a pair type;
-- `for n of mut c`, unsigned indexes;
-- `Self` in declarations and patterns;
-- Unicode text;
-- binary I/O.
+Next: **approve `docs/specs/Language v13 Draft.md`** (proposed in session 90):
+- M41: `Self` in declarations;
+- M42: `for … of mut`;
+- M43: more iterator helpers (`zip`/`Pair`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`);
+- M44: format specifiers (E0431).
+
+Once it is approved: record a MEMORY decision for v13, then write PRP-070 for M41.
 
 Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `codegen/runtime.rs` (~296), `check/array.rs` (~296), `check/env.rs` (295), `parser/stmt.rs` (~297).
 
