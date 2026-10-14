@@ -3733,28 +3733,44 @@ Branch: prp-065-iterator_helpers (merged into main)
 
 ---
 
-## SESSION 84 — 2026-10-14 — v11 direction — open
+## SESSION 84 — 2026-10-14 — v11 direction — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user chose v11 = package versions and re-exports.
+- Discovery, three questions, each answered with the recommended option:
+  - checked local versions;
+  - Cargo-compatible requirements only;
+  - named re-exports (`public import m { X }`, braces also without `public`).
+- Wrote `docs/specs/Language v11 Draft.md` (proposed): milestones 37 (versions, E0324) and 38 (named imports and re-exports).
+
+### FILES CREATED OR MODIFIED
+- New: `docs/specs/Language v11 Draft.md`.
+- CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (design only).
+
+### DECISIONS MADE
+- None recorded yet; the v11 MEMORY decision follows approval of the draft.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The v11 draft awaits the user's approval.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v10 is complete** (milestones 34–36; PRP-063–065; MEMORY 76–79):
-- `Self` in `impl` blocks, and default methods on concrete types;
-- `i8`/`i16`/`u16`, checked/saturating/rotating methods, `MIN`/`MAX`, `parse_u64`;
-- lazy iterator helpers, `iter`/`bytes`/`range`, `for b of s`.
+**Lugha v10 is complete** (milestones 34–36; PRP-063–065; MEMORY 76–79). Tagged `m36` and `v10`. `Language v10 Specification.md` is what `lughac spec` prints; v0–v9 are frozen.
 
-Tagged `m36` and `v10`. `Language v10 Specification.md` is what `lughac spec` prints; v0–v9 are frozen.
+Next: **approve `docs/specs/Language v11 Draft.md`** (proposed in session 84):
+- M37: package versions: `[package] version = "1.4.0"`, `geo = { path = "…", version = "1.2" }`, E0324;
+- M38: named imports and re-exports, `import m { X }` and `public import m { X }`.
 
-Next: **v11 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v10 spec §11 and §12):
-- `zip`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`/`max`, `position`, and a pair type;
-- `for n of mut c`, unsigned indexes;
-- `Self` in struct and enum declarations and patterns;
-- package versions, re-exports, a `--package` flag;
-- a `Display`-like interface (printing structs, errors in `unwrap`);
-- binary I/O, directories, streams and processes;
-- Unicode text (characters, not bytes).
+Once it is approved: record a MEMORY decision for v11, then write PRP-066 for M37.
 
 Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `check/instances.rs` (~291).
 
