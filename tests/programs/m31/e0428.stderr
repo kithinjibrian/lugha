@@ -1,0 +1,24 @@
+error[E0428]: `r` is not bound in this alternative
+  --> tests/programs/m31/e0428.la:6:17
+  |
+6 |     Circle(r) | Empty => r,
+  |                 ^^^^^
+  |
+  = help: every alternative of `p | q` must bind the same names, each at one type
+
+error[E0428]: `n` is i64 in the first alternative but f64 here
+  --> tests/programs/m31/e0428.la:7:16
+  |
+7 |     Count(n) | Circle(n) => n as f64,
+  |                ^^^^^^^^^
+  |
+  = help: every alternative of `p | q` must bind the same names, each at one type
+
+error[E0428]: `mut` needs a binding, but `None` is a variant
+   --> tests/programs/m31/e0428.la:14:13
+   |
+14 |         mut None => {}
+   |             ^^^^
+   |
+   = help: every alternative of `p | q` must bind the same names, each at one type
+

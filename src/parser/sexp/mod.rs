@@ -165,6 +165,11 @@ fn pattern(pattern: &Pattern) -> String {
             let name = name.as_ref().map_or("_", |n| n.name.as_str());
             format!("(: {name} {})", self::ty(ty))
         }
+        PatternKind::Or(alternatives) => {
+            let parts: Vec<String> = alternatives.iter().map(self::pattern).collect();
+            format!("(| {})", parts.join(" "))
+        }
+        PatternKind::Mut(inner) => format!("(mut {})", self::pattern(inner)),
     }
 }
 

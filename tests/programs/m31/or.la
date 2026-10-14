@@ -1,0 +1,28 @@
+// The v9 draft's §10 or-patterns program (milestone 31).
+
+enum Shape { Circle(f64), Square(f64), Rect(f64, f64) }
+
+fun size(s: Shape): f64 = match s {
+    Circle(r) | Square(r) => r * 2.0,
+    Rect(w, h) => w + h,
+};
+
+fun kind(cmd: string): string = match cmd {
+    "q" | "quit" | "exit" => "stop",
+    "h" | "help" => "help",
+    _ => "run",
+};
+
+fun main() {
+    println(size(Shape.Square(1.5)));
+    println(size(Shape.Rect(1.0, 2.0)));
+    println(kind("quit"));
+    println(kind("ls"));
+    match Some(41) {
+        Some(mut n) => {
+            n += 1;
+            println(n);
+        }
+        None => {}
+    }
+}

@@ -3466,20 +3466,40 @@ Branch: main
 
 ---
 
-## SESSION 77 — 2026-10-14 — Better patterns (milestone 31) — open
+## SESSION 77 — 2026-10-14 — Better patterns (milestone 31) — closed
 Branch: prp-060-better_patterns
+
+### WHAT WAS DONE
+- The user asked for milestones 31–33 "in one go": PRP-060 written as approved within the v9 draft, built, merged on green CI.
+- Parser: `|` alternatives, `mut` bindings, parenthesised patterns. Checker: expanded alternatives, E0428, per-alternative W0102, mutable bindings. Codegen: alternatives in the arm chain sharing one slot per name, owned `mut` copies.
+- `Language v9 Specification.md` begins (§3 grammar, §4 or-patterns and `mut`, E0428, §9, the §10 program).
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/or_patterns.rs`, `src/check/errors/v9.rs`, `src/codegen/or_patterns.rs`, `tests/programs/m31/` (`or`, `more`, `e0428`), `docs/specs/Language v9 Specification.md`.
+- Modified: `src/ast/pattern.rs`, `src/parser/pattern.rs`, `src/parser/sexp/mod.rs`, `src/check/{patterns,matching,type_patterns,mod}.rs`, `src/check/errors/mod.rs`, `src/codegen/{patterns,matching,scope,mod}.rs`, `src/lib.rs`, `tests/{cli,spec}.rs`.
+- Docs: PRP-060, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 73, CONTEXT.
+
+### TESTS WRITTEN
+- Parser: or-patterns, nesting, parentheses, `mut`, E0201 cases. Checker (`or_patterns.rs`): shared bindings, E0428 (missing, extra, type, `mut None`), coverage (E0417, W0102 per alternative), `mut` vs E0501, top-level `mut x`. Codegen: arm chain with one slot per name.
+- `tests/programs/m31/`; the §10 program from the spec. 220 earlier programs' IR byte-identical with `main`; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 73.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m31`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v9 draft approved** (`docs/specs/Language v9 Draft.md`, MEMORY 72): `match` and conveniences — milestones 31–33. `main` has v8 complete (tags `m30`, `v8`); `Language v8 Specification.md` is what `lughac spec` prints until milestone 31 starts `Language v9 Specification.md`.
+**Milestone 31 complete** (PRP-060, MEMORY 73): or-patterns and `mut` bindings. Tag `m31` goes on the merge of PRP-060. `Language v9 Specification.md` (in progress) is what `lughac spec` prints; v8 is frozen.
 
-Next: **milestone 31, better patterns** — PRP-060. Scope (v9 draft decisions 2–3, §3 `pattern`/`alternative`, §4 "Or-patterns" and "`mut` bindings", §9, E0428, §10 "Or-patterns"):
-- parser: `|` between pattern alternatives (the `Pipe` token exists since v7), parenthesised patterns, `mut` before a binding name (also `mut c: Circle`); `PatternKind` gains an or-form and a mutable flag on bindings;
-- checker: binding sets per alternative (E0428), `mut` on a variant (E0428), or-patterns in `check/usefulness.rs` (expand alternatives), mutable bindings as `let mut` locals;
-- codegen: alternatives tested in turn in the arm chain (`codegen/patterns.rs`, not the flat `switch`), the binding stored from the matching alternative; `mut` bindings copied at copy sites.
+Next (the user's "in one go"): **milestone 32, unwrapping** — PRP-061: built-in `unwrap()` / `expect(msg)` on `Option` and `Result` (checker `builtins.rs`, codegen near `int_methods.rs`; panic `unwrap on None` / `unwrap on Err` / the message at the method name via `lugha_rt_panic`), `%=` (lexer `PercentEq`, `AssignOp::Rem`). Then **milestone 33** — PRP-062: `if let`, `while let`, `let … else` (E0429).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `check/usefulness.rs` (~277), `codegen/patterns.rs` (~261).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/patterns.rs` (~290), `parser/stmt.rs` (~288).
 
 See `TODO.md`.

@@ -195,9 +195,9 @@ Done when the packages programs pass and the v8 spec is complete.
 
 ## v9 (draft approved, session 76 — `docs/specs/Language v9 Draft.md`)
 
-### Milestone 31 — Better patterns
+### Milestone 31 — Better patterns ✅
 Done when the or-patterns program passes.
-- [ ] or-patterns (E0428), `mut` bindings
+- [x] PRP-060: or-patterns (E0428), `mut` bindings; `Language v9 Specification.md` begins; tagged `m31` at merge
 
 ### Milestone 32 — Unwrapping
 Done when the unwrapping program passes.

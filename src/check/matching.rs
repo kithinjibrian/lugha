@@ -27,19 +27,24 @@ impl Checker {
         for arm in arms {
             let mut bindings = Vec::new();
             let before = self.diagnostics.len();
-            let pat = self.arm_pattern(&arm.pattern, &sty, &mut bindings);
+            let pats = self.arm_pattern(&arm.pattern, &sty, &mut bindings);
             if self.diagnostics.len() > before {
                 analysable = false;
             } else if analysable {
-                self.arm_reachable(&rows, &pat, &sty, arm.pattern.span);
+                self.arm_reachable(&rows, &pats, &sty, arm.pattern.span);
                 if arm.guard.is_none() {
-                    rows.push((pat, arm.pattern.span));
+                    rows.extend(pats);
                 }
             }
             self.push();
-            for (name, ty) in &bindings {
+            for (name, ty, mutable) in &bindings {
                 // `declare` reports E0311 for a binding named like a type.
-                self.declare(name, ty.clone(), Binding::Pattern);
+                // A `mut` binding is the arm's own copy (v9).
+                let binding = match mutable {
+                    true => Binding::Let { mutable: true },
+                    false => Binding::Pattern,
+                };
+                self.declare(name, ty.clone(), binding);
             }
             if let Some(guard) = &arm.guard {
                 self.expect_type(guard, &Expect::of(Type::Bool));
@@ -90,14 +95,35 @@ impl Checker {
         }
     }
 
-    /// W0102 if no value reaches `pat` past the earlier unguarded arms.
-    fn arm_reachable(&mut self, rows: &[(Pat, Span)], pat: &Pat, sty: &Type, span: Span) {
+    /// W0102 for an arm that no value reaches past the earlier unguarded
+    /// arms, or for each of its top-level alternatives that none does (v9).
+    fn arm_reachable(
+        &mut self,
+        rows: &[(Pat, Span)],
+        pats: &[(Pat, Span)],
+        sty: &Type,
+        span: Span,
+    ) {
         let tys = [sty.clone()];
         let space = self.space();
-        let earlier: Vec<Vec<Pat>> = rows.iter().map(|(p, _)| vec![p.clone()]).collect();
-        if space.useful(&earlier, std::slice::from_ref(pat), &tys) {
+        let mut earlier: Vec<Vec<Pat>> = rows.iter().map(|(p, _)| vec![p.clone()]).collect();
+        // An alternative is dead when none of its expansions is useful.
+        let mut dead: Vec<(Span, bool)> = Vec::new();
+        for (pat, at) in pats {
+            let useful = space.useful(&earlier, std::slice::from_ref(pat), &tys);
+            match dead.iter_mut().find(|(s, _)| s == at) {
+                Some((_, all_dead)) => *all_dead &= !useful,
+                None => dead.push((*at, !useful)),
+            }
+            earlier.push(vec![pat.clone()]);
+        }
+        if dead.iter().any(|(_, d)| !d) {
+            for (at, _) in dead.iter().filter(|(_, d)| *d) {
+                self.report(errors::unreachable_arm_combined(*at));
+            }
             return;
         }
+        let Some((pat, _)) = pats.first() else { return };
         // Name one arm that covers it alone, when there is one.
         let cause = rows
             .iter()
@@ -110,8 +136,8 @@ impl Checker {
     }
 
     /// W0103 for each binding that nothing in its arm mentions.
-    fn unused(&mut self, bindings: &[(Ident, Type)]) {
-        for (name, _) in bindings {
+    fn unused(&mut self, bindings: &[(Ident, Type, bool)]) {
+        for (name, _, _) in bindings {
             // A binding named like a type is already E0311.
             let named_like_type = self.type_span(&name.name).is_some();
             if !named_like_type && !self.mentions.values().any(|m| m.decl == name.span) {

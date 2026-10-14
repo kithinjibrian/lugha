@@ -48,6 +48,12 @@ impl<'ctx> Scopes<'ctx> {
             .unwrap_or_else(|| unreachable!("checked: `{name}` is in scope"))
     }
 
+    /// `name`'s binding in the innermost scope only: an or-pattern's later
+    /// alternatives reuse the local the first one declared (v9).
+    pub(super) fn in_innermost(&self, name: &str) -> Option<Local<'ctx>> {
+        self.stack.last().and_then(|scope| scope.get(name).cloned())
+    }
+
     /// The innermost binding of `name`, if there is one.
     pub(super) fn find(&self, name: &str) -> Option<Local<'ctx>> {
         self.stack

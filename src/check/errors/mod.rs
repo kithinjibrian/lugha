@@ -11,6 +11,7 @@ mod v4;
 mod v5;
 mod v6;
 mod v8;
+mod v9;
 
 pub(super) use generics::*;
 pub(super) use names::*;
@@ -20,6 +21,7 @@ pub(super) use v4::*;
 pub(super) use v5::*;
 pub(super) use v6::*;
 pub(super) use v8::*;
+pub(super) use v9::*;
 
 use crate::diagnostic::{Diagnostic, Label};
 

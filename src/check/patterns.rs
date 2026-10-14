@@ -1,9 +1,14 @@
 //! Pattern typing (v1 §4; v2 draft §3, §5): each pattern is checked against
-//! the type it matches, at any depth, giving its bindings and a `Pat` for
-//! the usefulness check.
+//! the type it matches, at any depth, giving its bindings and its `Pat`s for
+//! the usefulness check: one per way it can match, or-patterns expanded
+//! (v9), so the usefulness check never sees an or-pattern.
 
 use super::{Checker, Type, errors, slot_names_variant};
 use crate::ast::{Ident, Pattern, PatternKind};
+use crate::span::Span;
+
+/// A pattern's bindings: name, type, and whether it is `mut` (v9).
+pub(super) type Bindings = Vec<(Ident, Type, bool)>;
 
 /// A pattern as the usefulness check sees it: bindings and `_` are `Wild`.
 #[derive(Debug, Clone, PartialEq)]
@@ -25,26 +30,62 @@ pub(super) enum Ctor {
 }
 
 impl Checker {
-    /// Types the top-level `pattern` against `ty`, adding its bindings.
+    /// Types the top-level `pattern` against `ty`, adding its bindings. Each
+    /// way it can match comes with the span of its top-level alternative,
+    /// for W0102 (v9).
     pub(super) fn arm_pattern(
         &mut self,
         pattern: &Pattern,
         ty: &Type,
-        bindings: &mut Vec<(Ident, Type)>,
-    ) -> Pat {
-        self.pattern_at(pattern, ty, bindings, true)
+        bindings: &mut Bindings,
+    ) -> Vec<(Pat, Span)> {
+        if let PatternKind::Or(alternatives) = &pattern.kind {
+            let groups = self.or_alternatives(alternatives, ty, bindings, true);
+            return groups
+                .into_iter()
+                .flat_map(|(pats, span)| pats.into_iter().map(move |p| (p, span)))
+                .collect();
+        }
+        let pats = self.pattern_at(pattern, ty, bindings, true);
+        pats.into_iter().map(|p| (p, pattern.span)).collect()
     }
 
-    /// One pattern at any depth. A bare name in a payload slot binds the
-    /// payload unless the slot's type has a variant by that name (v2 draft
-    /// §3); at the top level it must be a variant.
-    fn pattern_at(
+    /// One pattern at any depth, as the ways it can match. A bare name in a
+    /// payload slot binds the payload unless the slot's type has a variant by
+    /// that name (v2 draft §3); at the top level it must be a variant.
+    pub(super) fn pattern_at(
         &mut self,
         pattern: &Pattern,
         ty: &Type,
-        bindings: &mut Vec<(Ident, Type)>,
+        bindings: &mut Bindings,
         top: bool,
-    ) -> Pat {
+    ) -> Vec<Pat> {
+        match &pattern.kind {
+            PatternKind::Or(alternatives) => self
+                .or_alternatives(alternatives, ty, bindings, top)
+                .into_iter()
+                .flat_map(|(pats, _)| pats)
+                .collect(),
+            PatternKind::Mut(inner) => self.mut_pattern(inner, ty, bindings, top),
+            PatternKind::Variant(name, slots) if !self.binds(pattern, ty, top) => {
+                self.variant_pattern(pattern, name, slots.as_deref(), ty, bindings)
+            }
+            _ => vec![self.single(pattern, ty, bindings, top)],
+        }
+    }
+
+    /// True if `pattern` is a bare name that binds rather than names a variant.
+    pub(super) fn binds(&self, pattern: &Pattern, ty: &Type, top: bool) -> bool {
+        match &pattern.kind {
+            PatternKind::Variant(name, None) => {
+                !top && !slot_names_variant(self.variants_of(ty).as_deref(), &name.name)
+            }
+            _ => false,
+        }
+    }
+
+    /// A pattern with no alternatives inside it.
+    fn single(&mut self, pattern: &Pattern, ty: &Type, bindings: &mut Bindings, top: bool) -> Pat {
         let fits = |ok: bool| ok || matches!(ty, Type::Error | Type::Never);
         match &pattern.kind {
             PatternKind::Wildcard => Pat::Wild,
@@ -71,18 +112,14 @@ impl Checker {
                 }
                 Pat::Ctor(Ctor::Bool(*value), Vec::new())
             }
-            PatternKind::Variant(name, None)
-                if !top && !slot_names_variant(self.variants_of(ty).as_deref(), &name.name) =>
-            {
-                bindings.push((name.clone(), ty.clone()));
+            PatternKind::Variant(name, None) if self.binds(pattern, ty, top) => {
+                bindings.push((name.clone(), ty.clone(), false));
                 Pat::Wild
-            }
-            PatternKind::Variant(name, slots) => {
-                self.variant_pattern(pattern, name, slots.as_deref(), ty, bindings)
             }
             PatternKind::Type(name, written) => {
                 self.type_pattern(pattern, name.as_ref(), written, ty, bindings)
             }
+            _ => unreachable!("handled by `pattern_at`"),
         }
     }
 
@@ -92,14 +129,14 @@ impl Checker {
         name: &Ident,
         slots: Option<&[Pattern]>,
         ty: &Type,
-        bindings: &mut Vec<(Ident, Type)>,
-    ) -> Pat {
+        bindings: &mut Bindings,
+    ) -> Vec<Pat> {
         if matches!(ty, Type::Error | Type::Never) {
-            return Pat::Wild;
+            return vec![Pat::Wild];
         }
         let Some(variants) = self.variants_of(ty) else {
             self.report(errors::pattern_mismatch(ty, pattern.span));
-            return Pat::Wild;
+            return vec![Pat::Wild];
         };
         let Some((index, (_, payloads))) = variants
             .into_iter()
@@ -107,7 +144,7 @@ impl Checker {
             .find(|(_, (v, _))| *v == name.name)
         else {
             self.report(errors::no_variant(&name.name, ty, name.span));
-            return Pat::Wild;
+            return vec![Pat::Wild];
         };
         let slots = slots.unwrap_or(&[]);
         if slots.len() != payloads.len() {
@@ -117,14 +154,25 @@ impl Checker {
                 slots.len(),
                 pattern.span,
             ));
-            return Pat::Wild;
+            return vec![Pat::Wild];
         }
-        let args = slots
-            .iter()
-            .zip(&payloads)
-            .map(|(slot, payload)| self.pattern_at(slot, payload, bindings, false))
-            .collect();
-        Pat::Ctor(Ctor::Variant(index, name.name.clone()), args)
+        // Every combination of the slots' alternatives (v9).
+        let mut rows: Vec<Vec<Pat>> = vec![Vec::new()];
+        for (slot, payload) in slots.iter().zip(&payloads) {
+            let options = self.pattern_at(slot, payload, bindings, false);
+            rows = rows
+                .into_iter()
+                .flat_map(|row| {
+                    options
+                        .iter()
+                        .map(move |o| [row.clone(), vec![o.clone()]].concat())
+                })
+                .collect();
+        }
+        let ctor = Ctor::Variant(index, name.name.clone());
+        rows.into_iter()
+            .map(|args| Pat::Ctor(ctor.clone(), args))
+            .collect()
     }
 }
 

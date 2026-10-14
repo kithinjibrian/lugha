@@ -17,7 +17,7 @@ use crate::check::{Type, slot_names_variant};
 /// Where a value being matched is: loaded already, or at an address in
 /// storage form (payloads; `bool` as `i8`).
 #[derive(Clone, Copy)]
-enum Subject<'ctx> {
+pub(super) enum Subject<'ctx> {
     Value(BasicValueEnum<'ctx>),
     At(PointerValue<'ctx>),
 }
@@ -33,8 +33,12 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn is_flat(&self, sty: &Type, arms: &[Arm]) -> bool {
         arms.iter().all(|arm| {
             let PatternKind::Variant(name, Some(slots)) = &arm.pattern.kind else {
-                // A type pattern tests a table, not a tag (v5).
-                let typed = matches!(arm.pattern.kind, PatternKind::Type(..));
+                // A type pattern tests a table, not a tag (v5); or-patterns
+                // and `mut` bindings go arm by arm too (v9).
+                let typed = matches!(
+                    arm.pattern.kind,
+                    PatternKind::Type(..) | PatternKind::Or(_) | PatternKind::Mut(_)
+                );
                 return arm.guard.is_none() && !typed;
             };
             let (_, payloads) = self.variant(sty, &name.name);
@@ -115,7 +119,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.builder.position_at_end(ok);
     }
 
-    fn load_subject(&self, subject: Subject<'ctx>, ty: &Type) -> BasicValueEnum<'ctx> {
+    pub(super) fn load_subject(&self, subject: Subject<'ctx>, ty: &Type) -> BasicValueEnum<'ctx> {
         match subject {
             Subject::Value(value) => value,
             Subject::At(address) => self.load_element(address, ty),
@@ -124,7 +128,7 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// Tests `pattern` against `subject`, binding as it goes; on a mismatch
     /// jumps to `next`. A bare name in a slot binds unless it names a variant.
-    fn test(
+    pub(super) fn test(
         &mut self,
         pattern: &Pattern,
         subject: Subject<'ctx>,
@@ -134,6 +138,8 @@ impl<'ctx> Lowerer<'ctx> {
     ) {
         match &pattern.kind {
             PatternKind::Wildcard => {}
+            PatternKind::Or(alternatives) => self.test_or(alternatives, subject, ty, next, top),
+            PatternKind::Mut(inner) => self.test_mut(inner, subject, ty, next, top),
             PatternKind::Variant(name, None)
                 if !top && !slot_names_variant(self.variants_of(ty).as_deref(), &name.name) =>
             {
@@ -202,6 +208,24 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// A borrowed local for a payload binding (v1 §4).
     fn bind(&mut self, name: &Ident, value: BasicValueEnum<'ctx>, ty: &Type) {
+        self.bind_as(name, value, ty, true);
+    }
+
+    /// A local for a binding: borrowed, or the arm's own (`mut`, v9). Every
+    /// alternative of an or-pattern stores into the one local its name got.
+    pub(super) fn bind_as(
+        &mut self,
+        name: &Ident,
+        value: BasicValueEnum<'ctx>,
+        ty: &Type,
+        borrowed: bool,
+    ) {
+        if let Some(local) = self.scopes.in_innermost(&name.name) {
+            self.builder
+                .build_store(local.ptr, value)
+                .expect(POSITIONED);
+            return;
+        }
         let local = self.entry_alloca(ty, &name.name);
         self.builder.build_store(local, value).expect(POSITIONED);
         self.scopes.declare(
@@ -209,7 +233,7 @@ impl<'ctx> Lowerer<'ctx> {
             Local {
                 ptr: local,
                 ty: ty.clone(),
-                borrowed: true,
+                borrowed,
             },
         );
     }

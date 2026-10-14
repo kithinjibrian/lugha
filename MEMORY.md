@@ -1119,9 +1119,21 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 73. Better patterns — milestone 31 (PRP-060)
+
+**Decision:** built under the user's "in one go" (milestones 31–33).
+- **AST/parser:** `PatternKind::Or(Vec<Pattern>)` (from `|` between alternatives, any depth), `PatternKind::Mut(Box<Pattern>)` (`mut name`, `mut name: T`; anything else after `mut` is E0201), `(p)` is `p`. Sexp `(| a b)`, `(mut n)`.
+- **Checker:** pattern typing returns the expanded ways a pattern matches (`Vec<Pat>`, products over nested ors), so `usefulness.rs` is unchanged; `arm_pattern` pairs each with its top-level alternative's span for per-alternative W0102 (an alternative is dead when none of its expansions is useful, counting earlier alternatives of the arm). Bindings are `(Ident, Type, bool mut)` (`patterns::Bindings`); `check/or_patterns.rs`: `or_alternatives` (first alternative's bindings kept; E0428 for missing/extra names or other types, `errors/v9.rs::or_bindings`), `mut_pattern` (E0428 if the bare name is a variant of the matched type, even at the top; top-level `mut x` binds the scrutinee). `mut` bindings declared `Binding::Let { mutable: true }`.
+- **Codegen** (`codegen/or_patterns.rs`): `is_flat` false for `Or`/`Mut` arms; `test_or` tries alternatives (`or.next`/`or.ok` blocks); `bind_as` reuses a name's local in the arm's innermost scope (`Scopes::in_innermost`), so alternatives share one slot; `test_mut` binds an owned (`borrowed: false`), deep-copied local.
+
+**Why:** expanding or-patterns before the usefulness check keeps that algorithm untouched.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 31 complete**: PRP-060 or-patterns and `mut` bindings; v9 spec begins
 - **Milestone 30 complete — Lugha v8 complete**: PRP-058 loading packages, PRP-059 package visibility
 - **Milestone 29 complete — Lugha v7 complete**: PRP-057 integer methods
 - **Milestone 28 complete**: PRP-056 bit operators
@@ -1190,22 +1202,19 @@ Open questions live in `DECISIONS.md`, not here.
 - v0 language spec reviewed and fixed
 
 ### In Progress
-- Nothing
+- Lugha v9: milestones 32–33 next (in one go)
 
 ### Not Started
-- Lugha v9: draft approved (MEMORY 72), milestones 31–33 not started
+- Milestones 32–33 (v9 draft, MEMORY 72)
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v9 draft approved** (`docs/specs/Language v9 Draft.md`, MEMORY 72): `match` and conveniences — milestones 31–33. `main` has v8 complete (tags `m30`, `v8`); `Language v8 Specification.md` is what `lughac spec` prints until milestone 31 starts `Language v9 Specification.md`.
+**Milestone 31 complete** (PRP-060, MEMORY 73): or-patterns and `mut` bindings. Tag `m31` goes on the merge of PRP-060. `Language v9 Specification.md` (in progress) is what `lughac spec` prints; v8 is frozen.
 
-Next: **milestone 31, better patterns** — PRP-060. Scope (v9 draft decisions 2–3, §3 `pattern`/`alternative`, §4 "Or-patterns" and "`mut` bindings", §9, E0428, §10 "Or-patterns"):
-- parser: `|` between pattern alternatives (the `Pipe` token exists since v7), parenthesised patterns, `mut` before a binding name (also `mut c: Circle`); `PatternKind` gains an or-form and a mutable flag on bindings;
-- checker: binding sets per alternative (E0428), `mut` on a variant (E0428), or-patterns in `check/usefulness.rs` (expand alternatives), mutable bindings as `let mut` locals;
-- codegen: alternatives tested in turn in the arm chain (`codegen/patterns.rs`, not the flat `switch`), the binding stored from the matching alternative; `mut` bindings copied at copy sites.
+Next (the user's "in one go"): **milestone 32, unwrapping** — PRP-061: built-in `unwrap()` / `expect(msg)` on `Option` and `Result` (checker `builtins.rs`, codegen near `int_methods.rs`; panic `unwrap on None` / `unwrap on Err` / the message at the method name via `lugha_rt_panic`), `%=` (lexer `PercentEq`, `AssignOp::Rem`). Then **milestone 33** — PRP-062: `if let`, `while let`, `let … else` (E0429).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `check/usefulness.rs` (~277), `codegen/patterns.rs` (~261).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `codegen/patterns.rs` (~290), `parser/stmt.rs` (~288).
 
 See `TODO.md`.

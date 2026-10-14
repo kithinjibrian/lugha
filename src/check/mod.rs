@@ -48,6 +48,7 @@ mod methods;
 mod modules;
 mod numbers;
 mod ops;
+mod or_patterns;
 mod patterns;
 mod results;
 mod satisfy;

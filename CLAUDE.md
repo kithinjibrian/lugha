@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v8 Specification.md` (`lughac spec` prints it): Lugha v8, complete (milestone 30: packages — `lugha.toml`, package imports, `public` / package / `private` visibility). `Language v8 Draft.md` is the approved plan it was built from. The v0–v7 files are frozen. `Result`, `Iter` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v8 Specification.md` (`lughac spec` prints it): Lugha v9, in progress (milestone 31 done: or-patterns, `mut` bindings). `Language v9 Draft.md` is the approved plan (milestones 31–33: patterns, unwrapping, conditional patterns). The v0–v8 files are frozen. `Result`, `Iter` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
 
 ---
 
@@ -260,7 +260,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  E0422), input.rs (args, parse_i64/f64, interpolation), fun_values.rs (function types
 │   │                  and values, calls of values), closures.rs (closure types, captures, E0511), helpers.rs
 │   │                  (xs.map(f) etc. as prelude calls), results.rs (Ok/Err, `?`, E0424), errors/ (mod.rs, names.rs E03xx, types.rs E04xx, places.rs E05xx/W01xx,
-│   │                  generics.rs milestone 11–12 codes, v4.rs v4 codes, v5.rs v5 codes, v6.rs v6 codes, v8.rs v8 visibility),
+│   │                  generics.rs milestone 11–12 codes, v4.rs v4 codes, v5.rs v5 codes, v6.rs v6 codes, v8.rs v8 visibility, v9.rs v9 codes),
 │   │                  iface_values.rs (interface types, E0425, conversion, Checked.conversions), iface_calls.rs
 │   │                  (calls on interface values), iface_tables.rs (Checked.interfaces, conversion reachability), type_patterns.rs
 │   │                  (`c: Circle` patterns, E0426), defaults.rs (default methods: `Self`, bodies, instances),
@@ -269,7 +269,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  interface-typed parameters), iterators.rs (`for … of` over `next`, `Iter`, Checked.iterations),
 │   │                  self_type.rs (`Self` in interfaces: items for a type, E0427),
 │   │                  upcast.rs (converting between interfaces: `undeclared`, E0422),
-│   │                  numbers.rs (v7 numeric types: `is_float`, `is_unsigned`, keyword types), slots.rs (enum payload slots)
+│   │                  numbers.rs (v7 numeric types: `is_float`, `is_unsigned`, keyword types), slots.rs (enum payload slots),
+│   │                  or_patterns.rs (or-pattern alternatives and bindings E0428, `mut` bindings)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
@@ -287,7 +288,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (dynamic calls, interface copies, type-pattern tests), defaults.rs (default instances, `?` boxing),
 │   │                  instances.rs (generic instances:
 │   │                  substitution, instance symbols),
-│   │                  swap.rs (swap: loads and crossed stores), bits.rs (bit operators, the shift range check), int_methods.rs (wrapping and counting methods), iterators.rs (iterator loops: a hidden copy, `next` until `None`),
+│   │                  swap.rs (swap: loads and crossed stores), bits.rs (bit operators, the shift range check), int_methods.rs (wrapping and counting methods), or_patterns.rs (alternatives in the arm chain, `mut` copies), iterators.rs (iterator loops: a hidden copy, `next` until `None`),
 │   │                  upcast.rs (between interfaces: table registry, derived tables, `lugha_up_` lookups)
 │   ├── modules/     — mod.rs (load: the main file and every import, one offset space; with_prelude), resolve.rs
 │   │                  (import checks, E0312/E0314/E0319), manifest.rs (`lugha.toml`, E0321), packages.rs (manifests
@@ -307,15 +308,15 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m30/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m31/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
-│   └── specs/       — Language v8 Specification.md (the language definition, complete, printed by `lughac spec`);
+│   └── specs/       — Language v9 Specification.md (the language definition, in progress, printed by `lughac spec`);
 │                      Language v9 Draft.md (approved v9 plan, milestones 31–33); Language v8 Draft.md (approved v8 plan, milestone 30); Language v7 Draft.md (approved v7 plan, milestones 27–29); Language v6 Draft.md (approved v6 plan, milestones 23–26); Language v5 Draft.md (approved v5 plan, milestones 20–22); Language v4 Draft.md (approved v4 plan, milestones 17–19); v3 and v2 Drafts (past plans);
-│                      Language v7, v6, v5, v4, v3, v2, v1 (v1.2) and v0 Specification.md (frozen)
+│                      Language v8, v7, v6, v5, v4, v3, v2, v1 (v1.2) and v0 Specification.md (frozen)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
 ```
 
@@ -329,7 +330,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them, except the one it names: a value to an interface where one is expected (v5, recorded in `Checked.conversions`). Every other one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (package versions, iterator helpers, `Self` outside interfaces…) even partially. v8 is complete (milestone 30); any further language feature is v9 and needs an approved spec change first.
+5. **Never implement a §11 "out of scope" feature** (iterator helpers, `Self` outside interfaces, package versions…) even partially, nor a v9 milestone ahead of its turn. v9 (milestones 31–33) follows `Language v9 Draft.md`; anything beyond it needs an approved spec change first.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

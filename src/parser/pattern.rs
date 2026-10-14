@@ -85,10 +85,51 @@ impl Parser<'_> {
         })
     }
 
-    /// One pattern; payload slots are patterns too, each a nesting level,
-    /// so deep nesting is E0206 rather than a stack overflow.
-    fn pattern(&mut self) -> PResult<Pattern> {
-        self.nested(|p| p.pattern_here())
+    /// One pattern: alternatives separated by `|` (v9). Payload slots are
+    /// patterns too, each a nesting level, so deep nesting is E0206 rather
+    /// than a stack overflow.
+    pub(super) fn pattern(&mut self) -> PResult<Pattern> {
+        self.nested(|p| {
+            let start = p.span().start;
+            let first = p.alternative()?;
+            if !p.at(&TokenKind::Pipe) {
+                return Ok(first);
+            }
+            let mut alternatives = vec![first];
+            while p.eat(&TokenKind::Pipe) {
+                alternatives.push(p.alternative()?);
+            }
+            Ok(Pattern {
+                kind: PatternKind::Or(alternatives),
+                span: Span::new(start, p.prev_end()),
+            })
+        })
+    }
+
+    /// One alternative: `mut` before a binding (v9), `( pattern )`, or a
+    /// single pattern form.
+    fn alternative(&mut self) -> PResult<Pattern> {
+        let start = self.span().start;
+        if self.eat(&TokenKind::Mut) {
+            // Only a name binds: `mut n` or `mut c: Circle`.
+            let names = matches!(self.peek(), TokenKind::Ident(n) if n != "_");
+            let named = names && !matches!(self.peek_at(1), TokenKind::LParen);
+            if !named {
+                return Err(self.expected("a name to bind after `mut`"));
+            }
+            let inner = self.pattern_here()?;
+            return Ok(Pattern {
+                kind: PatternKind::Mut(Box::new(inner)),
+                span: Span::new(start, self.prev_end()),
+            });
+        }
+        if self.at(&TokenKind::LParen) {
+            let open = self.bump();
+            let inner = self.pattern()?;
+            self.close(open, &TokenKind::RParen)?;
+            return Ok(inner);
+        }
+        self.pattern_here()
     }
 
     fn pattern_here(&mut self) -> PResult<Pattern> {
@@ -210,6 +251,24 @@ mod tests {
             "(match s (=> (: c Circle) 1) (=> (: _ (applied geo.Sq)) 2) (=> (Some (: x (applied Stack i64))) 3) (=> _ 4))"
         );
         assert_eq!(errors("fun t() { match s { c: => 1 } }")[0].0, "E0201");
+    }
+
+    #[test]
+    fn or_patterns_and_mut_bindings_parse() {
+        assert_eq!(
+            expr(
+                "match s { A | B => 1, Some(1 | 2) => 2, (C | D) => 3, Some(mut n) => n, mut m => 0 }"
+            ),
+            "(match s (=> (| A B) 1) (=> (Some (| 1 2)) 2) (=> (| C D) 3) (=> (Some (mut n)) n) (=> (mut m) 0))"
+        );
+        assert_eq!(
+            expr("match s { Some(mut c: Circle) | Some(mut c: Square) => 1 }"),
+            "(match s (=> (| (Some (mut (: c Circle))) (Some (mut (: c Square)))) 1))"
+        );
+        for bad in ["mut 1", "mut A(x)", "A |", "mut _"] {
+            let src = format!("fun t() {{ match s {{ {bad} => 1 }} }}");
+            assert_eq!(errors(&src)[0].0, "E0201", "{bad}");
+        }
     }
 
     #[test]

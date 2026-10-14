@@ -106,23 +106,23 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — parser:
-- [ ] `A | B => 1`, `Some(1 | 2)`, `(A | B)`, `mut n` and `Some(mut c: Circle)` parse and print.
-- [ ] `mut 1`, `mut A(x)` and a trailing `|` are E0201.
+- [x] `A | B => 1`, `Some(1 | 2)`, `(A | B)`, `mut n` and `Some(mut c: Circle)` parse and print.
+- [x] `mut 1`, `mut A(x)` and a trailing `|` are E0201.
 
 Unit tests — checker (`check/or_patterns.rs`):
-- [ ] **Allowed:**
+- [x] **Allowed:**
   - `Circle(r) | Square(r)` binds `r: f64`;
   - literal alternatives;
   - nested `Some(1 | 2)`.
-- [ ] **E0428:**
+- [x] **E0428:**
   - a missing name;
   - a different type;
   - `mut None`.
-- [ ] **E0417:** `Red | Green` without `Blue`.
-- [ ] **W0102:**
+- [x] **E0417:** `Red | Green` without `Blue`.
+- [x] **W0102:**
   - an alternative covered by an earlier arm;
   - an arm whose alternatives are all covered.
-- [ ] **`mut`:**
+- [x] **`mut`:**
   - `Some(mut n) => { n += 1; }` checks;
   - `Some(n) => { n += 1; }` is E0501;
   - `mut x =>` at the top level binds the scrutinee.
@@ -130,19 +130,19 @@ Unit tests — checker (`check/or_patterns.rs`):
 Unit tests — codegen (`codegen/patterns.rs`): an or-pattern match uses the arm chain, and both alternatives store into one slot.
 
 Acceptance — `tests/programs/m31/`:
-- [ ] `or.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `or.la`: the §10 program.
+- [x] `more.la`:
   - nested or-patterns;
   - or-patterns with guards;
   - integer and bool alternatives;
   - type-pattern alternatives (`_: Circle | _: Square`);
   - a `mut` binding of an array, changed in the arm while the scrutinee stays intact;
   - `mut` in a type pattern.
-- [ ] `e0428.la`: reject golden.
-- [ ] The §10 program runs from the spec.
+- [x] `e0428.la`: reject golden.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -150,10 +150,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m31/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] `Language v9 Specification.md` begins; docs updated.
-- [ ] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m31/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] `Language v9 Specification.md` begins; docs updated.
+- [x] No file over 300 lines: new code goes in new files, and any split of an existing file is proposed first. No new dependencies, no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -162,3 +162,11 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m31/or.la
 ```
+
+## AMENDMENTS (during build, session 77)
+
+- **No `Pat::Or`:** pattern typing returns each pattern's expansions (`Vec<Pat>`) instead, so `usefulness.rs` is unchanged. `check/or_patterns.rs` holds the alternatives and `mut` logic.
+- **`mut` on a variant is E0428 at the top level too:** `mut None` checks the matched type's variants. A top-level `mut x` that isn't a variant binds the scrutinee.
+- **The parser's `mut _` is E0201** (`_` binds nothing).
+- **`-O2`** was checked by hand for `m31/or` and `m31/more`.
+- **No file splits.** `codegen/or_patterns.rs` keeps `codegen/patterns.rs` under 300 lines.

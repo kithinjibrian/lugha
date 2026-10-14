@@ -14,7 +14,7 @@ impl Checker {
         name: Option<&Ident>,
         written: &Annotation,
         ty: &Type,
-        bindings: &mut Vec<(Ident, Type)>,
+        bindings: &mut super::patterns::Bindings,
     ) -> Pat {
         let span = pattern.span;
         let Some(interface) = super::applied::Applied::of(ty) else {
@@ -51,7 +51,7 @@ impl Checker {
             return Pat::Wild;
         }
         if let Some(name) = name {
-            bindings.push((name.clone(), found.clone()));
+            bindings.push((name.clone(), found.clone(), false));
         }
         Pat::Ctor(Ctor::Type(found.to_string()), Vec::new())
     }

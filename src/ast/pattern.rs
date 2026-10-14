@@ -41,4 +41,9 @@ pub enum PatternKind {
     Bool(bool),
     /// `name: T` or `_: T` (`None`): the interface value holds a `T` (v5).
     Type(Option<Ident>, super::Type),
+    /// `p | q | …`: matches when any alternative does (v9); two or more.
+    Or(Vec<Pattern>),
+    /// `mut name` or `mut name: T`: the binding is the arm's own mutable
+    /// copy (v9).
+    Mut(Box<Pattern>),
 }
