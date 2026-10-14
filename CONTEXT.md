@@ -4147,29 +4147,54 @@ Branch: prp-073-format_specifiers (merged into main)
 
 ---
 
-## SESSION 95 — 2026-10-14 — v14 direction — open
+## SESSION 95 — 2026-10-14 — v14 direction — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user chose v14 = `format()`, tuples, whole-module re-exports and import aliases, downloading packages with a lock file, unsigned indexes, Unicode text, and binary I/O.
+- **Discovery, six questions:**
+  - `format` is a **template** (the user's choice over the recommended runtime spec);
+  - full tuples with **`zip` yielding tuples and `Pair` removed** (the user's choice over keeping `Pair`);
+  - aliases plus whole-module re-exports;
+  - git plus a lock file;
+  - a `char` type;
+  - checked bytes and any-integer indexes.
+- Wrote `docs/specs/Language v14 Draft.md` (proposed):
+  - milestones 45–50;
+  - E0112, E0325, E0326, E0432, E0433;
+  - the compatibility breaks listed.
+- Proposed with the draft: moving `pub struct Checked` from `check/mod.rs` (300 lines) verbatim into a new `check/checked.rs`.
+
+### FILES CREATED OR MODIFIED
+- New: `docs/specs/Language v14 Draft.md`.
+- CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (design only).
+
+### DECISIONS MADE
+- None recorded yet; the v14 MEMORY decision follows approval of the draft.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The v14 draft and the `check/mod.rs` split await the user's approval. M50 (downloads) needs a security review of its PRP.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v13 is complete** (milestones 41–44; PRP-070–073; MEMORY 86–90):
-- `Self` in declarations;
-- `for x of mut e`;
-- `zip`/`Pair`, `chain` and the other iterator helpers;
-- format specifiers (E0431).
+**Lugha v13 is complete** (milestones 41–44; PRP-070–073; MEMORY 86–90). Tagged `m44` and `v13`. `Language v13 Specification.md` is what `lughac spec` prints; v0–v12 are frozen.
 
-Tagged `m44` and `v13`. `Language v13 Specification.md` is what `lughac spec` prints; v0–v12 are frozen.
+Next: **approve `docs/specs/Language v14 Draft.md`** (proposed in session 95) and the `check/mod.rs` split (move `Checked` into `check/checked.rs`). The milestones:
+- M45: bytes and indexes;
+- M46: Unicode `char`;
+- M47: tuples (`zip` → tuples, `Pair` removed);
+- M48: `format` templates;
+- M49: import aliases and whole-module re-exports;
+- M50: git packages and `lugha.lock`, whose PRP needs a security review before building.
 
-Next: **v14 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v13 spec §11 and §12):
-- a `format()` function, a debug form, parsing values from text;
-- tuples;
-- downloading packages, a lock file; whole-module re-exports and import aliases;
-- unsigned indexes; Unicode text; binary I/O.
-
-**Note:** `check/mod.rs` is at 300 lines. A new checker module needs a split proposal, or its `mod` line placed elsewhere.
-
-Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294), `parser/primary.rs` (~291).
+Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294), `parser/primary.rs` (~291), `lexer/interp.rs` (290).
 
 See `TODO.md`.
