@@ -4877,6 +4877,11 @@ Branch: main
 
 ---
 
+## SESSION 117 — 2026-10-15 — Copy-on-write arrays (milestone 55) — open
+Branch: prp-084-copy_on_write
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–54 complete.** **Milestone 55 (copy-on-write arrays) is proposed:** decisions 22–24 in `Language v15 Draft.md`, PRP-084, and **DECISION-012 (open), which would supersede DECISION-010**. All wait for the user's explicit approval.
