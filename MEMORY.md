@@ -1415,7 +1415,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 39 complete** (PRP-068, MEMORY 84): printing values. Tag `m39` goes on the merge. `Language v12 Specification.md` (in progress) is what `lughac spec` prints; v0–v11 are frozen.
+**Milestone 39 complete** (PRP-068, MEMORY 84): printing values. Tagged `m39`. `Language v12 Specification.md` (in progress) is what `lughac spec` prints; v0–v11 are frozen.
 
 Next, under the user's "in one go" (MEMORY 83): **milestone 40, printing anything** (PRP-069, next session). It completes v12, tagged `m40` and `v12`.
 - `printable` admits interface and function values; codegen already prints them.

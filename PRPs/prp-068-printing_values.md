@@ -1,6 +1,6 @@
 ## FEATURE: Printing values — `Display`/`show`, the built-in form, quoting, generic `T`; milestone 39.
 
-**Status:** approved 2026-10-14 — session 88. This is part of the user's "in one go" (milestones 39–40), merged once CI is green.
+**Status:** merged 2026-10-14 — session 88. This is part of the user's "in one go" (milestones 39–40), merged once CI is green.
 **Milestone:** 39 (one PRP; tag `m39` at merge; `Language v12 Specification.md` begins)
 **Spec:** `Language v12 Draft.md`:
 - decisions 1–3, and the choices on `show`, the built-in form, recursion and escapes;

@@ -235,7 +235,7 @@ Done when the re-exports program passes and the v11 spec is complete.
 
 ### Milestone 39 — Printing values ✅
 Done when the printing-values program passes.
-- [x] PRP-068: `Display` and `show`, built-in forms, quoting, printing `T`; `Language v12 Specification.md` begins; tagged `m39` at merge
+- [x] PRP-068: `Display` and `show`, built-in forms, quoting, printing `T`; `Language v12 Specification.md` begins; tagged `m39`
 
 ### Milestone 40 — Printing anything
 Done when the printing-anything program passes and the v12 spec is complete.

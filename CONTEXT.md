@@ -3880,8 +3880,8 @@ Branch: main
 
 ---
 
-## SESSION 88 — 2026-10-14 — Printing values (milestone 39) — open
-Branch: prp-068-printing_values
+## SESSION 88 — 2026-10-14 — Printing values (milestone 39) — closed
+Branch: prp-068-printing_values (merged into main)
 
 ### WHAT WAS DONE
 - The user approved the v12 draft and asked for it "in one go". The draft is marked approved; MEMORY 83.
@@ -3922,13 +3922,13 @@ Branch: prp-068-printing_values
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m39`.
+- Nothing. PRP-068 merged into `main`, tagged `m39`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 39 complete** (PRP-068, MEMORY 84): printing values. Tag `m39` goes on the merge. `Language v12 Specification.md` (in progress) is what `lughac spec` prints; v0–v11 are frozen.
+**Milestone 39 complete** (PRP-068, MEMORY 84): printing values. Tagged `m39`. `Language v12 Specification.md` (in progress) is what `lughac spec` prints; v0–v11 are frozen.
 
 Next, under the user's "in one go" (MEMORY 83): **milestone 40, printing anything** (PRP-069, next session). It completes v12, tagged `m40` and `v12`.
 - `printable` admits interface and function values; codegen already prints them.
