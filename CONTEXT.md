@@ -4373,6 +4373,11 @@ Branch: prp-078-import_aliases (merged into main)
 
 ---
 
+## SESSION 101 — 2026-10-14 — Git packages PRP for security review (milestone 50) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 49 complete** (PRP-078, MEMORY 96): import aliases and whole-module re-exports. Tagged `m49`. Milestones 45–49, the user's "in one go", are all done. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
