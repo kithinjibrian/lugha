@@ -4601,6 +4601,11 @@ Branch: prp-081-operator_overloading (merged into main)
 
 ---
 
+## SESSION 108 — 2026-10-14 — Move the prelude into src/prelude/ — open
+Branch: prelude-folder
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 52 complete** (PRP-081, MEMORY 100–101): operator overloading. Tagged `m52`. `Language v15 Specification.md` (in progress, milestones 51–52) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines.
