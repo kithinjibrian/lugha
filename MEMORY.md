@@ -1422,6 +1422,35 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 91. Lugha v14 direction (sessions 95–96)
+
+**Decision:** `docs/specs/Language v14 Draft.md` is approved: seven features in milestones 45–50. Milestones 45–49 are built "in one go"; M50 (git packages) waits for the user's security review of its PRP.
+- **M45 bytes and indexes:** `read_bytes`/`write_bytes`/`append_bytes`/`read_stdin_bytes`, `s.to_bytes()`, `string_from_utf8` (checked, `Err("invalid UTF-8 at byte N")`), any integer type as an index (negative or too large panics).
+- **M46 `char`:**
+  - `'a'` literals (E0112) and the `char` keyword (`i32`);
+  - `s.chars()` (prelude, U+FFFD for bad bytes), `char_count()`;
+  - `as` to integers and from integers (U+FFFD for non-scalars), `char_from`;
+  - ASCII/Latin-1 classification and case;
+  - quoted `'a'` inside built-in forms.
+- **M47 tuples:**
+  - `(A, B, …)` with at least two elements, `t.0` (the parser splits `0.1`);
+  - patterns everywhere, and irrefutable `let`/`for` patterns (E0433);
+  - element-wise `==`, lexicographic `<`, printing `(1, "a")`;
+  - `zip` yields tuples and `Pair` is removed (a break); `enumerate` keeps `Indexed`.
+- **M48 `format`:** `format("{} {:>5}", a, b)`: the template is a string literal (the lexer reads it raw after `format(`), placeholders must equal the arguments (E0432), and specs fit as v13 (E0431). `format` is an intrinsic name.
+- **M49 imports:** `import a.b as c;`, `import a.b { X as Y };`, `public import a.b [as v];` giving `m.v.X` (one level).
+- **M50 git packages:**
+  - `{ git, version }` entries, the system `git` (argument lists, no shell, no prompts or hooks), `https://`/`file://` only;
+  - the cache under `$LUGHA_CACHE`/XDG/`~/.cache/lugha`;
+  - `lugha.lock` pinning commits, `lughac update`, `--offline`;
+  - E0325/E0326.
+- **New codes:** E0112, E0325, E0326, E0432, E0433.
+- **Approved split:** `pub struct Checked` moves verbatim from `check/mod.rs` to `check/checked.rs`.
+
+**Why:** the session 95 discovery. The user chose the template `format` and `zip` → tuples over the recommendations; everything else as recommended.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working

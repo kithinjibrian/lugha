@@ -1,6 +1,6 @@
 # Lugha v14 — Draft (delta against v13)
 
-**Status:** proposed 2026-10-14 — session 95
+**Status:** approved 2026-10-14 — session 96 (proposed in session 95). The user asked for milestones 45–49 "in one go"; milestone 50 waits for a security review of its PRP.
 **Base:** `Language v13 Specification.md`, complete (milestone 44). It stays the source of truth, and what `lughac spec` prints, until v14's first milestone starts `Language v14 Specification.md`. That file then grows milestone by milestone, and v13 is frozen.
 
 This draft lists only what changes, in the order of the v13 sections. Everything not mentioned keeps its v13 meaning.

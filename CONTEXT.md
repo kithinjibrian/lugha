@@ -4179,7 +4179,12 @@ Branch: main
 - None.
 
 ### STILL OPEN AT CLOSE
-- The v14 draft and the `check/mod.rs` split await the user's approval. M50 (downloads) needs a security review of its PRP.
+- The v14 draft and the `check/mod.rs` split await the user's approval (both approved at the start of session 96). M50 (downloads) needs a security review of its PRP.
+
+---
+
+## SESSION 96 — 2026-10-14 — Bytes and indexes (milestone 45) — open
+Branch: main
 
 ---
 
