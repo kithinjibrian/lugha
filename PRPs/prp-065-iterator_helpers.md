@@ -1,6 +1,6 @@
 ## FEATURE: Iterator helpers — lazy `map`, `filter`, `take`, `skip`, `enumerate`; `collect`, `count`, `fold`, `any`, `all`, `find`, `sum`; `xs.iter()`, `s.bytes()`, `range(a, b)`, `for b of s`; milestone 36, v10 complete.
 
-**Status:** approved 2026-10-14 — session 83. This is the last part of the user's "in one go" (milestones 34–36), merged once CI is green.
+**Status:** merged 2026-10-14 — session 83. This is the last part of the user's "in one go" (milestones 34–36), merged once CI is green.
 **Milestone:** 36 (one PRP; completes v10; tags `m36` and `v10` at merge)
 **Spec:** `Language v10 Draft.md`:
 - decisions 2–4, and the choices on adapters, `enumerate`, receivers, copies, `take`/`skip` and `sum`;

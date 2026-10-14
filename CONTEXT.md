@@ -3681,8 +3681,8 @@ Branch: prp-064-more_integers (merged into main)
 
 ---
 
-## SESSION 83 — 2026-10-14 — Iterator helpers (milestone 36) — open
-Branch: prp-065-iterator_helpers
+## SESSION 83 — 2026-10-14 — Iterator helpers (milestone 36) — closed
+Branch: prp-065-iterator_helpers (merged into main)
 
 ### WHAT WAS DONE
 - PRP-065 written as approved under the "in one go" instruction, built and merged on green CI:
@@ -3729,7 +3729,7 @@ Branch: prp-065-iterator_helpers
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tags `m36` and `v10`.
+- Nothing. PRP-065 merged into `main`, tagged `m36` and `v10`.
 
 ---
 
@@ -3740,7 +3740,7 @@ Branch: prp-065-iterator_helpers
 - `i8`/`i16`/`u16`, checked/saturating/rotating methods, `MIN`/`MAX`, `parse_u64`;
 - lazy iterator helpers, `iter`/`bytes`/`range`, `for b of s`.
 
-Tags `m36` and `v10` go on the merge of PRP-065. `Language v10 Specification.md` is what `lughac spec` prints; v0–v9 are frozen.
+Tagged `m36` and `v10`. `Language v10 Specification.md` is what `lughac spec` prints; v0–v9 are frozen.
 
 Next: **v11 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v10 spec §11 and §12):
 - `zip`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`/`max`, `position`, and a pair type;

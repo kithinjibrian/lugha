@@ -219,7 +219,7 @@ Done when the more-integers program passes.
 
 ### Milestone 36 — Iterator helpers ✅
 Done when the iterator-helpers program passes and the v10 spec is complete.
-- [x] PRP-065: `iter`, `bytes`, `range`, `for b of s`; the adapters and consumers; v10 complete; tagged `m36` and `v10` at merge
+- [x] PRP-065: `iter`, `bytes`, `range`, `for b of s`; the adapters and consumers; v10 complete; tagged `m36` and `v10`
 
 ## Found while working — needs a PRP
 

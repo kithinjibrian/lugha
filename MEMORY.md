@@ -1316,7 +1316,7 @@ Open questions live in `DECISIONS.md`, not here.
 - `i8`/`i16`/`u16`, checked/saturating/rotating methods, `MIN`/`MAX`, `parse_u64`;
 - lazy iterator helpers, `iter`/`bytes`/`range`, `for b of s`.
 
-Tags `m36` and `v10` go on the merge of PRP-065. `Language v10 Specification.md` is what `lughac spec` prints; v0–v9 are frozen.
+Tagged `m36` and `v10`. `Language v10 Specification.md` is what `lughac spec` prints; v0–v9 are frozen.
 
 Next: **v11 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v10 spec §11 and §12):
 - `zip`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`/`max`, `position`, and a pair type;
