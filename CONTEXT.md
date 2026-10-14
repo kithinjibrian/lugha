@@ -4781,8 +4781,8 @@ Branch: main
 
 ---
 
-## SESSION 114 — 2026-10-14 — std.random (milestone 54) — open
-Branch: prp-083-std_random
+## SESSION 114 — 2026-10-14 — std.random (milestone 54) — closed
+Branch: prp-083-std_random (merged into main)
 
 ### WHAT WAS DONE
 - The user approved PRP-083 with `uniform(): f64`. Built and merged on green CI:
@@ -4816,13 +4816,13 @@ Branch: prp-083-std_random
 - None (lazy std modules noted in TODO).
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m54`.
+- Nothing. PRP-083 merged into `main`, tagged `m54`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 54 complete** (PRP-083, MEMORY 104–105): `std.random`. Tag `m54` goes on the merge. `Language v15 Specification.md` (in progress, milestones 51–54) is what `lughac spec` prints; v0–v14 are frozen. firefly uses `std.random`.
+**Milestone 54 complete** (PRP-083, MEMORY 104–105): `std.random`. Tagged `m54`. `Language v15 Specification.md` (in progress, milestones 51–54) is what `lughac spec` prints; v0–v14 are frozen. firefly uses `std.random`.
 
 The user is building glowworm (n-d arrays) and firefly (autograd, aiming at a tiny GPT) in Lugha. Next for firefly: a bigram character model.
 

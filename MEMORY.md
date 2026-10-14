@@ -1734,7 +1734,7 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestone 54 complete** (PRP-083, MEMORY 104–105): `std.random`. Tag `m54` goes on the merge. `Language v15 Specification.md` (in progress, milestones 51–54) is what `lughac spec` prints; v0–v14 are frozen. firefly uses `std.random`.
+**Milestone 54 complete** (PRP-083, MEMORY 104–105): `std.random`. Tagged `m54`. `Language v15 Specification.md` (in progress, milestones 51–54) is what `lughac spec` prints; v0–v14 are frozen. firefly uses `std.random`.
 
 The user is building glowworm (n-d arrays) and firefly (autograd, aiming at a tiny GPT) in Lugha. Next for firefly: a bigram character model.
 

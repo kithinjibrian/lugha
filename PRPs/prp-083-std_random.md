@@ -1,6 +1,6 @@
 ## FEATURE: `std.random` — a seeded or OS-seeded xoshiro256** `Rng` with `uniform`, `below`, `between`, `normal`, `chance`, `choice` and `shuffle`; milestone 54.
 
-**Status:** approved 2026-10-14 — session 114, with the milestone 54 additions to `Language v15 Draft.md`, including `uniform(): f64`.
+**Status:** merged 2026-10-14 — session 114. Approved with the milestone 54 additions to `Language v15 Draft.md`, including `uniform(): f64`.
 **Milestone:** 54 (one PRP; tag `m54` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 19–21, the milestone 54 choices, §10 M54, §11 row 54).
 
