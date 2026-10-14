@@ -4184,7 +4184,7 @@ Branch: main
 ---
 
 ## SESSION 96 — 2026-10-14 — Bytes and indexes (milestone 45) — open
-Branch: main
+Branch: prp-074-bytes_and_indexes
 
 ---
 
