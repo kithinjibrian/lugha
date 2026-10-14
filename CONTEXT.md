@@ -4224,6 +4224,11 @@ Branch: prp-074-bytes_and_indexes (merged into main)
 
 ---
 
+## SESSION 97 — 2026-10-14 — Unicode text (milestone 46) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 45 complete** (PRP-074, MEMORY 92): bytes and indexes. Tagged `m45`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
