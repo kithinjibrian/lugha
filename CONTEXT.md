@@ -3876,7 +3876,12 @@ Branch: main
 - None.
 
 ### STILL OPEN AT CLOSE
-- The v12 draft awaits the user's approval.
+- The v12 draft awaits the user's approval (approved at the start of session 88).
+
+---
+
+## SESSION 88 — 2026-10-14 — Printing values (milestone 39) — open
+Branch: main
 
 ---
 
