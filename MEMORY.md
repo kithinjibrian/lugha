@@ -1187,7 +1187,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Lugha v8 is complete** (milestone 30; PRP-058–059; MEMORY 69–71): packages — `lugha.toml`, package imports, per-package manifests, `public` / package / `private` visibility. Tags `m30` and `v8` go on the merge of PRP-059. `Language v8 Specification.md` is what `lughac spec` prints; v0–v7 are frozen.
+**Lugha v8 is complete** (milestone 30; PRP-058–059; MEMORY 69–71): packages — `lugha.toml`, package imports, per-package manifests, `public` / package / `private` visibility. Tagged `m30` and `v8`. `Language v8 Specification.md` is what `lughac spec` prints; v0–v7 are frozen.
 
 Next: **v9 direction — discovery** (one question at a time, recommended option first; explain options concretely — what you type, where it lives). Candidates are in the v8 spec's §11 out-of-scope list and §12 open questions:
 - or-patterns and `mut` bindings in `match`, `unwrap()`, `%=` (recommended for v8 but not chosen);

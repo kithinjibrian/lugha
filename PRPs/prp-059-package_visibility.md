@@ -1,6 +1,6 @@
 ## FEATURE: Package visibility — `public`, package-default visibility (E0313), no leaking (E0318); milestone 30, part 2; v8 complete.
 
-**Status:** approved 2026-10-14 — session 75. This is the second half of the user's "in one go" for milestone 30, merged once CI is green.
+**Status:** merged 2026-10-14 — session 75. This is the second half of the user's "in one go" for milestone 30, merged once CI is green.
 **Milestone:** 30, part 2 (completes v8; tags `m30` and `v8` at merge)
 **Spec:** `Language v8 Draft.md`:
 - decision 3, and the choice "No leaking";

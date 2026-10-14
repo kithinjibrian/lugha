@@ -3408,7 +3408,7 @@ Branch: prp-058-package_loading (merged into main)
 ---
 
 ## SESSION 75 — 2026-10-14 — Package visibility (milestone 30, part 2) — closed
-Branch: prp-059-package_visibility
+Branch: prp-059-package_visibility (merged into main)
 
 ### WHAT WAS DONE
 - Second half of the user's "in one go" for milestone 30. The code was written before the PRP file and branch (on `main`, uncommitted); caught before any commit, moved to `prp-059-package_visibility`, and PRP-059 written to match.
@@ -3432,13 +3432,13 @@ Branch: prp-059-package_visibility
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tags `m30` and `v8`.
+- Nothing. PRP-059 merged into `main`, tagged `m30` and `v8`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v8 is complete** (milestone 30; PRP-058–059; MEMORY 69–71): packages — `lugha.toml`, package imports, per-package manifests, `public` / package / `private` visibility. Tags `m30` and `v8` go on the merge of PRP-059. `Language v8 Specification.md` is what `lughac spec` prints; v0–v7 are frozen.
+**Lugha v8 is complete** (milestone 30; PRP-058–059; MEMORY 69–71): packages — `lugha.toml`, package imports, per-package manifests, `public` / package / `private` visibility. Tagged `m30` and `v8`. `Language v8 Specification.md` is what `lughac spec` prints; v0–v7 are frozen.
 
 Next: **v9 direction — discovery** (one question at a time, recommended option first; explain options concretely — what you type, where it lives). Candidates are in the v8 spec's §11 out-of-scope list and §12 open questions:
 - or-patterns and `mut` bindings in `match`, `unwrap()`, `%=` (recommended for v8 but not chosen);
