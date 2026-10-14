@@ -1,6 +1,6 @@
 ## FEATURE: Better patterns — or-patterns (E0428) and `mut` bindings; milestone 31.
 
-**Status:** approved 2026-10-14 — session 77. The user asked for milestones 31–33 "in one go": each is its own PRP, merged once CI is green.
+**Status:** merged 2026-10-14 — session 77. The user asked for milestones 31–33 "in one go": each is its own PRP, merged once CI is green.
 **Milestone:** 31 (one PRP; tag `m31` at merge; `Language v9 Specification.md` begins)
 **Spec:** `Language v9 Draft.md`:
 - decisions 2 and 3, and the choices "Or-patterns nest" and "`mut` binds wherever a name does";

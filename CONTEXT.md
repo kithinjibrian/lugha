@@ -3467,7 +3467,7 @@ Branch: main
 ---
 
 ## SESSION 77 — 2026-10-14 — Better patterns (milestone 31) — closed
-Branch: prp-060-better_patterns
+Branch: prp-060-better_patterns (merged into main)
 
 ### WHAT WAS DONE
 - The user asked for milestones 31–33 "in one go": PRP-060 written as approved within the v9 draft, built, merged on green CI.
@@ -3490,13 +3490,13 @@ Branch: prp-060-better_patterns
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m31`.
+- Nothing. PRP-060 merged into `main`, tagged `m31`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 31 complete** (PRP-060, MEMORY 73): or-patterns and `mut` bindings. Tag `m31` goes on the merge of PRP-060. `Language v9 Specification.md` (in progress) is what `lughac spec` prints; v8 is frozen.
+**Milestone 31 complete** (PRP-060, MEMORY 73): or-patterns and `mut` bindings. Tagged `m31`. `Language v9 Specification.md` (in progress) is what `lughac spec` prints; v8 is frozen.
 
 Next (the user's "in one go"): **milestone 32, unwrapping** — PRP-061: built-in `unwrap()` / `expect(msg)` on `Option` and `Result` (checker `builtins.rs`, codegen near `int_methods.rs`; panic `unwrap on None` / `unwrap on Err` / the message at the method name via `lugha_rt_panic`), `%=` (lexer `PercentEq`, `AssignOp::Rem`). Then **milestone 33** — PRP-062: `if let`, `while let`, `let … else` (E0429).
 

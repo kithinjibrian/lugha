@@ -1211,7 +1211,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 31 complete** (PRP-060, MEMORY 73): or-patterns and `mut` bindings. Tag `m31` goes on the merge of PRP-060. `Language v9 Specification.md` (in progress) is what `lughac spec` prints; v8 is frozen.
+**Milestone 31 complete** (PRP-060, MEMORY 73): or-patterns and `mut` bindings. Tagged `m31`. `Language v9 Specification.md` (in progress) is what `lughac spec` prints; v8 is frozen.
 
 Next (the user's "in one go"): **milestone 32, unwrapping** — PRP-061: built-in `unwrap()` / `expect(msg)` on `Option` and `Result` (checker `builtins.rs`, codegen near `int_methods.rs`; panic `unwrap on None` / `unwrap on Err` / the message at the method name via `lugha_rt_panic`), `%=` (lexer `PercentEq`, `AssignOp::Rem`). Then **milestone 33** — PRP-062: `if let`, `while let`, `let … else` (E0429).
 
