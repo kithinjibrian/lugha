@@ -4074,8 +4074,8 @@ Branch: prp-071-for_of_mut (merged into main)
 
 ---
 
-## SESSION 93 — 2026-10-14 — More iterator helpers (milestone 43) — open
-Branch: prp-072-more_iterator_helpers
+## SESSION 93 — 2026-10-14 — More iterator helpers (milestone 43) — closed
+Branch: prp-072-more_iterator_helpers (merged into main)
 
 ### WHAT WAS DONE
 - PRP-072 written as approved under the "in one go" instruction, built and merged on green CI: `zip` (`Pair`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`, in `src/prelude_more.la`.
@@ -4098,13 +4098,13 @@ Branch: prp-072-more_iterator_helpers
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m43`.
+- Nothing. PRP-072 merged into `main`, tagged `m43`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 43 complete** (PRP-072, MEMORY 89): more iterator helpers. Tag `m43` goes on the merge. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
+**Milestone 43 complete** (PRP-072, MEMORY 89): more iterator helpers. Tagged `m43`. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
 
 Next, under the user's "in one go" (MEMORY 86): **milestone 44, format specifiers** (PRP-073). It completes v13: tag `m44` and `v13`.
 - `"{x:[[fill]align][#][0][width][.precision][kind]}"`, split by the lexer at the first top-level `:`;

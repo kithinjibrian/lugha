@@ -1,6 +1,6 @@
 ## FEATURE: More iterator helpers — `zip` (`Pair`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`; milestone 43.
 
-**Status:** approved 2026-10-14 — session 93. This is part of the user's "in one go" (milestones 41–44), merged once CI is green.
+**Status:** merged 2026-10-14 — session 93. This is part of the user's "in one go" (milestones 41–44), merged once CI is green.
 **Milestone:** 43 (one PRP; tag `m43` at merge)
 **Spec:** `Language v13 Draft.md`:
 - decision 3, and the choices on `flat_map`, `min`/`max`, `position`, `chain`, `zip` and `Pair`;
