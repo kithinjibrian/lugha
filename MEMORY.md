@@ -1692,10 +1692,11 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestone 52 complete** (PRP-081, MEMORY 100–101): operator overloading. Tagged `m52`. `Language v15 Specification.md` (in progress, milestones 51–52) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines. The prelude lives in `src/prelude/` (session 108).
+**Milestones 51–52 complete** (`m51`, `m52`). **Milestone 53 (the std library and `std.math`) is proposed:** decisions 14–18 in `Language v15 Draft.md`, and PRP-082, waiting for the user's approval.
+- **On approval:** record MEMORY 102, branch `prp-082-std_math`, commit "Add approved PRP-082 std library", and build.
+- **Shape of the build:** `src/std/math.la` embedded as `lugha::STD`; `$` names lex only in bundled sources; the `Float` bound in `src/prelude/ops.la`; `check/float_ops.rs` and `codegen/float_ops.rs` lower to `llvm.<op>.f32/f64`.
+- Tag `m53` goes on the merge.
 
-Next:
-- glowworm can now use `impl NdArray<T: Num>` and operators;
-- next in v15: a std library of bundled `std.<module>` modules, with no opt-out (agreed in session 109); directories, processes and env go in it as `std.fs`/`std.process`/`std.env`. See `TODO.md`; it starts with a discovery.
+The file-size limit is 500 lines. The prelude lives in `src/prelude/`. After std.math: `std.fs`, `std.env`, `std.process` (security review), Unicode follow-ups (`TODO.md`).
 
 See `TODO.md`.

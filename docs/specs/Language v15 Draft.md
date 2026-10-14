@@ -1,6 +1,6 @@
 # Lugha v15 — Draft (delta against v14)
 
-**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106). Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
+**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) proposed in session 110. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
 **Base:** `Language v14 Specification.md`, complete (milestone 50). It stays the source of truth, and what `lughac spec` prints, until v15's first milestone starts `Language v15 Specification.md`. That file then grows milestone by milestone, and v14 is frozen.
 
 This draft lists only what changes, in the order of the v14 sections. Everything not mentioned keeps its v14 meaning.
@@ -112,6 +112,46 @@ fun main() {
   - two methods with one name in two `impl` blocks of a type are E0310, whatever their bounds;
   - a bound on an `impl` of a non-generic type is E0315.
 
+## Decisions behind milestone 53 (discovery, session 110)
+
+14. **A standard library of bundled modules:**
+    - `std.<module>` modules are written in Lugha (`src/std/`), embedded in `lughac` like the prelude, and loaded only when a file imports one, so they cost nothing otherwise;
+    - **no opt-out** (session 109);
+    - the prelude stays small, and new library features go in std modules.
+15. **The first milestone is the machinery plus `std.math`.** `std.fs`, `std.env` and `std.process` follow as their own milestones; `std.process` needs a security review.
+16. **`std` is reserved:**
+    - a manifest entry named `std` is E0321, and a folder `std/` or file `std.la` beside the main file is E0320, so `import std.math;` always means the bundled module;
+    - `import std.nope;` is E0312, with help listing the std modules;
+    - otherwise std follows the normal rules: `public` items, `import std.math as m;`, `import std.math { sqrt };`.
+17. **Constants are functions:** `math.pi()` and `math.e()`. Top-level constants are a later language feature.
+18. **Float functions are generic over a new built-in `Float` bound:**
+    - `Float` is satisfied by `f32` and `f64`, and implies everything `Num` allows;
+    - `sqrt`, `pow`, `exp`, `ln`, `log10`, `sin`, `cos`, `tan`, `atan2`, `floor`, `ceil` and `round` are `<T: Float>(…): T`;
+    - `abs` is `<T: Num>`, and `min`, `max` and `clamp` are `<T: Ord>`, written in Lugha.
+
+**Choices made while writing milestone 53:**
+- **The module's API:**
+  ```
+  public fun pi(): f64        public fun e(): f64
+  public fun sqrt<T: Float>(x: T): T        public fun pow<T: Float>(x: T, y: T): T
+  public fun exp<T: Float>(x: T): T         public fun ln<T: Float>(x: T): T
+  public fun log10<T: Float>(x: T): T
+  public fun sin<T: Float>(x: T): T         public fun cos<T: Float>(x: T): T
+  public fun tan<T: Float>(x: T): T         public fun atan2<T: Float>(y: T, x: T): T
+  public fun floor<T: Float>(x: T): T       public fun ceil<T: Float>(x: T): T
+  public fun round<T: Float>(x: T): T       // halves away from zero
+  public fun abs<T: Num>(x: T): T           // panics for the minimum integer, as `-x` does
+  public fun min<T: Ord>(a: T, b: T): T     public fun max<T: Ord>(a: T, b: T): T
+  public fun clamp<T: Ord>(x: T, lo: T, hi: T): T   // panics if lo > hi
+  ```
+- **The float functions are compiler built-ins** that `std.math` wraps. A std source may call the built-ins `$float.sqrt(x)` and so on. A name starting with `$` lexes only in bundled sources (the prelude and std), so a program can never name one. Each instance lowers to LLVM's float operation at its width (`llvm.sqrt.f64`, `llvm.sqrt.f32`), with no call into libm.
+- **The results are IEEE's:** `sqrt(-1.0)` is `NaN` and `ln(0.0)` is `-inf`, printed as v7 prints them; no panics.
+- **`Float`:**
+  - it is in the prelude next to `Num`, visible unless a module declares the name;
+  - a non-float argument is E0419 (help: "only `f32` and `f64` are `Float`");
+  - `T: Float` allows `0` and `1` as `T`, like `Num`; other literals stay E0401, so a generic float body writes `let half: T = 1; half / (half + half)`, or takes values as parameters.
+- **Where std modules come from:** the loader maps an import whose first segment is `std` to an embedded source, `src/std/<module>.la`, and gives the module path `std.<module>`, so symbols read `lugha_fn_std/math/sqrt<f64>`. Diagnostics inside std name the file `<std>/math.la`.
+
 ## §2–§5 — no changes for milestone 51
 
 ## §6 Functions and program structure — changes
@@ -137,6 +177,7 @@ fun main() {
 
 ## §10 Example programs — additions (v15 acceptance tests)
 
+- **M53:** `import std.math;` with `math.sqrt(2.0)`, `math.pow`, trigonometry, `math.floor`/`ceil`/`round`, `math.abs(-3)`, `math.max(2, 7)`, `math.clamp`, `math.pi()`, an `f32` instance, and a generic `hypot<T: Float>`.
 - **M52:** the Vec2 program above, plus a generic `add<T: Add>` over `i64`, `f64`, `string` and `Vec2`, `v * 2.0`, unary `-`, `+=`, and a generic `sum<T: Num>`.
 - **M51:** a directory case: a package with `name` and `source = "src"`, and an `examples/` program with no manifest that imports it by name, run from the package's parent folder (`lughac run glowworm/examples/basics.la`).
 
@@ -146,6 +187,7 @@ fun main() {
 | --- | --- | --- |
 | 51 | Package layout | `[package] name` (E0327), `source`, the upward lookup and implicit package, E0328, the `..` path fix |
 | 52 | Operator overloading | `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`; prelude `Add`…`Neg` and `Num` bounds; bounds on `impl` blocks; `0`/`1` as `T: Num` |
+| 53 | The std library and `std.math` | bundled `std.<module>` modules, `std` reserved, the `Float` bound, `std.math` (float functions via LLVM, `abs`/`min`/`max`/`clamp`, `pi`/`e`) |
 
 Later v15 milestones (directories, processes, environment variables, Unicode follow-ups) are added when their discovery resumes; processes need a security review.
 
