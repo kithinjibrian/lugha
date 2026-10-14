@@ -292,9 +292,12 @@ Done when the printing-anything program passes and the v12 spec is complete.
 ### Milestone 52 — Operator overloading ✅
 - [x] PRP-081: `+ - * / %` and unary `-` through methods, `Add`…`Neg` and `Num` bounds, `0`/`1` as `T: Num`, `impl` bounds; tagged `m52`
 
+### Milestone 53 — The std library and `std.math` ✅
+- [x] PRP-082: bundled `std.<module>` modules, `std` reserved, `$` built-ins, the `Float` bound, `std.math`; tagged `m53`
+
 ## v15 — later milestones, discovery paused (session 103)
 
-- [ ] **Std library first** (session 109): bundled Lugha modules imported as `std.<module>` (`import std.math;`), embedded in `lughac` like the prelude and loaded only when imported, so they cost nothing otherwise. `std` is a reserved package name, always available, versioned with the compiler. The prelude stays small; new features go in std modules. `std.math` comes first; the directories/processes/env items below become `std.fs`, `std.process` and `std.env`.
+- [x] **Std library first** (session 109; built as milestone 53, `std.math`): bundled Lugha modules imported as `std.<module>` (`import std.math;`), embedded in `lughac` like the prelude and loaded only when imported, so they cost nothing otherwise. `std` is a reserved package name, always available, versioned with the compiler. The prelude stays small; new features go in std modules. `std.math` comes first; the directories/processes/env items below become `std.fs`, `std.process` and `std.env`.
   - **Agreed with the user: no opt-out mechanism** (no `no_std`, no `[package] deny` list). Lazy loading already makes std free when unused; a `deny` list for policy can be reconsidered later.
   - Next step: a discovery, then a draft milestone and PRP.
 

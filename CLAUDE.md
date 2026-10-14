@@ -155,7 +155,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v15 Specification.md` (`lughac spec` prints it): Lugha v15, in progress (milestones 51–52 done: package layout — `[package] name` and `source`, the program's manifest from a parent folder and its implicit package, E0327, E0328; operator overloading — `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, the prelude's `Add`…`Neg` and `Num` bounds, bounds on `impl` blocks). `Language v15 Draft.md` is the approved plan; the rest of v15 (directories, processes, env, Unicode follow-ups) is planned in `TODO.md`. The v0–v14 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
+The language itself is defined by `docs/specs/Language v15 Specification.md` (`lughac spec` prints it): Lugha v15, in progress (milestones 51–53 done: the std library — bundled `std.<module>` modules, `std.math`, the `Float` bound; package layout — `[package] name` and `source`, the program's manifest from a parent folder and its implicit package, E0327, E0328; operator overloading — `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, the prelude's `Add`…`Neg` and `Num` bounds, bounds on `impl` blocks). `Language v15 Draft.md` is the approved plan; the rest of v15 (directories, processes, env, Unicode follow-ups) is planned in `TODO.md`. The v0–v14 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -229,7 +229,9 @@ pub fn parse_number(src: &str) -> i64 {
 │                      into one lugha_rt.c (PRP-028)
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
-│   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints), PRELUDE
+│   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints), PRELUDE, STD (v15)
+│   ├── std/         — the standard library in Lugha (v15), embedded as `lugha::STD` and loaded only when imported:
+│   │                  math.la (`std.math`: float functions over `T: Float` via `$float.*` built-ins, abs/min/max/clamp, pi/e)
 │   ├── prelude/     — the prelude in Lugha, joined in this order into the one module `$prelude` (`lugha::PRELUDE`):
 │   │                  core.la (Result<T, E>, Iter<T> (v6), the array helpers, the string/Option/Result helpers),
 │   │                  iter.la (iterator sources, adapters and consumers, v10; `Display`, v12), more.la (`zip` yielding
@@ -242,7 +244,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── template.rs  — `format` templates (v14): `pieces`, `holes`, `parts`, shared by the checker and codegen
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
 │   ├── lexer/       — mod.rs (lex, main loop), token.rs, punct.rs (operators), number.rs, string.rs,
-│   │                  interp.rs (string interpolation, E0111), format_spec.rs (the `FmtSpec` token, v13), char_lit.rs (`char` literals, E0112, v14); string.rs also reads `format` templates raw (v14)
+│   │                  interp.rs (string interpolation, E0111), format_spec.rs (the `FmtSpec` token, v13), char_lit.rs (`char` literals, E0112, v14); string.rs also reads `format` templates raw (v14); `lex_bundled` lets `$` start a name in bundled sources (v15)
 │   ├── ast/         — mod.rs (items, statements), types.rs (written types), expr.rs (expressions, ExprId, StructLiteral, Part),
 │   │                  pattern.rs (arms, nested patterns, guards), header.rs (imports, type parameters, bounds,
 │   │                  interfaces)
@@ -281,7 +283,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  numbers.rs (v7/v10 numeric types: `is_float`, `is_unsigned`, keyword types, `I.MIN`/`I.MAX`), slots.rs (enum payload slots),
 │   │                  or_patterns.rs (or-pattern alternatives and bindings E0428, `mut` bindings), conditional.rs
 │   │                  (`if let`, `while let`, `let … else`, E0429), concrete_defaults.rs (default methods on
-│   │                  concrete types, E0430), named_imports.rs (`import m { X }`, re-exports: aliases, `member`, E0318), printing.rs (what prints, `show` instances, `$print` uses), for_mut.rs (`for x of mut e`: place checks, E0501/E0502/E0506), iter_helpers.rs (iterator helpers as prelude calls, prelude iterator type names), tuples.rs (tuples as `$tuple<n>` structs, patterns, E0433, v14), templates.rs (`format`: holes against arguments, E0432, v14), operators.rs (v15: operators as method calls, built-in satisfaction of the operator bounds, `Num`; operators_tests.rs), impl_bounds.rs (v15: bounds on `impl` blocks), reexports.rs (`as`, whole-module re-exports: `module_path`, `member_through`, `m.v.X`, v14)
+│   │                  concrete types, E0430), named_imports.rs (`import m { X }`, re-exports: aliases, `member`, E0318), printing.rs (what prints, `show` instances, `$print` uses), for_mut.rs (`for x of mut e`: place checks, E0501/E0502/E0506), iter_helpers.rs (iterator helpers as prelude calls, prelude iterator type names), tuples.rs (tuples as `$tuple<n>` structs, patterns, E0433, v14), templates.rs (`format`: holes against arguments, E0432, v14), operators.rs (v15: operators as method calls, built-in satisfaction of the operator bounds, `Num`; operators_tests.rs), impl_bounds.rs (v15: bounds on `impl` blocks), float_ops.rs (v15: `$float.<op>` built-ins, `float_op`), reexports.rs (`as`, whole-module re-exports: `module_path`, `member_through`, `m.v.X`, v14)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
@@ -299,7 +301,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (dynamic calls, interface copies, type-pattern tests), defaults.rs (default instances, `?` boxing),
 │   │                  instances.rs (generic instances:
 │   │                  substitution, instance symbols),
-│   │                  swap.rs (swap: loads and crossed stores), bits.rs (bit operators, the shift range check), int_methods.rs (wrapping and counting methods), int_checked.rs (v10 checked/saturating/rotating methods, `I.MIN`/`I.MAX`), or_patterns.rs (alternatives in the arm chain, `mut` copies), format.rs (format specifiers → `lugha_rt_fmt_*`), show.rs (printing: `text`, `lugha_show_<type>` helpers), show_iface.rs (printing interface values by identity), unwrap.rs (`unwrap`/`expect`), conditional.rs (`if let`, `while let`, `let … else`), iterators.rs (iterator loops: a hidden copy, `next` until `None`), tuples.rs (tuple literals, patterns, printing, `lugha_cmp_` order), operators.rs (v15: operator method calls; numbers keep the built-in operators),
+│   │                  swap.rs (swap: loads and crossed stores), bits.rs (bit operators, the shift range check), int_methods.rs (wrapping and counting methods), int_checked.rs (v10 checked/saturating/rotating methods, `I.MIN`/`I.MAX`), or_patterns.rs (alternatives in the arm chain, `mut` copies), format.rs (format specifiers → `lugha_rt_fmt_*`), show.rs (printing: `text`, `lugha_show_<type>` helpers), show_iface.rs (printing interface values by identity), unwrap.rs (`unwrap`/`expect`), conditional.rs (`if let`, `while let`, `let … else`), iterators.rs (iterator loops: a hidden copy, `next` until `None`), tuples.rs (tuple literals, patterns, printing, `lugha_cmp_` order), operators.rs (v15: operator method calls; numbers keep the built-in operators), float_ops.rs (v15: `$float.<op>` → `llvm.<op>.f32/f64`),
 │   │                  upcast.rs (between interfaces: table registry, derived tables, `lugha_up_` lookups)
 │   ├── modules/     — mod.rs (load: the main file and every import, one offset space; with_prelude), resolve.rs
 │   │                  (import checks, E0312/E0314/E0319), manifest.rs (`lugha.toml`, E0321), inline.rs (inline
@@ -311,7 +313,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  lock, cache, clone, E0325/E0326; fetch_tests.rs with a fake `Git`), parse.rs (one module: decode, lex,
 │   │                  parse), paths.rs (`exists`, `normalized`, E0320), package_table.rs (v15: `[package]` version, name,
 │   │                  source), layout.rs (v15: `LoadEnv`, the bounded manifest lookup, `name`/`source`, the implicit
-│   │                  package, E0327/E0328; layout_tests.rs)
+│   │                  package, E0327/E0328; layout_tests.rs), std_tests.rs (v15: `std` modules from `lugha::STD`, reserved `std`)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_PARTS, RUNTIME_SOURCE, RUNTIME_SYMBOLS, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes, Output), build.rs (build, --emit per module), guard.rs
 │                      (panics → internal error, exit 2), pipeline.rs (load all modules + the prelude, check, codegen),
@@ -330,7 +332,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── git_packages.rs — git packages through lughac and a real `file://` repository (lock, offline, E0325/E0326)
 │   ├── package_layout.rs — package layout through lughac: `source`, `examples/` by name, the `$HOME` bound, E0327/E0328
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m52/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m53/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)

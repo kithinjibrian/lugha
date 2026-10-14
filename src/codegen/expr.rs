@@ -97,6 +97,10 @@ impl<'ctx> Lowerer<'ctx> {
             }
             ExprKind::Binary(op, op_span, lhs, rhs) => self.binary(*op, op_span.start, lhs, rhs)?,
             ExprKind::Cast(inner, _) => self.cast(expr, inner)?,
+            // `$float.sqrt(x)` in `std.math` (v15).
+            ExprKind::Call(callee, args) if let Some(op) = crate::check::float_op(callee) => {
+                self.float_call(expr, op, args)?
+            }
             ExprKind::Call(callee, args) if matches!(self.ty(callee), Type::Fun(..)) => {
                 return self.call_value(callee, args);
             }

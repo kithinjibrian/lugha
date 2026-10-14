@@ -36,12 +36,28 @@ use crate::span::Span;
 /// assert_eq!(kinds, [TokenKind::Ident("x".into()), TokenKind::Plus, TokenKind::Int(1), TokenKind::Eof]);
 /// ```
 pub fn lex(source: &str) -> Result<(Vec<Token>, Vec<Diagnostic>), Vec<Diagnostic>> {
+    lex_with(source, false)
+}
+
+/// [`lex`] for a source bundled with `lughac` (the prelude, a `std`
+/// module): identifiers may start with `$`, naming compiler built-ins
+/// such as `$float.sqrt` that a program can never write (v15).
+///
+/// # Errors
+///
+/// As [`lex`].
+pub fn lex_bundled(source: &str) -> Result<(Vec<Token>, Vec<Diagnostic>), Vec<Diagnostic>> {
+    lex_with(source, true)
+}
+
+fn lex_with(source: &str, bundled: bool) -> Result<(Vec<Token>, Vec<Diagnostic>), Vec<Diagnostic>> {
     let mut lexer = Lexer {
         src: source,
         pos: 0,
         tokens: Vec::new(),
         diagnostics: Vec::new(),
         interp: Vec::new(),
+        bundled,
     };
     lexer.run();
     if lexer
@@ -64,6 +80,8 @@ struct Lexer<'a> {
     diagnostics: Vec<Diagnostic>,
     /// The interpolations being lexed, innermost last (v3, nested in v4.1).
     interp: Vec<interp::Interp>,
+    /// A bundled source, where `$` may start an identifier (v15).
+    bundled: bool,
 }
 
 impl Lexer<'_> {
@@ -77,6 +95,11 @@ impl Lexer<'_> {
                 ' ' | '\t' | '\r' | '\n' => self.pos += 1,
                 '/' if self.byte_at(1) == Some(b'/') => self.skip_comment(),
                 'a'..='z' | 'A'..='Z' | '_' => self.identifier(start),
+                // `$float`: a compiler built-in, in bundled sources only (v15).
+                '$' if self.bundled => {
+                    self.pos += 1;
+                    self.identifier(start);
+                }
                 '0'..='9' => self.number(start),
                 '"' => self.string(start),
                 '\'' => self.char_literal(start),
@@ -258,5 +281,12 @@ mod tests {
             (eof.kind.clone(), eof.span.start, eof.span.end),
             (Eof, src.len(), src.len())
         );
+    }
+
+    #[test]
+    fn dollar_names_lex_only_in_bundled_sources_v15() {
+        let (tokens, _) = super::lex_bundled("$float.sqrt").unwrap();
+        assert_eq!(tokens[0].kind, Ident("$float".into()));
+        assert_eq!(errors("$float"), [("E0101", "$")]);
     }
 }

@@ -1,0 +1,17 @@
+// The std library (v15): `import std.math;`, with float functions generic
+// over `T: Float` and `abs`, `min`, `max` and `clamp` over any number.
+import std.math;
+
+fun hypot<T: Float>(a: T, b: T): T = math.sqrt(a * a + b * b);
+
+fun main() {
+    println(math.sqrt(2.0));
+    println(hypot(3.0, 4.0));
+    println(math.max(2, 7));
+    println(math.abs(-3));
+    println(math.round(2.5));
+    println(math.pi());
+    println(math.pow(2.0, 10.0));
+    println(math.floor(-1.5));
+    println(math.clamp(15, 0, 10));
+}

@@ -301,3 +301,18 @@ fn number_instances_of_operator_bounds_keep_the_built_in_operator() {
     assert!(body.contains("llvm.sadd.with.overflow.i64"), "{ir}");
     assert!(!body.contains("call i64 @lugha_fn_"), "{ir}");
 }
+
+#[test]
+fn std_math_lowers_to_llvm_float_intrinsics() {
+    // v15: each instance of `math.sqrt` is LLVM's `sqrt` at its width.
+    let src = "import std.math;\nfun main() { let a = math.sqrt(2.0); let x: f32 = 2.0; let b = math.sqrt(x); }\n";
+    let dir = TempDir::with(&[("m.la", src.as_bytes())]);
+    let out = lughac(&dir.0, &["build", "--emit=ir", "m.la"]);
+    let ir = text(&out.stdout);
+    assert!(
+        ir.contains("@llvm.sqrt.f64") && ir.contains("@llvm.sqrt.f32"),
+        "{ir}"
+    );
+    assert!(ir.contains("lugha_fn_std/math/sqrt<f64>"), "{ir}");
+    assert!(!ir.contains("declare double @sqrt"), "{ir}");
+}

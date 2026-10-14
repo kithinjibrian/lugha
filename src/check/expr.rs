@@ -113,6 +113,10 @@ impl Checker {
             }
             ExprKind::Unary(op, operand) => self.unary(*op, operand, expr, expect),
             ExprKind::Binary(op, _, lhs, rhs) => self.binary(expr, *op, lhs, rhs, expect),
+            // `$float.sqrt(x)` in a bundled source (v15).
+            ExprKind::Call(callee, args) if let Some(op) = super::float_ops::float_op(callee) => {
+                self.float_call(expr, (callee, op), args, expect)
+            }
             ExprKind::Call(callee, args) => {
                 if let Some(ty) = self.module_call(expr, callee, args, expect) {
                     ty

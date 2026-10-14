@@ -40,7 +40,16 @@ pub(super) fn parse_module(
             };
         }
     };
-    let program = match lexer::lex(&text) {
+    // Bundled sources (the prelude, `std`) may name `$` built-ins (v15).
+    let bundled = path
+        .first()
+        .is_some_and(|p| p.starts_with('$') || p == "std");
+    let lexed = if bundled {
+        lexer::lex_bundled(&text)
+    } else {
+        lexer::lex(&text)
+    };
+    let program = match lexed {
         Err(errors) => {
             diagnostics.extend(errors.into_iter().map(|d| shift(d, base)));
             None

@@ -241,6 +241,19 @@ pub(crate) mod test_util {
             .collect()
     }
 
+    /// The codes of checking `files` with the prelude, as a program is
+    /// checked (v15: `std.math` needs the prelude's `Float`).
+    pub fn prelude_codes(files: &[(&str, &str)]) -> Vec<&'static str> {
+        let mut loaded = loaded(files);
+        let mut errors = Vec::new();
+        crate::modules::with_prelude(&mut loaded.modules, &mut errors);
+        assert!(errors.is_empty(), "{errors:?}");
+        match check(&loaded) {
+            Ok((_, warnings)) => warnings.iter().map(|d| d.code).collect(),
+            Err(diagnostics) => diagnostics.iter().map(|d| d.code).collect(),
+        }
+    }
+
     /// Checks `files`, which must have no errors.
     pub fn ok(files: &[(&str, &str)]) -> Checked {
         check(&loaded(files)).unwrap_or_else(|d| panic!("{d:?}")).0

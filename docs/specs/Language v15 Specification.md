@@ -2,16 +2,17 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 51–52 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
+**Status:** in progress (milestones 51–53 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
 
 **v14.** This is v13 plus binary I/O, `char`, tuples, `format`, import aliases and whole-module re-exports, and git packages (milestones 45–50).
 
-**Changes since v14** (milestones 51–52):
+**Changes since v14** (milestones 51–53):
 - A package's `[package]` table may give its `name`, checked against the key a manifest lists it under (E0327), and its `source`, the folder its modules start in: with `source = "src"`, `src/array.la` of package `glowworm` is `glowworm.array` (section 6).
 - A program with no `lugha.toml` beside its main file uses the nearest one above it, looking no further than a folder with `.git` or the home folder; when that manifest names a package, the program imports it by that name, so `glowworm/examples/basics.la` writes `import glowworm.array;` with no manifest of its own (section 6).
 - A file imported as two modules is E0328 (section 6).
 - A manifest path such as `".."` resolves when the main file is given with a folder (`lughac run example/main.la`); v14 reported E0322.
 - Operator overloading: `a + b` on a struct, enum or interface value calls `a.add(b)`, and likewise `-` `sub`, `*` `mul`, `/` `div`, `%` `rem` and unary `-` `neg`, for a method of the operator's shape; `a += b` is `a = a.add(b)`. The prelude's `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` and `Num` are bounds that the numbers (and `string`, for `Add`) satisfy, so `fun add<T: Add>(a: T, b: T): T = a + b;` works for numbers, strings and your own types; `0` and `1` are values of a `T: Num`. An `impl` block may bound its parameters, `impl Grid<T: Num> { … }` (sections 3–5).
+- A standard library: `import std.math;` loads a module bundled with `lughac`, only when imported. `std.math` has `sqrt`, `pow`, `exp`, `ln`, `log10`, `sin`, `cos`, `tan`, `atan2`, `floor`, `ceil` and `round` for any `T: Float` (`f32` or `f64`, a new prelude bound), `abs`, `min`, `max` and `clamp`, and `pi()` and `e()`. `std` is a reserved package name (sections 4, 6, "The standard library").
 
 Every valid v14 program and package is a valid v15 one: a module's own type or interface named `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` or `Num` still means its own, as for `Iter`.
 
@@ -172,7 +173,7 @@ Source files are UTF-8. The lexer produces a flat list of tokens, each carrying 
 
 **Whitespace and comments.** Spaces, tabs, carriage returns and newlines separate tokens and are otherwise ignored. A line comment starts with `//` and runs to the end of the line. v0 has no block comments.
 
-**Identifiers.** `[A-Za-z_][A-Za-z0-9_]*`, excluding keywords. Identifiers are case-sensitive.
+**Identifiers.** `[A-Za-z_][A-Za-z0-9_]*`, excluding keywords. Identifiers are case-sensitive. In the sources bundled with `lughac` (the prelude and `std`), an identifier may also start with `$`, naming a compiler built-in such as `$float.sqrt` (v15); in a program `$` is E0101, so programs can never name one.
 
 **Keywords.**
 
@@ -588,6 +589,7 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 **Generic declarations.** `fun`, `struct`, `enum` and methods can take type parameters.
 - **Scope:** a type parameter is a type inside its declaration (fields, payloads, signature and body), and a method also sees its `impl`'s parameters. It may not be named like a type, a module or another parameter of the same declaration, nor a method's like its `impl`'s (E0316).
 - **Bounds:** `T: Eq`, `T: Ord`, interfaces (below), or several (`T: Shape + Eq`). Anything else is E0315. `Ord` doesn't imply `Eq`; write both if both are used.
+- **`Float`** (v15, milestone 53): a prelude bound satisfied by `f32` and `f64` only (E0419 otherwise, with help to write `2.0` or convert), allowing everything `Num` does. `std.math`'s float functions take a `T: Float`.
 - **Operator bounds** (v15): the prelude's interfaces `Add`, `Sub`, `Mul`, `Div`, `Rem` (each `fun op(self, other: Self): Self;`), `Neg` (`fun neg(self): Self;`) and `Num` (all six). `T: Add` allows `a + b` and `a.add(b)` on `T`, and so on; `T: Num` allows every arithmetic operator, `==` and `<`, and the literals `0` and `1` as values of `T` (`let mut s: T = 0;`; other literals are E0401). The numbers satisfy all of them as built-ins and `string` satisfies `Add`; other types satisfy the single-operator ones by having the method, and only the numbers satisfy `Num` (E0419). They are visible in every module unless the module declares the name, like `Iter`. Through a bound, each instance uses the built-in operator at a number or string type, panics included, and calls the method otherwise.
 - **What a bare `T` allows:** being stored, moved, copied, passed, returned and put in arrays, structs and enums. `==` needs `T: Eq`, `<` needs `T: Ord`, and a method call needs an interface bound that declares it. Using `==` or `<` without its bound is E0404, with help suggesting the bound.
 - **What `T` never allows:** arithmetic without an operator bound (v15), casts, `.len`, or indexing. Those need a concrete type or a bound. A `T` prints (v12), each instance by its concrete type's rules.
@@ -905,11 +907,31 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
   - **The implicit package:** when the program's manifest declares `name = N`, the program may import that package as `N` (`import N.array;`), with its `source`, as if listed. So a library's `examples/` and `tests/` programs need no manifest of their own. `N` may not also be a folder or `.la` file beside the main file (E0320).
   - **One file, one module:** a file reached under two module paths, such as `src/cli.la` as `cli` from `src/main.la` and as `tool.cli` through the implicit package, is E0328 at the second import.
   - **Run:** `lughac run glowworm/examples/basics.la` works from any folder; the file argument is required.
+- **The standard library** (v15, milestone 53). `import std.<module>;` loads a module bundled with `lughac`, written in Lugha, the same in every build of a given compiler version. It is read and compiled only when a file imports it, so a program that imports nothing from `std` is unchanged; there is no way to opt out, and none is needed. Std modules follow the normal rules: their `public` items, `import std.math as m;`, `import std.math { sqrt };`. `std` is reserved: a manifest entry or `[package] name` called `std` is E0321, a folder `std/` or file `std.la` beside an importing module is E0320, and an unknown module (`import std.maths;`) is E0312, with help listing the std modules. Diagnostics inside a std module name its file `<std>/math.la`. The modules are listed under "The standard library" below.
 - **Imports.** In `import a.b.c;` written in a module of package P (the program itself is the root package): if P's manifest lists `a`, the import loads `b/c.la` from `a`'s folder, and the module is `a.b.c`; otherwise it loads `a/b/c.la` from P's own folder, as before. So inside package `geo`, `import util.names;` is geo's own `geo.util.names`, and a program's `util.names` is a different module. `import geo;` naming only a package is E0312, with help to name a module.
 - **Not transitive.** A package's manifest is seen only by that package's modules: a program that wants `mathx` lists it itself, even if a package it uses lists `mathx` too.
 - **One name, one folder.** Across all the manifests of a build, a package name must mean one folder (compared after resolving `.` and `..`), or it is E0323 at the later entry. Because the root package's modules have no package prefix, no package name may also be a folder or `.la` file in the main file's folder, and inside a package a listed name may not also be one of that package's own folders or files: either is E0320.
 - **Loading.** Every file is read once, so packages may import each other. A package has no main file; `main` in one is E0304, and importing the program's main file is E0319, as for any module.
 - **Visibility.** Another package sees only what is `public` (below).
+
+**The standard library** (v15). Version 15 has one module.
+
+`std.math` (milestone 53). The float functions take and return any `T: Float` (`f32` or `f64`) and follow IEEE 754: they never panic, `sqrt(-1.0)` is `NaN`, `ln(0.0)` is `-inf` and `pow(0.0, -1.0)` is `inf`.
+
+| Function | Result |
+| --- | --- |
+| `pi(): f64`, `e(): f64` | π and e (top-level constants are a later feature) |
+| `sqrt(x)`, `exp(x)`, `ln(x)`, `log10(x)` | square root, eˣ, natural and base-10 logarithm |
+| `pow(x, y)` | xʸ |
+| `sin(x)`, `cos(x)`, `tan(x)` | in radians |
+| `atan2(y, x)` | the angle of the point (x, y), in −π..π |
+| `floor(x)`, `ceil(x)` | rounded down, up |
+| `round(x)` | to the nearest integer value, halves away from zero (`round(-2.5)` is `-3.0`) |
+| `abs<T: Num>(x)` | `-x` for a negative `x`; the minimum integer panics with `integer overflow`, as `-x` does |
+| `min<T: Ord>(a, b)`, `max<T: Ord>(a, b)` | the smaller, larger; `a` when they are equal |
+| `clamp<T: Ord>(x, lo, hi)` | `x` limited to `lo..=hi`; panics (`clamp: the lower bound is above the upper bound`) when `lo > hi` |
+
+An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math.sqrt(2)` is E0419.
 
 **Using another module.** `import shapes.circle;` binds the name `circle` in that file only.
 - **Calls:** `circle.area(c)` calls function `area` of the module.
@@ -1070,6 +1092,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - The v13 iterator helpers are Lugha in the prelude's third file, compiled only when reached like the others. `flat_map` keeps its current inner iterator in a 0- or 1-element array, so `next` steps it in place.
 - A format specifier (v13) is parsed once by the checker (E0431) and again by codegen, which passes its parts to `lugha_rt_fmt_int`, `lugha_rt_fmt_float` or `lugha_rt_pad`, from a runtime fragment `format.c`. Programs without specifiers give byte-identical IR.
 - `format` (v14) splits its template into text and holes in the checker and again in codegen, then lowers like an interpolated string with the arguments as its parts. Programs without `format` give byte-identical IR.
+- A std module (v15) is embedded in `lughac` (`lugha::STD`) and joins the program's offset space like a file when imported; its items' symbols carry its path, `lugha_fn_std/math/sqrt<f64>`. A `$float.<op>` built-in at `f32` or `f64` lowers to LLVM's intrinsic at that width (`llvm.sqrt.f64`, `llvm.log` for `ln`, `llvm.round`, `llvm.atan2`, …), so `std.math` makes no call into libm. Programs that import nothing from `std` give byte-identical IR.
 - An overloaded operator (v15) lowers to a call of the method, `lugha_fn_Vec2.add(self, other)` with a pointer to a copy of the left operand as for any `self` method, or through the interface's table for an interface value. A generic body's operator on `T` is lowered per instance: at a number or string type it is the built-in operator, so `add<i64>` is a plain checked `add`; at a struct or enum type, the method call. A `0` or `1` of type `T` is the instance's constant (`0.0` at `f64`). Programs without overloaded operators give byte-identical IR.
 - An index (v14) is evaluated at its own integer type and sign- or zero-extended to `i64` before the bounds check, so an `i64` index lowers exactly as before.
 - A `char` (v14) is an LLVM `i32`, compared unsigned. An integer `as char` selects U+FFFD unless the value, widened to `i64`, is a scalar value. `chars()`, `char_count()`, `char_from` and the classification and case methods are Lugha in the prelude's fourth file.
@@ -1197,7 +1220,7 @@ Name and type errors, reported by the checker:
 | E0309 | Variant declared twice | `enum E { A, B, A }` |
 | E0310 | Method declared twice, or named like a field or variant | `impl P { fun x(self) {} }` where `P` has a field `x` |
 | E0311 | A local named like a type or an imported module | `let Shape = 3;`, `fun f(Point: i64)` |
-| E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` (v2) |
+| E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` (v2); `import std.maths;` (v15) |
 | E0313 | An item, method or field not visible here | another module's `private` item: `range.helper()`, `r.lo`, `range.Range { lo: 1, hi: 5 }` (v2); another package's item without `public` (v8); `shapes.Vec2` when `shapes` imported `Vec2` without `public` (v11); `shapes.vec.helper()` through a re-exported module when `helper` isn't `public` (v14) |
 | E0314 | Import clash | `import a.util;` and `import b.util;` in one file; an import named like an item (v2); `import vec { add, add };` (v11); `import a as u; import b as u;` (v14) |
 | E0315 | Unknown bound | `fun f<T: Hash>(x: T)`; a struct as a bound (v2) |
@@ -1205,8 +1228,8 @@ Name and type errors, reported by the checker:
 | E0317 | Retired in v8 (was: `public` before packages existed); never reported, never reused | |
 | E0318 | A declaration exposing a less visible type | `private struct S {}` then `fun make(): S` (v2); `public fun a(): Inner` where `Inner` isn't `public` (v8); `public import util { helper };` where `helper` isn't `public` (v11) |
 | E0319 | The main file imported | a module writing `import main;` (v2) |
-| E0320 | A package name that is also a local folder or file (v8) | `geo` in `lugha.toml` while `geo/` sits next to `main.la` |
-| E0321 | A malformed `lugha.toml` (v8, v11; `name`/`source`, v15) or `lugha.lock` (v14) | `geo = libs/geo` (no quotes); `[deps]`; `geo` listed twice; `{ git = "ssh://h/g", version = "1" }`; `{ git = "https://me:pw@h/g", version = "1" }`; `git` without `version`; a lock commit that isn't 40 hex digits |
+| E0320 | A package name that is also a local folder or file (v8) | `geo` in `lugha.toml` while `geo/` sits next to `main.la`; `import std.math;` beside a `std.la` (v15) |
+| E0321 | A malformed `lugha.toml` (v8, v11; `name`/`source`, v15) or `lugha.lock` (v14) | `geo = libs/geo` (no quotes); `[deps]`; `geo` listed twice; `std = "lib"` or `name = "std"` (v15); `{ git = "ssh://h/g", version = "1" }`; `{ git = "https://me:pw@h/g", version = "1" }`; `git` without `version`; a lock commit that isn't 40 hex digits |
 | E0322 | A manifest path that doesn't exist (v8) | `geo = "libs/goe"` with no such folder |
 | E0323 | One package name for two folders (v8) | two manifests list `mathx` with different folders |
 | E0325 | A git package that can't be fetched (v14) | no `git`; a URL that fails; no tag meeting `version`; `--offline` with the package not locked and cached |
@@ -1230,7 +1253,7 @@ Name and type errors, reported by the checker:
 | E0416 | Wrong number of payloads | `Shape.Rect(1.0)`, `Rect(w) => …` |
 | E0417 | Non-exhaustive `match` | `match s { Circle(r) => r }` with more variants; an integer `match` without `_` |
 | E0418 | Wrong number of type arguments | `Stack<i64, i64>`, a bare `Stack` as a parameter type (v2) |
-| E0419 | Type argument doesn't satisfy its bound | `largest([[1]])`: `i64[]` is not `Ord` (v2); `sum(["a"])` with `T: Num`, or a method of an `impl Grid<T: Num>` on a `Grid<string>` (v15) |
+| E0419 | Type argument doesn't satisfy its bound | `largest([[1]])`: `i64[]` is not `Ord` (v2); `sum(["a"])` with `T: Num`, `math.sqrt(2)` (`i64` isn't `Float`), or a method of an `impl Grid<T: Num>` on a `Grid<string>` (v15) |
 | E0420 | Generic instantiation too deep | `fun f<T>(x: T) { f([x]); }`; `struct S<T> { xs: S<T[]>[] }` (v2) |
 | E0421 | A method no bound declares | `s.perimeter()` in `fun f<T: Shape>(s: T)` (v2) |
 | E0422 | A type argument, or a converted value, doesn't satisfy an interface | `total_area([1, 2])`: `i64` has no method `area` (v2); `let s: Shape = 1;` (v5); a `Named` value where a `Pet` is expected, without `sound` (v6) |
@@ -2681,6 +2704,28 @@ fun main() {
 }
 ```
 
+**The standard library** (milestone 53). Prints `1.4142135623730951`, `5.0`, `7`, `3`, `3.0`, `3.141592653589793`, `1024.0`, `-2.0`, `10` on nine lines, exits with 0.
+
+```
+// The std library (v15): `import std.math;`, with float functions generic
+// over `T: Float` and `abs`, `min`, `max` and `clamp` over any number.
+import std.math;
+
+fun hypot<T: Float>(a: T, b: T): T = math.sqrt(a * a + b * b);
+
+fun main() {
+    println(math.sqrt(2.0));
+    println(hypot(3.0, 4.0));
+    println(math.max(2, 7));
+    println(math.abs(-3));
+    println(math.round(2.5));
+    println(math.pi());
+    println(math.pow(2.0, 10.0));
+    println(math.floor(-1.5));
+    println(math.clamp(15, 0, 10));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2739,6 +2784,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 50 | Git packages (v14) | git entries, the cache, `lugha.lock`, `lughac update`, `--offline` (E0325, E0326) | A program using a `file://` repository is fetched, locked, built `--offline`, and a moved tag is caught (`tests/git_packages.rs`; done: v14 complete) |
 | 51 | Package layout (v15) | `[package] name` (E0327) and `source`, the program's manifest from a parent folder and its implicit package, E0328, the `..` path fix | A library with `source = "src"` and an `examples/` program run from any folder (`tests/package_layout.rs`; done) |
 | 52 | Operator overloading (v15) | `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, compound assignment, the prelude's `Add`…`Neg` and `Num` bounds, `0`/`1` as `T: Num`, bounds on `impl` blocks | The operator-overloading program in section 10 passes (done) |
+| 53 | The std library and `std.math` (v15) | bundled `std.<module>` modules, `std` reserved, `$` built-ins in bundled sources, the `Float` bound, `std.math` | The standard-library program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -2757,7 +2803,7 @@ fun main(): i32 {
 }
 ```
 
-**Out of scope for v15 so far** (for later, roughly in order; directories, processes, environment variables and Unicode follow-ups are planned for v15):
+**Out of scope for v15 so far** (for later, roughly in order; `std.fs` (directories), `std.process`, `std.env` and Unicode follow-ups are planned for v15):
 - a default entry point (`lughac run` without a file), workspaces of several packages, and requiring `name`;
 - a separate debug form, parsing values back from text, one-element tuples;
 - a package registry, `ssh` URLs, branches or commits as requirements; two versions of one package in a build; full version ranges and pre-release versions;

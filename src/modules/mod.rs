@@ -22,6 +22,8 @@ mod parse;
 pub(crate) mod paths;
 mod resolve;
 #[cfg(test)]
+mod std_tests;
+#[cfg(test)]
 mod tests;
 pub mod version;
 #[cfg(test)]
@@ -146,17 +148,22 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
     let mut queue: VecDeque<Pending> = VecDeque::new();
     queue.push_back((Vec::new(), main.to_path_buf(), None, None));
     while let Some((path, file, package, asked_by)) = queue.pop_front() {
-        let bytes = match read(&file) {
-            Ok(bytes) => bytes,
-            Err(e) if e.kind() == io::ErrorKind::NotFound && asked_by.is_some() => {
-                let at = asked_by.expect("checked just above");
-                loaded
-                    .diagnostics
-                    .push(resolve::not_found(&path, &file, at));
-                continue;
-            }
-            Err(source) => return Err(LoadError::Io { path: file, source }),
-        };
+        // A `std` module is embedded in `lughac`, never read from disk (v15).
+        let embedded = (package.as_deref() == Some(packages::STD))
+            .then(|| crate::STD.iter().find(|(n, _)| *n == path[1..].join(".")))
+            .flatten();
+        let bytes =
+            match embedded.map_or_else(|| read(&file), |(_, text)| Ok(text.as_bytes().to_vec())) {
+                Ok(bytes) => bytes,
+                Err(e) if e.kind() == io::ErrorKind::NotFound && asked_by.is_some() => {
+                    let at = asked_by.expect("checked just above");
+                    loaded
+                        .diagnostics
+                        .push(resolve::not_found(&path, &file, at));
+                    continue;
+                }
+                Err(source) => return Err(LoadError::Io { path: file, source }),
+            };
         let mut module =
             parse::parse_module(path, file, (base, next_id), bytes, &mut loaded.diagnostics);
         module.package = package.clone();

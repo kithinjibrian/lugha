@@ -29,6 +29,7 @@ mod enums;
 mod env;
 mod errors;
 mod expr;
+mod float_ops;
 mod flow;
 mod for_mut;
 mod fun_values;
@@ -80,6 +81,7 @@ use std::collections::HashMap;
 
 pub use checked::Checked;
 pub use defaults::SELF;
+pub use float_ops::float_op;
 pub use iface_tables::{InterfaceMethod, InterfaceShape};
 pub use instances::Instance;
 pub use iterators::Iteration;

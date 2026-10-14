@@ -4688,15 +4688,53 @@ Branch: main
 ## SESSION 111 — 2026-10-14 — The std library and std.math (milestone 53) — open
 Branch: prp-082-std_math
 
+### WHAT WAS DONE
+- The user approved PRP-082 "in one go"; built and merged on green CI:
+  - bundled `std.<module>` modules loaded only when imported;
+  - `std` reserved;
+  - `$` built-ins lexed only in bundled sources;
+  - the `Float` bound;
+  - `std.math` (float functions via LLVM intrinsics, `abs`/`min`/`max`/`clamp`, `pi`/`e`).
+- **Spec:** status, changes, identifiers (`$`), `Float` in §4, the std library in §6 with a "The standard library" table, §9, the E0312/E0320/E0321/E0419 rows, the §10 program, §11 row 53, out of scope.
+
+### FILES CREATED OR MODIFIED
+- New:
+  - `src/std/math.la`, `src/check/float_ops.rs`, `src/codegen/float_ops.rs`, `src/modules/std_tests.rs`;
+  - `tests/programs/m53/` (`math`, `more`, `clamp_panic`, `e0419`, `e0312`).
+- Modified:
+  - `src/lib.rs` (`STD`), `src/lexer/mod.rs`;
+  - `src/modules/{mod,packages,parse,manifest,package_table}.rs`;
+  - `src/check/{mod,expr,operators,bounds,iterators}.rs`, `src/check/errors/generics.rs`, `src/check/modules/mod.rs`;
+  - `src/codegen/{mod,expr}.rs`, `src/driver/build.rs`, `src/prelude/ops.la`;
+  - `tests/cli.rs`, `tests/spec.rs`, the v15 spec and draft.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 102–103, PRP-082 amendments, CONTEXT.
+
+### TESTS WRITTEN
+- **Lexer:** `$` names. **Loader:** std modules, E0312, E0320, E0321.
+- **Checker:** std import forms, `T: Float`, E0419.
+- **CLI:** `llvm.sqrt.f64`/`.f32`, no libm.
+- **Programs:** `tests/programs/m53/`, and the §10 program from the spec.
+- **Regression:** 171 earlier programs give byte-identical IR; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 102, 103.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m53`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–52 complete** (`m51`, `m52`). **Milestone 53 (the std library and `std.math`) is proposed:** decisions 14–18 in `Language v15 Draft.md`, and PRP-082, waiting for the user's approval.
-- **On approval:** record MEMORY 102, branch `prp-082-std_math`, commit "Add approved PRP-082 std library", and build.
-- **Shape of the build:** `src/std/math.la` embedded as `lugha::STD`; `$` names lex only in bundled sources; the `Float` bound in `src/prelude/ops.la`; `check/float_ops.rs` and `codegen/float_ops.rs` lower to `llvm.<op>.f32/f64`.
-- Tag `m53` goes on the merge.
+**Milestone 53 complete** (PRP-082, MEMORY 102–103): the std library and `std.math`. Tag `m53` goes on the merge. `Language v15 Specification.md` (in progress, milestones 51–53) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines; the prelude lives in `src/prelude/`, std in `src/std/`.
 
-The file-size limit is 500 lines. The prelude lives in `src/prelude/`. After std.math: `std.fs`, `std.env`, `std.process` (security review), Unicode follow-ups (`TODO.md`).
+Next in v15 (`TODO.md`):
+- `std.fs` (directories), `std.env`, `std.process` (security review);
+- Unicode follow-ups.
+
+Each needs its discovery. glowworm can now use `std.math`.
 
 See `TODO.md`.

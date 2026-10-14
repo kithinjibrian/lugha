@@ -81,6 +81,8 @@ pub(in crate::check) fn unmet_bound(ty: &Type, bound: &str, span: Span) -> Diagn
         "only numbers, strings and parameters with `Ord` are ordered"
     } else if bound == "Num" {
         "only the number types are `Num` (v15)"
+    } else if bound == "Float" {
+        "only `f32` and `f64` are `Float`: write `2.0`, or convert with `as f64` (v15)"
     } else {
         "a type parameter needs `Eq` before `==` works on it"
     };

@@ -1,0 +1,43 @@
+// std.math (v15, milestone 53): `import std.math;`, then `math.sqrt(2.0)`.
+// The float functions take any `T: Float` (`f32` or `f64`) and compile to
+// LLVM's own operation at that width; their results follow IEEE 754, so
+// `sqrt(-1.0)` is `NaN` and `ln(0.0)` is `-inf`. `abs`, `min`, `max` and
+// `clamp` work on any number (`abs`) or ordered value.
+
+// π and e, as `f64`.
+public fun pi(): f64 = 3.141592653589793;
+public fun e(): f64 = 2.718281828459045;
+
+public fun sqrt<T: Float>(x: T): T = $float.sqrt(x);
+public fun pow<T: Float>(x: T, y: T): T = $float.pow(x, y);
+public fun exp<T: Float>(x: T): T = $float.exp(x);
+
+// The natural logarithm, and the logarithm to base 10.
+public fun ln<T: Float>(x: T): T = $float.ln(x);
+public fun log10<T: Float>(x: T): T = $float.log10(x);
+
+// Trigonometry, in radians; `atan2(y, x)` is the angle of the point (x, y).
+public fun sin<T: Float>(x: T): T = $float.sin(x);
+public fun cos<T: Float>(x: T): T = $float.cos(x);
+public fun tan<T: Float>(x: T): T = $float.tan(x);
+public fun atan2<T: Float>(y: T, x: T): T = $float.atan2(y, x);
+
+// Rounding: `round` takes halves away from zero (`round(-2.5)` is `-3.0`).
+public fun floor<T: Float>(x: T): T = $float.floor(x);
+public fun ceil<T: Float>(x: T): T = $float.ceil(x);
+public fun round<T: Float>(x: T): T = $float.round(x);
+
+// `-x` for a negative `x`; the minimum integer has no positive twin, so
+// it panics with `integer overflow`, as `-x` does.
+public fun abs<T: Num>(x: T): T = if x < 0 { -x } else { x };
+
+public fun min<T: Ord>(a: T, b: T): T = if b < a { b } else { a };
+public fun max<T: Ord>(a: T, b: T): T = if a < b { b } else { a };
+
+// `x` within `lo..=hi`; panics when `lo` is above `hi`.
+public fun clamp<T: Ord>(x: T, lo: T, hi: T): T {
+    if hi < lo {
+        panic("clamp: the lower bound is above the upper bound");
+    }
+    max(lo, min(x, hi))
+}

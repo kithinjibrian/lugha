@@ -22,3 +22,14 @@ interface Num {
     fun rem(self, other: Self): Self;
     fun neg(self): Self;
 }
+
+// `f32` and `f64` (v15, milestone 53): everything `Num` allows, and the
+// float functions of `std.math`.
+interface Float {
+    fun add(self, other: Self): Self;
+    fun sub(self, other: Self): Self;
+    fun mul(self, other: Self): Self;
+    fun div(self, other: Self): Self;
+    fun rem(self, other: Self): Self;
+    fun neg(self): Self;
+}

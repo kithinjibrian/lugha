@@ -21,7 +21,10 @@ pub struct Iteration {
 
 /// The prelude's operator bounds (v15).
 pub(super) fn is_operator_bound(name: &str) -> bool {
-    matches!(name, "Add" | "Sub" | "Mul" | "Div" | "Rem" | "Neg" | "Num")
+    matches!(
+        name,
+        "Add" | "Sub" | "Mul" | "Div" | "Rem" | "Neg" | "Num" | "Float"
+    )
 }
 
 impl Checker {

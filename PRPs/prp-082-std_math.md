@@ -107,33 +107,33 @@ None (LLVM's float intrinsics; `-lm` is already linked).
 ## TESTS TO WRITE
 
 Unit tests:
-- [ ] **Lexer:** `$float` in bundled mode; E0101 otherwise.
-- [ ] **Loader:**
+- [x] **Lexer:** `$float` in bundled mode; E0101 otherwise.
+- [x] **Loader:**
   - `import std.math;` loads `std.math` once;
   - E0312 for `std.nope`, with the help;
   - E0320 for a local `std.la`;
   - E0321 for a `std` entry.
-- [ ] **Checker:**
+- [x] **Checker:**
   - the `Float` bound;
   - `$float.*` typing;
   - E0419 for `math.sqrt(2)`;
   - `T: Float` with operators and `0`/`1`.
-- [ ] **Codegen:** `math.sqrt(2.0)` lowers to `llvm.sqrt.f64`; an `f32` instance to `llvm.sqrt.f32`.
+- [x] **Codegen:** `math.sqrt(2.0)` lowers to `llvm.sqrt.f64`; an `f32` instance to `llvm.sqrt.f32`.
 
 Acceptance — `tests/programs/m53/`:
-- [ ] `math.la`: the §10 program, including the objective.
-- [ ] `more.la`:
+- [x] `math.la`: the §10 program, including the objective.
+- [x] `more.la`:
   - every function at `f64` and some at `f32`;
   - `NaN`, `inf`;
   - `round` of negative halves;
   - `abs`/`min`/`max`/`clamp` on integers and floats;
   - `import std.math as m;` and `import std.math { sqrt };`;
   - a generic `hypot<T: Float>`.
-- [ ] `clamp_panic.la`: `clamp` with `lo > hi` panics.
-- [ ] `e0419.la` and `e0312.la`: reject goldens.
+- [x] `clamp_panic.la`: `clamp` with `lo > hi` panics.
+- [x] `e0419.la` and `e0312.la`: reject goldens.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -141,11 +141,11 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The objective's program prints the values shown.
-- [ ] The `m53/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The spec is at milestone 53; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The objective's program prints the values shown.
+- [x] The `m53/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The spec is at milestone 53; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -154,3 +154,12 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m53/math.la
 ```
+
+## AMENDMENTS (during build, session 111)
+
+- **Loader:** `Packages::std_target` resolves `std.<module>` (E0312 with the module list, E0320 for a local `std`). `read_manifest` skips the `std` package, and the loader takes a std module's bytes from `lugha::STD` instead of `read`. Module files are named `<std>/<module>.la`.
+- **Lexing:** `lexer::lex_bundled` (also used by `--emit=tokens` for std modules); `parse_module` picks it for `$prelude` and `std` paths.
+- **`Float`** is declared in `src/prelude/ops.la` with `Num`'s items; `has_num` counts it, so `T: Float` gets the operators and `0`/`1`. `has_float` gates the `$float` built-ins.
+- **One module, one import per file** still applies (E0314), so `import std.math as m { sqrt };` combines an alias and names.
+- **`tests/programs/m53/clamp_panic`:** the panic location is `<std>/math.la:40:9`.
+- **IR:** the 171 earlier programs give byte-identical IR. `-O2` was checked by hand for `m53/math` and `m53/more`.

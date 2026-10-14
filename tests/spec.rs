@@ -118,6 +118,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Format",
         "Import aliases",
         "Operator overloading",
+        "The standard library",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

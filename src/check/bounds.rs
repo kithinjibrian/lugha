@@ -21,13 +21,15 @@ impl Checker {
                 return false;
             }
             for interface in &g.bounds.interfaces {
-                // Only the numbers are `Num`: E0419, like `Ord` (v15).
-                if interface.key == "$prelude.Num"
+                // Only the numbers are `Num`, and only `f32`/`f64` are
+                // `Float`: E0419, like `Ord` (v15).
+                let builtin = interface.key.strip_prefix("$prelude.");
+                if let Some(bound @ ("Num" | "Float")) = builtin
                     && self
                         .builtin_operator(arg, &interface.key)
                         .is_some_and(|p| !p.is_empty())
                 {
-                    self.report(errors::unmet_bound(arg, "Num", span));
+                    self.report(errors::unmet_bound(arg, bound, span));
                     return false;
                 }
                 // A bound's arguments may name the other parameters (v6).

@@ -19,6 +19,10 @@ pub mod parser;
 pub mod span;
 pub mod template;
 
+/// The standard library (v15): each `std` module's name and source, loaded
+/// only when a program imports `std.<name>`.
+pub const STD: &[(&str, &str)] = &[("math", include_str!("std/math.la"))];
+
 /// The prelude: the array helpers, written in Lugha and loaded with every
 /// program (v3 draft §4, PRP-041), then the iterator helpers (v10, v13),
 /// one module from five files (Unicode text, v14; operator bounds, v15).

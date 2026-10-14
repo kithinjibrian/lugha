@@ -52,6 +52,9 @@ fn identifier(text: &str) -> Result<String, String> {
     let first = chars
         .next()
         .is_some_and(|c| c.is_ascii_alphabetic() || c == '_');
+    if text == "std" {
+        return Err("`std` is the standard library's name".to_string());
+    }
     if first && chars.all(|c| c.is_ascii_alphanumeric() || c == '_') {
         return Ok(text.to_string());
     }

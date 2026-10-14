@@ -1,0 +1,16 @@
+error[E0419]: `i64` doesn't satisfy `Float`
+  --> tests/programs/m53/e0419.la:4:13
+  |
+4 |     let r = math.sqrt(2);
+  |             ^^^^^^^^^^^^
+  |
+  = help: only `f32` and `f64` are `Float`: write `2.0`, or convert with `as f64` (v15)
+
+error[E0419]: `string` doesn't satisfy `Num`
+  --> tests/programs/m53/e0419.la:5:13
+  |
+5 |     let s = math.abs("a");
+  |             ^^^^^^^^^^^^^
+  |
+  = help: only the number types are `Num` (v15)
+

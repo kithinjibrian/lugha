@@ -56,6 +56,14 @@ impl Checker {
         if !is_operator_bound(name) {
             return None;
         }
+        // `Float` (v15, milestone 53): `f32` and `f64` only.
+        if name == "Float" {
+            let parameter = matches!(arg, Type::Param(p) if self.has_float(p));
+            return match arg.is_float() || parameter || matches!(arg, Type::Error) {
+                true => Some(Vec::new()),
+                false => Some(vec!["only `f32` and `f64` are `Float`".to_string()]),
+            };
+        }
         if arg.is_numeric() || (name == "Add" && *arg == Type::String) {
             return Some(Vec::new());
         }
@@ -66,12 +74,21 @@ impl Checker {
         None
     }
 
-    /// True if type parameter `p` is bounded by the prelude's `Num`.
+    /// True if type parameter `p` is bounded by the prelude's `Num`, or
+    /// by `Float`, which allows everything `Num` does (v15).
     pub(super) fn has_num(&self, p: &str) -> bool {
         self.bounds(p)
             .interfaces
             .iter()
-            .any(|a| a.key == "$prelude.Num")
+            .any(|a| a.key == "$prelude.Num" || a.key == "$prelude.Float")
+    }
+
+    /// True if type parameter `p` is bounded by the prelude's `Float`.
+    pub(super) fn has_float(&self, p: &str) -> bool {
+        self.bounds(p)
+            .interfaces
+            .iter()
+            .any(|a| a.key == "$prelude.Float")
     }
 
     /// `lhs op rhs` (or `-lhs`, with no `rhs`) where `lhs`, already

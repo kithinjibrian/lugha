@@ -135,6 +135,9 @@ fn entry(code: &str) -> Result<(String, Place, Option<Requirement>), String> {
             "`{name}` is not a package name: use letters, digits and `_`"
         ));
     }
+    if name == "std" {
+        return Err("`std` is the standard library's name: list this package under another".into());
+    }
     let value = value.trim();
     if value.starts_with('{') {
         let (place, requirement) = inline::parse(value)?;

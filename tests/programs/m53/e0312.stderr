@@ -1,0 +1,8 @@
+error[E0312]: module `std.maths` not found
+  --> tests/programs/m53/e0312.la:1:8
+  |
+1 | import std.maths;
+  |        ^^^^^^^^^
+  |
+  = help: the standard library's modules are `std.math`
+

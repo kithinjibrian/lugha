@@ -98,7 +98,8 @@ impl Packages {
         base: &mut usize,
         loaded: &mut Loaded,
     ) -> Result<(), LoadError> {
-        if self.listed.contains_key(package) {
+        // The standard library has no manifest (v15).
+        if self.listed.contains_key(package) || package.as_deref() == Some(STD) {
             return Ok(());
         }
         self.listed.insert(package.clone(), Vec::new());
@@ -231,6 +232,10 @@ impl Packages {
     ) -> Result<(Target, Option<Diagnostic>), LoadError> {
         let written = names(import);
         let first = &written[0];
+        // `std.<module>` is the bundled standard library (v15).
+        if first == STD {
+            return Ok(self.std_target(import, package, read, written));
+        }
         let listed = self
             .listed
             .get(package)
@@ -274,5 +279,51 @@ impl Packages {
             return Ok((target, Some(clash(first, at))));
         }
         Ok((target, None))
+    }
+}
+
+/// The reserved name of the standard library's package (v15).
+pub(super) const STD: &str = "std";
+
+impl Packages {
+    /// Where `import std.<module>` leads: the embedded module, with E0312
+    /// for a name `lugha::STD` lacks and E0320 when the importing package
+    /// has its own `std/` folder or `std.la` (v15).
+    fn std_target(
+        &self,
+        import: &Import,
+        package: &Option<String>,
+        read: &mut Read<'_>,
+        written: Vec<String>,
+    ) -> (Target, Option<Diagnostic>) {
+        let at = import_path_span(import);
+        let file = PathBuf::from(format!("<std>/{}.la", written[1..].join("/")));
+        let module = written[1..].join(".");
+        let known = crate::STD.iter().any(|(name, _)| *name == module);
+        let target = Target {
+            path: written.clone(),
+            file,
+            package: Some(STD.to_string()),
+        };
+        if package.as_deref() != Some(STD) && self.local(read, package, STD) {
+            return (target, Some(clash(STD, at)));
+        }
+        if written.len() == 1 || !known {
+            let modules: Vec<String> = crate::STD
+                .iter()
+                .map(|(n, _)| format!("`std.{n}`"))
+                .collect();
+            let d = Diagnostic::error(
+                "E0312",
+                format!("module `{}` not found", written.join(".")),
+                at,
+            )
+            .with_help(format!(
+                "the standard library's modules are {}",
+                modules.join(", ")
+            ));
+            return (target, Some(d));
+        }
+        (target, None)
     }
 }

@@ -65,7 +65,13 @@ fn tokens(out: &mut Output, file: &Path, mode: Mode) -> Result<u8, Failure> {
     );
     for module in &loaded.modules {
         out.print(&header(&loaded.modules, &module.path));
-        let (tokens, _) = crate::lexer::lex(&module.text).expect("it lexed while loading");
+        let bundled = module.path.first().is_some_and(|p| p == "std");
+        let lexed = if bundled {
+            crate::lexer::lex_bundled(&module.text)
+        } else {
+            crate::lexer::lex(&module.text)
+        };
+        let (tokens, _) = lexed.expect("it lexed while loading");
         for token in tokens
             .iter()
             .filter(|t| t.kind != crate::lexer::TokenKind::Eof)

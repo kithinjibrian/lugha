@@ -1596,11 +1596,25 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why `Float`, not `Num`:** an integer `sqrt` would truncate, and a Lugha body can't cast `T` (the user asked; session 110).
 
+### 103. The std library and `std.math` — milestone 53 (PRP-082)
+
+**Decision:** built as approved (MEMORY 102).
+- **Sources:** `src/std/math.la`, embedded as `lugha::STD`.
+- **Loader:**
+  - `packages.rs::std_target` maps `std.<m>` to `<std>/<m>.la`, with the hidden package `std`;
+  - `mod.rs` takes the bytes from `STD`;
+  - `std` is reserved in `manifest.rs` (entry) and `package_table.rs` (`name`).
+- **Lexer:** `lex_bundled`; `$` names only in bundled sources.
+- **Checker:** `check/float_ops.rs` (`float_op`, `float_call`, `FLOAT_OPS`); `Float` in `prelude/ops.la`, `builtin_operator`/`has_float`, E0419 help.
+- **Codegen:** `codegen/float_ops.rs` lowers to `llvm.<op>` (with `ln` → `log`) at the call's float type.
+- **Tests:** `check::modules::test_util::prelude_codes` checks in-memory modules with the prelude.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 53 complete**: PRP-082 the std library and `std.math`
 - **Milestone 52 complete**: PRP-081 operator overloading
 - **Milestone 51 complete**: PRP-080 package layout; v15 spec begins
 - **Milestone 50 complete — Lugha v14 complete**: PRP-079 git packages
@@ -1700,11 +1714,12 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–52 complete** (`m51`, `m52`). **Milestone 53 (the std library and `std.math`) is proposed:** decisions 14–18 in `Language v15 Draft.md`, and PRP-082, waiting for the user's approval.
-- **On approval:** record MEMORY 102, branch `prp-082-std_math`, commit "Add approved PRP-082 std library", and build.
-- **Shape of the build:** `src/std/math.la` embedded as `lugha::STD`; `$` names lex only in bundled sources; the `Float` bound in `src/prelude/ops.la`; `check/float_ops.rs` and `codegen/float_ops.rs` lower to `llvm.<op>.f32/f64`.
-- Tag `m53` goes on the merge.
+**Milestone 53 complete** (PRP-082, MEMORY 102–103): the std library and `std.math`. Tag `m53` goes on the merge. `Language v15 Specification.md` (in progress, milestones 51–53) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines; the prelude lives in `src/prelude/`, std in `src/std/`.
 
-The file-size limit is 500 lines. The prelude lives in `src/prelude/`. After std.math: `std.fs`, `std.env`, `std.process` (security review), Unicode follow-ups (`TODO.md`).
+Next in v15 (`TODO.md`):
+- `std.fs` (directories), `std.env`, `std.process` (security review);
+- Unicode follow-ups.
+
+Each needs its discovery. glowworm can now use `std.math`.
 
 See `TODO.md`.
