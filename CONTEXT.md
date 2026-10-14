@@ -4147,6 +4147,11 @@ Branch: prp-073-format_specifiers (merged into main)
 
 ---
 
+## SESSION 95 — 2026-10-14 — v14 direction — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v13 is complete** (milestones 41–44; PRP-070–073; MEMORY 86–90):
