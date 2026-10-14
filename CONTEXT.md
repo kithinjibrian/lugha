@@ -3927,7 +3927,7 @@ Branch: prp-068-printing_values (merged into main)
 ---
 
 ## SESSION 89 — 2026-10-14 — Printing anything (milestone 40) — open
-Branch: main
+Branch: prp-069-printing_anything
 
 ---
 
