@@ -3495,7 +3495,7 @@ Branch: prp-060-better_patterns (merged into main)
 ---
 
 ## SESSION 78 — 2026-10-14 — Unwrapping (milestone 32) — closed
-Branch: prp-061-unwrapping
+Branch: prp-061-unwrapping (merged into main)
 
 ### WHAT WAS DONE
 - Part of the user's "in one go": PRP-061 written as approved within the v9 draft, built, merged on green CI.
@@ -3518,13 +3518,13 @@ Branch: prp-061-unwrapping
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m32`.
+- Nothing. PRP-061 merged into `main`, tagged `m32`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 32 complete** (PRP-061, MEMORY 74): `unwrap`, `expect`, `%=`. Tag `m32` goes on the merge of PRP-061. `Language v9 Specification.md` (in progress) is what `lughac spec` prints.
+**Milestone 32 complete** (PRP-061, MEMORY 74): `unwrap`, `expect`, `%=`. Tagged `m32`. `Language v9 Specification.md` (in progress) is what `lughac spec` prints.
 
 Next (the user's "in one go"): **milestone 33, conditional patterns** — PRP-062, completing v9 (tags `m33`, `v9`). Scope (v9 draft decision 5 and its choices, §3 `if_expr`/`while_stmt`/`var_decl`, §5, E0429, §10 "Conditional patterns"):
 - parser: `if let p = cond block [else …]` (an expression; `else if let` chains), `while let p = cond block`, `let p = e else block;` (told apart from `let` by the pattern/`else`);

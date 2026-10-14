@@ -201,7 +201,7 @@ Done when the or-patterns program passes.
 
 ### Milestone 32 — Unwrapping ✅
 Done when the unwrapping program passes.
-- [x] PRP-061: `unwrap`, `expect`, `%=`; tagged `m32` at merge
+- [x] PRP-061: `unwrap`, `expect`, `%=`; tagged `m32`
 
 ### Milestone 33 — Conditional patterns
 Done when the conditional-patterns program passes and the v9 spec is complete.

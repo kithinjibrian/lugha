@@ -1,6 +1,6 @@
 ## FEATURE: Unwrapping — `unwrap()` and `expect(msg)` on `Option` and `Result`, and `%=`; milestone 32.
 
-**Status:** approved 2026-10-14 — session 78. This is part of the user's "in one go" (milestones 31–33), merged once CI is green.
+**Status:** merged 2026-10-14 — session 78. This is part of the user's "in one go" (milestones 31–33), merged once CI is green.
 **Milestone:** 32 (one PRP; tag `m32` at merge)
 **Spec:** `Language v9 Draft.md`:
 - decision 4, and the choice "`unwrap` and `expect` are built in";
