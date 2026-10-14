@@ -51,6 +51,16 @@ impl Checker {
                 self.block(body, None);
                 self.loops -= 1;
             }
+            StmtKind::WhileLet {
+                pattern,
+                scrutinee,
+                body,
+            } => self.while_let(pattern, scrutinee, body),
+            StmtKind::LetElse {
+                pattern,
+                init,
+                else_,
+            } => self.let_else(pattern, init, else_),
             StmtKind::For {
                 var,
                 iter: ForIter::Range(start, end),

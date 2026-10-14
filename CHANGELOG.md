@@ -13,6 +13,7 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- Conditional patterns: `if let p = e { … } else { … }` (a value with `else`, chaining with `else if let`), `while let p = e { … }`, and `let p = e else { … };` whose `else` must leave (E0429); or-patterns and `mut` work in all three. `lughac spec` prints the complete v9 specification — **milestone 33 complete: Lugha v9 is complete**
 - `unwrap()` and `expect(msg)` on `Option` and `Result`, panicking at the call with `unwrap on None`, `unwrap on Err` or the message; and `x %= y` — **milestone 32 complete**
 - Or-patterns and `mut` bindings: `Circle(r) | Square(r) => r * 2.0` and `"q" | "quit" | "exit" => …`, nested anywhere (`Some(1 | 2)`), with every alternative binding the same names at the same types (E0428); `Some(mut n) => { n += 1; }` gives the arm its own copy. `lughac spec` now prints `Language v9 Specification.md` (in progress); v8's file is frozen — **milestone 31 complete**
 - Lugha v9 spec draft approved (`docs/specs/Language v9 Draft.md`): `match` and everyday conveniences — or-patterns (`Circle(r) | Square(r) =>`), `mut` bindings, `unwrap()`/`expect(msg)`, `%=`, `if let`, `while let` and `let … else` (milestones 31–33)

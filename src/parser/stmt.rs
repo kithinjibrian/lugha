@@ -61,6 +61,10 @@ impl Parser<'_> {
         let start = self.span().start;
         let kind = match self.peek() {
             TokenKind::Let => self.let_stmt()?,
+            TokenKind::While if matches!(self.peek_at(1), TokenKind::Let) => {
+                self.bump();
+                self.while_let()?
+            }
             TokenKind::While => {
                 self.bump();
                 let cond = self.cond()?;
@@ -135,6 +139,10 @@ impl Parser<'_> {
 
     fn let_stmt(&mut self) -> PResult<StmtKind> {
         self.bump();
+        // `let Some(n) = o else { … };` (v9).
+        if self.let_pattern_ahead() {
+            return self.let_else();
+        }
         let mutable = self.eat(&TokenKind::Mut);
         let name = self.ident("variable name")?;
         let ty = if self.eat(&TokenKind::Colon) {
@@ -144,6 +152,10 @@ impl Parser<'_> {
         };
         self.expect(&TokenKind::Eq)?;
         let init = self.expr()?;
+        // `let x = e else { … };`: a pattern after all (v9).
+        if !mutable && ty.is_none() && self.at(&TokenKind::Else) {
+            return self.named_let_else(name, init);
+        }
         self.expect(&TokenKind::Semi)?;
         Ok(StmtKind::Let {
             mutable,

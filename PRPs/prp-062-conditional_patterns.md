@@ -91,34 +91,34 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — parser:
-- [ ] `if let Some(x) = o { } else { }`, `else if let …`, `while let Some(x) = it.next() { }`, `let Some(n) = o else { return; };` and `let x = e else { return; };` parse and print.
+- [x] `if let Some(x) = o { } else { }`, `else if let …`, `while let Some(x) = it.next() { }`, `let Some(n) = o else { return; };` and `let x = e else { return; };` parse and print.
 
 Unit tests — checker (`check/conditional.rs`):
-- [ ] **Bindings:**
+- [x] **Bindings:**
   - visible in `then` and in the body, and after `let … else`;
   - not visible in `else`.
-- [ ] **Types:**
+- [x] **Types:**
   - `if let` with `else` gives the branches' type;
   - an or-pattern with `mut` works.
-- [ ] **E0429:** an `else` that finishes, versus `return`, `break` (in a loop) and `panic(…)`.
-- [ ] **Pattern errors:** a wrong pattern type is E0403.
+- [x] **E0429:** an `else` that finishes, versus `return`, `break` (in a loop) and `panic(…)`.
+- [x] **Pattern errors:** a wrong pattern type is E0403.
 
 Unit tests — codegen: an `if let` tests the tag and branches to its `else`.
 
 Acceptance — `tests/programs/m33/`:
-- [ ] `conditional.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `conditional.la`: the §10 program.
+- [x] `more.la`:
   - `else if let` chains;
   - `if let` as a value;
   - `while let` with `break` and `continue`;
   - `let … else` with `continue` in a loop;
   - an or-pattern in `if let`;
   - `mut` in `while let`.
-- [ ] `e0429.la`: reject golden.
-- [ ] The §10 program runs from the spec.
+- [x] `e0429.la`: reject golden.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -126,10 +126,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m33/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The v9 spec is complete; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m33/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The v9 spec is complete; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -138,3 +138,10 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m33/conditional.la
 ```
+
+## AMENDMENTS (during build, session 79)
+
+- **Boxed AST fields:** the patterns and the statement blocks are boxed (`Box<Pattern>`, `Box<Block>`), to satisfy clippy's `large_enum_variant` on the parser's `Element`.
+- **`if_expr`'s merging** became `Checker::join_branches`, shared with `if let`; `matching::unused` became `pub(super)`, so `if let` and `while let` warn about unused bindings (W0103). `let … else` doesn't, since its bindings live on in the block.
+- **`-O2`** was checked by hand for `m33/conditional` and `m33/more`.
+- **No file splits.**

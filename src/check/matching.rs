@@ -136,7 +136,7 @@ impl Checker {
     }
 
     /// W0103 for each binding that nothing in its arm mentions.
-    fn unused(&mut self, bindings: &[(Ident, Type, bool)]) {
+    pub(super) fn unused(&mut self, bindings: &[(Ident, Type, bool)]) {
         for (name, _, _) in bindings {
             // A binding named like a type is already E0311.
             let named_like_type = self.type_span(&name.name).is_some();

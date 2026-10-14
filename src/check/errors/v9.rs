@@ -9,3 +9,13 @@ pub(in crate::check) fn or_bindings(why: String, span: Span) -> Diagnostic {
     Diagnostic::error("E0428", why, span)
         .with_help("every alternative of `p | q` must bind the same names, each at one type")
 }
+
+/// E0429: a `let … else` block that can finish normally.
+pub(in crate::check) fn let_else_finishes(span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0429",
+        "the `else` of a `let … else` must not finish",
+        span,
+    )
+    .with_help("end it with `return`, `break`, `continue`, `panic(…)` or `exit(…)`")
+}

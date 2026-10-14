@@ -1,0 +1,11 @@
+error[E0429]: the `else` of a `let … else` must not finish
+  --> tests/programs/m33/e0429.la:4:39
+  |
+4 |       let Some(n) = parse_i64("x") else {
+  | /---------------------------------------^
+5 | |         println("no number");
+6 | |     };
+  | \-----^
+  |
+  = help: end it with `return`, `break`, `continue`, `panic(…)` or `exit(…)`
+

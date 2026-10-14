@@ -1,14 +1,15 @@
-# Lugha v9 Specification (in progress: milestones 31–32)
+# Lugha v9 Specification
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 31–32, or-patterns, `mut` bindings and unwrapping, are done; milestone 33 is next). It is built from the approved plan, `Language v9 Draft.md`, milestone by milestone. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v8 Specification.md` keeps v8 frozen.
+**Status:** complete (milestones 31–33). It is built from the approved plan, `Language v9 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v8 Specification.md` keeps v8 frozen.
 
 **v8.** This is v7 plus packages: a `lugha.toml` manifest, package imports, and `public` / package / `private` visibility (milestone 30).
 
-**Changes since v8** (milestones 31–32 so far):
+**Changes since v8** (milestones 31–33):
 - A pattern may be alternatives, `Circle(r) | Square(r) => r * 2.0` or `"q" | "quit" => …`, nested anywhere; every alternative binds the same names at the same types (E0428). `mut name` makes a binding the arm's own copy, which the arm may change (sections 3–4).
 - `o.unwrap()` and `o.expect(msg)` on `Option` and `Result` give the value inside or panic at the call (`unwrap on None`, `unwrap on Err`, or `msg`); `x %= y` is the compound remainder (sections 2–5).
+- `if let p = e { … } else { … }`, `while let p = e { … }` and `let p = e else { … };` test one pattern without a full `match`; a `let … else` block must leave (E0429) (sections 3, 5).
 
 Every valid v8 program is a valid v9 program.
 
@@ -222,11 +223,12 @@ stmt         = var_decl | while_stmt | for_stmt
              | block_like                     (* no ";" needed *)
              | expr [ assign_op expr ] ";" ;
 block_like   = if_expr | match_expr | block ;
-var_decl     = "let" [ "mut" ] IDENT [ ":" type ] "=" expr ";" ;
+var_decl     = "let" [ "mut" ] IDENT [ ":" type ] "=" expr ";"
+             | "let" pattern "=" expr "else" block ";" ;      (* let-else (v9) *)
 assign_op    = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ;   (* bit forms: v7; `%=`: v9 *)
 
-if_expr      = "if" cond block [ "else" ( if_expr | block ) ] ;
-while_stmt   = "while" cond block ;
+if_expr      = "if" ( cond | "let" pattern "=" cond ) block [ "else" ( if_expr | block ) ] ;   (* if let (v9) *)
+while_stmt   = "while" ( cond | "let" pattern "=" cond ) block ;                            (* while let (v9) *)
 for_stmt     = "for" ( for_head | "(" for_head ")" ) block ;
 for_head     = IDENT ( "in" cond ".." cond | "of" cond ) ;
 cond         = expr ;            (* parsed in no-struct-literal mode *)
@@ -606,6 +608,11 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 
 **while.** Evaluates the condition before each iteration; stops when it is `false`.
 
+**Conditional patterns** (v9). Each tests one pattern, typed as a `match` arm's (or-patterns and `mut` included), with no exhaustiveness check; the scrutinee is a condition, so a struct literal needs parentheses.
+- **`if let p = e { a } [else b]`** evaluates `e` once; if `p` matches it runs `a` with `p`'s bindings in scope, otherwise `b` (or nothing). It is an `if`: with `else` both branches agree on a type and it is a value; without, it is `void`. `else if let` chains. An irrefutable pattern (`if let x = e`) is allowed.
+- **`while let p = e { body }`** evaluates `e` and tests `p` before each iteration, running `body` with the bindings while it matches; `break` ends the loop and `continue` goes to the next test.
+- **`let p = e else { … };`** evaluates `e`; if `p` matches, its bindings are in scope for the rest of the block. Otherwise the `else` block runs, and it must not finish normally: it ends in `return`, `break`, `continue`, `panic(…)` or `exit(…)`, or is otherwise of type `never` (E0429). `let x = e else { … };` reads `x` as a pattern, so at the top it is a variant, as in a `match` arm. `mut` goes inside the pattern: `let Some(mut n) = o else { return; };`.
+
 **for over a range.** `for i in a..b { body }` runs with `i` = `a`, `a+1`, …, `b-1`. The range is half-open, and empty when `a >= b`. `a` and `b` must have the same integer type, which becomes the type of `i`. Both bounds are evaluated once, before the first iteration. `i` is a fresh immutable binding on each iteration. It desugars to:
 
 ```
@@ -840,6 +847,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - A default method (v5) compiles once per type that uses it, through a table or a bound: `lugha_fn_<Interface>.<method><Type>` (`lugha_fn_Error.report<ParseError>`); that type's table slot and bound calls use it. A generic interface's default (v6) compiles once per type and interface arguments, the arguments printed on the interface: `lugha_fn_Source<i64>.skip<Count>`. A converted `?` error is boxed on the failure branch, like any conversion. A program without interface values has none of these.
 - Converting a `J` value to `I` (v6) calls `lugha_up_<J>.<I>(table) -> table`, which compares the value's table with each `J` table the program has and returns the matching `I` table; its body is built after everything else, when every table is known. That `I` table is derived from the table the value was built with: `lugha_vt_<C>.<J>.<I>` has `C`'s identity and copy and, for each `I` item, the function `C`'s `J` table has, so methods behave as through `J`; derived tables keep the original interface (`<C>.<J>.<K>` for a chain) and converting back to it gives the original table. A program that never converts between interfaces has no `lugha_up_` functions and no derived tables. (The approved draft put one slot per target interface in each table instead; tables are emitted while lowering, before every conversion is known, so PRP-054 uses lookup functions.)
 - The v7 operators and methods: `& | ^` are `and`/`or`/`xor`; `<<` is `shl` and `>>` is `ashr` for `i32`/`i64` and `lshr` for the unsigned types, each after an `icmp uge` of the amount against the width that panics (`shift out of range`); `~x` is `xor x, -1`; the wrapping methods are plain `add`/`sub`/`mul`; the counting methods are `llvm.ctpop`, `llvm.ctlz` and `llvm.cttz` (zero not poison), widened to `i64`. A program that uses none of them has none of this code.
+- `if let`, `while let` and `let … else` (v9) test their pattern as an arm of the arm chain does, jumping on a mismatch to the `else` branch, the loop's exit, or the `else` block; `let … else` declares its bindings in the enclosing block's scope.
 - `unwrap` and `expect` (v9) are built in, not prelude functions, so their panic points at the caller: the value's tag is compared with `Some` or `Ok`, and a mismatch calls `lugha_rt_panic` with the message and the method name's location.
 - An or-pattern (v9) lowers in the arm chain: each alternative that fails tries the next, and every alternative stores a name's value into the arm's one local for it; a `match` with an or-pattern or a `mut` binding never uses the flat `switch`. A `mut` binding is a local of its own, deep-copied when its type is.
 - An iterator loop (v6) stores the iterator in a hidden local and calls its `next` with that local's address: directly for a struct or enum (its own method, or a bound default's instance in a generic instance), and through the table for an interface value.
@@ -989,6 +997,7 @@ Name and type errors, reported by the checker:
 | E0425 | An interface with an associated function used as a type | `fun f(x: Factory)` where `Factory` declares `fun make(): Factory;` (v5) |
 | E0426 | A type pattern that can't apply | `c: Circle` on an `i64`; `s: Shape` (an interface); `d: Dot` when `Dot` doesn't satisfy the interface (v5) |
 | E0427 | An interface that uses `Self` used as a type | `let xs: Ordered[] = …;` where `Ordered` declares `fun less(self, other: Self): bool;` (v6) |
+| E0429 | A `let … else` whose `else` block can finish (v9) | `let Some(n) = o else { println("no"); };` |
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
 | E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum, `Option`, function or interface parameters or returns (§8) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
@@ -1914,6 +1923,36 @@ fun main() {
 }
 ```
 
+**Conditional patterns** (milestone 33). Prints `skipped x`, `7`, `321`, `42`, `-1` on five lines, exits with 0.
+
+```
+fun double(s: string): i64 {
+    let Some(n) = parse_i64(s) else {
+        return -1;
+    };
+    n * 2
+}
+
+fun main() {
+    let mut total = 0;
+    for w of ["3", "x", "4"] {
+        if let Some(n) = parse_i64(w) {
+            total += n;
+        } else {
+            println("skipped {w}");
+        }
+    }
+    println(total);
+    let mut stack = [1, 2, 3];
+    while let Some(top) = stack.pop() {
+        print(top);
+    }
+    println("");
+    println(double("21"));
+    println(double("x"));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -1952,7 +1991,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 30 | Packages (v8) | `lugha.toml`, package imports, per-package manifests, `public` and package visibility, E0320–E0323 | The packages program in section 10 passes (done: v8 complete) |
 | 31 | Better patterns (v9) | or-patterns (E0428), `mut` bindings | The or-patterns program in section 10 passes (done) |
 | 32 | Unwrapping (v9) | `unwrap`, `expect`, `%=` | The unwrapping program in section 10 passes (done) |
-| 33 | Conditional patterns (v9, planned) | `if let`, `while let`, `let … else` (E0429) | The conditional-patterns program passes |
+| 33 | Conditional patterns (v9) | `if let`, `while let`, `let … else` (E0429) | The conditional-patterns program in section 10 passes (done: v9 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -2003,3 +2042,5 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [ ] **Unsigned indexes** (v7). `xs[i]` needs an `i64`, so a `u32` index needs a cast. Accepting any integer index would remove the cast, but it needs a rule for negative values.
 - [ ] **Re-exports** (v8). A package can't yet expose another package's items as its own (`public import`); users import both.
 - [ ] **A `--package` flag** (v8). Pointing at a package without editing `lugha.toml`, for a one-off build, could come later as a command-line override.
+- [ ] **Printing errors** (v9). `unwrap on Err` can't show the error, because values other than numbers, `bool` and strings have no text form. A later `Display`-like interface could add it.
+- [ ] **Irrefutable `if let`** (v9). `if let x = e` is allowed silently; a warning could come later if it proves a common mistake.

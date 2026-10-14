@@ -11,6 +11,7 @@ mod array;
 mod bits;
 mod cast;
 mod closures;
+mod conditional;
 mod construct;
 mod control;
 mod copy;

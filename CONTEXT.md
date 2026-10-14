@@ -3522,20 +3522,46 @@ Branch: prp-061-unwrapping (merged into main)
 
 ---
 
-## SESSION 79 — 2026-10-14 — Conditional patterns (milestone 33) — open
+## SESSION 79 — 2026-10-14 — Conditional patterns (milestone 33) — closed
 Branch: prp-062-conditional_patterns
+
+### WHAT WAS DONE
+- Last part of the user's "in one go" for v9: PRP-062 written as approved within the v9 draft, built, merged on green CI.
+- Native `IfLet`/`WhileLet`/`LetElse` (boxed), parsed in `parser/conditional.rs`, checked in `check/conditional.rs` (E0429), lowered in `codegen/conditional.rs`; liveness and sexp updated.
+- Spec complete: §3 grammar, §5 conditional patterns, §9, E0429, the §10 program, §11, §12.
+
+### FILES CREATED OR MODIFIED
+- New: `src/parser/conditional.rs`, `src/check/conditional.rs`, `src/codegen/conditional.rs`, `tests/programs/m33/` (`conditional`, `more`, `e0429`).
+- Modified: `src/ast/{expr,mod}.rs`, `src/parser/{primary,stmt,mod}.rs`, `src/parser/sexp/mod.rs`, `src/check/{expr,stmt,matching,mod}.rs`, `src/check/errors/v9.rs`, `src/check/liveness/walk.rs`, `src/codegen/{expr,stmt,mod}.rs`, `tests/spec.rs`, the v9 spec.
+- Docs: PRP-062, CLAUDE.md, README, CHANGELOG, TODO, MEMORY 75, CONTEXT.
+
+### TESTS WRITTEN
+- Parser: the three forms, `else if let`, or-pattern with `mut`, a missing `;`. Checker: binding scopes (E0301 in `else`), `if let` as a value, or-pattern + `mut`, E0403 pattern, E0429 vs `panic`/`return`/`continue`. Codegen: tag test and else branch.
+- `tests/programs/m33/`; the §10 program from the spec. 226 earlier programs' IR byte-identical; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 75.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tags `m33` and `v9`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 32 complete** (PRP-061, MEMORY 74): `unwrap`, `expect`, `%=`. Tagged `m32`. `Language v9 Specification.md` (in progress) is what `lughac spec` prints.
+**Lugha v9 is complete** (milestones 31–33; PRP-060–062; MEMORY 72–75): or-patterns, `mut` bindings, `unwrap`/`expect`, `%=`, `if let`, `while let`, `let … else`. Tags `m33` and `v9` go on the merge of PRP-062. `Language v9 Specification.md` is what `lughac spec` prints; v0–v8 are frozen.
 
-Next (the user's "in one go"): **milestone 33, conditional patterns** — PRP-062, completing v9 (tags `m33`, `v9`). Scope (v9 draft decision 5 and its choices, §3 `if_expr`/`while_stmt`/`var_decl`, §5, E0429, §10 "Conditional patterns"):
-- parser: `if let p = cond block [else …]` (an expression; `else if let` chains), `while let p = cond block`, `let p = e else block;` (told apart from `let` by the pattern/`else`);
-- checker: one-arm pattern typing (`arm_pattern`, bindings incl. `mut`), bindings in scope in the then-block / loop body / rest of the block; `let … else` else block must have type `never` (E0429); no exhaustiveness;
-- codegen: one-arm tests via `codegen/patterns.rs::test` (or-patterns too), `next` = else / loop exit / else block.
+Next: **v10 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v9 spec §11 and §12):
+- iterator helpers (`map`, `filter`, `collect` on `Iter<T>`), strings as iterators, `for n of mut c`;
+- `Self` outside interfaces, default methods on concrete types;
+- `i8`/`i16`/`u16`, rotations, checked/saturating methods, `parse_u64`, unsigned indexes;
+- package versions, re-exports, a `--package` flag;
+- a `Display`-like interface (printing structs, errors in `unwrap`);
+- binary I/O, directories, streams and processes.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~288), `codegen/control.rs` (292), `codegen/patterns.rs` (~290).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `codegen/patterns.rs` (~290).
 
 See `TODO.md`.

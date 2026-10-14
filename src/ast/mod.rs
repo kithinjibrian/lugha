@@ -211,6 +211,18 @@ pub enum StmtKind {
     Expr { expr: Expr, semicolon: bool },
     /// `while cond { body }`
     While { cond: Expr, body: Block },
+    /// `while let pattern = scrutinee { body }` (v9).
+    WhileLet {
+        pattern: Box<Pattern>,
+        scrutinee: Expr,
+        body: Box<Block>,
+    },
+    /// `let pattern = init else { … };` (v9): the `else` block must leave.
+    LetElse {
+        pattern: Box<Pattern>,
+        init: Expr,
+        else_: Box<Block>,
+    },
     /// `for var in a..b { body }` or `for var of xs { body }`
     For {
         var: Ident,

@@ -126,6 +126,12 @@ impl Checker {
             ExprKind::If { cond, then, else_ } => {
                 self.if_expr(expr, cond, then, else_.as_deref(), expect)
             }
+            ExprKind::IfLet {
+                pattern,
+                scrutinee,
+                then,
+                else_,
+            } => self.if_let(expr, pattern, scrutinee, then, else_.as_deref(), expect),
             ExprKind::Block(block) => self.block(block, expect),
             ExprKind::Match(scrutinee, arms) => self.match_expr(expr, scrutinee, arms, expect),
             ExprKind::Str(_) => Type::String,
@@ -190,6 +196,19 @@ impl Checker {
         };
         let then_ty = self.block(then, expect);
         let else_ty = self.expr(else_expr, expect);
+        self.join_branches(expr, then, then_ty, else_expr, else_ty)
+    }
+
+    /// The type of an `if` (or `if let`, v9) whose branches have these
+    /// types: they agree unless one diverges (E0403 otherwise).
+    pub(super) fn join_branches(
+        &mut self,
+        expr: &Expr,
+        then: &Block,
+        then_ty: Type,
+        else_expr: &Expr,
+        else_ty: Type,
+    ) -> Type {
         match (then_ty, else_ty) {
             (Type::Never, ty) | (ty, Type::Never) => ty,
             (Type::Error, _) | (_, Type::Error) => Type::Error,

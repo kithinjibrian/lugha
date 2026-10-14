@@ -58,6 +58,13 @@ pub enum ExprKind {
         then: Block,
         else_: Option<Box<Expr>>,
     },
+    /// `if let pattern = scrutinee { then } [else …]` (v9).
+    IfLet {
+        pattern: Box<super::Pattern>,
+        scrutinee: Box<Expr>,
+        then: Block,
+        else_: Option<Box<Expr>>,
+    },
     /// A block used as an expression.
     Block(Block),
     /// `match scrutinee { arms }` (v1).

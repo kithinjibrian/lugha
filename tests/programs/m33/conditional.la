@@ -1,0 +1,27 @@
+// The v9 draft's §10 conditional-patterns program (milestone 33).
+
+fun double(s: string): i64 {
+    let Some(n) = parse_i64(s) else {
+        return -1;
+    };
+    n * 2
+}
+
+fun main() {
+    let mut total = 0;
+    for w of ["3", "x", "4"] {
+        if let Some(n) = parse_i64(w) {
+            total += n;
+        } else {
+            println("skipped {w}");
+        }
+    }
+    println(total);
+    let mut stack = [1, 2, 3];
+    while let Some(top) = stack.pop() {
+        print(top);
+    }
+    println("");
+    println(double("21"));
+    println(double("x"));
+}

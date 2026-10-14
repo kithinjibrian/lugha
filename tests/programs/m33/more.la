@@ -1,0 +1,70 @@
+// if let, while let and let … else (milestone 33).
+
+enum Token { Num(i64), Word(string), Space, End }
+
+fun describe(t: Token): string {
+    if let Num(n) = t {
+        "number {n}"
+    } else if let Word(w) = t {
+        "word {w}"
+    } else if let Space | End = t {
+        "blank"
+    } else {
+        "other"
+    }
+}
+
+fun sum_positive(xs: i64[]): i64 {
+    let mut total = 0;
+    for x of xs {
+        let 0 = x % 2 else {
+            continue;
+        };
+        total += x;
+    }
+    total
+}
+
+fun main() {
+    println(describe(Token.Num(4)));
+    println(describe(Token.Word("hi")));
+    println(describe(Token.Space));
+    println(describe(Token.End));
+
+    // `if let` as a value
+    let n = if let Some(v) = parse_i64("12") { v } else { 0 };
+    println(n * 2);
+
+    // while let with break and continue
+    let mut stack = [1, 2, 3, 4, 5, 6];
+    let mut seen = 0;
+    while let Some(top) = stack.pop() {
+        if top == 5 {
+            continue;
+        }
+        if top == 2 {
+            break;
+        }
+        seen += top;
+    }
+    println("{seen} {stack.len}");
+
+    // mut in while let
+    let mut pairs = [Some(1), None, Some(3)];
+    while let Some(slot) = pairs.pop() {
+        if let Some(mut v) = slot {
+            v *= 10;
+            print("{v} ");
+        } else {
+            print("_ ");
+        }
+    }
+    println("");
+
+    println(sum_positive([1, 2, 3, 4]));
+    let End = Token.End else {
+        println("not the end");
+        return;
+    };
+    println("end");
+}

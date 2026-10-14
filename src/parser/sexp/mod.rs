@@ -50,6 +50,21 @@ fn stmt(stmt: &Stmt) -> String {
             semicolon: false,
         } => format!("(stmt {})", expr(e)),
         StmtKind::While { cond, body } => format!("(while {} {})", expr(cond), block(body)),
+        StmtKind::WhileLet {
+            pattern: p,
+            scrutinee,
+            body,
+        } => format!(
+            "(while-let {} {} {})",
+            pattern(p),
+            expr(scrutinee),
+            block(body)
+        ),
+        StmtKind::LetElse {
+            pattern: p,
+            init,
+            else_,
+        } => format!("(let-else {} {} {})", pattern(p), expr(init), block(else_)),
         StmtKind::For { var, iter, body } => {
             let iter = match iter {
                 ForIter::Range(a, b) => format!("(range {} {})", expr(a), expr(b)),
@@ -125,6 +140,23 @@ pub fn expr(expr: &Expr) -> String {
                 .map(|e| format!(" {}", self::expr(e)))
                 .unwrap_or_default();
             format!("(if {} {}{otherwise})", self::expr(cond), block(then))
+        }
+        ExprKind::IfLet {
+            pattern: p,
+            scrutinee,
+            then,
+            else_,
+        } => {
+            let otherwise = else_
+                .as_ref()
+                .map(|e| format!(" {}", self::expr(e)))
+                .unwrap_or_default();
+            format!(
+                "(if-let {} {} {}{otherwise})",
+                pattern(p),
+                self::expr(scrutinee),
+                block(then)
+            )
         }
         ExprKind::Block(b) => block(b),
         ExprKind::Match(scrutinee, arms) => {

@@ -21,6 +21,16 @@ impl<'ctx> Lowerer<'ctx> {
             StmtKind::Expr { expr, .. } => return Ok(matches!(self.expr(expr)?, Value::Never)),
             // Loops never definitely return (spec §6), whatever their body does.
             StmtKind::While { cond, body } => self.while_loop(cond, body)?,
+            StmtKind::WhileLet {
+                pattern,
+                scrutinee,
+                body,
+            } => self.while_let(pattern, scrutinee, body)?,
+            StmtKind::LetElse {
+                pattern,
+                init,
+                else_,
+            } => self.let_else(pattern, init, else_)?,
             StmtKind::For {
                 var,
                 iter: ForIter::Range(start, end),

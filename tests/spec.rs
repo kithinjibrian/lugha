@@ -100,6 +100,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Packages",
         "Or-patterns",
         "Unwrapping",
+        "Conditional patterns",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

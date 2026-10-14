@@ -41,6 +41,19 @@ impl Walk<'_> {
                 self.block(body);
                 self.loops.pop();
             }
+            // v9: the scrutinee is read, as a `match`'s is.
+            StmtKind::WhileLet {
+                scrutinee, body, ..
+            } => {
+                self.loops.push(stmt.span);
+                self.expr(scrutinee);
+                self.block(body);
+                self.loops.pop();
+            }
+            StmtKind::LetElse { init, else_, .. } => {
+                self.expr(init);
+                self.block(else_);
+            }
             StmtKind::For { iter, body, .. } => {
                 // The bounds and the iterated array are evaluated once, but
                 // counting them as inside the loop only errs towards copying.
@@ -86,6 +99,16 @@ impl Walk<'_> {
             }
             ExprKind::If { cond, then, else_ } => {
                 self.expr(cond);
+                self.block(then);
+                else_.iter().for_each(|e| self.expr(e));
+            }
+            ExprKind::IfLet {
+                scrutinee,
+                then,
+                else_,
+                ..
+            } => {
+                self.expr(scrutinee);
                 self.block(then);
                 else_.iter().for_each(|e| self.expr(e));
             }

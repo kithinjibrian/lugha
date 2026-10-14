@@ -16,7 +16,7 @@ $ lughac run fib.la
 832040
 ```
 
-Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is complete (milestones 17–19), with v4.1 allowing string literals inside interpolations. v5, interface values, is complete (milestones 20–22), and v6, generic interfaces, iterators, `Self` and converting between interfaces, is complete (milestones 23–26). v7, numbers and bits, is complete (milestones 27–29: `u32`, `u64`, `f32`, the bit operators and integer methods), v8, packages, is complete (milestone 30), and v9, `match` conveniences, is in progress. Today it has everything in v1.2:
+Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is complete (milestones 17–19), with v4.1 allowing string literals inside interpolations. v5, interface values, is complete (milestones 20–22), and v6, generic interfaces, iterators, `Self` and converting between interfaces, is complete (milestones 23–26). v7, numbers and bits, is complete (milestones 27–29: `u32`, `u64`, `f32`, the bit operators and integer methods), v8, packages, is complete (milestone 30), and v9, `match` conveniences, is complete (milestones 31–33). Today it has everything in v1.2:
 - **Basic types:** integers (`i32`, `i64`, `u8`), `f64`, `bool` and immutable strings.
 - **Compound types:** growable arrays (`push`, `pop`, `clear`), structs, and enums with exhaustive `match`, including `Option<T>` and recursive enums.
 - **Behaviour:** methods in `impl` blocks, `if` expressions, loops and `for … of`, and `swap(a, b)` to exchange two places without copying.
@@ -46,8 +46,9 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **Packages (v8, milestone 30):** a `lugha.toml` next to `main.la` lists package folders (`[packages]` / `geo = "libs/geo"`), and `import geo.shapes;` loads a package's module; a package can list its own packages, and other packages see only what it marks `public`.
 - **Better patterns (v9, milestone 31):** `Circle(r) | Square(r) => r * 2.0`, `"q" | "quit" => …`, and `Some(mut n) => { n += 1; … }` with the arm's own copy.
 - **Unwrapping (v9, milestone 32):** `parse_i64(s).unwrap()` and `.expect("need a number")` panic at the call on `None`/`Err`; `x %= 10`.
+- **Conditional patterns (v9, milestone 33):** `if let Some(n) = parse_i64(w) { … } else { … }`, `while let Some(x) = stack.pop() { … }`, and `let Some(n) = o else { return; };`.
 
-Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v9 Specification.md`](docs/specs/Language%20v9%20Specification.md) (what `lughac spec` prints, in progress); the approved plan it is built from is [`Language v9 Draft.md`](docs/specs/Language%20v9%20Draft.md), and v8 is frozen in [`Language v8 Specification.md`](docs/specs/Language%20v8%20Specification.md).
+Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v9 Specification.md`](docs/specs/Language%20v9%20Specification.md) (what `lughac spec` prints); the approved plan it is built from is [`Language v9 Draft.md`](docs/specs/Language%20v9%20Draft.md), and v8 is frozen in [`Language v8 Specification.md`](docs/specs/Language%20v8%20Specification.md).
 
 ## Prerequisites
 

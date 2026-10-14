@@ -203,9 +203,9 @@ Done when the or-patterns program passes.
 Done when the unwrapping program passes.
 - [x] PRP-061: `unwrap`, `expect`, `%=`; tagged `m32`
 
-### Milestone 33 — Conditional patterns
+### Milestone 33 — Conditional patterns ✅
 Done when the conditional-patterns program passes and the v9 spec is complete.
-- [ ] `if let`, `while let`, `let … else` (E0429)
+- [x] PRP-062: `if let`, `while let`, `let … else` (E0429); v9 complete; tagged `m33` and `v9` at merge
 
 ## Found while working — needs a PRP
 

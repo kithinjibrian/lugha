@@ -146,16 +146,12 @@ impl Parser<'_> {
     fn if_expr(&mut self) -> PResult<Expr> {
         self.nested(|p| {
             let start = p.bump().start;
+            if p.at(&TokenKind::Let) {
+                return p.if_let(start);
+            }
             let cond = p.cond()?;
             let then = p.block()?;
-            let else_ = if p.eat(&TokenKind::Else) {
-                match p.peek() {
-                    TokenKind::If | TokenKind::LBrace => Some(Box::new(p.block_like()?)),
-                    _ => return Err(p.expected("`{` or `if`")),
-                }
-            } else {
-                None
-            };
+            let else_ = p.else_part()?;
             Ok(p.mk(
                 start,
                 ExprKind::If {
