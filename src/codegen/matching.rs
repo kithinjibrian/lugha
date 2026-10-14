@@ -249,7 +249,9 @@ mod tests {
     fn enum_values_share_payloads_and_constructions_copy_places() {
         let src = "enum J { B(i64[]), I }\nfun main() { let xs = [1]; let a = J.B(xs); let b = a; println(xs[0]); }";
         let ir = ir(src);
-        // `xs` is used later, so building the variant copies it; `let b = a` copies nothing more.
-        assert_eq!(ir.matches("call void @llvm.memcpy").count(), 1, "{ir}");
+        // `xs` is used later, so building the variant shares it (v15: marks,
+        // not copies); `let b = a` copies nothing more.
+        assert_eq!(ir.matches("or i64 %cap").count(), 1, "{ir}");
+        assert!(!ir.contains("call void @llvm.memcpy"), "{ir}");
     }
 }

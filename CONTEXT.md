@@ -4877,18 +4877,50 @@ Branch: main
 
 ---
 
-## SESSION 117 — 2026-10-15 — Copy-on-write arrays (milestone 55) — open
+## SESSION 117 — 2026-10-15 — Copy-on-write arrays (milestone 55) — closed
 Branch: prp-084-copy_on_write
+
+### WHAT WAS DONE
+- The user approved PRP-084 and DECISION-012 ("approved. build in one go"); DECISION-010 marked superseded; MEMORY 106.
+- Built copy-on-write: copy sites mark (`cap` top bit), writes own each array on their path through two-phase places (`codegen/cow.rs`, `codegen/places.rs`); `for … of mut` via aliases; interface `mut self` receivers via their place; C grow masks the flag.
+- Probes against the eager v14 compiler found two hazards beyond the plan (`swap` with a copying index; an `of mut` iterator whose body copies its array); both fixed and added to `hazards.la`.
+- Spec v15 at milestone 55 (§4, §5 assignment order, §7, §8, §9, §10 "Copy-on-write", §11, §12 reversed); draft notes; docs.
+- Timings: firefly mlp 5.25 → 4.06 s, gpt 1000 steps 20.06 → 13.82 s, 6000 steps 1 m 43 s → 1 m 30 s; histogram and matmul slower (140 → 217 ms, 143 → 188 ms); particles faster (140 → 86 ms).
+- The user said "carry on, merge when CI is green".
+
+### FILES CREATED OR MODIFIED
+- New: `src/codegen/cow.rs`, `src/codegen/places.rs`, `tests/programs/m55/` (writes, hazards).
+- Modified: codegen `array.rs`, `copy.rs`, `dispatch.rs`, `growth.rs`, `iterators.rs`, `lower.rs`, `matching.rs`, `mod.rs`, `scope.rs`, `stmt.rs`, `structs.rs`, `swap.rs`; `runtime/lugha_rt.c`; `tests/spec.rs`; the v15 spec and draft; CLAUDE.md, README, TODO, CHANGELOG, MEMORY (107), PRP-084.
+
+### TESTS WRITTEN
+- Unit: `a_copy_marks_instead_of_copying`, `a_write_owns_its_array_first`; copy/growth/iterator/matching tests updated to copy-on-write IR.
+- Programs: `m55/writes.la`, `m55/hazards.la`; the §10 "Copy-on-write" program.
+
+### DECISIONS MADE
+- DECISION-012 resolved (copy-on-write); MEMORY 107 records the built design.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m55`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–54 complete.** **Milestone 55 (copy-on-write arrays) is proposed:** decisions 22–24 in `Language v15 Draft.md`, PRP-084, and **DECISION-012 (open), which would supersede DECISION-010**. All wait for the user's explicit approval.
-- **On approval:** resolve DECISION-012 (mark 010 superseded), record MEMORY 106, branch `prp-084-copy_on_write`.
-- **Before changing code:** record the "before" timings (DECISION-010's benchmarks in `docs/decisions/decision-010/`, firefly's `./gpt data/names-32k.txt 6000 32 4 0.1` = 1 m 43 s, `./mlp`, glowworm).
-- **Then build** the four parts: share/own helpers, the cap flag, two-phase places, `for … of mut` by slot, and extern unsharing.
+**Milestones 51–55 complete** (tag `m55`: copy-on-write arrays, PRP-084). firefly trains 13–35% faster; write-only loops pay a flag test per write (histogram +55%, matmul +30%).
 
-This is a correctness-critical change to every array write path.
+Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section):
+- own an array once per loop (removes the write-loop cost above);
+- nested `mut self` calls whose arguments only read the receiver;
+- any number as a `T: Num`;
+- lazy std modules; user-defined `Ord`; the `sum()` cleanup; std.fs/env/process; Unicode follow-ups.
 
 See `TODO.md`.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.

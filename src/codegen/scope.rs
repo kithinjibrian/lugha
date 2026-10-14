@@ -84,10 +84,10 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Loads a local's current value.
-    pub(super) fn load(&self, local: &Local<'ctx>, name: &str) -> BasicValueEnum<'ctx> {
+    pub(super) fn load(&mut self, local: &Local<'ctx>, name: &str) -> BasicValueEnum<'ctx> {
         let ty = llvm_type(self.context, &local.ty);
-        self.builder
-            .build_load(ty, local.ptr, name)
-            .expect(POSITIONED)
+        // A `for … of mut` variable is its element, reached afresh (v15).
+        let at = self.local_address(local.ptr, false);
+        self.builder.build_load(ty, at, name).expect(POSITIONED)
     }
 }

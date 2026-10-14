@@ -54,9 +54,12 @@ impl<'ctx> Lowerer<'ctx> {
         })
     }
 
-    /// A deep copy of `value`: arrays of plain elements by one allocation and
-    /// `llvm.memcpy`; nested arrays and structs holding arrays through
-    /// `lugha_copy_<type>` (spec §9). Anything else is copied by storing it.
+    /// A copy of `value` at a copy site (spec §4). Arrays are copy-on-write
+    /// (v15): the array is marked shared and the pointer kept, and the first
+    /// write clones it (`cow.rs`). A struct holding arrays is copied with
+    /// each of its arrays marked, through `lugha_copy_<type>`; an interface
+    /// value's box is copied the same way. Anything else is copied by
+    /// storing it.
     pub(super) fn deep_copy(
         &mut self,
         value: BasicValueEnum<'ctx>,
@@ -65,10 +68,9 @@ impl<'ctx> Lowerer<'ctx> {
         if !ty.is_deep(&self.structs) {
             return value;
         }
-        if let Type::Array(element) = ty
-            && !element.is_deep(&self.structs)
-        {
-            return self.copy_flat(value.into_pointer_value(), element).into();
+        if let Type::Array(_) = ty {
+            self.mark_shared(value.into_pointer_value());
+            return value;
         }
         let copy = self.copy_function(ty);
         let call = self
@@ -81,8 +83,30 @@ impl<'ctx> Lowerer<'ctx> {
         }
     }
 
-    /// Header and elements in one `memcpy`.
-    fn copy_flat(&self, source: PointerValue<'ctx>, element: &Type) -> PointerValue<'ctx> {
+    /// A one-level clone of an array of arrays or of structs holding arrays,
+    /// each element shared (v15): `lugha_copy_<type>`.
+    pub(super) fn clone_deep(
+        &mut self,
+        source: PointerValue<'ctx>,
+        ty: &Type,
+    ) -> PointerValue<'ctx> {
+        let copy = self.copy_function(ty);
+        let call = self
+            .builder
+            .build_call(copy, &[source.into()], "clone")
+            .expect(POSITIONED);
+        match call.try_as_basic_value() {
+            ValueKind::Basic(result) => result.into_pointer_value(),
+            ValueKind::Instruction(_) => unreachable!("copy functions return the copy"),
+        }
+    }
+
+    /// A clone of an array of plain elements: header and elements in one `memcpy`.
+    pub(super) fn clone_flat(
+        &self,
+        source: PointerValue<'ctx>,
+        element: &Type,
+    ) -> PointerValue<'ctx> {
         let len = self.length(source);
         let copy = self.new_array(len, element);
         let i64_type = self.context.i64_type();
@@ -158,7 +182,8 @@ impl<'ctx> Lowerer<'ctx> {
         copy.into()
     }
 
-    /// A new array with every element deep-copied.
+    /// A new array with every element copied by `deep_copy`, which shares
+    /// the arrays inside (v15).
     fn copy_elements(&mut self, source: PointerValue<'ctx>, ty: &Type) -> PointerValue<'ctx> {
         let element = element_of(ty);
         let len = self.length(source);
@@ -221,27 +246,28 @@ mod tests {
     }
 
     #[test]
-    fn copy_sites_follow_the_spec_table() {
-        // The later reads keep `xs` and `g` alive, so these are copies, not moves.
+    fn copy_sites_share_and_writes_clone() {
+        // The later reads keep `xs` and `g` alive, so these are copies, not
+        // moves: copy-on-write (v15) marks them shared instead of copying.
         let ir = ir(
-            "fun main() { let xs = [1, 2]; let ys = xs; let g = [[1]]; let h = g; println(xs[0] + g[0][0]); }",
+            "fun main() { let xs = [1, 2]; let ys = xs; let g = [[1]]; let mut h = g; h[0][0] = 2; println(xs[0] + g[0][0]); }",
         );
-        assert!(
-            ir.contains("llvm.memcpy"),
-            "plain arrays copy with memcpy: {ir}"
-        );
+        let main = body(&ir, "main");
+        assert!(main.contains("or i64 %cap"), "copies mark: {ir}");
+        // Writing `h` clones it one level, through the helper.
         assert!(
             ir.contains("define internal ptr @lugha_copy_i64_arr_arr(ptr"),
             "{ir}"
         );
+        assert!(main.contains("cow.clone"), "{ir}");
     }
 
     #[test]
-    fn returning_a_parameter_copies_but_a_local_moves() {
+    fn returning_a_parameter_shares_but_a_local_moves() {
         let src = "fun p(a: i64[]): i64[] = a;\nfun l(): i64[] { let a = [1]; a }\nfun main() { let x = p([1]); let y = l(); }";
         let ir = ir(src);
-        assert!(body(&ir, "p").contains("memcpy"), "{ir}");
-        assert!(!body(&ir, "l").contains("memcpy"), "{ir}");
+        assert!(body(&ir, "p").contains("or i64 %cap"), "{ir}");
+        assert!(!body(&ir, "l").contains("or i64 %cap"), "{ir}");
     }
 
     #[test]
@@ -282,19 +308,15 @@ mod tests {
             1,
             "{ir}"
         );
-        assert_eq!(
-            ir.matches("define internal ptr @lugha_copy_4Node_arr(")
-                .count(),
-            1,
-            "{ir}"
-        );
+        // `kids` is only marked shared: no array helper until something writes.
+        assert!(!ir.contains("@lugha_copy_4Node_arr("), "{ir}");
     }
 
     #[test]
-    fn a_dead_source_moves_and_a_live_one_copies() {
+    fn a_dead_source_moves_and_a_live_one_shares() {
         let dead = ir("fun f() { let xs = [1, 2]; let ys = xs; }\nfun main() {}");
-        assert!(!body(&dead, "f").contains("memcpy"), "{dead}");
+        assert!(!body(&dead, "f").contains("or i64 %cap"), "{dead}");
         let live = ir("fun f() { let xs = [1, 2]; let ys = xs; println(xs[0]); }\nfun main() {}");
-        assert!(body(&live, "f").contains("memcpy"), "{live}");
+        assert!(body(&live, "f").contains("or i64 %cap"), "{live}");
     }
 }

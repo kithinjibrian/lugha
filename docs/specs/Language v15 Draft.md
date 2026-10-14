@@ -1,6 +1,6 @@
 # Lugha v15 — Draft (delta against v14)
 
-**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116). Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
+**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116), and built. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
 **Base:** `Language v14 Specification.md`, complete (milestone 50). It stays the source of truth, and what `lughac spec` prints, until v15's first milestone starts `Language v15 Specification.md`. That file then grows milestone by milestone, and v14 is frozen.
 
 This draft lists only what changes, in the order of the v14 sections. Everything not mentioned keeps its v14 meaning.
@@ -208,6 +208,12 @@ Measured in firefly's IR: the copies that cost are `let` bindings that only read
   - For `place = value` and `place op= value`, the place's index expressions run and are bounds-checked first, as §5 requires. Then the value is computed. Then, from the root outward, each array on the path is made unique (cloned and stored back if shared), and the element address is formed.
   - The same applies to `push`, `pop`, `clear`, `swap`, a `mut self` receiver's writes, and `for … of mut`.
   - So an array shared during the right-hand side (`xs[0] += { let c = xs; 1 }`) is never written through a stale pointer.
+
+**Found while building milestone 55 (session 117):**
+- **Decision 23 needs nothing:** §8 already keeps arrays from crossing the C boundary (only numbers, `bool` and strings do), so C never sees one.
+- **No `lugha_own_<type>` helpers:** the uniqueness test is inline (load `cap`, test the sign bit, a cold branch to the clone); the clone reuses the `lugha_copy_<type>` helpers, which now copy one level and mark the arrays inside.
+- **`swap` plans both places before committing either,** and **`for x of mut it` over an iterator re-reaches `it` before every `next`:** otherwise a copy made in between (an index of the second place, or the loop body) would share the array the first address points into.
+- **Interface `mut self` calls reach their receiver through its place,** so the boxed value's arrays are owned like any other.
 - **`for x of mut xs`:** `x` names the element place `xs[k]`, not a raw pointer. Reading `x` loads the current element, and writing `x` makes `xs` unique first. Behaviour is as §5 specifies.
 - **Strings** are unchanged (immutable, shared). Enum payloads were already shared and never written.
 - **IR changes for every program that copies or writes arrays,** so the byte-identical-IR regression check doesn't apply to this milestone. Program output must be identical.

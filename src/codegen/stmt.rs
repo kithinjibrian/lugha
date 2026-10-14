@@ -95,26 +95,30 @@ impl<'ctx> Lowerer<'ctx> {
         place: &Expr,
         value: &Expr,
     ) -> Result<(), CodegenError> {
-        // The place is evaluated once, before the value (spec §5).
-        // A local's slot holds its value as is; fields and elements are
-        // stored in element layout (`bool` as `i8`).
-        let (address, ty, element) = self.place_address(place)?;
+        // The place's indexes are evaluated once, before the value (spec §5);
+        // the arrays on its path are made unique after the value (v15), so a
+        // value that shares one of them is never written through.
+        let plan = self.place_plan(place)?;
+        let ty = self.ty(place);
         let new = match compound_op(op) {
             None => self.value_for_store(value, &ty)?,
             // `a += b` on a struct or enum: `a = a.add(b)` (v15).
             Some(op) if matches!(ty, Type::Struct(..) | Type::Enum(..)) => {
-                let current = self.load_element(address, &ty);
+                let current = self.place_read(place, &plan);
                 let name = super::arith::method_of(op).expect("compound operators are arithmetic");
                 self.operator_on(place, (current, &ty), name, std::slice::from_ref(value))?
             }
             Some(op) => {
                 // `x op= e` reads `x` once, then evaluates `e` (spec §5).
                 // Compound operators need a numeric type, which has no `bool` widening.
-                let current = self.load_element(address, &ty);
+                let current = self.place_read(place, &plan);
                 let rhs = self.get(value, &ty)?;
                 self.arithmetic(op, ty.clone(), current, rhs, at)
             }
         };
+        // A local's slot holds its value as is; fields and elements are
+        // stored in element layout (`bool` as `i8`).
+        let (address, ty, element) = self.place_commit(place, &plan);
         if element {
             self.store_element(address, &ty, new);
         } else {

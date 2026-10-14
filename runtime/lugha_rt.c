@@ -117,7 +117,11 @@ void *lugha_rt_alloc(int64_t size) {
  * doubles, starting at 4. The old object is left to the GC; its single
  * owner switches to the copy (v1 §7). */
 LughaArray *lugha_rt_array_grow(const LughaArray *array, int64_t elem_size) {
-    int64_t cap = array->cap < 2 ? 4 : array->cap * 2;
+    /* The top bit of `cap` is the shared flag (v15). Arrays are made unique
+     * before they grow, so it should be clear, but a set flag would read as
+     * a negative capacity and shrink the array: mask it. */
+    int64_t old_cap = array->cap & INT64_MAX;
+    int64_t cap = old_cap < 2 ? 4 : old_cap * 2;
     if (cap > (INT64_MAX - (int64_t)sizeof(LughaArray)) / elem_size) {
         die("panic: out of memory\n");
     }

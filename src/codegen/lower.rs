@@ -74,6 +74,10 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) ret: Option<Type>,
     /// Local variables in scope.
     pub(super) scopes: Scopes<'ctx>,
+    /// `for x of mut xs` variables (v15): each names the element `xs[k]`,
+    /// keyed by its placeholder slot (`places.rs`).
+    pub(super) aliases:
+        std::collections::HashMap<inkwell::values::PointerValue<'ctx>, super::places::Alias<'ctx>>,
     /// Enclosing loops, innermost last, for `break` and `continue`.
     pub(super) loops: Vec<Loop<'ctx>>,
     /// String literals and the file name, emitted once each.
@@ -151,6 +155,7 @@ pub(super) fn lower<'ctx>(
         function: None,
         ret: None,
         scopes: Scopes::default(),
+        aliases: std::collections::HashMap::new(),
         loops: Vec::new(),
         constants: Constants::default(),
         source: OwnedSource {

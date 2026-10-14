@@ -161,7 +161,21 @@ impl<'ctx> Lowerer<'ctx> {
         } else {
             element_of(&array_type)
         };
-        let array = self.get(iter, &array_type)?.into_pointer_value();
+        // `of mut` (v13) writes the array, so it is reached as a place and made
+        // unique (v15); its variable is re-reached through that place on every
+        // use, so a copy of the array made in the body is never written.
+        let plan = if in_place {
+            Some(self.place_plan(iter)?)
+        } else {
+            None
+        };
+        let array = match &plan {
+            Some(plan) => {
+                let (slot, _, _) = self.place_commit(iter, plan);
+                self.own(slot, &array_type)
+            }
+            None => self.get(iter, &array_type)?.into_pointer_value(),
+        };
         let len = self.length(array);
         let i64_type = self.context.i64_type();
         let counter = self.entry_alloca(&Type::I64, "of.i");
@@ -192,15 +206,25 @@ impl<'ctx> Lowerer<'ctx> {
 
         self.builder.position_at_end(body_block);
         self.scopes.push();
-        let address = if string {
-            self.byte_address(array, i)
+        // `of mut` (v13): the variable names the element (`places.rs::Alias`).
+        let slot = if let Some(plan) = &plan {
+            // Never loaded or stored: only a key for `aliases`, which every
+            // use of the variable looks up (`scope.rs::load`, `walk`).
+            let key = self.entry_alloca(&element, &format!("{}.alias", var.name));
+            let alias = super::places::Alias {
+                place: iter.clone(),
+                plan: plan.clone(),
+                counter,
+                element: element.clone(),
+            };
+            self.aliases.insert(key, alias);
+            key
         } else {
-            self.element_address(array, i, self.element_size(&element))
-        };
-        // `of mut` (v13): the variable is the element itself.
-        let slot = if in_place {
-            address
-        } else {
+            let address = if string {
+                self.byte_address(array, i)
+            } else {
+                self.element_address(array, i, self.element_size(&element))
+            };
             let item = self.load_element(address, &element);
             let slot = self.entry_alloca(&element, &var.name);
             self.builder.build_store(slot, item).expect(POSITIONED);

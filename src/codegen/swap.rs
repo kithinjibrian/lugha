@@ -16,10 +16,13 @@ impl<'ctx> Lowerer<'ctx> {
         let [a, b] = args else {
             unreachable!("checked: E0405 enforces swap's two arguments")
         };
-        // Both addresses first, so element places are bounds-checked before
-        // either is written (spec §5: left to right).
-        let (a, ty, a_element) = self.place_address(a)?;
-        let (b, _, b_element) = self.place_address(b)?;
+        // Both places' indexes first, left to right, bounds-checked before
+        // either is written (spec §5); only then are their arrays made
+        // unique (v15), so an index of `b` that copies `a`'s array can't
+        // leave `a` pointing into a shared one.
+        let (a_plan, b_plan) = (self.place_plan(a)?, self.place_plan(b)?);
+        let (a, ty, a_element) = self.place_commit(a, &a_plan);
+        let (b, _, b_element) = self.place_commit(b, &b_plan);
         let first = self.read(a, &ty, a_element);
         let second = self.read(b, &ty, b_element);
         self.write(a, &ty, a_element, second);

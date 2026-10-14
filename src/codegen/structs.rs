@@ -6,11 +6,10 @@
 //! elements, so a `bool` field is an `i8`.
 
 use inkwell::types::BasicTypeEnum;
-use inkwell::values::{BasicValueEnum, PointerValue};
+use inkwell::values::BasicValueEnum;
 
 use super::CodegenError;
 use super::lower::{Lowerer, POSITIONED};
-use super::value::llvm_type;
 use crate::ast::{Expr, Ident};
 use crate::check::{Enums, Structs, Type};
 
@@ -62,7 +61,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// The position and type of `field` in struct type `ty`.
-    fn field_index(&self, ty: &Type, field: &str) -> (u32, Type) {
+    pub(super) fn field_index(&self, ty: &Type, field: &str) -> (u32, Type) {
         let Type::Struct(..) = ty else {
             unreachable!("checked: {ty} is a struct")
         };
@@ -124,37 +123,6 @@ impl<'ctx> Lowerer<'ctx> {
             .build_extract_value(aggregate, index, &field.name)
             .expect("checked: the field exists");
         Ok(self.loaded_form(raw, &field_ty))
-    }
-
-    /// The address and type of a place (spec §3): a local's slot, a field of
-    /// a place, or a bounds-checked element. Evaluated once, before the value
-    /// (spec §5). `true` when the place is stored in element layout.
-    pub(super) fn place_address(
-        &mut self,
-        place: &Expr,
-    ) -> Result<(PointerValue<'ctx>, Type, bool), CodegenError> {
-        use crate::ast::ExprKind;
-        Ok(match &place.kind {
-            ExprKind::Name(name) => {
-                let local = self.scopes.lookup(name);
-                (local.ptr, local.ty, false)
-            }
-            ExprKind::Field(base, field) => {
-                let (base_address, base_ty, _) = self.place_address(base)?;
-                let (index, field_ty) = self.field_index(&base_ty, &field.name);
-                let llvm = llvm_type(self.context, &base_ty).into_struct_type();
-                let address = self
-                    .builder
-                    .build_struct_gep(llvm, base_address, index, &field.name)
-                    .expect("checked: the field exists");
-                (address, field_ty, true)
-            }
-            ExprKind::Index(base, open, index) => {
-                let (address, ty) = self.element_place(base, open.start, index)?;
-                (address, ty, true)
-            }
-            _ => unreachable!("checked: E0502 rejects other places"),
-        })
     }
 
     /// A value as it is held in memory: `bool` widened to `i8`.

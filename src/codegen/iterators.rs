@@ -37,13 +37,21 @@ impl<'ctx> Lowerer<'ctx> {
         let element = self.concrete(&info.element);
         let option = Type::Option(Box::new(element.clone()));
         // `of mut` (v13) steps the place itself; otherwise a hidden copy.
-        let slot = if in_place {
-            self.place_address(iter)?.0
+        // The place's indexes are evaluated once, but its address is
+        // re-reached before every `next` (v15): the body may copy an array
+        // on the way, and the old address would then point into the copy.
+        let plan = if in_place {
+            Some(self.place_plan(iter)?)
         } else {
+            None
+        };
+        let hidden = if plan.is_none() {
             let value = self.value_for_store(iter, &ty)?;
             let slot = self.entry_alloca(&ty, "iter");
             self.builder.build_store(slot, value).expect(POSITIONED);
-            slot
+            Some(slot)
+        } else {
+            None
         };
         let (next, body_block, exit) = (
             self.append("iter.next"),
@@ -53,6 +61,11 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(next);
 
         self.builder.position_at_end(next);
+        let slot = match (&plan, hidden) {
+            (Some(plan), _) => self.place_commit(iter, plan).0,
+            (None, Some(slot)) => slot,
+            (None, None) => unreachable!("a loop has a plan or a hidden copy"),
+        };
         let result = self.call_next(&ty, &info, slot, &option);
         let stepped = self.entry_alloca(&option, "stepped");
         self.builder.build_store(stepped, result).expect(POSITIONED);
@@ -198,5 +211,7 @@ mod tests {
             !main.contains("%x = alloca"),
             "the element is the variable: {main}"
         );
+        // Each write reaches the element through `xs`, owning it (v15).
+        assert!(main.contains("cow.clone"), "{main}");
     }
 }

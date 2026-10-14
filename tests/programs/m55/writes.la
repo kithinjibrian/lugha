@@ -1,0 +1,73 @@
+// Copy-on-write (v15): every copy stays independent through every write
+// path. The output is the same as with eager copies.
+struct Bag { items: i64[], name: string }
+
+impl Bag {
+    fun add(mut self, x: i64) { self.items.push(x); }
+    fun set(mut self, i: i64, x: i64) { self.items[i] = x; }
+}
+
+fun echo(xs: i64[]): i64[] = xs;
+
+fun main() {
+    // Assignment after a copy, and the copy after a write.
+    let mut a = [1, 2, 3];
+    let b = a;
+    a[0] = 10;
+    println("{a} {b}");
+
+    // Passing and returning a parameter.
+    let mut c = echo(b);
+    c[1] = 20;
+    println("{b} {c}");
+
+    // push, pop and clear on a shared array.
+    let mut d = b;
+    d.push(4);
+    let mut e = b;
+    let popped = e.pop();
+    let mut f = b;
+    f.clear();
+    println("{b} {d} {e} {popped} {f}");
+
+    // Compound assignment.
+    let mut g = b;
+    g[2] += 100;
+    g[0] *= 7;
+    println("{b} {g}");
+
+    // swap between and within shared arrays.
+    let mut h = b;
+    let mut k = b;
+    swap(h[0], k[2]);
+    swap(h[1], h[2]);
+    println("{b} {h} {k}");
+
+    // Nested arrays: shared outer and inner.
+    let mut grid = [[1, 2], [3, 4]];
+    let snapshot = grid;
+    let row = grid[1];
+    grid[1][0] = 30;
+    grid[0].push(5);
+    println("{grid} {snapshot} {row}");
+
+    // Struct fields holding arrays, and `mut self` methods.
+    let mut bag = Bag { items: [1, 2], name: "bag" };
+    let copy = bag;
+    let items = bag.items;
+    bag.add(3);
+    bag.set(0, 9);
+    println("{bag.items} {copy.items} {items}");
+
+    // Arrays of structs holding arrays.
+    let mut bags = [bag, copy];
+    let saved = bags;
+    bags[0].items[1] = 77;
+    bags[1].add(8);
+    println("{bags[0].items} {bags[1].items} {saved[0].items} {saved[1].items}");
+
+    // Repeat literals share one value until written.
+    let mut rows = [[0, 0]; 3];
+    rows[1][1] = 5;
+    println("{rows}");
+}

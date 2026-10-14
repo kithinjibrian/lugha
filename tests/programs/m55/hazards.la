@@ -1,0 +1,104 @@
+// The hard cases for copy-on-write: a copy made while a write is under
+// way. Each must leave the copy unchanged, exactly as eager copies did.
+struct Holder { xs: i64[] }
+
+struct Count { n: i64, seen: i64[] }
+
+impl Count {
+    fun next(mut self): Option<i64> {
+        self.n += 1;
+        self.seen.push(self.n);
+        if self.n > 3 {
+            return None;
+        }
+        Some(self.n)
+    }
+}
+
+fun keep(xs: i64[]): i64[] = xs;
+
+fun main() {
+    // The right-hand side shares the array being written.
+    let mut a = [1, 2, 3];
+    let mut kept: i64[] = [];
+    a[0] += {
+        kept = a;
+        100
+    };
+    println("{a} {kept}");
+
+    let mut b = [5, 6];
+    let mut seen: i64[] = [];
+    b[1] = {
+        seen = b;
+        60
+    };
+    println("{b} {seen}");
+
+    // `for … of mut` whose body copies the array, then writes the element.
+    let mut xs = [1, 2, 3];
+    let mut copies: i64[][] = [];
+    for x of mut xs {
+        copies.push(xs);
+        x *= 10;
+    }
+    println("{xs} {copies}");
+
+    // The same through a function that returns its parameter.
+    let mut ys = [1, 2];
+    let mut via: i64[][] = [];
+    for y of mut ys {
+        via.push(keep(ys));
+        y += 1;
+        via.push(keep(ys));
+    }
+    println("{ys} {via}");
+
+    // A loop variable that is a struct holding an array.
+    let mut hs = [Holder { xs: [1] }, Holder { xs: [2] }];
+    let mut before: Holder[] = [];
+    for h of mut hs {
+        before.push(h);
+        h.xs.push(0);
+        h.xs[0] *= 3;
+    }
+    println("{hs[0].xs} {hs[1].xs} {before[0].xs} {before[1].xs}");
+
+    // Closures and interface-free captures hold their own copy.
+    let mut zs = [1, 2];
+    let show = fun(): string = "{zs}";
+    zs[0] = 9;
+    println("{zs} {show()}");
+
+    // `swap` whose second index copies the first place's array.
+    let mut p = [1, 2];
+    let mut q = [3, 4];
+    let mut r: i64[] = [];
+    swap(p[0], q[{
+        r = p;
+        0
+    }]);
+    println("{p} {q} {r}");
+
+    // An iterator stepped in place inside an array the body copies.
+    let mut cs = [Count { n: 0, seen: [] }];
+    let mut held: Count[] = [];
+    for v of mut cs[0] {
+        held = cs;
+        print("{v} ");
+    }
+    println("{cs[0].n} {cs[0].seen} {held[0].n} {held[0].seen}");
+
+    // The same through interface values.
+    let mut its: Iter<i64>[] = [Count { n: 0, seen: [] }];
+    let mut got: Iter<i64>[] = [];
+    for v of mut its[0] {
+        got = its;
+        print("{v} ");
+    }
+    let mut rest = got[0];
+    for v of mut rest {
+        print("{v} ");
+    }
+    println("");
+}

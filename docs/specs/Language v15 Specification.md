@@ -2,17 +2,18 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 51–54 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
+**Status:** in progress (milestones 51–55 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
 
 **v14.** This is v13 plus binary I/O, `char`, tuples, `format`, import aliases and whole-module re-exports, and git packages (milestones 45–50).
 
-**Changes since v14** (milestones 51–54):
+**Changes since v14** (milestones 51–55):
 - A package's `[package]` table may give its `name`, checked against the key a manifest lists it under (E0327), and its `source`, the folder its modules start in: with `source = "src"`, `src/array.la` of package `glowworm` is `glowworm.array` (section 6).
 - A program with no `lugha.toml` beside its main file uses the nearest one above it, looking no further than a folder with `.git` or the home folder; when that manifest names a package, the program imports it by that name, so `glowworm/examples/basics.la` writes `import glowworm.array;` with no manifest of its own (section 6).
 - A file imported as two modules is E0328 (section 6).
 - A manifest path such as `".."` resolves when the main file is given with a folder (`lughac run example/main.la`); v14 reported E0322.
 - Operator overloading: `a + b` on a struct, enum or interface value calls `a.add(b)`, and likewise `-` `sub`, `*` `mul`, `/` `div`, `%` `rem` and unary `-` `neg`, for a method of the operator's shape; `a += b` is `a = a.add(b)`. The prelude's `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` and `Num` are bounds that the numbers (and `string`, for `Add`) satisfy, so `fun add<T: Add>(a: T, b: T): T = a + b;` works for numbers, strings and your own types; `0` and `1` are values of a `T: Num`. An `impl` block may bound its parameters, `impl Grid<T: Num> { … }` (sections 3–5).
 - A standard library: `import std.math;` loads a module bundled with `lughac`, only when imported. `std.math` has `sqrt`, `pow`, `exp`, `ln`, `log10`, `sin`, `cos`, `tan`, `atan2`, `floor`, `ceil` and `round` for any `T: Float` (`f32` or `f64`, a new prelude bound), `abs`, `min`, `max` and `clamp`, and `pi()` and `e()`. `std` is a reserved package name (sections 4, 6, "The standard library").
+- Arrays are copy-on-write: a copy shares the array until either side writes to it, so copying costs a constant time and reading a copy never copies. Every copy still behaves as an independent value, and no program's output changes (sections 4, 5, 7, 9, 12).
 - `std.random`: `random.seeded(42)` or `random.from_os()` makes a generator (xoshiro256\*\*, not cryptographically secure) with `uniform`, `below`, `between`, `normal`, `chance`, `choice` and `shuffle` ("The standard library").
 
 Every valid v14 program and package is a valid v15 one: a module's own type or interface named `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` or `Num` still means its own, as for `Iter`.
@@ -446,7 +447,7 @@ There is no null. Every string and array variable holds a valid object.
 - List literal `[a, b, c]`. All elements must have the same type. An empty literal `[]` needs an expected type from context, such as `let xs: i64[] = [];`.
 - Repeat literal `[value; count]`, where `count` is a runtime `i64`. Every element is a copy of `value`. `value` is evaluated once, before `count`. A negative `count` panics with `negative array length`; a `count` of 0 gives an empty array.
 
-**Array copies.** The compiler copies an array only when it is read from an existing place and stored into another one. Fresh arrays and function arguments are never copied.
+**Array copies.** The compiler copies an array only when it is read from an existing place and stored into another one. Fresh arrays and function arguments are never copied. Since v15 a copy is *shared until written* (copy-on-write): the copy site only marks the array shared, in constant time, and whichever side next writes to it copies it first. A program can't tell the difference: in the table, "copied" means the new place behaves as its own array.
 
 | Situation | Copied? | Why |
 | --- | --- | --- |
@@ -461,7 +462,7 @@ There is no null. Every string and array variable holds a valid object.
 
 A function's tail value follows the same rules as `return`: a body ending in `p` copies, and one ending in `xs` moves. "From a place" looks through `if` and block tails: `let ys = if c { xs } else { [0] };` copies. When the value comes from a local that is never used again, the compiler may move it instead of copying; no program can tell the difference.
 
-Copies are deep. Copying an `i64[][]` copies every inner array, and copying a struct copies the arrays inside it. Strings inside are shared, since they are immutable.
+Copies are deep. Copying an `i64[][]` copies every inner array, and copying a struct copies the arrays inside it. Strings inside are shared, since they are immutable. With copy-on-write (v15) a deep copy happens a level at a time: writing `g[0][1]` after `let h = g;` copies `g`'s outer array and the one inner array written, and leaves the other inner arrays shared.
 
 **Strings.** Immutable. `.len` gives the length in bytes as `i64`. `s[i]` reads one byte as `u8`, bounds-checked, with `i` of any integer type (v14). `s.to_bytes()` (v14) gives the bytes as a new `u8[]`. `+` concatenates two strings into a new one. `==` and `!=` compare contents. `<`, `<=`, `>` and `>=` compare bytewise: the first differing byte decides, compared as an unsigned value, and a proper prefix is smaller (`"ab" < "abc"`). This is the order of C's `memcmp` and needs no Unicode tables.
 
@@ -662,6 +663,8 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 
 Evaluation is strictly left to right: operands, call arguments and struct-literal fields are evaluated in source order. The only exceptions are `&&` and `||`, which skip their right operand when the left decides the result.
 
+**Assignment order.** `place = value` and `place op= value` first evaluate the place's index expressions, root outward, bounds-checking each; then the value (for `op=`, the place's current value, then the right operand); then the write. So in `xs[i] = e`, an `e` that copies `xs` keeps the array as it was before the write (v15 spells this out; it is what every version did). `push`'s argument is likewise evaluated before the array is changed.
+
 **Operator overloading** (v15). `a op b` where `a` is a struct, enum or interface value calls a method of `a`'s type: `+` `add`, `-` `sub`, `*` `mul`, `/` `div`, `%` `rem`, and unary `-a` `neg`.
 - **Shape:** the method qualifies when it has a plain `self` receiver (not `mut self`), exactly one parameter (none for `neg`) and a result. No declaration is needed, as for interfaces. A method of that name with another shape doesn't make an operator, so a set's `fun add(mut self, x: i64)` leaves `set + 1` an error.
 - **Types:** `b` is checked against the method's parameter (E0403; a literal of the wrong kind, E0401) and the result has the method's return type, so `fun mul(self, k: f64): Vec2` makes `v * 2.0` a `Vec2`. Each type has one method per operator; the left operand decides, so `2.0 * v` is E0404.
@@ -775,7 +778,7 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 **for over an array.** `for x of xs { body }` binds each element in order. `xs` is evaluated once and is not copied. `x` is an immutable binding to the element, so assigning to `x` is an error; write `xs[i]` with a range loop to modify elements. The body may not assign to `xs` or any part of it, which is checked at compile time, so the loop always sees the array as it was when the loop started. Strings are not iterable in v0.
 
 **for over `mut`** (v13). `for x of mut e { body }` loops over `e` itself rather than a copy. `e` must be a variable, field or element (E0502) rooted in a `let mut` local or `mut self` (E0501); a string is E0506.
-- **Over an array,** `x` is each element in turn, not a copy: `x = v`, `x += 1`, `x.field = v` and `mut self` calls on `x` change the array. `x` is still a borrowed value, so storing or returning it copies.
+- **Over an array,** `x` is each element in turn, not a copy: `x = v`, `x += 1`, `x.field = v` and `mut self` calls on `x` change the array. `x` is still a borrowed value, so storing or returning it copies. The body may copy `e` (`let c = xs;`): later writes to `x` change `e` only, never the copy.
 - **Over an iterator,** `next` is called on `e` itself, so after a `break` the iterator stands where the loop left it and a later loop resumes it. `x` is an immutable value, as without `mut`.
 - **Guard:** in either case the body may not assign to `e`, grow or shrink it, or call its `mut self` methods (E0507), since the loop is using it; it may read it.
 
@@ -1051,7 +1054,9 @@ Value types live on the stack; strings and arrays live on a garbage-collected he
 
 Elements are laid out with LLVM's natural alignment for `T`. An array's capacity is never visible to programs: literals, repeat literals and copies are full (`cap == len`), and `push` on a full array allocates a new one with double the capacity (at least 4), copies the elements, and stores the new pointer in the array's place — its only owner, so no other pointer sees the old object. String data is always followed by a NUL byte, so it can be passed to C without copying. String literals are emitted as private constant globals with the same layout, and are never freed.
 
-Because of value semantics (section 4), every array is owned by exactly one variable, field or element, except while it is lent to a function call. Only strings are shared, and they are immutable.
+**Copy-on-write** (v15). The top bit of an array's `cap` word is its *shared* flag, so capacities use 63 bits and the header stays 16 bytes. A copy site sets the flag and shares the pointer. Before any write into an array — an assignment through it, `push`, `pop`, `clear`, `swap`, a `mut self` call or `for … of mut` — the array is made unique: if the flag is set, it is cloned one level (its elements copied, and any array held in them marked shared in turn) and the clone, unshared and full, replaces it in the place that held it. The flag is sticky: an array once shared stays marked, so its other holders clone it if they ever write. No reference counts are kept, which Boehm doesn't provide. A clone that turns out to be the last holder costs one extra copy, never a wrong result.
+
+So, as far as programs can tell, every array is owned by exactly one variable, field or element. Only unwritten arrays and strings, which are immutable, are actually shared.
 
 **Collection.** Boehm scans the stack, registers and the GC heap for anything that looks like a pointer into the heap. Objects with no such pointer are reclaimed. Two consequences matter for v0:
 
@@ -1072,7 +1077,7 @@ extern fun abs(x: i32): i32;
 extern fun sqrt(x: f64): f64;
 ```
 
-**Allowed types.** Extern signatures may use only the types below. Structs, arrays, enums, `Option`, function values and interface values (v5), generic or not, cannot cross the boundary: C can't call a Lugha function.
+**Allowed types.** Extern signatures may use only the types below. Structs, arrays, enums, `Option`, function values and interface values (v5), generic or not, cannot cross the boundary: C can't call a Lugha function. So C never sees an array, and copy-on-write (v15) needs nothing at the boundary; strings are immutable.
 
 | Lugha type | C type | Passed as |
 | --- | --- | --- |
@@ -1105,7 +1110,8 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - A default method (v5) compiles once per type that uses it, through a table or a bound: `lugha_fn_<Interface>.<method><Type>` (`lugha_fn_Error.report<ParseError>`); that type's table slot, bound calls and (v10) calls on the type itself use it. A generic interface's default (v6) compiles once per type and interface arguments, the arguments printed on the interface: `lugha_fn_Source<i64>.skip<Count>`. A converted `?` error is boxed on the failure branch, like any conversion. A program without interface values has none of these.
 - Printing a value that isn't a number, `bool` or `string` (v12) calls `lugha_show_<type>(value) -> string`, named like the copy helpers (`lugha_show_5Point`, `lugha_show_i64_arr`) and emitted once, only when used: it calls the type's `show`, or builds the built-in form with `lugha_rt_str_concat` and quotes strings with `lugha_rt_str_quote`. A generic type's `show` is listed as an instance wherever such a value is printed, inside other values and through type parameters too. An interface type's helper, built at the end of lowering, compares the value's identity slot with each concrete type the program has a table of for that interface and prints the box's value by its rules; dispatch tables are unchanged. A function value prints the literal `<fun>`. `unwrap()` on a `Result` builds its panic message in the failing branch from the error's text. Programs printing only numbers, `bool` and strings, and calling no `unwrap()` on a `Result`, give byte-identical IR.
 - `Self` in `impl` blocks and in struct and enum declarations (v10, v13) is replaced by the parser with the type it stands for, so the checker and codegen see the type's own name.
-- `for x of mut e` (v13) works on `e`'s address: over an array, `x` is a local whose storage is the element itself (an `i1` occupies one byte, so `bool` elements alias too); over an iterator, `next` is called on `e`'s own storage instead of a hidden copy.
+- `for x of mut e` (v13) works on `e`'s place: over an array, `x` names the element itself (an `i1` occupies one byte, so `bool` elements alias too); over an iterator, `next` is called on `e`'s own storage instead of a hidden copy. Since v15 the element (or iterator) is reached afresh through `e`'s place, made unique, at each use, with the index expressions of `e` evaluated once before the loop.
+- **Copy-on-write places** (v15): a write lowers in two phases. The plan evaluates the place's index expressions and bounds-checks them; the commit walks from the root slot, loading each array on the path, testing its shared flag (`cap < 0`) and, if set, cloning it and storing the clone back into the slot, then forms the element address. Assignment plans, evaluates the value, then commits; `swap` plans both places before committing either.
 - The v13 iterator helpers are Lugha in the prelude's third file, compiled only when reached like the others. `flat_map` keeps its current inner iterator in a 0- or 1-element array, so `next` steps it in place.
 - A format specifier (v13) is parsed once by the checker (E0431) and again by codegen, which passes its parts to `lugha_rt_fmt_int`, `lugha_rt_fmt_float` or `lugha_rt_pad`, from a runtime fragment `format.c`. Programs without specifiers give byte-identical IR.
 - `format` (v14) splits its template into text and holes in the checker and again in codegen, then lowers like an interpolated string with the arguments as its parts. Programs without `format` give byte-identical IR.
@@ -1151,7 +1157,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 - **if expressions:** lower each branch to its own basic block, as for statements, and merge a non-`void` result with a `phi` in the join block. A branch that definitely returns contributes no incoming edge.
 - **Float-to-int casts:** the `llvm.fptosi.sat` intrinsic gives the saturating behavior in section 4.
 - **Opaque pointers:** every `load`, `store` and `getelementptr` needs its element type, taken from the checker's type table.
-- **Array copies:** generate one deep-copy function per type that contains arrays (for example `lugha_copy_i64_arr_arr`, or `lugha_copy_5Point_arr` — struct names are length-prefixed so they can't be confused with `_arr` or primitive names; the `lugha_copy_` prefix is disjoint from `lugha_fn_` and `lugha_rt_`), and call it at each copy site listed in section 4. For arrays of plain values, the copy is one `lugha_rt_alloc` plus `llvm.memcpy`.
+- **Array copies:** generate one deep-copy function per type that contains arrays (for example `lugha_copy_i64_arr_arr`, or `lugha_copy_5Point_arr` — struct names are length-prefixed so they can't be confused with `_arr` or primitive names; the `lugha_copy_` prefix is disjoint from `lugha_fn_` and `lugha_rt_`), and call it to clone a shared array before a write (v15). A copy site itself only marks arrays shared: `or` of the flag into `cap`, through the struct, interface box and closure copies that reach them. For arrays of plain values, a clone is one `lugha_rt_alloc` plus `llvm.memcpy`; for arrays of arrays, the helper copies the outer array and marks the inner ones.
 - **Deep equality:** generate one `lugha_eq_<type>(T, T) -> i1` per struct, enum, `Option` or array type compared, with the copy helpers' type names (`lugha_eq_1L_opt` for `Option<L>`). Numbers and `bool` compare inline, and strings through `lugha_rt_str_eq`.
 - **Struct, enum and array arguments:** pass a pointer to the caller's storage rather than the value itself, since the callee can't modify it.
 - **`?`** (v4): the operand goes in a slot and its tag picks the branch. The failing branch builds the function's own `Err(e)` (or `None`) from the payload and returns it; the passing branch loads the `Ok`/`Some` payload.
@@ -1174,7 +1180,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_panic_bounds(len, index, file, line, col)` | The out-of-bounds panic, with the length and index |
 | `lugha_rt_str_eq(a, b)` | Implement string `==` and `!=`; returns 1 or 0 as `i32` |
 | `lugha_rt_str_cmp(a, b)` | Implement string `<`, `<=`, `>`, `>=`; returns −1, 0 or 1 as `i32` (v2) |
-| `lugha_rt_array_grow(array, elem_size)` | A copy of a full array with double the capacity (at least 4), for `push` |
+| `lugha_rt_array_grow(array, elem_size)` | A copy of a full array with double the capacity (at least 4), for `push`; the copy is unshared |
 | `lugha_rt_print_*` / `lugha_rt_to_string_*` | One per primitive type (plus `lugha_rt_print_str`), for the intrinsics; `bool` and `u8` arguments are passed zero-extended to 32 bits; `u32` goes to the `u64` functions zero-extended (v7), as does `u16`, and `i8`/`i16` go to the `i64` ones sign-extended (v10) |
 | `lugha_rt_str_quote(s)` | `s` quoted and escaped, for strings inside a printed value (v12) |
 | `lugha_rt_os_seed()` | 64 bits of OS entropy for `std.random`'s `from_os()` (v15): `getrandom`, else `/dev/urandom`, else a panic |
@@ -2765,6 +2771,39 @@ fun main() {
 }
 ```
 
+**Copy-on-write** (milestone 55). Prints `[10, 2, 3] [1, 2, 3]`, `[[0, 0], [7, 0], [9]] [[0, 0], [0, 0]]`, `[0.5, 2.5] [0.5, 1.5]`, `[1.0, 3.0] [0.5, 1.5]` on four lines, exits with 0. Every copy keeps its values, exactly as with v14's eager copies.
+
+```
+// Copy-on-write (v15): copies share an array until one side writes, and
+// every write leaves the other copies as they were.
+struct Layer { weights: f64[] }
+
+fun scaled(xs: f64[], k: f64): f64[] {
+    let mut ys = xs;
+    for y of mut ys { y *= k; }
+    ys
+}
+
+fun main() {
+    let mut a = [1, 2, 3];
+    let b = a;
+    a[0] = 10;
+    println("{a} {b}");
+
+    let mut grid = [[0; 2]; 2];
+    let saved = grid;
+    grid[1][0] = 7;
+    grid.push([9]);
+    println("{grid} {saved}");
+
+    let mut net = [Layer { weights: [0.5, 1.5] }];
+    let w = net[0].weights;
+    net[0].weights[1] += 1.0;
+    println("{net[0].weights} {w}");
+    println("{scaled(w, 2.0)} {w}");
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2825,6 +2864,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 52 | Operator overloading (v15) | `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, compound assignment, the prelude's `Add`…`Neg` and `Num` bounds, `0`/`1` as `T: Num`, bounds on `impl` blocks | The operator-overloading program in section 10 passes (done) |
 | 53 | The std library and `std.math` (v15) | bundled `std.<module>` modules, `std` reserved, `$` built-ins in bundled sources, the `Float` bound, `std.math` | The standard-library program in section 10 passes (done) |
 | 54 | `std.random` (v15) | a xoshiro256\*\* `Rng`: `seeded`, `from_os`, `uniform`, `below`, `between`, `normal`, `chance`, `choice`, `shuffle`; runtime `lugha_rt_os_seed` | The random-numbers program in section 10 passes (done) |
+| 55 | Copy-on-write arrays (v15) | the shared flag in `cap`, marking at copy sites, cloning before writes, two-phase places, `for … of mut` through the place | The copy-on-write program in section 10 passes; every earlier program prints the same (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -2857,7 +2897,7 @@ fun main(): i32 {
 These choices were made provisionally to keep the spec complete. Each is easy to change before implementation starts.
 
 - [x] **Return type syntax.** `fun f(): i32` (TypeScript) was chosen over `fun f() -> i32` (Rust) so that `:` always introduces a type.
-- [x] **Cost of array copies.** Decided: eager deep copies, measured on realistic programs. Copy-on-write would rarely help, because most copied arrays are written right away, so it would copy anyway. It would also need a reference count on every array, which Boehm doesn't provide. To change an array inside a struct or another array, write through the place (`ps[i].pos[0] += 1.0`) rather than copying the element out and back in.
+- [x] **Cost of array copies.** Decided in v15: copy-on-write with a sticky shared flag (milestone 55), reversing v0's eager deep copies. v0 judged that most copied arrays are written right away and that copy-on-write needs reference counts. Real programs proved otherwise: firefly's autograd copies arrays to read them (`let g = self.grads[i];`), and a sticky flag needs no counts, at the price of one extra copy when an array's last holder writes it. Measured: firefly's MLP and GPT training run 13–35% faster (1 m 43 s to 1 m 30 s for 6000 GPT steps; 20.1 s to 13.8 s for 1000). Each write now tests a flag on every array along its path, which slows tight loops that only write (a histogram count loop, a matrix multiply) by up to about 50%; owning an array once before such a loop is a later optimization. Writing through the place (`ps[i].pos[0] += 1.0`) is still cheapest.
 - [x] **Default integer type.** Decided: unannotated integer literals are `i64`. This matches `.len` and array indexes, so loop counters need no casts, and it pushes the overflow trap out to about 9.2 quintillion. Use `i32` explicitly where memory in large arrays matters.
 - [x] **Integer overflow.** Decided: always trap, like Swift, rather than wrapping or Rust's debug-only checks. One behavior in every build, at a cost of a few percent. Explicit wrapping operations can come later.
 - [x] **Semicolons.** Required, which keeps the parser simple. TypeScript-style automatic semicolon insertion is possible later but adds edge cases.

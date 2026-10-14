@@ -24,13 +24,19 @@ impl<'ctx> Lowerer<'ctx> {
     ) -> Result<Value<'ctx>, CodegenError> {
         let ty = self.ty(base);
         let element = element_of(&ty);
-        let (place, _, _) = self.place_address(base)?;
+        // `push`'s value may read (even share) the array, so the array is
+        // reached and made unique after the value (v15).
+        let plan = self.place_plan(base)?;
+        if name == "push" {
+            let value = self.value_for_store(&args[0], &element)?;
+            let (place, _, _) = self.place_commit(base, &plan);
+            self.own(place, &ty);
+            self.push(place, &element, value);
+            return Ok(Value::Void);
+        }
+        let (place, _, _) = self.place_commit(base, &plan);
+        self.own(place, &ty);
         match name {
-            "push" => {
-                let value = self.value_for_store(&args[0], &element)?;
-                self.push(place, &element, value);
-                Ok(Value::Void)
-            }
             "pop" => Ok(Value::Val(self.pop(place, &element))),
             "clear" => {
                 let array = self.array_in(place);
@@ -160,7 +166,9 @@ mod tests {
         let call = ir
             .find("call ptr @lugha_rt_array_grow(")
             .expect("grow call");
-        assert!(grow < call && ir.contains("icmp eq i64 %len, %cap"), "{ir}");
+        // The names carry numbers once the copy-on-write check comes first.
+        let full = ir.find("%full = icmp eq i64 %len").expect("the full test");
+        assert!(full < grow && grow < call, "{ir}");
     }
 
     #[test]

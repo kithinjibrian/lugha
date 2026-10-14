@@ -81,7 +81,23 @@ impl<'ctx> Lowerer<'ctx> {
         let index = index.expect("checked: the interface declares the method");
         let method = methods[index].clone();
         let ty = self.ty(base);
-        let pair = self.get(base, &ty)?.into_struct_value();
+        // A `mut self` method writes the box in place, so the receiver is
+        // reached as a place, making each array on the way unique (v15):
+        // an array cloned that way copies its interface values' boxes.
+        let pair = if method.mutable {
+            let (address, place_ty, element) = self.place_address(base)?;
+            if element {
+                self.load_element(address, &place_ty)
+            } else {
+                let llvm = llvm_type(self.context, &place_ty);
+                self.builder
+                    .build_load(llvm, address, "receiver")
+                    .expect(POSITIONED)
+            }
+            .into_struct_value()
+        } else {
+            self.get(base, &ty)?.into_struct_value()
+        };
         let (table, boxed) = self.parts(pair);
         let slot = u32::try_from(index).expect("method count fits in u32") + SLOTS;
         let code = self.slot(table, slot);

@@ -1638,11 +1638,24 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** a sticky flag needs no reference counts (DECISION-010's main cost), and firefly's read-then-modify bindings (`let g = self.grads[i];`) can't be removed statically. Copy-then-write programs gain nothing and pay a flag check per write; timings are recorded either way.
 
+### 107. Copy-on-write arrays — milestone 55 (PRP-084)
+
+**Decision:** built as planned (MEMORY 106), with these changes:
+- **Inline `own`, no `lugha_own_<type>`:** load `cap`, test the sign bit (a cold branch), clone with the existing `lugha_copy_<type>` helpers (now one level deep; inner arrays are marked) or `clone_flat`, store back. `codegen/cow.rs`.
+- **Two-phase places** (`codegen/places.rs`): `place_plan` evaluates and bounds-checks indexes, `place_commit` walks from the root owning each array. Assignment and `push` commit after the value; `swap` plans both places before committing either; `for … of mut` re-reaches its place on every use (arrays through `Lowerer.aliases`, iterators before every `next`). Interface `mut self` calls reach the receiver through its place.
+- **No extern work:** arrays can't cross the C boundary (§8), so decision 23 needs nothing.
+- **C:** `lugha_rt_array_grow` masks the flag defensively.
+
+**Why the changes:** the `swap` and iterator orderings were real hazards found by probes (a copy made between computing an address and writing it); the eager compiler's output is the oracle for every m55 golden.
+
+**Cost:** a flag test per array on each write's path slows write-only loops (histogram, matmul) by up to ~50%; owning once per loop is in TODO.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 55 complete**: PRP-084 copy-on-write arrays
 - **Milestone 54 complete**: PRP-083 `std.random`
 - **Milestone 53 complete**: PRP-082 the std library and `std.math`
 - **Milestone 52 complete**: PRP-081 operator overloading
@@ -1744,11 +1757,12 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–54 complete.** **Milestone 55 (copy-on-write arrays) is proposed:** decisions 22–24 in `Language v15 Draft.md`, PRP-084, and **DECISION-012 (open), which would supersede DECISION-010**. All wait for the user's explicit approval.
-- **On approval:** resolve DECISION-012 (mark 010 superseded), record MEMORY 106, branch `prp-084-copy_on_write`.
-- **Before changing code:** record the "before" timings (DECISION-010's benchmarks in `docs/decisions/decision-010/`, firefly's `./gpt data/names-32k.txt 6000 32 4 0.1` = 1 m 43 s, `./mlp`, glowworm).
-- **Then build** the four parts: share/own helpers, the cap flag, two-phase places, `for … of mut` by slot, and extern unsharing.
+**Milestones 51–55 complete** (tag `m55`: copy-on-write arrays, PRP-084). firefly trains 13–35% faster; write-only loops pay a flag test per write (histogram +55%, matmul +30%).
 
-This is a correctness-critical change to every array write path.
+Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section):
+- own an array once per loop (removes the write-loop cost above);
+- nested `mut self` calls whose arguments only read the receiver;
+- any number as a `T: Num`;
+- lazy std modules; user-defined `Ord`; the `sum()` cleanup; std.fs/env/process; Unicode follow-ups.
 
 See `TODO.md`.
