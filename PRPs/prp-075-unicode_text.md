@@ -97,15 +97,15 @@ None.
 Unit tests — lexer: every escape, multi-byte characters, and each E0112.
 
 Unit tests — checker:
-- [ ] Literal type, comparisons, casts, and `Ord`.
-- [ ] E0404 for `'a' + 1`; E0408 for `'a' as f64`.
-- [ ] The helper types (`chars()` yields `char`, `to_upper()` gives `char`, `char_from` gives `Option<char>`).
+- [x] Literal type, comparisons, casts, and `Ord`.
+- [x] E0404 for `'a' + 1`; E0408 for `'a' as f64`.
+- [x] The helper types (`chars()` yields `char`, `to_upper()` gives `char`, `char_from` gives `Option<char>`).
 
 Unit tests — codegen: `as char` selects U+FFFD; `print` of a `char` calls `lugha_rt_print_char`.
 
 Acceptance — `tests/programs/m46/`:
-- [ ] `text.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `text.la`: the §10 program.
+- [x] `more.la`:
   - invalid bytes from `read_line` decoded as U+FFFD (via `.stdin`);
   - surrogates and the maximum through `as char`;
   - `char_from` edges;
@@ -113,11 +113,11 @@ Acceptance — `tests/programs/m46/`:
   - format padding of a `char`;
   - `char` in a struct and an array, printed;
   - `match` on `char` through `if`/`==`.
-- [ ] `e0112.la`: reject golden.
-- [ ] The §10 program runs from the spec.
+- [x] `e0112.la`: reject golden.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -125,10 +125,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m46/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The spec is at milestone 46; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m46/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The spec is at milestone 46; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -137,3 +137,11 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m46/text.la
 ```
+
+## AMENDMENTS (during build, session 97)
+
+- **`char_from` is a bare prelude name like `range`,** shadowable by a program's own function, rather than a reserved intrinsic as the draft's compatibility list said. That is less breaking; the spec says so.
+- **`char` compares unsigned** (it isn't in `is_signed`); casts from `char` behave like `u32`.
+- **Format widths for `char`** count bytes, as for strings (`{'é':^5}` pads three bytes).
+- **IR:** the 161 earlier programs that compile give byte-identical IR. `-O2` was checked by hand for both `m46` run programs.
+- **No file splits:** the new code is in new files (`lexer/char_lit.rs`, `src/prelude_text.la`, `runtime/chars.c`).

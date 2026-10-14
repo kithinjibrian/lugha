@@ -7,6 +7,7 @@
 //!
 //! Depends on: span, diagnostic.
 
+mod char_lit;
 mod format_spec;
 mod interp;
 mod number;
@@ -78,6 +79,7 @@ impl Lexer<'_> {
                 'a'..='z' | 'A'..='Z' | '_' => self.identifier(start),
                 '0'..='9' => self.number(start),
                 '"' => self.string(start),
+                '\'' => self.char_literal(start),
                 _ => self.punctuation(start, c),
             }
         }
@@ -169,11 +171,11 @@ mod tests {
     #[test]
     fn keywords_are_recognised_exactly() {
         let src = "fun extern struct enum impl match self let mut if else while for in of return \
-                   break continue true false as i32 i64 u8 f64 bool string u32 u64 f32 i8 i16 u16";
+                   break continue true false as i32 i64 u8 f64 bool string u32 u64 f32 i8 i16 u16 char";
         let expected = [
             Fun, Extern, Struct, Enum, Impl, Match, SelfKw, Let, Mut, If, Else, While, For, In, Of,
             Return, Break, Continue, True, False, As, TyI32, TyI64, TyU8, TyF64, TyBool, TyString,
-            TyU32, TyU64, TyF32, TyI8, TyI16, TyU16,
+            TyU32, TyU64, TyF32, TyI8, TyI16, TyU16, TyChar,
         ];
         assert_eq!(kinds(src), expected);
         // v2 draft §2; longer words stay identifiers.

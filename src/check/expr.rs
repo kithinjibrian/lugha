@@ -90,6 +90,7 @@ impl Checker {
                 ty
             }
             ExprKind::Bool(_) => Type::Bool,
+            ExprKind::Char(_) => Type::Char,
             ExprKind::Name(name) if name == "None" && self.local(name).is_none() => {
                 self.none(expr.span, expect)
             }

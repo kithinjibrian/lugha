@@ -90,6 +90,7 @@ pub fn expr(expr: &Expr) -> String {
     match &expr.kind {
         ExprKind::Int(value) => value.to_string(),
         ExprKind::Float(value) => format!("{value:?}"),
+        ExprKind::Char(code) => format!("{:?}", char::from_u32(*code).unwrap_or('\u{FFFD}')),
         ExprKind::Str(value) => format!("{value:?}"),
         ExprKind::Interp(parts) => {
             let shown: Vec<String> = parts

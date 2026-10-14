@@ -122,6 +122,7 @@ impl Walk<'_> {
                 .for_each(|e| self.expr(e)),
             ExprKind::Int(_)
             | ExprKind::Float(_)
+            | ExprKind::Char(_)
             | ExprKind::Str(_)
             | ExprKind::Bool(_)
             | ExprKind::Name(_) => {}

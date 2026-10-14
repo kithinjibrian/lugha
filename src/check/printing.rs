@@ -21,7 +21,11 @@ pub(super) fn printable(ty: &Type) -> bool {
 
 /// True for the types codegen prints without any helper.
 fn plain(ty: &Type) -> bool {
-    ty.is_numeric() || matches!(ty, Type::Bool | Type::String | Type::Error | Type::Never)
+    ty.is_numeric()
+        || matches!(
+            ty,
+            Type::Bool | Type::String | Type::Char | Type::Error | Type::Never
+        )
 }
 
 impl Checker {

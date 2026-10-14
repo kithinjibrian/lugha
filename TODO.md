@@ -260,8 +260,8 @@ Done when the printing-anything program passes and the v12 spec is complete.
 ### Milestone 45 — Bytes and indexes ✅
 - [x] PRP-074: binary I/O, `to_bytes`, `string_from_utf8`, `read_stdin_bytes`, any-integer indexes; `Language v14 Specification.md` begins; tagged `m45`
 
-### Milestone 46 — Unicode text
-- [ ] `char`, `'a'`, `chars()`, `char_count()`, casts, `char_from`, classification and case (E0112)
+### Milestone 46 — Unicode text ✅
+- [x] PRP-075: `char`, `'a'`, `chars()`, `char_count()`, casts, `char_from`, classification and case (E0112); tagged `m46` at merge
 
 ### Milestone 47 — Tuples
 - [ ] tuple types and values, `t.0`, patterns, `zip` → tuples, `Pair` removed (E0433)

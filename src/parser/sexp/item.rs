@@ -206,6 +206,7 @@ pub(super) fn ty(ty: &Type) -> String {
         TypeKind::I8 => "i8".into(),
         TypeKind::I16 => "i16".into(),
         TypeKind::U16 => "u16".into(),
+        TypeKind::Char => "char".into(),
         TypeKind::Named(name) => name.clone(),
         TypeKind::Array(element) => format!("{}[]", self::ty(element)),
         TypeKind::Option(inner) => format!("(Option {})", self::ty(inner)),

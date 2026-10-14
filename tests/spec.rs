@@ -113,6 +113,7 @@ fn the_extractor_finds_every_section_10_program() {
         "More iterator helpers",
         "Format specifiers",
         "Bytes and indexes",
+        "Unicode text",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

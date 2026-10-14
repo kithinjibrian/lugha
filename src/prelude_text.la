@@ -1,0 +1,116 @@
+
+// Unicode text (v14 draft §5, milestone 46), joined after
+// `prelude_more.la` into the one prelude module: a string's characters,
+// `char_from`, and classification and case for ASCII and Latin-1.
+
+// A string's characters, decoded from UTF-8: `s.chars()`. Any invalid
+// sequence gives U+FFFD and moves one byte on.
+struct Chars { s: string, at: i64 }
+
+impl Chars {
+    fun next(mut self): Option<char> {
+        if self.at >= self.s.len {
+            return None;
+        }
+        let b0 = self.s[self.at] as u32;
+        if b0 < 128 {
+            self.at += 1;
+            return Some(b0 as char);
+        }
+        // The sequence's length, its first bits, and the smallest code it
+        // may encode (anything less is an overlong form).
+        let mut n: i64 = 0;
+        let mut code: u32 = 0;
+        let mut min: u32 = 0;
+        if b0 >= 194 && b0 <= 223 {
+            n = 2;
+            code = b0 & 31;
+            min = 128;
+        } else if b0 >= 224 && b0 <= 239 {
+            n = 3;
+            code = b0 & 15;
+            min = 2048;
+        } else if b0 >= 240 && b0 <= 244 {
+            n = 4;
+            code = b0 & 7;
+            min = 65536;
+        }
+        if n == 0 || self.at + n > self.s.len {
+            self.at += 1;
+            return Some('\u{FFFD}');
+        }
+        let mut k: i64 = 1;
+        while k < n {
+            let b = self.s[self.at + k] as u32;
+            if (b & 192) != 128 {
+                self.at += 1;
+                return Some('\u{FFFD}');
+            }
+            code = (code << 6) | (b & 63);
+            k += 1;
+        }
+        if code < min || code > 1114111 || (code >= 55296 && code <= 57343) {
+            self.at += 1;
+            return Some('\u{FFFD}');
+        }
+        self.at += n;
+        Some(code as char)
+    }
+}
+
+fun str_chars(s: string): Chars = Chars { s: s, at: 0 };
+
+fun str_char_count(s: string): i64 {
+    let mut n = 0;
+    for c of str_chars(s) {
+        n += 1;
+    }
+    n
+}
+
+// `n` as a `char` when it is a Unicode scalar value.
+fun char_from(n: u32): Option<char> {
+    if n < 55296 || (n >= 57344 && n <= 1114111) {
+        return Some(n as char);
+    }
+    None
+}
+
+fun char_is_digit(c: char): bool = c >= '0' && c <= '9';
+
+fun char_is_whitespace(c: char): bool {
+    let n = c as u32;
+    n == 32 || (n >= 9 && n <= 13) || n == 133 || n == 160
+}
+
+fun char_is_upper(c: char): bool {
+    let n = c as u32;
+    (n >= 65 && n <= 90) || (n >= 192 && n <= 222 && n != 215)
+}
+
+fun char_is_lower(c: char): bool {
+    let n = c as u32;
+    (n >= 97 && n <= 122) || n == 181 || (n >= 223 && n <= 255 && n != 247)
+}
+
+fun char_is_alphabetic(c: char): bool {
+    let n = c as u32;
+    char_is_upper(c) || char_is_lower(c) || n == 170 || n == 186
+}
+
+// Latin-1's cased letters pair 32 apart; `ß`, `ÿ` and `µ` have no partner here.
+fun char_to_upper(c: char): char {
+    let n = c as u32;
+    if (n >= 97 && n <= 122) || (n >= 224 && n <= 254 && n != 247) {
+        return (n - 32) as char;
+    }
+    c
+}
+
+fun char_to_lower(c: char): char {
+    let n = c as u32;
+    if (n >= 65 && n <= 90) || (n >= 192 && n <= 222 && n != 215) {
+        return (n + 32) as char;
+    }
+    c
+}

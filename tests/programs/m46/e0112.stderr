@@ -1,0 +1,24 @@
+error[E0112]: an empty character literal
+  --> tests/programs/m46/e0112.la:2:13
+  |
+2 |     let a = '';
+  |             ^^
+  |
+  = help: write one character, or an escape: \n \t \r \0 \\ \' \u{1F600}
+
+error[E0112]: a character literal holds one character
+  --> tests/programs/m46/e0112.la:3:13
+  |
+3 |     let b = 'ab';
+  |             ^^^^
+  |
+  = help: write one character, or an escape: \n \t \r \0 \\ \' \u{1F600}
+
+error[E0112]: unknown escape `\q`
+  --> tests/programs/m46/e0112.la:4:13
+  |
+4 |     let c = '\q';
+  |             ^^^^
+  |
+  = help: write one character, or an escape: \n \t \r \0 \\ \' \u{1F600}
+

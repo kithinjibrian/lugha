@@ -20,6 +20,8 @@ pub enum TokenKind {
     Float(f64),
     /// String literal with escapes decoded.
     Str(String),
+    /// A `char` literal's code point (v14).
+    Char(u32),
     /// A string's text before its first `{` (v3 interpolation).
     StrStart(String),
     /// Text between an interpolation's `}` and the next `{`.
@@ -76,6 +78,8 @@ pub enum TokenKind {
     TyI8,
     TyI16,
     TyU16,
+    /// `char` (v14).
+    TyChar,
 
     // Operators.
     Plus,
@@ -174,6 +178,7 @@ pub fn keyword(word: &str) -> Option<TokenKind> {
         "i8" => TyI8,
         "i16" => TyI16,
         "u16" => TyU16,
+        "char" => TyChar,
         _ => return None,
     })
 }

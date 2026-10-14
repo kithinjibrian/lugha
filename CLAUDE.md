@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v14 Specification.md` (`lughac spec` prints it): Lugha v14, in progress (milestone 45 done: binary I/O, `to_bytes`, `string_from_utf8`, any-integer indexes). `Language v14 Draft.md` is the approved plan (milestones 45–50: bytes and indexes, `char`, tuples, `format`, import aliases and re-exports, git packages). The v0–v13 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la` and `src/prelude_more.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v14 Specification.md` (`lughac spec` prints it): Lugha v14, in progress (milestones 45–46 done: binary I/O, `to_bytes`, `string_from_utf8`, any-integer indexes; `char`, `'a'`, `chars()`). `Language v14 Draft.md` is the approved plan (milestones 45–50: bytes and indexes, `char`, tuples, `format`, import aliases and re-exports, git packages). The v0–v13 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la`, `src/prelude_more.la` and `src/prelude_text.la`, loaded with every program.
 
 ---
 
@@ -224,7 +224,7 @@ pub fn parse_number(src: &str) -> i64 {
 ├── runtime/         — the C runtime, embedded in lughac (DECISION-009): lugha_rt.c (core: includes, types,
 │                      init, alloc, panics, strings), stack.c (overflow handler), print.c (formatting),
 │                      input.c (args, parse_i64/f64, stdin lines, files, stderr, exit), format.c (format
-│                      specifiers, v13), bytes.c (binary I/O, UTF-8 check, v14); fragments joined in that order
+│                      specifiers, v13), bytes.c (binary I/O, UTF-8 check, v14), chars.c (`char` printing and quoting, v14); fragments joined in that order
 │                      into one lugha_rt.c (PRP-028)
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
@@ -232,12 +232,13 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── prelude.la   — Result<T, E>, Iter<T> (v6), the array helpers, and the string/Option/Result helpers in Lugha, module `$prelude`
 │   ├── prelude_iter.la — the iterator sources, adapters and consumers (v10) and `Display` (v12), joined after prelude.la into the one `$prelude`
 │   ├── prelude_more.la — `Pair`, `zip`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position` (v13), joined third
+│   ├── prelude_text.la — `Chars` (UTF-8 decoding), `char_count`, `char_from`, Latin-1 classification and case (v14), joined fourth
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
 │   ├── format.rs    — format specifiers (v13): `parse`, `check`, shared by the checker and codegen
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
 │   ├── lexer/       — mod.rs (lex, main loop), token.rs, punct.rs (operators), number.rs, string.rs,
-│   │                  interp.rs (string interpolation, E0111), format_spec.rs (the `FmtSpec` token, v13)
+│   │                  interp.rs (string interpolation, E0111), format_spec.rs (the `FmtSpec` token, v13), char_lit.rs (`char` literals, E0112, v14)
 │   ├── ast/         — mod.rs (items, statements), types.rs (written types), expr.rs (expressions, ExprId, StructLiteral, Part),
 │   │                  pattern.rs (arms, nested patterns, guards), header.rs (imports, type parameters, bounds,
 │   │                  interfaces)
@@ -316,7 +317,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m45/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m46/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)

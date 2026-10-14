@@ -2,14 +2,15 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestone 45 of 45–50). It is built from the approved plan, `Language v14 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v13 Specification.md` keeps v13 frozen.
+**Status:** in progress (milestones 45–46 of 45–50). It is built from the approved plan, `Language v14 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v13 Specification.md` keeps v13 frozen.
 
 **v13.** This is v12 plus `Self` in declarations, `for … of mut`, more iterator helpers and format specifiers (milestones 41–44).
 
-**Changes since v13** (milestone 45):
+**Changes since v13** (milestones 45–46):
 - Binary I/O: `read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes`; `s.to_bytes()`; `string_from_utf8(bytes)`, which rejects invalid UTF-8. An index may be of any integer type (sections 4–5).
+- `char`, a Unicode scalar value: `'a'`, `'é'`, `'\u{1F600}'`; `s.chars()` and `s.char_count()`; `c as u32`, `n as char`, `char_from(n)`; classification and case for ASCII and Latin-1 (sections 2–5).
 
-A valid v13 program is a valid v14 program unless it declares a function named `read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes` or `string_from_utf8`, which are now intrinsics.
+A valid v13 program is a valid v14 program unless it uses `char` as a name (a type keyword now), or declares a function named `read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes` or `string_from_utf8`, which are now intrinsics.
 
 **v12.** This is v11 plus printing any value: the prelude's `Display` and `show`, built-in forms, and `unwrap on Err: <error>` (milestones 39–40).
 
@@ -163,7 +164,7 @@ Source files are UTF-8. The lexer produces a flat list of tokens, each carrying 
 fun  extern  struct  enum  impl  let  mut  if  else  while  for  in  of  match
 import  private  public  interface
 return  break  continue  true  false  as  self
-i32  i64  u8  f64  bool  string  u32  u64  f32  i8  i16  u16
+i32  i64  u8  f64  bool  string  u32  u64  f32  i8  i16  u16  char
 ```
 
 Built-in type names are keywords, so they can't be shadowed by user structs. `Option`, `Some` and `None` are not keywords but built-in names, reserved like the intrinsics (section 6).
@@ -208,6 +209,7 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 | E0109 | Float literal out of range | `1.0e999` |
 | E0110 | Source is not valid UTF-8 | A Latin-1 `é` byte; reported at the first bad byte |
 | E0111 | Bad interpolation in a string (v3) | `"a } b"`, `"{x"`, `"{}"` — write `{{`/`}}` for literal braces |
+| E0112 | A bad `char` literal (v14) | `''`, `'ab'`, `'\q'`, `'\u{D800}'`, `'\u{110000}'`, an unclosed `'a` |
 
 **Operators and punctuation.** The lexer uses longest match, so `<=` is one token, not `<` then `=`.
 
@@ -256,6 +258,7 @@ type         = base_type { "[" "]" } ;
 base_type    = "i32" | "i64" | "u8" | "f64" | "bool" | "string"
              | "u32" | "u64" | "f32"                (* v7 *)
              | "i8" | "i16" | "u16"                 (* v10 *)
+             | "char"                               (* v14 *)
              | IDENT [ "." IDENT ] [ "<" type { "," type } [ "," ] ">" ]
              | "fun" "(" [ type { "," type } [ "," ] ] ")" [ ":" type ]   (* a function type (v3) *)
              | "(" type ")" ;                  (* `(fun(i64): i64)[]` is an array of functions *)
@@ -295,7 +298,7 @@ postfix      = primary { call | index | member | "?" } ;   (* `read(p)?` (v4) *)
 call         = "(" [ expr { "," expr } [ "," ] ] ")" ;
 index        = "[" expr "]" ;
 member       = "." IDENT ;
-primary      = INT | FLOAT | STRING | interpolated | closure | "true" | "false"
+primary      = INT | FLOAT | CHAR | STRING | interpolated | closure | "true" | "false"
              | IDENT [ "." IDENT ] [ struct_init ]  (* `m.T { … }` *)
              | "self"
              | int_type "." IDENT                 (* `i16.MAX` (v10) *)
@@ -371,6 +374,7 @@ Lugha is statically typed with one implicit conversion: a value becomes an inter
 | `i8` | 8-bit signed integer, −128 to 127 (v10) | `i8` |
 | `i16` | 16-bit signed integer, −32768 to 32767 (v10) | `i16` |
 | `u16` | 16-bit unsigned integer, 0 to 65535 (v10) | `i16` |
+| `char` | A Unicode scalar value, U+0000–U+D7FF and U+E000–U+10FFFF (v14) | `i32` |
 | `bool` | `true` or `false` | `i1` (stored as `i8` in memory) |
 | `string` | Immutable UTF-8 bytes | `ptr` to `{ i64 len, bytes, NUL }` on the GC heap (literals: constant globals) |
 | `T[]` | Fixed-length array of `T` | `ptr` to `{ i64 len, T... }` on the GC heap |
@@ -479,6 +483,13 @@ Equality costs time proportional to the values compared. `f64` keeps IEEE semant
 
 **Operand types.** In `==`, `!=` and the comparisons, an operand that can't be typed on its own (a number literal, `None`, `[]`, or a list or `Some` around one) takes its type from the other operand, whichever side it is on. So `o == None`, `None == o` and `xs == []` work. If neither side can be typed alone (`None == None`), it is E0412. A number literal never takes a non-numeric type this way: `"a" == 1` is E0404.
 
+**Characters** (v14). A `char` literal is one character between single quotes, `'a'`, `'é'`, `'😀'`, or an escape: `'\n'`, `'\t'`, `'\r'`, `'\0'`, `'\\'`, `'\''`, `'\"'`, `'\u{1F600}'` (one to six hex digits naming a scalar value). Anything else is E0112.
+- **Comparison:** `==` and `<` compare code points, so `char` is `Ord`. There is no arithmetic (E0404).
+- **Casts:** `c as` any integer type gives its code point (truncated as casts do); any integer `as char` gives that character, or U+FFFD when the value is not a scalar value, since casts never fail. `char_from(n: u32): Option<char>` checks instead. `char` casts to nothing else (E0408).
+- **Strings:** `s.chars()` iterates a string's characters (a `Chars` iterator), decoding UTF-8; each invalid sequence gives U+FFFD and moves one byte on, so it never fails. `s.char_count()` counts them. `for b of s` still loops over bytes.
+- **Methods:** `c.is_alphabetic()`, `is_digit()` (`0`–`9`), `is_whitespace()`, `is_upper()`, `is_lower()`, `to_upper()` and `to_lower()` cover ASCII and Latin-1 (U+0000–U+00FF) only: other characters are neither letters nor cased, and `ß`, `ÿ` and `µ` keep their case.
+- **Names:** `char_from` and `Chars` are the prelude's, visible like `range` unless a module declares its own.
+
 **Casts.** `expr as T` converts between numeric types (`i32`, `i64`, `u8`, `u32`, `u64`, `f32`, `f64`; every pair, v7). `f64` to `f32` rounds to nearest, and `f32` to `f64` is exact. Integer narrowing truncates. Integer to float rounds to nearest. Float to integer truncates toward zero and saturates at the target's range; NaN becomes 0. `bool` cannot be cast; write `if b { 1 } else { 0 }` instead.
 
 **Names of types.** A local — a `let`, a parameter, a `for` variable or a `match` binding — may not be named like a struct, an enum or `Option` (E0311). So a name before `.` is always unambiguous: a type, meaning a variant or associated function follows, or a local, meaning a field or method follows.
@@ -524,6 +535,7 @@ They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (
 | `string` | `s.contains(sub)`, `s.starts_with(p)`, `s.ends_with(p)` | `bool`; true for an empty argument |
 | `string` | `s.slice(from, to)` | `string`: the bytes `from..to`; panics (at the call) unless `0 <= from <= to <= s.len` |
 | `string` | `s.to_bytes()` (v14) | `u8[]`: a new array of the string's bytes |
+| `string` | `s.chars()`, `s.char_count()` (v14) | the characters (`Chars`, yielding `char`) and their count |
 | `string[]` | `xs.join(sep)` | `string`: the elements with `sep` between them; `""` for `[]` |
 | `Option<T>` | `o.unwrap_or(d)` | `T`: the value, or `d` |
 | `Option<T>` | `o.ok_or(e)` | `Result<T, E>`: `Ok` with the value, or `Err(e)` |
@@ -783,6 +795,7 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 | --- | --- |
 | a number or `bool` | as below |
 | a `string` | its bytes |
+| a `char` | its character, as UTF-8 (v14) |
 | a struct or enum whose own method is `fun show(self): string` | what `show` returns |
 | any other struct | `Point { x: 1, y: 2 }`, or `Point {}` without fields |
 | any other enum value, `Option`, `Result` | `Circle(1.5)`, `Empty`, `Some(5)`, `None`, `Ok(1)`, `Err("no")` |
@@ -790,7 +803,7 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 | an interface value | as the value inside it |
 | a function value | `<fun>` |
 
-- **Parts:** the fields, payloads and elements inside a built-in form print by the same table, except that a `string` there is quoted: `"`, `\`, newline, tab and carriage return are written `\"`, `\\`, `\n`, `\t`, `\r`, other bytes below 0x20 as `\u{XX}`, and every other byte as itself. A `show`'s text is never quoted.
+- **Parts:** the fields, payloads and elements inside a built-in form print by the same table, except that a `string` there is quoted: `"`, `\`, newline, tab and carriage return are written `\"`, `\\`, `\n`, `\t`, `\r`, other bytes below 0x20 as `\u{XX}`, and every other byte as itself. A `show`'s text is never quoted. A `char` there is quoted too (v14): `'a'`, `'\n'`, `'\''`.
 - **Names:** a struct prints its bare name, without its module path or type arguments (`Stack { items: [3] }`), and an enum value only its variant.
 - **`show`:** the prelude declares `interface Display { fun show(self): string; }`, visible in every module like `Iter` unless the module declares `Display`. A struct or enum with its own method of exactly that shape prints through it, whatever the method's visibility, since printing is the type's own behaviour; a method `show` of any other shape is ignored, and the built-in form is used. Like any interface, `Display` works as a bound (`T: Display` gives `x.show()`) and as a type.
 - **Depth:** a recursive enum prints to its full depth. Values are trees, so printing always ends.
@@ -998,6 +1011,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - The v13 iterator helpers are Lugha in the prelude's third file, compiled only when reached like the others. `flat_map` keeps its current inner iterator in a 0- or 1-element array, so `next` steps it in place.
 - A format specifier (v13) is parsed once by the checker (E0431) and again by codegen, which passes its parts to `lugha_rt_fmt_int`, `lugha_rt_fmt_float` or `lugha_rt_pad`, from a runtime fragment `format.c`. Programs without specifiers give byte-identical IR.
 - An index (v14) is evaluated at its own integer type and sign- or zero-extended to `i64` before the bounds check, so an `i64` index lowers exactly as before.
+- A `char` (v14) is an LLVM `i32`, compared unsigned. An integer `as char` selects U+FFFD unless the value, widened to `i64`, is a scalar value. `chars()`, `char_count()`, `char_from` and the classification and case methods are Lugha in the prelude's fourth file.
 - Converting a `J` value to `I` (v6) calls `lugha_up_<J>.<I>(table) -> table`, which compares the value's table with each `J` table the program has and returns the matching `I` table; its body is built after everything else, when every table is known. That `I` table is derived from the table the value was built with: `lugha_vt_<C>.<J>.<I>` has `C`'s identity and copy and, for each `I` item, the function `C`'s `J` table has, so methods behave as through `J`; derived tables keep the original interface (`<C>.<J>.<K>` for a chain) and converting back to it gives the original table. A program that never converts between interfaces has no `lugha_up_` functions and no derived tables. (The approved draft put one slot per target interface in each table instead; tables are emitted while lowering, before every conversion is known, so PRP-054 uses lookup functions.)
 - The v7 operators and methods: `& | ^` are `and`/`or`/`xor`; `<<` is `shl` and `>>` is `ashr` for `i32`/`i64` and `lshr` for the unsigned types, each after an `icmp uge` of the amount against the width that panics (`shift out of range`); `~x` is `xor x, -1`; the wrapping methods are plain `add`/`sub`/`mul`; the counting methods are `llvm.ctpop`, `llvm.ctlz` and `llvm.cttz` (zero not poison), widened to `i64`. A program that uses none of them has none of this code.
 - The v10 integer methods: `checked_add/sub/mul` read the overflow flag of `llvm.{s,u}{add,sub,mul}.with.overflow` and select `None` or `Some`; `checked_div` divides by 1 instead when the divisor is 0 (or the operands are `MIN` and −1) and selects `None` then, so it never traps; `saturating_add/sub` are `llvm.{s,u}{add,sub}.sat`, and `saturating_mul` selects `MIN` or `MAX` on overflow; rotations are `llvm.fshl`/`llvm.fshr` of the value with itself, the `i64` count truncated to the width; `I.MIN`/`I.MAX` are constants.
@@ -1066,6 +1080,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_parse_i64(s, out)` / `lugha_rt_parse_u64(s, out)` / `lugha_rt_parse_f64(s, out)` | Parse `s` into `*out`; return 1, or 0 for `None` (v3; `u64` v10) |
 | `lugha_rt_str_slice(s, from, to, file, line, col)` | `s.slice(from, to)`: a new string of those bytes, or the bounds panic (v4) |
 | `lugha_rt_read_bytes` / `lugha_rt_write_bytes` / `lugha_rt_read_stdin_bytes` / `lugha_rt_str_to_bytes` / `lugha_rt_utf8_check` | Bytes (v14): file and stdin bytes, a string's bytes, and the UTF-8 check behind `string_from_utf8`, failing ones by flag and out-pointers as the v4 file functions do |
+| `lugha_rt_print_char` / `lugha_rt_to_string_char` / `lugha_rt_char_quote` | A `char` written as UTF-8, as a string, and quoted for a built-in form (v14) |
 | `lugha_rt_read_line(out)` | `read_line()`: 1 and the line, or 0 at the end of input (v4) |
 | `lugha_rt_read_file(path, out, error)` / `lugha_rt_write_file(path, text, append, count, error)` | The file intrinsics: 1 and the value, or 0 and the C library's `strerror` message (v4) |
 | `lugha_rt_eprint(text, newline)` / `lugha_rt_exit(code)` | `eprint`/`eprintln` (values formatted first) and `exit`, each flushing stdout first (v4) |
@@ -2433,6 +2448,28 @@ fun main() {
 }
 ```
 
+**Unicode text** (milestone 46). Prints `10 chars, 12 bytes`, `NAÏVE CAFÉ`, `9`, `['é', 'a', '\n']`, `233`, `None` on six lines, exits with 0.
+
+```
+fun shout(s: string): string {
+    let mut out = "";
+    for c of s.chars() {
+        out = out + to_string(c.to_upper());
+    }
+    out
+}
+
+fun main() {
+    let s = "naïve café";
+    println("{s.char_count()} chars, {s.len} bytes");
+    println(shout(s));
+    println(s.chars().filter(fun(c) = c.is_alphabetic()).count());
+    println(['é', 'a', '\n']);
+    println('é' as u32);
+    println(char_from(55296));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2484,6 +2521,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 43 | More iterator helpers (v13) | `zip` (`Pair`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position` | The more-helpers program in section 10 passes (done) |
 | 44 | Format specifiers (v13) | `"{x:spec}"`, E0431 | The format-specifiers program in section 10 passes (done: v13 complete) |
 | 45 | Bytes and indexes (v14) | binary file I/O, `to_bytes`, `string_from_utf8`, `read_stdin_bytes`, any-integer indexes | The bytes-and-indexes program in section 10 passes (done) |
+| 46 | Unicode text (v14) | `char`, `'a'`, `chars()`, `char_count()`, casts, `char_from`, classification and case (E0112) | The Unicode-text program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

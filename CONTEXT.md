@@ -4227,20 +4227,55 @@ Branch: prp-074-bytes_and_indexes (merged into main)
 ## SESSION 97 — 2026-10-14 — Unicode text (milestone 46) — open
 Branch: prp-075-unicode_text
 
+### WHAT WAS DONE
+- PRP-075 written as approved under the "in one go" instruction, built and merged on green CI:
+  - the `char` type and literals (E0112);
+  - `chars()`, `char_count()`;
+  - casts, `char_from`;
+  - Latin-1 classification and case;
+  - printing and quoting.
+- **Spec:** keywords, E0112, grammar, types table, "Characters", string methods, the print rows, runtime, §9, the §10 program, §11 row 46.
+
+### FILES CREATED OR MODIFIED
+- New: `src/lexer/char_lit.rs`, `src/prelude_text.la`, `runtime/chars.c`, `tests/programs/m46/` (`text`, `more` with `.stdin`, `e0112`), PRP-075.
+- Modified:
+  - `src/lexer/{mod,token}.rs`, `src/ast/{expr,types}.rs`;
+  - `src/parser/{primary,item,describe}.rs`, `src/parser/sexp/{mod,item}.rs`;
+  - `src/check/{types,numbers,expr,ops,bounds,helpers,call,iter_helpers,printing}.rs`, `src/check/liveness/walk.rs`;
+  - `src/codegen/{value,structs,expr,cast,runtime,input,show}.rs`;
+  - `src/link.rs`, `src/lib.rs`, `tests/spec.rs`;
+  - the v14 spec.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 93, CONTEXT.
+
+### TESTS WRITTEN
+- **Lexer:** escapes and E0112.
+- **Checker:** `char` types, comparisons, casts, `Ord`, helpers, E0404, E0408.
+- **Codegen:** U+FFFD select, `lugha_rt_print_char`.
+- **Programs:** `tests/programs/m46/`, and the §10 program from the spec.
+- **Regression:** 161 earlier programs give byte-identical IR; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 93.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m46`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 45 complete** (PRP-074, MEMORY 92): bytes and indexes. Tagged `m45`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 46 complete** (PRP-075, MEMORY 93): Unicode `char`. Tag `m46` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next, under the user's "in one go" (MEMORY 91), the remaining milestones:
-- M46: Unicode `char` (PRP-075, next session);
-- M47: tuples;
+- M47: tuples (PRP-076: `zip` → tuples, `Pair` removed, E0433);
 - M48: `format`;
 - M49: imports.
 
 Then stop for the user's security review of M50 (git packages).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `codegen/heap.rs` (295), `check/array.rs` (~294), `parser/primary.rs` (~291), `lexer/interp.rs` (290).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `codegen/runtime.rs` (297), `parser/stmt.rs` (296), `codegen/heap.rs` (295), `check/array.rs` (~294), `parser/primary.rs` (~292), `lexer/interp.rs` (290), `check/ops.rs` (~293).
 
 See `TODO.md`.

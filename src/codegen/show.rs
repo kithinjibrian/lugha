@@ -19,7 +19,7 @@ use crate::check::Type;
 
 /// True for the types that print without a helper.
 fn plain(ty: &Type) -> bool {
-    ty.is_numeric() || matches!(ty, Type::Bool | Type::String)
+    ty.is_numeric() || matches!(ty, Type::Bool | Type::String | Type::Char)
 }
 
 /// A type's name as printed: its key's last part, without arguments.
@@ -61,6 +61,8 @@ impl<'ctx> Lowerer<'ctx> {
                 self.call_runtime_value("lugha_rt_str_quote", &[Type::String], &[value])
             }
             Type::Fun(..) => self.string_literal("<fun>").into(),
+            // `'a'` inside a built-in form (v14).
+            Type::Char => self.call_runtime_value("lugha_rt_char_quote", &[Type::Char], &[value]),
             _ if plain(ty) => self.text_of(ty, value),
             _ => {
                 let helper = self.show_function(ty);

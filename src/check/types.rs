@@ -24,6 +24,8 @@ pub enum Type {
     I8,
     I16,
     U16,
+    /// v14: a Unicode scalar value.
+    Char,
     Bool,
     /// Immutable UTF-8 text (spec §4).
     String,
@@ -171,6 +173,7 @@ impl fmt::Display for Type {
             Type::I8 => "i8",
             Type::I16 => "i16",
             Type::U16 => "u16",
+            Type::Char => "char",
             Type::Bool => "bool",
             Type::String => "string",
             // `(fun(i64): i64)[]`: without parentheses `[]` would be the return type's.

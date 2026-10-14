@@ -48,7 +48,8 @@ impl Checker {
         let mut key = self.key(name);
         // `range(a, b)` is the prelude's unless a module declares one (v10).
         let prelude = qualify(&[crate::modules::PRELUDE_PATH.to_string()], name);
-        if name == "range"
+        // `char_from` (v14) is the prelude's the same way.
+        if matches!(name.as_str(), "range" | "char_from")
             && !self.functions.contains_key(&key)
             && self.functions.contains_key(&prelude)
         {

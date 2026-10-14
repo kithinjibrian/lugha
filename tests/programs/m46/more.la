@@ -1,0 +1,32 @@
+// Invalid bytes from read_line decoded as U+FFFD, `as char` at the edges,
+// char_from, Latin-1 classification and case, format padding (in bytes),
+// a char in a struct, and comparing chars.
+
+struct Glyph { c: char, n: i64 }
+
+fun main() {
+    match read_line() {
+        Some(line) => println(line.chars().collect()),
+        None => println("none"),
+    }
+    println(-1 as char);
+    println(1114111 as char as u32);
+    println(1114112 as char as u32);
+    println(57343 as char as u32);
+    println(char_from(57344).is_some());
+    println([
+        'ß'.is_lower(),
+        'ß'.to_upper() == 'ß',
+        'ÿ'.to_upper() == 'ÿ',
+        '7'.is_digit(),
+        '\t'.is_whitespace(),
+        'Ä'.to_lower() == 'ä',
+        '×'.is_alphabetic(),
+    ]);
+    println("[{'x':<3}][{'é':^5}]");
+    println(Glyph { c: 'x', n: 1 });
+    let c = 'q';
+    if c == 'q' {
+        println("quit");
+    }
+}

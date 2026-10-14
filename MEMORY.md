@@ -1472,9 +1472,34 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 93. Unicode text — milestone 46 (PRP-075)
+
+**Decision:** built under the user's "in one go" (milestones 45–49).
+- **Lexer:** `lexer/char_lit.rs` lexes `'…'` to `TokenKind::Char(u32)`, with escapes `\n \t \r \0 \\ \' \"` and `\u{1-6 hex}`. Errors are E0112, still pushing `Char(0xFFFD)` so parsing goes on. The keyword is `TyChar`.
+- **AST:** `ExprKind::Char(u32)` and `TypeKind::Char`; the sexp shows `{:?}` of the char.
+- **Checker:**
+  - `Type::Char`; `ord_ok` includes it;
+  - `ops.rs::cast` allows `char` ↔ any integer;
+  - `helper_function` maps `char` methods to prelude `char_<m>` and string `chars`/`char_count` to `str_<m>`;
+  - `char_from` joins `range` as a bare prelude name. It is shadowable, not a reserved intrinsic as the draft listed;
+  - `ITER_TYPES` gains `Chars`;
+  - `printing::plain` includes `char`.
+- **Codegen:**
+  - `char` is `i32` (layout 4/4), compared unsigned (not `is_signed`);
+  - `cast.rs::to_char` widens to `i64` and selects U+FFFD unless < 0xD800 or 0xE000..=0x10FFFF;
+  - print, `to_string` and interpolation go through the `char` runtime suffix;
+  - `show.rs::part` quotes it with `lugha_rt_char_quote`.
+- **Prelude:** `src/prelude_text.la`, the fourth file. `Chars.next` is a strict UTF-8 decoder in Lugha (U+FFFD, one byte on); the Latin-1 tables are written as ranges.
+- **Runtime:** `runtime/chars.c` (`utf8_encode`, print, to_string, quote); `RUNTIME_SYMBOLS` has 46 entries.
+
+**Why:** decoding in Lugha needs no new runtime surface. Printing needs UTF-8 encoding, which is cheap in C.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 46 complete**: PRP-075 Unicode `char`
 - **Milestone 45 complete**: PRP-074 bytes and indexes; v14 spec begins
 - **Milestone 44 complete — Lugha v13 complete**: PRP-073 format specifiers
 - **Milestone 43 complete**: PRP-072 more iterator helpers
@@ -1567,16 +1592,15 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 45 complete** (PRP-074, MEMORY 92): bytes and indexes. Tagged `m45`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 46 complete** (PRP-075, MEMORY 93): Unicode `char`. Tag `m46` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next, under the user's "in one go" (MEMORY 91), the remaining milestones:
-- M46: Unicode `char` (PRP-075, next session);
-- M47: tuples;
+- M47: tuples (PRP-076: `zip` → tuples, `Pair` removed, E0433);
 - M48: `format`;
 - M49: imports.
 
 Then stop for the user's security review of M50 (git packages).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `codegen/heap.rs` (295), `check/array.rs` (~294), `parser/primary.rs` (~291), `lexer/interp.rs` (290).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `codegen/runtime.rs` (297), `parser/stmt.rs` (296), `codegen/heap.rs` (295), `check/array.rs` (~294), `parser/primary.rs` (~292), `lexer/interp.rs` (290), `check/ops.rs` (~293).
 
 See `TODO.md`.

@@ -16,6 +16,7 @@ pub(super) fn found(kind: &TokenKind) -> String {
         TokenKind::StrMid(_) | TokenKind::StrEnd(_) => "`}` of an interpolation".to_string(),
         TokenKind::FmtSpec(_) => "format specifier".to_string(),
         TokenKind::Ident(name) => format!("identifier `{name}`"),
+        TokenKind::Char(_) => "character literal".to_string(),
         TokenKind::Eof => "end of file".to_string(),
         other => text(other),
     }
@@ -89,6 +90,8 @@ pub(super) fn symbol(kind: &TokenKind) -> &'static str {
         TyI8 => "i8",
         TyI16 => "i16",
         TyU16 => "u16",
+        TyChar => "char",
+        Char(_) => "character",
         Plus => "+",
         Minus => "-",
         Star => "*",

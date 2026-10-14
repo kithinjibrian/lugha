@@ -59,6 +59,7 @@ impl Type {
             TypeKind::I8 => Type::I8,
             TypeKind::I16 => Type::I16,
             TypeKind::U16 => Type::U16,
+            TypeKind::Char => Type::Char,
             TypeKind::Bool => Type::Bool,
             TypeKind::String => Type::String,
             _ => return None,
@@ -168,6 +169,25 @@ mod tests {
         assert_eq!(
             errors("fun parse_u64(s: string): i64 = 1;\nfun main() {}"),
             [("E0302", "parse_u64")]
+        );
+    }
+
+    #[test]
+    fn chars_compare_cast_and_have_helpers_v14() {
+        assert_eq!(ty("let c = 'a';", "c"), Type::Char);
+        assert_eq!(ty("let b = 'a' < 'b';", "b"), Type::Bool);
+        assert_eq!(ty("let n = 'a' as u32;", "n"), Type::U32);
+        assert_eq!(ty("let c = 97 as char;", "c"), Type::Char);
+        assert_eq!(ty("let c = 'a'.to_upper();", "c"), Type::Char);
+        assert_eq!(
+            ty("let o = char_from(65);", "o"),
+            Type::Option(Box::new(Type::Char))
+        );
+        assert_eq!(ty("let n = \"é\".char_count();", "n"), Type::I64);
+        assert_eq!(codes("let c = 'a' + 1;"), ["E0404"]);
+        assert_eq!(codes("let f = 'a' as f64;"), ["E0408"]);
+        ok(
+            "fun max<T: Ord>(a: T, b: T): T = if a < b { b } else { a };\nfun main() { let c = max('a', 'b'); }",
         );
     }
 }

@@ -36,6 +36,7 @@ fn suffix(ty: &Type) -> &'static str {
         Type::U16 | Type::U32 | Type::U64 => "u64",
         Type::I8 | Type::I16 => "i64",
         Type::F32 => "f32",
+        Type::Char => "char",
         Type::Bool => "bool",
         Type::String => "str",
         _ => unreachable!("checked: intrinsics take primitives or strings"),

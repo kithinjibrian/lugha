@@ -13,6 +13,7 @@ impl Parser<'_> {
         let kind = match self.peek().clone() {
             TokenKind::Int(value) => ExprKind::Int(value),
             TokenKind::Float(value) => ExprKind::Float(value),
+            TokenKind::Char(code) => ExprKind::Char(code),
             TokenKind::Str(value) => ExprKind::Str(value),
             TokenKind::Fun => {
                 self.bump();

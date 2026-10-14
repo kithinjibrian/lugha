@@ -101,7 +101,10 @@ impl Checker {
         if matches!(from, Type::Error | Type::Never) || to == Type::Error {
             return to;
         }
-        if from.is_numeric() && to.is_numeric() {
+        // `char` casts to and from any integer (v14).
+        let char_cast =
+            (from == Type::Char && to.is_integer()) || (to == Type::Char && from.is_integer());
+        if (from.is_numeric() && to.is_numeric()) || char_cast {
             return to;
         }
         self.report(errors::bad_cast(from, to, expr.span));

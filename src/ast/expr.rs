@@ -22,6 +22,8 @@ pub struct Expr {
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExprKind {
     Int(u64),
+    /// A `char` literal's code point (v14).
+    Char(u32),
     Float(f64),
     Str(String),
     /// `"a {x} b"`: literal text and interpolated expressions in order (v3).

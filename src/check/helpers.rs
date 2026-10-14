@@ -19,6 +19,15 @@ fn helper_function(receiver: &Type, method: &str) -> Option<String> {
         "starts_with",
         "ends_with",
     ];
+    const CHAR: [&str; 7] = [
+        "is_alphabetic",
+        "is_digit",
+        "is_whitespace",
+        "is_upper",
+        "is_lower",
+        "to_upper",
+        "to_lower",
+    ];
     const OPTION: [&str; 5] = ["unwrap_or", "ok_or", "map", "is_some", "is_none"];
     const RESULTS: [&str; 6] = ["unwrap_or", "ok", "map", "map_err", "is_ok", "is_err"];
     let name = match receiver {
@@ -26,6 +35,9 @@ fn helper_function(receiver: &Type, method: &str) -> Option<String> {
         // The iterator sources (v10).
         Type::Array(_) if method == "iter" => "array_iter".to_string(),
         Type::String if method == "bytes" => "str_bytes".to_string(),
+        // Characters (v14).
+        Type::String if matches!(method, "chars" | "char_count") => format!("str_{method}"),
+        Type::Char if CHAR.contains(&method) => format!("char_{method}"),
         Type::Array(_) if ARRAY.contains(&method) => method.to_string(),
         Type::String if STRING.contains(&method) => format!("str_{method}"),
         Type::Option(_) if OPTION.contains(&method) => format!("option_{method}"),

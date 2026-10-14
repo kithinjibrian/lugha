@@ -23,6 +23,11 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn unconverted(&mut self, expr: &Expr) -> Result<Value<'ctx>, CodegenError> {
         let value: BasicValueEnum<'ctx> = match &expr.kind {
             ExprKind::Int(_) | ExprKind::Float(_) => self.literal(expr, false),
+            ExprKind::Char(code) => self
+                .context
+                .i32_type()
+                .const_int(u64::from(*code), false)
+                .into(),
             // `-` directly on a literal is part of it (spec §4 rule 6): `-2147483648` is one i32.
             ExprKind::Unary(UnOp::Neg, inner)
                 if matches!(inner.kind, ExprKind::Int(_) | ExprKind::Float(_)) =>

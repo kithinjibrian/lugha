@@ -59,7 +59,7 @@ impl Checker {
     pub(super) fn ord_ok(&self, ty: &Type) -> bool {
         match ty {
             Type::Param(n) => self.bounds(n).ord,
-            _ => ty.is_numeric() || *ty == Type::String,
+            _ => ty.is_numeric() || matches!(ty, Type::String | Type::Char),
         }
     }
 

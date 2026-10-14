@@ -20,11 +20,12 @@ pub mod span;
 
 /// The prelude: the array helpers, written in Lugha and loaded with every
 /// program (v3 draft §4, PRP-041), then the iterator helpers (v10, v13),
-/// one module from three files.
+/// one module from four files (Unicode text, v14).
 pub const PRELUDE: &str = concat!(
     include_str!("prelude.la"),
     include_str!("prelude_iter.la"),
-    include_str!("prelude_more.la")
+    include_str!("prelude_more.la"),
+    include_str!("prelude_text.la")
 );
 
 /// The language specification this compiler implements, embedded verbatim;

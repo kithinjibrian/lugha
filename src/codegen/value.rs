@@ -37,6 +37,7 @@ pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnu
         Type::U64 => context.i64_type().into(),
         Type::F32 => context.f32_type().into(),
         Type::I8 => context.i8_type().into(),
+        Type::Char => context.i32_type().into(),
         Type::I16 | Type::U16 => context.i16_type().into(),
         Type::Bool => context.bool_type().into(),
         // Strings and arrays are pointers to heap objects (spec §7).

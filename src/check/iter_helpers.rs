@@ -36,7 +36,7 @@ const HELPERS: [&str; 20] = [
 ];
 
 /// The prelude structs a program may name (v10), unless it declares the name.
-pub(super) const ITER_TYPES: [&str; 15] = [
+pub(super) const ITER_TYPES: [&str; 16] = [
     "ArrayIter",
     "Bytes",
     "Range",
@@ -53,6 +53,8 @@ pub(super) const ITER_TYPES: [&str; 15] = [
     "TakeWhile",
     "SkipWhile",
     "FlatMap",
+    // v14
+    "Chars",
 ];
 
 impl Checker {

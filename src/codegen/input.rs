@@ -58,6 +58,7 @@ impl<'ctx> Lowerer<'ctx> {
             Type::U16 | Type::U32 | Type::U64 => "u64",
             Type::I8 | Type::I16 => "i64",
             Type::F32 => "f32",
+            Type::Char => "char",
             _ => "bool",
         };
         let name = format!("lugha_rt_to_string_{suffix}");

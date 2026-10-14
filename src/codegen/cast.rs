@@ -29,6 +29,8 @@ impl<'ctx> Lowerer<'ctx> {
         let b = &self.builder;
         Ok(match (&from, &to) {
             _ if from == to => value,
+            // An integer `as char` (v14): U+FFFD unless it is a scalar value.
+            (_, Type::Char) => self.to_char(value.into_int_value(), &from).into(),
             // Between the two float widths (v7).
             (Type::F64, Type::F32) => b
                 .build_float_trunc(value.into_float_value(), self.context.f32_type(), "fptrunc")
@@ -86,6 +88,31 @@ impl<'ctx> Lowerer<'ctx> {
 }
 
 impl<'ctx> Lowerer<'ctx> {
+    /// Integer `i` of type `ty` as a `char`: itself when 0–0xD7FF or
+    /// 0xE000–0x10FFFF, else U+FFFD, since casts never fail.
+    fn to_char(&self, i: IntValue<'ctx>, ty: &Type) -> IntValue<'ctx> {
+        let i64_type = self.context.i64_type();
+        let wide = self.widen_index(i, ty);
+        let b = &self.builder;
+        let c = |n: u64| i64_type.const_int(n, false);
+        let lt = |x, n, name| {
+            b.build_int_compare(inkwell::IntPredicate::ULT, x, c(n), name)
+                .expect(POSITIONED)
+        };
+        // Unsigned compares: a negative `i64` is huge, so it fails both.
+        let low = lt(wide, 0xD800, "low");
+        let above = b.build_int_sub(wide, c(0xE000), "above").expect(POSITIONED);
+        let high = lt(above, 0x10_FFFF - 0xE000 + 1, "high");
+        let valid = b.build_or(low, high, "scalar").expect(POSITIONED);
+        let code = b
+            .build_int_truncate(wide, self.context.i32_type(), "code")
+            .expect(POSITIONED);
+        let replacement = self.context.i32_type().const_int(0xFFFD, false);
+        b.build_select(valid, code, replacement, "char")
+            .expect(POSITIONED)
+            .into_int_value()
+    }
+
     /// An index of integer type `ty` as the `i64` the bounds check takes.
     pub(super) fn widen_index(&self, i: IntValue<'ctx>, ty: &Type) -> IntValue<'ctx> {
         let i64_type = self.context.i64_type();
@@ -143,5 +170,12 @@ mod tests {
             assert!(ir.contains(needle), "{needle}: {ir}");
         }
         assert!(!ir.contains("div.min"), "no MIN check for unsigned: {ir}");
+    }
+
+    #[test]
+    fn integers_become_chars_or_the_replacement_v14() {
+        let ir = ir("fun main() { let n: u32 = 65; let c = n as char; println(c); }");
+        assert!(ir.contains("i32 65533"), "{ir}");
+        assert!(ir.contains("@lugha_rt_print_char"), "{ir}");
     }
 }
