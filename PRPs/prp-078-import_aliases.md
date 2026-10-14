@@ -1,6 +1,6 @@
 ## FEATURE: Import aliases and re-exports — `import a.b as c;`, `import a.b { X as Y };`, `public import a.b [as v];` giving `m.v.X`; milestone 49.
 
-**Status:** approved 2026-10-14 — session 100. This is part of the user's "in one go" (milestones 45–49), merged once CI is green.
+**Status:** merged 2026-10-14 — session 100. This is part of the user's "in one go" (milestones 45–49), merged once CI is green.
 **Milestone:** 49 (one PRP; tag `m49` at merge)
 **Spec:** `Language v14 Draft.md`:
 - decision 4, and the choices on imports;

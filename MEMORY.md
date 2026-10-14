@@ -1627,7 +1627,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 49 complete** (PRP-078, MEMORY 96): import aliases and whole-module re-exports. Tag `m49` goes on the merge. Milestones 45–49, the user's "in one go", are all done. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 49 complete** (PRP-078, MEMORY 96): import aliases and whole-module re-exports. Tagged `m49`. Milestones 45–49, the user's "in one go", are all done. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next: **M50 (git packages) needs the user's security review of its PRP before any code.** Write PRP-079 from the draft's "Downloaded packages" choices (`{ git = "URL", version }`, `https://`/`file://` only, the system `git` through argument lists with no shell, `GIT_TERMINAL_PROMPT=0`, hooks off, a cache under `$LUGHA_CACHE`/`$XDG_CACHE_HOME/lugha`/`$HOME/.cache/lugha`, `lugha.lock`, `lughac update`, `--offline`, E0325/E0326) and present it for review. Tag `v14` goes on M50's merge.
 

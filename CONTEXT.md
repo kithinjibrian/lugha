@@ -4335,8 +4335,8 @@ Branch: prp-077-format (merged into main)
 
 ---
 
-## SESSION 100 — 2026-10-14 — Import aliases and re-exports (milestone 49) — open
-Branch: prp-078-import_aliases
+## SESSION 100 — 2026-10-14 — Import aliases and re-exports (milestone 49) — closed
+Branch: prp-078-import_aliases (merged into main)
 
 ### WHAT WAS DONE
 - PRP-078 written as approved under the "in one go" instruction, built and merged on green CI:
@@ -4369,13 +4369,13 @@ Branch: prp-078-import_aliases
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m49`.
+- Nothing. PRP-078 merged into `main`, tagged `m49`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 49 complete** (PRP-078, MEMORY 96): import aliases and whole-module re-exports. Tag `m49` goes on the merge. Milestones 45–49, the user's "in one go", are all done. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 49 complete** (PRP-078, MEMORY 96): import aliases and whole-module re-exports. Tagged `m49`. Milestones 45–49, the user's "in one go", are all done. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next: **M50 (git packages) needs the user's security review of its PRP before any code.** Write PRP-079 from the draft's "Downloaded packages" choices (`{ git = "URL", version }`, `https://`/`file://` only, the system `git` through argument lists with no shell, `GIT_TERMINAL_PROMPT=0`, hooks off, a cache under `$LUGHA_CACHE`/`$XDG_CACHE_HOME/lugha`/`$HOME/.cache/lugha`, `lugha.lock`, `lughac update`, `--offline`, E0325/E0326) and present it for review. Tag `v14` goes on M50's merge.
 
