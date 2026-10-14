@@ -13,7 +13,8 @@ mod pattern;
 mod types;
 
 pub use expr::{
-    BinOp, Closure, Expr, ExprId, ExprKind, FormatText, IfLet, Part, StructLiteral, UnOp,
+    BinOp, Closure, Expr, ExprId, ExprKind, FormatCall, FormatText, IfLet, Part, StructLiteral,
+    UnOp,
 };
 pub use header::{
     Bound, Field, Import, InterfaceDecl, InterfaceItem, TypeParam, Visibility, VisibilityKind,

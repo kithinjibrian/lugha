@@ -65,6 +65,7 @@ mod stmt;
 mod struct_literal;
 mod structs;
 mod swap;
+mod templates;
 mod tuples;
 mod type_patterns;
 mod types;
@@ -81,6 +82,7 @@ pub use instances::Instance;
 pub use iterators::Iteration;
 pub use modules::{Unit, check_modules, qualify, symbol};
 pub use slots::{indirect_slot, slot_names_variant};
+pub use templates::exact as template_exact;
 pub use tuples::elements as tuple_elements;
 pub use types::{Enums, Structs, Type};
 

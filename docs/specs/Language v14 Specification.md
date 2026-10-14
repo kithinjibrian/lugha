@@ -2,16 +2,17 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 45–47 of 45–50). It is built from the approved plan, `Language v14 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v13 Specification.md` keeps v13 frozen.
+**Status:** in progress (milestones 45–48 of 45–50). It is built from the approved plan, `Language v14 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v13 Specification.md` keeps v13 frozen.
 
 **v13.** This is v12 plus `Self` in declarations, `for … of mut`, more iterator helpers and format specifiers (milestones 41–44).
 
-**Changes since v13** (milestones 45–47):
+**Changes since v13** (milestones 45–48):
 - Binary I/O: `read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes`; `s.to_bytes()`; `string_from_utf8(bytes)`, which rejects invalid UTF-8. An index may be of any integer type (sections 4–5).
 - `char`, a Unicode scalar value: `'a'`, `'é'`, `'\u{1F600}'`; `s.chars()` and `s.char_count()`; `c as u32`, `n as char`, `char_from(n)`; classification and case for ASCII and Latin-1 (sections 2–5).
 - Tuples: `(A, B)` types and `(a, b)` values, `t.0`, patterns `(p, q)` in `match`, `if let`, `let (a, b) = t;` and `for (i, w) of …`; element-wise `==`, lexicographic `<`, printed `(1, "a")`. `zip` yields tuples, and `Pair` is gone (sections 3–5).
+- `format("{} has {:>4} items", name, n)` returns a `string`: a literal template whose holes `{}` and `{:spec}` take the further arguments in order (E0432; sections 2, 5).
 
-A valid v13 program is a valid v14 program unless it uses `Pair` or `zip`'s `Pair` fields (`zip` yields tuples now: `p.first` is `p.0`), uses `char` as a name (a type keyword now), or declares a function named `read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes` or `string_from_utf8`, which are now intrinsics.
+A valid v13 program is a valid v14 program unless it uses `Pair` or `zip`'s `Pair` fields (`zip` yields tuples now: `p.first` is `p.0`), uses `char` as a name (a type keyword now), or declares a function named `format`, `read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes` or `string_from_utf8`, which are now intrinsics.
 
 **v12.** This is v11 plus printing any value: the prelude's `Display` and `show`, built-in forms, and `unwrap on Err: <error>` (milestones 39–40).
 
@@ -194,6 +195,8 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 **String details.** A string may not contain a raw line break: write `\n`. An unclosed string is reported at the end of its line, and lexing continues on the next one. Any other UTF-8 may appear inside strings and comments. Outside them, only ASCII is allowed.
 
 **String interpolation** (v3). Inside a string literal, `{` starts an interpolation that runs to its matching `}`: `"{name} is {age * 2}"`. Braces inside the expression nest, so `"{if c { 1 } else { 2 }}"` works. The expression may contain string literals, which may interpolate in turn (v4.1): `"<{parts.join("-")}>"`, `"{if ok { "yes" } else { "no" }}"`, `"{name}: {"{a}/{b}"}"`. `{{` and `}}` are literal braces. The lexer emits such a string as its literal parts (`STRING_START`, `STRING_MID`, `STRING_END`) with the expression's tokens between them, a nested string's tokens among them; escapes apply in every part. Errors (E0111): a lone `}`, a `{` never closed, or an empty `{}`. Strings stay on one line: a line break ends a string that began inside an interpolation with E0111 at that interpolation's `{`, and otherwise ends the string (E0102).
+
+**`format` templates** (v14). A string literal directly after `format` `(` (the name not after a `.`) is a template: one `STRING` token whose escapes are decoded but whose braces are kept as written, so nothing in it interpolates. Section 5 says what its braces mean.
 
 **Lexical errors.** The lexer reports every error it finds, not just the first.
 
@@ -826,6 +829,8 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 - **Other values** take only fill, alignment and width, applied to the text `print` would write: `{p:>20}` right-aligns a struct.
 - **Errors:** an empty specifier, an unknown kind, trailing text, a width or precision over 1024, a non-ASCII or brace fill, precision on a non-float, a kind on a non-integer, `#` without a kind, or `0` on a non-number is E0431 at the specifier.
 
+**`format`** (v14). `format(template, a, b, …)` returns a `string`: the template's text with each hole replaced by the next argument, written as an interpolation would write it. The template must be a string literal, read raw (section 2). In it, `{}` is a hole, `{:spec}` a hole with a format specifier as above, and `{{` and `}}` are literal braces. `format("{} has {:>4} items", "box", 12)` is `"box has   12 items"`. Any value that prints may be an argument; `format` is the only function that takes any number of them. Errors (E0432): a template that isn't a literal, `{x}` or any other text inside a hole, a `{` never closed, a lone `}`, or a number of holes unlike the number of further arguments. A bad specifier is E0431, as in an interpolation.
+
 `swap(a, b)` exchanges what two places hold, like `let t = a; a = b; b = t;` but without copying anything: swapping two arrays exchanges them in constant time, which makes double buffering cheap (`swap(ys, buf)`). Both arguments must be places of the same type (E0502, E0403), each following the assignment rules: the root is `let mut` (E0501), not inside a string (E0506), and not an array being iterated (E0507). The places are evaluated left to right, and elements are bounds-checked, before either is written. A place can't be swapped with a part of itself (E0509): `swap(n, n.kids[0])` would store `n` inside itself. Places that might be the same are fine, since swapping a place with itself changes nothing: `swap(xs[i], xs[j])`, `swap(p.a, p.b)` and `swap(a, a)` are all valid.
 
 Floats print as the shortest decimal that round-trips, in Lugha float-literal syntax: always a `.` with at least one digit on each side, so `2.0` prints as `2.0`, not `2`. Values with magnitude at or above `1e16`, or below `1e-5` and nonzero, use an exponent: `1.0e16`, `2.5e-7`. Infinities and NaN print as `inf`, `-inf` and `NaN`; `-0.0` prints as `-0.0`. `bool` prints as `true` or `false`. `u8` prints as a number, not a character. `u32` and `u64` print as unsigned decimals (v7). An `f32` prints by the same rules as the shortest decimal that reads back as the same `f32`, so `0.1` prints `0.1`, not the digits of its `f64` value.
@@ -1017,6 +1022,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - `for x of mut e` (v13) works on `e`'s address: over an array, `x` is a local whose storage is the element itself (an `i1` occupies one byte, so `bool` elements alias too); over an iterator, `next` is called on `e`'s own storage instead of a hidden copy.
 - The v13 iterator helpers are Lugha in the prelude's third file, compiled only when reached like the others. `flat_map` keeps its current inner iterator in a 0- or 1-element array, so `next` steps it in place.
 - A format specifier (v13) is parsed once by the checker (E0431) and again by codegen, which passes its parts to `lugha_rt_fmt_int`, `lugha_rt_fmt_float` or `lugha_rt_pad`, from a runtime fragment `format.c`. Programs without specifiers give byte-identical IR.
+- `format` (v14) splits its template into text and holes in the checker and again in codegen, then lowers like an interpolated string with the arguments as its parts. Programs without `format` give byte-identical IR.
 - An index (v14) is evaluated at its own integer type and sign- or zero-extended to `i64` before the bounds check, so an `i64` index lowers exactly as before.
 - A `char` (v14) is an LLVM `i32`, compared unsigned. An integer `as char` selects U+FFFD unless the value, widened to `i64`, is a scalar value. `chars()`, `char_count()`, `char_from` and the classification and case methods are Lugha in the prelude's fourth file.
 - A tuple type (v14) is the generic struct `$tuple<n>` with fields `0`, `1`, …, so it lowers as a struct: an LLVM named struct spelt as the type prints, `%"(i64, string)"`, with struct copy, equality and print helpers, and symbols such as `lugha_fn_max<(i64, i64)>`. `<` calls one `lugha_cmp_<type>(a, b) -> i32` helper per tuple type. A tuple pattern tests each field's address, with no tag. `for (i, w) of e` becomes a loop over a hidden variable whose body starts `let (i, w) = …;`.
@@ -1184,6 +1190,7 @@ Name and type errors, reported by the checker:
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
 | E0430 | A default method that two visible interfaces supply (v10) | `c.describe()` where `Named` and `Shown` both default `describe` and `Circle` satisfies both |
 | E0431 | A bad format specifier (v13) | `"{n:.2}"` with `n: i64`; `"{x:q}"`; `"{f:x}"` with `f: f64`; `"{n:#}"`; `"{s:05}"` with `s: string`; `"{n:2000}"` |
+| E0432 | A bad `format` template (v14) | `format(t, 1)` with `t` a variable; `format("{} and {}", 1)`; `format("{x}", 1)`; `format("a {")` |
 | E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum, `Option`, function or interface parameters or returns (§8) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut`; `for x of mut xs` where `xs` isn't (v13) |
@@ -2513,6 +2520,26 @@ fun main() {
 }
 ```
 
+**Format** (milestone 48). Prints `box has   12 items`, `crate has  340 items`, `3.14 | 0xff | left  |`, `{literal} and (1, 'a')`, `total: 00352` on five lines, exits with 0.
+
+```
+// `format` (v14): a template and the values for its holes.
+struct Item { name: string, n: i64 }
+
+fun line(it: Item): string = format("{} has {:>4} items", it.name, it.n);
+
+fun main() {
+    let items = [Item { name: "box", n: 12 }, Item { name: "crate", n: 340 }];
+    for it of items {
+        println(line(it));
+    }
+    println(format("{:.2} | {:#x} | {:<6}|", 3.14159, 255, "left"));
+    println(format("{{literal}} and {}", (1, 'a')));
+    let total = items.iter().map(fun(it: Item): i64 = it.n).sum();
+    println("total: {format("{:05}", total)}");
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2566,6 +2593,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 45 | Bytes and indexes (v14) | binary file I/O, `to_bytes`, `string_from_utf8`, `read_stdin_bytes`, any-integer indexes | The bytes-and-indexes program in section 10 passes (done) |
 | 46 | Unicode text (v14) | `char`, `'a'`, `chars()`, `char_count()`, casts, `char_from`, classification and case (E0112) | The Unicode-text program in section 10 passes (done) |
 | 47 | Tuples (v14) | tuple types and values, `t.0`, patterns, `let`/`for` destructuring (E0433), `zip` → tuples, `Pair` removed | The tuples program in section 10 passes (done) |
+| 48 | `format` (v14) | template `format(…)` (E0432) | The format program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -2624,4 +2652,4 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [ ] **A `show` of another shape** (v12) is ignored silently, so v11 programs stay valid. A later warning could point out `fun show(self): i64`.
 - [ ] **Module paths in printed names** (v12). A type prints with its bare name, so two modules' `Point`s look the same. A debug form could add the path.
 - [ ] **Width counts bytes** (v13). Text with multi-byte characters pads as if it were longer; this waits for a decision on Unicode text.
-- [ ] **Format specifiers at run time** (v13). A spec must be written in the string; a `format(spec, x)` function could come later.
+- [ ] **Format specifiers at run time** (v13). A spec must be written in the string. v14's `format` keeps that rule: its template is a literal, checked when compiling.

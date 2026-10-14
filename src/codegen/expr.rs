@@ -115,6 +115,14 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Match(scrutinee, arms) => return self.match_expr(expr, scrutinee, arms),
             ExprKind::Str(text) => self.string_literal(text).into(),
             ExprKind::Interp(parts) => self.interpolation(parts)?,
+            // `format` (v14): its template's parts, lowered as interpolation.
+            ExprKind::Format(call) => {
+                let pieces = crate::template::pieces(&call.template)
+                    .expect("the checker accepted the template");
+                let exact = crate::check::template_exact(call);
+                let parts = crate::template::parts(&pieces, &call.args, call.template_span, exact);
+                self.interpolation(&parts)?
+            }
             ExprKind::Closure(c) => self.closure_value(expr, c)?,
             ExprKind::Try(inner) => return self.try_value(inner),
             ExprKind::Index(base, open, index) => self.index(base, open.start, index)?,

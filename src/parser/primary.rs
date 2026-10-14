@@ -30,6 +30,9 @@ impl Parser<'_> {
                     name,
                     span: self.bump(),
                 };
+                if name.name == "format" && self.at_template() {
+                    return self.format_call(start);
+                }
                 return self.name_or_struct(start, name);
             }
             TokenKind::LParen => {

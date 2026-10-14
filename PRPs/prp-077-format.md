@@ -94,22 +94,22 @@ Unit tests — `template.rs`: holes, specs, `{{`/`}}`, and each error.
 Unit tests — parser: `(format "…" a b)`; `format(s)` stays a call.
 
 Unit tests — checker:
-- [ ] The type is `string`.
-- [ ] Each E0432 case; E0431 inside a template; E0407; E0302.
+- [x] The type is `string`.
+- [x] Each E0432 case; E0431 inside a template; E0407; E0302.
 
 Acceptance — `tests/programs/m48/`:
-- [ ] `format.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `format.la`: the §10 program.
+- [x] `more.la`:
   - no arguments (`format("{{}}")`);
   - every specifier kind;
   - structs, arrays, `Option`, tuples and `char`s as arguments;
   - nested `format` and `format` inside an interpolation;
   - escapes in a template.
-- [ ] `e0432.la`: reject golden.
-- [ ] The §10 program runs from the spec.
+- [x] `e0432.la`: reject golden.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -117,10 +117,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m48/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The spec is at milestone 48; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m48/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The spec is at milestone 48; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -129,3 +129,10 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m48/format.la
 ```
+
+## AMENDMENTS (during build, session 99)
+
+- **`template.rs` is crate-level** next to `format.rs`, since both the checker and codegen read it; `check::template_exact` says whether specifier spans can point inside the literal.
+- **A non-literal `format(…)` call** reaches `input_intrinsic` (`format` joined `INPUT`) and is E0432 at its first argument, or at the call for `format()`.
+- **IR:** the 165 earlier programs that compile give byte-identical IR. `-O2` was checked by hand for both `m48` run programs.
+- **No file splits:** the new code is in new files (`src/template.rs`, `parser/format.rs`, `check/templates.rs`).

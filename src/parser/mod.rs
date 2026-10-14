@@ -12,6 +12,7 @@ mod conditional;
 mod decl;
 mod describe;
 mod expr;
+mod format;
 mod generic;
 mod import;
 mod interface;

@@ -17,6 +17,7 @@ pub mod link;
 pub mod modules;
 pub mod parser;
 pub mod span;
+pub mod template;
 
 /// The prelude: the array helpers, written in Lugha and loaded with every
 /// program (v3 draft §4, PRP-041), then the iterator helpers (v10, v13),

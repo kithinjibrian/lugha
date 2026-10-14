@@ -30,6 +30,9 @@ pub enum ExprKind {
     Str(String),
     /// `"a {x} b"`: literal text and interpolated expressions in order (v3).
     Interp(Vec<Part>),
+    /// `format("{} has {:>4}", a, b)` with a literal template (v14), boxed
+    /// so `Expr` stays small.
+    Format(Box<FormatCall>),
     /// `e?`: the `Ok`/`Some` value, or an early return (v4).
     Try(Box<Expr>),
     /// `fun(x) = e` or `fun(x: T): R { … }` (v3). Boxed: it is large and rare.
@@ -166,6 +169,17 @@ pub struct Closure {
     pub ret: Option<super::Type>,
     /// The body; `= e` is a block with tail `e`, as for functions.
     pub body: super::Block,
+}
+
+/// A `format` call with a literal template (v14).
+#[derive(Debug, Clone, PartialEq)]
+pub struct FormatCall {
+    /// The template as the lexer kept it: escapes decoded, braces as written.
+    pub template: String,
+    /// The template literal, quotes included.
+    pub template_span: Span,
+    /// The values for its holes, in order.
+    pub args: Vec<Expr>,
 }
 
 /// The contents of a struct literal.

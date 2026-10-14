@@ -10,7 +10,7 @@ use crate::format;
 
 /// The input and I/O intrinsics (v3, v4), checked here rather than in
 /// `call.rs` — except `eprint`/`eprintln`, which follow `print`'s rules.
-pub(super) const INPUT: [&str; 16] = [
+pub(super) const INPUT: [&str; 17] = [
     "args",
     "parse_i64",
     "parse_u64",
@@ -28,11 +28,16 @@ pub(super) const INPUT: [&str; 16] = [
     "append_bytes",
     "read_stdin_bytes",
     "string_from_utf8",
+    // v14: a `format` call reaching here has no literal template (E0432).
+    "format",
 ];
 
 impl Checker {
     /// `args()`, `parse_i64(s)`, `parse_f64(s)`, or an I/O intrinsic.
     pub(super) fn input_intrinsic(&mut self, call: &Expr, name: &str, args: &[Expr]) -> Type {
+        if name == "format" {
+            return self.format_without_template(call, args);
+        }
         let result = |t: Type| Type::Enum(RESULT.to_string(), vec![t, Type::String]);
         let bytes = || Type::Array(Box::new(Type::U8));
         let (params, ret) = match name {

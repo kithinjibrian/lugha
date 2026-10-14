@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v14 Specification.md` (`lughac spec` prints it): Lugha v14, in progress (milestones 45–47 done: binary I/O, `to_bytes`, `string_from_utf8`, any-integer indexes; `char`, `'a'`, `chars()`; tuples). `Language v14 Draft.md` is the approved plan (milestones 45–50: bytes and indexes, `char`, tuples, `format`, import aliases and re-exports, git packages). The v0–v13 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la`, `src/prelude_more.la` and `src/prelude_text.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v14 Specification.md` (`lughac spec` prints it): Lugha v14, in progress (milestones 45–48 done: binary I/O, `to_bytes`, `string_from_utf8`, any-integer indexes; `char`, `'a'`, `chars()`; tuples; `format`). `Language v14 Draft.md` is the approved plan (milestones 45–50: bytes and indexes, `char`, tuples, `format`, import aliases and re-exports, git packages). The v0–v13 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la`, `src/prelude_more.la` and `src/prelude_text.la`, loaded with every program.
 
 ---
 
@@ -236,9 +236,10 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
 │   ├── format.rs    — format specifiers (v13): `parse`, `check`, shared by the checker and codegen
+│   ├── template.rs  — `format` templates (v14): `pieces`, `holes`, `parts`, shared by the checker and codegen
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
 │   ├── lexer/       — mod.rs (lex, main loop), token.rs, punct.rs (operators), number.rs, string.rs,
-│   │                  interp.rs (string interpolation, E0111), format_spec.rs (the `FmtSpec` token, v13), char_lit.rs (`char` literals, E0112, v14)
+│   │                  interp.rs (string interpolation, E0111), format_spec.rs (the `FmtSpec` token, v13), char_lit.rs (`char` literals, E0112, v14); string.rs also reads `format` templates raw (v14)
 │   ├── ast/         — mod.rs (items, statements), types.rs (written types), expr.rs (expressions, ExprId, StructLiteral, Part),
 │   │                  pattern.rs (arms, nested patterns, guards), header.rs (imports, type parameters, bounds,
 │   │                  interfaces)
@@ -247,7 +248,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  pattern.rs (match, patterns, guards), generic.rs (type params, m.T / T<args>),
 │   │                  import.rs (import, pub), interface.rs (interfaces, bounds), closure.rs (closure
 │   │                  literals, E0209), sexp/ (mod.rs exprs,
-│   │                  item.rs items and types), test_util.rs, tuples.rs (tuple types, literals, patterns, `t.0`, `for (i, w)`, v14)
+│   │                  item.rs items and types), test_util.rs, tuples.rs (tuple types, literals, patterns, `t.0`, `for (i, w)`, v14), format.rs (`format("…", …)` with a literal template, v14)
 │   ├── check/       — mod.rs (check), checked.rs (the `Checked` output), test_util.rs, types.rs, env.rs (globals, main, scopes),
 │   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), body.rs (function bodies), stmt.rs,
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
@@ -277,7 +278,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  numbers.rs (v7/v10 numeric types: `is_float`, `is_unsigned`, keyword types, `I.MIN`/`I.MAX`), slots.rs (enum payload slots),
 │   │                  or_patterns.rs (or-pattern alternatives and bindings E0428, `mut` bindings), conditional.rs
 │   │                  (`if let`, `while let`, `let … else`, E0429), concrete_defaults.rs (default methods on
-│   │                  concrete types, E0430), named_imports.rs (`import m { X }`, re-exports: aliases, `member`, E0318), printing.rs (what prints, `show` instances, `$print` uses), for_mut.rs (`for x of mut e`: place checks, E0501/E0502/E0506), iter_helpers.rs (iterator helpers as prelude calls, prelude iterator type names), tuples.rs (tuples as `$tuple<n>` structs, patterns, E0433, v14)
+│   │                  concrete types, E0430), named_imports.rs (`import m { X }`, re-exports: aliases, `member`, E0318), printing.rs (what prints, `show` instances, `$print` uses), for_mut.rs (`for x of mut e`: place checks, E0501/E0502/E0506), iter_helpers.rs (iterator helpers as prelude calls, prelude iterator type names), tuples.rs (tuples as `$tuple<n>` structs, patterns, E0433, v14), templates.rs (`format`: holes against arguments, E0432, v14)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
@@ -317,7 +318,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m47/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m48/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)

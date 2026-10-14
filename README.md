@@ -61,6 +61,7 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **Bytes and indexes (v14, milestone 45):** `read_bytes`/`write_bytes`/`append_bytes`/`read_stdin_bytes`, `s.to_bytes()`, `string_from_utf8(bytes)` (checked), and `xs[i]` with `i` of any integer type.
 - **Unicode text (v14, milestone 46):** a `char` type with `'é'` literals, `s.chars()`, `s.char_count()`, `c as u32`, `char_from(n)`, and `is_alphabetic`/`to_upper`-style methods for ASCII and Latin-1.
 - **Tuples (v14, milestone 47):** `fun divmod(a: i64, b: i64): (i64, i64)`, `let (q, r) = divmod(7, 2);`, `t.0`, `for (i, w) of xs.iter().zip(ws.iter())`, tuple patterns in `match`, `==` and `<`, printed `(1, "a")`.
+- **`format` (v14, milestone 48):** `format("{} has {:>4} items", name, n)` returns a `string`; the template is a literal checked when compiling.
 
 Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v14 Specification.md`](docs/specs/Language%20v14%20Specification.md) (what `lughac spec` prints, in progress); the approved plan it is built from is [`Language v14 Draft.md`](docs/specs/Language%20v14%20Draft.md), and v13 is frozen in [`Language v13 Specification.md`](docs/specs/Language%20v13%20Specification.md).
 

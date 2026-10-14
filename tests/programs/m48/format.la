@@ -1,0 +1,15 @@
+// `format` (v14): a template and the values for its holes.
+struct Item { name: string, n: i64 }
+
+fun line(it: Item): string = format("{} has {:>4} items", it.name, it.n);
+
+fun main() {
+    let items = [Item { name: "box", n: 12 }, Item { name: "crate", n: 340 }];
+    for it of items {
+        println(line(it));
+    }
+    println(format("{:.2} | {:#x} | {:<6}|", 3.14159, 255, "left"));
+    println(format("{{literal}} and {}", (1, 'a')));
+    let total = items.iter().map(fun(it: Item): i64 = it.n).sum();
+    println("total: {format("{:05}", total)}");
+}

@@ -115,6 +115,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Bytes and indexes",
         "Unicode text",
         "Tuples",
+        "Format",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

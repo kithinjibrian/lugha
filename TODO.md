@@ -266,8 +266,8 @@ Done when the printing-anything program passes and the v12 spec is complete.
 ### Milestone 47 — Tuples ✅
 - [x] PRP-076: tuple types and values, `t.0`, patterns, `let`/`for` destructuring, `zip` → tuples, `Pair` removed (E0433); tagged `m47`
 
-### Milestone 48 — `format`
-- [ ] template `format(…)` (E0432)
+### Milestone 48 — `format` ✅
+- [x] PRP-077: template `format(…)` (E0432); tagged `m48`
 
 ### Milestone 49 — Import aliases and re-exports
 - [ ] `as` on modules and items, `public import m;`, `m.v.X`

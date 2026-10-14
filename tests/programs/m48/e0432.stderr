@@ -1,0 +1,32 @@
+error[E0432]: the template of `format` must be a string literal
+  --> tests/programs/m48/e0432.la:3:20
+  |
+3 |     let a = format(t, 1);
+  |                    ^
+  |
+  = help: write `format("{} and {:>5}", a, b)`: one `{}` or `{:spec}` per value
+
+error[E0432]: the template has 2 holes but 1 value follows
+  --> tests/programs/m48/e0432.la:4:20
+  |
+4 |     let b = format("{} and {}", 1);
+  |                    ^^^^^^^^^^^
+  |
+  = help: write `format("{} and {:>5}", a, b)`: one `{}` or `{:spec}` per value
+
+error[E0432]: `{x}` in a template: holes are `{}` or `{:spec}`, filled from the arguments in order
+  --> tests/programs/m48/e0432.la:5:20
+  |
+5 |     let c = format("{x}", 1);
+  |                    ^^^^^
+  |
+  = help: write `format("{} and {:>5}", a, b)`: one `{}` or `{:spec}` per value
+
+error[E0431]: `q` isn't a format: use `x`, `X`, `b` or `o`
+  --> tests/programs/m48/e0432.la:6:22
+  |
+6 |     let d = format("{:q}", 1);
+  |                      ^^
+  |
+  = help: a specifier is `[[fill]align][#][0][width][.precision][kind]`, e.g. `{x:>8.2}`
+

@@ -124,6 +124,7 @@ impl Walk<'_> {
                 .iter()
                 .filter_map(Part::expr)
                 .for_each(|e| self.expr(e)),
+            ExprKind::Format(call) => call.args.iter().for_each(|e| self.expr(e)),
             ExprKind::Int(_)
             | ExprKind::Float(_)
             | ExprKind::Char(_)

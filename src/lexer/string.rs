@@ -3,7 +3,7 @@
 //! A string may not contain a raw line break: an unclosed string ends at the
 //! end of its line, so one missing `"` can't swallow the rest of the file.
 
-use super::Lexer;
+use super::{Lexer, TokenKind};
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
 
@@ -12,7 +12,48 @@ impl Lexer<'_> {
     /// Interpolations are in `interp.rs` (v3).
     pub(super) fn string(&mut self, start: usize) {
         self.pos += 1;
+        if self.after_format() {
+            return self.template(start);
+        }
         self.string_text(start, start, true);
+    }
+
+    /// Whether the tokens so far end in `format (`, not after a `.`: the
+    /// intrinsic's template comes next (v14).
+    fn after_format(&self) -> bool {
+        match self.tokens.as_slice() {
+            [.., before, name, paren] => {
+                paren.kind == TokenKind::LParen
+                    && name.kind == TokenKind::Ident("format".to_string())
+                    && before.kind != TokenKind::Dot
+            }
+            [name, paren] => {
+                paren.kind == TokenKind::LParen
+                    && name.kind == TokenKind::Ident("format".to_string())
+            }
+            _ => false,
+        }
+    }
+
+    /// A `format` template after its `"` (v14): escapes decoded, braces kept
+    /// as written for `template.rs` to read, so nothing interpolates.
+    fn template(&mut self, start: usize) {
+        let mut value = String::new();
+        loop {
+            match self.peek_char() {
+                None | Some('\n') => return self.unterminated(start),
+                Some('\r') if self.byte_at(1) == Some(b'\n') => return self.unterminated(start),
+                Some('"') => {
+                    self.pos += 1;
+                    return self.push(TokenKind::Str(value), start);
+                }
+                Some('\\') => self.escape(&mut value),
+                Some(c) => {
+                    value.push(c);
+                    self.pos += c.len_utf8();
+                }
+            }
+        }
     }
 
     pub(super) fn escape(&mut self, value: &mut String) {
@@ -60,6 +101,20 @@ mod tests {
         assert_eq!(kinds(r#""hello\n""#), [Str("hello\n".into())]);
         assert_eq!(kinds(r#""\n\t\r\\\"\0""#), [Str("\n\t\r\\\"\0".into())]);
         assert_eq!(kinds("\"héllo 👋\""), [Str("héllo 👋".into())]);
+    }
+
+    #[test]
+    fn a_format_template_keeps_its_braces_v14() {
+        let template = |src: &str| kinds(src)[2].clone();
+        assert_eq!(
+            template(r#"format("{x} {{ \t{}")"#),
+            Str("{x} {{ \t{}".into())
+        );
+        // A method named `format` interpolates as before.
+        assert_eq!(kinds(r#"p.format("{x}")"#)[4], StrStart(String::new()));
+        // Inside an interpolation too.
+        assert!(kinds(r#""{format("{}", x)}""#).contains(&Str("{}".into())));
+        assert_eq!(errors("format(\"{}"), [("E0102", "\"{}")]);
     }
 
     #[test]

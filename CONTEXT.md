@@ -4308,18 +4308,41 @@ Branch: prp-076-tuples (merged into main)
 ## SESSION 99 — 2026-10-14 — format (milestone 48) — open
 Branch: prp-077-format
 
+### WHAT WAS DONE
+- PRP-077 written as approved under the "in one go" instruction, built and merged on green CI: `format("…", args…)` with a literal template, holes `{}`/`{:spec}`, `{{`/`}}`, E0432, `format` reserved.
+- **Spec:** changes and compatibility, §2 templates, §5 `format`, §9, the E0432 row, the §10 "Format" program, §11 row 48, §12 note.
+
+### FILES CREATED OR MODIFIED
+- New: `src/template.rs`, `src/parser/format.rs`, `src/check/templates.rs`, `tests/programs/m48/` (`format`, `more`, `e0432`), PRP-077.
+- Modified: `src/lib.rs`, `src/lexer/string.rs`, `src/ast/{expr,mod}.rs`, `src/parser/{mod,primary}.rs`, `src/parser/sexp/mod.rs`, `src/check/{mod,expr,input}.rs`, `src/check/errors/v14.rs`, `src/check/liveness/walk.rs`, `src/codegen/expr.rs`, `tests/spec.rs`, the v14 spec.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 95, CONTEXT.
+
+### TESTS WRITTEN
+- **Lexer:** raw templates, `x.format(…)` still interpolating, templates inside interpolations, E0102.
+- **Template:** pieces, holes, errors. **Parser:** the `format` form and ordinary calls.
+- **Checker:** the `string` type, each E0432 case, E0431, E0407, E0302.
+- **Programs:** `tests/programs/m48/`, and the §10 program from the spec.
+- **Regression:** 165 earlier programs give byte-identical IR; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 95.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m48`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 47 complete** (PRP-076, MEMORY 94): tuples; `zip` yields `(A, B)`, `Pair` removed. Tagged `m47`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 48 complete** (PRP-077, MEMORY 95): `format` with a literal template. Tag `m48` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
-Next, under the user's "in one go" (MEMORY 91), the remaining milestones:
-- M48: `format` (PRP-077: a template literal, E0432);
-- M49: imports (PRP-078: `as`, `public import m [as v];`).
+Next, under the user's "in one go" (MEMORY 91): M49 imports (PRP-078: `import a.b as c;`, `{ X as Y }`, `public import m [as v];` giving `m.v.X`).
 
 Then stop for the user's security review of M50 (git packages).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/env.rs` (299), `check/interfaces.rs` (299), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `codegen/runtime.rs` (297), `parser/stmt.rs` (297), `parser/primary.rs` (295).
+Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/env.rs` (299), `check/interfaces.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `codegen/runtime.rs` (297), `parser/stmt.rs` (297).
 
 See `TODO.md`.

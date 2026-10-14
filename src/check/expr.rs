@@ -132,6 +132,7 @@ impl Checker {
             ExprKind::Match(scrutinee, arms) => self.match_expr(expr, scrutinee, arms, expect),
             ExprKind::Str(_) => Type::String,
             ExprKind::Interp(parts) => self.interpolation(parts),
+            ExprKind::Format(call) => self.format_call(call),
             ExprKind::Closure(c) => self.closure(expr, c, expect),
             ExprKind::Try(inner) => self.try_expr(expr, inner),
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),

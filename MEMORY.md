@@ -1506,11 +1506,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 **Why:** reusing generic structs gives tuples every struct feature for a few hundred lines; the one-variant trick keeps exhaustiveness in one place.
 
+### 95. `format` — milestone 48 (PRP-077)
+
+**Decision:** built under the user's "in one go" (milestones 45–49).
+- **Lexer:** a string right after `format` `(` (not after `.`) is one `Str` token with escapes decoded and braces as written (`lexer/string.rs::template`).
+- **Parser:** `format` `(` STR followed by `,` or `)` → `ExprKind::Format(Box<FormatCall { template, template_span, args }>)` (`parser/format.rs`); anything else stays a call.
+- **Shared:** `src/template.rs` splits the template (`pieces`, `holes`) and builds interpolation `Part`s with the argument exprs cloned (`parts`), so the checker's `interpolation` and codegen's `interpolation` do the rest.
+- **Checker:** `check/templates.rs`; E0432 for a bad template, a count mismatch, or (via `INPUT`) a non-literal template. `format` is reserved (E0302).
+
+**Why:** reusing interpolation gives printing and specifiers for free, with no runtime change and byte-identical IR elsewhere.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 48 complete**: PRP-077 `format`
 - **Milestone 47 complete**: PRP-076 tuples
 - **Milestone 46 complete**: PRP-075 Unicode `char`
 - **Milestone 45 complete**: PRP-074 bytes and indexes; v14 spec begins
@@ -1605,14 +1616,12 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 47 complete** (PRP-076, MEMORY 94): tuples; `zip` yields `(A, B)`, `Pair` removed. Tagged `m47`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 48 complete** (PRP-077, MEMORY 95): `format` with a literal template. Tag `m48` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
-Next, under the user's "in one go" (MEMORY 91), the remaining milestones:
-- M48: `format` (PRP-077: a template literal, E0432);
-- M49: imports (PRP-078: `as`, `public import m [as v];`).
+Next, under the user's "in one go" (MEMORY 91): M49 imports (PRP-078: `import a.b as c;`, `{ X as Y }`, `public import m [as v];` giving `m.v.X`).
 
 Then stop for the user's security review of M50 (git packages).
 
-Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/env.rs` (299), `check/interfaces.rs` (299), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `codegen/runtime.rs` (297), `parser/stmt.rs` (297), `parser/primary.rs` (295).
+Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/env.rs` (299), `check/interfaces.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `codegen/runtime.rs` (297), `parser/stmt.rs` (297).
 
 See `TODO.md`.

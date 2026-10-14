@@ -106,6 +106,11 @@ pub fn expr(expr: &Expr) -> String {
                 .collect();
             format!("(interp {})", shown.join(" "))
         }
+        ExprKind::Format(call) => {
+            let mut parts = vec![format!("(format {:?}", call.template)];
+            parts.extend(call.args.iter().map(self::expr));
+            format!("{})", parts.join(" "))
+        }
         ExprKind::Bool(value) => value.to_string(),
         ExprKind::Name(name) => name.clone(),
         ExprKind::Unary(UnOp::Neg, e) => list("neg", &[e]),

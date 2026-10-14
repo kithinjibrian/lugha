@@ -1,0 +1,22 @@
+// `format` with no holes, every specifier kind, any printable value,
+// nesting, and escapes in the template.
+struct P { x: i64, y: i64 }
+enum Shape { Circle(f64), Square(f64) }
+
+fun main() {
+    println(format("{{}}"));
+    println(format(""));
+    println(format("[{:>6}] [{:<6}] [{:^6}] [{:*^7}]", 1, 2, 3, 4));
+    println(format("{:x} {:X} {:b} {:o} {:#b} {:#o} {:08.3}", 255, 255, 5, 8, 5, 8, -2.5));
+    println(format("{} {} {}", P { x: 1, y: 2 }, [Some(1), None], Shape.Circle(1.5)));
+    println(format("{} {} {}", ("a", 2), 'é', true));
+    println(format("<{}>", format("{}-{}", 1, format("{}", 2))));
+    println(format("tab:\t{}\nquote: \"{}\"", 1, "q"));
+    let s = format("{}", "x").len;
+    println(format("{}", s));
+    let words = ["a", "bb", "ccc"];
+    for w of words {
+        print(format("{:>4}|", w));
+    }
+    println("");
+}
