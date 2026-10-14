@@ -4103,7 +4103,7 @@ Branch: prp-072-more_iterator_helpers (merged into main)
 ---
 
 ## SESSION 94 — 2026-10-14 — Format specifiers (milestone 44) — open
-Branch: main
+Branch: prp-073-format_specifiers
 
 ---
 
