@@ -4265,8 +4265,8 @@ Branch: prp-075-unicode_text (merged into main)
 
 ---
 
-## SESSION 98 — 2026-10-14 — Tuples (milestone 47) — open
-Branch: prp-076-tuples
+## SESSION 98 — 2026-10-14 — Tuples (milestone 47) — closed
+Branch: prp-076-tuples (merged into main)
 
 ### WHAT WAS DONE
 - PRP-076 written as approved under the "in one go" instruction, built and merged on green CI:
@@ -4301,13 +4301,13 @@ Branch: prp-076-tuples
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m47`.
+- Nothing. PRP-076 merged into `main`, tagged `m47`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 47 complete** (PRP-076, MEMORY 94): tuples; `zip` yields `(A, B)`, `Pair` removed. Tag `m47` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 47 complete** (PRP-076, MEMORY 94): tuples; `zip` yields `(A, B)`, `Pair` removed. Tagged `m47`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next, under the user's "in one go" (MEMORY 91), the remaining milestones:
 - M48: `format` (PRP-077: a template literal, E0432);

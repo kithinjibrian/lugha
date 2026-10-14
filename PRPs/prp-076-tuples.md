@@ -1,6 +1,6 @@
 ## FEATURE: Tuples — `(A, B)` types and values, `t.0`, patterns in `match`/`if let`/`let`/`for`, `zip` → tuples, `Pair` removed (E0433); milestone 47.
 
-**Status:** approved 2026-10-14 — session 98. This is part of the user's "in one go" (milestones 45–49), merged once CI is green.
+**Status:** merged 2026-10-14 — session 98. This is part of the user's "in one go" (milestones 45–49), merged once CI is green.
 **Milestone:** 47 (one PRP; tag `m47` at merge)
 **Spec:** `Language v14 Draft.md`:
 - decision 3, and the choices on tuples;

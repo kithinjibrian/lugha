@@ -1605,7 +1605,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 47 complete** (PRP-076, MEMORY 94): tuples; `zip` yields `(A, B)`, `Pair` removed. Tag `m47` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 47 complete** (PRP-076, MEMORY 94): tuples; `zip` yields `(A, B)`, `Pair` removed. Tagged `m47`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next, under the user's "in one go" (MEMORY 91), the remaining milestones:
 - M48: `format` (PRP-077: a template literal, E0432);
