@@ -1107,6 +1107,18 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 72. Lugha v9 direction (session 76)
+
+**Decision:** `docs/specs/Language v9 Draft.md` is approved: `match` and everyday conveniences, as milestones 31–33.
+- **M31 patterns:** or-patterns `p | q` anywhere a pattern goes (nested, guard covers the arm); every alternative binds the same names at the same types, else E0428 (also `mut` on a variant); exhaustiveness/W0102 per alternative. `mut name` bindings (every binding position, incl. type patterns) are an owned mutable copy; plain bindings stay read-only (E0501).
+- **M32 unwrapping:** built-in `unwrap()` / `expect(msg: string)` on `Option` and `Result`, panicking `unwrap on None` / `unwrap on Err` / the message at the method name (not in the prelude); E0415 elsewhere. `%=` (zero-divisor panic).
+- **M33 conditional patterns:** `if let p = cond block [else …]` (expression with `else`; `else if let` chains; irrefutable allowed silently), `while let p = cond block`, `let p = e else block;` whose `else` must not finish (E0429), bindings in scope after; scrutinees in no-struct-literal mode.
+- **New codes:** E0428, E0429.
+
+**Why:** the session 76 discovery; the user took every recommendation plus `while let` and `let … else`.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
@@ -1181,22 +1193,19 @@ Open questions live in `DECISIONS.md`, not here.
 - Nothing
 
 ### Not Started
-- Lugha v9 (nothing planned; see the v8 spec's §11 out-of-scope list)
+- Lugha v9: draft approved (MEMORY 72), milestones 31–33 not started
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v8 is complete** (milestone 30; PRP-058–059; MEMORY 69–71): packages — `lugha.toml`, package imports, per-package manifests, `public` / package / `private` visibility. Tagged `m30` and `v8`. `Language v8 Specification.md` is what `lughac spec` prints; v0–v7 are frozen.
+**Lugha v9 draft approved** (`docs/specs/Language v9 Draft.md`, MEMORY 72): `match` and conveniences — milestones 31–33. `main` has v8 complete (tags `m30`, `v8`); `Language v8 Specification.md` is what `lughac spec` prints until milestone 31 starts `Language v9 Specification.md`.
 
-Next: **v9 direction — discovery** (one question at a time, recommended option first; explain options concretely — what you type, where it lives). Candidates are in the v8 spec's §11 out-of-scope list and §12 open questions:
-- or-patterns and `mut` bindings in `match`, `unwrap()`, `%=` (recommended for v8 but not chosen);
-- iterator helpers, strings as iterators, `for n of mut c`;
-- `Self` outside interfaces, default methods on concrete types;
-- package versions/downloading, re-exports (`public import`), a `--package` flag;
-- `i8`/`i16`/`u16`, rotations, checked/saturating methods, `parse_u64`, unsigned indexes;
-- binary I/O, directories, streams and processes.
+Next: **milestone 31, better patterns** — PRP-060. Scope (v9 draft decisions 2–3, §3 `pattern`/`alternative`, §4 "Or-patterns" and "`mut` bindings", §9, E0428, §10 "Or-patterns"):
+- parser: `|` between pattern alternatives (the `Pipe` token exists since v7), parenthesised patterns, `mut` before a binding name (also `mut c: Circle`); `PatternKind` gains an or-form and a mutable flag on bindings;
+- checker: binding sets per alternative (E0428), `mut` on a variant (E0428), or-patterns in `check/usefulness.rs` (expand alternatives), mutable bindings as `let mut` locals;
+- codegen: alternatives tested in turn in the arm chain (`codegen/patterns.rs`, not the flat `switch`), the binding stored from the matching alternative; `mut` bindings copied at copy sites.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `check/visibility.rs` (~297).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `check/usefulness.rs` (~277), `codegen/patterns.rs` (~261).
 
 See `TODO.md`.

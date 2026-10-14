@@ -193,6 +193,20 @@ Done when the packages programs pass and the v8 spec is complete.
 - [x] PRP-058: `lugha.toml`, package imports and per-package manifests (E0320–E0323); `Language v8 Specification.md` begins
 - [x] PRP-059: `public` and package visibility (E0313, E0318; E0317 retired); v8 complete; tagged `m30` and `v8`
 
+## v9 (draft approved, session 76 — `docs/specs/Language v9 Draft.md`)
+
+### Milestone 31 — Better patterns
+Done when the or-patterns program passes.
+- [ ] or-patterns (E0428), `mut` bindings
+
+### Milestone 32 — Unwrapping
+Done when the unwrapping program passes.
+- [ ] `unwrap`, `expect`, `%=`
+
+### Milestone 33 — Conditional patterns
+Done when the conditional-patterns program passes and the v9 spec is complete.
+- [ ] `if let`, `while let`, `let … else` (E0429)
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.
