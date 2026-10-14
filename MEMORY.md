@@ -1522,7 +1522,7 @@ Open questions live in `DECISIONS.md`, not here.
 - `zip`/`Pair`, `chain` and the other iterator helpers;
 - format specifiers (E0431).
 
-Tags `m44` and `v13` go on the merge of PRP-073. `Language v13 Specification.md` is what `lughac spec` prints; v0–v12 are frozen.
+Tagged `m44` and `v13`. `Language v13 Specification.md` is what `lughac spec` prints; v0–v12 are frozen.
 
 Next: **v14 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v13 spec §11 and §12):
 - a `format()` function, a debug form, parsing values from text;

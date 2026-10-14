@@ -1,6 +1,6 @@
 ## FEATURE: Format specifiers — `"{x:[[fill]align][#][0][width][.precision][kind]}"` (E0431); milestone 44, v13 complete.
 
-**Status:** approved 2026-10-14 — session 94. This is the last part of the user's "in one go" (milestones 41–44), merged once CI is green.
+**Status:** merged 2026-10-14 — session 94. This is the last part of the user's "in one go" (milestones 41–44), merged once CI is green.
 **Milestone:** 44 (one PRP; completes v13; tags `m44` and `v13` at merge)
 **Spec:** `Language v13 Draft.md`:
 - decision 2, and the choices on format specifiers;

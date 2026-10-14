@@ -4102,8 +4102,8 @@ Branch: prp-072-more_iterator_helpers (merged into main)
 
 ---
 
-## SESSION 94 — 2026-10-14 — Format specifiers (milestone 44) — open
-Branch: prp-073-format_specifiers
+## SESSION 94 — 2026-10-14 — Format specifiers (milestone 44) — closed
+Branch: prp-073-format_specifiers (merged into main)
 
 ### WHAT WAS DONE
 - PRP-073 written as approved under the "in one go" instruction, built and merged on green CI: format specifiers in interpolations, E0431, and the runtime fragment `format.c`.
@@ -4143,7 +4143,7 @@ Branch: prp-073-format_specifiers
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tags `m44` and `v13`.
+- Nothing. PRP-073 merged into `main`, tagged `m44` and `v13`.
 
 ---
 
@@ -4155,7 +4155,7 @@ Branch: prp-073-format_specifiers
 - `zip`/`Pair`, `chain` and the other iterator helpers;
 - format specifiers (E0431).
 
-Tags `m44` and `v13` go on the merge of PRP-073. `Language v13 Specification.md` is what `lughac spec` prints; v0–v12 are frozen.
+Tagged `m44` and `v13`. `Language v13 Specification.md` is what `lughac spec` prints; v0–v12 are frozen.
 
 Next: **v14 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v13 spec §11 and §12):
 - a `format()` function, a debug form, parsing values from text;
