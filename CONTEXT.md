@@ -3582,7 +3582,7 @@ Branch: main
 ---
 
 ## SESSION 81 — 2026-10-14 — `Self` everywhere (milestone 34) — open
-Branch: main
+Branch: prp-063-self_everywhere
 
 ---
 
