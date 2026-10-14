@@ -166,6 +166,7 @@ impl Checker {
     pub(super) fn interface_key(&self, b: &Bound) -> Option<String> {
         let key = match &b.module {
             None => self.key(&b.name.name),
+            // `m.v.I` too (v14), under the ordinary visibility rules only.
             Some(m) => self.follow(qualify(&self.imported(&m.name)?, &b.name.name)),
         };
         let key = self.or_prelude_interface(key, b.module.as_ref(), &b.name.name);

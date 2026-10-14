@@ -71,11 +71,7 @@ impl Parser<'_> {
     /// `Eq`, `Ord`, `Shape`, `m.Shape`, or with arguments, `Source<T>` (v6).
     pub(super) fn bound(&mut self) -> PResult<Bound> {
         let first = self.ident("bound name")?;
-        let (module, name) = if self.eat(&TokenKind::Dot) {
-            (Some(first), self.ident("bound name")?)
-        } else {
-            (None, first)
-        };
+        let (module, name) = self.qualified_name(first, "bound name")?;
         let args = if self.at(&TokenKind::Lt) {
             let open = self.bump();
             if self.at(&TokenKind::Gt) {

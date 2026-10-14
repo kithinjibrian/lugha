@@ -13,13 +13,7 @@ impl Checker {
     fn enum_named(&mut self, expr: &Expr) -> Option<String> {
         let key = match &expr.kind {
             ExprKind::Name(name) if self.local(name).is_none() => self.key(name),
-            ExprKind::Field(base, e) => match &base.kind {
-                ExprKind::Name(m) => {
-                    let path = self.imported(m)?;
-                    self.member(&path, e)
-                }
-                _ => return None,
-            },
+            ExprKind::Field(base, e) => self.member_through(&Self::module_name(base)?, e)?,
             _ => return None,
         };
         if !self.enums.contains_key(&key) {

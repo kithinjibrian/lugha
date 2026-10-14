@@ -153,8 +153,7 @@ impl Checker {
             .map(|(n, i)| {
                 let written = || i.path.iter().map(|s| s.name.clone()).collect();
                 let path: Vec<String> = unit.imports.get(n).cloned().unwrap_or_else(written);
-                let last = i.path.last().expect("an import has a path").name.clone();
-                (last, path)
+                (i.bound().name.clone(), path)
             })
             .collect::<HashMap<_, _>>();
     }
@@ -167,10 +166,7 @@ impl Checker {
 
     /// The module imported as `name` here, unless a local shadows it.
     pub(super) fn imported(&self, name: &str) -> Option<Vec<String>> {
-        if self.local(name).is_some() {
-            return None;
-        }
-        self.imports.get(name).cloned()
+        self.module_path(name).map(|(path, _)| path)
     }
 }
 

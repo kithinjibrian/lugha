@@ -19,10 +19,7 @@ impl Checker {
     ) -> Option<Type> {
         let key = match module {
             None => self.key(&name.name),
-            Some(m) => {
-                let path = self.imported(&m.name)?;
-                self.member(&path, name)
-            }
+            Some(m) => self.member_through(&m.name, name)?,
         };
         let key = self.or_prelude_interface(key, module, &name.name);
         let info = self.interfaces.get(&key)?;

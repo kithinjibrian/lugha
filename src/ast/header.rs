@@ -4,17 +4,47 @@
 use super::{Ident, Param, Receiver, Type};
 use crate::span::Span;
 
-/// `import a.b.c;` — a module path, bound by its last segment (v2 draft §6).
+/// `import a.b.c;` — a module path, bound by its last segment (v2 draft §6)
+/// or by the name after `as` (v14).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Import {
     /// The path's segments in order; never empty.
     pub path: Vec<Ident>,
-    /// The names in `{ X, y }` after the path, in order (v11).
-    pub items: Vec<Ident>,
-    /// The `public` before a re-export, `public import m { X };` (v11).
+    /// `c` in `import a.b as c;` (v14).
+    pub alias: Option<Ident>,
+    /// The names in `{ X, y as z }` after the path, in order (v11, v14).
+    pub items: Vec<ImportItem>,
+    /// The `public` before a re-export, `public import m { X };` (v11) or
+    /// `public import m;` (v14).
     pub public: Option<Span>,
     /// From `import` to the `;`.
     pub span: Span,
+}
+
+impl Import {
+    /// The name the module is bound to in its file: the alias, or the
+    /// path's last segment.
+    pub fn bound(&self) -> &Ident {
+        self.alias
+            .as_ref()
+            .unwrap_or_else(|| self.path.last().expect("an import has a path"))
+    }
+}
+
+/// `X` or `X as Y` in an import's `{ … }` (v11, v14).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ImportItem {
+    /// The item's name in its module.
+    pub name: Ident,
+    /// The name it is bound to here, after `as` (v14).
+    pub alias: Option<Ident>,
+}
+
+impl ImportItem {
+    /// The name the item is bound to in the importing file.
+    pub fn bound(&self) -> &Ident {
+        self.alias.as_ref().unwrap_or(&self.name)
+    }
 }
 
 /// A type parameter and its bounds, `T` or `T: Eq + Ord` (v2 draft §4).

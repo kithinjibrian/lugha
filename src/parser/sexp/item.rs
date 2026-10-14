@@ -20,14 +20,25 @@ pub fn program(program: &Program) -> String {
     let imports = program.imports.iter().map(|i| {
         let path: Vec<&str> = i.path.iter().map(|s| s.name.as_str()).collect();
         let public = if i.public.is_some() { "(public " } else { "(" };
-        let items: Vec<&str> = i.items.iter().map(|s| s.name.as_str()).collect();
-        // `(import a b (items X y))` for named items (v11).
+        let items: Vec<String> = i
+            .items
+            .iter()
+            .map(|s| match &s.alias {
+                Some(a) => format!("(as {} {})", s.name.name, a.name),
+                None => s.name.name.clone(),
+            })
+            .collect();
+        // `(import a b (items X y))` for named items (v11), `(as c)` (v14).
         let items = if items.is_empty() {
             String::new()
         } else {
             format!(" (items {})", items.join(" "))
         };
-        format!("{public}import {}{items})", path.join(" "))
+        let alias = i
+            .alias
+            .as_ref()
+            .map_or(String::new(), |a| format!(" (as {})", a.name));
+        format!("{public}import {}{alias}{items})", path.join(" "))
     });
     imports
         .chain(program.items.iter().map(item))

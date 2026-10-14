@@ -17,7 +17,8 @@ pub use expr::{
     UnOp,
 };
 pub use header::{
-    Bound, Field, Import, InterfaceDecl, InterfaceItem, TypeParam, Visibility, VisibilityKind,
+    Bound, Field, Import, ImportItem, InterfaceDecl, InterfaceItem, TypeParam, Visibility,
+    VisibilityKind,
 };
 pub use pattern::{Arm, Pattern, PatternKind};
 pub use types::{AppliedType, Type, TypeKind};

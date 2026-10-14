@@ -22,7 +22,8 @@ pub(super) fn check(
                 .with_help("move what both files need into a module of its own"),
         );
     }
-    let last = &import.path.last().expect("an import has a path").name;
+    // The name the file binds: the alias, or the last segment (v14).
+    let last = &import.bound().name;
     let earlier = program
         .imports
         .iter()
@@ -35,7 +36,7 @@ pub(super) fn check(
                 other,
             ));
         }
-        if other.path.last().is_some_and(|s| &s.name == last) {
+        if &other.bound().name == last {
             return Some(clash(
                 at,
                 format!("two imports are both named `{last}`"),

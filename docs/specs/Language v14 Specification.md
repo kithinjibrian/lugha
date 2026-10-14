@@ -2,15 +2,16 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 45–48 of 45–50). It is built from the approved plan, `Language v14 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v13 Specification.md` keeps v13 frozen.
+**Status:** in progress (milestones 45–49 of 45–50). It is built from the approved plan, `Language v14 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v13 Specification.md` keeps v13 frozen.
 
 **v13.** This is v12 plus `Self` in declarations, `for … of mut`, more iterator helpers and format specifiers (milestones 41–44).
 
-**Changes since v13** (milestones 45–48):
+**Changes since v13** (milestones 45–49):
 - Binary I/O: `read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes`; `s.to_bytes()`; `string_from_utf8(bytes)`, which rejects invalid UTF-8. An index may be of any integer type (sections 4–5).
 - `char`, a Unicode scalar value: `'a'`, `'é'`, `'\u{1F600}'`; `s.chars()` and `s.char_count()`; `c as u32`, `n as char`, `char_from(n)`; classification and case for ASCII and Latin-1 (sections 2–5).
 - Tuples: `(A, B)` types and `(a, b)` values, `t.0`, patterns `(p, q)` in `match`, `if let`, `let (a, b) = t;` and `for (i, w) of …`; element-wise `==`, lexicographic `<`, printed `(1, "a")`. `zip` yields tuples, and `Pair` is gone (sections 3–5).
 - `format("{} has {:>4} items", name, n)` returns a `string`: a literal template whose holes `{}` and `{:spec}` take the further arguments in order (E0432; sections 2, 5).
+- Imports take `as`: `import a.util as u1;` binds the module as `u1`, and `import a.b { X as Y };` binds the item as `Y`. `public import a.b [as v];` re-exports the whole module, which files importing this one reach as `m.v.X` (sections 3, 6).
 
 A valid v13 program is a valid v14 program unless it uses `Pair` or `zip`'s `Pair` fields (`zip` yields tuples now: `p.first` is `p.0`), uses `char` as a name (a type keyword now), or declares a function named `format`, `read_bytes`, `write_bytes`, `append_bytes`, `read_stdin_bytes` or `string_from_utf8`, which are now intrinsics.
 
@@ -234,7 +235,9 @@ The grammar is LL(1) apart from expressions, which use Pratt parsing with the pr
 
 ```ebnf
 program      = { import } { item } EOF ;
-import       = [ "public" ] "import" IDENT { "." IDENT } [ "{" IDENT { "," IDENT } [ "," ] "}" ] ";" ;   (* names and `public`: v11 *)
+import       = [ "public" ] "import" IDENT { "." IDENT } [ "as" IDENT ]
+               [ "{" import_item { "," import_item } [ "," ] "}" ] ";" ;   (* names and `public`: v11; `as`: v14 *)
+import_item  = IDENT [ "as" IDENT ] ;
 item         = [ visibility ] ( fun_decl | extern_decl | struct_decl | enum_decl | interface_decl ) | impl_decl ;
 visibility   = "private" | "public" ;                (* `public`: v8, packages *)
 
@@ -248,7 +251,7 @@ impl_decl    = "impl" IDENT [ "<" IDENT { "," IDENT } ">" ] "{" { [ visibility ]
 method       = "fun" IDENT [ type_params ] "(" [ receiver [ "," params ] | params ] ")" [ ":" type ] fun_body ;
 type_params  = "<" type_param { "," type_param } [ "," ] ">" ;
 type_param   = IDENT [ ":" bound { "+" bound } ] ;
-bound        = "Eq" | "Ord" | IDENT [ "." IDENT ] [ "<" type { "," type } [ "," ] ">" ] ;
+bound        = "Eq" | "Ord" | IDENT [ "." IDENT [ "." IDENT ] ] [ "<" type { "," type } [ "," ] ">" ] ;
                                           (* an interface, `m.Shape` from module `m`, `Source<T>` (v6) *)
 interface_decl = "interface" IDENT [ type_params ] "{" { iface_item } "}" ;
 iface_item   = "fun" IDENT "(" [ receiver [ "," params ] | params ] ")" [ ":" type ]
@@ -264,10 +267,10 @@ base_type    = "i32" | "i64" | "u8" | "f64" | "bool" | "string"
              | "i8" | "i16" | "u16"                 (* v10 *)
              | "char"                               (* v14 *)
              | "(" type "," type { "," type } [ "," ] ")"   (* a tuple (v14) *)
-             | IDENT [ "." IDENT ] [ "<" type { "," type } [ "," ] ">" ]
+             | IDENT [ "." IDENT [ "." IDENT ] ] [ "<" type { "," type } [ "," ] ">" ]
              | "fun" "(" [ type { "," type } [ "," ] ] ")" [ ":" type ]   (* a function type (v3) *)
              | "(" type ")" ;                  (* `(fun(i64): i64)[]` is an array of functions *)
-                                           (* `m.T`, `Stack<i64>`; `Option<T>` is one such *)
+                                           (* `m.T`, `m.v.T` (v14), `Stack<i64>`; `Option<T>` is one such *)
 
 block        = "{" { stmt } [ expr ] "}" ;   (* trailing expr = tail value *)
 stmt         = var_decl | while_stmt | for_stmt
@@ -353,7 +356,7 @@ The bit operators sit between comparisons and `+ -`, as in Rust, so `flags & MAS
 
 | Code | Error | Example |
 | --- | --- | --- |
-| E0201 | Unexpected token | `let x = 1 let y = 2;`, `let x = );`, a stray `;`, `let` at top level; `public import a;` without names, `private import a;` (v11) |
+| E0201 | Unexpected token | `let x = 1 let y = 2;`, `let x = );`, a stray `;`, `let` at top level; `private import a;` (v11) |
 | E0202 | Unclosed delimiter | `(`, `[` or `{` still open at end of file |
 | E0203 | Chained comparison or equality | `a < b < c`, `a == b != c` |
 | E0204 | Assignment used as an expression | `a = b = c;`, `if (x = 1) {}`, `f(x = 1)` |
@@ -878,8 +881,14 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 
 **Named imports and re-exports** (v11). An import may list items after its path:
 - **`import a.b { X, y };`** imports module `a.b` as before (binding `b`), and binds each listed name in this file to that module's item: a function, extern, struct, enum or interface, written without a prefix (`X { … }`, `y(1)`, `X.f()`, `X.V`, `T: X`). Each must be an item of the module (E0301) visible here (E0313). A listed name the file also declares is E0302; one listed twice, or named like an imported module, is E0314.
-- **`public import a.b { X, y };`** does the same, and makes `X` and `y` items of this module, visible to every package: a module that imports this one writes `m.X` and `m.y`, and may re-export them again. A re-exported item must itself be `public` (E0318). `public import a.b;` without names is E0201, and `private import` is E0201.
+- **`public import a.b { X, y };`** does the same, and makes `X` and `y` items of this module, visible to every package: a module that imports this one writes `m.X` and `m.y`, and may re-export them again. A re-exported item must itself be `public` (E0318). `private import` is E0201.
 - **Same items:** a named import is the item itself, not a copy: `shapes.Vec2` and `vec.Vec2` are one type, calls reach one function, and types print with the declaring module's path (`mathx.vec.Vec2`). A name imported without `public` is the file's own: another module writing `m.X` for it is E0313. Re-exports don't change manifests: a program uses `shapes.Vec2` without listing `mathx`, and still can't `import mathx.vec;` unless it lists `mathx` itself.
+
+**Aliases and whole-module re-exports** (v14).
+- **`import a.b as c;`** binds the module as `c` instead of `b`; `b` is not bound. Aliases clash like any import name (E0314), so `import a.util as u1; import b.util as u2;` is how two `util`s share a file.
+- **`import a.b { X as Y };`** binds the item as `Y` only. With `public`, the item is re-exported as `Y`.
+- **`public import a.b;`** (or `public import a.b as v;`) makes the module a member of this one, visible to every package. A file that imports this module as `m` names `v`'s items `m.v.X`: calls `m.v.f()`, types `m.v.T`, literals `m.v.T { … }`, associated calls `m.v.T.f()`, variants `m.v.E.V`, bounds `T: m.v.I`, and function values `m.v.f`. Only `public` items are reached this way (E0313). One re-export is followed: a module re-exported by a re-exported module is reached through its own import.
+- **Same items:** as with named imports, `m.v.X` is the item itself, so keys, types and symbols are the declaring module's.
 
 **Names.** Each module has its own namespace for functions, structs, enums, interfaces and externs, so two modules may each declare `Point`; duplicates within a module are a compile error. Intrinsics and the built-in names `Option`, `Some`, `None`, `Eq` and `Ord` are visible in every module, and no program may declare them (E0302). Methods live in their type's namespace, so a function `dist` and a method `Point.dist` can coexist. No local may be named like a type or an imported module (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then the module's own items and named imports (v11), then imported module names. In messages a type from another module is shown with its full module path (`shapes.circle.Circle`); a main-file type keeps its bare name. `main` belongs in the main file (E0304 elsewhere).
 
@@ -1148,8 +1157,8 @@ Name and type errors, reported by the checker:
 | E0310 | Method declared twice, or named like a field or variant | `impl P { fun x(self) {} }` where `P` has a field `x` |
 | E0311 | A local named like a type or an imported module | `let Shape = 3;`, `fun f(Point: i64)` |
 | E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` (v2) |
-| E0313 | An item, method or field not visible here | another module's `private` item: `range.helper()`, `r.lo`, `range.Range { lo: 1, hi: 5 }` (v2); another package's item without `public` (v8); `shapes.Vec2` when `shapes` imported `Vec2` without `public` (v11) |
-| E0314 | Import clash | `import a.util;` and `import b.util;` in one file; an import named like an item (v2); `import vec { add, add };` (v11) |
+| E0313 | An item, method or field not visible here | another module's `private` item: `range.helper()`, `r.lo`, `range.Range { lo: 1, hi: 5 }` (v2); another package's item without `public` (v8); `shapes.Vec2` when `shapes` imported `Vec2` without `public` (v11); `shapes.vec.helper()` through a re-exported module when `helper` isn't `public` (v14) |
+| E0314 | Import clash | `import a.util;` and `import b.util;` in one file; an import named like an item (v2); `import vec { add, add };` (v11); `import a as u; import b as u;` (v14) |
 | E0315 | Unknown bound | `fun f<T: Hash>(x: T)`; a struct as a bound (v2) |
 | E0316 | Bad type parameter name | `fun f<T, T>()`, a parameter named like a struct (v2) |
 | E0317 | Retired in v8 (was: `public` before packages existed); never reported, never reused | |
@@ -2540,6 +2549,58 @@ fun main() {
 }
 ```
 
+**Import aliases** (milestone 49). Prints `11 22`, `11`, `12`, `27`, `up`, `Vec2 { x: 2, y: 4 }` on six lines, exits with 0. `shapes` re-exports `shapes.vec` whole and `shapes.circle` as `round`.
+
+```
+// shapes/vec.la
+public struct Vec2 { public x: i64, public y: i64 }
+
+impl Vec2 {
+    public fun zero(): Vec2 = Vec2 { x: 0, y: 0 };
+}
+
+public fun add(a: Vec2, b: Vec2): Vec2 = Vec2 { x: a.x + b.x, y: a.y + b.y };
+
+public enum Dir { Up, Down }
+
+fun hidden(): i64 = 1;
+```
+
+```
+// shapes/circle.la
+public fun area(r: i64): i64 = r * r * 3;
+```
+
+```
+// shapes.la
+public import shapes.vec;
+public import shapes.circle as round;
+```
+
+```
+// main.la
+// Import aliases and whole-module re-exports (v14).
+import shapes;
+import shapes.circle as c;
+import shapes.vec { Vec2 as V, add };
+
+fun main() {
+    let a = shapes.vec.Vec2 { x: 1, y: 2 };
+    let b: shapes.vec.Vec2 = shapes.vec.add(a, V { x: 10, y: 20 });
+    println("{b.x} {b.y}");
+    println(add(b, shapes.vec.Vec2.zero()).x);
+    println(c.area(2));
+    println(shapes.round.area(3));
+    let d = shapes.vec.Dir.Up;
+    match d {
+        Up => println("up"),
+        Down => println("down"),
+    }
+    let f = shapes.vec.add;
+    println(f(a, a));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2594,6 +2655,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 46 | Unicode text (v14) | `char`, `'a'`, `chars()`, `char_count()`, casts, `char_from`, classification and case (E0112) | The Unicode-text program in section 10 passes (done) |
 | 47 | Tuples (v14) | tuple types and values, `t.0`, patterns, `let`/`for` destructuring (E0433), `zip` → tuples, `Pair` removed | The tuples program in section 10 passes (done) |
 | 48 | `format` (v14) | template `format(…)` (E0432) | The format program in section 10 passes (done) |
+| 49 | Import aliases and re-exports (v14) | `as` on modules and items, `public import m [as v];`, `m.v.X` | The import-aliases program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -2615,7 +2677,7 @@ fun main(): i32 {
 **Out of scope for v14** (for later, roughly in order):
 - a separate debug form, parsing values back from text, one-element tuples;
 - downloading packages (git or a registry), a cache, and a lock file; two versions of one package in a build; full version ranges and pre-release versions;
-- whole-module re-exports (`public import m;`), import aliases, and a `--package` flag;
+- re-export chains (`m.v.w.X`), glob imports, and a `--package` flag;
 - directories, streams and processes;
 - shared references and closures that change their captures;
 - explicit type arguments and `.len()`.

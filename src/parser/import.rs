@@ -3,7 +3,7 @@
 //! field (v2 draft §3, decision 9).
 
 use super::{PResult, Parser};
-use crate::ast::{Import, Item, Visibility, VisibilityKind};
+use crate::ast::{Ident, Import, ImportItem, Item, Visibility, VisibilityKind};
 use crate::diagnostic::Diagnostic;
 use crate::lexer::TokenKind;
 use crate::span::Span;
@@ -34,8 +34,8 @@ impl Parser<'_> {
         Some(at)
     }
 
-    /// An import after its optional `public`: only named items are
-    /// re-exported, so `public import a;` is E0201 (v11).
+    /// An import after its optional `public`: `path [as name] [{ items }];`.
+    /// `public import a;` re-exports the whole module (v14).
     pub(super) fn import_with(&mut self, public: Option<Span>) -> PResult<Import> {
         let start = public.map_or_else(|| self.span().start, |p| p.start);
         self.bump();
@@ -43,27 +43,36 @@ impl Parser<'_> {
         while self.eat(&TokenKind::Dot) {
             path.push(self.ident("module name")?);
         }
+        let alias = self.import_alias()?;
         let items = if self.at(&TokenKind::LBrace) {
             let open = self.bump();
             if self.at(&TokenKind::RBrace) {
                 return Err(self.expected("item name"));
             }
-            self.comma_list(open, TokenKind::RBrace, |p| p.ident("item name"))?
+            self.comma_list(open, TokenKind::RBrace, |p| {
+                let name = p.ident("item name")?;
+                let alias = p.import_alias()?;
+                Ok(ImportItem { name, alias })
+            })?
         } else {
             Vec::new()
         };
         self.expect(&TokenKind::Semi)?;
-        if let Some(at) = public.filter(|_| items.is_empty()) {
-            let d = Diagnostic::error("E0201", "only named items can be re-exported", at)
-                .with_help("list them: `public import a.b { X, y };`");
-            self.error(d);
-        }
         Ok(Import {
             path,
+            alias,
             items,
             public,
             span: Span::new(start, self.prev_end()),
         })
+    }
+
+    /// `as name` after an import path or item, if written (v14).
+    fn import_alias(&mut self) -> PResult<Option<Ident>> {
+        if !self.eat(&TokenKind::As) {
+            return Ok(None);
+        }
+        self.ident("name").map(Some)
     }
 
     /// E0208 for an `import` after the first item, which is parsed anyway so
@@ -171,7 +180,6 @@ mod tests {
             [("E0201", "private")]
         );
         assert_eq!(errors("fun f(private x: i64) {}"), [("E0201", "private")]);
-        assert_eq!(errors("public import a;"), [("E0201", "public")]);
         assert_eq!(errors("private import a;"), [("E0201", "private")]);
     }
 
@@ -188,6 +196,33 @@ fun main() {}"
 (fun main () void (block))"
         );
         assert_eq!(errors("import a { };"), [("E0201", "}")]);
+        assert_eq!(errors("import a as;"), [("E0201", ";")]);
         assert_eq!(errors("import a { X"), [("E0202", "{")]);
+    }
+
+    #[test]
+    fn names_reach_through_a_re_exported_module_v14() {
+        assert_eq!(
+            program("fun f<T: m.v.I>(p: m.v.P<i64>): m.v.Q = m.v.Q { x: m.v.g() };"),
+            "(fun f (type-params (T m.v.I)) ((p (applied m.v.P i64))) (applied m.v.Q) (block (struct-lit m.v.Q (x (call (. (. m v) g))))))"
+        );
+    }
+
+    #[test]
+    fn aliases_and_whole_module_re_exports_v14() {
+        assert_eq!(
+            program(
+                "import a.b as c;
+import d { X as Y, z };
+public import e.f;
+public import g as h { W };
+fun main() {}"
+            ),
+            "(import a b (as c))
+(import d (items (as X Y) z))
+(public import e f)
+(public import g (as h) (items W))
+(fun main () void (block))"
+        );
     }
 }

@@ -127,6 +127,17 @@ fn clashing_imports_are_e0314() {
             ("E0314", "geo".to_string())
         ]
     );
+    // `as` (v14) names the binding: two `util`s coexist; an alias can clash.
+    let files: &[(&str, &[u8])] = &[
+        (
+            "main.la",
+            b"import x.util as u1;\nimport y.util as u2;\nimport a as u1;\nfun main() {}\n",
+        ),
+        ("a.la", b""),
+        ("x/util.la", b""),
+        ("y/util.la", b""),
+    ];
+    assert_eq!(codes(&ok(files)), [("E0314", "a".to_string())]);
 }
 
 #[test]

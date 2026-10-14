@@ -11,6 +11,17 @@ pub(in crate::check) fn bad_template(why: String, span: Span) -> Diagnostic {
         .with_help("write `format(\"{} and {:>5}\", a, b)`: one `{}` or `{:spec}` per value")
 }
 
+/// E0313: `name` reached through `module`, a re-exported module (`m.v`),
+/// isn't `public`.
+pub(in crate::check) fn not_reexported(name: &str, module: &str, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0313",
+        format!("`{name}` is not `public`, so `{module}.{name}` can't reach it"),
+        span,
+    )
+    .with_help("a module re-exported whole offers only its `public` items")
+}
+
 /// E0433: a pattern in `let` without `else`, or in a `for` destructuring,
 /// that some value wouldn't match.
 pub(in crate::check) fn refutable(span: Span) -> Diagnostic {

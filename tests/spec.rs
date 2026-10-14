@@ -116,6 +116,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Unicode text",
         "Tuples",
         "Format",
+        "Import aliases",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

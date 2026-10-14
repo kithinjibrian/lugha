@@ -94,19 +94,19 @@ Unit tests — parser: `import a.b as c;`, `{ X as Y, z }`, `public import a.b a
 Unit tests — loader: E0314 for `import a.util; import b.util;`; `as` resolves it.
 
 Unit tests — checker (in-memory modules):
-- [ ] An aliased module's items, types and variants.
-- [ ] An aliased item (the original name is not bound).
-- [ ] `m.v.f()`, `m.v.T`, `m.v.S { … }`, `m.v.T.f()`, `m.v.E.V`, a bound `m.v.I`, an alias of a re-export.
-- [ ] E0313 for a package-level item through `m.v.X`.
-- [ ] E0314 clashes; E0301 for `m.v.nope`.
+- [x] An aliased module's items, types and variants.
+- [x] An aliased item (the original name is not bound).
+- [x] `m.v.f()`, `m.v.T`, `m.v.S { … }`, `m.v.T.f()`, `m.v.E.V`, a bound `m.v.I`, an alias of a re-export.
+- [x] E0313 for a package-level item through `m.v.X`.
+- [x] E0314 clashes; E0301 for `m.v.nope`.
 
 Acceptance — `tests/programs/m49/`:
-- [ ] `imports/` (a directory case): the §10 program.
-- [ ] `e0313/`: a reject golden for a non-`public` item through a re-export.
-- [ ] The §10 program runs from the spec, if the extractor takes directory programs; otherwise the directory case stands in for it, as for earlier module programs.
+- [x] `imports/` (a directory case): the §10 program.
+- [x] `e0313/`: a reject golden for a non-`public` item through a re-export.
+- [x] The §10 program runs from the spec, if the extractor takes directory programs; otherwise the directory case stands in for it, as for earlier module programs.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -114,10 +114,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The `m49/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The spec is at milestone 49; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The `m49/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The spec is at milestone 49; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -126,3 +126,12 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m49/imports/main.la
 ```
+
+## AMENDMENTS (during build, session 100)
+
+- **Bounds:** `T: m.v.I` resolves through the same module lookup, but `interface_key` reports nothing, so such a bound follows the ordinary visibility rules rather than the public-only rule of `member_through`.
+- **E0313 through a re-export** is reported only when the ordinary rules would allow the item (`denied` is `None`); otherwise the ordinary E0313 stands alone, so there is one error, not two.
+- **`import a.b as x; import a.b as y;`** stays E0314 ("imported twice"): one module, one binding.
+- **Spec §10:** the program is a multi-file example run by `tests/spec.rs`; `tests/programs/m49/imports/` is the same program.
+- **IR:** the 167 earlier programs that compile give byte-identical IR. `-O2` was checked by hand for `m49/imports`.
+- **No file splits:** the new code is in `check/reexports.rs`; `check/interfaces.rs` stays at 300 lines (a one-line comment).

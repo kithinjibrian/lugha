@@ -1,0 +1,8 @@
+error[E0313]: `hidden` is not `public`, so `shapes.vec.hidden` can't reach it
+  --> tests/programs/m49/e0313/main.la:4:24
+  |
+4 |     println(shapes.vec.hidden());
+  |                        ^^^^^^
+  |
+  = help: a module re-exported whole offers only its `public` items
+

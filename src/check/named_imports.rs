@@ -49,22 +49,28 @@ impl Checker {
         for (n, import) in unit.program.imports.iter().enumerate() {
             let written = || import.path.iter().map(|s| s.name.clone()).collect();
             let path: Vec<String> = unit.imports.get(n).cloned().unwrap_or_else(written);
+            // `public import a.b [as v];` (v14): the module is a member of this one.
+            if import.public.is_some() && import.items.is_empty() {
+                let key = qualify(&self.module, &import.bound().name);
+                self.reexports.insert(key, path.clone());
+            }
             for item in &import.items {
-                let name = item.name.as_str();
+                let bound = item.bound();
+                let name = bound.name.as_str();
                 if let Some(first) = own.iter().find(|d| d.name == name) {
-                    self.report(errors::duplicate(name, item.span, first.span));
+                    self.report(errors::duplicate(name, bound.span, first.span));
                     continue;
                 }
                 if listed.contains(&name) || self.imported(name).is_some() {
-                    self.report(clash(name, item.span));
+                    self.report(clash(name, bound.span));
                     continue;
                 }
                 listed.push(name);
                 let key = qualify(&self.module, name);
                 let public = import.public.is_some();
                 let alias = Alias {
-                    target: qualify(&path, name),
-                    at: item.span,
+                    target: qualify(&path, &item.name.name),
+                    at: bound.span,
                     public,
                 };
                 self.aliases.insert(key.clone(), alias);
@@ -76,7 +82,7 @@ impl Checker {
                 };
                 let visibility = Visibility {
                     kind,
-                    span: item.span,
+                    span: bound.span,
                 };
                 self.register_item(&key, Some(visibility));
             }
@@ -110,11 +116,12 @@ impl Checker {
     pub(super) fn check_named_imports(&mut self, unit: &Unit) {
         let items = unit.program.imports.iter().flat_map(|i| &i.items);
         for item in items {
-            let key = qualify(&self.module, &item.name);
+            let bound = item.bound();
+            let key = qualify(&self.module, &bound.name);
             let Some(alias) = self
                 .aliases
                 .get(&key)
-                .filter(|a| a.at == item.span)
+                .filter(|a| a.at == bound.span)
                 .cloned()
             else {
                 continue; // a clash, reported when registered
@@ -125,13 +132,13 @@ impl Checker {
                 || self.enums.contains_key(&target)
                 || self.interfaces.contains_key(&target);
             if !exists {
-                self.report(errors::undefined(&item.name, item.span));
+                self.report(errors::undefined(&item.name.name, item.name.span));
                 continue;
             }
-            self.item_visible(&target, item.span);
+            self.item_visible(&target, item.name.span);
             let level = self.privacy.items.get(&target).map(|o| o.level);
             if alias.public && level.is_some_and(|l| l != Level::Public) {
-                self.report(not_public(&item.name, item.span));
+                self.report(not_public(&item.name.name, item.name.span));
             }
         }
     }

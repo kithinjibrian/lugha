@@ -4338,16 +4338,47 @@ Branch: prp-077-format (merged into main)
 ## SESSION 100 — 2026-10-14 — Import aliases and re-exports (milestone 49) — open
 Branch: prp-078-import_aliases
 
+### WHAT WAS DONE
+- PRP-078 written as approved under the "in one go" instruction, built and merged on green CI:
+  - `import a.b as c;` and `import a.b { X as Y };`;
+  - `public import a.b [as v];` re-exporting a whole module;
+  - `m.v.X` for calls, types, literals, associated calls, variants, bounds and function values; E0313 for a non-`public` item through a re-export.
+- **Spec:** changes, grammar (`import`, `import_item`, `bound`, `base_type`), §6 "Aliases and whole-module re-exports", the E0201/E0313/E0314 rows, the §10 "Import aliases" program, §11 row 49, the out-of-scope list.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/reexports.rs`, `tests/programs/m49/` (`imports/`, `e0313/` directory cases), PRP-078.
+- Modified:
+  - `src/ast/{header,mod}.rs`;
+  - `src/parser/{import,generic,interface,expr}.rs`, `src/parser/sexp/item.rs`;
+  - `src/modules/{resolve,tests}.rs`;
+  - `src/check/{mod,named_imports,construct,interfaces,iface_values,fun_values}.rs`, `src/check/modules/{mod,lookup}.rs`, `src/check/errors/v14.rs`;
+  - `tests/spec.rs`, the v14 spec.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 96, CONTEXT.
+
+### TESTS WRITTEN
+- **Parser:** aliases, item aliases, whole-module re-exports, `m.v.T` in types, bounds and literals.
+- **Loader:** E0314 with aliases.
+- **Checker:** every `m.v.X` form, item aliases (the original name unbound), E0313, E0301, E0305.
+- **Programs:** `tests/programs/m49/`, and the §10 program from the spec.
+- **Regression:** 167 earlier programs give byte-identical IR; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 96.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m49`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 48 complete** (PRP-077, MEMORY 95): `format` with a literal template. Tagged `m48`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 49 complete** (PRP-078, MEMORY 96): import aliases and whole-module re-exports. Tag `m49` goes on the merge. Milestones 45–49, the user's "in one go", are all done. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
-Next, under the user's "in one go" (MEMORY 91): M49 imports (PRP-078: `import a.b as c;`, `{ X as Y }`, `public import m [as v];` giving `m.v.X`).
+Next: **M50 (git packages) needs the user's security review of its PRP before any code.** Write PRP-079 from the draft's "Downloaded packages" choices (`{ git = "URL", version }`, `https://`/`file://` only, the system `git` through argument lists with no shell, `GIT_TERMINAL_PROMPT=0`, hooks off, a cache under `$LUGHA_CACHE`/`$XDG_CACHE_HOME/lugha`/`$HOME/.cache/lugha`, `lugha.lock`, `lughac update`, `--offline`, E0325/E0326) and present it for review. Tag `v14` goes on M50's merge.
 
-Then stop for the user's security review of M50 (git packages).
-
-Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/env.rs` (299), `check/interfaces.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `codegen/runtime.rs` (297), `parser/stmt.rs` (297).
+Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `codegen/runtime.rs` (297), `parser/stmt.rs` (297).
 
 See `TODO.md`.

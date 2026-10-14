@@ -1516,11 +1516,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 **Why:** reusing interpolation gives printing and specifiers for free, with no runtime change and byte-identical IR elsewhere.
 
+### 96. Import aliases and re-exports — milestone 49 (PRP-078)
+
+**Decision:** built under the user's "in one go" (milestones 45–49).
+- **AST:** `Import { path, alias, items: Vec<ImportItem { name, alias }>, public }`, with `bound()` on both (the alias, or the last segment / the name). The loader's E0314 checks and the checker's `imports` table use `bound()`.
+- **Parser:** `as` after a path or item; `public import a.b;` allowed (the v11 E0201 is gone); `qualified_name` in `generic.rs` reads `m.v.T` in types and bounds as module ident `"m.v"`, and `expr.rs::member` does the same for `m.v.S { … }`.
+- **Checker:** `named_imports` records `reexports[qualify(module, v)] = path` for a public import without items. `check/reexports.rs`: `module_path("m" | "m.v")` (one re-export, locals shadow), `module_name(expr)` (`Name` or `Field(Name, v)`), and `member_through`, which replaced the `imported` + `member` pairs and reports E0313 for a non-`public` item the ordinary rules would allow.
+- **Codegen:** unchanged; keys are the declaring module's.
+
+**Why:** dotted module idents ("m.v") reuse every `Option<Ident>` module slot in the AST, so three-part names needed no new AST shapes.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 49 complete**: PRP-078 import aliases and whole-module re-exports
 - **Milestone 48 complete**: PRP-077 `format`
 - **Milestone 47 complete**: PRP-076 tuples
 - **Milestone 46 complete**: PRP-075 Unicode `char`
@@ -1616,12 +1627,10 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 48 complete** (PRP-077, MEMORY 95): `format` with a literal template. Tagged `m48`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 49 complete** (PRP-078, MEMORY 96): import aliases and whole-module re-exports. Tag `m49` goes on the merge. Milestones 45–49, the user's "in one go", are all done. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
-Next, under the user's "in one go" (MEMORY 91): M49 imports (PRP-078: `import a.b as c;`, `{ X as Y }`, `public import m [as v];` giving `m.v.X`).
+Next: **M50 (git packages) needs the user's security review of its PRP before any code.** Write PRP-079 from the draft's "Downloaded packages" choices (`{ git = "URL", version }`, `https://`/`file://` only, the system `git` through argument lists with no shell, `GIT_TERMINAL_PROMPT=0`, hooks off, a cache under `$LUGHA_CACHE`/`$XDG_CACHE_HOME/lugha`/`$HOME/.cache/lugha`, `lugha.lock`, `lughac update`, `--offline`, E0325/E0326) and present it for review. Tag `v14` goes on M50's merge.
 
-Then stop for the user's security review of M50 (git packages).
-
-Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/env.rs` (299), `check/interfaces.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `codegen/runtime.rs` (297), `parser/stmt.rs` (297).
+Watch file sizes: `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `codegen/runtime.rs` (297), `parser/stmt.rs` (297).
 
 See `TODO.md`.

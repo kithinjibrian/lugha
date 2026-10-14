@@ -1,0 +1,20 @@
+// Import aliases and whole-module re-exports (v14).
+import shapes;
+import shapes.circle as c;
+import shapes.vec { Vec2 as V, add };
+
+fun main() {
+    let a = shapes.vec.Vec2 { x: 1, y: 2 };
+    let b: shapes.vec.Vec2 = shapes.vec.add(a, V { x: 10, y: 20 });
+    println("{b.x} {b.y}");
+    println(add(b, shapes.vec.Vec2.zero()).x);
+    println(c.area(2));
+    println(shapes.round.area(3));
+    let d = shapes.vec.Dir.Up;
+    match d {
+        Up => println("up"),
+        Down => println("down"),
+    }
+    let f = shapes.vec.add;
+    println(f(a, a));
+}

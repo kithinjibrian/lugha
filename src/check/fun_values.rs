@@ -61,10 +61,10 @@ impl Checker {
         (base, name): (&Expr, &Ident),
         expect: Option<&Expect>,
     ) -> Option<Type> {
-        if let ExprKind::Name(m) = &base.kind
-            && let Some(path) = self.imported(m)
+        if let Some(m) = Self::module_name(base)
+            && self.module_path(&m).is_some()
         {
-            let key = self.member(&path, name);
+            let key = self.member_through(&m, name)?;
             if !self.functions.contains_key(&key) {
                 return None;
             }

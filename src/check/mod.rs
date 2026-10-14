@@ -57,6 +57,7 @@ mod ops;
 mod or_patterns;
 mod patterns;
 mod printing;
+mod reexports;
 mod results;
 mod satisfy;
 mod self_type;
@@ -127,6 +128,7 @@ impl Checker {
             imports: HashMap::new(),
             privacy: visibility::Privacy::default(),
             aliases: named_imports::Aliases::new(),
+            reexports: HashMap::new(),
             externs: HashMap::new(),
             callees: HashMap::new(),
             annotations: HashMap::new(),
@@ -212,6 +214,8 @@ pub(super) struct Checker {
     privacy: visibility::Privacy,
     /// Named imports and re-exports, by their key in their module (v11).
     aliases: named_imports::Aliases,
+    /// Whole-module re-exports (v14): `m.v` (as a key of `m`) → `v`'s path.
+    reexports: HashMap<String, Vec<String>>,
     /// Every extern's C name: its signature and first declaration (E0306).
     externs: HashMap<String, (Vec<Type>, Type, Span)>,
     /// See `Checked::callees`.

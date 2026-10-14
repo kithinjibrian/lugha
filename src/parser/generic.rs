@@ -5,6 +5,14 @@ use super::{PResult, Parser};
 use crate::ast::{AppliedType, Ident, TypeKind, TypeParam};
 use crate::lexer::TokenKind;
 
+/// `m.v` as one module name, spanning both (v14).
+pub(super) fn joined(m: &Ident, v: &Ident) -> Ident {
+    Ident {
+        name: format!("{}.{}", m.name, v.name),
+        span: crate::span::Span::new(m.span.start, v.span.end),
+    }
+}
+
 impl Parser<'_> {
     /// `<T, U: Eq + Ord>` after a declaration's name; empty when there is none.
     pub(super) fn type_params(&mut self) -> PResult<Vec<TypeParam>> {
@@ -67,15 +75,30 @@ impl Parser<'_> {
         self.comma_list(open, TokenKind::Gt, |p| p.ident("type parameter name"))
     }
 
+    /// `Name`, `m.Name`, or `m.v.Name` through a re-exported module (v14),
+    /// after the first identifier: the module, its segments joined with
+    /// `.`, and the name.
+    pub(super) fn qualified_name(
+        &mut self,
+        first: Ident,
+        what: &str,
+    ) -> PResult<(Option<Ident>, Ident)> {
+        if !self.eat(&TokenKind::Dot) {
+            return Ok((None, first));
+        }
+        let second = self.ident(what)?;
+        if !self.eat(&TokenKind::Dot) {
+            return Ok((Some(first), second));
+        }
+        let name = self.ident(what)?;
+        Ok((Some(joined(&first, &second)), name))
+    }
+
     /// The rest of a named type after its first identifier: `Name`, `m.Name`,
     /// `Name<args>` or `m.Name<args>`. Each argument list is one nesting
     /// level, so `A<A<A<…>>>` hits E0206 instead of overflowing the stack.
     pub(super) fn named_type(&mut self, first: Ident) -> PResult<TypeKind> {
-        let (module, name) = if self.eat(&TokenKind::Dot) {
-            (Some(first), self.ident("type name")?)
-        } else {
-            (None, first)
-        };
+        let (module, name) = self.qualified_name(first, "type name")?;
         let args = if self.at(&TokenKind::Lt) {
             let open = self.bump();
             if self.at(&TokenKind::Gt) {

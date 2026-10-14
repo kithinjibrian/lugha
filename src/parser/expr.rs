@@ -126,9 +126,18 @@ impl Parser<'_> {
     fn member(&mut self, start: usize, base: Expr) -> PResult<Result<Expr, ExprKind>> {
         self.bump();
         let member = self.member_name()?;
-        if let ExprKind::Name(module) = &base.kind {
+        // `m.S { … }`, or `m.v.S { … }` through a re-export (v14).
+        let module = match &base.kind {
+            ExprKind::Name(module) => Some(module.clone()),
+            ExprKind::Field(inner, v) => match &inner.kind {
+                ExprKind::Name(m) => Some(format!("{m}.{}", v.name)),
+                _ => None,
+            },
+            _ => None,
+        };
+        if let Some(module) = module {
             let module = Ident {
-                name: module.clone(),
+                name: module,
                 span: base.span,
             };
             if let Some(literal) = self.struct_lit_after(start, Some(module), member.clone())? {

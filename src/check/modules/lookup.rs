@@ -14,13 +14,7 @@ impl Checker {
     pub(in crate::check) fn type_named_by(&mut self, expr: &Expr) -> Option<Type> {
         let key = match &expr.kind {
             ExprKind::Name(t) if self.local(t).is_none() => self.key(t),
-            ExprKind::Field(base, t) => match &base.kind {
-                ExprKind::Name(m) => {
-                    let path = self.imported(m)?;
-                    self.member(&path, t)
-                }
-                _ => return None,
-            },
+            ExprKind::Field(base, t) => self.member_through(&Self::module_name(base)?, t)?,
             _ => return None,
         };
         let ty = self.named_type(&key)?;
@@ -38,8 +32,8 @@ impl Checker {
     ) -> Option<String> {
         let key = match module {
             None => self.key(&name.name),
-            Some(m) => match self.imported(&m.name) {
-                Some(path) => self.member(&path, name),
+            Some(m) => match self.member_through(&m.name, name) {
+                Some(key) => key,
                 None => {
                     self.report(errors::unknown_type(
                         &format!("{}.{}", m.name, name.name),
@@ -83,14 +77,12 @@ impl Checker {
         let ExprKind::Field(base, f) = &callee.kind else {
             return None;
         };
-        let ExprKind::Name(m) = &base.kind else {
-            return None;
-        };
-        let path = self.imported(m)?;
+        let m = Self::module_name(base)?;
+        self.module_path(&m)?;
         // A module and a function name aren't values: `void` marks them.
         self.record(base, Type::Void);
         self.record(callee, Type::Void);
-        let key = self.member(&path, f);
+        let key = self.member_through(&m, f)?;
         if !self.functions.contains_key(&key) {
             self.report(errors::undefined(&f.name, f.span));
             return Some(self.unchecked_args(args));
