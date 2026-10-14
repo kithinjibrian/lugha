@@ -4225,7 +4225,7 @@ Branch: prp-074-bytes_and_indexes (merged into main)
 ---
 
 ## SESSION 97 — 2026-10-14 — Unicode text (milestone 46) — open
-Branch: main
+Branch: prp-075-unicode_text
 
 ---
 
