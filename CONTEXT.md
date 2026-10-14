@@ -3851,28 +3851,44 @@ Branch: prp-067-reexports (merged into main)
 
 ---
 
-## SESSION 87 — 2026-10-14 — v12 direction — open
+## SESSION 87 — 2026-10-14 — v12 direction — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user chose v12 = a `Display`-style interface.
+- Discovery, three questions, each answered with the recommended option:
+  - `show` plus a built-in form for everything else;
+  - strings quoted only inside built-in forms;
+  - everything prints (generic `T`, interface values, `<fun>`, `unwrap on Err: <error>`).
+- Wrote `docs/specs/Language v12 Draft.md` (proposed): milestones 39 (printing values) and 40 (printing anything). No new error codes.
+
+### FILES CREATED OR MODIFIED
+- New: `docs/specs/Language v12 Draft.md`.
+- CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (design only).
+
+### DECISIONS MADE
+- None recorded yet; the v12 MEMORY decision follows approval of the draft.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The v12 draft awaits the user's approval.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v11 is complete** (milestones 37–38; PRP-066–067; MEMORY 80–82):
-- package versions (`[package] version`, `{ path, version }` requirements, E0324);
-- named imports and re-exports (`import m { X }`, `public import m { X }`).
+**Lugha v11 is complete** (milestones 37–38; PRP-066–067; MEMORY 80–82). Tagged `m38` and `v11`. `Language v11 Specification.md` is what `lughac spec` prints; v0–v10 are frozen.
 
-Tagged `m38` and `v11`. `Language v11 Specification.md` is what `lughac spec` prints; v0–v10 are frozen.
+Next: **approve `docs/specs/Language v12 Draft.md`** (proposed in session 87):
+- M39: printing values — `Display { show }`, built-in forms, quoting, generic `T`;
+- M40: printing anything — interface values by identity chain, `<fun>`, `unwrap on Err: <error>`.
 
-Next: **v12 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v11 spec §11 and §12):
-- downloading packages, a lock file;
-- whole-module re-exports and import aliases, a `--package` flag;
-- `zip`/`chain` and the other iterator helpers, and a pair type;
-- `for n of mut c`, unsigned indexes;
-- `Self` in declarations and patterns;
-- a `Display`-like interface;
-- Unicode text;
-- binary I/O.
+Once it is approved: record a MEMORY decision for v12, then write PRP-068 for M39.
 
 Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `modules/tests.rs` (281).
 
