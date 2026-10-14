@@ -229,7 +229,7 @@ Done when the package-versions program passes.
 
 ### Milestone 38 — Re-exports ✅
 Done when the re-exports program passes and the v11 spec is complete.
-- [x] PRP-067: `import m { X }`, `public import m { X }`; v11 complete; tagged `m38` and `v11` at merge
+- [x] PRP-067: `import m { X }`, `public import m { X }`; v11 complete; tagged `m38` and `v11`
 
 ## Found while working — needs a PRP
 

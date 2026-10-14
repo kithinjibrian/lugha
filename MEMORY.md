@@ -1379,7 +1379,7 @@ Open questions live in `DECISIONS.md`, not here.
 - package versions (`[package] version`, `{ path, version }` requirements, E0324);
 - named imports and re-exports (`import m { X }`, `public import m { X }`).
 
-Tags `m38` and `v11` go on the merge of PRP-067. `Language v11 Specification.md` is what `lughac spec` prints; v0–v10 are frozen.
+Tagged `m38` and `v11`. `Language v11 Specification.md` is what `lughac spec` prints; v0–v10 are frozen.
 
 Next: **v12 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v11 spec §11 and §12):
 - downloading packages, a lock file;

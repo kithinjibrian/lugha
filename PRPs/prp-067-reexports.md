@@ -1,6 +1,6 @@
 ## FEATURE: Named imports and re-exports — `import m { X }`, `public import m { X }`; milestone 38, v11 complete.
 
-**Status:** approved 2026-10-14 — session 86. This is the last part of the user's "in one go" (milestones 37–38), merged once CI is green.
+**Status:** merged 2026-10-14 — session 86. This is the last part of the user's "in one go" (milestones 37–38), merged once CI is green.
 **Milestone:** 38 (one PRP; completes v11; tags `m38` and `v11` at merge)
 **Spec:** `Language v11 Draft.md`:
 - decision 4, and the choices on named imports, re-exports, `public`, clashes, methods and fields;
