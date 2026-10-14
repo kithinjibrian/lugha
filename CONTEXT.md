@@ -3929,17 +3929,60 @@ Branch: prp-068-printing_values (merged into main)
 ## SESSION 89 — 2026-10-14 — Printing anything (milestone 40) — open
 Branch: prp-069-printing_anything
 
+### WHAT WAS DONE
+- PRP-069 written as approved under the "in one go" instruction, built and merged on green CI:
+  - interface and function values print directly;
+  - `unwrap()` on `Err` panics with `unwrap on Err: <error>`.
+- **v12 spec complete:**
+  - status and changes summary;
+  - the print table rows;
+  - the intrinsics, interpolation, interface and function value rules;
+  - the `unwrap` row and the panics list;
+  - E0403;
+  - §9;
+  - the §10 program, §11 row 40;
+  - §12 printing errors decided.
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m40/` (`anything`, `more`), PRP-069.
+- Modified:
+  - `src/check/{printing,method_calls,call,input,fun_values,iface_calls}.rs`, `src/codegen/unwrap.rs`;
+  - `src/lib.rs`, `tests/spec.rs`, `tests/programs/m32/err.stderr`;
+  - the v12 spec.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 85, CONTEXT.
+
+### TESTS WRITTEN
+- **Checker:**
+  - interface and function values print and interpolate;
+  - `unwrap` on a `Result` lists the error's `show` instance;
+  - `void` is E0407.
+- **Programs:** `tests/programs/m40/`, and the §10 program from the spec.
+- **Regression:** 144 earlier programs give byte-identical IR (the three `Result.unwrap` programs differ by design).
+
+### DECISIONS MADE
+- MEMORY 85.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tags `m40` and `v12`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 39 complete** (PRP-068, MEMORY 84): printing values. Tagged `m39`. `Language v12 Specification.md` (in progress) is what `lughac spec` prints; v0–v11 are frozen.
+**Lugha v12 is complete** (milestones 39–40; PRP-068–069; MEMORY 83–85): every value prints, through `show` (the prelude's `Display`) or a built-in form; interface values by their contents, functions as `<fun>`, and `unwrap on Err: <error>`. Tags `m40` and `v12` go on the merge of PRP-069. `Language v12 Specification.md` is what `lughac spec` prints; v0–v11 are frozen.
 
-Next, under the user's "in one go" (MEMORY 83): **milestone 40, printing anything** (PRP-069, next session). It completes v12, tagged `m40` and `v12`.
-- `printable` admits interface and function values; codegen already prints them.
-- `unwrap` on `Err(e)` panics with `unwrap on Err: ` plus `e`'s text (`codegen/unwrap.rs`).
-- The §10 printing-anything program.
+Next: **v13 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v12 spec §11 and §12):
+- format specifiers (`{x:.2}`, padding), a debug form;
+- downloading packages, a lock file; whole-module re-exports and import aliases;
+- `zip`/`chain` and the other iterator helpers, and a pair type;
+- `for n of mut c`, unsigned indexes;
+- `Self` in declarations and patterns;
+- Unicode text;
+- binary I/O.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `codegen/runtime.rs` (~297), `check/env.rs` (295), `parser/stmt.rs` (~297).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `codegen/runtime.rs` (~296), `check/array.rs` (~296), `check/env.rs` (295), `parser/stmt.rs` (~297).
 
 See `TODO.md`.

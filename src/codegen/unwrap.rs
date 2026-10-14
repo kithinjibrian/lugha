@@ -62,6 +62,16 @@ impl<'ctx> Lowerer<'ctx> {
             .build_conditional_branch(ok, pass, fail)
             .expect(POSITIONED);
         self.builder.position_at_end(fail);
+        // `unwrap` on `Err(e)` shows `e` (v12).
+        let message = if name == "unwrap" && !option {
+            let (_, errors) = self.variant(ty, "Err");
+            let error = self.load_payload(ty, slot, &errors, 0, &errors[0]);
+            let text = self.text(error, &errors[0]);
+            let lead = self.string_literal("unwrap on Err: ").into();
+            self.concat(lead, text)
+        } else {
+            message
+        };
         self.call_panic(message, at);
         self.builder.position_at_end(pass);
         let payload = payloads[0].clone();

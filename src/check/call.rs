@@ -232,8 +232,8 @@ mod tests {
             [("E0405", "println(1, 2)")]
         );
         assert_eq!(
-            errors("fun main() { let s = to_string(fun(x: i64): i64 = x); }"),
-            [("E0403", "fun(x: i64): i64 = x")]
+            errors("fun f() {}\nfun main() { let s = to_string(f()); }"),
+            [("E0407", "f()")]
         );
         assert_eq!(errors("fun main() { panic(1); }"), [("E0403", "1")]);
         assert_eq!(

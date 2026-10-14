@@ -2,14 +2,15 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestone 39 of 39–40). It is built from the approved plan, `Language v12 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v11 Specification.md` keeps v11 frozen.
+**Status:** complete (milestones 39–40). It is built from the approved plan, `Language v12 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v11 Specification.md` keeps v11 frozen.
 
 **v11.** This is v10 plus package versions and named imports and re-exports (milestones 37–38).
 
-**Changes since v11** (milestone 39):
+**Changes since v11** (milestones 39–40):
 - `print`, `println`, `eprint`, `eprintln`, `to_string` and `"{x}"` accept structs, enums, arrays, `Option`, `Result` and type parameters. A type with its own `fun show(self): string` (the prelude's `Display`) prints through it; any other prints in a built-in form, `Point { x: 1, y: 2 }`, `Circle(1.5)`, `[Some(1), None]`, with the strings inside it quoted (sections 4–6).
+- Interface values print as the value inside them, function values as `<fun>`, and `unwrap()` on an `Err` panics with `unwrap on Err: ` followed by the error (sections 4–5).
 
-Every valid v11 program is a valid v12 program.
+Every valid v11 program is a valid v12 program; only the `unwrap on Err` panic message is longer.
 
 **v10.** This is v9 plus `Self` in `impl` blocks, default methods on concrete types, `i8`/`i16`/`u16` with checked, saturating and rotating methods, and iterator helpers (milestones 34–36).
 
@@ -514,7 +515,7 @@ They follow the `mut self` rules: `xs` must be a place whose root is `let mut` (
 | `Result<T, E>` | `r.ok()` | `Option<T>` |
 | `Result<T, E>` | `r.map(f)`, `r.map_err(f)` | `Result<U, E>`, `Result<T, F>` |
 | `Result<T, E>` | `r.is_ok()`, `r.is_err()` | `bool` |
-| `Option<T>`, `Result<T, E>` | `x.unwrap()` (v9) | `T`: the `Some` or `Ok` value; otherwise panics (at the method name) with `unwrap on None` or `unwrap on Err` |
+| `Option<T>`, `Result<T, E>` | `x.unwrap()` (v9) | `T`: the `Some` or `Ok` value; otherwise panics (at the method name) with `unwrap on None`, or `unwrap on Err: ` and the error printed (v12) |
 | `Option<T>`, `Result<T, E>` | `x.expect(msg)` (v9) | `T`, as `unwrap`, but the panic's message is `msg`, a `string` evaluated even when it isn't needed |
 
 Strings are bytes: every position is a byte offset, and `slice` can cut a multi-byte character, giving a string of exactly those bytes. A closure argument is typed as for the array helpers (`o.map(fun(x) = "{x}")` is an `Option<string>`). `map` means the array, `Option` or `Result` helper according to the receiver. `parse_i64(s).ok_or("bad number")?` turns a missing value into an error and returns it. There is no `unwrap()`: handle a failure with `match`, `?` or `unwrap_or`.
@@ -566,12 +567,12 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
   - **No expected type, no conversion:** `let s = c;` keeps `c`'s type, and `[c, sq]` with no expected type is E0403.
 - **Calls:** `s.area()` calls the concrete type's method, checked against the interface's signature. A `mut self` method needs a mutable place (E0501, E0502, E0508). The value inside has no reachable fields (E0410).
 - **Copies:** an interface value holds its own copy of the value inside. Assigning, passing or storing one copies that value deeply, as for an array, so a `mut self` call through one interface value never changes another; move on last use applies.
-- **Equality, order and printing:** none. `==` is E0404, so an interface type, and a struct, enum, array or `Option` holding one, doesn't satisfy `Eq` or `Ord` (E0419). Interface values can't be printed or interpolated (E0403).
+- **Equality, order and printing:** none. `==` is E0404, so an interface type, and a struct, enum, array or `Option` holding one, doesn't satisfy `Eq` or `Ord` (E0419). Interface values print as the value inside them (v12).
 - **As a type argument:** `I` satisfies the interface `I` itself, so `total_area<Shape>(shapes)` works and calls through the values. It satisfies another interface only if `I` declares each of that interface's items the same way.
 
 **Function types** (v3). `fun(A, B): R` is the type of a function value taking `A` and `B` and returning `R`; `fun(A)` returns nothing. Two function types are the same when their parameter and return types are. A return type takes any `[]` after it, so `fun(i64): i64[]` returns an array, and an array of functions is written `(fun(i64): i64)[]`; messages print types the same way.
 - **Equality:** function values have no `==` (E0404), and neither does a struct, enum, array or `Option` that holds one anywhere. So a function type, or a type holding one, doesn't satisfy `Eq` (E0419).
-- **Order, printing and casts:** function values have no `<`, can't be printed or interpolated (E0403), and can't be cast (E0408).
+- **Order, printing and casts:** function values have no `<`, print as `<fun>` (v12), and can't be cast (E0408).
 - **Copying:** a function value is immutable, so a copy is the same value.
 - **Generics and interfaces:** a function type can be a type argument (`apply<T>(f: fun(T): T, x: T)`), a field, an element or a payload. It has no methods, so it satisfies only an interface with no items.
 
@@ -716,13 +717,13 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 
 **Expression statements.** Any expression followed by `;` is a statement, and its value is discarded. Discarding the result of a non-`void` call is allowed. Adding `;` after a would-be tail expression turns it into a statement, so `{ x * x; }` is a `void` block. When a value was expected, the checker reports this as "remove this semicolon" and points at it.
 
-**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), a shift out of range (`shift out of range`; v7), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), an out-of-range `slice` (`slice out of bounds: from F to T of a string of length L`, at the method name; v4), `split` with an empty separator (located in the prelude, `<prelude>:…`; v4), a negative repeat-literal count, too-deep recursion (`stack overflow`), `unwrap` on a `None` or an `Err` (`unwrap on None`, `unwrap on Err`) and `expect(msg)` likewise (message `msg`), each located at the method name (v9), and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. A stack overflow is the one panic without a location — it prints just `panic: stack overflow` — because the runtime can't tell which call went too deep. They cannot be caught.
+**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), a shift out of range (`shift out of range`; v7), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), an out-of-range `slice` (`slice out of bounds: from F to T of a string of length L`, at the method name; v4), `split` with an empty separator (located in the prelude, `<prelude>:…`; v4), a negative repeat-literal count, too-deep recursion (`stack overflow`), `unwrap` on a `None` or an `Err` (`unwrap on None`, `unwrap on Err: <error>` with the error printed, v12) and `expect(msg)` likewise (message `msg`), each located at the method name (v9), and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. A stack overflow is the one panic without a location — it prints just `panic: stack overflow` — because the runtime can't tell which call went too deep. They cannot be caught.
 
 **Intrinsics.** These names are built into the compiler, not declared in source. They accept arguments that ordinary functions can't, which is why they are special.
 
 | Intrinsic | Accepts | Effect |
 | --- | --- | --- |
-| `print(x)` | Any value but an interface or function value (v12) | Writes `x`'s text (below) to stdout with no newline |
+| `print(x)` | Any value (v12) | Writes `x`'s text (below) to stdout with no newline |
 | `println(x)` | The same, or nothing | Writes `x`'s text and a newline |
 | `panic(msg)` | `string` | Panics with `msg` |
 | `to_string(x)` | The same as `print` (v12) | Returns the text `print` would write; a `string` is itself |
@@ -750,13 +751,15 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 | any other struct | `Point { x: 1, y: 2 }`, or `Point {}` without fields |
 | any other enum value, `Option`, `Result` | `Circle(1.5)`, `Empty`, `Some(5)`, `None`, `Ok(1)`, `Err("no")` |
 | an array | `[1, 2, 3]`, or `[]` |
+| an interface value | as the value inside it |
+| a function value | `<fun>` |
 
 - **Parts:** the fields, payloads and elements inside a built-in form print by the same table, except that a `string` there is quoted: `"`, `\`, newline, tab and carriage return are written `\"`, `\\`, `\n`, `\t`, `\r`, other bytes below 0x20 as `\u{XX}`, and every other byte as itself. A `show`'s text is never quoted.
 - **Names:** a struct prints its bare name, without its module path or type arguments (`Stack { items: [3] }`), and an enum value only its variant.
 - **`show`:** the prelude declares `interface Display { fun show(self): string; }`, visible in every module like `Iter` unless the module declares `Display`. A struct or enum with its own method of exactly that shape prints through it, whatever the method's visibility, since printing is the type's own behaviour; a method `show` of any other shape is ignored, and the built-in form is used. Like any interface, `Display` works as a bound (`T: Display` gives `x.show()`) and as a type.
 - **Depth:** a recursive enum prints to its full depth. Values are trees, so printing always ends.
 
-**Interpolated strings** (v3). Each `{expr}` is evaluated left to right and formatted exactly as `print` would write it (floats as below); the parts are joined into one new `string`. Any value `print` takes interpolates (v12); an interface or function value is E0403, with help to convert it first.
+**Interpolated strings** (v3). Each `{expr}` is evaluated left to right and formatted exactly as `print` would write it (floats as below); the parts are joined into one new `string`. Any value interpolates (v12); only a `void` expression can't (E0407).
 
 `swap(a, b)` exchanges what two places hold, like `let t = a; a = b; b = t;` but without copying anything: swapping two arrays exchanges them in constant time, which makes double buffering cheap (`swap(ys, buf)`). Both arguments must be places of the same type (E0502, E0403), each following the assignment rules: the root is `let mut` (E0501), not inside a string (E0506), and not an array being iterated (E0507). The places are evaluated left to right, and elements are bounds-checked, before either is written. A place can't be swapped with a part of itself (E0509): `swap(n, n.kids[0])` would store `n` inside itself. Places that might be the same are fine, since swapping a place with itself changes nothing: `swap(xs[i], xs[j])`, `swap(p.a, p.b)` and `swap(a, a)` are all valid.
 
@@ -944,7 +947,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - A function used as a value (v3) is called through `lugha_ref_<symbol>`, a wrapper that takes an environment pointer first and calls `lugha_fn_<symbol>`: `lugha_ref_double`, `lugha_ref_max<i64>`, `lugha_ref_Point.at`. It is emitted once, when first needed.
 - An interface value's table (v5) is `lugha_vt_<Type>.<Interface>`, with names printed as in other symbols (`lugha_vt_Circle.Shape`, `lugha_vt_Stack<i64>.geo/Sized`), emitted once per pair a program converts. Its identity slot points at `lugha_type_<Type>`, its copy slot at `lugha_copy_<mangled type>_box` (`lugha_copy_6Circle_box`), and each method slot at the method itself: methods take their receiver as a pointer, so a call passes the box. Copying an interface value goes through `lugha_copy_<mangled interface>` (`lugha_copy_5Shape`). A generic interface (v6) prints with its arguments: `lugha_vt_Count.Source<i64>`, `lugha_copy_11Source<i64>`. A type pattern compares the table's identity slot with `lugha_type_<T>`.
 - A default method (v5) compiles once per type that uses it, through a table or a bound: `lugha_fn_<Interface>.<method><Type>` (`lugha_fn_Error.report<ParseError>`); that type's table slot, bound calls and (v10) calls on the type itself use it. A generic interface's default (v6) compiles once per type and interface arguments, the arguments printed on the interface: `lugha_fn_Source<i64>.skip<Count>`. A converted `?` error is boxed on the failure branch, like any conversion. A program without interface values has none of these.
-- Printing a value that isn't a number, `bool` or `string` (v12) calls `lugha_show_<type>(value) -> string`, named like the copy helpers (`lugha_show_5Point`, `lugha_show_i64_arr`) and emitted once, only when used: it calls the type's `show`, or builds the built-in form with `lugha_rt_str_concat` and quotes strings with `lugha_rt_str_quote`. A generic type's `show` is listed as an instance wherever such a value is printed, inside other values and through type parameters too. An interface type's helper, built at the end of lowering, compares the value's identity slot with each concrete type the program has a table of for that interface and prints the box's value by its rules; dispatch tables are unchanged. Programs printing only numbers, `bool` and strings give byte-identical IR.
+- Printing a value that isn't a number, `bool` or `string` (v12) calls `lugha_show_<type>(value) -> string`, named like the copy helpers (`lugha_show_5Point`, `lugha_show_i64_arr`) and emitted once, only when used: it calls the type's `show`, or builds the built-in form with `lugha_rt_str_concat` and quotes strings with `lugha_rt_str_quote`. A generic type's `show` is listed as an instance wherever such a value is printed, inside other values and through type parameters too. An interface type's helper, built at the end of lowering, compares the value's identity slot with each concrete type the program has a table of for that interface and prints the box's value by its rules; dispatch tables are unchanged. A function value prints the literal `<fun>`. `unwrap()` on a `Result` builds its panic message in the failing branch from the error's text. Programs printing only numbers, `bool` and strings, and calling no `unwrap()` on a `Result`, give byte-identical IR.
 - Converting a `J` value to `I` (v6) calls `lugha_up_<J>.<I>(table) -> table`, which compares the value's table with each `J` table the program has and returns the matching `I` table; its body is built after everything else, when every table is known. That `I` table is derived from the table the value was built with: `lugha_vt_<C>.<J>.<I>` has `C`'s identity and copy and, for each `I` item, the function `C`'s `J` table has, so methods behave as through `J`; derived tables keep the original interface (`<C>.<J>.<K>` for a chain) and converting back to it gives the original table. A program that never converts between interfaces has no `lugha_up_` functions and no derived tables. (The approved draft put one slot per target interface in each table instead; tables are emitted while lowering, before every conversion is known, so PRP-054 uses lookup functions.)
 - The v7 operators and methods: `& | ^` are `and`/`or`/`xor`; `<<` is `shl` and `>>` is `ashr` for `i32`/`i64` and `lshr` for the unsigned types, each after an `icmp uge` of the amount against the width that panics (`shift out of range`); `~x` is `xor x, -1`; the wrapping methods are plain `add`/`sub`/`mul`; the counting methods are `llvm.ctpop`, `llvm.ctlz` and `llvm.cttz` (zero not poison), widened to `i64`. A program that uses none of them has none of this code.
 - The v10 integer methods: `checked_add/sub/mul` read the overflow flag of `llvm.{s,u}{add,sub,mul}.with.overflow` and select `None` or `Some`; `checked_div` divides by 1 instead when the divisor is 0 (or the operands are `MIN` and −1) and selects `None` then, so it never traps; `saturating_add/sub` are `llvm.{s,u}{add,sub}.sat`, and `saturating_mul` selects `MIN` or `MAX` on overflow; rotations are `llvm.fshl`/`llvm.fshr` of the value with itself, the `i64` count truncated to the width; `I.MIN`/`I.MAX` are constants.
@@ -1078,7 +1081,7 @@ Name and type errors, reported by the checker:
 | E0324 | A package version that doesn't meet a requirement, or a requirement on a package without a version (v11) | `geo = { path = "libs/geo", version = "1.2" }` when geo's `lugha.toml` says `version = "2.0.0"`, or nothing |
 | E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
 | E0402 | Integer literal out of range for its type | `let b: u8 = 256;` |
-| E0403 | Type mismatch | `let n: i32 = ok;` where `ok` is `bool`; `if`/`else` of different types; printing an interface or function value (v12) |
+| E0403 | Type mismatch | `let n: i32 = ok;` where `ok` is `bool`; `if`/`else` of different types |
 | E0404 | Operator applied to invalid operand types | `true + 1`, `-u` where `u` is `u8`, `u16`, `u32` or `u64`; `a == b` on a `T` without `Eq` (with help to declare it) |
 | E0405 | Wrong number of arguments | `add(1)` for `fun add(a: i64, b: i64)` |
 | E0406 | Not a function, or something that can't be a value | `let step = 2; step(1);`; `let a = Circle.area;` (a method), `let p = println;`, an extern (v3) |
@@ -2242,6 +2245,33 @@ fun main() {
 }
 ```
 
+**Printing anything** (milestone 40). Prints `Circle { r: 2.0 }`, `square 3`, `<fun>` on three lines, exits with 101 (the last line panics, with the message unwrap on Err: Bad { code: 7 }).
+
+```
+interface Shape { fun area(self): f64; }
+
+struct Circle { r: f64 }
+impl Circle { fun area(self): f64 = 3.0 * self.r * self.r; }
+
+struct Square { side: i64 }
+impl Square {
+    fun area(self): f64 = (self.side * self.side) as f64;
+    fun show(self): string = "square {self.side}";
+}
+
+struct Bad { code: i64 }
+
+fun main() {
+    let shapes: Shape[] = [Circle { r: 2.0 }, Square { side: 3 }];
+    for s of shapes {
+        println(s);
+    }
+    println(fun(x: i64): i64 = x);
+    let r: Result<i64, Bad> = Err(Bad { code: 7 });
+    println(r.unwrap());
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2287,6 +2317,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 37 | Package versions (v11) | `[package]` versions, inline entries with requirements, E0324 | The package-versions program in section 10 passes (done) |
 | 38 | Re-exports (v11) | `import m { X }`, `public import m { X }` | The re-exports program in section 10 passes (done: v11 complete) |
 | 39 | Printing values (v12) | `Display` and `show`, built-in forms, quoting, printing type parameters | The printing-values program in section 10 passes (done) |
+| 40 | Printing anything (v12) | interface and function values, `unwrap on Err: <error>` | The printing-anything program in section 10 passes (done: v12 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -2339,7 +2370,7 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [ ] **Unsigned indexes** (v7). `xs[i]` needs an `i64`, so a `u32` index needs a cast. Accepting any integer index would remove the cast, but it needs a rule for negative values.
 - [ ] **Re-exports** (v8). A package can't yet expose another package's items as its own (`public import`); users import both.
 - [ ] **A `--package` flag** (v8). Pointing at a package without editing `lugha.toml`, for a one-off build, could come later as a command-line override.
-- [ ] **Printing errors** (v9). `unwrap on Err` can't show the error, because values other than numbers, `bool` and strings have no text form. A later `Display`-like interface could add it.
+- [x] **Printing errors** (v9). Decided (v12): `unwrap on Err: <error>` prints the error.
 - [ ] **Irrefutable `if let`** (v9). `if let x = e` is allowed silently; a warning could come later if it proves a common mistake.
 - [ ] **`xs.iter()` copies the array** (v10). It follows the copy rules, so iterating a variable still used later costs a copy; move on last use avoids it otherwise. A borrowing iterator would need shared references.
 - [ ] **Unicode text** (v10). `bytes()` is the only way to iterate a string; iterating characters waits for a decision on text encoding.

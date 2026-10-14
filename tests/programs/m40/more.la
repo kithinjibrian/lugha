@@ -1,0 +1,33 @@
+// Interface values printed directly and interpolated, a generic interface
+// value, a struct holding an interface value and a function value, and
+// to_string of an interface value.
+interface Named { fun name(self): string; }
+
+interface Source<T> { fun next(mut self): Option<T>; }
+
+struct Dog { age: i64 }
+impl Dog { fun name(self): string = "dog"; }
+
+struct Cat { lives: i64 }
+impl Cat {
+    fun name(self): string = "cat";
+    fun show(self): string = "a cat with {self.lives} lives";
+}
+
+struct Count { n: i64 }
+impl Count {
+    fun next(mut self): Option<i64> = None;
+}
+
+struct Pen { pet: Named, act: fun(i64): i64 }
+
+fun main() {
+    let pets: Named[] = [Dog { age: 2 }, Cat { lives: 9 }];
+    println(pets);
+    println("first: {pets[0]}");
+    let src: Source<i64> = Count { n: 5 };
+    println(src);
+    println(Pen { pet: Cat { lives: 1 }, act: fun(x: i64): i64 = x + 1 });
+    let text = to_string(pets[1]);
+    println(text.len);
+}

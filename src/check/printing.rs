@@ -14,10 +14,9 @@ use crate::ast::Expr;
 /// The key of a print site's use: its one argument is the printed type.
 pub(super) const PRINT: &str = "$print";
 
-/// True if a value of `ty` can be printed. Interface and function values
-/// come in milestone 40; `void` never prints.
+/// True if a value of `ty` can be printed: everything but `void` (v12).
 pub(super) fn printable(ty: &Type) -> bool {
-    !matches!(ty, Type::Void | Type::Interface(..) | Type::Fun(..))
+    *ty != Type::Void
 }
 
 /// True for the types codegen prints without any helper.
@@ -31,6 +30,16 @@ impl Checker {
     pub(super) fn printed(&mut self, at: &Expr, ty: &Type) {
         if !plain(ty) {
             self.used(at, PRINT, std::slice::from_ref(ty));
+        }
+    }
+
+    /// `r.unwrap()` on a `Result<T, E>` prints the error when it fails (v12).
+    pub(super) fn unwrap_prints(&mut self, call: &Expr, receiver: &Type, name: &str) {
+        if let Type::Enum(key, args) = receiver
+            && key == super::results::RESULT
+            && name == "unwrap"
+        {
+            self.printed(call, &args[1]);
         }
     }
 
@@ -130,7 +139,8 @@ mod tests {
              let p = P {{ x: 1, s: \"a\" }};\n\
              println(p); print(E.B); println([1]); println(Some(2));\n\
              let r: Result<i64, string> = Ok(1); eprintln(r);\n\
-             let t = \"{{p}} {{[E.A(1.0)]}}\"; let u = to_string(\"s\"); let v = dump(p);\n}}"
+             let t = \"{{p}} {{[E.A(1.0)]}}\"; let u = to_string(\"s\"); let v = dump(p);\n\
+             let f = fun(x: i64): i64 = x; println(f); let g = \"{{f}}\";\n}}"
         ));
         let e = |body: &str| {
             errors(&format!("{TYPES}fun main() {{ {body} }}"))
@@ -139,8 +149,7 @@ mod tests {
                 .collect::<Vec<_>>()
         };
         assert_eq!(e("println(nothing());"), ["E0407"]);
-        assert_eq!(e("println(fun(x: i64): i64 = x);"), ["E0403"]);
-        assert_eq!(e("let t = \"{nothing}\";"), ["E0403"]);
+        assert_eq!(e("let t = \"{nothing()}\";"), ["E0407"]);
     }
 
     #[test]
@@ -163,5 +172,16 @@ mod tests {
             generic.contains(&"Stack.show<bool>".to_string()),
             "{generic:?}"
         );
+    }
+
+    #[test]
+    fn interface_values_print_and_unwrap_shows_the_error_v12() {
+        ok(&format!(
+            "{TYPES}struct C {{ r: f64 }}\nimpl C {{ fun area(self): f64 = self.r; }}\n\
+             fun main() {{ let s: Shape = C {{ r: 1.0 }}; println(s); let t = \"{{s}}\"; let u = to_string([s]); }}"
+        ));
+        let found =
+            monos("fun main() { let r: Result<i64, Stack<i64>> = Ok(1); let n = r.unwrap(); }");
+        assert!(found.contains(&"Stack.show<i64>".to_string()), "{found:?}");
     }
 }

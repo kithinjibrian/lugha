@@ -239,7 +239,7 @@ mod tests {
     }
 
     #[test]
-    fn functions_have_no_equality_printing_or_casts() {
+    fn functions_have_no_equality_or_casts() {
         assert_eq!(e("let b = double == double;")[0].0, "E0404");
         assert_eq!(
             e("let b = Button { label: \"\", on_click: double }; let c = b == b;")[0].0,
@@ -249,8 +249,7 @@ mod tests {
         let eq = "fun has<T: Eq>(xs: T[], x: T): bool = false;\n";
         let src = format!("{LIB}{eq}fun main() {{ let c = has([double], double); }}");
         assert_eq!(errors(&src)[0].0, "E0419");
-        assert_eq!(e("println(double);")[0].0, "E0403");
-        assert_eq!(e("let f = double; let s = \"{f}\";")[0].0, "E0403");
+        // v12: function values print as `<fun>` (`check/printing.rs`).
         assert_eq!(e("let n = double as i64;")[0].0, "E0408");
         let src = format!("{LIB}extern fun g(f: fun(i64));\nfun main() {{}}");
         assert_eq!(errors(&src)[0].0, "E0409");

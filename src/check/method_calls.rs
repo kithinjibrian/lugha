@@ -99,6 +99,7 @@ impl Checker {
             return ty;
         }
         if let Some(m) = builtin(receiver, &name.name) {
+            self.unwrap_prints(call, receiver, &name.name);
             // Array built-ins grow the array in place: the `mut self` place rules
             // apply, but the value is read before it changes, so E0508 doesn't
             // (v1 §4). `s.slice(…)` only reads (v4).

@@ -1,0 +1,5 @@
+[Dog { age: 2 }, a cat with 9 lives]
+first: Dog { age: 2 }
+Count { n: 5 }
+Pen { pet: a cat with 1 lives, act: <fun> }
+18

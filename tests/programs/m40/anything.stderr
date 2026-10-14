@@ -1,0 +1,1 @@
+panic: unwrap on Err: Bad { code: 7 } at tests/programs/m40/anything.la:21:15

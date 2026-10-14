@@ -69,23 +69,23 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (`check/printing.rs`):
-- [ ] An interface value and a function value print and interpolate.
-- [ ] `unwrap` on `Result<i64, Stack<i64>>` lists `Stack.show<i64>`.
+- [x] An interface value and a function value print and interpolate.
+- [x] `unwrap` on `Result<i64, Stack<i64>>` lists `Stack.show<i64>`.
 
 Unit tests — codegen (`codegen/unwrap.rs`): `unwrap` on a `Result` builds its message with the error's text.
 
 Acceptance — `tests/programs/m40/`:
-- [ ] `anything.la`: the §10 program (exit 101, stderr golden).
-- [ ] `more.la`:
+- [x] `anything.la`: the §10 program (exit 101, stderr golden).
+- [x] `more.la`:
   - an interface array printed directly and interpolated;
   - a generic interface value;
   - a struct holding an interface value and a function value;
   - `to_string` of an interface value.
-- [ ] `m32/err` golden updated to the new message.
-- [ ] The §10 program runs from the spec.
+- [x] `m32/err` golden updated to the new message.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs that don't `unwrap` a `Result` give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs that don't `unwrap` a `Result` give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -93,10 +93,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m40/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The v12 spec is complete; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m40/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The v12 spec is complete; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -105,3 +105,15 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m40/anything.la
 ```
+
+## AMENDMENTS (during build, session 89)
+
+- **No codegen unit test for the `unwrap` message:** the codegen test helper loads no prelude, so it has no `Result`. The message is covered by `m40/anything` and `m32/err` (golden updated to `unwrap on Err: no`).
+- **Earlier E0403 tests changed:**
+  - `fun_values` (printing function values), `iface_calls` (`interface_values_dont_print`, removed);
+  - `call` and `input` (`to_string`/`eprint`/interpolation of a function value).
+
+  They now use `void` (E0407), and `check/printing.rs` has the positive cases.
+- **IR:** 144 earlier programs give byte-identical IR. The three that differ are exactly those that call `unwrap()` on a `Result` (`m32/err`, `more`, `unwrap`). `-O2` was checked by hand for `m40/anything` and `m40/more`.
+- **The §10 sentence** puts only stdout lines in backticks, as the extractor reads them; the panic message is written plain.
+- **No file splits.**

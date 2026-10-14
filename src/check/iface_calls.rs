@@ -123,12 +123,6 @@ mod tests {
     }
 
     #[test]
-    fn interface_values_dont_print() {
-        assert_eq!(e("fun f(s: Shape) { println(s); }")[0].0, "E0403");
-        assert_eq!(e("fun f(s: Shape) { let t = \"{s}\"; }")[0].0, "E0403");
-    }
-
-    #[test]
     fn interface_values_dont_cross_the_c_boundary() {
         assert_eq!(
             e("extern fun c_area(s: Shape): f64;"),

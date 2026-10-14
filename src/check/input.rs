@@ -68,7 +68,7 @@ impl Checker {
 #[cfg(test)]
 mod tests {
     use crate::check::Type;
-    use crate::check::test_util::{diagnostics, errors, let_type};
+    use crate::check::test_util::{errors, let_type};
 
     #[test]
     fn interpolated_strings_are_strings() {
@@ -78,11 +78,9 @@ mod tests {
 
     #[test]
     fn only_printable_values_interpolate() {
-        // v12: structs and arrays print; a function value doesn't yet.
-        let src = "fun f() {}\nfun main() { let g = f; let t = \"{g}\"; }";
-        assert_eq!(errors(src), [("E0403", "g")]);
-        let help = diagnostics(src)[0].help.clone().expect("a help");
-        assert!(help.contains("convert"), "{help}");
+        // v12: every value but `void` interpolates.
+        let src = "fun f() {}\nfun main() { let t = \"{f()}\"; }";
+        assert_eq!(errors(src), [("E0407", "f()")]);
         crate::check::test_util::ok(
             "struct P { x: i64 }\nfun main() { let t = \"{[1]} {P { x: 1 }}\"; }",
         );
@@ -147,8 +145,8 @@ mod tests {
         );
         assert_eq!(errors("fun main() { exit(\"x\"); }"), [("E0403", "\"x\"")]);
         assert_eq!(
-            errors("fun main() { eprint(fun() {}); }"),
-            [("E0403", "fun() {}")]
+            errors("fun f() {}\nfun main() { eprint(f()); }"),
+            [("E0407", "f()")]
         );
         assert_eq!(errors("fun exit() {}\nfun main() {}"), [("E0302", "exit")]);
     }
