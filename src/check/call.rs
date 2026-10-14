@@ -5,7 +5,7 @@
 use super::env::is_intrinsic;
 use super::expr::Expect;
 use super::generics::subst;
-use super::{Checker, Type, errors};
+use super::{Checker, Type, errors, qualify};
 use crate::ast::{Expr, ExprKind};
 
 impl Checker {
@@ -45,7 +45,15 @@ impl Checker {
         }
         // A function called by name is not a value here; `void` marks it.
         self.record(callee, Type::Void);
-        let key = self.key(name);
+        let mut key = self.key(name);
+        // `range(a, b)` is the prelude's unless a module declares one (v10).
+        let prelude = qualify(&[crate::modules::PRELUDE_PATH.to_string()], name);
+        if name == "range"
+            && !self.functions.contains_key(&key)
+            && self.functions.contains_key(&prelude)
+        {
+            key = prelude;
+        }
         if !self.functions.contains_key(&key) {
             if is_intrinsic(name) {
                 return self.intrinsic(call, name, args);

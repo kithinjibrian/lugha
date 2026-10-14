@@ -3684,17 +3684,73 @@ Branch: prp-064-more_integers (merged into main)
 ## SESSION 83 — 2026-10-14 — Iterator helpers (milestone 36) — open
 Branch: prp-065-iterator_helpers
 
+### WHAT WAS DONE
+- PRP-065 written as approved under the "in one go" instruction, built and merged on green CI:
+  - iterator sources `xs.iter()`, `s.bytes()` and `range(a, b)`;
+  - lazy adapters `map`, `filter`, `take`, `skip` and `enumerate`;
+  - consumers `collect`, `count`, `fold`, `any`, `all`, `find` and `sum`;
+  - `for b of s`.
+- **v10 spec complete:**
+  - status and changes summary;
+  - §4 sources and helpers;
+  - §5 for over a string;
+  - the E0411 example;
+  - §9;
+  - the §10 program, §11 row 36;
+  - §12 gains two questions.
+- **Prelude types and methods compile only when reached** (amendment).
+
+### FILES CREATED OR MODIFIED
+- New: `src/prelude_iter.la`, `src/check/iter_helpers.rs`, `tests/programs/m36/` (`helpers`, `more`, `sources`, `overflow`, `e0415`), PRP-065.
+- Modified:
+  - `src/lib.rs`;
+  - `src/check/{mod,helpers,method_calls,iterators,instances,call,array,results,types}.rs`;
+  - `src/codegen/{array,heap,methods,iterators,interfaces}.rs`;
+  - `tests/spec.rs`;
+  - the v10 spec.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 79, CONTEXT.
+
+### TESTS WRITTEN
+- **Checker:**
+  - helper and source types;
+  - user iterators, `Iter<i64>` values, bound parameters;
+  - the type's own method wins;
+  - a user `range` wins;
+  - strings loop over `u8`;
+  - E0415, E0405, E0403.
+- **Codegen:** a string loop reads 8 bytes past the pointer.
+- **Programs:** `tests/programs/m36/`, and the §10 program from the spec.
+- **Regression:** 138 earlier programs give byte-identical IR; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 79.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tags `m36` and `v10`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 35 complete** (PRP-064, MEMORY 78): `i8`/`i16`/`u16`, checked/saturating/rotating methods, `I.MIN`/`I.MAX`, `parse_u64`. Tagged `m35`. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
+**Lugha v10 is complete** (milestones 34–36; PRP-063–065; MEMORY 76–79):
+- `Self` in `impl` blocks, and default methods on concrete types;
+- `i8`/`i16`/`u16`, checked/saturating/rotating methods, `MIN`/`MAX`, `parse_u64`;
+- lazy iterator helpers, `iter`/`bytes`/`range`, `for b of s`.
 
-Next, under the user's "in one go" (MEMORY 76): **milestone 36, iterator helpers** (PRP-065, next session). It completes v10, tagged `m36` and `v10`.
-- Lazy prelude adapters `map`, `filter`, `take`, `skip`, `enumerate` (`Indexed<T>`);
-- consumers `collect`, `count`, `fold`, `any`, `all`, `find`, `sum`;
-- sources `xs.iter()`, `s.bytes()`, `range(a, b)`, and `for b of s`.
+Tags `m36` and `v10` go on the merge of PRP-065. `Language v10 Specification.md` is what `lughac spec` prints; v0–v9 are frozen.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `codegen/patterns.rs` (~290).
+Next: **v11 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v10 spec §11 and §12):
+- `zip`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`/`max`, `position`, and a pair type;
+- `for n of mut c`, unsigned indexes;
+- `Self` in struct and enum declarations and patterns;
+- package versions, re-exports, a `--package` flag;
+- a `Display`-like interface (printing structs, errors in `unwrap`);
+- binary I/O, directories, streams and processes;
+- Unicode text (characters, not bytes).
+
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `check/instances.rs` (~291).
 
 See `TODO.md`.

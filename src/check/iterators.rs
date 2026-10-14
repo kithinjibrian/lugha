@@ -57,7 +57,8 @@ impl Checker {
         };
         match ty {
             Type::Param(p) => self.bound_used(iter, p, "next"),
-            Type::Struct(owner, args) | Type::Enum(owner, args) if !args.is_empty() => {
+            // A non-generic type's `next` is listed only for the prelude's (v10).
+            Type::Struct(owner, args) | Type::Enum(owner, args) => {
                 let key = self.methods[owner]["next"].key.clone();
                 self.used(iter, &key, args);
             }
@@ -70,7 +71,7 @@ impl Checker {
 
     /// The `T` of `ty`'s `next(mut self): Option<T>`, and for a type
     /// parameter the bound interface whose default it may be.
-    fn next_of(&self, ty: &Type) -> Option<Iteration> {
+    pub(super) fn next_of(&self, ty: &Type) -> Option<Iteration> {
         if matches!(ty, Type::Error | Type::Never) {
             return None;
         }

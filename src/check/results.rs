@@ -36,9 +36,13 @@ impl Checker {
         self.module.len() == 1 && self.module[0] == crate::modules::PRELUDE_PATH
     }
 
-    /// The prelude's key for a type name no module declares: `Result`.
+    /// The prelude's key for a type name no module declares: `Result`, or
+    /// an iterator type (v10).
     pub(super) fn prelude_type(&self, name: &str) -> Option<String> {
-        (name == "Result" && self.enums.contains_key(RESULT)).then(|| RESULT.to_string())
+        if name == "Result" && self.enums.contains_key(RESULT) {
+            return Some(RESULT.to_string());
+        }
+        self.prelude_iter_type(name)
     }
 
     /// `e?`: on `Result<T, E>` in a function returning `Result<U, E>`, or on

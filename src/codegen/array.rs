@@ -150,10 +150,16 @@ impl<'ctx> Lowerer<'ctx> {
         body: &Block,
     ) -> Result<(), CodegenError> {
         let array_type = self.ty(iter);
-        if !matches!(array_type, Type::Array(_)) {
+        // A string loops over its bytes like a `u8[]` (v10).
+        let string = array_type == Type::String;
+        if !string && !matches!(array_type, Type::Array(_)) {
             return self.iterator_loop(var, iter, body);
         }
-        let element = element_of(&array_type);
+        let element = if string {
+            Type::U8
+        } else {
+            element_of(&array_type)
+        };
         let array = self.get(iter, &array_type)?.into_pointer_value();
         let len = self.length(array);
         let i64_type = self.context.i64_type();
@@ -185,7 +191,11 @@ impl<'ctx> Lowerer<'ctx> {
 
         self.builder.position_at_end(body_block);
         self.scopes.push();
-        let address = self.element_address(array, i, self.element_size(&element));
+        let address = if string {
+            self.byte_address(array, i)
+        } else {
+            self.element_address(array, i, self.element_size(&element))
+        };
         let item = self.load_element(address, &element);
         let slot = self.entry_alloca(&element, &var.name);
         self.builder.build_store(slot, item).expect(POSITIONED);
@@ -265,5 +275,12 @@ mod tests {
             cond.contains("icmp slt i64 %i, %len") && !cond.contains("load ptr"),
             "{ir}"
         );
+    }
+
+    #[test]
+    fn a_string_loop_reads_bytes_past_the_string_header() {
+        let ir = ir("fun main() { for b of \"ab\" { print(b); } }");
+        assert!(ir.contains("%offset = add i64 %scaled, 8"), "{ir}");
+        assert!(ir.contains("load i8"), "{ir}");
     }
 }

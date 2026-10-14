@@ -83,6 +83,15 @@ impl<'ctx> Lowerer<'ctx> {
         self.address_after(object, ARRAY_HEADER, index, size)
     }
 
+    /// The address of byte `index` of the string `object` (v10, `for b of s`).
+    pub(super) fn byte_address(
+        &self,
+        object: PointerValue<'ctx>,
+        index: IntValue<'ctx>,
+    ) -> PointerValue<'ctx> {
+        self.address_after(object, STRING_HEADER, index, 1)
+    }
+
     /// Where an array's capacity is stored: the second `i64` of its header.
     pub(super) fn capacity_address(&self, array: PointerValue<'ctx>) -> PointerValue<'ctx> {
         let zero = self.context.i64_type().const_zero();

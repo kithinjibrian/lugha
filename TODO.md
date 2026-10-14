@@ -217,9 +217,9 @@ Done when the `Self`-in-`impl` program passes.
 Done when the more-integers program passes.
 - [x] PRP-064: `i8`, `i16`, `u16`; `checked_*`, `saturating_*`, rotations, `MIN`/`MAX`; `parse_u64`; tagged `m35`
 
-### Milestone 36 — Iterator helpers
+### Milestone 36 — Iterator helpers ✅
 Done when the iterator-helpers program passes and the v10 spec is complete.
-- [ ] `iter`, `bytes`, `range`, `for b of s`; the adapters and consumers
+- [x] PRP-065: `iter`, `bytes`, `range`, `for b of s`; the adapters and consumers; v10 complete; tagged `m36` and `v10` at merge
 
 ## Found while working — needs a PRP
 

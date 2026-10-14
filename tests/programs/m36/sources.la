@@ -1,0 +1,24 @@
+// The prelude's iterator types reached every way: a direct `next` call, a
+// loop over one, a call through a bound, and a conversion to `Iter<u8>`.
+
+fun total<I: Iter<i64>>(it: I): i64 {
+    let mut t = 0;
+    for x of it {
+        t += x;
+    }
+    t
+}
+
+fun main() {
+    let mut r = range(0, 3);
+    println(r.next().unwrap());
+    for x of r {
+        print(x);
+    }
+    println("");
+    println(total(range(1, 4)));
+    let mut b = "hi".bytes();
+    println(b.next().unwrap());
+    let it: Iter<u8> = b;
+    println(it.count());
+}

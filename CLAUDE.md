@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v10 Specification.md` (`lughac spec` prints it): Lugha v10, in progress (milestones 34–35 done: `Self` in `impl` blocks, default methods on concrete types; `i8`/`i16`/`u16`, checked and saturating methods, rotations, `MIN`/`MAX`, `parse_u64`). `Language v10 Draft.md` is the approved plan (milestones 34–36: `Self` everywhere, more integers, iterator helpers). The v0–v9 files are frozen. `Result`, `Iter` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v10 Specification.md` (`lughac spec` prints it): Lugha v10, complete (milestones 34–36: `Self` in `impl` blocks and default methods on concrete types; `i8`/`i16`/`u16`, checked/saturating/rotating methods, `MIN`/`MAX`, `parse_u64`; lazy iterator helpers, `iter`/`bytes`/`range`, `for b of s`). `Language v10 Draft.md` is the approved plan it was built from. The v0–v9 files are frozen. `Result`, `Iter`, the iterator types and the array helpers are written in Lugha in `src/prelude.la` and `src/prelude_iter.la`, loaded with every program.
 
 ---
 
@@ -229,6 +229,7 @@ pub fn parse_number(src: &str) -> i64 {
 ├── src/
 │   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints), PRELUDE
 │   ├── prelude.la   — Result<T, E>, Iter<T> (v6), the array helpers, and the string/Option/Result helpers in Lugha, module `$prelude`
+│   ├── prelude_iter.la — the iterator sources, adapters and consumers (v10), joined after prelude.la into the one `$prelude`
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
@@ -272,7 +273,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  numbers.rs (v7/v10 numeric types: `is_float`, `is_unsigned`, keyword types, `I.MIN`/`I.MAX`), slots.rs (enum payload slots),
 │   │                  or_patterns.rs (or-pattern alternatives and bindings E0428, `mut` bindings), conditional.rs
 │   │                  (`if let`, `while let`, `let … else`, E0429), concrete_defaults.rs (default methods on
-│   │                  concrete types, E0430)
+│   │                  concrete types, E0430), iter_helpers.rs (iterator helpers as prelude calls, prelude iterator type names)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
@@ -310,13 +311,13 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m35/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m36/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
-│   └── specs/       — Language v10 Specification.md (the language definition, in progress, printed by `lughac spec`);
+│   └── specs/       — Language v10 Specification.md (the language definition, complete, printed by `lughac spec`);
 │                      Language v10 Draft.md (approved v10 plan, milestones 34–36); Language v9 Draft.md (approved v9 plan, milestones 31–33); Language v8 Draft.md (approved v8 plan, milestone 30); Language v7 Draft.md (approved v7 plan, milestones 27–29); Language v6 Draft.md (approved v6 plan, milestones 23–26); Language v5 Draft.md (approved v5 plan, milestones 20–22); Language v4 Draft.md (approved v4 plan, milestones 17–19); v3 and v2 Drafts (past plans);
 │                      Language v9, v8, v7, v6, v5, v4, v3, v2, v1 (v1.2) and v0 Specification.md (frozen)
 └── reports/         — EOD reports (YYYY-MM-DD.md)
@@ -332,7 +333,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them, except the one it names: a value to an interface where one is expected (v5, recorded in `Checked.conversions`). Every other one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (`zip`/`chain`, `Self` in declarations, package versions…) even partially, nor a v10 milestone ahead of its turn. v10 (milestones 34–36) follows `Language v10 Draft.md`; anything beyond it needs an approved spec change first.
+5. **Never implement a §11 "out of scope" feature** (`zip`/`chain`, `Self` in declarations, package versions…) even partially. v10 is complete (milestones 34–36); any further language feature is v11 and needs an approved spec change first.
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

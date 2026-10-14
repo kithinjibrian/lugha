@@ -1192,9 +1192,43 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 79. Iterator helpers — milestone 36, v10 complete (PRP-065)
+
+**Decision:** built under the user's "in one go" (milestones 34–36).
+- **Prelude:** `src/prelude_iter.la`, joined after `prelude.la` (`PRELUDE = concat!(…)`) into one `$prelude` module. It holds:
+  - sources `ArrayIter<T>`/`array_iter`, `Bytes`/`str_bytes`, `Range`/`range`;
+  - adapters `Map`, `Filter`, `Take`, `Skip`, `Enumerate` (each `{ src: Iter<T>, … }`) with `iter_map`, …;
+  - `Indexed<T> { public i, public value }`;
+  - consumers `iter_collect/count/fold/any/all/find`;
+  - `iter_sum_<N>` for the ten number types, written as loops: closures there would add to every program's checked closure list.
+- **Checker:** `check/iter_helpers.rs` (`iter_helper_call`, hooked in `on_value` after the array helpers).
+  - It applies when the receiver doesn't declare the name (`method` for structs and enums, `offered` otherwise) and `next_of` (now `pub(super)`) gives `T`.
+  - It then converts the receiver to `Iter<T>` (`convert`), binds from `Iter<T>`, and infers as `helper_call` does.
+  - `helper_function` maps `xs.iter()` → `array_iter` and `s.bytes()` → `str_bytes`.
+  - `call.rs`: a bare `range` that no module declares calls `$prelude.range`.
+  - `prelude_type` also resolves `ITER_TYPES`.
+  - `for_of` gives a string the element `u8`.
+- **Prelude structs print with `$prelude.`** (`Type` Display strips the prefix only for enums and interfaces): codegen names LLVM types and symbols by Display, so a user `struct Range` would otherwise clash.
+- **Prelude methods compile only when reached:**
+  - **Codegen:** `declare_methods`/`define_methods` skip the prelude unit; its methods come from `monos` (`instance_name(k, [])` = `k`), with lookups falling back to `monos` (`methods.rs` found chain, `iterators.rs::next_function`, `interfaces.rs` table slots).
+  - **Checker:** records the use:
+    - in `on_value` (non-generic method calls);
+    - in `iterator_element` (every struct/enum `next`);
+    - in `conversion_uses` (already did);
+    - in `bound_target` (prelude keys listed even when not generic).
+
+    `used` keeps empty-argument keys only for the prelude.
+- **Codegen `for b of s`:** `for_of` treats a string as `u8[]` with `heap.rs::byte_address` (8-byte string header).
+- **Panics:** a `sum` overflow panics located in the prelude (`<prelude>:L:C`).
+
+**Why:** writing everything in Lugha reuses generic interface values, closures and the instance machinery. Gating prelude methods keeps every earlier program's IR byte-identical.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 36 complete — Lugha v10 complete**: PRP-065 iterator helpers, `iter`/`bytes`/`range`, `for b of s`
 - **Milestone 35 complete**: PRP-064 `i8`/`i16`/`u16`, checked/saturating/rotating methods, `MIN`/`MAX`, `parse_u64`
 - **Milestone 34 complete**: PRP-063 `Self` in `impl` blocks, default methods on concrete types (E0430); v10 spec begins
 - **Milestone 33 complete — Lugha v9 complete**: PRP-062 `if let`, `while let`, `let … else`
@@ -1277,13 +1311,22 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 35 complete** (PRP-064, MEMORY 78): `i8`/`i16`/`u16`, checked/saturating/rotating methods, `I.MIN`/`I.MAX`, `parse_u64`. Tagged `m35`. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
+**Lugha v10 is complete** (milestones 34–36; PRP-063–065; MEMORY 76–79):
+- `Self` in `impl` blocks, and default methods on concrete types;
+- `i8`/`i16`/`u16`, checked/saturating/rotating methods, `MIN`/`MAX`, `parse_u64`;
+- lazy iterator helpers, `iter`/`bytes`/`range`, `for b of s`.
 
-Next, under the user's "in one go" (MEMORY 76): **milestone 36, iterator helpers** (PRP-065, next session). It completes v10, tagged `m36` and `v10`.
-- Lazy prelude adapters `map`, `filter`, `take`, `skip`, `enumerate` (`Indexed<T>`);
-- consumers `collect`, `count`, `fold`, `any`, `all`, `find`, `sum`;
-- sources `xs.iter()`, `s.bytes()`, `range(a, b)`, and `for b of s`.
+Tags `m36` and `v10` go on the merge of PRP-065. `Language v10 Specification.md` is what `lughac spec` prints; v0–v9 are frozen.
 
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `codegen/patterns.rs` (~290).
+Next: **v11 direction — discovery** (one question at a time, recommended option first, explanation inside the question). Candidates (v10 spec §11 and §12):
+- `zip`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`/`max`, `position`, and a pair type;
+- `for n of mut c`, unsigned indexes;
+- `Self` in struct and enum declarations and patterns;
+- package versions, re-exports, a `--package` flag;
+- a `Display`-like interface (printing structs, errors in `unwrap`);
+- binary I/O, directories, streams and processes;
+- Unicode text (characters, not bytes).
+
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `check/instances.rs` (~291).
 
 See `TODO.md`.

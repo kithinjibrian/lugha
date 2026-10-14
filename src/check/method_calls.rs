@@ -94,6 +94,10 @@ impl Checker {
         if let Some(ty) = self.helper_call(call, (receiver, name), args, expect) {
             return ty;
         }
+        // `it.map(f)` and the other iterator helpers (v10).
+        if let Some(ty) = self.iter_helper_call(call, (base, receiver), name, args, expect) {
+            return ty;
+        }
         if let Some(m) = builtin(receiver, &name.name) {
             // Array built-ins grow the array in place: the `mut self` place rules
             // apply, but the value is read before it changes, so E0508 doesn't
@@ -143,6 +147,10 @@ impl Checker {
         };
         if let Type::Struct(owner, _) | Type::Enum(owner, _) = receiver {
             self.method_visible(owner, &name.name, name.span);
+            // A prelude type's method compiles only when reached (v10).
+            if m.generics.is_empty() {
+                self.used(call, &m.key, &[]);
+            }
         }
         // The `impl`'s parameters come from the receiver: `Stack<string>` binds `T`.
         let bound = match receiver {

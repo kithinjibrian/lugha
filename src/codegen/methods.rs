@@ -43,6 +43,10 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn declare_methods(&mut self, unit: &Unit) {
         for item in &unit.program.items {
             let Item::Impl(i) = item else { continue };
+            // The prelude's methods are listed instances, compiled when reached (v10).
+            if super::declare::is_prelude(unit) {
+                continue;
+            }
             let owner = qualify(unit.path, &i.ty.name);
             for f in i.methods.iter().filter(|f| !generic(i, f)) {
                 let params: Vec<Type> = f
@@ -86,6 +90,9 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn define_methods(&mut self, unit: &Unit) -> Result<(), CodegenError> {
         for item in &unit.program.items {
             let Item::Impl(i) = item else { continue };
+            if super::declare::is_prelude(unit) {
+                continue;
+            }
             let name = qualify(unit.path, &i.ty.name);
             let owner = if self.enums.contains_key(&name) {
                 Type::Enum(name.clone(), Vec::new())
@@ -176,6 +183,8 @@ impl<'ctx> Lowerer<'ctx> {
             instance
                 .or_else(by_type)
                 .or_else(|| self.methods.get(&k).cloned())
+                // A prelude type's method is compiled as a listed instance (v10).
+                .or_else(|| self.monos.get(&k).cloned())
         });
         let found = found.or_else(|| self.default_method(call, &base_type));
         let Some(method) = found else {

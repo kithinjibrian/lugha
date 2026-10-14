@@ -39,6 +39,7 @@ mod infer;
 mod input;
 mod instances;
 mod interfaces;
+mod iter_helpers;
 mod iterators;
 mod layouts;
 mod levels;

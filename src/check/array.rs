@@ -122,6 +122,7 @@ impl Checker {
     pub(super) fn for_of(&mut self, var: &Ident, iter: &Expr, body: &Block) {
         let element = match self.value(iter, None) {
             Type::Array(element) => *element,
+            Type::String => Type::U8,
             Type::Error | Type::Never => Type::Error,
             // Anything with `next` (v6): the loop works on a copy, unguarded.
             other => return self.iterator_loop(var, iter, &other, body),
@@ -262,10 +263,7 @@ mod tests {
     #[test]
     fn for_of_iterates_arrays_and_guards_them() {
         ok("fun main() { let xs = [1, 2]; let mut t = 0; for x of xs { t += x; } }");
-        assert_eq!(
-            errors("fun main() { for c of \"abc\" { } }"),
-            [("E0411", "\"abc\"")]
-        );
+        assert_eq!(errors("fun main() { for c of 5 { } }"), [("E0411", "5")]);
         assert_eq!(
             errors("fun main() { let mut xs = [1]; for x of xs { xs[0] = x; } }"),
             [("E0507", "xs[0]")]

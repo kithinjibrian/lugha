@@ -117,26 +117,26 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (`check/iter_helpers.rs`):
-- [ ] **Types:**
+- [x] **Types:**
   - `map` gives `$prelude.Map<i64, string>`, `filter` gives `Filter<i64>`, `enumerate` yields `Indexed<i64>`;
   - `collect` gives `T[]`, `count` an `i64`, `find` an `Option<T>`, `sum` the element type;
   - `xs.iter()` gives `ArrayIter<i64>`, `s.bytes()` gives `Bytes`, `range(0, 3)` gives `Range`.
-- [ ] **Receivers:**
+- [x] **Receivers:**
   - a user iterator type;
   - an `Iter<i64>` value;
   - a type parameter bound by `Iter<T>`;
   - a type's own `map` wins.
-- [ ] **Errors:**
+- [x] **Errors:**
   - E0415 for `sum` on strings and for `(5).map(f)`;
   - E0405 for `take()`;
   - E0403 for `take(true)`.
-- [ ] **`for b of s`** binds `u8`, and a user `fun range` is called instead of the prelude's.
+- [x] **`for b of s`** binds `u8`, and a user `fun range` is called instead of the prelude's.
 
 Unit tests — codegen: `for b of s` loads bytes 8 bytes past the string pointer.
 
 Acceptance — `tests/programs/m36/`:
-- [ ] `helpers.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `helpers.la`: the §10 program.
+- [x] `more.la`:
   - every helper;
   - laziness: a side-effecting `map` runs only for values pulled, on an endless user iterator;
   - `skip` past the end;
@@ -147,12 +147,12 @@ Acceptance — `tests/programs/m36/`:
   - `collect` of strings;
   - helpers called in generic code bound by `Iter<T>`;
   - `range` with `a >= b`.
-- [ ] `overflow.la`: `sum` overflow panics (exit 101).
-- [ ] `e0415.la`: reject golden (`sum` over strings).
-- [ ] The §10 program runs from the spec.
+- [x] `overflow.la`: `sum` overflow panics (exit 101).
+- [x] `e0415.la`: reject golden (`sum` over strings).
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -160,10 +160,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m36/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The v10 spec is complete; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m36/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The v10 spec is complete; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -172,3 +172,18 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m36/helpers.la
 ```
+
+## AMENDMENTS (during build, session 83)
+
+- **Prelude methods compile only when reached.** A plain program got `Bytes.next` and `Range.next`, because codegen compiled every non-generic method.
+  - **Codegen:** it now skips the prelude's `impl`s in `declare_methods`/`define_methods` and takes those methods from `monos`. The method-call, iterator-loop and table lookups fall back to `monos`.
+  - **Checker:** it lists them where reached: method calls (`on_value`), loops (`iterator_element`), conversions (already), and calls through bounds (`bound_target`).
+  - **New program:** `m36/sources.la` reaches them each way.
+- **The `sum` helpers are loops,** not `iter_fold` with closures. Prelude closures are checked with every program, and `check::closures::tests::captures_are_recorded_in_order` counts them all.
+- **Earlier tests changed:**
+  - `check::array` `for c of "abc"` is no longer E0411; it now uses `for c of 5`;
+  - the E0411 example in the spec's code table likewise.
+- **`take(true)` is E0403,** as the PRP said; the first test draft expected E0401.
+- **A `sum` overflow panics in the prelude:** `<prelude>:L:C`, in the `m36/overflow` golden.
+- **IR:** the 138 earlier programs that compile give byte-identical IR. `-O2` was checked by hand for `m36/helpers`, `m36/more`, `m36/sources` and `m36/overflow`.
+- **No file splits:** the new prelude code is a new file, `src/prelude_iter.la` (263 lines).

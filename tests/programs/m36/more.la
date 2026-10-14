@@ -1,0 +1,63 @@
+// Every iterator helper, laziness on an endless iterator, the edges of
+// take and skip, chains through Iter<T> values, and helpers in generic code.
+
+struct Naturals { n: i64 }
+
+impl Naturals {
+    fun next(mut self): Option<i64> {
+        self.n += 1;
+        Some(self.n)
+    }
+}
+
+struct Loud { n: i64 }
+
+impl Loud {
+    fun next(mut self): Option<i64> {
+        self.n += 1;
+        print("<{self.n}>");
+        Some(self.n)
+    }
+}
+
+fun firsts<I: Iter<i64>>(it: I): i64[] = it.take(2).collect();
+
+fun main() {
+    let xs = [5, 3, 8, 1];
+    println(xs.iter().count());
+    println(xs.iter().map(fun(n) = n * 10).sum());
+    println(xs.iter().filter(fun(n) = n > 2).count());
+    println(xs.iter().skip(1).take(2).collect().len);
+    println(xs.iter().map(fun(n) = "{n}").collect().join("-"));
+    println(xs.iter().fold(1, fun(a, n) = a * n));
+    println(xs.iter().all(fun(n) = n > 0));
+    println(xs.iter().any(fun(n) = n > 9));
+    println(xs.iter().find(fun(n) = n > 9).is_none());
+    println(xs.iter().skip(10).count());
+    println(xs.iter().take(-1).count());
+    println(xs.iter().skip(-3).count());
+
+    // Only the values pulled are produced.
+    let loud = Loud { n: 0 };
+    println(loud.map(fun(n) = n * n).take(3).sum());
+    let evens = Naturals { n: 0 }.filter(fun(n) = n % 2 == 0);
+    let it: Iter<i64> = evens.take(3);
+    let got = it.map(fun(n) = n + 1).collect();
+    println(got[2]);
+    for p of (Naturals { n: 41 }).enumerate().take(2) {
+        print("{p.i}:{p.value};");
+    }
+    println("");
+
+    let fs = [1.5, 2.25];
+    println(fs.iter().sum());
+    let bs: u8[] = [200, 50];
+    println(bs.iter().sum());
+    println("abc".bytes().map(fun(b) = b as i64).sum());
+    println(range(5, 5).count());
+    println(range(3, 1).count());
+    println(firsts(Naturals { n: 0 })[1]);
+    let words = ["a", "bb", "ccc"];
+    println(words.iter().map(fun(w) = w.len).sum());
+    println(words.iter().filter(fun(w) = w.len > 1).collect().join("+"));
+}

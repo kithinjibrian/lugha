@@ -2,14 +2,15 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 34–35 of 34–36). It is built from the approved plan, `Language v10 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v9 Specification.md` keeps v9 frozen.
+**Status:** complete (milestones 34–36). It is built from the approved plan, `Language v10 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v9 Specification.md` keeps v9 frozen.
 
 **v9.** This is v8 plus or-patterns, `mut` bindings, `unwrap`/`expect`, `%=`, and `if let`, `while let` and `let … else` (milestones 31–33).
 
-**Changes since v9** (milestones 34–35):
+**Changes since v9** (milestones 34–36):
 - Inside `impl T`, `Self` is `T` (with its parameters, `Stack<T>`), as a type, in struct literals (`Self { x: 0 }`), associated calls (`Self.new()`) and variants (`Self.Red`) (section 4).
 - A default method can be called on a struct or enum that lacks its own, `c.describe()`, when exactly one visible interface the type satisfies supplies it; two are E0430 (section 4).
 - `i8`, `i16` and `u16` are integer types like the others. Every integer type has `checked_add/sub/mul/div` (an `Option`), `saturating_add/sub/mul` and `rotate_left/right`, and the constants `I.MIN` and `I.MAX` (`i16.MAX`); `parse_u64(s)` parses a `u64` (sections 2–5, 8).
+- Iterator helpers: `xs.iter()`, `s.bytes()` and `range(a, b)` make iterators; `it.map(f)`, `filter`, `take`, `skip` and `enumerate` wrap one lazily, and `collect`, `count`, `fold`, `any`, `all`, `find` and `sum` consume it. `for b of s` loops over a string's bytes (sections 4–5).
 
 A valid v9 program is a valid v10 program unless it uses `i8`, `i16` or `u16` as a name, which are type keywords now, or declares a function named `parse_u64`, which is now an intrinsic.
 
@@ -589,6 +590,36 @@ Evaluation is strictly left to right: operands, call arguments and struct-litera
 
 **Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way, including `%=` (v9), which panics on a zero divisor as `%` does. Shifts (v7) lose the bits shifted out and never panic for overflow; `>>` copies the sign bit for `i32` and `i64` and fills with zeros for the unsigned types; a shift amount that is negative, or at least the type's width (8, 32 or 64), panics with `shift out of range` at the operator. `&=`, `|=`, `^=`, `<<=` and `>>=` mean `x = x op y` with the place evaluated once, as `+=` does, and need an integer.
 
+**Iterator sources and helpers** (v10). These make and use iterators, the values `for … of` steps through (`Iter<T>`, above):
+
+| Expression | Gives | Yields |
+| --- | --- | --- |
+| `xs.iter()` | `ArrayIter<T>` | the elements of a copy of `xs`, in order |
+| `s.bytes()` | `Bytes` | the bytes of `s`, as `u8` |
+| `range(a, b)` | `Range` | `a`, `a + 1`, … up to `b − 1` (`i64`s; nothing if `a >= b`) |
+
+Every iterator `it` that yields `T` (a value whose type has `fun next(mut self): Option<T>`, an `Iter<T>` value, or a type parameter bound by `Iter<T>`) has these helpers, unless its type declares a method or item by that name, which wins:
+
+| Helper | Gives | Meaning |
+| --- | --- | --- |
+| `it.map(f)`, `f: fun(T): U` | `Map<T, U>`, yielding `U` | `f` of each value |
+| `it.filter(f)`, `f: fun(T): bool` | `Filter<T>` | the values `f` is true for |
+| `it.take(n)` | `Take<T>` | the first `n` values (`n` an `i64`); after them it pulls nothing more |
+| `it.skip(n)` | `Skip<T>` | every value after the first `n` |
+| `it.enumerate()` | `Enumerate<T>`, yielding `Indexed<T>` | each value with its position: `p.i` (from 0) and `p.value` |
+| `it.collect()` | `T[]` | every value, in order |
+| `it.count()` | `i64` | how many values |
+| `it.fold(init, f)`, `f: fun(A, T): A` | `A` | the values folded from `init` |
+| `it.any(f)`, `it.all(f)` | `bool` | whether some or every value passes `f`, stopping at the first that decides |
+| `it.find(f)` | `Option<T>` | the first value `f` is true for |
+| `it.sum()` | `T` | the total, for a number type `T` only (E0415 otherwise) |
+
+- **Lazy:** the five adapters (`map` to `enumerate`) only wrap their iterator; nothing runs until a loop or a consumer pulls values, so they work on endless iterators: `range(10, 1000000000).filter(f).take(3)` tests only as many numbers as it needs.
+- **Copies:** a helper takes its iterator by copy, as `for … of` does, so `let m = it.map(f);` leaves `it` unchanged; `xs.iter()` holds its own copy of `xs`.
+- **Arguments:** closures are typed from the receiver as for the array helpers, and `take`/`skip` take an `i64`, a negative one taking or skipping nothing. Arrays keep their eager helpers: `xs.map(f)` is an array, `xs.iter().map(f)` an iterator.
+- **Panics:** `sum` uses `+`, so it panics on overflow, located in the prelude.
+- **Names:** these are Lugha in the prelude. `range` and the types `ArrayIter`, `Bytes`, `Range`, `Map`, `Filter`, `Take`, `Skip`, `Enumerate` and `Indexed` are visible in every module, like `Result`, unless the module declares the name; they print with their module, `$prelude.Map<i64, string>`.
+
 **Methods on integers** (v7, v10). Every integer type (`i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`) has these built-in methods:
 
 | Method | Gives | Meaning |
@@ -649,6 +680,8 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 ```
 
 **for over an array.** `for x of xs { body }` binds each element in order. `xs` is evaluated once and is not copied. `x` is an immutable binding to the element, so assigning to `x` is an error; write `xs[i]` with a range loop to modify elements. The body may not assign to `xs` or any part of it, which is checked at compile time, so the loop always sees the array as it was when the loop started. Strings are not iterable in v0.
+
+**for over a string** (v10). `for b of s { body }`, where `s` is a `string`, binds each byte of `s` in order, as a `u8`, like `for b of s.bytes()`; strings never change, so nothing in the body can disturb it.
 
 **for over an iterator** (v6). `for x of e { body }`, where `e` isn't an array but has `fun next(mut self): Option<T>` (section 4), evaluates `e` once into a hidden mutable copy (moved instead when `e` is a local's last use), then calls `next` on that copy before each iteration: `Some(v)` runs the body with `x` bound to `v`, and `None` ends the loop. `x` is immutable and holds its own value. `break` ends the loop and `continue` goes to the next call of `next`. Because the loop works on a copy, `e` itself never changes, and the body may assign to it; looping twice over the same variable starts from the beginning both times. As in every `for` header, a struct literal needs parentheses: `for n of (Count { n: 0, end: 3 }) { … }`. It desugars to:
 
@@ -878,6 +911,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - An iterator loop (v6) stores the iterator in a hidden local and calls its `next` with that local's address: directly for a struct or enum (its own method, or a bound default's instance in a generic instance), and through the table for an interface value.
 - A closure's body (v3) is `lugha_closure_<enclosing>.<n>`: the enclosing function's symbol without its prefix, then the closure's number in that function from 0 (`lugha_closure_main.0`, `lugha_closure_main.0.0` for a closure inside it, `lugha_closure_max<i64>.0` in an instance). Its environment comes first, as for every function value's code.
 - The array helpers (v3) are generic functions of a prelude written in Lugha, bundled with the compiler and checked with every program, under the module path `$prelude`, which no program can name: `lugha_fn_$prelude/map<Person, string>`. Each is compiled only at the types a program uses.
+- The iterator helpers and sources (v10) are Lugha in the prelude too: `it.map(f)` calls the prelude's `iter_map` with `it` converted to `Iter<T>` (its type's table, as for any conversion), `xs.iter()` calls `array_iter`, and `it.sum()` calls the `iter_sum_<T>` of its element type. Like every prelude item, each function, instance and method (`lugha_fn_$prelude/Range.next`) is compiled only when the program reaches it. `for b of s` is the array loop over the string's bytes, 8 bytes past the string pointer.
 - An extern follows the visibility rules of section 6, and the same C function may be declared in several modules only with identical signatures (E0306); it is one symbol.
 - Runtime library functions use the `lugha_rt_` prefix. Neither prefix is a prefix of the other, so a Lugha function can never collide with a runtime function, whatever its name.
 - Extern names starting with `lugha_` are reserved and rejected with an E03xx error, so an extern declaration can't collide with either.
@@ -1005,7 +1039,7 @@ Name and type errors, reported by the checker:
 | E0406 | Not a function, or something that can't be a value | `let step = 2; step(1);`; `let a = Circle.area;` (a method), `let p = println;`, an extern (v3) |
 | E0407 | `void` used as a value | `let x = log();` where `log` returns nothing |
 | E0410 | No such field | `s.size` on a `string`; `(5).len`; `p.z` or `Point { z: 1.0 }` on a `Point` without `z` |
-| E0411 | Not indexable or not iterable | `n[0]` where `n` is an `i64`; `for c of "abc"`; a `for … of` over a type whose `next` isn't `fun next(mut self): Option<T>` (v6) |
+| E0411 | Not indexable or not iterable | `n[0]` where `n` is an `i64`; `for c of 5`; a `for … of` over a type whose `next` isn't `fun next(mut self): Option<T>` (v6) |
 | E0412 | Cannot infer an array's element type, `None`'s type, or a type argument | `let xs = [];`, `let x = None;`, `let s = Stack.new();`, `let m = max;` — annotate it: `let xs: i64[] = [];` |
 | E0413 | Struct literal missing fields | `Point { x: 1.0 }` |
 | E0414 | Struct literal field given twice | `Point { x: 1.0, x: 2.0, y: 0.0 }` |
@@ -2034,6 +2068,34 @@ fun main() {
 }
 ```
 
+**Iterator helpers** (milestone 36). Prints `16,4,36`, `5050`, `63`, `0=104;1=101;2=121;`, `3`, `true`, `5`, `31` on eight lines, exits with 0.
+
+```
+fun even(n: i64): bool = n % 2 == 0;
+
+fun main() {
+    let xs = [3, 1, 4, 1, 5, 9, 2, 6];
+    let words = xs.iter().filter(even).map(fun(n) = "{n * n}").collect();
+    println(words.join(","));
+    println(range(1, 101).sum());
+    println(range(10, 1000000000).filter(fun(n) = n % 7 == 0).take(3).sum());
+    for p of "hey".bytes().enumerate() {
+        print("{p.i}={p.value};");
+    }
+    println("");
+    let mut vowels = 0;
+    for b of "banana" {
+        if b == 97 {
+            vowels += 1;
+        }
+    }
+    println(vowels);
+    println(xs.iter().any(fun(n) = n > 8));
+    println(xs.iter().find(fun(n) = n > 4).unwrap());
+    println(xs.iter().fold(0, fun(a, n) = a + n));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2075,6 +2137,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 33 | Conditional patterns (v9) | `if let`, `while let`, `let … else` (E0429) | The conditional-patterns program in section 10 passes (done: v9 complete) |
 | 34 | `Self` everywhere (v10) | `Self` in `impl` blocks; default methods on concrete types (E0430) | The `Self`-in-`impl` program in section 10 passes (done) |
 | 35 | More integers (v10) | `i8`, `i16`, `u16`; `checked_*`, `saturating_*`, rotations, `MIN`/`MAX`; `parse_u64` | The more-integers program in section 10 passes (done) |
+| 36 | Iterator helpers (v10) | `iter`, `bytes`, `range`, `for b of s`; lazy adapters and consumers | The iterator-helpers program in section 10 passes (done: v10 complete) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -2127,3 +2190,5 @@ These choices were made provisionally to keep the spec complete. Each is easy to
 - [ ] **A `--package` flag** (v8). Pointing at a package without editing `lugha.toml`, for a one-off build, could come later as a command-line override.
 - [ ] **Printing errors** (v9). `unwrap on Err` can't show the error, because values other than numbers, `bool` and strings have no text form. A later `Display`-like interface could add it.
 - [ ] **Irrefutable `if let`** (v9). `if let x = e` is allowed silently; a warning could come later if it proves a common mistake.
+- [ ] **`xs.iter()` copies the array** (v10). It follows the copy rules, so iterating a variable still used later costs a copy; move on last use avoids it otherwise. A borrowing iterator would need shared references.
+- [ ] **Unicode text** (v10). `bytes()` is the only way to iterate a string; iterating characters waits for a decision on text encoding.

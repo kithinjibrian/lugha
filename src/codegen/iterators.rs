@@ -132,7 +132,7 @@ impl<'ctx> Lowerer<'ctx> {
             Type::Struct(owner, args) | Type::Enum(owner, args) => {
                 let k = key(owner, "next");
                 match args.is_empty() {
-                    true => self.methods.get(&k),
+                    true => self.methods.get(&k).or_else(|| self.monos.get(&k)),
                     false => self.monos.get(&instance_name(&k, args)),
                 }
             }

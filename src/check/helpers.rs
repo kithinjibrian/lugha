@@ -23,6 +23,9 @@ fn helper_function(receiver: &Type, method: &str) -> Option<String> {
     const RESULTS: [&str; 6] = ["unwrap_or", "ok", "map", "map_err", "is_ok", "is_err"];
     let name = match receiver {
         Type::Array(e) if method == "join" && **e == Type::String => "str_join".to_string(),
+        // The iterator sources (v10).
+        Type::Array(_) if method == "iter" => "array_iter".to_string(),
+        Type::String if method == "bytes" => "str_bytes".to_string(),
         Type::Array(_) if ARRAY.contains(&method) => method.to_string(),
         Type::String if STRING.contains(&method) => format!("str_{method}"),
         Type::Option(_) if OPTION.contains(&method) => format!("option_{method}"),

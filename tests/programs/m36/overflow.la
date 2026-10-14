@@ -1,0 +1,4 @@
+fun main() {
+    let big = [9223372036854775807, 1];
+    println(big.iter().sum());
+}

@@ -103,6 +103,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Conditional patterns",
         "`Self` in `impl` blocks",
         "More integers",
+        "Iterator helpers",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

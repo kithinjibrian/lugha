@@ -87,7 +87,9 @@ impl Checker {
             return None;
         };
         let m = self.methods.get(owner)?.get(name)?;
-        (!m.generics.is_empty()).then(|| Instance {
+        // A prelude type's methods compile only when reached, generic or not (v10).
+        let listed = !m.generics.is_empty() || m.key.starts_with(PRELUDE_KEY);
+        listed.then(|| Instance {
             key: m.key.clone(),
             args: targs.clone(),
         })
