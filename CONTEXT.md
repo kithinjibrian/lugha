@@ -4305,8 +4305,8 @@ Branch: prp-076-tuples (merged into main)
 
 ---
 
-## SESSION 99 — 2026-10-14 — format (milestone 48) — open
-Branch: prp-077-format
+## SESSION 99 — 2026-10-14 — format (milestone 48) — closed
+Branch: prp-077-format (merged into main)
 
 ### WHAT WAS DONE
 - PRP-077 written as approved under the "in one go" instruction, built and merged on green CI: `format("…", args…)` with a literal template, holes `{}`/`{:spec}`, `{{`/`}}`, E0432, `format` reserved.
@@ -4331,13 +4331,13 @@ Branch: prp-077-format
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m48`.
+- Nothing. PRP-077 merged into `main`, tagged `m48`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 48 complete** (PRP-077, MEMORY 95): `format` with a literal template. Tag `m48` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 48 complete** (PRP-077, MEMORY 95): `format` with a literal template. Tagged `m48`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next, under the user's "in one go" (MEMORY 91): M49 imports (PRP-078: `import a.b as c;`, `{ X as Y }`, `public import m [as v];` giving `m.v.X`).
 

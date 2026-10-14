@@ -1,6 +1,6 @@
 ## FEATURE: `format` — `format("{} has {:>4} items", name, n)` returns a `string` from a template literal (E0432); milestone 48.
 
-**Status:** approved 2026-10-14 — session 99. This is part of the user's "in one go" (milestones 45–49), merged once CI is green.
+**Status:** merged 2026-10-14 — session 99. This is part of the user's "in one go" (milestones 45–49), merged once CI is green.
 **Milestone:** 48 (one PRP; tag `m48` at merge)
 **Spec:** `Language v14 Draft.md`:
 - decision 2, and the choices on `format`;

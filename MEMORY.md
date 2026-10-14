@@ -1616,7 +1616,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 48 complete** (PRP-077, MEMORY 95): `format` with a literal template. Tag `m48` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 48 complete** (PRP-077, MEMORY 95): `format` with a literal template. Tagged `m48`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next, under the user's "in one go" (MEMORY 91): M49 imports (PRP-078: `import a.b as c;`, `{ X as Y }`, `public import m [as v];` giving `m.v.X`).
 
