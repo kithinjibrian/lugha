@@ -3579,6 +3579,11 @@ Branch: main
 ### STILL OPEN AT CLOSE
 - The v10 draft awaits the user's approval.
 
+## SESSION 81 — 2026-10-14 — `Self` everywhere (milestone 34) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v9 is complete** (milestones 31–33; PRP-060–062; MEMORY 72–75). Tagged `m33` and `v9`. `Language v9 Specification.md` is what `lughac spec` prints; v0–v8 are frozen.
