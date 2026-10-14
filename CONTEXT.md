@@ -4727,6 +4727,31 @@ Branch: prp-082-std_math (merged into main)
 
 ---
 
+## SESSION 112 — 2026-10-14 — Noted the sum() cleanup and user-defined Ord — closed
+Branch: main
+
+### WHAT WAS DONE
+- Reviewed what could move into the prelude. The user liked two items but chose to keep building glowworm first, so they are noted in `TODO.md`:
+  - `it.sum()` as one `iter_sum<T: Num>` instead of ten per-type copies;
+  - user-defined `Ord` through `fun cmp(self, other: Self): Ordering`, with recommended answers.
+
+### FILES CREATED OR MODIFIED
+- `TODO.md`, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None yet (recommendations recorded for a future discovery).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 53 complete** (PRP-082, MEMORY 102–103): the std library and `std.math`. Tagged `m53`. `Language v15 Specification.md` (in progress, milestones 51–53) is what `lughac spec` prints; v0–v14 are frozen. The file-size limit is 500 lines; the prelude lives in `src/prelude/`, std in `src/std/`.

@@ -297,6 +297,15 @@ Done when the printing-anything program passes and the v12 spec is complete.
 
 ## v15 — later milestones, discovery paused (session 103)
 
+- [ ] **`it.sum()` cleanup** (session 112, no language change): replace the ten `iter_sum_<type>` copies in `src/prelude/iter.la` and the per-type table in `check/iter_helpers.rs` with one `fun iter_sum<T: Num>(it: Iter<T>): T`. `["a"].iter().sum()` stays E0415; only the IR names change (`iter_sum<i64>`).
+- [ ] **User-defined `Ord`** (session 112, a milestone with a discovery). Recommended answers:
+  - a type with `fun cmp(self, other: Self): Ordering` (a prelude `enum Ordering { Less, Equal, Greater }`) gets `<`, `<=`, `>` and `>=` and satisfies `Ord`;
+  - `==` stays structural;
+  - `Ord` doesn't imply `Eq`.
+
+  This unlocks `iter().min()/max()`, `math.min/max/clamp` and generic sorting for structs.
+- [ ] **Optional C → Lugha:** `parse_i64`/`parse_u64`, and sharing the UTF-8 decoder between `string_from_utf8` and `s.chars()`.
+
 - [x] **Std library first** (session 109; built as milestone 53, `std.math`): bundled Lugha modules imported as `std.<module>` (`import std.math;`), embedded in `lughac` like the prelude and loaded only when imported, so they cost nothing otherwise. `std` is a reserved package name, always available, versioned with the compiler. The prelude stays small; new features go in std modules. `std.math` comes first; the directories/processes/env items below become `std.fs`, `std.process` and `std.env`.
   - **Agreed with the user: no opt-out mechanism** (no `no_std`, no `[package] deny` list). Lazy loading already makes std free when unused; a `deny` list for policy can be reconsidered later.
   - Next step: a discovery, then a draft milestone and PRP.
