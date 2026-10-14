@@ -4458,17 +4458,49 @@ Branch: main
 
 ---
 
-## SESSION 104 — 2026-10-14 — Discovery: package name and source folder — open
+## SESSION 104 — 2026-10-14 — Discovery: package name and source folder — closed
 Branch: main
+
+### WHAT WAS DONE
+- Discovered while setting up the user's `glowworm` repository: `import glowworm.src.array` is unwanted, and `lughac run example/main.la` hits a `..` manifest path bug.
+- Discussed how libraries and programs should be laid out. Discovery answers:
+  - v15's first milestone;
+  - `[package] name` checked (E0327);
+  - `source` explicit;
+  - programs inside a package use it by name through a bounded upward lookup;
+  - the file argument stays required;
+  - one file one module (E0328);
+  - the lookup stops at `lugha.toml`, `.git` or `$HOME`.
+- Wrote `docs/specs/Language v15 Draft.md` (M51 only) and PRP-080 (proposed, with two file splits for approval).
+
+### FILES CREATED OR MODIFIED
+- New: `docs/specs/Language v15 Draft.md`, `PRPs/prp-080-package_layout.md`.
+- Modified: CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- The discovery answers above (to become MEMORY 98 on approval).
+
+### PENDING DECISIONS OPENED
+- Approval of the v15 draft, PRP-080, and the splits of `modules/mod.rs` and `modules/packages.rs`.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval; then branch `prp-080-package_layout`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v14 is complete** (milestones 45–50; MEMORY 91–97), tagged `m50` and `v14`. `Language v14 Specification.md` (complete) is what `lughac spec` prints; v0–v13 are frozen.
+**Lugha v14 is complete** (milestones 45–50), tagged `v14`. **v15's draft (`docs/specs/Language v15 Draft.md`) and PRP-080 (package layout, milestone 51) are proposed** (session 104) and wait for the user's approval. The approval also covers the splits of `modules/mod.rs` (parse_module → `parse.rs`) and `modules/packages.rs` (paths helpers → `paths.rs`). On approval:
+- record MEMORY 98 (the draft);
+- branch `prp-080-package_layout`;
+- commit "Add approved PRP-080 package layout" with the draft marked approved;
+- build. Tag `m51` goes on the merge.
 
-**v15 is planned in `TODO.md`, with its discovery paused** (session 103): directories, processes and environment variables (chosen), plus Unicode follow-ups (recommended, not yet confirmed); no file streams. When the user resumes, continue the discovery at the process API shape (`run` captures + `call` passes through, the proposal not yet answered). Then write `Language v15 Draft.md` and PRPs. Processes need a security review. Everything else left after v14 is under "After v14 — noted, not scheduled" in `TODO.md`.
+The rest of v15 (directories, processes, env, Unicode follow-ups) stays in `TODO.md` with its discovery paused at the process API shape. The user's `glowworm` repository (`~/Documents/kithinji/glowworm`) is waiting for M51 to use `source = "src"` and `examples/`; its working copy has uncommitted layout changes.
 
-Watch file sizes: `modules/mod.rs` (300), `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `modules/tests.rs` (293).
+Watch file sizes: `modules/mod.rs` (300), `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `modules/packages.rs` (285).
 
 See `TODO.md`.

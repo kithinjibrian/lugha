@@ -1639,10 +1639,14 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Lugha v14 is complete** (milestones 45–50; MEMORY 91–97), tagged `m50` and `v14`. `Language v14 Specification.md` (complete) is what `lughac spec` prints; v0–v13 are frozen.
+**Lugha v14 is complete** (milestones 45–50), tagged `v14`. **v15's draft (`docs/specs/Language v15 Draft.md`) and PRP-080 (package layout, milestone 51) are proposed** (session 104) and wait for the user's approval. The approval also covers the splits of `modules/mod.rs` (parse_module → `parse.rs`) and `modules/packages.rs` (paths helpers → `paths.rs`). On approval:
+- record MEMORY 98 (the draft);
+- branch `prp-080-package_layout`;
+- commit "Add approved PRP-080 package layout" with the draft marked approved;
+- build. Tag `m51` goes on the merge.
 
-**v15 is planned in `TODO.md`, with its discovery paused** (session 103): directories, processes and environment variables (chosen), plus Unicode follow-ups (recommended, not yet confirmed); no file streams. When the user resumes, continue the discovery at the process API shape (`run` captures + `call` passes through, the proposal not yet answered). Then write `Language v15 Draft.md` and PRPs. Processes need a security review. Everything else left after v14 is under "After v14 — noted, not scheduled" in `TODO.md`.
+The rest of v15 (directories, processes, env, Unicode follow-ups) stays in `TODO.md` with its discovery paused at the process API shape. The user's `glowworm` repository (`~/Documents/kithinji/glowworm`) is waiting for M51 to use `source = "src"` and `examples/`; its working copy has uncommitted layout changes.
 
-Watch file sizes: `modules/mod.rs` (300), `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `modules/tests.rs` (293).
+Watch file sizes: `modules/mod.rs` (300), `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `modules/packages.rs` (285).
 
 See `TODO.md`.
