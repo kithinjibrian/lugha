@@ -4075,7 +4075,7 @@ Branch: prp-071-for_of_mut (merged into main)
 ---
 
 ## SESSION 93 — 2026-10-14 — More iterator helpers (milestone 43) — open
-Branch: main
+Branch: prp-072-more_iterator_helpers
 
 ---
 
