@@ -1639,9 +1639,9 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Lugha v14 is complete** (milestones 45–50; MEMORY 91–97). Milestone 50 (PRP-079, git packages) passed the user's security review. Tagged `m50` and `v14`. `Language v14 Specification.md` (complete) is what `lughac spec` prints; v0–v13 are frozen.
+**Lugha v14 is complete** (milestones 45–50; MEMORY 91–97), tagged `m50` and `v14`. `Language v14 Specification.md` (complete) is what `lughac spec` prints; v0–v13 are frozen.
 
-Next: any further language feature is v15 and starts with a discovery and an approved draft. Changes to how `git` runs need a security review.
+**v15 is planned in `TODO.md`, with its discovery paused** (session 103): directories, processes and environment variables (chosen), plus Unicode follow-ups (recommended, not yet confirmed); no file streams. When the user resumes, continue the discovery at the process API shape (`run` captures + `call` passes through, the proposal not yet answered). Then write `Language v15 Draft.md` and PRPs. Processes need a security review. Everything else left after v14 is under "After v14 — noted, not scheduled" in `TODO.md`.
 
 Watch file sizes: `modules/mod.rs` (300), `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `modules/tests.rs` (293).
 

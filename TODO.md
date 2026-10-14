@@ -284,6 +284,23 @@ Done when the printing-anything program passes and the v12 spec is complete.
 
 - [x] (PRP-029) `check/stmt.rs` (294) and `check/method_calls.rs` (285) were close to 300 lines. Bodies and array built-ins moved to `body.rs` and `builtins.rs`.
 
+## v15 — planned, discovery paused (session 103)
+
+The user chose this scope; the discovery stopped after its first answer, so v15 starts by resuming it (one question at a time), then a draft spec, then PRPs.
+
+- [ ] **Directories:** `list_dir(path)`, `make_dir`, `remove_file`/`remove_dir`, `file_exists`/`is_dir`; returning `Result` like the file intrinsics. *(chosen)*
+- [ ] **Processes:** run a program with an argument list (never a shell), wait, and get its exit code and output. *(chosen; needs a security review like PRP-079)*
+  - Open: the API's shape. The proposal not yet answered:
+    - `run(cmd, args): Result<Output, string>` with a prelude `Output { code, stdout, stderr }` that captures;
+    - `call(cmd, args): Result<i32, string>` that passes output through to the terminal;
+    - optionally stdin text.
+- [ ] **Environment variables:** `env(name): Option<string>` and the current directory, read-only. *(chosen)*
+- [ ] **Unicode follow-ups:**
+  - format widths counted in characters, not bytes;
+  - fuller `char` classification and case tables beyond Latin-1.
+  - *(recommended; not yet confirmed in discovery)*
+- File streams (open, read in chunks, write incrementally) were offered and **not** chosen: they wait below.
+
 ## After v14 — noted, not scheduled (session 103)
 
 v15 takes system access and the Unicode follow-ups; everything else left at v14's close waits here. Each needs a discovery and an approved spec change.
@@ -299,6 +316,7 @@ v15 takes system access and the Unicode follow-ups; everything else left at v14'
   - full version ranges and pre-release versions.
 - [ ] **Imports, more:** re-export chains (`m.v.w.X`), glob imports, a `--package` flag, and package-level (not `public`) re-exports.
 - [ ] **Explicit type arguments and `.len()`.**
+- [ ] **File streams:** open a file, read it line by line or in chunks, write incrementally, close (not chosen for v15).
 - [ ] **Format specifiers chosen at run time.**
 - [ ] **Listing a git package's `extern` functions at `lughac update`.** Needs a security review, like PRP-079.
 - [ ] **Checking the program's own `[package]` version,** e.g. against a minimum `lughac` version.

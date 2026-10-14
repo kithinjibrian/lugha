@@ -4433,16 +4433,36 @@ Branch: prp-079-git_packages (merged into main)
 
 ---
 
-## SESSION 103 — 2026-10-14 — v15 discovery: system access and Unicode follow-ups — open
+## SESSION 103 — 2026-10-14 — v15 plan noted in TODO (discovery paused) — closed
 Branch: main
+
+### WHAT WAS DONE
+- Listed what remains after v14. The user chose system access and the Unicode follow-ups for v15, and asked for the rest to go to `TODO.md`.
+- v15 discovery, question 1: the user chose directories, processes and environment variables (not file streams). At question 2 (process API shape) the user stopped the discovery and asked for v15 to be noted in `TODO.md` instead.
+- `TODO.md` gains "v15 — planned, discovery paused" and "After v14 — noted, not scheduled".
+
+### FILES CREATED OR MODIFIED
+- `TODO.md`, CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- v15 scope (partial): directories, processes, environment variables, and Unicode follow-ups; no file streams.
+
+### PENDING DECISIONS OPENED
+- The rest of the v15 discovery: the process API shape first, then the remaining questions.
+
+### STILL OPEN AT CLOSE
+- Nothing; v15 waits for the user to resume its discovery.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v14 is complete** (milestones 45–50; MEMORY 91–97). Milestone 50 (PRP-079, git packages) passed the user's security review. Tagged `m50` and `v14`. `Language v14 Specification.md` (complete) is what `lughac spec` prints; v0–v13 are frozen.
+**Lugha v14 is complete** (milestones 45–50; MEMORY 91–97), tagged `m50` and `v14`. `Language v14 Specification.md` (complete) is what `lughac spec` prints; v0–v13 are frozen.
 
-Next: any further language feature is v15 and starts with a discovery and an approved draft. Changes to how `git` runs need a security review.
+**v15 is planned in `TODO.md`, with its discovery paused** (session 103): directories, processes and environment variables (chosen), plus Unicode follow-ups (recommended, not yet confirmed); no file streams. When the user resumes, continue the discovery at the process API shape (`run` captures + `call` passes through, the proposal not yet answered). Then write `Language v15 Draft.md` and PRPs. Processes need a security review. Everything else left after v14 is under "After v14 — noted, not scheduled" in `TODO.md`.
 
 Watch file sizes: `modules/mod.rs` (300), `codegen/copy.rs` (300), `check/visibility.rs` (300), `check/interfaces.rs` (300), `check/env.rs` (299), `parser/primary.rs` (298), `check/instances.rs` (298), `check/satisfy.rs` (298), `codegen/patterns.rs` (298), `modules/tests.rs` (293).
 
