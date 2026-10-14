@@ -25,6 +25,10 @@ pub enum TypeKind {
     U32,
     U64,
     F32,
+    /// `i8`, `i16`, `u16` (v10).
+    I8,
+    I16,
+    U16,
     /// A struct name, resolved by the checker.
     Named(String),
     /// `T[]`.

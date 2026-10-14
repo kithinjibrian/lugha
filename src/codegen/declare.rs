@@ -78,20 +78,27 @@ impl<'ctx> Lowerer<'ctx> {
         }
     }
 
-    /// C passes `bool` and `u8` zero-extended (spec §8): mark them so LLVM
-    /// lowers the call the way a C compiler would.
+    /// C passes `bool`, `u8` and `u16` zero-extended and `i8`/`i16`
+    /// sign-extended (spec §8, v10): mark them so LLVM lowers the call the
+    /// way a C compiler would.
     fn c_abi(&self, function: FunctionValue<'ctx>, params: &[Type], ret: Option<&Type>) {
-        let zeroext = self
-            .context
-            .create_enum_attribute(Attribute::get_named_enum_kind_id("zeroext"), 0);
+        let extension = |ty: &Type| {
+            let name = match ty {
+                Type::Bool | Type::U8 | Type::U16 => "zeroext",
+                Type::I8 | Type::I16 => "signext",
+                _ => return None,
+            };
+            let kind = Attribute::get_named_enum_kind_id(name);
+            Some(self.context.create_enum_attribute(kind, 0))
+        };
         for (index, ty) in params.iter().enumerate() {
-            if matches!(ty, Type::Bool | Type::U8) {
+            if let Some(attribute) = extension(ty) {
                 let index = u32::try_from(index).expect("parameter count fits in u32");
-                function.add_attribute(AttributeLoc::Param(index), zeroext);
+                function.add_attribute(AttributeLoc::Param(index), attribute);
             }
         }
-        if matches!(ret, Some(Type::Bool | Type::U8)) {
-            function.add_attribute(AttributeLoc::Return, zeroext);
+        if let Some(attribute) = ret.and_then(extension) {
+            function.add_attribute(AttributeLoc::Return, attribute);
         }
     }
 }

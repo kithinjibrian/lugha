@@ -2,15 +2,16 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestone 34 of 34–36). It is built from the approved plan, `Language v10 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v9 Specification.md` keeps v9 frozen.
+**Status:** in progress (milestones 34–35 of 34–36). It is built from the approved plan, `Language v10 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v9 Specification.md` keeps v9 frozen.
 
 **v9.** This is v8 plus or-patterns, `mut` bindings, `unwrap`/`expect`, `%=`, and `if let`, `while let` and `let … else` (milestones 31–33).
 
-**Changes since v9** (milestone 34):
+**Changes since v9** (milestones 34–35):
 - Inside `impl T`, `Self` is `T` (with its parameters, `Stack<T>`), as a type, in struct literals (`Self { x: 0 }`), associated calls (`Self.new()`) and variants (`Self.Red`) (section 4).
 - A default method can be called on a struct or enum that lacks its own, `c.describe()`, when exactly one visible interface the type satisfies supplies it; two are E0430 (section 4).
+- `i8`, `i16` and `u16` are integer types like the others. Every integer type has `checked_add/sub/mul/div` (an `Option`), `saturating_add/sub/mul` and `rotate_left/right`, and the constants `I.MIN` and `I.MAX` (`i16.MAX`); `parse_u64(s)` parses a `u64` (sections 2–5, 8).
 
-Every valid v9 program is a valid v10 program.
+A valid v9 program is a valid v10 program unless it uses `i8`, `i16` or `u16` as a name, which are type keywords now, or declares a function named `parse_u64`, which is now an intrinsic.
 
 **v8.** This is v7 plus packages: a `lugha.toml` manifest, package imports, and `public` / package / `private` visibility (milestone 30).
 
@@ -128,7 +129,7 @@ Source files are UTF-8. The lexer produces a flat list of tokens, each carrying 
 fun  extern  struct  enum  impl  let  mut  if  else  while  for  in  of  match
 import  private  public  interface
 return  break  continue  true  false  as  self
-i32  i64  u8  f64  bool  string  u32  u64  f32
+i32  i64  u8  f64  bool  string  u32  u64  f32  i8  i16  u16
 ```
 
 Built-in type names are keywords, so they can't be shadowed by user structs. `Option`, `Some` and `None` are not keywords but built-in names, reserved like the intrinsics (section 6).
@@ -219,6 +220,8 @@ param        = IDENT ":" type ;
 
 type         = base_type { "[" "]" } ;
 base_type    = "i32" | "i64" | "u8" | "f64" | "bool" | "string"
+             | "u32" | "u64" | "f32"                (* v7 *)
+             | "i8" | "i16" | "u16"                 (* v10 *)
              | IDENT [ "." IDENT ] [ "<" type { "," type } [ "," ] ">" ]
              | "fun" "(" [ type { "," type } [ "," ] ] ")" [ ":" type ]   (* a function type (v3) *)
              | "(" type ")" ;                  (* `(fun(i64): i64)[]` is an array of functions *)
@@ -261,6 +264,7 @@ member       = "." IDENT ;
 primary      = INT | FLOAT | STRING | interpolated | closure | "true" | "false"
              | IDENT [ "." IDENT ] [ struct_init ]  (* `m.T { … }` *)
              | "self"
+             | int_type "." IDENT                 (* `i16.MAX` (v10) *)
              | "(" expr ")"
              | "[" [ expr ( ";" expr | { "," expr } [ "," ] ) ] "]"
              | block_like ;
@@ -330,6 +334,9 @@ Lugha is statically typed with one implicit conversion: a value becomes an inter
 | `u32` | 32-bit unsigned integer (v7) | `i32` |
 | `u64` | 64-bit unsigned integer (v7) | `i64` |
 | `f32` | 32-bit IEEE 754 float (v7) | `float` |
+| `i8` | 8-bit signed integer, −128 to 127 (v10) | `i8` |
+| `i16` | 16-bit signed integer, −32768 to 32767 (v10) | `i16` |
+| `u16` | 16-bit unsigned integer, 0 to 65535 (v10) | `i16` |
 | `bool` | `true` or `false` | `i1` (stored as `i8` in memory) |
 | `string` | Immutable UTF-8 bytes | `ptr` to `{ i64 len, bytes, NUL }` on the GC heap (literals: constant globals) |
 | `T[]` | Fixed-length array of `T` | `ptr` to `{ i64 len, T... }` on the GC heap |
@@ -582,7 +589,7 @@ Evaluation is strictly left to right: operands, call arguments and struct-litera
 
 **Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way, including `%=` (v9), which panics on a zero divisor as `%` does. Shifts (v7) lose the bits shifted out and never panic for overflow; `>>` copies the sign bit for `i32` and `i64` and fills with zeros for the unsigned types; a shift amount that is negative, or at least the type's width (8, 32 or 64), panics with `shift out of range` at the operator. `&=`, `|=`, `^=`, `<<=` and `>>=` mean `x = x op y` with the place evaluated once, as `+=` does, and need an integer.
 
-**Methods on integers** (v7). Every integer type (`i32`, `i64`, `u8`, `u32`, `u64`) has six built-in methods:
+**Methods on integers** (v7, v10). Every integer type (`i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`) has these built-in methods:
 
 | Method | Gives | Meaning |
 | --- | --- | --- |
@@ -590,8 +597,13 @@ Evaluation is strictly left to right: operands, call arguments and struct-litera
 | `a.count_ones()` | `i64` | how many bits are 1 |
 | `a.leading_zeros()` | `i64` | zero bits above the highest 1 (the width for 0) |
 | `a.trailing_zeros()` | `i64` | zero bits below the lowest 1 (the width for 0) |
+| `a.checked_add(b)`, `a.checked_sub(b)`, `a.checked_mul(b)`, `a.checked_div(b)` | `Option` of `a`'s type | `None` where the operator would panic: on overflow, a zero divisor, or `MIN / -1` (v10) |
+| `a.saturating_add(b)`, `a.saturating_sub(b)`, `a.saturating_mul(b)` | `a`'s type | the result clamped to `MIN … MAX` (v10) |
+| `a.rotate_left(n)`, `a.rotate_right(n)` | `a`'s type | the bits rotated by `n`, an `i64`, modulo the width: a negative `n` rotates the other way (v10) |
 
-`b` has `a`'s type, and a literal `b` takes it (E0403 for another type, E0405 for the wrong count). Any other method on an integer, and these names on a float or `bool`, is E0415. A literal receiver with no expected type is `i64`: `(5).count_ones()` is `2`. The wrapping methods are the explicit way to wrap; `+`, `-` and `*` still panic on overflow.
+`b` has `a`'s type, and a literal `b` takes it (E0403 for another type, E0405 for the wrong count).
+
+**Integer limits** (v10). `I.MIN` and `I.MAX` are the smallest and largest value of integer type `I`, of type `I`: `i8.MIN` is −128, `u64.MAX` is 18446744073709551615. Only these two names follow an integer type keyword (E0415 otherwise); other type keywords take none. Any other method on an integer, and these names on a float or `bool`, is E0415. A literal receiver with no expected type is `i64`: `(5).count_ones()` is `2`. The wrapping methods are the explicit way to wrap; `+`, `-` and `*` still panic on overflow.
 
 Float arithmetic follows IEEE 754: overflow gives an infinity and division by zero gives an infinity or NaN, never a panic. Explicit casts are the one place values wrap: narrowing with `as` truncates (section 4).
 
@@ -669,6 +681,7 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 | `swap(a, b)` | Two places of the same type | Exchanges their contents |
 | `args()` | Nothing | Returns the program's command-line arguments as a new `string[]`; `args()[0]` is the program's path (v3) |
 | `parse_i64(s)` | `string` | `Some(n)` if `s` is an optional `-` followed by decimal digits and fits in `i64`, else `None`; no `+`, spaces, `_` or hex (v3) |
+| `parse_u64(s)` | `string` | `Some(n)` if `s` is decimal digits only and fits in `u64`, else `None`; no sign (v10) |
 | `parse_f64(s)` | `string` | `Some(x)` if `s` is an optional `-`, digits, an optional `.` and digits, and an optional exponent (`e`/`E`, optional sign, digits), else `None`; `"3"` gives `3.0`, while `".5"`, `"5."`, `"inf"` and `"nan"` give `None` (v3) |
 | `read_line()` | Nothing | `Option<string>`: the next line of stdin without its `\n` (and a `\r` before it); a last line without `\n` is still returned; `None` at the end of input (or on a read error). Stdout is flushed first, so a prompt shows (v4) |
 | `read_file(path)` | `string` | `Result<string, string>`: the whole file, or `Err` with the system's message, such as `"No such file or directory"` (v4) |
@@ -837,6 +850,8 @@ extern fun sqrt(x: f64): f64;
 | `u32` | `uint32_t` | Value (v7) |
 | `u64` | `uint64_t` | Value (v7) |
 | `f32` | `float` | Value (v7) |
+| `i8`, `i16` | `int8_t`, `int16_t` | Value, sign-extended (v10) |
+| `u16` | `uint16_t` | Value, zero-extended (v10) |
 | `bool` | `bool` (C99) | Value, `i1` zero-extended |
 | `string` (parameter only) | `const char *` | Pointer to the first data byte, 8 bytes past the header |
 | return type omitted | `void` | — |
@@ -856,6 +871,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - A default method (v5) compiles once per type that uses it, through a table or a bound: `lugha_fn_<Interface>.<method><Type>` (`lugha_fn_Error.report<ParseError>`); that type's table slot, bound calls and (v10) calls on the type itself use it. A generic interface's default (v6) compiles once per type and interface arguments, the arguments printed on the interface: `lugha_fn_Source<i64>.skip<Count>`. A converted `?` error is boxed on the failure branch, like any conversion. A program without interface values has none of these.
 - Converting a `J` value to `I` (v6) calls `lugha_up_<J>.<I>(table) -> table`, which compares the value's table with each `J` table the program has and returns the matching `I` table; its body is built after everything else, when every table is known. That `I` table is derived from the table the value was built with: `lugha_vt_<C>.<J>.<I>` has `C`'s identity and copy and, for each `I` item, the function `C`'s `J` table has, so methods behave as through `J`; derived tables keep the original interface (`<C>.<J>.<K>` for a chain) and converting back to it gives the original table. A program that never converts between interfaces has no `lugha_up_` functions and no derived tables. (The approved draft put one slot per target interface in each table instead; tables are emitted while lowering, before every conversion is known, so PRP-054 uses lookup functions.)
 - The v7 operators and methods: `& | ^` are `and`/`or`/`xor`; `<<` is `shl` and `>>` is `ashr` for `i32`/`i64` and `lshr` for the unsigned types, each after an `icmp uge` of the amount against the width that panics (`shift out of range`); `~x` is `xor x, -1`; the wrapping methods are plain `add`/`sub`/`mul`; the counting methods are `llvm.ctpop`, `llvm.ctlz` and `llvm.cttz` (zero not poison), widened to `i64`. A program that uses none of them has none of this code.
+- The v10 integer methods: `checked_add/sub/mul` read the overflow flag of `llvm.{s,u}{add,sub,mul}.with.overflow` and select `None` or `Some`; `checked_div` divides by 1 instead when the divisor is 0 (or the operands are `MIN` and −1) and selects `None` then, so it never traps; `saturating_add/sub` are `llvm.{s,u}{add,sub}.sat`, and `saturating_mul` selects `MIN` or `MAX` on overflow; rotations are `llvm.fshl`/`llvm.fshr` of the value with itself, the `i64` count truncated to the width; `I.MIN`/`I.MAX` are constants.
 - `if let`, `while let` and `let … else` (v9) test their pattern as an arm of the arm chain does, jumping on a mismatch to the `else` branch, the loop's exit, or the `else` block; `let … else` declares its bindings in the enclosing block's scope.
 - `unwrap` and `expect` (v9) are built in, not prelude functions, so their panic points at the caller: the value's tag is compared with `Some` or `Ok`, and a mismatch calls `lugha_rt_panic` with the message and the method name's location.
 - An or-pattern (v9) lowers in the arm chain: each alternative that fails tries the next, and every alternative stores a name's value into the arm's one local for it; a `match` with an or-pattern or a `mut` binding never uses the flat `switch`. A `mut` binding is a local of its own, deep-copied when its type is.
@@ -912,10 +928,10 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_str_eq(a, b)` | Implement string `==` and `!=`; returns 1 or 0 as `i32` |
 | `lugha_rt_str_cmp(a, b)` | Implement string `<`, `<=`, `>`, `>=`; returns −1, 0 or 1 as `i32` (v2) |
 | `lugha_rt_array_grow(array, elem_size)` | A copy of a full array with double the capacity (at least 4), for `push` |
-| `lugha_rt_print_*` / `lugha_rt_to_string_*` | One per primitive type (plus `lugha_rt_print_str`), for the intrinsics; `bool` and `u8` arguments are passed zero-extended to 32 bits; `u32` goes to the `u64` functions zero-extended (v7) |
+| `lugha_rt_print_*` / `lugha_rt_to_string_*` | One per primitive type (plus `lugha_rt_print_str`), for the intrinsics; `bool` and `u8` arguments are passed zero-extended to 32 bits; `u32` goes to the `u64` functions zero-extended (v7), as does `u16`, and `i8`/`i16` go to the `i64` ones sign-extended (v10) |
 | `lugha_rt_print_newline()` | The newline `println` adds |
 | `lugha_rt_args()` | A new `string[]` of the program's arguments (v3) |
-| `lugha_rt_parse_i64(s, out)` / `lugha_rt_parse_f64(s, out)` | Parse `s` into `*out`; return 1, or 0 for `None` (v3) |
+| `lugha_rt_parse_i64(s, out)` / `lugha_rt_parse_u64(s, out)` / `lugha_rt_parse_f64(s, out)` | Parse `s` into `*out`; return 1, or 0 for `None` (v3; `u64` v10) |
 | `lugha_rt_str_slice(s, from, to, file, line, col)` | `s.slice(from, to)`: a new string of those bytes, or the bounds panic (v4) |
 | `lugha_rt_read_line(out)` | `read_line()`: 1 and the line, or 0 at the end of input (v4) |
 | `lugha_rt_read_file(path, out, error)` / `lugha_rt_write_file(path, text, append, count, error)` | The file intrinsics: 1 and the value, or 0 and the C library's `strerror` message (v4) |
@@ -984,7 +1000,7 @@ Name and type errors, reported by the checker:
 | E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
 | E0402 | Integer literal out of range for its type | `let b: u8 = 256;` |
 | E0403 | Type mismatch | `let n: i32 = ok;` where `ok` is `bool`; `if`/`else` of different types |
-| E0404 | Operator applied to invalid operand types | `true + 1`, `-u` where `u` is `u8`, `u32` or `u64`; `a == b` on a `T` without `Eq` (with help to declare it) |
+| E0404 | Operator applied to invalid operand types | `true + 1`, `-u` where `u` is `u8`, `u16`, `u32` or `u64`; `a == b` on a `T` without `Eq` (with help to declare it) |
 | E0405 | Wrong number of arguments | `add(1)` for `fun add(a: i64, b: i64)` |
 | E0406 | Not a function, or something that can't be a value | `let step = 2; step(1);`; `let a = Circle.area;` (a method), `let p = println;`, an extern (v3) |
 | E0407 | `void` used as a value | `let x = log();` where `log` returns nothing |
@@ -2000,6 +2016,24 @@ fun main() {
 }
 ```
 
+**More integers** (milestone 35). Prints `32767`, `-1`, `32767`, `255`, `3`, `true`, `18446744073709551615` on seven lines, exits with 0.
+
+```
+fun main() {
+    let a: i16 = i16.MAX;
+    println(a);
+    println(a.checked_add(1).unwrap_or(-1));
+    println(a.saturating_add(100));
+    let b: u8 = 200;
+    println(b.saturating_mul(2));
+    let c: u16 = 0b1000000000000001;
+    println(c.rotate_left(1));
+    let d: i8 = i8.MIN;
+    println(d.checked_div(-1).is_none());
+    println(parse_u64("18446744073709551615").unwrap());
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2040,6 +2074,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 32 | Unwrapping (v9) | `unwrap`, `expect`, `%=` | The unwrapping program in section 10 passes (done) |
 | 33 | Conditional patterns (v9) | `if let`, `while let`, `let … else` (E0429) | The conditional-patterns program in section 10 passes (done: v9 complete) |
 | 34 | `Self` everywhere (v10) | `Self` in `impl` blocks; default methods on concrete types (E0430) | The `Self`-in-`impl` program in section 10 passes (done) |
+| 35 | More integers (v10) | `i8`, `i16`, `u16`; `checked_*`, `saturating_*`, rotations, `MIN`/`MAX`; `parse_u64` | The more-integers program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

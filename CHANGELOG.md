@@ -13,6 +13,7 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- More integers: `i8`, `i16` and `u16` (type keywords now); on every integer type `checked_add/sub/mul/div` (an `Option`), `saturating_add/sub/mul`, `rotate_left/right(n)`, and `I.MIN`/`I.MAX`; `parse_u64(s)` (`lugha_rt_parse_u64`) — **milestone 35 complete**
 - `Self` everywhere: inside `impl T`, `Self` is `T` as a type, in struct literals (`Self { … }`), associated calls (`Self.new()`) and variants (`Self.Red`); an interface's default method can be called on a struct or enum that satisfies it, when exactly one visible interface supplies it (E0430 for two). `lughac spec` now prints `Language v10 Specification.md` (in progress); v9's file is frozen — **milestone 34 complete**
 - Conditional patterns: `if let p = e { … } else { … }` (a value with `else`, chaining with `else if let`), `while let p = e { … }`, and `let p = e else { … };` whose `else` must leave (E0429); or-patterns and `mut` work in all three. `lughac spec` prints the complete v9 specification — **milestone 33 complete: Lugha v9 is complete**
 - `unwrap()` and `expect(msg)` on `Option` and `Result`, panicking at the call with `unwrap on None`, `unwrap on Err` or the message; and `x %= y` — **milestone 32 complete**

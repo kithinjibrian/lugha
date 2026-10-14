@@ -1,0 +1,4 @@
+fun main() {
+    let small: i8 = 128;
+    let none: u16 = -1;
+}

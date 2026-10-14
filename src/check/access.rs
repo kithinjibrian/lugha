@@ -3,11 +3,22 @@
 
 use super::expr::Expect;
 use super::{Checker, Type, errors};
-use crate::ast::{Expr, Ident};
+use crate::ast::{Expr, ExprKind, Ident};
 
 impl Checker {
     /// `base.field`: `.len` of strings and arrays, or a struct's field.
     pub(super) fn field(&mut self, base: &Expr, field: &Ident) -> Type {
+        // `i16.MAX` (v10): an integer keyword is no value, so nothing else applies.
+        if let ExprKind::Name(keyword) = &base.kind
+            && let Some(int) = Type::int_keyword(keyword)
+        {
+            self.record(base, Type::Void);
+            if Type::int_limit(base, &field.name).is_none() {
+                self.report(errors::no_method(&field.name, &int, field.span, None));
+                return Type::Error;
+            }
+            return int;
+        }
         let ty = self.value(base, None);
         match (ty, field.name.as_str()) {
             (Type::Error | Type::Never, _) => Type::Error,

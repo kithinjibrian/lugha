@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v10 Specification.md` (`lughac spec` prints it): Lugha v10, in progress (milestone 34 done: `Self` in `impl` blocks, default methods on concrete types). `Language v10 Draft.md` is the approved plan (milestones 34–36: `Self` everywhere, more integers, iterator helpers). The v0–v9 files are frozen. `Result`, `Iter` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v10 Specification.md` (`lughac spec` prints it): Lugha v10, in progress (milestones 34–35 done: `Self` in `impl` blocks, default methods on concrete types; `i8`/`i16`/`u16`, checked and saturating methods, rotations, `MIN`/`MAX`, `parse_u64`). `Language v10 Draft.md` is the approved plan (milestones 34–36: `Self` everywhere, more integers, iterator helpers). The v0–v9 files are frozen. `Result`, `Iter` and the array helpers are written in Lugha in `src/prelude.la`, loaded with every program.
 
 ---
 
@@ -269,7 +269,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  interface-typed parameters), iterators.rs (`for … of` over `next`, `Iter`, Checked.iterations),
 │   │                  self_type.rs (`Self` in interfaces: items for a type, E0427),
 │   │                  upcast.rs (converting between interfaces: `undeclared`, E0422),
-│   │                  numbers.rs (v7 numeric types: `is_float`, `is_unsigned`, keyword types), slots.rs (enum payload slots),
+│   │                  numbers.rs (v7/v10 numeric types: `is_float`, `is_unsigned`, keyword types, `I.MIN`/`I.MAX`), slots.rs (enum payload slots),
 │   │                  or_patterns.rs (or-pattern alternatives and bindings E0428, `mut` bindings), conditional.rs
 │   │                  (`if let`, `while let`, `let … else`, E0429), concrete_defaults.rs (default methods on
 │   │                  concrete types, E0430)
@@ -290,7 +290,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (dynamic calls, interface copies, type-pattern tests), defaults.rs (default instances, `?` boxing),
 │   │                  instances.rs (generic instances:
 │   │                  substitution, instance symbols),
-│   │                  swap.rs (swap: loads and crossed stores), bits.rs (bit operators, the shift range check), int_methods.rs (wrapping and counting methods), or_patterns.rs (alternatives in the arm chain, `mut` copies), unwrap.rs (`unwrap`/`expect`), conditional.rs (`if let`, `while let`, `let … else`), iterators.rs (iterator loops: a hidden copy, `next` until `None`),
+│   │                  swap.rs (swap: loads and crossed stores), bits.rs (bit operators, the shift range check), int_methods.rs (wrapping and counting methods), int_checked.rs (v10 checked/saturating/rotating methods, `I.MIN`/`I.MAX`), or_patterns.rs (alternatives in the arm chain, `mut` copies), unwrap.rs (`unwrap`/`expect`), conditional.rs (`if let`, `while let`, `let … else`), iterators.rs (iterator loops: a hidden copy, `next` until `None`),
 │   │                  upcast.rs (between interfaces: table registry, derived tables, `lugha_up_` lookups)
 │   ├── modules/     — mod.rs (load: the main file and every import, one offset space; with_prelude), resolve.rs
 │   │                  (import checks, E0312/E0314/E0319), manifest.rs (`lugha.toml`, E0321), packages.rs (manifests
@@ -310,7 +310,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m34/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m35/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)

@@ -148,7 +148,7 @@ impl<'ctx> Lowerer<'ctx> {
             let ExprKind::Name(name) = &callee.kind else {
                 unreachable!("checked: E0406 rejects non-name callees")
             };
-            if ["args", "parse_i64", "parse_f64"].contains(&name.as_str()) {
+            if ["args", "parse_i64", "parse_u64", "parse_f64"].contains(&name.as_str()) {
                 return self.input_intrinsic(name, args);
             }
             const IO: [&str; 7] = [

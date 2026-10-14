@@ -55,7 +55,8 @@ impl<'ctx> Lowerer<'ctx> {
             Type::I64 => "i64",
             Type::U8 => "u8",
             Type::F64 => "f64",
-            Type::U32 | Type::U64 => "u64",
+            Type::U16 | Type::U32 | Type::U64 => "u64",
+            Type::I8 | Type::I16 => "i64",
             Type::F32 => "f32",
             _ => "bool",
         };
@@ -91,7 +92,7 @@ impl<'ctx> Lowerer<'ctx> {
         }
     }
 
-    /// `args()`, `parse_i64(s)` or `parse_f64(s)`.
+    /// `args()`, `parse_i64(s)`, `parse_u64(s)` (v10) or `parse_f64(s)`.
     pub(super) fn input_intrinsic(
         &mut self,
         name: &str,
@@ -105,15 +106,15 @@ impl<'ctx> Lowerer<'ctx> {
             )));
         }
         let text = self.get(&args[0], &Type::String)?;
-        let ty = if name == "parse_i64" {
-            Type::I64
-        } else {
-            Type::F64
+        let ty = match name {
+            "parse_i64" => Type::I64,
+            "parse_u64" => Type::U64,
+            _ => Type::F64,
         };
         // The runtime writes the number here and returns whether it parsed.
         let out = self.entry_alloca(&ty, "parsed");
         let zero: BasicValueEnum = match ty {
-            Type::I64 => self.context.i64_type().const_zero().into(),
+            Type::I64 | Type::U64 => self.context.i64_type().const_zero().into(),
             _ => self.context.f64_type().const_zero().into(),
         };
         self.builder.build_store(out, zero).expect(POSITIONED);

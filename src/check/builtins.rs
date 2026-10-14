@@ -26,6 +26,22 @@ pub(super) fn builtin(receiver: &Type, name: &str) -> Option<Method> {
         (int, "wrapping_add" | "wrapping_sub" | "wrapping_mul") if int.is_integer() => {
             (vec![int.clone()], int.clone(), false)
         }
+        // v10: `None` instead of a panic, clamped, or rotated.
+        (int, "checked_add" | "checked_sub" | "checked_mul" | "checked_div")
+            if int.is_integer() =>
+        {
+            (
+                vec![int.clone()],
+                Type::Option(Box::new(int.clone())),
+                false,
+            )
+        }
+        (int, "saturating_add" | "saturating_sub" | "saturating_mul") if int.is_integer() => {
+            (vec![int.clone()], int.clone(), false)
+        }
+        (int, "rotate_left" | "rotate_right") if int.is_integer() => {
+            (vec![Type::I64], int.clone(), false)
+        }
         (int, "count_ones" | "leading_zeros" | "trailing_zeros") if int.is_integer() => {
             (Vec::new(), Type::I64, false)
         }
@@ -101,10 +117,7 @@ mod tests {
             let src = format!("fun main() {{ {body} }}");
             errors(&src).into_iter().map(|(c, _)| c).collect::<Vec<_>>()
         };
-        assert_eq!(
-            codes("let x: u32 = 1; let r = x.rotate_left(1);"),
-            ["E0415"]
-        );
+        assert_eq!(codes("let x: u32 = 1; let r = x.swap_bytes();"), ["E0415"]);
         assert_eq!(
             codes("let f: f64 = 1.0; let r = f.count_ones();"),
             ["E0415"]
@@ -146,5 +159,38 @@ mod tests {
         assert_eq!(codes("let o = Some(1); let r = o.unwrap(1);"), ["E0405"]);
         ok("fun main() { let mut a = 7; a %= 2; let mut f = 7.5; f %= 2.0; }");
         assert_eq!(codes("let mut s = \"a\"; s %= 2;"), ["E0404"]);
+    }
+
+    #[test]
+    fn checked_saturating_and_rotating_methods() {
+        use crate::check::Type;
+        use crate::check::test_util::let_type;
+        let at = |body: &str| let_type(&format!("fun main() {{ {body} }}"), "r");
+        assert_eq!(
+            at("let a: i16 = 1; let r = a.checked_add(2);"),
+            Type::Option(Box::new(Type::I16))
+        );
+        assert_eq!(
+            at("let a: u32 = 1; let r = a.checked_div(0);"),
+            Type::Option(Box::new(Type::U32))
+        );
+        assert_eq!(at("let a: u8 = 1; let r = a.saturating_mul(3);"), Type::U8);
+        assert_eq!(at("let a: u16 = 1; let r = a.rotate_left(-3);"), Type::U16);
+        assert_eq!(
+            errors("fun main() { let a: i16 = 1; let b: u8 = 2; let r = a.checked_sub(b); }"),
+            [("E0403", "b")]
+        );
+        assert_eq!(
+            errors("fun main() { let a: u16 = 1; let n: i32 = 2; let r = a.rotate_right(n); }"),
+            [("E0403", "n")]
+        );
+        assert_eq!(
+            errors("fun main() { let f = 1.5; let r = f.saturating_add(1.0); }"),
+            [("E0415", "saturating_add")]
+        );
+        assert_eq!(
+            errors("fun main() { let a = 1; let r = a.checked_mul(); }"),
+            [("E0405", "a.checked_mul()")]
+        );
     }
 }

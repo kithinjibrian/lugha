@@ -102,21 +102,21 @@ None.
 Unit tests — lexer: `i8 i16 u16` lex as keywords.
 
 Unit tests — parser:
-- [ ] `let a: i8 = 1;` and casts to the new types print.
-- [ ] `i16.MAX` parses as a field of the name `i16`.
+- [x] `let a: i8 = 1;` and casts to the new types print.
+- [x] `i16.MAX` parses as a field of the name `i16`.
 
 Unit tests — checker (`check/numbers.rs`, `check/builtins.rs`):
-- [ ] **Literal ranges:** `let a: i8 = -128;`, `let b: u16 = 65535;`; E0401 for `let c: i8 = 128;` and `let d: u16 = -1;`.
-- [ ] **Method types:** `checked_add` gives `Option<i16>`, `saturating_mul` gives `u8`, `rotate_left` gives `u16`; E0403 for a `u8` argument on an `i16`; E0415 on `f64`.
-- [ ] **Constants:** `i8.MIN` is an `i8`; `i64.TOP` is E0415.
-- [ ] **`parse_u64`:** gives `Option<u64>`; a user `fun parse_u64` is E0302.
+- [x] **Literal ranges:** `let a: i8 = -128;`, `let b: u16 = 65535;`; E0401 for `let c: i8 = 128;` and `let d: u16 = -1;`.
+- [x] **Method types:** `checked_add` gives `Option<i16>`, `saturating_mul` gives `u8`, `rotate_left` gives `u16`; E0403 for a `u8` argument on an `i16`; E0415 on `f64`.
+- [x] **Constants:** `i8.MIN` is an `i8`; `i64.TOP` is E0415.
+- [x] **`parse_u64`:** gives `Option<u64>`; a user `fun parse_u64` is E0302.
 
 Unit tests — codegen (`codegen/int_checked.rs`):
-- [ ] `checked_add` uses `sadd.with.overflow`; `saturating_add` on `u8` uses `uadd.sat.i8`; `rotate_left` uses `fshl.i16`; `i16.MAX` is `i16 32767`.
+- [x] `checked_add` uses `sadd.with.overflow`; `saturating_add` on `u8` uses `uadd.sat.i8`; `rotate_left` uses `fshl.i16`; `i16.MAX` is `i16 32767`.
 
 Acceptance — `tests/programs/m35/`:
-- [ ] `integers.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `integers.la`: the §10 program.
+- [x] `more.la`:
   - arithmetic, comparison, casts and printing for `i8`, `i16` and `u16`;
   - interpolation;
   - every `checked_*` at its edges, including `checked_div` by 0 and `MIN / -1`;
@@ -125,12 +125,12 @@ Acceptance — `tests/programs/m35/`:
   - `MIN`/`MAX` of all eight integer types;
   - `parse_u64` on `""`, `"-1"`, `"18446744073709551616"` and `"007"`;
   - struct fields and arrays of the new types.
-- [ ] `overflow.la`: `i8` addition overflow panics (exit 101).
-- [ ] `e0401.la`: reject golden for an out-of-range `i8` literal.
-- [ ] The §10 program runs from the spec.
+- [x] `overflow.la`: `i8` addition overflow panics (exit 101).
+- [x] `e0402.la`: reject golden for out-of-range `i8` and `u16` literals.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -138,10 +138,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m35/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The spec is at milestone 35; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m35/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The spec is at milestone 35; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -150,3 +150,16 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m35/integers.la
 ```
+
+## AMENDMENTS (during build, session 82)
+
+- **Out-of-range literals are E0402** ("integer literal out of range"), not E0401. The golden is `m35/e0402.la`, and the unit tests say so.
+- **`codegen/function.rs`** lists the input intrinsics by name: `parse_u64` was added there too.
+- **`parser/describe.rs::symbol`** became `pub(super)`, to name an integer keyword read as a name.
+- **`rotate_left` was v7's example of a missing method:**
+  - in `check/builtins.rs::integers_have_wrapping_and_counting_methods`;
+  - in the `m29/e0415.la` golden.
+
+  Both now use `swap_bytes`, and the golden's comment was updated.
+- **IR:** the 135 earlier programs that compile give byte-identical IR. `-O2` was checked by hand for `m35/integers`, `m35/more` and `m35/overflow`.
+- **No file splits.**

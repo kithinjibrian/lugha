@@ -69,6 +69,10 @@ pub enum TokenKind {
     TyU32,
     TyU64,
     TyF32,
+    /// `i8`, `i16`, `u16` (v10).
+    TyI8,
+    TyI16,
+    TyU16,
 
     // Operators.
     Plus,
@@ -164,6 +168,9 @@ pub fn keyword(word: &str) -> Option<TokenKind> {
         "u32" => TyU32,
         "u64" => TyU64,
         "f32" => TyF32,
+        "i8" => TyI8,
+        "i16" => TyI16,
+        "u16" => TyU16,
         _ => return None,
     })
 }

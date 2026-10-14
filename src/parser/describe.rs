@@ -42,7 +42,7 @@ pub(super) fn assign_symbol(kind: &TokenKind) -> Option<&'static str> {
     })
 }
 
-fn symbol(kind: &TokenKind) -> &'static str {
+pub(super) fn symbol(kind: &TokenKind) -> &'static str {
     use TokenKind::*;
     match kind {
         Int(_) => "integer",
@@ -84,6 +84,9 @@ fn symbol(kind: &TokenKind) -> &'static str {
         TyU32 => "u32",
         TyU64 => "u64",
         TyF32 => "f32",
+        TyI8 => "i8",
+        TyI16 => "i16",
+        TyU16 => "u16",
         Plus => "+",
         Minus => "-",
         Star => "*",

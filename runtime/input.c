@@ -54,6 +54,29 @@ int32_t lugha_rt_parse_i64(const LughaString *s, int64_t *out) {
     return 1;
 }
 
+/* `parse_u64(s)` (v10): one or more decimal digits and nothing else; 1
+ * with `*out` set, or 0 (spec: `None`) on anything else, including a sign
+ * and values above `UINT64_MAX`, checked before each step. */
+int32_t lugha_rt_parse_u64(const LughaString *s, uint64_t *out) {
+    if (s->len == 0) {
+        return 0;
+    }
+    uint64_t value = 0;
+    for (int64_t i = 0; i < s->len; i++) {
+        char c = s->bytes[i];
+        if (c < '0' || c > '9') {
+            return 0;
+        }
+        uint64_t digit = (uint64_t)(c - '0');
+        if (value > (UINT64_MAX - digit) / 10) {
+            return 0;
+        }
+        value = value * 10 + digit;
+    }
+    *out = value;
+    return 1;
+}
+
 /* Skips decimal digits from `*i`; true if there was at least one. */
 static bool digits(const LughaString *s, int64_t *i) {
     int64_t start = *i;

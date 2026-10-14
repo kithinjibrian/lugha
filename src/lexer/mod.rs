@@ -168,11 +168,11 @@ mod tests {
     #[test]
     fn keywords_are_recognised_exactly() {
         let src = "fun extern struct enum impl match self let mut if else while for in of return \
-                   break continue true false as i32 i64 u8 f64 bool string u32 u64 f32";
+                   break continue true false as i32 i64 u8 f64 bool string u32 u64 f32 i8 i16 u16";
         let expected = [
             Fun, Extern, Struct, Enum, Impl, Match, SelfKw, Let, Mut, If, Else, While, For, In, Of,
             Return, Break, Continue, True, False, As, TyI32, TyI64, TyU8, TyF64, TyBool, TyString,
-            TyU32, TyU64, TyF32,
+            TyU32, TyU64, TyF32, TyI8, TyI16, TyU16,
         ];
         assert_eq!(kinds(src), expected);
         // v2 draft §2; longer words stay identifiers.

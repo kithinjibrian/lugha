@@ -31,8 +31,10 @@ fn suffix(ty: &Type) -> &'static str {
         Type::I64 => "i64",
         Type::U8 => "u8",
         Type::F64 => "f64",
-        // `u32` prints through the `u64` functions, zero-extended (v7).
-        Type::U32 | Type::U64 => "u64",
+        // `u32` prints through the `u64` functions, zero-extended (v7), and
+        // `i8`/`i16`/`u16` through the 64-bit ones, extended (v10).
+        Type::U16 | Type::U32 | Type::U64 => "u64",
+        Type::I8 | Type::I16 => "i64",
         Type::F32 => "f32",
         Type::Bool => "bool",
         Type::String => "str",
@@ -55,7 +57,7 @@ impl<'ctx> Lowerer<'ctx> {
         let abi = |ty: &Type| -> BasicMetadataTypeEnum<'ctx> {
             match ty {
                 Type::Bool | Type::U8 => self.context.i32_type().into(),
-                Type::U32 => self.context.i64_type().into(),
+                Type::U32 | Type::U16 | Type::I8 | Type::I16 => self.context.i64_type().into(),
                 Type::String => self.context.ptr_type(AddressSpace::default()).into(),
                 _ => super::value::llvm_type(self.context, ty).into(),
             }
@@ -74,8 +76,8 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Calls `lugha_rt_init` (it runs `GC_INIT()`), first thing in the C `main`.
-    /// Widens `bool`/`u8` to the runtime's `i32` parameters, and `u32` to
-    /// the `u64` ones (v7).
+    /// Widens `bool`/`u8` to the runtime's `i32` parameters, `u32` and
+    /// `u16` to the `u64` ones (v7, v10), and `i8`/`i16` to the `i64` ones.
     pub(super) fn abi_value(
         &self,
         ty: &Type,
@@ -89,10 +91,17 @@ impl<'ctx> Lowerer<'ctx> {
                     .expect(POSITIONED)
                     .into()
             }
-            Type::U32 => {
+            Type::U32 | Type::U16 => {
                 let i64_type = self.context.i64_type();
                 self.builder
                     .build_int_z_extend(value.into_int_value(), i64_type, "abi")
+                    .expect(POSITIONED)
+                    .into()
+            }
+            Type::I8 | Type::I16 => {
+                let i64_type = self.context.i64_type();
+                self.builder
+                    .build_int_s_extend(value.into_int_value(), i64_type, "abi")
                     .expect(POSITIONED)
                     .into()
             }

@@ -3630,18 +3630,65 @@ Branch: prp-063-self_everywhere (merged into main)
 ## SESSION 82 — 2026-10-14 — More integers (milestone 35) — open
 Branch: prp-064-more_integers
 
+### WHAT WAS DONE
+- PRP-064 written as approved under the "in one go" instruction, built and merged on green CI:
+  - `i8`, `i16` and `u16`;
+  - `checked_*`, `saturating_*` and rotations on every integer type;
+  - `I.MIN`/`I.MAX`;
+  - `parse_u64`.
+- v10 spec at milestone 35:
+  - the changes summary, including the compatibility note on the new keywords and `parse_u64`;
+  - §2 keywords, §3 grammar;
+  - §4 types table, methods table and integer limits;
+  - `parse_u64` in the intrinsics table;
+  - §8 externs;
+  - §9 runtime table and lowering;
+  - the E0404 row;
+  - the §10 program, §11 row 35.
+
+### FILES CREATED OR MODIFIED
+- New: `src/codegen/int_checked.rs`, `tests/programs/m35/` (`integers`, `more`, `overflow`, `e0402`), PRP-064.
+- Modified:
+  - `src/lexer/{token,mod}.rs`, `src/ast/types.rs`;
+  - `src/parser/{item,describe,primary}.rs`, `src/parser/sexp/item.rs`;
+  - `src/check/{types,numbers,access,builtins,input}.rs`;
+  - `src/codegen/{mod,value,structs,runtime,input,declare,int_methods,expr,function}.rs`;
+  - `runtime/input.c`, `src/link.rs`;
+  - `tests/spec.rs`, `tests/programs/m29/e0415.{la,stderr}`;
+  - the v10 spec.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 78, CONTEXT.
+
+### TESTS WRITTEN
+- **Lexer:** the new keywords.
+- **Parser:** the types, casts and `i16.MAX`.
+- **Checker:**
+  - literal ranges (E0402);
+  - limits (E0415 for `i64.TOP`);
+  - `parse_u64`, and a user `parse_u64` (E0302);
+  - method types, E0403 and E0405.
+- **Codegen:** the intrinsics and constants; `checked_div` never divides by zero.
+- **Programs:** `tests/programs/m35/`, and the §10 program from the spec.
+- **Regression:** 135 earlier programs give byte-identical IR; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 78.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m35`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 34 complete** (PRP-063, MEMORY 77): `Self` in `impl` blocks, default methods on concrete types (E0430). Tagged `m34`. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
+**Milestone 35 complete** (PRP-064, MEMORY 78): `i8`/`i16`/`u16`, checked/saturating/rotating methods, `I.MIN`/`I.MAX`, `parse_u64`. Tag `m35` goes on the merge. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
 
-Next, under the user's "in one go" (MEMORY 76): **milestone 35, more integers** (PRP-064, next session):
-- `i8`/`i16`/`u16` keyword types;
-- `checked_*`/`saturating_*` methods, rotations, `I.MIN`/`I.MAX`;
-- `parse_u64` (`lugha_rt_parse_u64`).
-
-Then **milestone 36, iterator helpers** (PRP-065), which completes v10.
+Next, under the user's "in one go" (MEMORY 76): **milestone 36, iterator helpers** (PRP-065, next session). It completes v10, tagged `m36` and `v10`.
+- Lazy prelude adapters `map`, `filter`, `take`, `skip`, `enumerate` (`Indexed<T>`);
+- consumers `collect`, `count`, `fold`, `any`, `all`, `find`, `sum`;
+- sources `xs.iter()`, `s.bytes()`, `range(a, b)`, and `for b of s`.
 
 Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `codegen/patterns.rs` (~290).
 

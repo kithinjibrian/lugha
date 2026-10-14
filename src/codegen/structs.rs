@@ -18,7 +18,8 @@ use crate::check::{Enums, Structs, Type};
 /// alignment on a 64-bit target, matching LLVM's layout for `%S` there (spec §7).
 pub(super) fn layout(ty: &Type, structs: &Structs, enums: &Enums) -> (u64, u64) {
     match ty {
-        Type::U8 | Type::Bool => (1, 1),
+        Type::U8 | Type::I8 | Type::Bool => (1, 1),
+        Type::I16 | Type::U16 => (2, 2),
         Type::I32 | Type::U32 | Type::F32 => (4, 4),
         Type::I64 | Type::U64 | Type::F64 | Type::String | Type::Array(_) => (8, 8),
         // `{ code, env }` (v3 draft §7), `{ table, box }` (v5 draft §7).

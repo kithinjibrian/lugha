@@ -1,8 +1,9 @@
 //! The numeric types beyond v0's (v7 draft §4, milestone 27): `u32`, `u64`
-//! and `f32`, and the questions every numeric type answers.
+//! and `f32`, then `i8`, `i16` and `u16` with `I.MIN`/`I.MAX` (v10), and
+//! the questions every numeric type answers.
 
 use super::Type;
-use crate::ast::TypeKind;
+use crate::ast::{Expr, ExprKind, TypeKind};
 
 impl Type {
     /// `f32` or `f64`.
@@ -10,9 +11,39 @@ impl Type {
         matches!(self, Type::F32 | Type::F64)
     }
 
-    /// `u8`, `u32` or `u64`: no negative values, so no negation (E0404).
+    /// `u8`, `u16`, `u32` or `u64`: no negative values, so no negation (E0404).
     pub fn is_unsigned(&self) -> bool {
-        matches!(self, Type::U8 | Type::U32 | Type::U64)
+        matches!(self, Type::U8 | Type::U16 | Type::U32 | Type::U64)
+    }
+
+    /// The integer type an integer keyword names (`i16`), for `i16.MAX`
+    /// (v10); `None` for any other name.
+    pub fn int_keyword(name: &str) -> Option<Type> {
+        Some(match name {
+            "i8" => Type::I8,
+            "i16" => Type::I16,
+            "i32" => Type::I32,
+            "i64" => Type::I64,
+            "u8" => Type::U8,
+            "u16" => Type::U16,
+            "u32" => Type::U32,
+            "u64" => Type::U64,
+            _ => return None,
+        })
+    }
+
+    /// The integer type and constant of `I.MIN` / `I.MAX` (v10), `None`
+    /// for any other expression; the checker reports other names (E0415).
+    pub fn int_limit(base: &Expr, name: &str) -> Option<(Type, bool)> {
+        let ExprKind::Name(keyword) = &base.kind else {
+            return None;
+        };
+        let ty = Type::int_keyword(keyword)?;
+        match name {
+            "MIN" => Some((ty, false)),
+            "MAX" => Some((ty, true)),
+            _ => None,
+        }
     }
 
     /// The type a built-in type keyword names, `None` for any other written type.
@@ -25,6 +56,9 @@ impl Type {
             TypeKind::U32 => Type::U32,
             TypeKind::U64 => Type::U64,
             TypeKind::F32 => Type::F32,
+            TypeKind::I8 => Type::I8,
+            TypeKind::I16 => Type::I16,
+            TypeKind::U16 => Type::U16,
             TypeKind::Bool => Type::Bool,
             TypeKind::String => Type::String,
             _ => return None,
@@ -115,5 +149,25 @@ mod tests {
         );
         assert_eq!(codes("let a = ~true;"), ["E0404"]);
         assert_eq!(codes("let mut x: f64 = 1.0; x &= 2.0;"), ["E0404"]);
+    }
+
+    #[test]
+    fn the_v10_integer_types_have_their_ranges_and_limits() {
+        assert_eq!(ty("let a: i8 = -128;", "a"), Type::I8);
+        assert_eq!(ty("let b: u16 = 65535;", "b"), Type::U16);
+        assert_eq!(ty("let c: i16 = -32768;", "c"), Type::I16);
+        assert_eq!(codes("let c: i8 = 128;"), ["E0402"]);
+        assert_eq!(codes("let d: u16 = -1;"), ["E0402"]);
+        assert_eq!(ty("let m = i8.MIN;", "m"), Type::I8);
+        assert_eq!(ty("let m = u64.MAX;", "m"), Type::U64);
+        assert_eq!(codes("let t = i64.TOP;"), ["E0415"]);
+        assert_eq!(
+            ty("let p = parse_u64(\"1\");", "p"),
+            Type::Option(Box::new(Type::U64))
+        );
+        assert_eq!(
+            errors("fun parse_u64(s: string): i64 = 1;\nfun main() {}"),
+            [("E0302", "parse_u64")]
+        );
     }
 }

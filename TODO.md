@@ -213,9 +213,9 @@ Done when the conditional-patterns program passes and the v9 spec is complete.
 Done when the `Self`-in-`impl` program passes.
 - [x] PRP-063: `Self` in `impl` blocks, default methods on concrete types (E0430); `Language v10 Specification.md` begins; tagged `m34`
 
-### Milestone 35 — More integers
+### Milestone 35 — More integers ✅
 Done when the more-integers program passes.
-- [ ] `i8`, `i16`, `u16`; `checked_*`, `saturating_*`, rotations, `MIN`/`MAX`; `parse_u64`
+- [x] PRP-064: `i8`, `i16`, `u16`; `checked_*`, `saturating_*`, rotations, `MIN`/`MAX`; `parse_u64`; tagged `m35` at merge
 
 ### Milestone 36 — Iterator helpers
 Done when the iterator-helpers program passes and the v10 spec is complete.

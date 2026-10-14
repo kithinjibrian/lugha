@@ -42,6 +42,19 @@ impl Parser<'_> {
                 return self.with_struct_literals(true, |p| p.array(start, open));
             }
             TokenKind::If | TokenKind::LBrace | TokenKind::Match => return self.block_like(),
+            // `i16.MAX`: an integer type keyword before `.` is a name (v10).
+            TokenKind::TyI8
+            | TokenKind::TyI16
+            | TokenKind::TyI32
+            | TokenKind::TyI64
+            | TokenKind::TyU8
+            | TokenKind::TyU16
+            | TokenKind::TyU32
+            | TokenKind::TyU64
+                if self.peek_at(1) == &TokenKind::Dot =>
+            {
+                ExprKind::Name(super::describe::symbol(self.peek()).to_string())
+            }
             // `self` is a name the checker binds like a parameter (v1, milestone 7).
             TokenKind::SelfKw => ExprKind::Name("self".to_string()),
             _ => return Err(self.expected("expression")),
@@ -251,6 +264,19 @@ mod tests {
         assert_eq!(
             body("let v = if c { 1 } else if d { 2 } else { 3 };"),
             "(block (let v (if c (block 1) (if d (block 2) (block 3)))))"
+        );
+    }
+
+    #[test]
+    fn the_v10_integer_types_and_their_limits() {
+        assert_eq!(
+            body("let a: i8 = 1; let b = a as i16; let c: u16 = 2;"),
+            "(block (let a i8 1) (let b (as a i16)) (let c u16 2))"
+        );
+        assert_eq!(expr("i16.MAX"), "(. i16 MAX)");
+        assert_eq!(
+            expr("u8.MIN.count_ones()"),
+            "(call (. (. u8 MIN) count_ones))"
         );
     }
 }

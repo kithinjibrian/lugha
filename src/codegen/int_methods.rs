@@ -20,6 +20,10 @@ impl<'ctx> Lowerer<'ctx> {
         name: &str,
         args: &[Expr],
     ) -> Result<Value<'ctx>, CodegenError> {
+        // `checked_*`, `saturating_*` and the rotations (v10).
+        if let Some(value) = self.int_v10_method(base, ty, name, args)? {
+            return Ok(value);
+        }
         let a = self.get(base, ty)?.into_int_value();
         let b = match args.first() {
             Some(arg) => Some(self.get(arg, ty)?.into_int_value()),

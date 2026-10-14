@@ -1,8 +1,8 @@
-error[E0415]: no method `rotate_left` on `u32`
+error[E0415]: no method `swap_bytes` on `u32`
   --> tests/programs/m29/e0415.la:5:15
   |
-5 |     let r = x.rotate_left(1);
-  |               ^^^^^^^^^^^
+5 |     let r = x.swap_bytes();
+  |               ^^^^^^^^^^
 
 error[E0415]: no method `count_ones` on `f64`
   --> tests/programs/m29/e0415.la:7:15

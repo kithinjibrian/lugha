@@ -9,9 +9,10 @@ use crate::ast::{Expr, Part};
 
 /// The input and I/O intrinsics (v3, v4), checked here rather than in
 /// `call.rs` — except `eprint`/`eprintln`, which follow `print`'s rules.
-pub(super) const INPUT: [&str; 10] = [
+pub(super) const INPUT: [&str; 11] = [
     "args",
     "parse_i64",
+    "parse_u64",
     "parse_f64",
     "read_line",
     "read_file",
@@ -30,6 +31,7 @@ impl Checker {
             "args" => (Vec::new(), Type::Array(Box::new(Type::String))),
             "parse_i64" => (vec![Type::String], Type::Option(Box::new(Type::I64))),
             "parse_f64" => (vec![Type::String], Type::Option(Box::new(Type::F64))),
+            "parse_u64" => (vec![Type::String], Type::Option(Box::new(Type::U64))),
             "read_line" => (Vec::new(), Type::Option(Box::new(Type::String))),
             "read_file" => (vec![Type::String], result(Type::String)),
             "write_file" | "append_file" => (vec![Type::String, Type::String], result(Type::I64)),

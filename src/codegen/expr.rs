@@ -113,6 +113,11 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Closure(c) => self.closure_value(expr, c)?,
             ExprKind::Try(inner) => return self.try_value(inner),
             ExprKind::Index(base, open, index) => self.index(base, open.start, index)?,
+            // `i16.MAX` (v10): the checker typed the keyword `void` too.
+            ExprKind::Field(base, field) if Type::int_limit(base, &field.name).is_some() => {
+                let (ty, max) = Type::int_limit(base, &field.name).expect("just matched");
+                self.int_limit(&ty, max).into()
+            }
             // The checker gives a type name `void`: `Shape.Empty` is a variant.
             ExprKind::Field(base, field) if self.ty(base) == Type::Void => {
                 let ty = self.ty(expr);

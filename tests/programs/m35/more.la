@@ -1,0 +1,71 @@
+// i8, i16 and u16 through arithmetic, casts and printing; every checked
+// and saturating method at its edges; rotations; MIN and MAX; parse_u64.
+
+struct Pixel { r: u16, d: i8 }
+
+fun main() {
+    let a: i8 = -100;
+    let b: i8 = 27;
+    println(a + b);
+    println(a < b);
+    let w: i16 = -300;
+    println(w * 100);
+    println(w as u16);
+    let u: u16 = 65000;
+    println(u + 535);
+    println(u as i8);
+    println("{a}/{u}");
+
+    let m: i8 = i8.MAX;
+    println(m.checked_add(1).is_none());
+    println(m.checked_sub(1).unwrap());
+    let n: i8 = i8.MIN;
+    println(n.checked_mul(-1).is_none());
+    println(n.checked_div(-1).is_none());
+    println(n.checked_div(0).is_none());
+    println(n.checked_div(2).unwrap());
+    let z: u16 = 0;
+    println(z.checked_sub(1).is_none());
+
+    println(m.saturating_add(100));
+    println(n.saturating_sub(1));
+    println(n.saturating_mul(2));
+    println(n.saturating_mul(-2));
+    println(z.saturating_sub(5));
+    let big: u16 = 300;
+    println(big.saturating_mul(300));
+
+    let r: u8 = 0b10000001;
+    println(r.rotate_left(1));
+    println(r.rotate_right(1));
+    println(r.rotate_left(-1));
+    println(r.rotate_left(9));
+    let q: i16 = -32768;
+    println(q.rotate_left(1));
+
+    println(i8.MIN);
+    println(i8.MAX);
+    println(i16.MIN);
+    println(i16.MAX);
+    println(i32.MIN);
+    println(i32.MAX);
+    println(i64.MIN);
+    println(i64.MAX);
+    println(u8.MIN);
+    println(u8.MAX);
+    println(u16.MIN);
+    println(u16.MAX);
+    println(u32.MAX);
+    println(u64.MAX);
+
+    println(parse_u64("").is_none());
+    println(parse_u64("-1").is_none());
+    println(parse_u64("18446744073709551616").is_none());
+    println(parse_u64("007").unwrap());
+
+    let mut px = Pixel { r: 1, d: -1 };
+    px.r += 2;
+    let ds: i8[] = [px.d, 5, -5];
+    println(px.r);
+    println(ds[0] + ds[1] + ds[2]);
+}

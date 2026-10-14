@@ -1,8 +1,8 @@
-// Integers have exactly six methods; floats have none of them.
+// Integers have only the built-in integer methods; floats have none of them.
 
 fun main() {
     let x: u32 = 1;
-    let r = x.rotate_left(1);
+    let r = x.swap_bytes();
     let f: f64 = 2.0;
     let n = f.count_ones();
 }

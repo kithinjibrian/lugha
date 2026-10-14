@@ -1169,9 +1169,33 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 78. More integers — milestone 35 (PRP-064)
+
+**Decision:** built under the user's "in one go" (milestones 34–36).
+- **Types:** `TyI8/TyI16/TyU16` → `TypeKind`/`Type::{I8, I16, U16}`, wherever the type lists are written out (lexer, describe, parser `ty`, sexp, `is_integer`, `is_unsigned`, `literal_range`, Display, `primitive`, `llvm_type`, `is_signed`, `layout`).
+- **Printing:** goes through the `i64`/`u64` runtime functions, sign- or zero-extended (`suffix`, `runtime` ABI, `abi_value`, `text_of`), with no new runtime printers.
+- **Externs:** `c_abi` adds `signext` for `i8`/`i16` and `zeroext` for `u16`.
+- **`I.MIN`/`I.MAX`:**
+  - **Parser:** an integer keyword followed by `.` is `ExprKind::Name("i16")`.
+  - **Checker:** `access.rs::field` checks it first (`Type::int_keyword`, `Type::int_limit` in `check/numbers.rs`); base recorded `void`; another name is E0415.
+  - **Codegen:** an `expr.rs` arm before the field arms → `int_limit` constant.
+- **Methods:** `check/builtins.rs` entries; `codegen/int_checked.rs` (`int_v10_method`, called first from `integer_method`).
+  - `checked_*`: with.overflow plus a `select` of Some/None.
+  - `checked_div`: divides by `select(bad, 1, b)`.
+  - `saturating_add/sub`: `.sat`.
+  - `saturating_mul`: overflow → MAX, or MIN when the signs differ.
+  - Rotations: `fshl/fshr(a, a, trunc n)`.
+- **`parse_u64`:** in `INPUT`, codegen `function.rs`'s input list and `input_intrinsic`; `lugha_rt_parse_u64` in `runtime/input.c`; `RUNTIME_SYMBOLS` has 34 entries.
+- **Out-of-range literals are E0402** (not E0401 as the PRP said).
+
+**Why:** following `u32`'s path kept the change mechanical. Routing printing through the 64-bit functions avoids new runtime code.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 35 complete**: PRP-064 `i8`/`i16`/`u16`, checked/saturating/rotating methods, `MIN`/`MAX`, `parse_u64`
 - **Milestone 34 complete**: PRP-063 `Self` in `impl` blocks, default methods on concrete types (E0430); v10 spec begins
 - **Milestone 33 complete — Lugha v9 complete**: PRP-062 `if let`, `while let`, `let … else`
 - **Milestone 32 complete**: PRP-061 `unwrap`, `expect`, `%=`
@@ -1253,14 +1277,12 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 34 complete** (PRP-063, MEMORY 77): `Self` in `impl` blocks, default methods on concrete types (E0430). Tagged `m34`. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
+**Milestone 35 complete** (PRP-064, MEMORY 78): `i8`/`i16`/`u16`, checked/saturating/rotating methods, `I.MIN`/`I.MAX`, `parse_u64`. Tag `m35` goes on the merge. `Language v10 Specification.md` (in progress) is what `lughac spec` prints; v0–v9 are frozen.
 
-Next, under the user's "in one go" (MEMORY 76): **milestone 35, more integers** (PRP-064, next session):
-- `i8`/`i16`/`u16` keyword types;
-- `checked_*`/`saturating_*` methods, rotations, `I.MIN`/`I.MAX`;
-- `parse_u64` (`lugha_rt_parse_u64`).
-
-Then **milestone 36, iterator helpers** (PRP-065), which completes v10.
+Next, under the user's "in one go" (MEMORY 76): **milestone 36, iterator helpers** (PRP-065, next session). It completes v10, tagged `m36` and `v10`.
+- Lazy prelude adapters `map`, `filter`, `take`, `skip`, `enumerate` (`Indexed<T>`);
+- consumers `collect`, `count`, `fold`, `any`, `all`, `find`, `sum`;
+- sources `xs.iter()`, `s.bytes()`, `range(a, b)`, and `for b of s`.
 
 Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (295), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `codegen/patterns.rs` (~290).
 

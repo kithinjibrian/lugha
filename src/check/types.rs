@@ -20,6 +20,10 @@ pub enum Type {
     U32,
     U64,
     F32,
+    /// v10: `i8`, `i16`, `u16`.
+    I8,
+    I16,
+    U16,
     Bool,
     /// Immutable UTF-8 text (spec §4).
     String,
@@ -53,11 +57,18 @@ pub enum Type {
 }
 
 impl Type {
-    /// `i32`, `i64`, `u8`, `u32` or `u64`.
+    /// `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32` or `u64`.
     pub fn is_integer(&self) -> bool {
         matches!(
             self,
-            Type::I32 | Type::I64 | Type::U8 | Type::U32 | Type::U64
+            Type::I8
+                | Type::I16
+                | Type::I32
+                | Type::I64
+                | Type::U8
+                | Type::U16
+                | Type::U32
+                | Type::U64
         )
     }
 
@@ -103,7 +114,10 @@ impl Type {
     pub(super) fn literal_range(&self) -> (u64, u64) {
         match self {
             Type::I32 => (i32::MAX as u64, 1 << 31),
+            Type::I8 => (i8::MAX as u64, 1 << 7),
+            Type::I16 => (i16::MAX as u64, 1 << 15),
             Type::U8 => (u64::from(u8::MAX), 0),
+            Type::U16 => (u64::from(u16::MAX), 0),
             Type::U32 => (u64::from(u32::MAX), 0),
             Type::U64 => (u64::MAX, 0),
             _ => (i64::MAX as u64, 1 << 63),
@@ -154,6 +168,9 @@ impl fmt::Display for Type {
             Type::U32 => "u32",
             Type::U64 => "u64",
             Type::F32 => "f32",
+            Type::I8 => "i8",
+            Type::I16 => "i16",
+            Type::U16 => "u16",
             Type::Bool => "bool",
             Type::String => "string",
             // `(fun(i64): i64)[]`: without parentheses `[]` would be the return type's.
