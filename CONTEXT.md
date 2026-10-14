@@ -4074,6 +4074,11 @@ Branch: prp-071-for_of_mut (merged into main)
 
 ---
 
+## SESSION 93 — 2026-10-14 — More iterator helpers (milestone 43) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 42 complete** (PRP-071, MEMORY 88): `for x of mut e`. Tagged `m42`. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
