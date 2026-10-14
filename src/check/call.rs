@@ -137,13 +137,16 @@ impl Checker {
             return result;
         };
         let ty = self.value(arg, None);
+        // Every value prints (v12); `panic` still takes a `string`.
         let fits = match name {
-            "print" | "println" | "eprint" | "eprintln" => {
-                ty.is_numeric() || matches!(ty, Type::Bool | Type::String)
+            "print" | "println" | "eprint" | "eprintln" | "to_string" => {
+                super::printing::printable(&ty)
             }
-            "to_string" => ty.is_numeric() || ty == Type::Bool,
             _ => ty == Type::String,
         };
+        if fits && name != "panic" {
+            self.printed(arg, &ty);
+        }
         if !fits && !matches!(ty, Type::Error | Type::Never) {
             self.report(errors::intrinsic_argument(name, ty, arg.span));
         }
@@ -229,8 +232,8 @@ mod tests {
             [("E0405", "println(1, 2)")]
         );
         assert_eq!(
-            errors("fun main() { let s = to_string(\"s\"); }"),
-            [("E0403", "\"s\"")]
+            errors("fun main() { let s = to_string(fun(x: i64): i64 = x); }"),
+            [("E0403", "fun(x: i64): i64 = x")]
         );
         assert_eq!(errors("fun main() { panic(1); }"), [("E0403", "1")]);
         assert_eq!(

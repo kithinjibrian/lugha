@@ -81,18 +81,18 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (`check/printing.rs`):
-- [ ] Structs, enums, arrays, `Option`, `Result` and a `T` print, interpolate and go through `to_string`.
-- [ ] E0403 for `void`, an interface value and a function value.
-- [ ] A generic type's `show` instance is listed when printed directly, inside an array, and through a generic `T`.
+- [x] Structs, enums, arrays, `Option`, `Result` and a `T` print, interpolate and go through `to_string`.
+- [x] E0403 for `void`, an interface value and a function value.
+- [x] A generic type's `show` instance is listed when printed directly, inside an array, and through a generic `T`.
 
 Unit tests — codegen (`codegen/show.rs`):
-- [ ] A struct print calls `lugha_show_5Point`.
-- [ ] A string field is quoted with `lugha_rt_str_quote`.
-- [ ] A type with `show` calls its method.
+- [x] A struct print calls `lugha_show_5Point`.
+- [x] A string field is quoted with `lugha_rt_str_quote`.
+- [x] A type with `show` calls its method.
 
 Acceptance — `tests/programs/m39/`:
-- [ ] `values.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `values.la`: the §10 program.
+- [x] `more.la`:
   - nested structs and enums;
   - a recursive enum;
   - `Result`;
@@ -104,10 +104,10 @@ Acceptance — `tests/programs/m39/`:
   - a `show` with the wrong signature ignored;
   - `to_string`, `eprintln`;
   - a generic `T` that is an interface value (`dump(s)` with `s: Shape`).
-- [ ] The §10 program runs from the spec.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -115,10 +115,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m39/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] `Language v12 Specification.md` begins; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m39/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] `Language v12 Specification.md` begins; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -127,3 +127,20 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m39/values.la
 ```
+
+## AMENDMENTS (during build, session 88)
+
+- **`Display`** is in `src/prelude_iter.la` (the prelude's second file). `or_prelude_interface` resolves `Iter` and `Display` by one rule.
+- **Printing `void` is E0407,** the existing code for a `void` value, not E0403.
+- **Four earlier checker tests changed** to the v12 behaviour:
+  - `bounds` (`println(a)` on a bare `T`);
+  - `call` (`to_string("s")`);
+  - `input` (`eprint([1])`, `"{p}"`, `"{[1]}"`).
+
+  Their error cases now use function values.
+- **`monomorphize`'s use loop** now builds a list of callees per use, so a `$print` use can expand into several `show` instances.
+- **The more program is a directory case,** `m39/more_mod/`, with module `geo` for the bare-name check. Its `eprintln` output is checked by `more_mod.stderr`.
+- **Codegen tests** live in `codegen/show_iface.rs`, keeping `show.rs` under 300 lines.
+- **`input.rs::call_runtime_value`** became `pub(super)`.
+- **IR:** the 145 earlier programs that compile give byte-identical IR. `-O2` was checked by hand for `m39/values` and `m39/more_mod`.
+- **No file splits.**

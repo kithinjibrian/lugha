@@ -45,6 +45,17 @@ impl<'ctx> Upcasts<'ctx> {
         });
     }
 
+    /// Every concrete type with a table serving `interface`, once each (v12).
+    pub(super) fn concretes(&self, interface: &crate::check::Type) -> Vec<crate::check::Type> {
+        let mut found: Vec<crate::check::Type> = Vec::new();
+        for t in self.tables.iter().filter(|t| t.interface == *interface) {
+            if !found.contains(&t.concrete) {
+                found.push(t.concrete.clone());
+            }
+        }
+        found
+    }
+
     /// The table of `concrete` built as `root` that serves `interface`.
     fn find(&self, concrete: &Type, root: &Type, interface: &Type) -> Option<PointerValue<'ctx>> {
         self.tables

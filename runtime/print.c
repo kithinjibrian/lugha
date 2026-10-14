@@ -184,3 +184,50 @@ LughaString *lugha_rt_to_string_f32(float value) {
 LughaString *lugha_rt_to_string_bool(int32_t value) {
     return make_string(value ? "true" : "false");
 }
+
+/* The escape for byte `c` inside a quoted string (v12), or NULL when it is
+ * copied as itself; bytes below 0x20 without a short form use `\u{XX}`. */
+static const char *escape_of(unsigned char c, char *buf) {
+    switch (c) {
+    case '"': return "\\\"";
+    case '\\': return "\\\\";
+    case '\n': return "\\n";
+    case '\t': return "\\t";
+    case '\r': return "\\r";
+    default:
+        if (c < 0x20) {
+            snprintf(buf, 8, "\\u{%02x}", c);
+            return buf;
+        }
+        return NULL;
+    }
+}
+
+/* `s` between double quotes with `"`, `\` and control bytes escaped, as
+ * strings appear inside a printed struct, enum or array (v12). The length
+ * is counted first, so the result is allocated once. */
+LughaString *lugha_rt_str_quote(const LughaString *s) {
+    char buf[8];
+    int64_t len = 2;
+    for (int64_t i = 0; i < s->len; i++) {
+        const char *e = escape_of((unsigned char)s->bytes[i], buf);
+        len += e ? (int64_t)strlen(e) : 1;
+    }
+    LughaString *out = lugha_rt_alloc((int64_t)sizeof(LughaString) + len + 1);
+    out->len = len;
+    char *at = out->bytes;
+    *at++ = '"';
+    for (int64_t i = 0; i < s->len; i++) {
+        const char *e = escape_of((unsigned char)s->bytes[i], buf);
+        if (e) {
+            size_t n = strlen(e);
+            memcpy(at, e, n);
+            at += n;
+        } else {
+            *at++ = s->bytes[i];
+        }
+    }
+    *at++ = '"';
+    *at = '\0';
+    return out;
+}

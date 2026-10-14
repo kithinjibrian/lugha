@@ -29,8 +29,11 @@ impl Checker {
         name: &str,
     ) -> String {
         let declared = self.interfaces.contains_key(&key) || self.named_type(&key).is_some();
-        if module.is_none() && name == "Iter" && !declared && self.interfaces.contains_key(ITER) {
-            return ITER.to_string();
+        // `Iter` (v6) and `Display` (v12) are the prelude's interfaces.
+        let prelude = format!("$prelude.{name}");
+        let known = matches!(name, "Iter" | "Display") && self.interfaces.contains_key(&prelude);
+        if module.is_none() && known && !declared {
+            return prelude;
         }
         key
     }

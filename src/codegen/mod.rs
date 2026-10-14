@@ -40,6 +40,8 @@ mod patterns;
 mod results;
 mod runtime;
 mod scope;
+mod show;
+mod show_iface;
 mod stmt;
 mod structs;
 mod swap;

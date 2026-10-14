@@ -3883,18 +3883,58 @@ Branch: main
 ## SESSION 88 — 2026-10-14 — Printing values (milestone 39) — open
 Branch: prp-068-printing_values
 
+### WHAT WAS DONE
+- The user approved the v12 draft and asked for it "in one go". The draft is marked approved; MEMORY 83.
+- PRP-068 written as approved under that instruction, built and merged on green CI:
+  - every struct, enum, array, `Option`, `Result` and `T` prints, through its own `show` or a built-in form, with strings quoted inside it;
+  - codegen also prints interface values (for a `T` that is one), by identity.
+- `Language v12 Specification.md` begins:
+  - the changes summary;
+  - §4 on `T`;
+  - §5 "How values print", and the intrinsics and interpolation rules;
+  - §9 helpers and the runtime table;
+  - the E0403 row;
+  - the §10 program, §11 row 39;
+  - the v12 out-of-scope list and §12.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/printing.rs`, `src/codegen/{show,show_iface}.rs`, `tests/programs/m39/` (`values`, `more_mod/`), `docs/specs/Language v12 Specification.md`, PRP-068.
+- Modified:
+  - `src/check/{mod,call,input,iterators,instances,bounds}.rs`;
+  - `src/codegen/{mod,lower,runtime,io,input,upcast}.rs`;
+  - `src/prelude_iter.la`, `runtime/print.c`, `src/link.rs`, `src/lib.rs`;
+  - `tests/{cli,spec}.rs`;
+  - the v12 draft (status).
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 83–84, CONTEXT.
+
+### TESTS WRITTEN
+- **Checker:**
+  - everything but `void` and interface or function values prints;
+  - a generic `show` instance is listed directly, inside an array, and through `T`.
+- **Codegen:** helpers and quoting; a type's own `show`; interface identity; plain values unchanged.
+- **Programs:** `tests/programs/m39/`, and the §10 program from the spec.
+- **Regression:** 145 earlier programs give byte-identical IR; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 83 (v12 direction), 84 (milestone 39).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m39`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Lugha v11 is complete** (milestones 37–38; PRP-066–067; MEMORY 80–82). Tagged `m38` and `v11`. `Language v11 Specification.md` is what `lughac spec` prints; v0–v10 are frozen.
+**Milestone 39 complete** (PRP-068, MEMORY 84): printing values. Tag `m39` goes on the merge. `Language v12 Specification.md` (in progress) is what `lughac spec` prints; v0–v11 are frozen.
 
-Next: **approve `docs/specs/Language v12 Draft.md`** (proposed in session 87):
-- M39: printing values — `Display { show }`, built-in forms, quoting, generic `T`;
-- M40: printing anything — interface values by identity chain, `<fun>`, `unwrap on Err: <error>`.
+Next, under the user's "in one go" (MEMORY 83): **milestone 40, printing anything** (PRP-069, next session). It completes v12, tagged `m40` and `v12`.
+- `printable` admits interface and function values; codegen already prints them.
+- `unwrap` on `Err(e)` panics with `unwrap on Err: ` plus `e`'s text (`codegen/unwrap.rs`).
+- The §10 printing-anything program.
 
-Once it is approved: record a MEMORY decision for v12, then write PRP-068 for M39.
-
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `modules/tests.rs` (281).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `codegen/runtime.rs` (~297), `check/env.rs` (295), `parser/stmt.rs` (~297).
 
 See `TODO.md`.

@@ -144,7 +144,8 @@ impl<'ctx> Lowerer<'ctx> {
             Some(arg) => {
                 let ty = self.ty(arg);
                 let value = self.get(arg, &ty)?;
-                Some((ty, value))
+                // Any value prints as its text (v12).
+                Some(self.printable(ty, value))
             }
             None => None,
         };
@@ -167,6 +168,7 @@ impl<'ctx> Lowerer<'ctx> {
                 }
                 Ok(Value::Void)
             }
+            ("to_string", Some((Type::String, value))) => Ok(Value::Val(value)),
             ("to_string", Some((ty, value))) => {
                 let convert = self.runtime(
                     &format!("lugha_rt_to_string_{}", suffix(&ty)),

@@ -106,6 +106,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Iterator helpers",
         "Package versions",
         "Re-exports",
+        "Printing values",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

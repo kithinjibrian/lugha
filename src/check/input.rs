@@ -49,15 +49,16 @@ impl Checker {
         ret
     }
 
-    /// `"a {x} b"`: each interpolated value is a number, `bool` or `string`
-    /// (E0403 otherwise), and the whole is a `string`.
+    /// `"a {x} b"`: each interpolated value prints (v12; E0403 for `void`),
+    /// and the whole is a `string`.
     pub(super) fn interpolation(&mut self, parts: &[Part]) -> Type {
         for part in parts {
             let Part::Expr(e) = part else { continue };
             let ty = self.value(e, None);
-            let printable = ty.is_numeric() || matches!(ty, Type::Bool | Type::String);
-            if !printable && !matches!(ty, Type::Error | Type::Never) {
+            if !super::printing::printable(&ty) && !matches!(ty, Type::Error | Type::Never) {
                 self.report(errors::not_interpolable(&ty, e.span));
+            } else {
+                self.printed(e, &ty);
             }
         }
         Type::String
@@ -77,13 +78,13 @@ mod tests {
 
     #[test]
     fn only_printable_values_interpolate() {
-        let src = "struct P { x: i64 }\nfun main() { let p = P { x: 1 }; let t = \"{p}\"; }";
-        assert_eq!(errors(src), [("E0403", "p")]);
+        // v12: structs and arrays print; a function value doesn't yet.
+        let src = "fun f() {}\nfun main() { let g = f; let t = \"{g}\"; }";
+        assert_eq!(errors(src), [("E0403", "g")]);
         let help = diagnostics(src)[0].help.clone().expect("a help");
         assert!(help.contains("convert"), "{help}");
-        assert_eq!(
-            errors("fun main() { let t = \"{[1]}\"; }"),
-            [("E0403", "[1]")]
+        crate::check::test_util::ok(
+            "struct P { x: i64 }\nfun main() { let t = \"{[1]} {P { x: 1 }}\"; }",
         );
     }
 
@@ -145,7 +146,10 @@ mod tests {
             [("E0401", "1")]
         );
         assert_eq!(errors("fun main() { exit(\"x\"); }"), [("E0403", "\"x\"")]);
-        assert_eq!(errors("fun main() { eprint([1]); }"), [("E0403", "[1]")]);
+        assert_eq!(
+            errors("fun main() { eprint(fun() {}); }"),
+            [("E0403", "fun() {}")]
+        );
         assert_eq!(errors("fun exit() {}\nfun main() {}"), [("E0302", "exit")]);
     }
 }

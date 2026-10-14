@@ -25,11 +25,7 @@ impl<'ctx> Lowerer<'ctx> {
                 Part::Expr(e) => {
                     let ty = self.ty(e);
                     let value = self.get(e, &ty)?;
-                    if ty == Type::String {
-                        value
-                    } else {
-                        self.text_of(&ty, value)
-                    }
+                    self.text(value, &ty)
                 }
             };
             joined = Some(match joined {
@@ -74,7 +70,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Calls runtime function `name`, which returns a string-like pointer.
-    fn call_runtime_value(
+    pub(super) fn call_runtime_value(
         &mut self,
         name: &str,
         params: &[Type],

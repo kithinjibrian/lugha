@@ -54,6 +54,7 @@ mod numbers;
 mod ops;
 mod or_patterns;
 mod patterns;
+mod printing;
 mod results;
 mod satisfy;
 mod self_type;

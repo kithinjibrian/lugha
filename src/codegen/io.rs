@@ -76,11 +76,7 @@ impl<'ctx> Lowerer<'ctx> {
                     Some(arg) => {
                         let ty = self.ty(arg);
                         let value = self.get(arg, &ty)?;
-                        if ty == Type::String {
-                            value
-                        } else {
-                            self.text_of(&ty, value)
-                        }
+                        self.text(value, &ty)
                     }
                     None => self.string_literal("").into(),
                 };

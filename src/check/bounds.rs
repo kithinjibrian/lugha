@@ -149,13 +149,14 @@ mod tests {
             errors("fun less<T: Eq>(a: T, b: T): bool = a < b;\nfun main() {}"),
             [("E0404", "a < b")]
         );
+        // v12: a bare parameter prints.
+        ok("fun f<T>(a: T) { println(a); }\nfun main() {}");
         ok(
             "fun same<T: Eq>(a: T, b: T): bool = a == b;\nfun less<T: Ord>(a: T, b: T): bool = a < b;\nfun main() {}",
         );
         for (body, code, at) in [
             ("let c = a + a;", "E0404", "a + a"),
             ("let c = a as i64;", "E0408", "a as i64"),
-            ("println(a);", "E0403", "a"),
             ("let n = a.len;", "E0410", "len"),
             ("let c = a[0];", "E0411", "a"),
             ("let x: T = 0;", "E0401", "0"),

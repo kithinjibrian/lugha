@@ -1306,9 +1306,30 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 84. Printing values — milestone 39 (PRP-068)
+
+**Decision:** built under the user's "in one go" (milestones 39–40).
+- **Checker (`check/printing.rs`):**
+  - **What prints:** `printable` is every type but `void` and (until M40) interface and function values; `call.rs` (the print family and `to_string`) and `input.rs` (interpolation) use it.
+  - **Uses:** each print site records `printed` → a use of key `$print` at `[ty]` (skipped for numbers, `bool`, strings). `monomorphize` expands it, at concrete types, into `show_instances(ty)`, which walks fields, payloads, elements, `Option` and the types converted to an interface, and lists each generic type's own `show` instance.
+  - **Which `show`:** `own_show` requires receiver `self`, no params, `string` result, and no own type params.
+  - **Prelude:** `Display` is in `prelude_iter.la`; `or_prelude_interface` resolves `Iter` and `Display`.
+- **Codegen (`codegen/show.rs`):**
+  - `printable(ty, value)` turns a non-plain value into `(String, text)`; it is used for the print, `to_string` and `eprint` arguments, and by interpolation (`text`).
+  - `part` quotes strings (`lugha_rt_str_quote`), gives `<fun>` for function values, and otherwise calls `lugha_show_<mangle>(value)`.
+  - The helper calls `own_show` (non-generic method, prelude instance, or generic instance from `monos`), or builds `Name { f: … }`, `Variant(…)` (a tag switch with an accumulator slot) or `[…]` (`count_loop` and a `select` for the `, `). Names are bare.
+- **Interface values (`codegen/show_iface.rs`):** the interface helper is declared and queued in `Lowerer::shows`. `finish_shows` (after `finish_upcasts`) builds its body: an identity-slot comparison per concrete type in `Upcasts::concretes(interface)`, then `load_element` from the box and that type's text.
+- **Runtime:** `lugha_rt_str_quote` in `print.c`; `RUNTIME_SYMBOLS` has 35 entries.
+- **Earlier tests changed:** four E0403 checker tests (`bounds`, `call`, `input` ×2) now assert the v12 behaviour; printing `void` stays E0407.
+
+**Why:** helpers per type mirror the copy and equality helpers. Building interface bodies at the end keeps the tables and earlier IR unchanged.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 39 complete**: PRP-068 printing values (`Display`/`show`, built-in forms); v12 spec begins
 - **Milestone 38 complete — Lugha v11 complete**: PRP-067 named imports and re-exports
 - **Milestone 37 complete**: PRP-066 package versions (`[package]`, requirements, E0324); v11 spec begins
 - **Milestone 36 complete — Lugha v10 complete**: PRP-065 iterator helpers, `iter`/`bytes`/`range`, `for b of s`
@@ -1394,14 +1415,13 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Lugha v11 is complete** (milestones 37–38; PRP-066–067; MEMORY 80–82). Tagged `m38` and `v11`. `Language v11 Specification.md` is what `lughac spec` prints; v0–v10 are frozen.
+**Milestone 39 complete** (PRP-068, MEMORY 84): printing values. Tag `m39` goes on the merge. `Language v12 Specification.md` (in progress) is what `lughac spec` prints; v0–v11 are frozen.
 
-Next: **approve `docs/specs/Language v12 Draft.md`** (proposed in session 87):
-- M39: printing values — `Display { show }`, built-in forms, quoting, generic `T`;
-- M40: printing anything — interface values by identity chain, `<fun>`, `unwrap on Err: <error>`.
+Next, under the user's "in one go" (MEMORY 83): **milestone 40, printing anything** (PRP-069, next session). It completes v12, tagged `m40` and `v12`.
+- `printable` admits interface and function values; codegen already prints them.
+- `unwrap` on `Err(e)` panics with `unwrap on Err: ` plus `e`'s text (`codegen/unwrap.rs`).
+- The §10 printing-anything program.
 
-Once it is approved: record a MEMORY decision for v12, then write PRP-068 for M39.
-
-Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `check/env.rs` (295), `check/generics.rs` (294), `check/satisfy.rs` (294), `parser/stmt.rs` (~297), `codegen/control.rs` (292), `modules/tests.rs` (281).
+Watch file sizes: `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/mod.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `check/array.rs` (~296), `codegen/runtime.rs` (~297), `check/env.rs` (295), `parser/stmt.rs` (~297).
 
 See `TODO.md`.

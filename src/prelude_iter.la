@@ -261,3 +261,7 @@ fun iter_sum_f64(it: Iter<f64>): f64 {
     }
     total
 }
+
+// A type's own text (v12 draft §4): a struct or enum with this `show`
+// prints through it; every other value has a built-in form.
+interface Display { fun show(self): string; }

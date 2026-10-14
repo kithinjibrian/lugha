@@ -22,7 +22,7 @@ pub const RUNTIME_PARTS: [(&str, &str); 4] = [
 ];
 
 /// Every runtime function codegen may call; `lugha_rt.c` defines them all.
-pub const RUNTIME_SYMBOLS: [&str; 34] = [
+pub const RUNTIME_SYMBOLS: [&str; 35] = [
     "lugha_rt_init",
     "lugha_rt_read_line",
     "lugha_rt_read_file",
@@ -49,6 +49,7 @@ pub const RUNTIME_SYMBOLS: [&str; 34] = [
     "lugha_rt_print_f32",
     "lugha_rt_print_bool",
     "lugha_rt_print_str",
+    "lugha_rt_str_quote",
     "lugha_rt_print_newline",
     "lugha_rt_to_string_i32",
     "lugha_rt_to_string_i64",

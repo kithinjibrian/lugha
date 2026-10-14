@@ -231,6 +231,16 @@ Done when the package-versions program passes.
 Done when the re-exports program passes and the v11 spec is complete.
 - [x] PRP-067: `import m { X }`, `public import m { X }`; v11 complete; tagged `m38` and `v11`
 
+## v12 (draft approved, session 88 — `docs/specs/Language v12 Draft.md`)
+
+### Milestone 39 — Printing values ✅
+Done when the printing-values program passes.
+- [x] PRP-068: `Display` and `show`, built-in forms, quoting, printing `T`; `Language v12 Specification.md` begins; tagged `m39` at merge
+
+### Milestone 40 — Printing anything
+Done when the printing-anything program passes and the v12 spec is complete.
+- [ ] interface and function values printed directly, `unwrap on Err: <error>`
+
 ## Found while working — needs a PRP
 
 - [x] (PRP-024) A Rust panic inside `lughac` exits with 101, but architecture rule 6 says an internal compiler error is exit 2. Seen in session 26: a codegen bug, since fixed, crashed with 101. Fix: a panic hook or `catch_unwind` in `driver::main`.

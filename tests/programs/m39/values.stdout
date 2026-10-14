@@ -1,0 +1,7 @@
+Point { x: 1, y: 2 }
+Circle(1.5)
+[Some(1), None]
+Team { name: "red", members: ["ann", "bo"] }
+$5.25
+wallet: Wallet { cash: $5.25 }
+Stack { items: [3] }

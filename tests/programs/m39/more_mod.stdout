@@ -1,0 +1,10 @@
+Line { from: Pt { x: 0.5, y: 2.0 }, to: Pt { x: 1.0, y: -1.0 }, tag: Some("a\"b\\c\nd") }
+Node(Leaf, 1, Node(Leaf, 2, Leaf))
+Empty {}
+[]
+[stop, go]
+Odd { n: 3 }
+Err("no")
+13
+Dog { age: 4 }
+[Dog { age: 4 }, Dog { age: 4 }]

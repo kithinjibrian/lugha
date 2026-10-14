@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use super::generics::{Generic, subst};
+use super::printing::PRINT;
 use super::{Checker, Type, errors};
 use crate::ast::Expr;
 use crate::diagnostic::Severity;
@@ -128,8 +129,12 @@ impl Checker {
             next += 1;
             let generics = self.params_of(&owner);
             for u in self.uses.iter().filter(|u| u.owner == owner) {
-                let callee = match &u.through {
-                    None => Instance {
+                let callees = match &u.through {
+                    // A print site reaches the `show` instances of its type (v12).
+                    None if u.callee.key == PRINT => {
+                        self.show_instances(&subst(&u.callee.args[0], &generics, &args))
+                    }
+                    None => vec![Instance {
                         key: u.callee.key.clone(),
                         args: u
                             .callee
@@ -137,30 +142,32 @@ impl Checker {
                             .iter()
                             .map(|a| subst(a, &generics, &args))
                             .collect(),
-                    },
+                    }],
                     Some(param) => {
                         match self.bound_target(&generics, &args, param, &u.callee.key) {
-                            Some(instance) => instance,
+                            Some(instance) => vec![instance],
                             None => continue,
                         }
                     }
                 };
-                if !seen.insert(callee.clone()) {
-                    continue;
+                for callee in callees {
+                    if !seen.insert(callee.clone()) {
+                        continue;
+                    }
+                    if depth + 1 > MAX_DEPTH {
+                        let chain = chain(&found, at);
+                        let d = errors::too_deep(&chain, u.span);
+                        self.report(d);
+                        return Vec::new();
+                    }
+                    queue.push((
+                        callee.key.clone(),
+                        callee.args.clone(),
+                        depth + 1,
+                        Some(found.len()),
+                    ));
+                    found.push((callee, depth + 1, at));
                 }
-                if depth + 1 > MAX_DEPTH {
-                    let chain = chain(&found, at);
-                    let d = errors::too_deep(&chain, u.span);
-                    self.report(d);
-                    return Vec::new();
-                }
-                queue.push((
-                    callee.key.clone(),
-                    callee.args.clone(),
-                    depth + 1,
-                    Some(found.len()),
-                ));
-                found.push((callee, depth + 1, at));
             }
         }
         found.into_iter().map(|(i, _, _)| i).collect()
