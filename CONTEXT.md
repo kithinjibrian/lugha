@@ -4781,6 +4781,11 @@ Branch: main
 
 ---
 
+## SESSION 114 — 2026-10-14 — std.random (milestone 54) — open
+Branch: prp-083-std_random
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–53 complete.** **Milestone 54 (`std.random`) is proposed:** decisions 19–21 in `Language v15 Draft.md`, and PRP-083, waiting for the user's approval, which includes the `uniform(): f64` change.
