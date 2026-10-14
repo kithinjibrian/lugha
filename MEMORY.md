@@ -1669,7 +1669,7 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestone 51 complete** (PRP-080, MEMORY 98–99): package layout. Tag `m51` goes on the merge. `Language v15 Specification.md` (in progress) is what `lughac spec` prints; v0–v14 are frozen.
+**Milestone 51 complete** (PRP-080, MEMORY 98–99): package layout. Tagged `m51`. `Language v15 Specification.md` (in progress) is what `lughac spec` prints; v0–v14 are frozen.
 
 Next:
 - move the user's `glowworm` repository (`~/Documents/kithinji/glowworm`, uncommitted rearrangement) to `name`/`source = "src"`/`examples/`, once they want it;

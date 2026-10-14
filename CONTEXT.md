@@ -4491,8 +4491,8 @@ Branch: main
 
 ---
 
-## SESSION 105 — 2026-10-14 — Package layout (milestone 51) — open
-Branch: prp-080-package_layout
+## SESSION 105 — 2026-10-14 — Package layout (milestone 51) — closed
+Branch: prp-080-package_layout (merged into main)
 
 ### WHAT WAS DONE
 - The user approved the v15 draft, PRP-080 and the two splits; built and merged on green CI:
@@ -4524,13 +4524,13 @@ Branch: prp-080-package_layout
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m51`.
+- Nothing. PRP-080 merged into `main`, tagged `m51`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 51 complete** (PRP-080, MEMORY 98–99): package layout. Tag `m51` goes on the merge. `Language v15 Specification.md` (in progress) is what `lughac spec` prints; v0–v14 are frozen.
+**Milestone 51 complete** (PRP-080, MEMORY 98–99): package layout. Tagged `m51`. `Language v15 Specification.md` (in progress) is what `lughac spec` prints; v0–v14 are frozen.
 
 Next:
 - move the user's `glowworm` repository (`~/Documents/kithinji/glowworm`, uncommitted rearrangement) to `name`/`source = "src"`/`examples/`, once they want it;
