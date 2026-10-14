@@ -3926,6 +3926,11 @@ Branch: prp-068-printing_values (merged into main)
 
 ---
 
+## SESSION 89 — 2026-10-14 — Printing anything (milestone 40) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestone 39 complete** (PRP-068, MEMORY 84): printing values. Tagged `m39`. `Language v12 Specification.md` (in progress) is what `lughac spec` prints; v0–v11 are frozen.
