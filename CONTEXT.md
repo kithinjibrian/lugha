@@ -3436,6 +3436,11 @@ Branch: prp-059-package_visibility (merged into main)
 
 ---
 
+## SESSION 76 — 2026-10-14 — v9 direction — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v8 is complete** (milestone 30; PRP-058–059; MEMORY 69–71): packages — `lugha.toml`, package imports, per-package manifests, `public` / package / `private` visibility. Tagged `m30` and `v8`. `Language v8 Specification.md` is what `lughac spec` prints; v0–v7 are frozen.
