@@ -3881,7 +3881,7 @@ Branch: main
 ---
 
 ## SESSION 88 — 2026-10-14 — Printing values (milestone 39) — open
-Branch: main
+Branch: prp-068-printing_values
 
 ---
 
