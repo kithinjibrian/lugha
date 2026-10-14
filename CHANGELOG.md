@@ -13,6 +13,7 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- More iterator helpers: `zip` (the prelude's `Pair<A, B> { first, second }`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`, in Lugha in `src/prelude_more.la`; prelude structs can be built by name (`Pair { … }`) — **milestone 43 complete**
 - `for x of mut e`: over an array, `x` aliases each element so writes change the array; over an iterator, `next` is called on `e` itself so later loops resume it (E0501, E0502, E0506, E0507) — **milestone 42 complete**
 - `Self` in declarations: in struct fields and enum payloads, `Self` is the type being declared, with its parameters (`kids: Self[]`, `Cons(i64, Self)`). `lughac spec` now prints `Language v13 Specification.md` (in progress); v12's file is frozen — **milestone 41 complete**
 - Printing anything: interface values print as the value inside them, function values as `<fun>`, and `unwrap()` on an `Err` panics with `unwrap on Err: ` and the error printed — **milestone 40 complete, Lugha v12 complete**

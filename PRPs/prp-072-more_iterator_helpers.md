@@ -66,17 +66,17 @@ None.
 ## TESTS TO WRITE
 
 Unit tests — checker (`check/iter_helpers.rs`):
-- [ ] **Types:**
+- [x] **Types:**
   - `zip` yields `$prelude.Pair<i64, string>`;
   - `chain`, `take_while` and `skip_while` keep `T`;
   - `flat_map` yields `U`;
   - `min` gives `Option<T>`;
   - `position` gives `Option<i64>`.
-- [ ] **Errors:** E0419 for `min` on a struct; E0403 for `chain` of `i64` and `string`.
+- [x] **Errors:** E0419 for `min` on a struct; E0403 for `chain` of `i64` and `string`.
 
 Acceptance — `tests/programs/m43/`:
-- [ ] `helpers.la`: the §10 program.
-- [ ] `more.la`:
+- [x] `helpers.la`: the §10 program.
+- [x] `more.la`:
   - `zip` of different lengths both ways;
   - `chain` of empty iterators;
   - `take_while` that never fails;
@@ -86,10 +86,10 @@ Acceptance — `tests/programs/m43/`:
   - `position` not found;
   - `Pair` built by the program and printed;
   - laziness: `zip` with an endless iterator.
-- [ ] The §10 program runs from the spec.
+- [x] The §10 program runs from the spec.
 
 Regression:
-- [ ] Every earlier test passes, and earlier programs give byte-identical IR.
+- [x] Every earlier test passes, and earlier programs give byte-identical IR.
 
 ## ROLLBACK PLAN
 
@@ -97,10 +97,10 @@ Regression:
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The §10 program and the `m43/` programs pass at `-O0`, and at `-O2` when checked by hand.
-- [ ] The spec is at milestone 43; docs updated.
-- [ ] No file over 300 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] The §10 program and the `m43/` programs pass at `-O0`, and at `-O2` when checked by hand.
+- [x] The spec is at milestone 43; docs updated.
+- [x] No file over 300 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -109,3 +109,11 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m43/helpers.la
 ```
+
+## AMENDMENTS (during build, session 93)
+
+- **`chain` of another element type is E0422,** reported at the argument because it doesn't satisfy `Iter<T>`, not E0403. The spec says so.
+- **`Pair { … }` written by a program** needed the prelude fallback in `check/struct_literal.rs` (`prelude_iter_type`): struct literals didn't use the type-name fallback.
+- **`min`/`max`** keep their best value in a 0/1 array, since `T` has no default value.
+- **IR:** the 153 earlier programs that compile give byte-identical IR. `-O2` was checked by hand for both `m43` programs.
+- **No file splits:** the new code is in a new file, `src/prelude_more.la` (141 lines).

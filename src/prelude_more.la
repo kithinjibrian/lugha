@@ -1,0 +1,141 @@
+
+// More iterator helpers (v13 draft §5, milestone 43), joined after
+// `prelude_iter.la` into the one prelude module. Like v10's, each adapter
+// wraps its iterators as `Iter<T>` values and runs only when pulled.
+
+// Two values side by side: what `a.zip(b)` yields.
+struct Pair<A, B> { public first: A, public second: B }
+
+// `a`'s and `b`'s values in step, ending with the shorter: `a.zip(b)`.
+struct Zip<A, B> { a: Iter<A>, b: Iter<B> }
+
+impl Zip<A, B> {
+    fun next(mut self): Option<Pair<A, B>> {
+        let Some(x) = self.a.next() else {
+            return None;
+        };
+        let Some(y) = self.b.next() else {
+            return None;
+        };
+        Some(Pair { first: x, second: y })
+    }
+}
+
+fun iter_zip<A, B>(it: Iter<A>, other: Iter<B>): Zip<A, B> = Zip { a: it, b: other };
+
+// `a`'s values, then `b`'s: `a.chain(b)`.
+struct Chain<T> { a: Iter<T>, b: Iter<T>, second: bool }
+
+impl Chain<T> {
+    fun next(mut self): Option<T> {
+        if !self.second {
+            if let Some(x) = self.a.next() {
+                return Some(x);
+            }
+            self.second = true;
+        }
+        self.b.next()
+    }
+}
+
+fun iter_chain<T>(it: Iter<T>, other: Iter<T>): Chain<T> = Chain { a: it, b: other, second: false };
+
+// Values while `keep` holds, then nothing more: `it.take_while(keep)`.
+struct TakeWhile<T> { src: Iter<T>, keep: fun(T): bool, done: bool }
+
+impl TakeWhile<T> {
+    fun next(mut self): Option<T> {
+        if self.done {
+            return None;
+        }
+        if let Some(x) = self.src.next() {
+            if self.keep(x) {
+                return Some(x);
+            }
+        }
+        self.done = true;
+        None
+    }
+}
+
+fun iter_take_while<T>(it: Iter<T>, keep: fun(T): bool): TakeWhile<T> = TakeWhile { src: it, keep: keep, done: false };
+
+// Values from the first one `skip` fails for: `it.skip_while(skip)`.
+struct SkipWhile<T> { src: Iter<T>, skip: fun(T): bool, started: bool }
+
+impl SkipWhile<T> {
+    fun next(mut self): Option<T> {
+        if self.started {
+            return self.src.next();
+        }
+        self.started = true;
+        while let Some(x) = self.src.next() {
+            if !self.skip(x) {
+                return Some(x);
+            }
+        }
+        None
+    }
+}
+
+fun iter_skip_while<T>(it: Iter<T>, skip: fun(T): bool): SkipWhile<T> = SkipWhile { src: it, skip: skip, started: false };
+
+// Each value's iterator, one after another: `it.flat_map(f)`. The current
+// one sits in a 0- or 1-element array, so `next` steps it in place.
+struct FlatMap<T, U, I: Iter<U>> { src: Iter<T>, f: fun(T): I, cur: I[] }
+
+impl FlatMap<T, U, I> {
+    fun next(mut self): Option<U> {
+        while true {
+            if self.cur.len == 1 {
+                if let Some(x) = self.cur[0].next() {
+                    return Some(x);
+                }
+                self.cur.clear();
+            }
+            let Some(v) = self.src.next() else {
+                return None;
+            };
+            self.cur.push(self.f(v));
+        }
+        None
+    }
+}
+
+fun iter_flat_map<T, U, I: Iter<U>>(it: Iter<T>, f: fun(T): I): FlatMap<T, U, I> = FlatMap { src: it, f: f, cur: [] };
+
+// The first smallest value: `it.min()`.
+fun iter_min<T: Ord>(it: Iter<T>): Option<T> {
+    let mut best: T[] = [];
+    for x of it {
+        if best.len == 0 || x < best[0] {
+            best.clear();
+            best.push(x);
+        }
+    }
+    if best.len == 0 { None } else { Some(best[0]) }
+}
+
+// The first largest value: `it.max()`.
+fun iter_max<T: Ord>(it: Iter<T>): Option<T> {
+    let mut best: T[] = [];
+    for x of it {
+        if best.len == 0 || x > best[0] {
+            best.clear();
+            best.push(x);
+        }
+    }
+    if best.len == 0 { None } else { Some(best[0]) }
+}
+
+// The index of the first value `f` holds for: `it.position(f)`.
+fun iter_position<T>(it: Iter<T>, f: fun(T): bool): Option<i64> {
+    let mut at = 0;
+    for x of it {
+        if f(x) {
+            return Some(at);
+        }
+        at += 1;
+    }
+    None
+}

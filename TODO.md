@@ -249,8 +249,8 @@ Done when the printing-anything program passes and the v12 spec is complete.
 ### Milestone 42 — `for … of mut` ✅
 - [x] PRP-071: iterators advanced in place; array elements as mutable aliases; tagged `m42`
 
-### Milestone 43 — More iterator helpers
-- [ ] `zip` (`Pair`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`
+### Milestone 43 — More iterator helpers ✅
+- [x] PRP-072: `zip` (`Pair`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`; tagged `m43` at merge
 
 ### Milestone 44 — Format specifiers
 - [ ] `"{x:spec}"`, E0431

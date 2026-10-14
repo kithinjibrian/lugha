@@ -1,0 +1,11 @@
+fun main() {
+    let xs = [1, 2, 3, 1, 9];
+    println(xs.iter().zip(["a", "b"].iter()).collect());
+    println([1, 2].iter().chain([3, 4].iter()).collect());
+    println(xs.iter().take_while(fun(n) = n < 3).collect());
+    println(xs.iter().skip_while(fun(n) = n < 3).take(2).collect());
+    println(range(1, 4).flat_map(fun(n) = range(0, n)).collect());
+    println(xs.iter().min());
+    println(xs.iter().max());
+    println(xs.iter().position(fun(n) = n == 3));
+}

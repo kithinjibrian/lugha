@@ -11,7 +11,7 @@ use crate::ast::{Expr, Ident};
 use crate::modules::PRELUDE_PATH;
 
 /// The helpers every iterator has, unless its type declares the name.
-const HELPERS: [&str; 12] = [
+const HELPERS: [&str; 20] = [
     "map",
     "filter",
     "take",
@@ -24,10 +24,19 @@ const HELPERS: [&str; 12] = [
     "all",
     "find",
     "sum",
+    // v13
+    "zip",
+    "chain",
+    "take_while",
+    "skip_while",
+    "flat_map",
+    "min",
+    "max",
+    "position",
 ];
 
 /// The prelude structs a program may name (v10), unless it declares the name.
-pub(super) const ITER_TYPES: [&str; 9] = [
+pub(super) const ITER_TYPES: [&str; 15] = [
     "ArrayIter",
     "Bytes",
     "Range",
@@ -37,6 +46,13 @@ pub(super) const ITER_TYPES: [&str; 9] = [
     "Skip",
     "Enumerate",
     "Indexed",
+    // v13
+    "Pair",
+    "Zip",
+    "Chain",
+    "TakeWhile",
+    "SkipWhile",
+    "FlatMap",
 ];
 
 impl Checker {
@@ -198,5 +214,38 @@ mod tests {
             e("let r = [1].iter().take(true);"),
             [("E0403", "true".to_string())]
         );
+    }
+
+    #[test]
+    fn the_v13_helpers_have_their_types() {
+        assert_eq!(
+            ty("let r = xs.iter().zip([\"a\"].iter()).find(fun(p) = true);"),
+            "Option<$prelude.Pair<i64, string>>"
+        );
+        assert_eq!(
+            ty(
+                "let r = xs.iter().chain(xs.iter()).take_while(fun(n) = n > 0).skip_while(fun(n) = n > 2).collect();"
+            ),
+            "i64[]"
+        );
+        assert_eq!(
+            ty("let r = xs.iter().flat_map(fun(n) = [\"s\"].iter()).collect();"),
+            "string[]"
+        );
+        assert_eq!(ty("let r = xs.iter().min();"), "Option<i64>");
+        assert_eq!(
+            ty("let r = xs.iter().position(fun(n) = n > 1);"),
+            "Option<i64>"
+        );
+        let e = |body: &str| {
+            errors(&format!(
+                "{COUNT}struct S {{ n: i64 }}\nfun main() {{ {body} }}"
+            ))
+            .into_iter()
+            .map(|(c, _)| c)
+            .collect::<Vec<_>>()
+        };
+        assert!(e("let r = [S { n: 1 }].iter().min();").contains(&"E0419"));
+        assert!(e("let r = [1].iter().chain([\"a\"].iter());").contains(&"E0422"));
     }
 }

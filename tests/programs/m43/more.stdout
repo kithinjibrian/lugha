@@ -1,0 +1,14 @@
+1
+[Pair { first: true, second: 7 }]
+0
+[5, 6]
+0
+2
+Some("apple")
+Some("pear")
+None
+Some(1)
+None
+Pair { first: "x", second: 1.5 }
+1.5
+6

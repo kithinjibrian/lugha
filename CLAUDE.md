@@ -154,7 +154,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v13 Specification.md` (`lughac spec` prints it): Lugha v13, in progress (milestones 41–42 done: `Self` in struct and enum declarations; `for x of mut e`). `Language v13 Draft.md` is the approved plan (milestones 41–44: `Self` in declarations, `for … of mut`, more iterator helpers, format specifiers). The v0–v12 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la` and `src/prelude_iter.la`, loaded with every program.
+The language itself is defined by `docs/specs/Language v13 Specification.md` (`lughac spec` prints it): Lugha v13, in progress (milestones 41–43 done: `Self` in struct and enum declarations; `for x of mut e`; `zip`/`Pair`, `chain` and the other iterator helpers). `Language v13 Draft.md` is the approved plan (milestones 41–44: `Self` in declarations, `for … of mut`, more iterator helpers, format specifiers). The v0–v12 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude.la`, `src/prelude_iter.la` and `src/prelude_more.la`, loaded with every program.
 
 ---
 
@@ -230,6 +230,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints), PRELUDE
 │   ├── prelude.la   — Result<T, E>, Iter<T> (v6), the array helpers, and the string/Option/Result helpers in Lugha, module `$prelude`
 │   ├── prelude_iter.la — the iterator sources, adapters and consumers (v10) and `Display` (v12), joined after prelude.la into the one `$prelude`
+│   ├── prelude_more.la — `Pair`, `zip`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position` (v13), joined third
 │   ├── main.rs      — `lughac` entry point (CLI only)
 │   ├── span.rs      — byte-offset Span
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
@@ -313,7 +314,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── modules.rs   — programs of several files through lughac (emit, per-file diagnostics, symbols)
 │   ├── interface_values.rs — interface values through lughac (check, run, IR tables)
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m42/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m43/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)

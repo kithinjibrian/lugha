@@ -4077,16 +4077,42 @@ Branch: prp-071-for_of_mut (merged into main)
 ## SESSION 93 — 2026-10-14 — More iterator helpers (milestone 43) — open
 Branch: prp-072-more_iterator_helpers
 
+### WHAT WAS DONE
+- PRP-072 written as approved under the "in one go" instruction, built and merged on green CI: `zip` (`Pair`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`, in `src/prelude_more.la`.
+- **Spec:** `Pair`, the helper table rows, the names list, §9, the §10 program, §11 row 43.
+
+### FILES CREATED OR MODIFIED
+- New: `src/prelude_more.la`, `tests/programs/m43/` (`helpers`, `more`), PRP-072.
+- Modified: `src/lib.rs`, `src/check/{iter_helpers,struct_literal}.rs`, `tests/spec.rs`, the v13 spec.
+- Docs: CLAUDE.md, README, CHANGELOG, TODO, MEMORY 89, CONTEXT.
+
+### TESTS WRITTEN
+- **Checker:** the v13 helper types; E0419 for `min` on a struct; E0422 for `chain` of different types.
+- **Programs:** `tests/programs/m43/`, and the §10 program from the spec.
+- **Regression:** 153 earlier programs give byte-identical IR; `-O2` checked by hand.
+
+### DECISIONS MADE
+- MEMORY 89.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing once merged; tag `m43`.
+
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 42 complete** (PRP-071, MEMORY 88): `for x of mut e`. Tagged `m42`. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
+**Milestone 43 complete** (PRP-072, MEMORY 89): more iterator helpers. Tag `m43` goes on the merge. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
 
-Next, under the user's "in one go" (MEMORY 86): **milestone 43, more iterator helpers** (PRP-072: `zip`/`Pair`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`), then M44 (format specifiers, which completes v13).
+Next, under the user's "in one go" (MEMORY 86): **milestone 44, format specifiers** (PRP-073). It completes v13: tag `m44` and `v13`.
+- `"{x:[[fill]align][#][0][width][.precision][kind]}"`, split by the lexer at the first top-level `:`;
+- E0431;
+- `lugha_rt_fmt_int`, `lugha_rt_fmt_float`, `lugha_rt_pad`.
 
 **Note:** `check/mod.rs` is at 300 lines. A new checker module needs a split proposal, or its `mod` line placed elsewhere.
 
-Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294), `codegen/array.rs` (293).
+Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294).
 
 See `TODO.md`.

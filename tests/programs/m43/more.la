@@ -1,0 +1,33 @@
+// Edges of the v13 helpers: uneven zips, empty chains, predicates that
+// never or always hold, empty inner iterators, string and tied extremes,
+// a missing position, a Pair the program builds, and laziness.
+
+struct Naturals { n: i64 }
+
+impl Naturals {
+    fun next(mut self): Option<i64> {
+        self.n += 1;
+        Some(self.n)
+    }
+}
+
+fun main() {
+    let short = [1].iter();
+    println(short.zip([true, false].iter()).count());
+    println([true, false].iter().zip([7].iter()).collect());
+    let none: i64[] = [];
+    println(none.iter().chain(none.iter()).count());
+    println([5, 6].iter().take_while(fun(n) = n > 0).collect());
+    println([5, 6].iter().skip_while(fun(n) = n > 0).count());
+    println(range(0, 4).flat_map(fun(n) = range(0, n % 2)).count());
+    println(["pear", "apple", "fig"].iter().min());
+    println(["pear", "apple", "fig"].iter().max());
+    println(none.iter().max());
+    println([2, 1, 1].iter().position(fun(n) = n == 1));
+    println([2, 1].iter().position(fun(n) = n > 5));
+    let p = Pair { first: "x", second: 1.5 };
+    println(p);
+    println(p.second);
+    let ends = (Naturals { n: 0 }).zip(["a", "b", "c"].iter());
+    println(ends.map(fun(p) = p.first).sum());
+}

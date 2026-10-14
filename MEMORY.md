@@ -1389,9 +1389,23 @@ Open questions live in `DECISIONS.md`, not here.
 
 ---
 
+### 89. More iterator helpers — milestone 43 (PRP-072)
+
+**Decision:** built under the user's "in one go" (milestones 41–44).
+- **Prelude:** `src/prelude_more.la`, the third file joined into `PRELUDE`. It holds `Pair`, `Zip`, `Chain`, `TakeWhile`, `SkipWhile` and `FlatMap<T, U, I: Iter<U>>`, the last keeping its current inner iterator in a 0/1-element array so `self.cur[0].next()` steps it in place. `iter_min`/`iter_max` (`T: Ord`, the first extreme, kept in a 0/1 array) and `iter_position`.
+- **Checker:**
+  - `HELPERS` (20 names) and `ITER_TYPES` (15 names) grow;
+  - `struct_literal.rs` falls back to `prelude_iter_type` for a bare struct name no module declares, so `Pair { … }` builds;
+  - `chain` of another element type is E0422 (the second iterator doesn't satisfy `Iter<T>`), not E0403.
+
+**Why:** everything is Lugha over generic interface values, and IR stays byte-identical.
+
+---
+
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 43 complete**: PRP-072 more iterator helpers
 - **Milestone 42 complete**: PRP-071 `for x of mut e`
 - **Milestone 41 complete**: PRP-070 `Self` in declarations; v13 spec begins
 - **Milestone 40 complete — Lugha v12 complete**: PRP-069 printing anything
@@ -1481,12 +1495,15 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 42 complete** (PRP-071, MEMORY 88): `for x of mut e`. Tagged `m42`. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
+**Milestone 43 complete** (PRP-072, MEMORY 89): more iterator helpers. Tag `m43` goes on the merge. `Language v13 Specification.md` (in progress) is what `lughac spec` prints; v0–v12 are frozen.
 
-Next, under the user's "in one go" (MEMORY 86): **milestone 43, more iterator helpers** (PRP-072: `zip`/`Pair`, `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position`), then M44 (format specifiers, which completes v13).
+Next, under the user's "in one go" (MEMORY 86): **milestone 44, format specifiers** (PRP-073). It completes v13: tag `m44` and `v13`.
+- `"{x:[[fill]align][#][0][width][.precision][kind]}"`, split by the lexer at the first top-level `:`;
+- E0431;
+- `lugha_rt_fmt_int`, `lugha_rt_fmt_float`, `lugha_rt_pad`.
 
 **Note:** `check/mod.rs` is at 300 lines. A new checker module needs a split proposal, or its `mod` line placed elsewhere.
 
-Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294), `codegen/array.rs` (293).
+Watch file sizes: `check/mod.rs` (300), `codegen/copy.rs` (300), `check/interfaces.rs` (299), `check/instances.rs` (~298), `check/infer.rs` (297), `check/errors/types.rs` (297), `check/visibility.rs` (~297), `parser/stmt.rs` (296), `codegen/runtime.rs` (~296), `check/array.rs` (~294).
 
 See `TODO.md`.

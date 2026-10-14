@@ -18,9 +18,13 @@ pub mod parser;
 pub mod span;
 
 /// The prelude: the array helpers, written in Lugha and loaded with every
-/// program (v3 draft §4, PRP-041), then the iterator helpers (v10), one
-/// module from two files.
-pub const PRELUDE: &str = concat!(include_str!("prelude.la"), include_str!("prelude_iter.la"));
+/// program (v3 draft §4, PRP-041), then the iterator helpers (v10, v13),
+/// one module from three files.
+pub const PRELUDE: &str = concat!(
+    include_str!("prelude.la"),
+    include_str!("prelude_iter.la"),
+    include_str!("prelude_more.la")
+);
 
 /// The language specification this compiler implements, embedded verbatim;
 /// `lughac spec` prints it (spec §9, "LLM-ready spec").

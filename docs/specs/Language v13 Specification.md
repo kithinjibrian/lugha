@@ -2,13 +2,14 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 41–42 of 41–44). It is built from the approved plan, `Language v13 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v12 Specification.md` keeps v12 frozen.
+**Status:** in progress (milestones 41–43 of 41–44). It is built from the approved plan, `Language v13 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v12 Specification.md` keeps v12 frozen.
 
 **v12.** This is v11 plus printing any value: the prelude's `Display` and `show`, built-in forms, and `unwrap on Err: <error>` (milestones 39–40).
 
-**Changes since v12** (milestones 41–42):
+**Changes since v12** (milestones 41–43):
 - In a struct's fields and an enum's payloads, `Self` is the type being declared: `struct Tree<T> { value: T, kids: Self[] }`, `enum List { Cons(i64, Self), Nil }` (section 4).
 - `for x of mut xs` makes `x` each element itself, so `x *= 2` changes `xs`; `for x of mut it` advances the iterator `it` itself, so a later loop resumes where a `break` left it (sections 3, 5).
+- Iterators gain `zip` (yielding the prelude's `Pair { first, second }`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max` and `position` (section 4).
 
 Every valid v12 program is a valid v13 program.
 
@@ -614,6 +615,8 @@ Evaluation is strictly left to right: operands, call arguments and struct-litera
 
 **Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way, including `%=` (v9), which panics on a zero divisor as `%` does. Shifts (v7) lose the bits shifted out and never panic for overflow; `>>` copies the sign bit for `i32` and `i64` and fills with zeros for the unsigned types; a shift amount that is negative, or at least the type's width (8, 32 or 64), panics with `shift out of range` at the operator. `&=`, `|=`, `^=`, `<<=` and `>>=` mean `x = x op y` with the place evaluated once, as `+=` does, and need an integer.
 
+**`Pair`** (v13). The prelude declares `struct Pair<A, B> { public first: A, public second: B }`, what `zip` yields. Programs may build and print it like any struct: `Pair { first: 1, second: "a" }`.
+
 **Iterator sources and helpers** (v10). These make and use iterators, the values `for … of` steps through (`Iter<T>`, above):
 
 | Expression | Gives | Yields |
@@ -637,12 +640,19 @@ Every iterator `it` that yields `T` (a value whose type has `fun next(mut self):
 | `it.any(f)`, `it.all(f)` | `bool` | whether some or every value passes `f`, stopping at the first that decides |
 | `it.find(f)` | `Option<T>` | the first value `f` is true for |
 | `it.sum()` | `T` | the total, for a number type `T` only (E0415 otherwise) |
+| `a.zip(b)` (v13) | `Zip<A, B>`, yielding `Pair<A, B>` | `a`'s and `b`'s values side by side, ending with the shorter |
+| `a.chain(b)` (v13) | `Chain<T>` | `a`'s values, then `b`'s (`b` must yield `T`, E0422 otherwise) |
+| `it.take_while(f)` (v13) | `TakeWhile<T>` | values while `f` holds; after the first that fails, nothing more is pulled |
+| `it.skip_while(f)` (v13) | `SkipWhile<T>` | every value from the first `f` fails for |
+| `it.flat_map(f)`, `f: fun(T): I` (v13) | `FlatMap<T, U, I>`, yielding `U` | each value's iterator `I` (yielding `U`) in turn; for an array, return `xs.iter()` |
+| `it.min()`, `it.max()` (v13) | `Option<T>` | the first smallest or largest value, `None` when empty; `T` must be `Ord` (E0419) |
+| `it.position(f)` (v13) | `Option<i64>` | the index, from 0, of the first value `f` holds for |
 
 - **Lazy:** the five adapters (`map` to `enumerate`) only wrap their iterator; nothing runs until a loop or a consumer pulls values, so they work on endless iterators: `range(10, 1000000000).filter(f).take(3)` tests only as many numbers as it needs.
 - **Copies:** a helper takes its iterator by copy, as `for … of` does, so `let m = it.map(f);` leaves `it` unchanged; `xs.iter()` holds its own copy of `xs`.
 - **Arguments:** closures are typed from the receiver as for the array helpers, and `take`/`skip` take an `i64`, a negative one taking or skipping nothing. Arrays keep their eager helpers: `xs.map(f)` is an array, `xs.iter().map(f)` an iterator.
 - **Panics:** `sum` uses `+`, so it panics on overflow, located in the prelude.
-- **Names:** these are Lugha in the prelude. `range` and the types `ArrayIter`, `Bytes`, `Range`, `Map`, `Filter`, `Take`, `Skip`, `Enumerate` and `Indexed` are visible in every module, like `Result`, unless the module declares the name; they print with their module, `$prelude.Map<i64, string>`.
+- **Names:** these are Lugha in the prelude. `range` and the types `ArrayIter`, `Bytes`, `Range`, `Map`, `Filter`, `Take`, `Skip`, `Enumerate` and `Indexed`, and (v13) `Pair`, `Zip`, `Chain`, `TakeWhile`, `SkipWhile` and `FlatMap`, are visible in every module, like `Result`, unless the module declares the name; they print with their module, `$prelude.Map<i64, string>`.
 
 **Methods on integers** (v7, v10). Every integer type (`i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`) has these built-in methods:
 
@@ -963,6 +973,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - Printing a value that isn't a number, `bool` or `string` (v12) calls `lugha_show_<type>(value) -> string`, named like the copy helpers (`lugha_show_5Point`, `lugha_show_i64_arr`) and emitted once, only when used: it calls the type's `show`, or builds the built-in form with `lugha_rt_str_concat` and quotes strings with `lugha_rt_str_quote`. A generic type's `show` is listed as an instance wherever such a value is printed, inside other values and through type parameters too. An interface type's helper, built at the end of lowering, compares the value's identity slot with each concrete type the program has a table of for that interface and prints the box's value by its rules; dispatch tables are unchanged. A function value prints the literal `<fun>`. `unwrap()` on a `Result` builds its panic message in the failing branch from the error's text. Programs printing only numbers, `bool` and strings, and calling no `unwrap()` on a `Result`, give byte-identical IR.
 - `Self` in `impl` blocks and in struct and enum declarations (v10, v13) is replaced by the parser with the type it stands for, so the checker and codegen see the type's own name.
 - `for x of mut e` (v13) works on `e`'s address: over an array, `x` is a local whose storage is the element itself (an `i1` occupies one byte, so `bool` elements alias too); over an iterator, `next` is called on `e`'s own storage instead of a hidden copy.
+- The v13 iterator helpers are Lugha in the prelude's third file, compiled only when reached like the others. `flat_map` keeps its current inner iterator in a 0- or 1-element array, so `next` steps it in place.
 - Converting a `J` value to `I` (v6) calls `lugha_up_<J>.<I>(table) -> table`, which compares the value's table with each `J` table the program has and returns the matching `I` table; its body is built after everything else, when every table is known. That `I` table is derived from the table the value was built with: `lugha_vt_<C>.<J>.<I>` has `C`'s identity and copy and, for each `I` item, the function `C`'s `J` table has, so methods behave as through `J`; derived tables keep the original interface (`<C>.<J>.<K>` for a chain) and converting back to it gives the original table. A program that never converts between interfaces has no `lugha_up_` functions and no derived tables. (The approved draft put one slot per target interface in each table instead; tables are emitted while lowering, before every conversion is known, so PRP-054 uses lookup functions.)
 - The v7 operators and methods: `& | ^` are `and`/`or`/`xor`; `<<` is `shl` and `>>` is `ashr` for `i32`/`i64` and `lshr` for the unsigned types, each after an `icmp uge` of the amount against the width that panics (`shift out of range`); `~x` is `xor x, -1`; the wrapping methods are plain `add`/`sub`/`mul`; the counting methods are `llvm.ctpop`, `llvm.ctlz` and `llvm.cttz` (zero not poison), widened to `i64`. A program that uses none of them has none of this code.
 - The v10 integer methods: `checked_add/sub/mul` read the overflow flag of `llvm.{s,u}{add,sub,mul}.with.overflow` and select `None` or `Some`; `checked_div` divides by 1 instead when the divisor is 0 (or the operands are `MIN` and −1) and selects `None` then, so it never traps; `saturating_add/sub` are `llvm.{s,u}{add,sub}.sat`, and `saturating_mul` selects `MIN` or `MAX` on overflow; rotations are `llvm.fshl`/`llvm.fshr` of the value with itself, the `i64` count truncated to the width; `I.MIN`/`I.MAX` are constants.
@@ -2337,6 +2348,22 @@ fun main() {
 }
 ```
 
+**More iterator helpers** (milestone 43). Prints `[Pair { first: 1, second: "a" }, Pair { first: 2, second: "b" }]`, `[1, 2, 3, 4]`, `[1, 2]`, `[3, 1]`, `[0, 0, 1, 0, 1, 2]`, `Some(1)`, `Some(9)`, `Some(2)` on eight lines, exits with 0.
+
+```
+fun main() {
+    let xs = [1, 2, 3, 1, 9];
+    println(xs.iter().zip(["a", "b"].iter()).collect());
+    println([1, 2].iter().chain([3, 4].iter()).collect());
+    println(xs.iter().take_while(fun(n) = n < 3).collect());
+    println(xs.iter().skip_while(fun(n) = n < 3).take(2).collect());
+    println(range(1, 4).flat_map(fun(n) = range(0, n)).collect());
+    println(xs.iter().min());
+    println(xs.iter().max());
+    println(xs.iter().position(fun(n) = n == 3));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2385,6 +2412,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 40 | Printing anything (v12) | interface and function values, `unwrap on Err: <error>` | The printing-anything program in section 10 passes (done: v12 complete) |
 | 41 | `Self` in declarations (v13) | `Self` in struct fields and enum payloads | The `Self`-in-declarations program in section 10 passes (done) |
 | 42 | `for … of mut` (v13) | iterators advanced in place; array elements as mutable aliases | The `for … of mut` program in section 10 passes (done) |
+| 43 | More iterator helpers (v13) | `zip` (`Pair`), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max`, `position` | The more-helpers program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

@@ -26,10 +26,14 @@ impl Checker {
                 self.item_visible(&key, expr.span);
                 Some(key)
             }
-            None => {
-                self.report(errors::unknown_type(&name.name, name.span));
-                None
-            }
+            // A prelude struct no module declares, `Pair { … }` (v13).
+            None => match self.prelude_iter_type(&name.name) {
+                Some(key) => Some(key),
+                None => {
+                    self.report(errors::unknown_type(&name.name, name.span));
+                    None
+                }
+            },
         };
         let Some(info) = key.as_ref().and_then(|k| self.structs.get(k)) else {
             for (_, value) in given {
