@@ -1,6 +1,6 @@
 ## FEATURE: Unicode text — `char`, `'a'` literals, `s.chars()`, `char_count()`, casts, `char_from`, classification and case (E0112); milestone 46.
 
-**Status:** approved 2026-10-14 — session 97. This is part of the user's "in one go" (milestones 45–49), merged once CI is green.
+**Status:** merged 2026-10-14 — session 97. This is part of the user's "in one go" (milestones 45–49), merged once CI is green.
 **Milestone:** 46 (one PRP; tag `m46` at merge)
 **Spec:** `Language v14 Draft.md`:
 - decision 6, and the choices on `char`;

@@ -1592,7 +1592,7 @@ Open questions live in `DECISIONS.md`, not here.
 
 ## NEXT SESSION START POINT
 
-**Milestone 46 complete** (PRP-075, MEMORY 93): Unicode `char`. Tag `m46` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 46 complete** (PRP-075, MEMORY 93): Unicode `char`. Tagged `m46`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next, under the user's "in one go" (MEMORY 91), the remaining milestones:
 - M47: tuples (PRP-076: `zip` → tuples, `Pair` removed, E0433);

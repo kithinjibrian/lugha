@@ -4224,8 +4224,8 @@ Branch: prp-074-bytes_and_indexes (merged into main)
 
 ---
 
-## SESSION 97 — 2026-10-14 — Unicode text (milestone 46) — open
-Branch: prp-075-unicode_text
+## SESSION 97 — 2026-10-14 — Unicode text (milestone 46) — closed
+Branch: prp-075-unicode_text (merged into main)
 
 ### WHAT WAS DONE
 - PRP-075 written as approved under the "in one go" instruction, built and merged on green CI:
@@ -4261,13 +4261,13 @@ Branch: prp-075-unicode_text
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m46`.
+- Nothing. PRP-075 merged into `main`, tagged `m46`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 46 complete** (PRP-075, MEMORY 93): Unicode `char`. Tag `m46` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 46 complete** (PRP-075, MEMORY 93): Unicode `char`. Tagged `m46`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next, under the user's "in one go" (MEMORY 91), the remaining milestones:
 - M47: tuples (PRP-076: `zip` → tuples, `Pair` removed, E0433);
