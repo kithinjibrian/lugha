@@ -258,7 +258,7 @@ Done when the printing-anything program passes and the v12 spec is complete.
 ## v14 (draft approved, session 96 — `docs/specs/Language v14 Draft.md`)
 
 ### Milestone 45 — Bytes and indexes ✅
-- [x] PRP-074: binary I/O, `to_bytes`, `string_from_utf8`, `read_stdin_bytes`, any-integer indexes; `Language v14 Specification.md` begins; tagged `m45` at merge
+- [x] PRP-074: binary I/O, `to_bytes`, `string_from_utf8`, `read_stdin_bytes`, any-integer indexes; `Language v14 Specification.md` begins; tagged `m45`
 
 ### Milestone 46 — Unicode text
 - [ ] `char`, `'a'`, `chars()`, `char_count()`, casts, `char_from`, classification and case (E0112)

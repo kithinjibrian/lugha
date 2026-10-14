@@ -4183,8 +4183,8 @@ Branch: main
 
 ---
 
-## SESSION 96 — 2026-10-14 — Bytes and indexes (milestone 45) — open
-Branch: prp-074-bytes_and_indexes
+## SESSION 96 — 2026-10-14 — Bytes and indexes (milestone 45) — closed
+Branch: prp-074-bytes_and_indexes (merged into main)
 
 ### WHAT WAS DONE
 - The user approved the v14 draft and the `check/mod.rs` split, building milestones 45–49 "in one go" and pausing before M50 for a security review. MEMORY 91.
@@ -4220,13 +4220,13 @@ Branch: prp-074-bytes_and_indexes
 - None.
 
 ### STILL OPEN AT CLOSE
-- Nothing once merged; tag `m45`.
+- Nothing. PRP-074 merged into `main`, tagged `m45`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestone 45 complete** (PRP-074, MEMORY 92): bytes and indexes. Tag `m45` goes on the merge. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
+**Milestone 45 complete** (PRP-074, MEMORY 92): bytes and indexes. Tagged `m45`. `Language v14 Specification.md` (in progress) is what `lughac spec` prints; v0–v13 are frozen.
 
 Next, under the user's "in one go" (MEMORY 91), the remaining milestones:
 - M46: Unicode `char` (PRP-075, next session);

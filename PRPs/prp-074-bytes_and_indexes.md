@@ -1,6 +1,6 @@
 ## FEATURE: Bytes and indexes — binary file I/O, `to_bytes`, `string_from_utf8`, `read_stdin_bytes`, any-integer indexes; milestone 45.
 
-**Status:** approved 2026-10-14 — session 96. This is part of the user's "in one go" (milestones 45–49), merged once CI is green.
+**Status:** merged 2026-10-14 — session 96. This is part of the user's "in one go" (milestones 45–49), merged once CI is green.
 **Milestone:** 45 (one PRP; tag `m45` at merge; `Language v14 Specification.md` begins)
 **Spec:** `Language v14 Draft.md`:
 - decision 7, and the choices on bytes and indexes;
