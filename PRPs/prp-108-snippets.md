@@ -1,6 +1,6 @@
 ## FEATURE: Snippets — declaration and control-flow snippets in the VS Code extension, call placeholders and a postfix `.match` from the language server; milestone 78.
 
-**Status:** proposed 2026-10-16 — session 162 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-16 ("build it") — built in session 163; proposed in session 162.
 **Milestone:** 78 (one PRP; tag `m78` at merge).
 **Spec:** `Language v16 Draft.md` decisions 52–55; spec §9 (the `lughac lsp` paragraph), §11 (row 78). No language change.
 
@@ -73,21 +73,27 @@ None.
 - Nothing new is read, run or written. `tests/snippets.rs` runs the freshly built `lughac check` on generated programs in a temporary folder.
 
 ## TESTS TO WRITE
-- [ ] **`tests/snippets.rs`:** every static snippet expands and checks; the file has every chosen prefix.
-- [ ] **`tests/lsp_snippets.rs`:** call placeholders for `twice(${1:n})`, `p.scale(${1:k})`, `max(${1:a}, ${2:b})`, `Shape.Circle(${1:f64})`, `xs.push(${1:i64})`; none when `(` follows; none when the client lacks snippet support; `s.match` on an enum (every variant, payload placeholders), an `Option` and a `Result`; no `.match` on a struct.
-- [ ] **Unit tests** in `snippets.rs`: arm text for variants with 0, 1 and 2 payloads; placeholder numbering.
-- [ ] **Extension:** `npm test` validates the snippet file.
-- [ ] **Regression:** every existing test passes.
+- [x] **`tests/snippets.rs`:** every static snippet expands and checks; the file has every chosen prefix.
+- [x] **`tests/lsp_snippets.rs`:** call placeholders for `twice(${1:n})`, `p.scale(${1:k})`, `max(${1:a}, ${2:b})`, `Shape.Circle(${1:f64})`, `xs.push(${1:i64})`; none when `(` follows; none when the client lacks snippet support; `s.match` on an enum (every variant, payload placeholders), an `Option` and a `Result`; no `.match` on a struct.
+- [x] **Unit tests** in `snippets.rs`: arm text for variants with 0, 1 and 2 payloads; placeholder numbering.
+- [x] **Extension:** `npm test` validates the snippet file.
+- [x] **Regression:** every existing test passes.
 - [ ] **Manual check** (extension README), by the user: `fun⇥`, `forof⇥`, a call from completion, `s.match`.
+
+## BUILT (session 163)
+- As designed: 16 static snippets in `editors/vscode/snippets/lugha.json`, registered in `package.json`; `tests/snippets.rs` (3, written first) expands each with VS Code's placeholder and escape rules and runs `lughac check`; `driver/lsp/snippets.rs` (call placeholders, postfix `.match`; 3 unit tests); the server records the client's `snippetSupport`; completion calls `snippets::call` for every item and `snippets::postfix_match` after `.`.
+- Tests: `tests/snippets.rs` (3), `tests/lsp_snippets.rs` (4), `driver::lsp::snippets` (3), the extension's `snippets.test.ts` (1); the shared client gained `start_with` for capabilities.
+- **Details settled while building:** a payload slot's placeholder is `_` (a valid pattern as is); a prelude helper used as a method (`xs.map`) skips its receiver parameter in the placeholders; `.match` sets `filterText` to `value.match` so the editor keeps it while `value.ma` is typed.
+- The manual check in VS Code is left to the user (extension README, step 12).
 
 ## ROLLBACK PLAN
 - Branch `prp-108-snippets` from `main`; tag `m78`.
 - To abandon before merge: delete the branch. After: revert the merge.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test` (CI in the background).
-- [ ] Spec at milestone 78; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test` (CI in the background).
+- [x] Spec at milestone 78; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 - [ ] The manual check passes in VS Code.
 
 ## VALIDATION

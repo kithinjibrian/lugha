@@ -73,6 +73,12 @@
         "command": "lugha.showOutput",
         "title": "Lugha: Show Output"
       }
+    ],
+    "snippets": [
+      {
+        "language": "lugha",
+        "path": "./snippets/lugha.json"
+      }
     ]
   },
   "scripts": {

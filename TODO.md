@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 78 — Snippets ✅
+- [x] PRP-108: static snippets (checked by `lughac`), call placeholders, postfix `.match`; tagged `m78`
+
 ### Milestone 77 — Doc comments ✅
 - [x] PRP-107: `/** */` with `@param`/`@returns` in hover, completion and signature help; std and the prelude documented; tagged `m77`
 - [ ] Later: a `lughac doc` tool (HTML from doc comments)
@@ -391,7 +394,8 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [ ] **Expression error nodes** — keep a broken statement with a hole, so `foo(p).` on the broken line completes too.
 - [ ] **Lexer recovery** — tokens up to an unclosed string, so a fresh `"` without auto-closing doesn't lose the tree.
 - [x] **Signature help** — milestone 74, PRP-104.
-- [ ] **Snippets**.
+- [x] **Snippets** — milestone 78, PRP-108.
+- [ ] **Quick fix: add missing match arms** (E0417's witnesses as a code action).
 - [ ] **Find References** and **Go to Implementations** — the definitions table read backwards; implementations of interface methods.
 - [ ] **A read-only view of bundled sources** (`std`, the prelude) for hover and definitions that land there.
 - [ ] **Go-to-definition** — the PRP after hover.

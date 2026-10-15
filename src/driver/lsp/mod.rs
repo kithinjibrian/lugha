@@ -15,6 +15,7 @@ mod hover;
 mod publish;
 mod server;
 mod signature;
+mod snippets;
 mod targets;
 
 use std::io::Write;

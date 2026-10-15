@@ -1905,11 +1905,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. `lexer::doc_comments` (the lexer's own scan records `/**` spans), `driver/lsp/docs.rs` (parse, attach through whitespace and `fun`/`struct`/… /`public`, a per-snapshot `DocCache`), `Member.decl` for fields, variants and helpers; helper calls now record their name for hover. Library: every public std function and method and every prelude function has a doc (a unit test fails otherwise); implementation `//` notes kept above the docs, since anything between a doc and its declaration detaches it. **Visible side effect:** panic locations inside bundled sources moved down (four `.stderr` expectations updated, same statements).
 
+### 149. Snippets planned (session 162, approved session 163)
+
+**Decision:** v16 draft decisions 52–55: a static snippets file in the extension (declarations and control flow) plus server snippets (call placeholders, postfix `.match`); no quick fix yet.
+
+### 150. Snippets — milestone 78 (PRP-108)
+
+**Decision:** built as planned. `editors/vscode/snippets/lugha.json` (16 snippets; `tests/snippets.rs` expands each with VS Code's rules and runs `lughac check`); `driver/lsp/snippets.rs` (call placeholders from `Sig` names, a prelude helper's receiver skipped; built-ins and variants from their types; the postfix `.match` with a `textEdit` from the receiver's start); the server records `snippetSupport`; `Here.snippets` is off when a `(` follows the cursor.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 78 complete**: PRP-108 snippets
 - **Milestone 77 complete**: PRP-107 doc comments
 - **Milestone 76 complete**: PRP-106 block comments
 - **Milestone 75 complete**: PRP-105 partial syntax trees
