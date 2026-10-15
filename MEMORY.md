@@ -1778,11 +1778,9 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–56 complete** (tag `m56`: owning arrays once per loop, PRP-085). Copy-on-write now costs write loops almost nothing (matmul 131 ms eager, 133 ms now), and firefly keeps its copy-on-write gains.
-
-Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section):
-- nested `mut self` calls whose arguments only read the receiver;
-- any number as a `T: Num`;
-- lazy std modules; user-defined `Ord`; the `sum()` cleanup; std.fs/env/process; Unicode follow-ups.
+**Milestones 51–56 complete.** **Milestone 57 (nested `mut self` calls) is proposed:** decisions 29–32 in `Language v15 Draft.md` and PRP-086. It waits for the user's explicit approval.
+- **On approval:** record MEMORY 110, branch `prp-086-nested_mut_self`, commit the approved PRP; tests first.
+- **Then build:** E0508 by "evaluates to" places passed by pointer; E0510 for receivers only across an index; `mut self` receivers planned before the arguments and committed after (direct, dynamic, default calls); the firefly `gpt.la` rewrite.
+- **After M57,** the user picked (session 120): any number as a `T: Num`, then user-defined `Ord`, each with its own discovery.
 
 See `TODO.md`.

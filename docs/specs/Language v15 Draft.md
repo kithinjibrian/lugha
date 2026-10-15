@@ -1,6 +1,6 @@
 # Lugha v15 — Draft (delta against v14)
 
-**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116), and built. Milestone 56 (owning arrays once per loop) approved in session 119 (proposed in session 118), and built. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
+**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116), and built. Milestone 56 (owning arrays once per loop) approved in session 119 (proposed in session 118), and built. Milestone 57 (nested `mut self` calls) proposed in session 120. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
 **Base:** `Language v14 Specification.md`, complete (milestone 50). It stays the source of truth, and what `lughac spec` prints, until v15's first milestone starts `Language v15 Specification.md`. That file then grows milestone by milestone, and v14 is frozen.
 
 This draft lists only what changes, in the order of the v14 sections. Everything not mentioned keeps its v14 meaning.
@@ -239,6 +239,15 @@ Measured after milestone 55: a write tests the shared flag of every array on its
 - **A `for … of mut` variable stands for its array's root,** both when mentioned in the loop and when it is a hoisted path's root; one from an enclosing loop is never a fixed index.
 - **Paths match by the root variable's slot,** so code from another function lowered mid-loop never matches.
 
+## Decisions behind milestone 57 (discovery, session 120)
+
+Found writing firefly: tape-style model code needs one `let` per op, because `g.tanh(g.add(a, b))` is E0508 (an argument of a `mut self` call mentions its receiver).
+
+29. **E0508 applies only to arguments that can be the receiver's storage:** a place rooted at the receiver's root variable (also through `if`, block and `match` tails) whose type is passed by pointer (a struct, enum, `Option`, array, tuple or interface value). Anything else may mention the receiver: calls (`g.f(g.h(x))`), operators, literals, and reads of numbers, `bool`, `char` and strings (`g.scale(x, g.lr)`). `v.add(v)`, `v.add(v.inner)`, `g.set(g.values[0])` and `v.add(if c { v } else { w })` stay E0508.
+30. **A `mut self` call runs like an assignment** (§5, milestone 55): the receiver place's index expressions first, bounds-checked; then the arguments, left to right; then the receiver's place is reached (its arrays made unique) and the method runs. Inner calls on the same receiver finish before the outer one starts, and it sees their effects.
+31. **E0510 for a `mut self` receiver only when an index lies between:** a change made by the arguments to something that strictly contains the receiver is allowed when no array index lies on the receiver's path below the changed place (`self.g.f(self.norm(x))`, `a.b.f(a.reset())`); `gs[i].f(gs.clear())` and `self.layers[i].f(self.reset())` stay E0510, since the array could shrink after the bounds check. Assignment and `swap` keep their E0510.
+32. **Success:** milestone 57, tag `m57`; checker tests for every allowed and still-rejected case, programs whose output equals the one-`let`-per-op form, a §10 program; then firefly's `gpt.la` `layer` rewritten in the nested style, with the same losses (committed, not pushed).
+
 ## §2–§5 — no changes for milestone 51
 
 ## §6 Functions and program structure — changes
@@ -264,6 +273,7 @@ Measured after milestone 55: a write tests the shared flag of every array on its
 
 ## §10 Example programs — additions (v15 acceptance tests)
 
+- **M57:** a tape-style program with nested calls on one receiver (`g.mul(g.add(a, b), g.add(a, b))`), printing the same as the one-`let`-per-op form.
 - **M56:** no new §10 program (no language change); `tests/programs/m56/` hazards whose output equals v14's.
 - **M55:** a program printing the results of copies followed by writes — through every write path — showing every copy independent (the same output as v14), and a timing note for firefly's GPT.
 - **M54:** a seeded `Rng` printing a fixed sequence (the reproducibility test): `uniform`, `below`, `between`, `normal`, `chance`, `choice`, `shuffle`, and a `from_os()` generator whose values are only checked for range.
@@ -281,6 +291,7 @@ Measured after milestone 55: a write tests the shared flag of every array on its
 | 54 | `std.random` | xoshiro256\*\* `Rng`, `seeded`/`from_os`, `uniform`, `below`, `between`, `normal`, `chance`, `choice`, `shuffle` |
 | 55 | Copy-on-write arrays | copy sites share and mark arrays; the first write to a shared array clones it; writes reach arrays through their slots after the value is computed; arrays unshared before `extern` calls |
 | 56 | Owning arrays once per loop | arrays a loop writes through, and can't share, are made unique before the loop; its writes skip the flag test |
+| 57 | Nested `mut self` calls | E0508 only for arguments that can be the receiver's storage; `mut self` calls run their arguments before reaching the receiver; E0510 for receivers only across an index |
 
 Later v15 milestones (directories, processes, environment variables, Unicode follow-ups) are added when their discovery resumes; processes need a security review.
 

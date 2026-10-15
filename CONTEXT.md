@@ -4967,19 +4967,43 @@ Branch: prp-085-loop_ownership
 
 ---
 
-## SESSION 120 — 2026-10-15 — Discovery: nested `mut self` calls — open
+## SESSION 120 — 2026-10-15 — Discovery: nested `mut self` calls — closed
 Branch: main
+
+### WHAT WAS DONE
+- Firefly: committed the stacked-layers GPT (`ce6f38b`, not pushed); the user's 4-layer, 20,000-step run reached validation 2.216 (vs 2.242).
+- The user picked three TODO items, in order: nested `mut self` calls, any number as a `T: Num`, user-defined `Ord`.
+- Discovery for nested `mut self` calls. The user chose every recommended answer:
+  - E0508 only for arguments that can be the receiver's storage;
+  - assignment order for `mut self` calls;
+  - E0510 relaxed for receivers when no index lies between;
+  - milestone 57 plus a firefly rewrite.
+- Added decisions 29–32 to `Language v15 Draft.md` and wrote PRP-086 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-086-nested_mut_self.md`.
+- Modified: `docs/specs/Language v15 Draft.md`, CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: they wait for the user's approval of PRP-086.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-086.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–56 complete** (tag `m56`: owning arrays once per loop, PRP-085). Copy-on-write now costs write loops almost nothing (matmul 131 ms eager, 133 ms now), and firefly keeps its copy-on-write gains.
-
-Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section):
-- nested `mut self` calls whose arguments only read the receiver;
-- any number as a `T: Num`;
-- lazy std modules; user-defined `Ord`; the `sum()` cleanup; std.fs/env/process; Unicode follow-ups.
+**Milestones 51–56 complete.** **Milestone 57 (nested `mut self` calls) is proposed:** decisions 29–32 in `Language v15 Draft.md` and PRP-086. It waits for the user's explicit approval.
+- **On approval:** record MEMORY 110, branch `prp-086-nested_mut_self`, commit the approved PRP; tests first.
+- **Then build:** E0508 by "evaluates to" places passed by pointer; E0510 for receivers only across an index; `mut self` receivers planned before the arguments and committed after (direct, dynamic, default calls); the firefly `gpt.la` rewrite.
+- **After M57,** the user picked (session 120): any number as a `T: Num`, then user-defined `Ord`, each with its own discovery.
 
 See `TODO.md`.
 
