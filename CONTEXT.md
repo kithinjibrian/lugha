@@ -5287,6 +5287,11 @@ Branch: prp-090-one_iter_sum
 
 ---
 
+## SESSION 130 — 2026-10-15 — C → Lugha (milestone 62) — open
+Branch: prp-091-c_to_lugha
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–61 complete.** **Approved and next, in one go** (session 129): milestone 62, C → Lugha (PRP-091), then 63 widths (PRP-092), 64 `std.env` (PRP-093), 65 `std.fs` (PRP-094) and 66 `std.process` (PRP-095, security-reviewed by approval). Each gets a session, a branch, tests first, a merge on green CI, and a tag. MEMORY 118 is the plan.
