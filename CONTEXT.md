@@ -6032,6 +6032,11 @@ Branch: main
 
 ---
 
+## SESSION 155 — 2026-10-15 — Signature help in the language server (milestone 74) — open
+Branch: prp-104-lsp_signature_help
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).

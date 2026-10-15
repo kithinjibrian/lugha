@@ -1,6 +1,6 @@
 ## FEATURE: Signature help in `lughac lsp` — the signature of the call being typed, with the current parameter marked; milestone 74.
 
-**Status:** proposed 2026-10-15 — session 154 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-15 ("build it") — built in session 155; proposed in session 154.
 **Milestone:** 74 (one PRP; tag `m74` at merge). The fifth language-server PRP (diagnostics, hover, go-to-definition, completion).
 **Spec:** `Language v16 Draft.md` decisions 33–37; spec §5 (the intrinsics table), §9 (the `lughac lsp` paragraph), §11 (row 74).
 
