@@ -1,6 +1,6 @@
 ## FEATURE: Doc comments — `/** … */` before a declaration, Markdown with `@param`/`@returns`, shown by the language server; std and the prelude documented; milestone 77.
 
-**Status:** proposed 2026-10-16 — session 160 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-16 ("build it") — built in session 161; proposed in session 160.
 **Milestone:** 77 (one PRP; tag `m77` at merge). The second of the two steps the user asked for (milestone 76 added block comments).
 **Spec:** `Language v16 Draft.md` decisions 47–51; spec §2 (comments: the doc-comment convention), §9 (the `lughac lsp` paragraph), §11 (row 77).
 
