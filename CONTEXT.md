@@ -5351,6 +5351,11 @@ Branch: prp-092-widths_in_chars
 
 ---
 
+## SESSION 132 — 2026-10-15 — `std.env` (milestone 64) — open
+Branch: prp-093-std_env
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–63 complete.** **Approved and next, in one go:** milestone 64 `std.env` (PRP-093), 65 `std.fs` (PRP-094) and 66 `std.process` (PRP-095, security-reviewed by approval). MEMORY 118 is the plan.
