@@ -80,6 +80,7 @@ impl Checker {
                     ));
                     continue;
                 }
+                self.hover.field(&field.name, &ty);
                 fields.push((field.name.name.clone(), ty));
             }
             self.structs

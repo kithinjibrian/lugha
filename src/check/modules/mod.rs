@@ -7,7 +7,7 @@ mod lookup;
 
 use std::collections::HashMap;
 
-use super::{Checked, Checker, Type, liveness};
+use super::{Checked, Checker, Instance, Type, liveness};
 use crate::ast::Program;
 use crate::diagnostic::{Diagnostic, Severity};
 
@@ -29,17 +29,7 @@ pub struct Unit<'a> {
 ///
 /// Every diagnostic found (errors and warnings) when there is at least one error.
 pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
-    // Ids are shared across modules (PRP-034), so the last module's count covers all.
-    let count = units
-        .iter()
-        .map(|u| u.program.expr_count)
-        .max()
-        .unwrap_or(0);
-    let mut checker = Checker::new(count as usize);
-    checker.modules(units);
-    let monos = checker.monomorphize();
-    checker.instance_literals(&monos);
-    let (layouts, used) = checker.type_instances(&monos);
+    let (checker, monos, layouts, used) = run(units);
     if checker
         .diagnostics
         .iter()
@@ -79,6 +69,23 @@ pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<D
         },
         checker.diagnostics,
     ))
+}
+
+/// Every checking pass over `units`, before codegen's tables are built:
+/// shared by `check_modules` and the language server's `check_partial`.
+pub(in crate::check) fn run(units: &[Unit]) -> (Checker, Vec<Instance>, Vec<Type>, Vec<Type>) {
+    // Ids are shared across modules (PRP-034), so the last module's count covers all.
+    let count = units
+        .iter()
+        .map(|u| u.program.expr_count)
+        .max()
+        .unwrap_or(0);
+    let mut checker = Checker::new(count as usize);
+    checker.modules(units);
+    let monos = checker.monomorphize();
+    checker.instance_literals(&monos);
+    let (layouts, used) = checker.type_instances(&monos);
+    (checker, monos, layouts, used)
 }
 
 /// The key of item `name` in module `path`: `a.b.name`, or `name` in the main file.

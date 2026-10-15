@@ -1843,11 +1843,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built in `driver/lsp/` over `pipeline::front_with` (a `Read` over open documents, no lock written). Checks are offline, 200 ms after typing stops, whole-program. A malformed message ends the server with exit 2 (`lsp-server`'s reader stops), not an error reply. E0325 from git packages lands in `lugha.toml`, as in `lughac check`. Extension 0.2.0: `engines.vscode` `^1.91.0`, Node16 module resolution, a log output channel; not bundled yet.
 
+### 134. Hover planned (session 146, approved session 147)
+
+**Decision:** v16 draft decisions 18–22: hover on expressions and declared names, from the checker's partial results so it works with errors; a Lugha code block plus `instance:` / `converted to` notes; a hover runs a pending check first.
+
+### 135. Hover — milestone 71 (PRP-101)
+
+**Decision:** built as planned. The checker records names (`check/partial.rs`'s `Recorder`) at `env.rs::declare`, function and method declarations, calls (`call_key`, method calls), function values and field declarations; each use maps to its declaration's name span, which go-to-definition can reuse. A function's hover is its header sliced from the source. `check_modules` shares `modules::run` with `check_partial`. **Difference:** while any module fails to parse, there is no hover anywhere (the pipeline stops before checking), not just in that module. The test harness moved to `tests/common/lsp_client.rs`.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 71 complete**: PRP-101 hover
 - **Milestone 70 complete**: PRP-100 `lughac lsp`, VS Code extension 0.2.0
 - **Milestone 69 complete**: PRP-098 `lughac init`
 - **VS Code extension**: PRP-099, `editors/vscode/`

@@ -27,6 +27,8 @@ impl Checker {
         }
         let (generics, params, ret) = (sig.generics.clone(), sig.params.clone(), sig.ret.clone());
         self.callees.insert(at.id, key.to_string());
+        let decl = self.functions[key].span;
+        self.hover.function(at.span, decl, None);
         self.generic_value(at, key, &generics, Type::Fun(params, Box::new(ret)), expect)
     }
 
@@ -93,6 +95,7 @@ impl Checker {
             self.method_visible(k, &name.name, name.span);
         }
         self.callees.insert(expr.id, method.key.clone());
+        self.hover.function(name.span, method.span, None);
         let ty = Type::Fun(method.params.clone(), Box::new(method.ret.clone()));
         Some(self.generic_value(expr, &method.key, &method.generics, ty, expect))
     }

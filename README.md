@@ -69,6 +69,7 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **The standard library (v15, milestone 53):** `import std.math;` then `math.sqrt(2.0)`, `math.pow`, `math.sin`, `math.round`, `math.abs(-3)`, `math.max(2, 7)`, `math.clamp`, `math.pi()`; the float functions work for any `T: Float` (`f32`, `f64`). Std modules ship inside `lughac` and cost nothing unless imported.
 - **Copy-on-write arrays (v15, milestone 55):** `let g = grads[i];` no longer copies the array; it is shared until either side writes, and the writer copies it first. Programs print exactly what they did before, and read-heavy code such as firefly's autograd trains 13–35% faster.
 - **Lazy std modules (v15, milestone 60):** of an imported std module, only the functions your program reaches are compiled, as with the prelude; everything is still type-checked.
+- **Hover (v16, milestone 71):** hovering in VS Code shows a value's type or a function's header (`let total: i64`, `fun Circle.area(self): f64`), even while the program has errors.
 - **`lughac lsp` (v16, milestone 70):** a language server; the VS Code extension shows errors as you type, in unsaved files too.
 - **`lughac init` (v16, milestone 69):** `lughac init oyster` or `lughac init shapes --lib` writes a runnable program or a library with an example; existing files are kept.
 - **Changing directory (v16, milestone 68):** `env.set_current_dir("/tmp")?` moves the whole program: relative paths and programs it starts follow.
@@ -121,7 +122,7 @@ It never overwrites a file; the package name is the folder's unless `--name` giv
 | Command | Effect |
 | --- | --- |
 | `lughac init [folder] [--lib] [--name N]` | Start a program, or a library with an example, in a folder |
-| `lughac lsp` | Serve the Language Server Protocol on stdin/stdout: `check`'s diagnostics as you type, for editors |
+| `lughac lsp` | Serve the Language Server Protocol on stdin/stdout: `check`'s diagnostics as you type, and hover types, for editors |
 | `lughac build prog.la [-o prog]` | Compile and link an executable |
 | `lughac run prog.la [-- args…]` | Build to a temporary file and run it, passing `args` to it; the exit code is the program's |
 | `lughac check prog.la` | Lex, parse and type-check only |

@@ -1,6 +1,6 @@
 ## FEATURE: Hover in `lughac lsp` — the type of the expression or declared name under the cursor, also while the program has errors; milestone 71.
 
-**Status:** proposed 2026-10-15 — session 146 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-15 ("build it") — built in session 147; proposed in session 146.
 **Milestone:** 71 (one PRP; tag `m71` at merge). The second language-server PRP (PRP-100 was live diagnostics; go-to-definition follows).
 **Spec:** `Language v16 Draft.md` decisions 18–22; spec §9 (the `lughac lsp` paragraph), §11 (row 71).
 
@@ -80,26 +80,35 @@ None (`lsp-types` already has `Hover`).
 - Nothing new is read, run or written; hover only reads results the server already computed from the same inputs. Offline and no writes, as PRP-100.
 
 ## TESTS TO WRITE
-- [ ] **`check::partial` unit tests:** a valid program gives the same types as `check_modules`; a program with an error still types its other expressions and lists the same diagnostics; `names` holds a `let`, a `let mut`, a parameter, a `for` and a `match` binding, a function and a method declaration and call, a generic function's signature, and a struct field.
-- [ ] **`driver::lsp::hover` unit tests:** smallest span wins, names win ties; each text form (local, mutable local, function, method, field, expression, `instance:`, `converted to`); UTF-16 position → byte offset after `é`/emoji; nothing → `None`.
-- [ ] **`tests/lsp_hover.rs`** (real server over stdio):
+- [x] **`check::partial` unit tests:** a valid program gives the same types as `check_modules`; a program with an error still types its other expressions and lists the same diagnostics; `names` holds a `let`, a `let mut`, a parameter, a `for` and a `match` binding, a function and a method declaration and call, a generic function's signature, and a struct field.
+- [x] **`driver::lsp::hover` unit tests:** smallest span wins, names win ties; each text form (local, mutable local, function, method, field, expression, `instance:`, `converted to`); UTF-16 position → byte offset after `é`/emoji; nothing → `None`.
+- [x] **`tests/lsp_hover.rs`** (real server over stdio):
   - `initialize` advertises `hoverProvider`;
   - hover on `let total` → `let total: i64`; on a parameter; on `fun area` and on a call of it; on `p.area()`'s `area`; on a struct field; on a generic call (`instance: max<f64>`); on a value converted to an interface;
   - with an unrelated type error in the program → still answers; on the broken expression → `null`;
   - in a module checked through a seen main;
   - right after an unsaved change (no wait) → the new text's types;
   - on whitespace, a comment, a keyword → `null`; in a file never opened → `null`.
-- [ ] **Regression:** `tests/lsp.rs` unchanged in behaviour after the harness move; every existing test passes (`check_modules` byte-identical).
+- [x] **Regression:** `tests/lsp.rs` unchanged in behaviour after the harness move; every existing test passes (`check_modules` byte-identical).
 - [ ] **Manual check** (extension README), by the user: hovers in VS Code on a variable, a method call and a generic call; still working with an error in the file.
+
+## BUILT (session 147)
+- As designed: `check/partial.rs` (`check_partial`, `Partial`, `Name`, the `Recorder`), `check_modules` and `check_partial` sharing `modules::run`; recording at `env.rs::declare`, function and method declarations, `call_key`, method calls, function values and field declarations; `pipeline::front_partial` (replacing PRP-100's `front_with`); `driver/lsp/hover.rs`; hover in `server.rs` and `mod.rs`.
+- Tests: 6 in `check::partial`, 1 in `driver::lsp::hover` (UTF-16 → byte offsets; the forms and tie rules are covered end to end), 10 in `tests/lsp_hover.rs`; the harness moved to `tests/common/lsp_client.rs`, `tests/lsp.rs` unchanged in behaviour (14 pass).
+- **Differences from the plan:**
+  - while any module of the program fails to parse there is no hover anywhere, not only in that module: the front end stops before checking (spec says so);
+  - names map each use to its declaration's name span, and a function's text is its header sliced from the source, so go-to-definition can reuse the table;
+  - an interface method (no body in the source) shows no header; its call still shows the call's type.
+- The manual check in VS Code is left to the user (extension README, step 5).
 
 ## ROLLBACK PLAN
 - Branch `prp-101-lsp_hover` from `main`; tag `m71`.
 - To abandon before merge: delete the branch. After: revert the merge; the server stops advertising hover, diagnostics unchanged.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test`; CI green.
-- [ ] Spec at milestone 71; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test`; CI green.
+- [x] Spec at milestone 71; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 - [ ] The manual check passes in VS Code.
 
 ## VALIDATION

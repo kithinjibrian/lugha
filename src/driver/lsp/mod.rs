@@ -8,6 +8,7 @@
 
 mod check;
 mod documents;
+mod hover;
 mod publish;
 mod server;
 mod targets;
@@ -17,9 +18,9 @@ use std::time::{Duration, Instant};
 
 use lsp_server::{Connection, ErrorCode, Message, ProtocolError, Response};
 use lsp_types::{
-    InitializeParams, PositionEncodingKind, SaveOptions, ServerCapabilities, ServerInfo,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-    TextDocumentSyncSaveOptions,
+    HoverParams, HoverProviderCapability, InitializeParams, PositionEncodingKind, SaveOptions,
+    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
 };
 use thiserror::Error;
 
@@ -83,13 +84,28 @@ fn run(connection: &Connection) -> Result<u8, LspError> {
                 if connection.handle_shutdown(&request)? {
                     return Ok(0);
                 }
-                // Nothing but `shutdown` is served yet: hover and definitions
-                // come with later milestones.
-                let reply = Response::new_err(
-                    request.id,
-                    ErrorCode::MethodNotFound as i32,
-                    format!("lughac lsp doesn't handle `{}`", request.method),
-                );
+                let reply = match request.method.as_str() {
+                    "textDocument/hover" => {
+                        match serde_json::from_value::<HoverParams>(request.params) {
+                            Ok(params) => {
+                                let (hover, published) = server.hover(&params, Instant::now());
+                                send(connection, published)?;
+                                Response::new_ok(request.id, hover)
+                            }
+                            Err(error) => Response::new_err(
+                                request.id,
+                                ErrorCode::InvalidParams as i32,
+                                error.to_string(),
+                            ),
+                        }
+                    }
+                    // Go-to-definition comes with a later milestone.
+                    _ => Response::new_err(
+                        request.id,
+                        ErrorCode::MethodNotFound as i32,
+                        format!("lughac lsp doesn't handle `{}`", request.method),
+                    ),
+                };
                 send(connection, [reply.into()])?;
             }
             Ok(Message::Notification(n)) if n.method == "exit" => return Ok(1),
@@ -119,6 +135,7 @@ fn send(
 fn capabilities() -> ServerCapabilities {
     ServerCapabilities {
         position_encoding: Some(PositionEncodingKind::UTF16),
+        hover_provider: Some(HoverProviderCapability::Simple(true)),
         text_document_sync: Some(TextDocumentSyncCapability::Options(
             TextDocumentSyncOptions {
                 open_close: Some(true),

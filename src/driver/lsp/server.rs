@@ -9,13 +9,14 @@ use lsp_server::{Message, Notification};
 use lsp_types::notification::{LogMessage, Notification as _, PublishDiagnostics};
 use lsp_types::{
     DidChangeConfigurationParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DidSaveTextDocumentParams, InitializeParams, LogMessageParams,
-    MessageType, PublishDiagnosticsParams,
+    DidOpenTextDocumentParams, DidSaveTextDocumentParams, Hover, HoverParams, InitializeParams,
+    LogMessageParams, MessageType, PublishDiagnosticsParams,
 };
 use serde_json::Value;
 
 use super::check;
 use super::documents::{Documents, uri_to_path};
+use super::hover::{self, Snapshot};
 use super::publish::{self, Store};
 use super::targets::{self, Target};
 
@@ -31,6 +32,8 @@ pub(super) struct Server {
     pending: HashMap<PathBuf, Instant>,
     /// For each main file checked, every file its last check loaded.
     seen: HashMap<PathBuf, Vec<PathBuf>>,
+    /// Each main file's last check, for hover.
+    snapshots: HashMap<PathBuf, Snapshot>,
     store: Store,
 }
 
@@ -60,6 +63,7 @@ impl Server {
             entries: Vec::new(),
             pending: HashMap::new(),
             seen: HashMap::new(),
+            snapshots: HashMap::new(),
             store: Store::default(),
         };
         let mut out = Vec::new();
@@ -158,11 +162,42 @@ impl Server {
             if !target.alone {
                 self.seen.insert(target.main.clone(), outcome.loaded);
             }
+            match outcome.snapshot {
+                Some(snapshot) => self.snapshots.insert(target.main.clone(), snapshot),
+                // A program that no longer loads or parses has nothing to hover.
+                None => self.snapshots.remove(&target.main),
+            };
             for file in self.store.update(&target.main, outcome.files) {
                 out.extend(self.publish(&file));
             }
         }
         out
+    }
+
+    /// Answers a hover; also returns what the checks it had to run first
+    /// publish, so a hover never answers from older text (decision 21).
+    pub(super) fn hover(
+        &mut self,
+        params: &HoverParams,
+        now: Instant,
+    ) -> (Option<Hover>, Vec<Message>) {
+        let at = &params.text_document_position_params;
+        let Some(file) = uri_to_path(at.text_document.uri.as_str()) else {
+            return (None, Vec::new());
+        };
+        let mut out = Vec::new();
+        if self.pending.contains_key(&file) {
+            self.pending.insert(file.clone(), now);
+            out = self.run_due(now);
+        }
+        // Planning again only reads: rejected entries were logged when checked.
+        let hover = self
+            .plan(&file, &mut Vec::new())
+            .iter()
+            .filter_map(|t| self.snapshots.get(&t.main))
+            .find(|s| s.has(&file))
+            .and_then(|s| hover::answer(s, &file, at.position));
+        (hover, out)
     }
 
     fn plan(&self, file: &Path, out: &mut Vec<Message>) -> Vec<Target> {

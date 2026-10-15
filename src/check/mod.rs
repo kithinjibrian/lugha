@@ -59,6 +59,7 @@ mod operators;
 mod ops;
 mod or_patterns;
 mod ordering;
+mod partial;
 mod patterns;
 mod printing;
 mod reexports;
@@ -90,6 +91,7 @@ pub use instances::Instance;
 pub use iterators::Iteration;
 pub use modules::{Unit, check_modules, qualify, symbol};
 pub use ordering::ORDERING;
+pub use partial::{Name, Partial, check_partial};
 pub use refs::REF_NEW;
 pub use slots::{indirect_slot, slot_names_variant};
 pub use templates::exact as template_exact;
@@ -154,6 +156,7 @@ impl Checker {
             param_literals: Vec::new(),
             uses: Vec::new(),
             body_types: HashMap::new(),
+            hover: partial::Recorder::new(count),
         }
     }
 }
@@ -259,6 +262,8 @@ pub(super) struct Checker {
     /// The types in each generic body that mention its parameters, by the
     /// body's key: each instance's types are these, substituted (PRP-036).
     body_types: HashMap<String, Vec<Type>>,
+    /// Names and expression spans for the language server's hover (v16).
+    hover: partial::Recorder,
 }
 
 impl Checker {
@@ -269,6 +274,7 @@ impl Checker {
     fn record(&mut self, expr: &crate::ast::Expr, ty: Type) {
         self.body_type(&ty);
         self.types[expr.id.0 as usize] = Some(ty);
+        self.hover.expr(expr);
     }
 }
 
