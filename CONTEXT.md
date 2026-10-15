@@ -4998,6 +4998,11 @@ Branch: main
 
 ---
 
+## SESSION 121 — 2026-10-15 — Discovery: any number as `T: Num`, user-defined `Ord` — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–56 complete.** **Milestone 57 (nested `mut self` calls) is proposed:** decisions 29–32 in `Language v15 Draft.md` and PRP-086. It waits for the user's explicit approval.
