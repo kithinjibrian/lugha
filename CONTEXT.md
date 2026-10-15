@@ -6269,8 +6269,27 @@ Branch: prp-108-snippets
 
 ---
 
-## SESSION 164 — 2026-10-16 — VS Code extension 0.3.0 — open
+## SESSION 164 — 2026-10-16 — VS Code extension 0.3.0 — closed
 Branch: extension-0.3.0
+
+### WHAT WAS DONE
+- The user reported snippets not working: VS Code still ran the 0.2.0 build from before milestone 76 (no `snippets/`); the `.vsix` hadn't been rebuilt, and with an unchanged version a reinstall can be skipped. Rebuilt and force-installed it on the user's machine (outside the repo).
+- Bumped the extension to 0.3.0 (`package.json`, `package-lock.json`); the extension README, README and CLAUDE.md say to bump the version with every change in `editors/vscode/`.
+
+### FILES CREATED OR MODIFIED
+- Modified: `editors/vscode/{package.json,package-lock.json,README.md}`, README.md, CLAUDE.md, CHANGELOG.md, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (version and docs); the extension's `npm test` passes.
+
+### DECISIONS MADE
+- Every change in `editors/vscode/` bumps the extension's version.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.
 
 ---
 

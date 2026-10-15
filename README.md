@@ -167,7 +167,7 @@ CI runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo
 
 ```sh
 cd editors/vscode && npm ci && npm run package
-code --install-extension lugha-0.2.0.vsix
+code --install-extension lugha-0.3.0.vsix
 ```
 
 Its [README](editors/vscode/README.md) covers the settings (`lugha.path`, `lugha.entries`) and how it picks the file to check.

@@ -143,7 +143,7 @@ cargo run -q -- lsp                           # the language server on stdin/std
 
 cd editors/vscode && npm ci                   # the VS Code extension (PRP-099, PRP-100)
 npm test                                      # its server-command, keyword and grammar tests
-npm run package                               # lugha-<version>.vsix
+npm run package                               # lugha-<version>.vsix; bump the version (`npm version minor --no-git-tag-version`) whenever editors/vscode changes, or VS Code keeps the old build
 ```
 
 Run fmt, clippy and tests after every non-trivial change. A task is not done until all pass. These local runs are the merge gate: CI runs once per pull request as a background safety net and merges don't wait for it (the user, session 150).

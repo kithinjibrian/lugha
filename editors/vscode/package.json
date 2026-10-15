@@ -2,7 +2,7 @@
   "name": "lugha",
   "displayName": "Lugha",
   "description": "Syntax highlighting and live lughac diagnostics for the Lugha language",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "kithinjibrian",
   "license": "GPL-3.0-only",
   "repository": {
