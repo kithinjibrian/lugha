@@ -1,0 +1,18 @@
+/* Block comments (v16, milestone 76): anywhere whitespace may be,
+   over several lines, and nested. */
+
+/** A doc-style comment is an ordinary block comment to the compiler. */
+fun add(a: i64, /* the other */ b: i64): i64 = a + b;
+
+fun main() {
+    let x = 1 /* inline */ + 2;
+    /* commented out:
+    println("old");   /* a comment inside */
+    println(x * 100);
+    */
+    println(x);                       // 3
+    println(add(x, 4));               // 7
+    println("/* not a comment */");   // text inside a string
+    println("{x /* in a hole */ + 1}");
+    /*/ odd but closed */ println("done");
+}

@@ -1889,11 +1889,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. `parser::parse_partial_from` (`parse_from` wraps it), `LoadEnv.partial` and `parse_module`'s flag, `pipeline::front_partial` checking when every module lexed, `Snapshot.broken` so `last_good` only takes checks of text that parsed. **Found while building:** `with_prelude` placed the prelude right after the last module, overlapping manifests' offsets; harmless in the CLI (it never adds the prelude beside loader errors) but in the server it sent a manifest's E0325 to `<prelude>`. Fixed for the server with `with_prelude_at` past every loaded file. **Signature help** prefers the last good check's filled-in generic when the current check dropped the call being typed. The parser's recovery skips to the next `;`, so a missing `;` also drops the following statement.
 
+### 145. Block comments planned (session 158, approved session 159)
+
+**Decision:** v16 draft decisions 42–46: `/* … */`, nesting (the user's choice), wherever whitespace may be; E0113 for an unclosed one; first of two steps toward `/** … */` doc comments in the language server (milestone 77).
+
+### 146. Block comments — milestone 76 (PRP-106)
+
+**Decision:** built as planned in `lexer/mod.rs::skip_block_comment` (a depth counter, no recursion; nothing special inside but `/*` and `*/`). **Correction found while building:** a line break inside an interpolation is E0102 (the string ends), not E0111 as the draft first said; inside an interpolation the comment stops at its line, so that existing rule applies. VS Code: `comment.block.lugha` (nested) and `blockComment` in the language configuration.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 76 complete**: PRP-106 block comments
 - **Milestone 75 complete**: PRP-105 partial syntax trees
 - **Milestone 74 complete**: PRP-104 signature help
 - **Milestone 73 complete**: PRP-103 completion

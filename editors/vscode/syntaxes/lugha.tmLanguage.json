@@ -7,6 +7,7 @@
   "repository": {
     "code": {
       "patterns": [
+        { "include": "#block-comment" },
         { "include": "#comment" },
         { "include": "#format-template" },
         { "include": "#string" },
@@ -26,6 +27,15 @@
       "begin": "//",
       "beginCaptures": { "0": { "name": "punctuation.definition.comment.lugha" } },
       "end": "$"
+    },
+    "block-comment": {
+      "comment": "`/* … */`, nesting (spec §2, v16 milestone 76).",
+      "name": "comment.block.lugha",
+      "begin": "/\\*",
+      "beginCaptures": { "0": { "name": "punctuation.definition.comment.begin.lugha" } },
+      "end": "\\*/",
+      "endCaptures": { "0": { "name": "punctuation.definition.comment.end.lugha" } },
+      "patterns": [{ "include": "#block-comment" }]
     },
     "declaration": {
       "patterns": [

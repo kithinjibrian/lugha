@@ -1,0 +1,8 @@
+error[E0113]: unterminated block comment
+  --> tests/programs/m76/unclosed_comment.la:3:5
+  |
+3 |     /* forgot to close /* this */ one
+  |     ^^ this comment is never closed
+  |
+  = help: close it with `*/`
+
