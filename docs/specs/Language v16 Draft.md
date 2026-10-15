@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built. Milestone 76 (block comments) proposed in session 158.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -116,6 +116,16 @@ The language server's features read the checker's findings, and the checker need
 40. **Diagnostics:** while a module has a syntax error, the server publishes only the syntax errors, as before; what the checker finds in the partial program is used, not shown, since a dropped statement makes later names look undefined.
 41. **Success:** milestone 75, tag `m75`. Tests: the parser's partial results, and the server's features in files with syntax errors.
 
+## Decisions behind milestone 76 (discovery, session 158)
+
+The user wants JSDoc-style documentation, `/** … */`, shown by the editor. Lugha has had only `//` comments (spec §2: "v0 has no block comments"), so block comments come first, as a language change; doc comments in the language server follow as milestone 77.
+
+42. **`/* … */` is a comment** wherever whitespace may be: between any two tokens, over any number of lines. Its text is ignored, `//` and `"` inside it included; inside a string, `/*` is text.
+43. **They nest:** `/* a /* b */ c */` is one comment (as Rust, Swift, Kotlin), so code holding a block comment can be commented out. `/**` and `/*!` are ordinary block comments to the compiler.
+44. **Errors:** a `/*` never closed is E0113 at the outermost one still open, with help to add `*/`; lexing ends there. Inside an interpolation, a block comment must end on its line, as the string must (E0111 otherwise). A `*/` outside a comment stays the tokens `*` and `/`.
+45. **Compatibility:** every valid program stays valid with the same meaning. Outside strings and `//` comments, `/*` never occurs in valid code today, since `*` is never a prefix operator (`a / *b` is a syntax error).
+46. **Success:** milestone 76, tag `m76`. Lexer tests, a `tests/programs/m76/` case and a rejected one, a §10 program; the VS Code grammar highlights them (nested) and `Shift+Alt+A` toggles them.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -152,6 +162,7 @@ The language server's features read the checker's findings, and the checker need
 | 73 | Completion | members after `.`, plain names in scope, keywords; from the last check that parsed |
 | 74 | Signature help | every callable; generic instances filled in when known; intrinsics in the spec's call form |
 | 75 | Partial syntax trees | the language server checks text with syntax errors; the CLI unchanged |
+| 76 | Block comments | `/* … */`, nested; E0113 |
 
 ## §12 Open questions — additions
 
