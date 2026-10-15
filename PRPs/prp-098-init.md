@@ -74,22 +74,27 @@ None.
 
 ## TESTS TO WRITE
 `tests/init.rs`:
-- [ ] **Program:** `lughac init p` creates the three files; `lughac check p/src/main.la` passes; `lughac run p/src/main.la` prints `Hello from p!`.
-- [ ] **Library:** `lughac init shapes --lib` creates the four files; `lughac run shapes/examples/hello.la` prints `Hello, world, from shapes!`.
-- [ ] **Current folder:** `lughac init` takes the folder's name.
-- [ ] **`--name` overrides** the folder's name.
-- [ ] **Refusals:** an existing `lugha.toml` (exit 2, nothing written); `my-shell` (exit 2, hint `my_shell`); `fun` and `std` as names (exit 2).
-- [ ] **Kept:** an existing `.gitignore` stays byte-for-byte, reported `kept`, exit 0.
+- [x] **Program:** `lughac init p` creates the three files; `lughac check p/src/main.la` passes; `lughac run p/src/main.la` prints `Hello from p!`.
+- [x] **Library:** `lughac init shapes --lib` creates the four files; `lughac run shapes/examples/hello.la` prints `Hello, world, from shapes!`.
+- [x] **Current folder:** `lughac init` takes the folder's name.
+- [x] **`--name` overrides** the folder's name.
+- [x] **Refusals:** an existing `lugha.toml` (exit 2, nothing written); `my-shell` (exit 2, hint `my_shell`); `fun` and `std` as names (exit 2).
+- [x] **Kept:** an existing `.gitignore` stays byte-for-byte, reported `kept`, exit 0.
+
+## BUILT (session 142)
+- As designed, in `src/driver/init.rs` (`InitError`, exit 2) with `Command::Init` in `driver/mod.rs`; 9 tests in `tests/init.rs` and 3 unit tests.
+- **Changed:** the `.gitignore` lists only the executable `lughac build` writes (`/main`, `/hello`); `/target` was dropped, since lughac writes no such folder.
+- **Added tests:** `init .` names the folder; `--name` on a library; a name starting with a digit gets a leading `_` in the hint; a file where the folder should be is exit 2 with the system's message.
 
 ## ROLLBACK PLAN
 - Branch `prp-098-init`; tag `m69`.
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass.
-- [ ] Spec at milestone 69; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] fmt, clippy and tests pass; CI green.
+- [x] All tests pass.
+- [x] Spec at milestone 69; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] fmt, clippy and tests pass; CI green.
 
 ## VALIDATION
 ```bash

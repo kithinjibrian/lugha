@@ -138,6 +138,7 @@ cargo run -q -- run prog.la                   # exit code = the program's
 cargo run -q -- check prog.la [--offline]     # lex, parse, type-check
 cargo run -q -- update prog.la                # re-resolve git packages, rewrite lugha.lock
 cargo run -q -- spec                          # print the bundled language spec
+cargo run -q -- init [dir] [--lib] [--name N] # start a program or library (v16); never overwrites
 
 cd editors/vscode && npm ci                   # the VS Code extension (PRP-099)
 LUGHAC=../../target/debug/lughac npm test     # its unit, runner and grammar tests
@@ -160,7 +161,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 - `editors/vscode/` — the VS Code extension (PRP-099): TypeScript on Node 22, dev dependencies only (`typescript`, `@types/vscode`, `@types/node`, `vscode-tmgrammar-test`, `@vscode/vsce`), tests with `node:test`. It runs only `lughac check --offline` through `execFile`; changes to how it starts `lughac` need the user's security review.
 
-The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestones 67–68 done: `env.set_current_dir`; shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
+The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestones 67–69 done: `lughac init`; `env.set_current_dir`; shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -328,7 +329,7 @@ pub fn parse_number(src: &str) -> i64 {
 │                      (panics → internal error, exit 2), pipeline.rs (load all modules + the prelude, check, codegen),
 │                      source.rs (source map of all files, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines), update.rs (v14: the fetcher, writing
-│                      `lugha.lock`, `lughac update`)
+│                      `lugha.lock`, `lughac update`), init.rs (v16: `lughac init`, the program and library layouts)
 ├── tests/
 │   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
 │   ├── spec.rs      — spec §10 acceptance: programs and expected results extracted from lugha::SPEC
@@ -341,6 +342,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── git_packages.rs — git packages through lughac and a real `file://` repository (lock, offline, E0325/E0326)
 │   ├── lazy_std.rs  — lazy std modules through lughac: only reached std functions in the IR (v15)
 │   ├── ordering.rs  — user-defined order through lughac: `<` and tuple helpers call `cmp` (v15)
+│   ├── init.rs      — `lughac init` through lughac: both layouts created, checked and run; refusals; kept files (v16)
 │   ├── package_layout.rs — package layout through lughac: `source`, `examples/` by name, the `$HOME` bound, E0327/E0328
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
 │   ├── programs/    — m1/ … m68/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
