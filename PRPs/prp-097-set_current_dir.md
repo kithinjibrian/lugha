@@ -1,6 +1,6 @@
 ## FEATURE: Changing the working directory — `env.set_current_dir(path)`, so a Lugha program (oyster's `cd`) can move; milestone 68.
 
-**Status:** proposed 2026-10-15 — session 137.
+**Status:** approved 2026-10-15 — session 138 ("build it"); proposed in session 137.
 **Milestone:** 68 (one PRP; tag `m68` at merge)
 **Spec:** `Language v16 Draft.md` decisions 6–8; spec "The standard library" (`std.env`), §9 (runtime table), §10 (a program), §11 (row 68).
 

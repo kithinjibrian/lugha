@@ -1809,6 +1809,12 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why it stays sound:** boxes are pointer copies (`is_deep` false), `get` is a copy site and `set` follows the store rules, so a box is one holder for copy-on-write and loop ownership.
 
+### 127. Changing the working directory planned (session 137, approved session 138)
+
+**Decision (v16 draft decisions 6–8, PRP-097):** `env.set_current_dir(path): Result<i64, string>` (`chdir`), process-wide. Environment variables stay read-only, and `~`, `cd -` and the like are the program's job. Milestone 68, plus oyster's `cd`.
+
+**Why:** a shell's `cd` must move the whole program (redirects, child processes); a per-call `dir` would have left the shell's own paths behind.
+
 ---
 
 ## CURRENT PROJECT STATE
