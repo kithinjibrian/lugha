@@ -94,6 +94,7 @@ impl Lexer<'_> {
             match c {
                 ' ' | '\t' | '\r' | '\n' => self.pos += 1,
                 '/' if self.byte_at(1) == Some(b'/') => self.skip_comment(),
+                '/' if self.byte_at(1) == Some(b'*') => self.skip_block_comment(start),
                 'a'..='z' | 'A'..='Z' | '_' => self.identifier(start),
                 // `$float`: a compiler built-in, in bundled sources only (v15).
                 '$' if self.bundled => {
@@ -149,6 +150,56 @@ impl Lexer<'_> {
         self.pos = self.src[self.pos..]
             .find('\n')
             .map_or(self.src.len(), |i| self.pos + i);
+    }
+
+    /// Skips a `/* … */` comment starting at `start`, counting nested ones
+    /// (v16, milestone 76). Nothing inside is special but `/*` and `*/`.
+    /// Never closed: E0113 at `start`, the outermost, and the rest of the
+    /// input is the comment. Inside an interpolation the comment ends with
+    /// its line, as the string must: a line break there ends the string (E0102).
+    fn skip_block_comment(&mut self, start: usize) {
+        let bytes = self.src.as_bytes();
+        let stop = if self.interp.is_empty() {
+            bytes.len()
+        } else {
+            self.src[start..]
+                .find('\n')
+                .map_or(bytes.len(), |i| start + i)
+        };
+        // A counter, not recursion: any depth is fine.
+        let mut depth = 0usize;
+        let mut i = start;
+        while i < stop {
+            match (bytes[i], bytes.get(i + 1)) {
+                (b'/', Some(b'*')) => {
+                    depth += 1;
+                    i += 2;
+                }
+                (b'*', Some(b'/')) => {
+                    depth -= 1;
+                    i += 2;
+                    if depth == 0 {
+                        self.pos = i;
+                        return;
+                    }
+                }
+                _ => i += 1,
+            }
+        }
+        self.pos = stop;
+        if stop < bytes.len() {
+            // The interpolation's line ends first: the main loop reports it.
+            return;
+        }
+        self.diagnostics.push(
+            Diagnostic::error(
+                "E0113",
+                "unterminated block comment",
+                Span::new(start, start + 2),
+            )
+            .with_primary_label("this comment is never closed")
+            .with_help("close it with `*/`"),
+        );
     }
 
     fn identifier(&mut self, start: usize) {
@@ -288,5 +339,73 @@ mod tests {
         let (tokens, _) = super::lex_bundled("$float.sqrt").unwrap();
         assert_eq!(tokens[0].kind, Ident("$float".into()));
         assert_eq!(errors("$float"), [("E0101", "$")]);
+    }
+    #[test]
+    fn block_comments_are_skipped_v16() {
+        assert_eq!(kinds("/* x */"), []);
+        assert_eq!(kinds("a/*x*/b"), [Ident("a".into()), Ident("b".into())]);
+        assert_eq!(
+            kinds("a /* one\ntwo\n */ b"),
+            [Ident("a".into()), Ident("b".into())]
+        );
+        assert_eq!(kinds("/**/ a /***/ /** doc */"), [Ident("a".into())]);
+        // `//`, quotes and apostrophes mean nothing inside one.
+        assert_eq!(kinds("/* // \" ' */ a"), [Ident("a".into())]);
+        // Inside a string or a line comment, `/*` is text.
+        assert_eq!(kinds("\"/* x\""), [Str("/* x".into())]);
+        assert_eq!(kinds("// /* x\na"), [Ident("a".into())]);
+    }
+
+    #[test]
+    fn block_comments_nest_v16() {
+        assert_eq!(kinds("/* a /* b */ c */ d"), [Ident("d".into())]);
+        assert_eq!(kinds("/*/**/*/ e"), [Ident("e".into())]);
+        // Deep nesting is counted, not recursed into.
+        let deep = format!("{}{} z", "/*".repeat(10_000), "*/".repeat(10_000));
+        assert_eq!(kinds(&deep), [Ident("z".into())]);
+    }
+
+    #[test]
+    fn spans_after_a_block_comment_are_exact_v16() {
+        let src = "/* é 👋 */ let x";
+        let (tokens, _) = lex(src).unwrap();
+        assert_eq!(&src[tokens[0].span.start..tokens[0].span.end], "let");
+        assert_eq!(&src[tokens[1].span.start..tokens[1].span.end], "x");
+    }
+
+    #[test]
+    fn an_unclosed_block_comment_is_e0113_at_the_outermost_v16() {
+        assert_eq!(errors("a /* never"), [("E0113", "/*")]);
+        let src = "/* outer /* inner */ still open";
+        let diags = lex(src).expect_err("unclosed");
+        assert_eq!(diags.len(), 1);
+        assert_eq!((diags[0].code, diags[0].span.start), ("E0113", 0));
+        assert!(diags[0].help.as_deref().is_some_and(|h| h.contains("*/")));
+    }
+
+    #[test]
+    fn a_stray_close_is_two_operators_v16() {
+        assert_eq!(kinds("*/"), [Star, Slash]);
+    }
+
+    #[test]
+    fn inside_an_interpolation_a_block_comment_stays_on_its_line_v16() {
+        assert_eq!(
+            kinds("\"{a /* c */ + 1}\""),
+            [
+                StrStart(String::new()),
+                Ident("a".into()),
+                Plus,
+                Int(1),
+                StrEnd(String::new()),
+            ]
+        );
+        let codes: Vec<&str> = lex("\"{a /* c\n */}\"")
+            .expect_err("broken")
+            .iter()
+            .map(|d| d.code)
+            .collect();
+        // The line break ends the string, as any line break there does.
+        assert!(codes.contains(&"E0102"), "{codes:?}");
     }
 }

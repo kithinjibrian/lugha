@@ -2,15 +2,16 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–75 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–76 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestones 67–75):
+**Changes since v15** (milestones 67–76):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
 - `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
 - `lughac init [folder] [--lib] [--name N]` starts a program, or a library with an example, in a folder; it never overwrites a file (milestone 69; section 9).
 - `lughac lsp` is a language server: editors get `lughac check`'s diagnostics as you type, for unsaved text too (milestone 70; section 9), and hovering shows the type of an expression or a declared name, also while the program has errors (milestone 71); Go to Definition jumps from a name to its declaration (milestone 72); completion offers members after `.` and the names in scope (milestone 73); signature help shows the call being typed with its current parameter (milestone 74); and all of these keep working in a file with a syntax error, which the server checks partially (milestone 75).
+- Block comments: `/* … */`, over any number of lines, nesting, wherever whitespace may be; an unclosed one is E0113 (milestone 76; section 2).
 
 Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type; a module's own type `Ref` still means its own.
 
@@ -193,7 +194,11 @@ fun main() {
 
 Source files are UTF-8. The lexer produces a flat list of tokens, each carrying a span (start and end byte offsets) for error reporting.
 
-**Whitespace and comments.** Spaces, tabs, carriage returns and newlines separate tokens and are otherwise ignored. A line comment starts with `//` and runs to the end of the line. v0 has no block comments.
+**Whitespace and comments.** Spaces, tabs, carriage returns and newlines separate tokens and are otherwise ignored. A line comment starts with `//` and runs to the end of the line. v0 had no block comments; v16 adds them (milestone 76):
+- A block comment starts with `/*` and ends with the matching `*/`, over any number of lines, and may appear wherever whitespace may: `let x = 1 /* inline */ + 2;`.
+- Block comments **nest**: `/* a /* b */ c */` is one comment, so code that holds one can be commented out. Nothing else inside is special: `//`, quotes and apostrophes are just text there. `/**` and `/*!` are ordinary block comments.
+- Inside a string, `/*` is text. Inside an interpolation, a block comment ends with its line, as the string does: a line break there ends the string (E0102).
+- A `/*` never closed is E0113, at the outermost one still open; the rest of the file is the comment. A `*/` outside a comment is the operators `*` and `/`.
 
 **Identifiers.** `[A-Za-z_][A-Za-z0-9_]*`, excluding keywords. Identifiers are case-sensitive. In the sources bundled with `lughac` (the prelude and `std`), an identifier may also start with `$`, naming a compiler built-in such as `$float.sqrt` (v15); in a program `$` is E0101, so programs can never name one.
 
@@ -251,6 +256,7 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 | E0110 | Source is not valid UTF-8 | A Latin-1 `é` byte; reported at the first bad byte |
 | E0111 | Bad interpolation in a string (v3) | `"a } b"`, `"{x"`, `"{}"` — write `{{`/`}}` for literal braces |
 | E0112 | A bad `char` literal (v14) | `''`, `'ab'`, `'\q'`, `'\u{D800}'`, `'\u{110000}'`, an unclosed `'a` |
+| E0113 | Unterminated block comment (v16) | `/* never closed`, `/* a /* b */` |
 
 **Operators and punctuation.** The lexer uses longest match, so `<=` is one token, not `<` then `=`.
 
@@ -3119,6 +3125,24 @@ fun main() {
 }
 ```
 
+**Block comments** (milestone 76). Prints `3`, `7`, `done` on three lines, exits with 0.
+
+```
+/* Block comments (v16): anywhere whitespace may be,
+   over several lines, and nested. */
+fun add(a: i64, /* the other */ b: i64): i64 = a + b;
+
+fun main() {
+    let x = 1 /* inline */ + 2;
+    /* commented out:
+    println("old");   /* a comment inside */
+    */
+    println(x);
+    println(add(x, 4));
+    println("done");
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -3200,6 +3224,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 73 | Completion (v16) | `textDocument/completion`: members after `.` (fields, methods, built-ins, helpers, module items, variants), names in scope, intrinsics, keywords; from the last check that parsed | `tests/lsp_completion.rs` drives it over stdio (done) |
 | 74 | Signature help (v16) | `textDocument/signatureHelp`: every callable, the active parameter, generic instances filled in when known, intrinsics in their call forms | `tests/lsp_signature.rs` drives it over stdio (done) |
 | 75 | Partial syntax trees (v16) | the parser's recovered program checked by the language server; only syntax errors shown meanwhile; the CLI unchanged | `tests/lsp_partial.rs` (done) |
+| 76 | Block comments (v16) | `/* … */`, nested, wherever whitespace may be; E0113 | The block-comments program in section 10 passes (`tests/programs/m76/`; done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
