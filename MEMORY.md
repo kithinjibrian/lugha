@@ -1650,6 +1650,15 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Cost:** a flag test per array on each write's path slows write-only loops (histogram, matmul) by up to ~50%; owning once per loop is in TODO.
 
+### 108. Owning arrays once per loop planned (session 118, approved session 119)
+
+**Decision (draft decisions 25–28, PRP-085):**
+- **Hoisting:** before a loop, codegen owns each array the loop writes through, when its root passes a strict syntactic whitelist (written places, and reads holding no array); writes inside skip the flag test.
+- **Scope:** every loop kind, every nesting level. A path is fixed when its indexes are literals or variables the loop never assigns or redeclares, with no calls. An out-of-bounds hoist index skips the hoist and never panics.
+- **Unchanged:** output, panics, copy sites, `own` outside loops. Milestone 56; timings reported, not gated.
+
+**Why:** M55's per-write test slowed write-only loops (histogram +55%, matmul +30%, no vectorization). A syntactic rule can't be fooled by calls, because any call mentioning the root turns hoisting off.
+
 ---
 
 ## CURRENT PROJECT STATE

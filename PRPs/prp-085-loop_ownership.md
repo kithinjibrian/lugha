@@ -1,6 +1,6 @@
 ## FEATURE: Owning arrays once per loop — writes inside a loop skip the copy-on-write flag test when the loop can't share their arrays; milestone 56.
 
-**Status:** proposed 2026-10-15 — session 118.
+**Status:** approved 2026-10-15 — session 119 ("build in one go"); proposed in session 118.
 **Milestone:** 56 (one PRP; tag `m56` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 25–28, the milestone 56 choices); spec §7 (copy-on-write), §9 (lowering), §11 (row 56), §12 ("Cost of array copies").
 
