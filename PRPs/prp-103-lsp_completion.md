@@ -79,9 +79,9 @@ None.
 - Nothing new is read, run or written; completion reads results the server already computed. Offline, no writes (PRP-100).
 
 ## TESTS TO WRITE
-- [ ] **`check::partial` unit tests:** `members` for a struct (fields with types, methods with declarations), an enum (variants, associated functions), an interface (its methods); the built-in listing for arrays and strings, each name of which the checker resolves.
-- [ ] **`driver::lsp::completion` unit tests:** context (`p.`, `p.le`, `tot`, inside a string or comment → nothing); alignment (equal prefix → trusted; an edit before the receiver → not).
-- [ ] **`tests/lsp_completion.rs`** (real server over stdio):
+- [x] **`check::partial` unit tests:** `members` for a struct (fields with types, methods with declarations), an enum (variants, associated functions), an interface (its methods); the built-in listing for arrays and strings, each name of which the checker resolves.
+- [x] **`driver::lsp::completion` unit tests:** context (`p.`, `p.le`, `tot`, inside a string or comment → nothing); alignment (equal prefix → trusted; an edit before the receiver → not).
+- [x] **`tests/lsp_completion.rs`** (real server over stdio):
   - `initialize` advertises `completionProvider` with `.` as a trigger;
   - `p.` typed after a check (the text no longer parses) → `x` (field, `f64`) and `len` (method, its header);
   - `xs.` on an array → `len`, `push`, `map`; `s.` on a string → its methods;
@@ -90,17 +90,24 @@ None.
   - a plain word in a function → its earlier locals and parameters (not later ones, not another function's), the program's functions and types, `println`, `Some`, keywords;
   - an edit earlier in the file since the last good check → member completion empty, plain names without locals;
   - no snapshot (a file never opened) → empty.
-- [ ] **Regression:** hover and definitions unchanged (`tests/lsp_hover.rs`, `tests/lsp_definition.rs`); every existing test passes.
+- [x] **Regression:** hover and definitions unchanged (`tests/lsp_hover.rs`, `tests/lsp_definition.rs`); every existing test passes.
 - [ ] **Manual check** (extension README), by the user: `p.`, `geo.`, `Shape.` and a plain word in VS Code.
+
+## BUILT (session 152)
+- `check/members.rs` (new, beside `partial.rs` to keep both under 500 lines): `TypeMembers`, `Member`, `MemberKind`, `Detail`, `value_members`, `type_members`; built-ins and helpers come from one candidate list filtered through `builtins::builtin` and `helpers::helper_function` (made `pub(super)`), and a test fails on a candidate no receiver accepts; iterator helpers (`iter_helpers::HELPERS`, now `pub(super)`) for any type with a `next` method. `Partial.members` and `Partial.prelude`; `check::intrinsics()`.
+- Server: `last_good` beside `snapshots` (`Rc<Snapshot>` shared); `driver/lsp/completion.rs`; `completionProvider` with `.`; hover's `declaration` reused for headers.
+- Tests: 6 in `check::members`, 4 in `driver::lsp::completion`, 10 in `tests/lsp_completion.rs`.
+- **Difference from the plan (a refinement of decision 29):** alignment is the longest prefix the check's text and the current text share. Member completion uses the check's expression ending at the `.` when that point is inside it; otherwise a simple name before the `.` is looked up among locals declared within the shared prefix, imports and the module's types. Without that, `p.` typed on a new line inside a block would offer nothing, since the line before it rarely parses on its own.
+- The manual check in VS Code is left to the user (extension README, step 7).
 
 ## ROLLBACK PLAN
 - Branch `prp-103-lsp_completion` from `main`; tag `m73`.
 - To abandon before merge: delete the branch. After: revert the merge; the server stops advertising completion.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test` (CI runs in the background, not waited on).
-- [ ] Spec at milestone 73; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test` (CI runs in the background, not waited on).
+- [x] Spec at milestone 73; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 - [ ] The manual check passes in VS Code.
 
 ## VALIDATION

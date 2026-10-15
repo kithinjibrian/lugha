@@ -11,7 +11,7 @@ use crate::ast::{Expr, Ident};
 use crate::modules::PRELUDE_PATH;
 
 /// The helpers every iterator has, unless its type declares the name.
-const HELPERS: [&str; 20] = [
+pub(super) const HELPERS: [&str; 20] = [
     "map",
     "filter",
     "take",

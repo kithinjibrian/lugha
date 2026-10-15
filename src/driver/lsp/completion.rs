@@ -1,0 +1,446 @@
+//! Completion (v16 draft decisions 28–31): what can be written at the
+//! cursor, from the last check that parsed. Its offsets are trusted only
+//! where its text and the current text agree (decision 29).
+
+use std::path::Path;
+
+use lsp_types::{CompletionItem, CompletionItemKind as Kind, Position};
+
+use super::hover::{Snapshot, byte_offset, declaration};
+use crate::ast::{FunDecl, Item, Program, VisibilityKind};
+use crate::check::{self, Detail, Member, MemberKind, Name, Target, Type};
+use crate::modules::Module;
+use crate::span::Span;
+
+/// The keywords a program may write (spec §2), less the type names, which
+/// come with the types.
+const KEYWORDS: [&str; 25] = [
+    "fun",
+    "extern",
+    "struct",
+    "enum",
+    "impl",
+    "let",
+    "mut",
+    "if",
+    "else",
+    "while",
+    "for",
+    "in",
+    "of",
+    "match",
+    "import",
+    "private",
+    "public",
+    "interface",
+    "return",
+    "break",
+    "continue",
+    "true",
+    "false",
+    "as",
+    "self",
+];
+
+/// What is being typed at the cursor.
+#[derive(Debug, PartialEq)]
+struct Context {
+    /// Where the identifier being typed starts (the cursor when there is none).
+    word: usize,
+    /// The `.` before it, if any.
+    dot: Option<usize>,
+}
+
+/// The completions at `at` in `file`, whose current text is `text`.
+pub(super) fn answer(
+    snapshot: &Snapshot,
+    file: &Path,
+    text: &str,
+    at: Position,
+) -> Vec<CompletionItem> {
+    let Some(cursor) = byte_offset(text, at) else {
+        return Vec::new();
+    };
+    let Some(context) = context(text, cursor) else {
+        return Vec::new();
+    };
+    let Some((base, old)) = snapshot.base(file) else {
+        return Vec::new();
+    };
+    let Some(module) = snapshot.modules.iter().find(|m| m.base == base) else {
+        return Vec::new();
+    };
+    let here = Here {
+        snapshot,
+        module,
+        text,
+        base,
+        same: common_prefix(old, text),
+    };
+    match context.dot {
+        Some(dot) => here.members(dot),
+        None => here.names(context.word),
+    }
+}
+
+/// The context at `cursor`, or `None` inside a comment or a string.
+fn context(text: &str, cursor: usize) -> Option<Context> {
+    let line_start = text[..cursor].rfind('\n').map_or(0, |i| i + 1);
+    if in_comment_or_string(&text[line_start..cursor]) {
+        return None;
+    }
+    let word = cursor
+        - text[..cursor]
+            .chars()
+            .rev()
+            .take_while(|c| is_ident(*c))
+            .map(char::len_utf8)
+            .sum::<usize>();
+    let dot = (word > 0 && text.as_bytes()[word - 1] == b'.').then(|| word - 1);
+    Some(Context { word, dot })
+}
+
+fn is_ident(c: char) -> bool {
+    c.is_ascii_alphanumeric() || c == '_'
+}
+
+/// Whether the end of `line` is inside a `//` comment or a string (strings
+/// stay on one line, spec §2).
+fn in_comment_or_string(line: &str) -> bool {
+    let mut chars = line.chars().peekable();
+    let mut string = false;
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' if string => {
+                chars.next();
+            }
+            '"' => string = !string,
+            '/' if !string && chars.peek() == Some(&'/') => return true,
+            _ => {}
+        }
+    }
+    string
+}
+
+/// How many leading bytes `a` and `b` share, at a character boundary.
+fn common_prefix(a: &str, b: &str) -> usize {
+    let mut n = a.bytes().zip(b.bytes()).take_while(|(x, y)| x == y).count();
+    while !a.is_char_boundary(n) {
+        n -= 1;
+    }
+    n
+}
+
+/// The cursor's file in the last good check.
+struct Here<'a> {
+    snapshot: &'a Snapshot,
+    module: &'a Module,
+    text: &'a str,
+    /// Where the file starts in the check's offset space.
+    base: usize,
+    /// How many leading bytes the check's text and the current text share.
+    same: usize,
+}
+
+impl Here<'_> {
+    /// What can follow the `.` at `dot`.
+    fn members(&self, dot: usize) -> Vec<CompletionItem> {
+        let partial = &self.snapshot.partial;
+        if self.same >= dot {
+            let end = self.base + dot;
+            // A module or type name written just before the dot.
+            let named = partial.definitions.iter().filter(|(s, _)| s.end == end);
+            if let Some(target) = smallest(named.map(|(s, t)| (*s, t))) {
+                match target {
+                    Target::Module(path) => return self.module_items(path),
+                    Target::Decl(decl) => {
+                        if let Some(key) = self.type_at(*decl) {
+                            return self.items(&check::type_members(partial, &key));
+                        }
+                    }
+                }
+            }
+            // An expression ending at the dot, typed by that check.
+            let typed = partial.spans.iter().enumerate().filter_map(|(id, span)| {
+                let span = (*span)?;
+                let ty = partial.types.get(id)?.as_ref()?;
+                let usable =
+                    span.end == end && !matches!(ty, Type::Void | Type::Error | Type::Never);
+                usable.then_some((span, ty))
+            });
+            if let Some(ty) = smallest(typed) {
+                return self.items(&check::value_members(partial, ty));
+            }
+        }
+        // A name just before the dot that this check may not have seen
+        // there: `p.` typed on a new line.
+        let name_len: usize = self.text[..dot]
+            .chars()
+            .rev()
+            .take_while(|c| is_ident(*c))
+            .map(char::len_utf8)
+            .sum();
+        let name_start = dot - name_len;
+        let name = &self.text[name_start..dot];
+        if name.is_empty() || self.text[..name_start].ends_with('.') {
+            return Vec::new();
+        }
+        if let Some(local) = self
+            .locals(name_start)
+            .into_iter()
+            .find(|(n, _, _)| n == name)
+        {
+            return self.items(&check::value_members(partial, &local.1));
+        }
+        let program = self.program();
+        if let Some(n) = program.and_then(|p| p.imports.iter().position(|i| i.bound().name == name))
+        {
+            let path = self.module.imports.get(n).cloned().unwrap_or_default();
+            return self.module_items(&path);
+        }
+        let key = check::qualify(&self.module.path, name);
+        if partial.members.contains_key(&key) {
+            return self.items(&check::type_members(partial, &key));
+        }
+        Vec::new()
+    }
+
+    /// Every name that may start at `word`.
+    fn names(&self, word: usize) -> Vec<CompletionItem> {
+        let mut out: Vec<CompletionItem> = Vec::new();
+        for (name, ty, mutable) in self.locals(word) {
+            let mutable = if mutable { "mut " } else { "" };
+            out.push(item(
+                &name,
+                Kind::VARIABLE,
+                format!("let {mutable}{name}: {ty}"),
+            ));
+        }
+        if let Some(program) = self.program() {
+            out.extend(self.program_items(program, true));
+            for import in &program.imports {
+                let name = &import.bound().name;
+                out.push(item(name, Kind::MODULE, format!("module {name}")));
+            }
+        }
+        for name in check::intrinsics() {
+            out.push(item(name, Kind::FUNCTION, "intrinsic".to_string()));
+        }
+        for name in ["Some", "None", "Ok", "Err"] {
+            out.push(item(name, Kind::ENUM_MEMBER, String::new()));
+        }
+        for keyword in KEYWORDS {
+            out.push(CompletionItem {
+                label: keyword.to_string(),
+                kind: Some(Kind::KEYWORD),
+                ..CompletionItem::default()
+            });
+        }
+        // An inner name hides an outer one: keep the first of each label.
+        let mut seen = std::collections::HashSet::new();
+        out.retain(|i| seen.insert(i.label.clone()));
+        out
+    }
+
+    /// The locals and parameters declared before `limit` (a current-text
+    /// offset) in the function around it, newest first: only those inside
+    /// the text the check shares with the current one.
+    fn locals(&self, limit: usize) -> Vec<(String, Type, bool)> {
+        let shared = self.base + self.same.min(limit);
+        let Some(function) = self.program().and_then(|p| enclosing(p, shared)) else {
+            return Vec::new();
+        };
+        let mut found: Vec<(Span, String, Type, bool)> = self
+            .snapshot
+            .partial
+            .names
+            .iter()
+            .filter_map(|(span, name)| match name {
+                Name::Local { name, ty, mutable }
+                    if span.start >= function.start && span.end <= shared =>
+                {
+                    Some((*span, name.clone(), ty.clone(), *mutable))
+                }
+                _ => None,
+            })
+            .collect();
+        found.sort_by_key(|(span, ..)| std::cmp::Reverse(span.start));
+        found.into_iter().map(|(_, n, t, m)| (n, t, m)).collect()
+    }
+
+    fn program(&self) -> Option<&Program> {
+        self.module.program.as_ref()
+    }
+
+    /// The struct, enum or interface whose name is declared at `decl`.
+    fn type_at(&self, decl: Span) -> Option<String> {
+        let members = &self.snapshot.partial.members;
+        members
+            .iter()
+            .find(|(_, t)| t.decl == decl)
+            .map(|(k, _)| k.clone())
+    }
+
+    /// The items of the module at `path` that this module may use.
+    fn module_items(&self, path: &[String]) -> Vec<CompletionItem> {
+        let module = self.snapshot.modules.iter().find(|m| m.path == path);
+        match module.and_then(|m| m.program.as_ref()) {
+            Some(program) => self.program_items(program, false),
+            None => Vec::new(),
+        }
+    }
+
+    /// A program's functions and types; `private` ones only for its own module.
+    fn program_items(&self, program: &Program, own: bool) -> Vec<CompletionItem> {
+        let shown = |v: &Option<crate::ast::Visibility>| {
+            own || v.as_ref().is_none_or(|v| v.kind != VisibilityKind::Private)
+        };
+        let mut out = Vec::new();
+        for it in &program.items {
+            match it {
+                Item::Fun(f) if shown(&f.visibility) && f.name.name != "main" => {
+                    out.push(item(
+                        &f.name.name,
+                        Kind::FUNCTION,
+                        self.header(f.name.span, &f.name.name),
+                    ));
+                }
+                Item::Extern(e) if shown(&e.visibility) => {
+                    out.push(item(
+                        &e.name.name,
+                        Kind::FUNCTION,
+                        format!("extern fun {}", e.name.name),
+                    ));
+                }
+                Item::Struct(s) if shown(&s.visibility) => {
+                    out.push(item(
+                        &s.name.name,
+                        Kind::STRUCT,
+                        format!("struct {}", s.name.name),
+                    ));
+                }
+                Item::Enum(e) if shown(&e.visibility) => {
+                    out.push(item(
+                        &e.name.name,
+                        Kind::ENUM,
+                        format!("enum {}", e.name.name),
+                    ));
+                }
+                Item::Interface(i) if shown(&i.visibility) => {
+                    out.push(item(
+                        &i.name.name,
+                        Kind::INTERFACE,
+                        format!("interface {}", i.name.name),
+                    ));
+                }
+                _ => {}
+            }
+        }
+        out
+    }
+
+    fn items(&self, members: &[Member]) -> Vec<CompletionItem> {
+        members
+            .iter()
+            .map(|m| {
+                let kind = match m.kind {
+                    MemberKind::Field => Kind::FIELD,
+                    MemberKind::Method => Kind::METHOD,
+                    MemberKind::Associated => Kind::FUNCTION,
+                    MemberKind::Variant => Kind::ENUM_MEMBER,
+                };
+                let detail = match &m.detail {
+                    Detail::Type(ty) => format!("{}: {ty}", m.name),
+                    Detail::Decl(decl) => self.header(*decl, &m.name),
+                    Detail::Text(text) => text.clone(),
+                };
+                item(&m.name, kind, detail)
+            })
+            .collect()
+    }
+
+    /// A function's header as written, or its name when it has none.
+    fn header(&self, decl: Span, name: &str) -> String {
+        declaration(self.snapshot, decl).map_or_else(|| name.to_string(), |(header, _)| header)
+    }
+}
+
+/// The function or method whose body holds `offset`.
+fn enclosing(program: &Program, offset: usize) -> Option<Span> {
+    let holds = |f: &FunDecl| f.span.start <= offset && offset <= f.span.end;
+    program.items.iter().find_map(|it| match it {
+        Item::Fun(f) if holds(f) => Some(f.span),
+        Item::Impl(i) => i.methods.iter().find(|m| holds(m)).map(|m| m.span),
+        _ => None,
+    })
+}
+
+/// The value of the smallest span among `found`.
+fn smallest<T>(found: impl Iterator<Item = (Span, T)>) -> Option<T> {
+    found
+        .min_by_key(|(s, _)| (s.end - s.start, s.start))
+        .map(|(_, t)| t)
+}
+
+fn item(label: &str, kind: Kind, detail: String) -> CompletionItem {
+    CompletionItem {
+        label: label.to_string(),
+        kind: Some(kind),
+        detail: (!detail.is_empty()).then_some(detail),
+        ..CompletionItem::default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_context_is_the_word_and_the_dot_before_it() {
+        assert_eq!(
+            context("p.", 2),
+            Some(Context {
+                word: 2,
+                dot: Some(1)
+            })
+        );
+        assert_eq!(
+            context("  p.le", 6),
+            Some(Context {
+                word: 4,
+                dot: Some(3)
+            })
+        );
+        assert_eq!(
+            context("let x = tot", 11),
+            Some(Context { word: 8, dot: None })
+        );
+        assert_eq!(context("x\n", 2), Some(Context { word: 2, dot: None }));
+    }
+
+    #[test]
+    fn nothing_completes_in_comments_and_strings() {
+        assert_eq!(context("// p.", 5), None);
+        assert_eq!(context("let s = \"p.", 11), None);
+        assert_eq!(context("let s = \"a\\\" p.", 15), None);
+        assert!(context("let s = \"a\"; p.", 15).is_some());
+        assert!(context("let s = \"//\"; p.", 16).is_some());
+    }
+
+    #[test]
+    fn the_shared_prefix_stops_at_the_first_difference() {
+        assert_eq!(common_prefix("abc", "abd"), 2);
+        assert_eq!(common_prefix("abc", "abc"), 3);
+        assert_eq!(common_prefix("é", "è"), 0);
+    }
+
+    #[test]
+    fn keywords_are_the_lexers() {
+        for k in KEYWORDS {
+            assert!(
+                crate::lexer::token::keyword(k).is_some(),
+                "{k} isn't a keyword"
+            );
+        }
+    }
+}

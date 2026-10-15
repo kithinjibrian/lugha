@@ -50,6 +50,7 @@ mod levels;
 mod literal;
 mod liveness;
 mod matching;
+mod members;
 mod method_calls;
 mod methods;
 mod modules;
@@ -89,6 +90,7 @@ pub use iface_tables::{InterfaceMethod, InterfaceShape};
 pub use input::prelude_helper;
 pub use instances::Instance;
 pub use iterators::Iteration;
+pub use members::{Detail, Member, MemberKind, TypeMembers, type_members, value_members};
 pub use modules::{Unit, check_modules, qualify, symbol};
 pub use ordering::ORDERING;
 pub use partial::{Name, Partial, Target, check_partial};
@@ -101,6 +103,12 @@ pub use types::{Enums, Structs, Type};
 use crate::ast::{ExprId, Program};
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
+
+/// Every intrinsic's name (`println`, `read_line`, …): names a program may
+/// call that no source declares, for the language server's completion.
+pub fn intrinsics() -> impl Iterator<Item = &'static str> {
+    env::INTRINSICS.into_iter().chain(input::INPUT)
+}
 
 /// Type-checks `program`, a program of one file, returning the type table
 /// and any warnings. [`check_modules`] checks several.

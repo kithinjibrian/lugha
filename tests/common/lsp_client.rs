@@ -216,6 +216,35 @@ impl Server {
         reply["result"].clone()
     }
 
+    /// Asks for completions at a zero-based `line` and UTF-16 `character`
+    /// of `uri`; returns the items' labels with their kinds and details.
+    pub fn completion(
+        &mut self,
+        uri: &str,
+        line: u32,
+        character: u32,
+    ) -> Vec<(String, u64, String)> {
+        let reply = self.request(
+            "textDocument/completion",
+            json!({ "textDocument": { "uri": uri }, "position": { "line": line, "character": character } }),
+        );
+        assert!(reply.get("error").is_none(), "{reply}");
+        let items = match &reply["result"] {
+            Value::Array(items) => items.clone(),
+            Value::Object(list) => list["items"].as_array().cloned().unwrap_or_default(),
+            _ => Vec::new(),
+        };
+        items
+            .iter()
+            .map(|i| {
+                let label = i["label"].as_str().unwrap_or_default().to_string();
+                let kind = i["kind"].as_u64().unwrap_or(0);
+                let detail = i["detail"].as_str().unwrap_or_default().to_string();
+                (label, kind, detail)
+            })
+            .collect()
+    }
+
     /// `shutdown` then `exit`, returning the exit code.
     pub fn finish(mut self) -> Option<i32> {
         let reply = self.request("shutdown", Value::Null);
