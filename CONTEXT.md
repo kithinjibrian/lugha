@@ -5545,6 +5545,11 @@ Branch: main
 
 ---
 
+## SESSION 138 — 2026-10-15 — Changing the working directory (milestone 68) — open
+Branch: prp-097-set_current_dir
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestone 67 complete.** **Milestone 68, changing the working directory (`env.set_current_dir`), is proposed:** v16 draft decisions 6–8 and PRP-097. It waits for the user's approval. Then the language change, then oyster's `cd` (left uncommitted with the rest of oyster).
