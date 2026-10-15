@@ -42,3 +42,19 @@ int32_t lugha_rt_cwd(LughaArray **out, LughaString **error) {
         cap *= 2;
     }
 }
+
+/* `$os.chdir(path)` (v16, milestone 68): 1 after making `path` the working
+ * directory, or 0 and the system's message; a NUL byte would cut the path
+ * short, so it is refused. */
+int32_t lugha_rt_chdir(const LughaString *path, LughaString **error) {
+    const char *message = NULL;
+    if (memchr(path->bytes, 0, (size_t)path->len) != NULL) {
+        message = "path contains a NUL byte";
+    } else if (chdir(path->bytes) != 0) {
+        message = strerror(errno);
+    } else {
+        return 1;
+    }
+    *error = string_of(message, (int64_t)strlen(message));
+    return 0;
+}

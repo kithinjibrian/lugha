@@ -45,6 +45,8 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         "seed" => (Vec::new(), Type::U64),
         "env" => (vec![Type::String], Type::Option(Box::new(bytes()))),
         "cwd" => (Vec::new(), result(bytes())),
+        // v16, milestone 68: `std.env.set_current_dir`.
+        "chdir" => (vec![Type::String], result(Type::I64)),
         // `std.fs` (milestone 65).
         "list_dir" => (vec![Type::String], result(Type::Array(Box::new(bytes())))),
         "make_dir" | "remove_file" | "remove_dir" => (vec![Type::String], result(Type::I64)),

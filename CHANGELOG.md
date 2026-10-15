@@ -15,6 +15,7 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- `env.set_current_dir(path): Result<i64, string>` changes the program's working directory (`$os.chdir` → `lugha_rt_chdir` in `runtime/env.c`, `RUNTIME_SYMBOLS` 56). Environment variables stay read-only. Built for oyster's `cd` — **milestone 68 complete**
 - **Lugha v16 begins.** Shared boxes: `Ref<T>` is the one value that copies share.
   - **API:** `Ref.new(v)`, `get` (a copy), `set`, `update(f)`, `is`. Nothing reaches inside a box in place (E0410, E0411, E0415), so copy-on-write and loop ownership stay sound.
   - **Bindings:** `set`/`update` take plain `self`, so `let` bindings and closures' captures can change a box.

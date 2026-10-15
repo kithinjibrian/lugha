@@ -2,12 +2,13 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestone 67 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–68 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestone 67):
+**Changes since v15** (milestones 67–68):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
+- `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
 
 Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type; a module's own type `Ref` still means its own.
 
@@ -988,12 +989,13 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 | `r.choice<T>(xs: T[]): Option<T>` | a uniformly chosen element, `None` for an empty array |
 | `r.shuffle<T>(xs: T[]): T[]` | a copy of `xs` in a uniformly random order (Fisher–Yates); `xs` is unchanged |
 
-`std.env` (milestone 64). The program's environment, read-only: nothing sets variables or changes the working directory.
+`std.env` (milestone 64). The program's environment. Variables are read-only: nothing sets them. The working directory can change (v16, milestone 68), for the whole program.
 
 | Function | Result |
 | --- | --- |
 | `get(name: string): Option<string>` | the variable's value, or `None` when it is unset, isn't valid UTF-8, or `name` contains a NUL byte |
 | `current_dir(): Result<string, string>` | the absolute path of the working directory, or `Err` with the system's message (e.g. when it was deleted) |
+| `set_current_dir(path: string): Result<i64, string>` | `Ok(0)` after making `path` the working directory (`chdir`); relative paths in the file functions and `std.fs`, and every program `std.process` starts afterwards, use it. `Err` with the system's message (`No such file or directory`, `Not a directory`), or `Err("path contains a NUL byte")` (v16) |
 
 `std.fs` (milestone 65). Folders and what exists; a file's contents stay with the intrinsics (`read_file`, `write_file`, …). Errors are the system's message, as for `read_file`; a path holding a NUL byte is `Err("path contains a NUL byte")` (or `false`). Nothing deletes recursively.
 
@@ -1258,7 +1260,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_print_*` / `lugha_rt_to_string_*` | One per primitive type (plus `lugha_rt_print_str`), for the intrinsics; `bool` and `u8` arguments are passed zero-extended to 32 bits; `u32` goes to the `u64` functions zero-extended (v7), as does `u16`, and `i8`/`i16` go to the `i64` ones sign-extended (v10) |
 | `lugha_rt_str_quote(s)` | `s` quoted and escaped, for strings inside a printed value (v12) |
 | `lugha_rt_os_seed()` | 64 bits of OS entropy for `std.random`'s `from_os()` (v15): `getrandom`, else `/dev/urandom`, else a panic |
-| `lugha_rt_env(name, out)` / `lugha_rt_cwd(out, error)` | `std.env` (v15): a variable's bytes, or 0 when unset or the name holds a NUL; the working directory's bytes, or 0 and the system's message |
+| `lugha_rt_env(name, out)` / `lugha_rt_cwd(out, error)` / `lugha_rt_chdir(path, error)` (v16) | `std.env` (v15): a variable's bytes, or 0 when unset or the name holds a NUL; the working directory's bytes, or 0 and the system's message |
 | `lugha_rt_list_dir(path, out, error)` / `lugha_rt_make_dir` / `lugha_rt_remove_file` / `lugha_rt_remove_dir(path, error)` / `lugha_rt_stat_kind(path)` | `std.fs` (v15): a folder's names as bytes, one folder made or removed, a file removed, each with the system's message on failure; the kind of thing at a path |
 | `lugha_rt_spawn(cmd, args, input, mode, code, out, err, error)` | `std.process` (v15): runs a program without a shell (mode 0 shares stdio, 1 captures with an empty stdin, 2 also writes `input`), and gives its code and output bytes, or 0 and why it couldn't start |
 | `lugha_rt_fmt_int(v, bits, signed, kind, alt, fill, align, width, zero)` / `lugha_rt_fmt_float(v, f32, precision, fill, align, width, zero)` / `lugha_rt_pad(text, fill, align, width)` | Format specifiers (v13): an integer (sign- or zero-extended to `i64`), a float (as `f64`), or any other value's text, padded; all arguments are plain numbers |
@@ -3057,6 +3059,28 @@ fun main() {
 }
 ```
 
+**Changing directory** (milestone 68). Prints `Ok(0)`, `true`, `Err("No such file or directory")` on three lines, exits with 0, and leaves nothing behind.
+
+```
+// Changing the working directory (v16): relative paths follow it.
+import std.env;
+import std.fs;
+
+fun main() {
+    let start = env.current_dir().unwrap_or("?");
+    let made = fs.make_dirs("inbox/2026");
+    let moved = env.set_current_dir("inbox/2026");
+    println(moved);
+    let wrote = write_file("note.txt", "hi");
+    let back = env.set_current_dir(start);
+    println(fs.is_file("inbox/2026/note.txt"));
+    println(env.set_current_dir("missing"));
+    let a = fs.remove_file("inbox/2026/note.txt");
+    let b = fs.remove_dir("inbox/2026");
+    let c = fs.remove_dir("inbox");
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -3130,6 +3154,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 65 | `std.fs` (v15) | folders and what exists; no recursive delete; `$os.list_dir` … `$os.stat_kind` | The directories program in section 10 passes (done) |
 | 66 | `std.process` (v15) | `run`, `run_with`, `call`; no shell, `PATH` lookup, inherited environment, fds 0–2 only; `$os.spawn` | The processes program in section 10 passes (done: the v15 TODO complete) |
 | 67 | Shared boxes (v16) | `Ref<T>`: `new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing | The shared-boxes program in section 10 passes (done) |
+| 68 | Changing directory (v16) | `env.set_current_dir(path)`; `$os.chdir` | The changing-directory program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

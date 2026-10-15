@@ -1,0 +1,30 @@
+// Changing the working directory (v16, milestone 68): relative paths and
+// child processes follow it. Runs in a fresh scratch directory.
+import std.env;
+import std.fs;
+import std.process;
+
+fun show(r: Result<i64, string>): string = match r {
+    Ok(n) => "ok {n}",
+    Err(e) => "err {e}",
+};
+
+fun main() {
+    let start = env.current_dir().unwrap_or("?");
+    let made = fs.make_dir("sub");
+    let wrote = write_file("sub/note.txt", "hello");
+    println(show(env.set_current_dir("sub")));
+    let here = env.current_dir().unwrap_or("?");
+    println("{here.ends_with("/sub")} {here == start + "/sub"}");
+    println(read_file("note.txt"));
+    println(fs.list_dir("."));
+    match process.run("ls", []) {
+        Ok(out) => println(out.stdout.trim()),
+        Err(e) => println(e),
+    }
+    println(show(env.set_current_dir("..")));
+    println(env.current_dir().unwrap_or("?") == start);
+    println(show(env.set_current_dir("nope")));
+    println(show(env.set_current_dir("sub/note.txt")));
+    println(show(env.set_current_dir("a\0b")));
+}

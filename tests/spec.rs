@@ -128,6 +128,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Directories",
         "Processes",
         "Shared boxes",
+        "Changing directory",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

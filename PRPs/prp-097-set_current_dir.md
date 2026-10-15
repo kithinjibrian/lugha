@@ -1,6 +1,6 @@
 ## FEATURE: Changing the working directory — `env.set_current_dir(path)`, so a Lugha program (oyster's `cd`) can move; milestone 68.
 
-**Status:** approved 2026-10-15 — session 138 ("build it"); proposed in session 137.
+**Status:** merged 2026-10-15 — session 138 (approved the same session; proposed in session 137); tag `m68`.
 **Milestone:** 68 (one PRP; tag `m68` at merge)
 **Spec:** `Language v16 Draft.md` decisions 6–8; spec "The standard library" (`std.env`), §9 (runtime table), §10 (a program), §11 (row 68).
 
@@ -65,26 +65,38 @@ None.
 - **The path is program input;** NUL is rejected and nothing is interpreted (no `~` expansion in the language).
 
 ## TESTS TO WRITE
-- [ ] **Program `m68/cd.la`** (`.scratch`):
+- [x] **Program `m68/cd.la`** (`.scratch`):
   - `make_dir("sub")`, write `sub/note.txt`, then `set_current_dir("sub")`;
   - `current_dir()` ends with `/sub`; `read_file("note.txt")` reads it; `fs.list_dir(".")` lists it; `process.run("ls", [])` lists it;
   - `set_current_dir("..")` goes back;
   - `Err` for a missing folder (`No such file or directory`), a file (`Not a directory`) and a NUL.
-- [ ] **E0312 help** unchanged (no new module).
-- [ ] **oyster:** a scripted session (`cd /tmp`, `pwd`, `cd -`, `cd`, `cd ~`, `cd nope`) printing the expected directories and error.
-- [ ] **Regression:** every earlier program unchanged.
+- [x] **E0312 help** unchanged (no new module).
+- [x] **oyster:** a scripted session (`cd /tmp`, `pwd`, `cd -`, `cd`, `cd ~`, `cd nope`) printing the expected directories and error.
+- [x] **Regression:** every earlier program unchanged.
 
 ## ROLLBACK PLAN
 - Branch `prp-097-set_current_dir`; tag `m68`.
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass at `-O0`; `m68/` at `-O2`.
-- [ ] Spec at milestone 68; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] fmt, clippy and tests pass; CI green.
+- [x] All tests pass at `-O0`; `m68/` at `-O2`.
+- [x] Spec at milestone 68; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] fmt, clippy and tests pass; CI green.
 
 ## VALIDATION
 ```bash
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 ```
+
+## AMENDMENTS
+
+Session 138, while building:
+1. **Codegen** reuses the `make_dir` arm of `codegen/os.rs` (`Ok(0)` or `Err`); the checker adds `chdir` to `os_signature`.
+2. **The E0312 help is unchanged:** no new module.
+3. **oyster's `cd`:**
+   - built after the merge with the installed compiler;
+   - `cd -` prints the directory it goes to, as bash does;
+   - the previous directory is kept in a `Ref<string>` (M67);
+   - left uncommitted with the rest of oyster.
+

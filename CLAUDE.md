@@ -155,7 +155,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestone 67 done: shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
+The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestones 67–68 done: `env.set_current_dir`; shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -225,7 +225,7 @@ pub fn parse_number(src: &str) -> i64 {
 ├── runtime/         — the C runtime, embedded in lughac (DECISION-009): lugha_rt.c (core: includes, types,
 │                      init, alloc, panics, strings), stack.c (overflow handler), print.c (formatting),
 │                      input.c (args, parse_i64/f64, stdin lines, files, stderr, exit), format.c (format
-│                      specifiers, v13), bytes.c (binary I/O, UTF-8 check, v14), chars.c (`char` printing and quoting, v14), random.c (`lugha_rt_os_seed`, v15), env.c (`lugha_rt_env`, `lugha_rt_cwd`, v15), fs.c (folders and `stat`, v15), process.c (`lugha_rt_spawn`: `posix_spawnp`, no shell, v15); fragments joined in that order
+│                      specifiers, v13), bytes.c (binary I/O, UTF-8 check, v14), chars.c (`char` printing and quoting, v14), random.c (`lugha_rt_os_seed`, v15), env.c (`lugha_rt_env`, `lugha_rt_cwd`, v15; `lugha_rt_chdir`, v16), fs.c (folders and `stat`, v15), process.c (`lugha_rt_spawn`: `posix_spawnp`, no shell, v15); fragments joined in that order
 │                      into one lugha_rt.c (PRP-028)
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
@@ -233,7 +233,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── std/         — the standard library in Lugha (v15), embedded as `lugha::STD` and loaded only when imported:
 │   │                  math.la (`std.math`: float functions over `T: Float` via `$float.*` built-ins, abs/min/max/clamp, pi/e),
 │   │                  random.la (`std.random`: xoshiro256** `Rng`, `seeded`/`from_os` via `$os.seed`),
-│   │                  env.la (`std.env`: `get`, `current_dir` via `$os.env`/`$os.cwd`),
+│   │                  env.la (`std.env`: `get`, `current_dir`, `set_current_dir` via `$os.env`/`$os.cwd`/`$os.chdir`),
 │   │                  fs.la (`std.fs`: `list_dir`, `make_dir(s)`, `remove_file`, `remove_dir`, `exists`, `is_dir`, `is_file`),
 │   │                  process.la (`std.process`: `run`, `run_with`, `call` via `$os.spawn`)
 │   ├── prelude/     — the prelude in Lugha, joined in this order into the one module `$prelude` (`lugha::PRELUDE`):
@@ -338,7 +338,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── ordering.rs  — user-defined order through lughac: `<` and tuple helpers call `cmp` (v15)
 │   ├── package_layout.rs — package layout through lughac: `source`, `examples/` by name, the `$HOME` bound, E0327/E0328
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m67/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m68/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch/.envvars),
 │                      execute, report)

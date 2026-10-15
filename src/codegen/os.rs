@@ -59,7 +59,7 @@ impl<'ctx> Lowerer<'ctx> {
                 self.result(call, ok, (out, &names), error)
             }
             // `Ok(0)` or `Err(message)`.
-            "make_dir" | "remove_file" | "remove_dir" => {
+            "make_dir" | "remove_file" | "remove_dir" | "chdir" => {
                 let path = self.get(&args[0], &Type::String)?;
                 let (zero, error) = (self.out_slot(&Type::I64), self.out_slot(&Type::String));
                 let params = [Type::String, Type::String];

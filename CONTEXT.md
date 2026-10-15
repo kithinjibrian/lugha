@@ -5545,14 +5545,43 @@ Branch: main
 
 ---
 
-## SESSION 138 — 2026-10-15 — Changing the working directory (milestone 68) — open
+## SESSION 138 — 2026-10-15 — Changing the working directory (milestone 68) — closed
 Branch: prp-097-set_current_dir
+
+### WHAT WAS DONE
+- The user approved PRP-097 ("build it"); MEMORY 127.
+- Tests first: `m68/cd.la` with `.scratch` (expected output by hand).
+- Built: `set_current_dir` in `std/env.la`, `$os.chdir`, `lugha_rt_chdir`.
+- Spec v16 at milestone 68 (std.env table, runtime row, §10 "Changing directory", §11 row 68); docs.
+- After the merge: oyster's `cd` (`cd dir`, `~`, `cd`, `cd -`), checked with a scripted session; uncommitted in the user's repo.
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m68/`.
+- Modified:
+  - `src/std/env.la`, `src/check/float_ops.rs`, `src/codegen/os.rs`, `runtime/env.c`, `src/link.rs`;
+  - `tests/spec.rs`; the v16 spec and draft;
+  - CLAUDE.md, README, TODO, CHANGELOG, MEMORY (127, 128), PRP-097.
+- Outside the repo: oyster `src/exec.la` (uncommitted).
+
+### TESTS WRITTEN
+- `m68/cd.la`; §10 "Changing directory".
+
+### DECISIONS MADE
+- MEMORY 128.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m68`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**v16: milestone 67 complete.** **Milestone 68, changing the working directory (`env.set_current_dir`), is proposed:** v16 draft decisions 6–8 and PRP-097. It waits for the user's approval. Then the language change, then oyster's `cd` (left uncommitted with the rest of oyster).
+**v16: milestones 67–68 complete** (tags `m67` shared boxes, `m68` changing directory). oyster has `cd` (uncommitted in the user's repo, with the rest of oyster). Nothing is proposed or in progress.
+
+Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 

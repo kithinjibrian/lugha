@@ -1815,11 +1815,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** a shell's `cd` must move the whole program (redirects, child processes); a per-call `dir` would have left the shell's own paths behind.
 
+### 128. Changing the working directory — milestone 68 (PRP-097)
+
+**Decision:** built as planned. `std.env.set_current_dir` over `$os.chdir` (`runtime/env.c::lugha_rt_chdir`), with `Err` for a NUL byte; oyster's `cd` uses it.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 68 complete**: PRP-097 changing the working directory
 - **Milestone 67 complete — Lugha v16 begins**: PRP-096 shared boxes `Ref<T>`; v15 frozen (milestones 51–66)
 - **Milestone 66 complete — the v15 TODO is done**: PRP-095 `std.process`
 - **Milestone 65 complete**: PRP-094 `std.fs`
@@ -1934,7 +1939,9 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**v16: milestone 67 complete.** **Milestone 68, changing the working directory (`env.set_current_dir`), is proposed:** v16 draft decisions 6–8 and PRP-097. It waits for the user's approval. Then the language change, then oyster's `cd` (left uncommitted with the rest of oyster).
+**v16: milestones 67–68 complete** (tags `m67` shared boxes, `m68` changing directory). oyster has `cd` (uncommitted in the user's repo, with the rest of oyster). Nothing is proposed or in progress.
+
+Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 
