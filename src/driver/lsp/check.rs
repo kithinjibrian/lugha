@@ -11,6 +11,7 @@ use lsp_types::Diagnostic;
 use super::documents::Documents;
 use super::hover::Snapshot;
 use super::publish;
+use crate::diagnostic::Severity;
 use crate::driver::guard;
 use crate::driver::pipeline::{self, Failure};
 use crate::driver::render::Report;
@@ -57,13 +58,22 @@ fn check_with(
     let mut kept = None;
     let (source, reports) = match panic::catch_unwind(AssertUnwindSafe(front)) {
         Ok(Ok(front)) => {
+            // While the text has a syntax error, only syntax errors are
+            // shown: the partial program's other errors come from what the
+            // parser dropped (v16 draft decision 40).
+            let syntax = front.warnings.iter().any(|d| d.severity == Severity::Error);
+            let checked = if syntax {
+                &[][..]
+            } else {
+                &front.partial.diagnostics[..]
+            };
             let reports = front
                 .warnings
                 .iter()
-                .chain(&front.partial.diagnostics)
+                .chain(checked)
                 .map(Report::from)
                 .collect();
-            kept = Some((front.modules, front.partial));
+            kept = Some((front.modules, front.partial, syntax));
             (front.source, reports)
         }
         Ok(Err(Failure::Program(source, diagnostics))) => {
@@ -101,11 +111,12 @@ fn check_with(
         };
         outcome.files.entry(file).or_default().push(diagnostic);
     }
-    outcome.snapshot = kept.map(|(modules, partial)| Snapshot {
+    outcome.snapshot = kept.map(|(modules, partial, broken)| Snapshot {
         root: root.to_path_buf(),
         source,
         modules,
         partial,
+        broken,
     });
     outcome
 }

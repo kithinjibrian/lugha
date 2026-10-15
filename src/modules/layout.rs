@@ -20,6 +20,9 @@ pub struct LoadEnv {
     pub home: Option<PathBuf>,
     /// The folder relative paths start from, absolute (v15).
     pub cwd: PathBuf,
+    /// Keep a module's recovered program when it has syntax errors, and
+    /// follow its imports: for the language server only (v16, milestone 75).
+    pub partial: bool,
 }
 
 impl LoadEnv {
@@ -30,6 +33,7 @@ impl LoadEnv {
             fetcher: Fetcher::none(),
             home: None,
             cwd: PathBuf::from("/"),
+            partial: false,
         }
     }
 }

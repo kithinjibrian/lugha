@@ -26,6 +26,7 @@ pub(super) fn env(mode: Mode) -> LoadEnv {
         fetcher: Fetcher::new(Box::new(SystemGit), root, mode),
         home,
         cwd,
+        partial: false,
     }
 }
 

@@ -6084,11 +6084,38 @@ Branch: main
 
 ---
 
+## SESSION 157 — 2026-10-15 — Partial syntax trees for the language server (milestone 75) — closed
+Branch: prp-105-partial_trees
+
+### WHAT WAS DONE
+- The user approved PRP-105 ("build it"); MEMORY 143. Built in a worktree (`../lugha-prp-105`), merged through a PR without waiting for CI.
+- Tests first for the parser (5) and the loader (1); then `parse_partial_from`, `LoadEnv.partial`, `front_partial`, the server's diagnostics rule and snapshot order; `tests/lsp_partial.rs` (5) after.
+- Found and fixed the prelude overlapping manifests' offsets in the server (`with_prelude_at`); kept milestone 74's filled-in signatures with `Snapshot.broken`.
+- Spec v16 at milestone 75 (§3 recovery, §9 `lughac lsp` paragraph, §11 row 75, summary); docs.
+
+### FILES CREATED OR MODIFIED
+- New: `tests/lsp_partial.rs`.
+- Modified: `src/parser/mod.rs`, `src/modules/{mod,parse,layout,tests}.rs`, `src/driver/{pipeline,update}.rs`, `src/driver/lsp/{check,server,hover}.rs`, `tests/lsp_completion.rs`; the v16 spec and draft; CLAUDE.md, README, the extension README, TODO, CHANGELOG, MEMORY (143, 144), PRP-105, CONTEXT.
+
+### TESTS WRITTEN
+- `parser::partial_tests` (5), `modules::tests` (1), `tests/lsp_partial.rs` (5), `tests/lsp_completion.rs` (1 rewritten, 1 new).
+
+### DECISIONS MADE
+- MEMORY 144.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual checks in VS Code of signature help and of editing with a syntax error (extension README steps 8–9).
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
 
-**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. **Milestone 73 done** (tag `m73`): completion; the user's manual checks of milestones 70–73 all passed (session 153). **Milestone 74 done** (tag `m74`): signature help. **Proposed: milestone 75, partial syntax trees** — v16 draft decisions 38–41 and PRP-105; it waits for the user's approval. Later for the extension (each a discovery + PRP): partial syntax trees, signature help and snippets, Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. **Milestone 73 done** (tag `m73`): completion; the user's manual checks of milestones 70–73 all passed (session 153). **Milestone 74 done** (tag `m74`): signature help. **Milestone 75 done** (tag `m75`): partial syntax trees. Later for the extension: expression error nodes, lexer recovery, snippets, bundling. Later for the extension (each a discovery + PRP): partial syntax trees, signature help and snippets, Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

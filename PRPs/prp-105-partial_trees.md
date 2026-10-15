@@ -1,6 +1,6 @@
 ## FEATURE: Partial syntax trees for the language server — check the text being edited even with syntax errors, so hover, definitions, completion and signature help work in the rest of the file; milestone 75.
 
-**Status:** proposed 2026-10-15 — session 156 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-15 ("build it") — built in session 157; proposed in session 156.
 **Milestone:** 75 (one PRP; tag `m75` at merge).
 **Spec:** `Language v16 Draft.md` decisions 38–41; spec §3 (recovery), §9 (the `lughac lsp` paragraph), §11 (row 75).
 
@@ -76,26 +76,33 @@ None.
 - Nothing new is read, run or written; the server checks the same files with the same offline, no-write rules (PRP-100). Recovery is bounded by the parser's existing nesting limit (E0206).
 
 ## TESTS TO WRITE
-- [ ] **`parser` unit tests:** `parse_partial_from` on a valid program equals `parse_from`'s; with a broken statement keeps the function and its other statements; with a broken item keeps the other items; with a broken import keeps the rest; diagnostics equal `parse_from`'s `Err` list.
-- [ ] **`modules` test:** with `partial: true`, a module with a syntax error has a program and its imports are loaded; with `false`, as today.
-- [ ] **`tests/lsp_partial.rs`** (real server, a file with a syntax error — a missing `;` — on another line):
+- [x] **`parser` unit tests:** `parse_partial_from` on a valid program equals `parse_from`'s; with a broken statement keeps the function and its other statements; with a broken item keeps the other items; with a broken import keeps the rest; diagnostics equal `parse_from`'s `Err` list.
+- [x] **`modules` test:** with `partial: true`, a module with a syntax error has a program and its imports are loaded; with `false`, as today.
+- [x] **`tests/lsp_partial.rs`** (real server, a file with a syntax error — a missing `;` — on another line):
   - diagnostics show only the syntax error (no `E03xx`/`E04xx`);
   - hover on a variable and a call works; go-to-definition on a type and a method works;
   - completion on `p.` works in a file that never parsed (no last good check at all);
   - signature help on `max(1.5, ` filled in from the current check;
   - a module with a syntax error still has its functions completed and hovered from the main file;
   - an unclosed string (a lex error) → completion falls back to the last good check.
-- [ ] **Regression:** `tests/cli.rs`, `tests/programs.rs`, `tests/spec.rs` byte-identical; all language-server tests pass.
+- [x] **Regression:** `tests/cli.rs`, `tests/programs.rs`, `tests/spec.rs` byte-identical; all language-server tests pass.
 - [ ] **Manual check** (extension README), by the user: delete a `;` and hover, Ctrl+click and complete elsewhere in the file.
+
+## BUILT (session 157)
+- As designed: `parser::parse_partial_from` (with `parse_from` its wrapper; 5 unit tests written first), `LoadEnv.partial` through `parse_module` (a loader test written first), `pipeline::front_partial` checking whenever every module has a program, `check.rs` publishing only the loader's diagnostics while there's a syntax error, completion and signature help on the current snapshot first.
+- **Found and fixed:** `with_prelude` started the prelude right after the last module, overlapping the manifests' offsets; the CLI never adds the prelude beside loader errors, but the server now does, and a manifest's E0325 went to `<prelude>` (caught by `tests/lsp.rs`). The server uses a new `with_prelude_at` past every loaded file; the CLI's offsets are unchanged.
+- **Adjusted:** `last_good` takes only checks of text that parsed (`Snapshot.broken`), and signature help prefers the last good check's filled-in generic when the current check dropped the call being typed — otherwise milestone 74's filled-in signatures would have regressed. Completion's test of a stale offset now uses a lex error (the only remaining fallback), and a new test shows an edit earlier in the file no longer matters.
+- `tests/lsp_partial.rs` (5) was written after the server changes, not before them as the parser and loader tests were; the recovery skips to the next `;`, so a missing `;` drops the following statement too (the tests place their targets accordingly).
+- The manual check in VS Code is left to the user (extension README, step 9).
 
 ## ROLLBACK PLAN
 - Branch `prp-105-partial_trees` from `main`; tag `m75`.
 - To abandon before merge: delete the branch. After: revert the merge; the server returns to needing a tree that parses.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test` (CI in the background).
-- [ ] Spec at milestone 75; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test` (CI in the background).
+- [x] Spec at milestone 75; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 - [ ] The manual check passes in VS Code.
 
 ## VALIDATION

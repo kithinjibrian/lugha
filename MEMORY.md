@@ -1881,11 +1881,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. `check/signatures.rs` (`Sig`, recorded in `env.rs::collect` and `methods.rs`, in `Partial.signatures`); `driver/lsp/signature.rs` scans forward from a line start up to 2,000 bytes back with a bracket stack (strings, chars, comments skipped); the receiver logic moved into `completion.rs`'s shared `Here::receiver`. The intrinsic table is tested against `check::intrinsics()` and the embedded spec — it caught three guessed parameter names during the build.
 
+### 143. Partial syntax trees planned (session 156, approved session 157)
+
+**Decision:** v16 draft decisions 38–41: statement- and item-level partial trees (the parser's existing recovery), for the language server only; while a file has a syntax error only syntax errors are shown; the last good check stays as a fallback for lex errors.
+
+### 144. Partial syntax trees — milestone 75 (PRP-105)
+
+**Decision:** built as planned. `parser::parse_partial_from` (`parse_from` wraps it), `LoadEnv.partial` and `parse_module`'s flag, `pipeline::front_partial` checking when every module lexed, `Snapshot.broken` so `last_good` only takes checks of text that parsed. **Found while building:** `with_prelude` placed the prelude right after the last module, overlapping manifests' offsets; harmless in the CLI (it never adds the prelude beside loader errors) but in the server it sent a manifest's E0325 to `<prelude>`. Fixed for the server with `with_prelude_at` past every loaded file. **Signature help** prefers the last good check's filled-in generic when the current check dropped the call being typed. The parser's recovery skips to the next `;`, so a missing `;` also drops the following statement.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 75 complete**: PRP-105 partial syntax trees
 - **Milestone 74 complete**: PRP-104 signature help
 - **Milestone 73 complete**: PRP-103 completion
 - **Milestone 72 complete**: PRP-102 go-to-definition

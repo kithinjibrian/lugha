@@ -179,17 +179,35 @@ fn a_plain_word_offers_names_in_scope() {
 }
 
 #[test]
-fn an_edit_earlier_in_the_file_stops_member_completion() {
+fn an_edit_earlier_in_the_file_no_longer_matters() {
     let t = files();
-    // An edit near the top, then `p.` below it: offsets no longer line up.
+    // An edit near the top, then `p.` below it: the current text is checked
+    // (milestone 75), so nothing depends on the last good check's offsets.
     let (text, _) = typed("println(word);\n", "    p.");
     let text = text.replacen("import geo;", "import geo;\n// added", 1);
+    let line = text[..text.find("    p.").unwrap()].matches('\n').count() as u32;
+    let items = complete(&t, &text, (line, 6));
+    assert!(find(&items, "x").is_some(), "{items:?}");
+    let (text, _) = typed("println(word);\n", "    wo");
+    let text = text.replacen("import geo;", "import geo;\n// added", 1);
+    let line = text[..text.find("    wo").unwrap()].matches('\n').count() as u32;
+    let items = complete(&t, &text, (line, 6));
+    assert!(find(&items, "word").is_some(), "{items:?}");
+}
+
+#[test]
+fn a_lex_error_earlier_falls_back_and_stops_member_completion() {
+    let t = files();
+    // An unclosed string leaves no tokens at all: completion falls back to
+    // the last good check, whose offsets no longer line up below the edit.
+    let (text, _) = typed("println(word);\n", "    p.");
+    let text = text.replacen("import geo;", "import geo;\n\"oops", 1);
     let line = text[..text.find("    p.").unwrap()].matches('\n').count() as u32;
     let items = complete(&t, &text, (line, 6));
     assert!(find(&items, "x").is_none(), "{items:?}");
     // Plain names still come, without locals.
     let (text, _) = typed("println(word);\n", "    wo");
-    let text = text.replacen("import geo;", "import geo;\n// added", 1);
+    let text = text.replacen("import geo;", "import geo;\n\"oops", 1);
     let line = text[..text.find("    wo").unwrap()].matches('\n').count() as u32;
     let items = complete(&t, &text, (line, 6));
     assert!(find(&items, "twice").is_some(), "{items:?}");

@@ -61,6 +61,19 @@ pub fn parse_from(
     tokens: &[Token],
     first: u32,
 ) -> Result<(Program, Vec<Diagnostic>), Vec<Diagnostic>> {
+    let (program, diagnostics) = parse_partial_from(tokens, first);
+    if diagnostics.is_empty() {
+        Ok((program, Vec::new()))
+    } else {
+        Err(diagnostics)
+    }
+}
+
+/// [`parse_from`], always returning the program the parser recovered: every
+/// import, item and statement that parsed, without the broken ones, beside
+/// every diagnostic (v16, milestone 75). For the language server, which
+/// checks text being edited; the compiler itself stops at any diagnostic.
+pub fn parse_partial_from(tokens: &[Token], first: u32) -> (Program, Vec<Diagnostic>) {
     let mut parser = Parser {
         tokens,
         pos: 0,
@@ -72,18 +85,12 @@ pub fn parse_from(
         diagnostics: Vec::new(),
     };
     let (imports, items) = parser.program();
-    if parser.diagnostics.is_empty() {
-        Ok((
-            Program {
-                imports,
-                items,
-                expr_count: parser.next_id,
-            },
-            Vec::new(),
-        ))
-    } else {
-        Err(parser.diagnostics)
-    }
+    let program = Program {
+        imports,
+        items,
+        expr_count: parser.next_id,
+    };
+    (program, parser.diagnostics)
 }
 
 /// A diagnostic for this failure is already recorded; callers recover instead of reporting again.
@@ -231,5 +238,91 @@ impl Parser<'_> {
         let diagnostic = Diagnostic::error("E0201", message, self.span())
             .with_label(open, format!("to match this {opener}"));
         Err(self.error(diagnostic))
+    }
+}
+
+#[cfg(test)]
+mod partial_tests {
+    use super::*;
+    use crate::ast::{Item, StmtKind};
+    use crate::lexer;
+
+    fn tokens(src: &str) -> Vec<Token> {
+        lexer::lex(src).expect("test source lexes").0
+    }
+
+    fn functions(program: &Program) -> Vec<String> {
+        program
+            .items
+            .iter()
+            .filter_map(|i| match i {
+                Item::Fun(f) => Some(f.name.name.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_valid_program_is_the_same_either_way() {
+        let t = tokens("fun f(): i64 = 1;\nfun main() { let x = f(); println(x); }\n");
+        let (partial, diagnostics) = parse_partial_from(&t, 0);
+        assert!(diagnostics.is_empty());
+        assert_eq!(parse_from(&t, 0).expect("parses").0, partial);
+    }
+
+    #[test]
+    fn a_broken_statement_leaves_its_function_and_the_other_statements() {
+        let src =
+            "fun main() {\n    let a = 1;\n    let b = a +;\n    println(a);\n}\nfun other() { }\n";
+        let t = tokens(src);
+        let (program, diagnostics) = parse_partial_from(&t, 0);
+        assert_eq!(parse_from(&t, 0).expect_err("a syntax error"), diagnostics);
+        assert_eq!(functions(&program), ["main", "other"]);
+        let Item::Fun(main) = &program.items[0] else {
+            panic!("main first")
+        };
+        let lets: Vec<&str> = main
+            .body
+            .stmts
+            .iter()
+            .filter_map(|s| match &s.kind {
+                StmtKind::Let { name, .. } => Some(name.name.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(lets, ["a"]);
+        assert_eq!(main.body.stmts.len(), 2, "the `let a` and the `println`");
+    }
+
+    #[test]
+    fn a_broken_item_leaves_the_other_items() {
+        let t = tokens("fun ok(): i64 = 1;\nstruct { x: i64 }\nfun main() { }\n");
+        let (program, diagnostics) = parse_partial_from(&t, 0);
+        assert!(!diagnostics.is_empty());
+        assert_eq!(functions(&program), ["ok", "main"]);
+    }
+
+    #[test]
+    fn a_broken_import_leaves_the_rest() {
+        let t = tokens("import geo;\nimport ;\nfun main() { }\n");
+        let (program, diagnostics) = parse_partial_from(&t, 0);
+        assert!(!diagnostics.is_empty());
+        assert_eq!(program.imports.len(), 1);
+        assert_eq!(functions(&program), ["main"]);
+    }
+
+    #[test]
+    fn expression_ids_stay_below_the_count() {
+        let t = tokens("fun main() { let a = 1 + 2; let b = (; let c = a * 3; }\n");
+        let (program, _) = parse_partial_from(&t, 5);
+        assert!(program.expr_count > 5);
+        let Item::Fun(main) = &program.items[0] else {
+            panic!()
+        };
+        for stmt in &main.body.stmts {
+            if let StmtKind::Let { init, .. } = &stmt.kind {
+                assert!(init.id.0 >= 5 && init.id.0 < program.expr_count);
+            }
+        }
     }
 }

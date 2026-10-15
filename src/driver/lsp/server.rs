@@ -39,8 +39,8 @@ pub(super) struct Server {
     seen: HashMap<PathBuf, Vec<PathBuf>>,
     /// Each main file's last check, for hover.
     snapshots: HashMap<PathBuf, Rc<Snapshot>>,
-    /// Each main file's last check that parsed, for completion while the
-    /// text being typed doesn't (decision 29).
+    /// Each main file's last check that had a tree, for completion and
+    /// signature help while the current text doesn't lex (decisions 29, 39).
     last_good: HashMap<PathBuf, Rc<Snapshot>>,
     store: Store,
 }
@@ -174,7 +174,11 @@ impl Server {
             match outcome.snapshot {
                 Some(snapshot) => {
                     let snapshot = Rc::new(snapshot);
-                    self.last_good.insert(target.main.clone(), snapshot.clone());
+                    // Only a check of text that parsed: its expressions are
+                    // the whole program (decision 39).
+                    if !snapshot.broken {
+                        self.last_good.insert(target.main.clone(), snapshot.clone());
+                    }
                     self.snapshots.insert(target.main.clone(), snapshot)
                 }
                 // A program that no longer loads or parses has nothing to hover.
@@ -256,12 +260,25 @@ impl Server {
         let (file, out) = self.fresh(at.text_document.uri.as_str(), now);
         let help = file.and_then(|f| {
             let targets = self.plan(&f, &mut Vec::new());
-            let snapshot = Self::loaded(&self.last_good, &targets, &f)?;
             let text = match self.docs.text(&f) {
                 Some(text) => text.to_string(),
                 None => std::fs::read_to_string(&f).ok()?,
             };
-            signature::answer(snapshot, &f, &text, at.position)
+            let current = Self::loaded(&self.snapshots, &targets, &f)
+                .and_then(|s| signature::answer(s, &f, &text, at.position));
+            // The call being typed is a broken statement the current check
+            // dropped, so only the last good check may know its instance: its
+            // filled-in signature wins over a written one (decision 34).
+            let filled = |h: &SignatureHelp| h.signatures[0].documentation.is_some();
+            if current.as_ref().is_some_and(filled) {
+                return current;
+            }
+            let older = Self::loaded(&self.last_good, &targets, &f)
+                .and_then(|s| signature::answer(s, &f, &text, at.position));
+            match older {
+                Some(help) if filled(&help) || current.is_none() => Some(help),
+                _ => current,
+            }
         });
         (help, out)
     }
@@ -278,7 +295,10 @@ impl Server {
         let items = file
             .and_then(|f| {
                 let targets = self.plan(&f, &mut Vec::new());
-                let snapshot = Self::loaded(&self.last_good, &targets, &f)?;
+                // The current text's check first (milestone 75); the last one with
+                // a tree only when the current text didn't lex (decision 39).
+                let snapshot = Self::loaded(&self.snapshots, &targets, &f)
+                    .or_else(|| Self::loaded(&self.last_good, &targets, &f))?;
                 let text = match self.docs.text(&f) {
                     Some(text) => text.to_string(),
                     None => std::fs::read_to_string(&f).ok()?,
