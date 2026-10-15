@@ -1,6 +1,6 @@
 # Lugha v15 — Draft (delta against v14)
 
-**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116), and built. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
+**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116), and built. Milestone 56 (owning arrays once per loop) proposed in session 118. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
 **Base:** `Language v14 Specification.md`, complete (milestone 50). It stays the source of truth, and what `lughac spec` prints, until v15's first milestone starts `Language v15 Specification.md`. That file then grows milestone by milestone, and v14 is frozen.
 
 This draft lists only what changes, in the order of the v14 sections. Everything not mentioned keeps its v14 meaning.
@@ -218,6 +218,21 @@ Measured in firefly's IR: the copies that cost are `let` bindings that only read
 - **Strings** are unchanged (immutable, shared). Enum payloads were already shared and never written.
 - **IR changes for every program that copies or writes arrays,** so the byte-identical-IR regression check doesn't apply to this milestone. Program output must be identical.
 
+## Decisions behind milestone 56 (discovery, session 118)
+
+Measured after milestone 55: a write tests the shared flag of every array on its path, so loops that only write slow down (DECISION-010's histogram 140 → 217 ms, matmul 143 → 188 ms, where the test also stops vectorization).
+
+25. **The compiler hoists ownership out of loops.** Before a loop, codegen makes unique each array the body writes through, when the body can't share that array again; inside the loop, those writes skip the flag test. No language change: every program prints what it does today.
+26. **"Can't share" is a strict syntactic whitelist, per root variable.** In the loop (its condition, header and body, nested loops included), the root may appear only:
+    - as the root of a written place: `=`, `op=`, `push`/`pop`/`clear` (assigning an array-valued place, such as `xs = ys` or `g[i] = row`, is not on the list);
+    - in reads whose value holds no array: numbers, `bool`, `char`, strings, `.len`, and structs, enums and tuples without arrays.
+
+    Anything else turns hoisting off for that root in that loop: a `let`/argument/return/capture of the root or an array inside it, a method call on it (`self` or `mut self`), `swap`, `for … of` over it, or a `for … of mut` alias of it used other than as above.
+27. **Every loop kind, every nesting level:** `for … in`, `for … of`, `for … of mut`, iterator loops, `while`, `while let`. Each loop owns the paths fixed during it.
+    - A path is fixed when each of its indexes is a literal or a variable the loop never assigns, with no calls; so in matmul the `i` loop owns `out` and the `j` loop owns `out[i]`.
+    - A hoisted index out of bounds skips that hoist instead of panicking; the write's own bounds check still reports it, at the same place as today.
+28. **Success:** milestone 56, tag `m56`. Every existing test unchanged, IR tests (no flag test in a hoisted loop; the test kept when the body copies), hazard programs; timings reported, not gated.
+
 ## §2–§5 — no changes for milestone 51
 
 ## §6 Functions and program structure — changes
@@ -243,6 +258,7 @@ Measured in firefly's IR: the copies that cost are `let` bindings that only read
 
 ## §10 Example programs — additions (v15 acceptance tests)
 
+- **M56:** no new §10 program (no language change); `tests/programs/m56/` hazards whose output equals v14's.
 - **M55:** a program printing the results of copies followed by writes — through every write path — showing every copy independent (the same output as v14), and a timing note for firefly's GPT.
 - **M54:** a seeded `Rng` printing a fixed sequence (the reproducibility test): `uniform`, `below`, `between`, `normal`, `chance`, `choice`, `shuffle`, and a `from_os()` generator whose values are only checked for range.
 - **M53:** `import std.math;` with `math.sqrt(2.0)`, `math.pow`, trigonometry, `math.floor`/`ceil`/`round`, `math.abs(-3)`, `math.max(2, 7)`, `math.clamp`, `math.pi()`, an `f32` instance, and a generic `hypot<T: Float>`.
@@ -258,6 +274,7 @@ Measured in firefly's IR: the copies that cost are `let` bindings that only read
 | 53 | The std library and `std.math` | bundled `std.<module>` modules, `std` reserved, the `Float` bound, `std.math` (float functions via LLVM, `abs`/`min`/`max`/`clamp`, `pi`/`e`) |
 | 54 | `std.random` | xoshiro256\*\* `Rng`, `seeded`/`from_os`, `uniform`, `below`, `between`, `normal`, `chance`, `choice`, `shuffle` |
 | 55 | Copy-on-write arrays | copy sites share and mark arrays; the first write to a shared array clones it; writes reach arrays through their slots after the value is computed; arrays unshared before `extern` calls |
+| 56 | Owning arrays once per loop | arrays a loop writes through, and can't share, are made unique before the loop; its writes skip the flag test |
 
 Later v15 milestones (directories, processes, environment variables, Unicode follow-ups) are added when their discovery resumes; processes need a security review.
 

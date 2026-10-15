@@ -4907,20 +4907,44 @@ Branch: prp-084-copy_on_write
 
 ---
 
-## SESSION 118 — 2026-10-15 — Discovery: owning arrays once per loop — open
+## SESSION 118 — 2026-10-15 — Discovery: owning arrays once per loop — closed
 Branch: main
+
+### WHAT WAS DONE
+- Rebuilt firefly's examples with the M55 compiler; updated its README timings (pushed `e61c888`, at the user's request).
+- Discovery for the TODO item "Own an array once per loop". The user chose every recommended answer:
+  - compiler hoisting;
+  - a strict syntactic whitelist per root;
+  - every loop kind at every nesting level, with guarded hoists for indexed paths;
+  - milestone 56, timings reported but not gated.
+- Added decisions 25–28 to `Language v15 Draft.md` and wrote PRP-085 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-085-loop_ownership.md`.
+- Modified: `docs/specs/Language v15 Draft.md`, CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: they wait for the user's approval of PRP-085.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-085.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–55 complete** (tag `m55`: copy-on-write arrays, PRP-084). firefly trains 13–35% faster; write-only loops pay a flag test per write (histogram +55%, matmul +30%).
+**Milestones 51–55 complete.** **Milestone 56 (owning arrays once per loop) is proposed:** decisions 25–28 in `Language v15 Draft.md` and PRP-085. It waits for the user's explicit approval.
+- **On approval:** record MEMORY 108, branch `prp-085-loop_ownership`, commit the approved PRP.
+- **Before changing code:** record the "before" timings with the M55 compiler (DECISION-010's benchmarks, best of 5; firefly `./mlp data/names-32k.txt` and `./gpt data/names-32k.txt 1000 32 4 0.1`).
+- **Then build:** `codegen/hoist.rs` (analysis), the hoists before each loop kind, `Lowerer.owned` consulted by `places.rs::walk`.
 
-Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section):
-- own an array once per loop (removes the write-loop cost above);
-- nested `mut self` calls whose arguments only read the receiver;
-- any number as a `T: Num`;
-- lazy std modules; user-defined `Ord`; the `sum()` cleanup; std.fs/env/process; Unicode follow-ups.
+A wrong hoist silently breaks value semantics: test every exclusion against the M55 compiler's output.
 
 See `TODO.md`.
 

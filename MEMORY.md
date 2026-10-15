@@ -1757,12 +1757,11 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–55 complete** (tag `m55`: copy-on-write arrays, PRP-084). firefly trains 13–35% faster; write-only loops pay a flag test per write (histogram +55%, matmul +30%).
+**Milestones 51–55 complete.** **Milestone 56 (owning arrays once per loop) is proposed:** decisions 25–28 in `Language v15 Draft.md` and PRP-085. It waits for the user's explicit approval.
+- **On approval:** record MEMORY 108, branch `prp-085-loop_ownership`, commit the approved PRP.
+- **Before changing code:** record the "before" timings with the M55 compiler (DECISION-010's benchmarks, best of 5; firefly `./mlp data/names-32k.txt` and `./gpt data/names-32k.txt 1000 32 4 0.1`).
+- **Then build:** `codegen/hoist.rs` (analysis), the hoists before each loop kind, `Lowerer.owned` consulted by `places.rs::walk`.
 
-Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section):
-- own an array once per loop (removes the write-loop cost above);
-- nested `mut self` calls whose arguments only read the receiver;
-- any number as a `T: Num`;
-- lazy std modules; user-defined `Ord`; the `sum()` cleanup; std.fs/env/process; Unicode follow-ups.
+A wrong hoist silently breaks value semantics: test every exclusion against the M55 compiler's output.
 
 See `TODO.md`.
