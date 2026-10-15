@@ -5979,6 +5979,11 @@ Branch: prp-103-lsp_completion
 
 ---
 
+## SESSION 153 — 2026-10-15 — Record the language server's manual checks; completion settings note — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
