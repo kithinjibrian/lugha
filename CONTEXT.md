@@ -5204,18 +5204,50 @@ Branch: prp-089-lazy_std
 
 ---
 
-## SESSION 127 — 2026-10-15 — Discovery: the rest of the v15 TODO — open
+## SESSION 127 — 2026-10-15 — Discovery: the rest of the v15 TODO — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user asked to "swallow the remaining TODO in one PRP". I flagged the scope rule, std.process's security review and the §11 "full Unicode tables" exclusion; the user chose one approval with a PRP per item.
+- Discovery. The user chose every recommendation:
+  - C → Lugha: all three, over one decoder;
+  - `std.fs`: plain functions, no recursive delete;
+  - `std.env`: read-only `get` and `current_dir`;
+  - `std.process`: `run`, `run_with` and `call`, with PATH lookup, no shell, an inherited environment, only fds 0–2, UTF-8 output or `Err`, and `128 + signal`;
+  - Unicode: widths only, with the tables staying out of scope.
+- Added decisions 44–52 and milestone rows 61–66 to `Language v15 Draft.md`.
+- Interrupted by the user before the PRPs were written.
+
+### FILES CREATED OR MODIFIED
+- Modified: `docs/specs/Language v15 Draft.md`, CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: the PRPs aren't written or approved yet.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Writing PRP-090 to PRP-095.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–60 complete** (tag `m60`: lazy std modules, PRP-089). Nothing is proposed or in progress.
+**Milestones 51–60 complete.** **Discovery for the rest of the v15 TODO is done** (session 127; decisions 44–52 in `Language v15 Draft.md`). The six PRPs are **not yet written** (the user interrupted):
+- PRP-090: milestone 61, one `iter_sum`;
+- PRP-091: milestone 62, C → Lugha (parsers, one UTF-8 decoder);
+- PRP-092: milestone 63, format widths in characters;
+- PRP-093: milestone 64, `std.env`;
+- PRP-094: milestone 65, `std.fs`;
+- PRP-095: milestone 66, `std.process` (its approval is the user's security review).
 
-Unpushed local commits, for the user to push when they ask: firefly `ce6f38b` (layers) and `a891512` (nested layer); glowworm `b0683c3` (numbers as `T`). The user's `gpt-4x20k.log` is untracked in firefly.
+**Next:** write them from decisions 44–52, then get one approval and build them back to back.
 
-Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section): the `sum()` cleanup, optional C → Lugha, std.fs/env/process (processes need a security review), Unicode follow-ups.
+Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 
 See `TODO.md`.
 

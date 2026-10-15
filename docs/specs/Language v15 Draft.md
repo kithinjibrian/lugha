@@ -1,6 +1,6 @@
 # Lugha v15 — Draft (delta against v14)
 
-**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116), and built. Milestone 56 (owning arrays once per loop) approved in session 119 (proposed in session 118), and built. Milestone 57 (nested `mut self` calls) proposed in session 120 and built in session 122, and milestones 58 (numbers as `T`, built in session 123) and 59 (user-defined `Ord`, built in session 124) in session 121; all three approved in session 122. Milestone 60 (lazy std modules) approved in session 126 (proposed in session 125), and built. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
+**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116), and built. Milestone 56 (owning arrays once per loop) approved in session 119 (proposed in session 118), and built. Milestone 57 (nested `mut self` calls) proposed in session 120 and built in session 122, and milestones 58 (numbers as `T`, built in session 123) and 59 (user-defined `Ord`, built in session 124) in session 121; all three approved in session 122. Milestone 60 (lazy std modules) approved in session 126 (proposed in session 125), and built. Milestones 61–66 (the rest of the v15 TODO) proposed in session 127. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
 **Base:** `Language v14 Specification.md`, complete (milestone 50). It stays the source of truth, and what `lughac spec` prints, until v15's first milestone starts `Language v15 Specification.md`. That file then grows milestone by milestone, and v14 is frozen.
 
 This draft lists only what changes, in the order of the v14 sections. Everything not mentioned keeps its v14 meaning.
@@ -272,6 +272,36 @@ Found in session 114: importing a std module compiles every non-generic function
 42. **Std only:** a program's own modules and its packages still compile everything.
 43. **Success:** milestone 60, tag `m60`, with no language change. IR tests (unused std functions absent; std reached through generics, interface values and function values present), every program's output unchanged, and the IR size of the std programs before and after.
 
+## Decisions behind milestones 61–66 (discovery, session 127)
+
+The user asked to finish the v15 TODO in one approval. Each item stays its own PRP and milestone (the scope rule), built back to back in this order.
+
+44. **Milestone 61, one `iter_sum`:** the ten `iter_sum_<type>` prelude copies and the checker's per-type table become one `fun iter_sum<T: Num>(it: Iter<T>): T`. `["a"].iter().sum()` stays E0415; only IR names change (`iter_sum<i64>`). No language change.
+45. **Milestone 62, `parse_i64` and `parse_u64` in Lugha:** prelude functions with the same results (an optional `-` for `i64`, digits only, `None` on overflow or anything else). `lugha_rt_parse_i64` and `lugha_rt_parse_u64` are removed.
+46. **Milestone 62, one UTF-8 decoder:** a prelude `utf8_step` decides how many bytes the scalar at a position takes (0 if invalid). `s.chars()` and `string_from_utf8` both use it, so they can't disagree. A bundled-only built-in `$string.from_bytes` turns checked bytes into a string, and `lugha_rt_utf8_check` is removed. Same results and messages.
+47. **Milestone 63, widths in characters:** a format width (`{name:<8}`, `{x:^9}`) counts Unicode scalar values, not bytes, and a fill may be any `char`. Classification and case stay Latin-1: the user ruled fuller tables out of v15, keeping §11's "full Unicode tables" exclusion.
+48. **Milestone 64, `std.env`:** `env.get(name): Option<string>` (`None` when unset or not UTF-8) and `env.current_dir(): Result<string, string>`; read-only, with no setting and no changing directory.
+49. **Milestone 65, `std.fs`:**
+    - `list_dir(path): Result<string[], string>` gives names sorted by bytes, without `.` and `..`;
+    - `make_dir`, `make_dirs` (with parents), `remove_file` and `remove_dir` (empty only) return `Result<i64, string>` with `Ok(0)`;
+    - `exists`, `is_dir` and `is_file` return `bool`.
+
+    No recursive delete. Errors carry the system's message, as `read_file`'s do.
+50. **Milestone 66, `std.process` API:**
+    - `run(cmd, args): Result<Output, string>` captures, with `Output { code: i32, stdout: string, stderr: string }`;
+    - `run_with(cmd, args, input)` also writes `input` to the child's stdin;
+    - `call(cmd, args): Result<i32, string>` lets output through to the terminal.
+
+    `Err` only when the program can't start; any exit code is `Ok`.
+51. **Milestone 66, how programs start** (the user's security choices):
+    - **No shell:** `posix_spawnp` with the argument list (no splitting, globbing or quoting); a `cmd` without `/` is found on `PATH`, one with `/` is a path; a NUL in `cmd` or an argument is an `Err`.
+    - **Inherited state:** the child inherits the environment unchanged; the runtime's own descriptors are close-on-exec, so it gets only 0, 1 and 2.
+    - **Results:** stdout and stderr are drained together (no pipe deadlock); output that isn't valid UTF-8 is an `Err`; death by signal `n` is code `128 + n`.
+    - **Limits:** no timeout and no output limit in v15.
+
+    The user's approval of PRP-095 is the security review.
+52. **Success, each milestone:** tests first, every earlier program unchanged, a tag (`m61` … `m66`); new std modules get §10 programs, while 61–63 change no language (63 changes only padding of non-ASCII text).
+
 ## §2–§5 — no changes for milestone 51
 
 ## §6 Functions and program structure — changes
@@ -297,6 +327,8 @@ Found in session 114: importing a std module compiles every non-generic function
 
 ## §10 Example programs — additions (v15 acceptance tests)
 
+- **M64–M66:** a §10 program each for `std.env`, `std.fs` (in a scratch folder) and `std.process` (running `echo` and `sort` found on `PATH`, with captured output, stdin and exit codes).
+- **M61–M63:** no new §10 program; M63 updates the format program's expectations only if it pads non-ASCII text.
 - **M60:** no new §10 program (no language change).
 - **M59:** a leaderboard: a struct with `cmp`, sorted with `sort()`, its best with `it.min()`, ties broken through a tuple.
 - **M58:** a generic `mean`, `arange` and `scale` at `i64`, `f32` and `f64`, using `as T` and literals as `T`.
@@ -322,6 +354,12 @@ Found in session 114: importing a std module compiles every non-generic function
 | 58 | Numbers as `T` | `as` casts with `T: Num`/`Float`; integer literals as `T: Num`, float literals as `T: Float`; E0402 per instance |
 | 59 | User-defined `Ord` | `cmp(self, other: Self): Ordering`, the prelude `Ordering`, `<` through `cmp`, tuples, `xs.sort()` |
 | 60 | Lazy std modules | an imported std module's functions and methods compiled only when reached, as the prelude's |
+| 61 | One `iter_sum` | `iter_sum<T: Num>` replaces the per-type copies |
+| 62 | C → Lugha | `parse_i64`/`parse_u64` and one UTF-8 decoder in the prelude; `$string.from_bytes` |
+| 63 | Widths in characters | format widths count chars; any `char` fill |
+| 64 | `std.env` | `get`, `current_dir` |
+| 65 | `std.fs` | `list_dir`, `make_dir(s)`, `remove_file`, `remove_dir`, `exists`, `is_dir`, `is_file` |
+| 66 | `std.process` | `run`, `run_with`, `call`; no shell, `PATH` lookup, inherited environment |
 
 Later v15 milestones (directories, processes, environment variables, Unicode follow-ups) are added when their discovery resumes; processes need a security review.
 
