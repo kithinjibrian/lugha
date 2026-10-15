@@ -5104,6 +5104,11 @@ Branch: prp-087-numbers_as_t
 
 ---
 
+## SESSION 124 — 2026-10-15 — User-defined `Ord` (milestone 59) — open
+Branch: prp-088-user_ord
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–58 complete** (tag `m58`: numbers as `T`, PRP-087). **Approved and next, in one go:** milestone 59, user-defined `Ord` (PRP-088): a session, branch `prp-088-user_ord`, MEMORY 114, tests first, merge on green CI, tag `m59`.

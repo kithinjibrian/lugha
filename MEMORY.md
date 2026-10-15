@@ -1705,6 +1705,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 - **Literals:** `literal.rs` types any integer literal as `T: Num` and any float literal as `T: Float`, records the integer ones (`ParamLiteral`), and `instance_literals` reports E0402 per (literal, type) after `monomorphize`.
 - **Libraries:** glowworm's `arange`/`linspace`/`mean` simplified (`b0683c3`, local); firefly needed nothing.
 
+### 114. User-defined `Ord` planned (session 121, approved session 122)
+
+**Decision (draft decisions 37–40, PRP-088):**
+- **`Ord`:** a type with `fun cmp(self, other: Self): Ordering` (a prelude `enum Ordering { Less, Equal, Greater }`, written `Ordering.Less`) is `Ord`; `<` `<=` `>` `>=` call `cmp`.
+- **Unchanged:** `==` stays structural, and `Ord` doesn't imply `Eq`.
+- **Also:** tuples compare through `cmp`; a prelude `xs.sort()` for `T: Ord`.
+- **Success:** milestone 59, tests only.
+
+**Why:** unlocks `min`/`max`/`clamp` and sorting for user types with one method, mirroring M52's operator methods.
+
 ---
 
 ## CURRENT PROJECT STATE
