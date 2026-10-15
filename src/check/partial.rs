@@ -61,6 +61,9 @@ pub struct Partial {
     pub prelude: HashMap<String, Span>,
     /// Each function's and method's signature, by its declaration's name.
     pub signatures: HashMap<Span, super::Sig>,
+    /// Every missing pattern of each non-exhaustive `match`, in full
+    /// (`Rect(_, _)`), by its E0417 span; empty when only `_` applies.
+    pub missing_arms: HashMap<Span, Vec<String>>,
     /// Every error and warning, as `check_modules` reports them.
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -72,6 +75,7 @@ pub(super) struct Recorder {
     pub names: HashMap<Span, Name>,
     pub definitions: HashMap<Span, Target>,
     pub signatures: HashMap<Span, super::Sig>,
+    pub missing_arms: HashMap<Span, Vec<String>>,
     /// Each field's declaration by struct key and field name.
     pub(super) fields: HashMap<(String, String), Span>,
     /// Each variant's declaration by enum key and variant name.
@@ -186,6 +190,7 @@ pub fn check_partial(units: &[Unit]) -> Partial {
         names: checker.hover.names,
         definitions: checker.hover.definitions,
         signatures: checker.hover.signatures,
+        missing_arms: checker.hover.missing_arms,
         diagnostics: checker.diagnostics,
     }
 }
@@ -404,5 +409,37 @@ fun main() {
         assert_eq!(target(&partial, "Dot =>", "Dot"), decl("Dot }", "Dot"));
         assert_eq!(target(&partial, "p.x +", "x"), decl("{ x: f64", "x"));
         assert_eq!(target(&partial, "P { x: 1.0", "x"), decl("{ x: f64", "x"));
+    }
+    #[test]
+    fn missing_arms_are_recorded_in_full() {
+        let src = "enum Shape { Circle(f64), Rect(f64, f64), Dot, Tri(f64), Hex }
+fun main() {
+    let s = Shape.Dot;
+    match s { Circle(r) => println(r) }
+    let o: Option<Shape> = None;
+    match o { Some(Circle(_)) => {}, None => {} }
+    let n = 3;
+    match n { 1 => {} }
+}
+";
+        let partial = test_util::partial(src);
+        let at = |needle: &str| {
+            let start = src.find(needle).expect("a match");
+            partial
+                .missing_arms
+                .iter()
+                .find(|(s, _)| s.start == start)
+                .map(|(_, m)| m.clone())
+        };
+        // Every one, not only the three the message lists, payloads as `_`.
+        assert_eq!(
+            at("match s").expect("recorded"),
+            ["Rect(_, _)", "Dot", "Tri(_)", "Hex"]
+        );
+        assert_eq!(
+            at("match o").expect("recorded"),
+            ["Some(Rect(_, _))", "Some(Dot)", "Some(Tri(_))", "Some(Hex)"]
+        );
+        assert_eq!(at("match n").expect("recorded"), Vec::<String>::new());
     }
 }

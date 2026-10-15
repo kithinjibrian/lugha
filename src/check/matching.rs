@@ -156,9 +156,13 @@ impl Checker {
         let span = Span::new(expr.span.start, scrutinee.span.end);
         // Integers and strings have too many values to list.
         if missing.iter().all(|w| w[0] == Pat::Wild) && (sty.is_integer() || *sty == Type::String) {
+            self.hover.missing_arms.insert(span, Vec::new());
             self.report(errors::non_exhaustive_values(sty, span));
             return;
         }
+        // In full for the quick fix (milestone 79): `Rect(_, _)`, not `Rect`.
+        let full = missing.iter().map(|w| show(&w[0], false)).collect();
+        self.hover.missing_arms.insert(span, full);
         let shown: Vec<String> = missing.iter().map(|w| show(&w[0], true)).collect();
         self.report(errors::non_exhaustive(&shown, span));
     }

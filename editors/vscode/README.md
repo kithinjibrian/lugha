@@ -4,6 +4,7 @@ Syntax highlighting and live `lughac` diagnostics for [Lugha](../../README.md) (
 
 - **Highlighting:** keywords, types, numbers, `//` and `/* … */` comments (nested ones too), strings with `{…}` interpolation and format specifiers (`{pi:.2}`), `format("{} {:>4}", …)` templates, `char` literals.
 - **Editing:** `Ctrl+/` toggles `//`, `Shift+Alt+A` toggles `/* … */`; brackets and quotes close themselves.
+- **Quick fixes:** on a non-exhaustive `match` (E0417), the lightbulb offers **Add missing arms** (every missing case, in full) and **Add a `_` arm**; each new arm's body is `panic("not handled")` until you write it. Needs a `lughac` from milestone 79.
 - **Snippets:** type a prefix and Tab — `fun`, `main`, `struct`, `enum`, `impl`, `interface`, `import`, `doc`, `if`, `ifelse`, `while`, `forof`, `forin`, `iflet`, `letelse`, `match`. Picking a function, method or variant from completion inserts its call with each parameter as a tab stop; on an enum, `Option` or `Result` value, `value.match` writes out every variant. Needs a `lughac` from milestone 78 for the completion ones.
 - **Doc comments:** `/** … */` above a function, method, type, field or variant (Markdown, `@param name text`, `@returns text`) shows under its header in hover and completion, and in signature help with the active parameter's text. Hovering a type or variant name shows it too. std and the prelude are documented. Needs a `lughac` from milestone 77.
 - **While a file has a syntax error** (a missing `;`, a half-typed line), all of the below keep working everywhere but the broken statement, and only the syntax errors are underlined. Needs a `lughac` from milestone 75.
@@ -23,8 +24,8 @@ Needs Node 22.
 cd editors/vscode
 npm ci
 npm test                    # server-command and grammar tests
-npm run package             # lugha-0.3.1.vsix
-code --install-extension lugha-0.3.1.vsix
+npm run package             # lugha-0.3.2.vsix
+code --install-extension lugha-0.3.2.vsix
 ```
 
 **After any change in `editors/vscode/`**, bump the version in `package.json` (`npm version minor --no-git-tag-version`), rebuild the `.vsix` and reinstall it, then run **Developer: Reload Window**. VS Code skips a `.vsix` whose version is already installed, so an unbumped rebuild needs `code --install-extension … --force`. The language-server features come from `lughac` itself: reinstall it too (`cargo install --path .`) when they changed.
@@ -69,4 +70,5 @@ Also make sure the `lughac` VS Code starts is from milestone 73 or later (`cargo
 10. Write a `/* … */` comment with a nested one inside: all of it is coloured as a comment; select lines and press `Shift+Alt+A`: they become a block comment.
 11. Write `/** Doubles. @param n the number */` above a function: hover it, complete it and type its call — the doc shows each time; hover `math.sqrt` and `xs.map`: their library docs show.
 12. Type `fun` then Tab, and `forof` then Tab: the snippets expand with tab stops; complete `max` and press Enter: `max(a, b)` with `a` selected; type `s.match` on an enum value and pick `match`: every variant is written out.
-13. Set `lugha.path` to `/nonexistent`: one notification.
+13. Leave a variant out of a `match`: the lightbulb offers **Add missing arms** and **Add a `_` arm**; either one clears the error.
+14. Set `lugha.path` to `/nonexistent`: one notification.

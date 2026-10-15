@@ -7,6 +7,7 @@
 //! file, opens no port.
 
 mod check;
+mod code_actions;
 mod completion;
 mod definition;
 mod docs;
@@ -23,6 +24,7 @@ use std::time::{Duration, Instant};
 
 use lsp_server::{Connection, ErrorCode, Message, ProtocolError, Response};
 use lsp_types::{
+    CodeActionKind, CodeActionOptions, CodeActionParams, CodeActionProviderCapability,
     CompletionOptions, CompletionParams, CompletionResponse, GotoDefinitionParams,
     GotoDefinitionResponse, HoverParams, HoverProviderCapability, InitializeParams, OneOf,
     PositionEncodingKind, SaveOptions, ServerCapabilities, ServerInfo, SignatureHelpOptions,
@@ -98,6 +100,21 @@ fn run(connection: &Connection) -> Result<u8, LspError> {
                                 let (hover, published) = server.hover(&params, Instant::now());
                                 send(connection, published)?;
                                 Response::new_ok(request.id, hover)
+                            }
+                            Err(error) => Response::new_err(
+                                request.id,
+                                ErrorCode::InvalidParams as i32,
+                                error.to_string(),
+                            ),
+                        }
+                    }
+                    "textDocument/codeAction" => {
+                        match serde_json::from_value::<CodeActionParams>(request.params) {
+                            Ok(params) => {
+                                let (actions, published) =
+                                    server.code_action(&params, Instant::now());
+                                send(connection, published)?;
+                                Response::new_ok(request.id, actions)
                             }
                             Err(error) => Response::new_err(
                                 request.id,
@@ -187,6 +204,10 @@ fn capabilities() -> ServerCapabilities {
         position_encoding: Some(PositionEncodingKind::UTF16),
         hover_provider: Some(HoverProviderCapability::Simple(true)),
         definition_provider: Some(OneOf::Left(true)),
+        code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
+            code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
+            ..CodeActionOptions::default()
+        })),
         signature_help_provider: Some(SignatureHelpOptions {
             trigger_characters: Some(vec!["(".to_string(), ",".to_string()]),
             retrigger_characters: Some(vec![",".to_string()]),

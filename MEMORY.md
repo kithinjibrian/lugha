@@ -1913,11 +1913,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. `editors/vscode/snippets/lugha.json` (16 snippets; `tests/snippets.rs` expands each with VS Code's rules and runs `lughac check`); `driver/lsp/snippets.rs` (call placeholders from `Sig` names, a prelude helper's receiver skipped; built-ins and variants from their types; the postfix `.match` with a `textEdit` from the receiver's start); the server records `snippetSupport`; `Here.snippets` is off when a `(` follows the cursor.
 
+### 151. The add-missing-arms quick fix planned (session 166, approved session 167)
+
+**Decision:** v16 draft decisions 56–59: on E0417, "Add missing arms" (every missing pattern in full) and "Add a `_` arm", bodies `panic("not handled")` (the user's choices).
+
+### 152. The add-missing-arms quick fix — milestone 79 (PRP-109)
+
+**Decision:** built as planned: `Partial.missing_arms` recorded beside E0417 in `matching.rs` (`show(_, false)`); `driver/lsp/code_actions.rs` places the edit from the source text (a bracket scanner from the scrutinee's end to the closing `}`, skipping strings and nested comments, since the AST has no general walker); answers only from a current, unbroken check. An interface match's only missing case `_` gives just the `_` fix.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 79 complete**: PRP-109 the add-missing-arms quick fix
 - **Milestone 78 complete**: PRP-108 snippets
 - **Milestone 77 complete**: PRP-107 doc comments
 - **Milestone 76 complete**: PRP-106 block comments
