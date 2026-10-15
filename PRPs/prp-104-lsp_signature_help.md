@@ -74,25 +74,31 @@ None.
 - Nothing new is read, run or written. The scanner reads only the open document's text and is bounded (design 1). Offline, no writes (PRP-100).
 
 ## TESTS TO WRITE
-- [ ] **`check::partial` unit tests:** `signatures` for a function (names, types, return), a generic function (its generics), a method (receiver, the `impl`'s and its own generics).
-- [ ] **`driver::lsp::signature` unit tests:** call context for `max(1.5, |`, `f(a, g(b, |`, `f([1, 2], |`, `f("a,b", |`, a call over two lines, a comment after `(`, a grouping `(a + |` → none, outside any call → none; the intrinsic table matches `check::intrinsics()` and the spec.
-- [ ] **`tests/lsp_signature.rs`** (real server over stdio, the text mid-typing so it doesn't parse):
+- [x] **`check::partial` unit tests:** `signatures` for a function (names, types, return), a generic function (its generics), a method (receiver, the `impl`'s and its own generics).
+- [x] **`driver::lsp::signature` unit tests:** call context for `max(1.5, |`, `f(a, g(b, |`, `f([1, 2], |`, `f("a,b", |`, a call over two lines, a comment after `(`, a grouping `(a + |` → none, outside any call → none; the intrinsic table matches `check::intrinsics()` and the spec.
+- [x] **`tests/lsp_signature.rs`** (real server over stdio, the text mid-typing so it doesn't parse):
   - `initialize` advertises `signatureHelpProvider` with `(` and `,`;
   - `twice(|` → `fun twice(n: i64): i64`, active parameter 0;
   - `max(1.5, |` in a call the last good check had → the filled-in text, the written header as documentation, active parameter 1; on a new line (not in the last good check) → the written header;
   - `p.scale(|` → the method's header, parameter `k` active; `geo.double(|`; `Shape.Circle(|` → `Circle(f64)`; `xs.push(|` → `push(i64)`; `read_file(|` → `read_file(path)`;
   - `(a + |` and plain code → `null`; a file never opened → `null`.
-- [ ] **Regression:** completion, hover and definitions unchanged; every existing test passes.
+- [x] **Regression:** completion, hover and definitions unchanged; every existing test passes.
 - [ ] **Manual check** (extension README), by the user: a function, a method, a generic call and `println(` in VS Code.
+
+## BUILT (session 155)
+- As designed: `check/signatures.rs` (`Sig` with `filled`; its tests stand in for the planned `check::partial` ones), `Partial.signatures` recorded where functions and methods are registered; `driver/lsp/signature.rs`; `Here` and a new `Receiver` in `completion.rs` shared by both; `signatureHelpProvider` with `(` and `,`.
+- Tests: 3 in `check::signatures`, 4 in `driver::lsp::signature`, 9 in `tests/lsp_signature.rs`; completion's 10 unchanged after the refactor.
+- **Differences:** the call is found by scanning forward from a line start (up to 2,000 bytes back) with a bracket stack, rather than backwards — strings and comments are only reliable read forwards. A local holding a function value shows its `fun(…)` type only.
+- The manual check in VS Code is left to the user (extension README, step 8).
 
 ## ROLLBACK PLAN
 - Branch `prp-104-lsp_signature_help` from `main`; tag `m74`.
 - To abandon before merge: delete the branch. After: revert the merge; the server stops advertising signature help.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test` (CI in the background, not waited on).
-- [ ] Spec at milestone 74; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test` (CI in the background, not waited on).
+- [x] Spec at milestone 74; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 - [ ] The manual check passes in VS Code.
 
 ## VALIDATION

@@ -56,7 +56,7 @@ impl Checker {
                 let own = self.generics_with(&f.type_params, &outer);
                 self.type_params = [outer.clone(), own].concat();
                 self.check_params(&f.type_params, &outer);
-                let params = f.params.iter().map(|p| self.resolve(&p.ty)).collect();
+                let params: Vec<Type> = f.params.iter().map(|p| self.resolve(&p.ty)).collect();
                 let ret = f.ret.as_ref().map_or(Type::Void, |t| self.resolve(t));
                 if let Some(first) = self.methods.get(owner).and_then(|m| m.get(name)) {
                     let first = first.span;
@@ -68,6 +68,15 @@ impl Checker {
                     continue;
                 }
                 self.register_method(owner, name, f.visibility);
+                let receiver = f.receiver.map(|r| r.mutable);
+                let sig = super::Sig::of(
+                    &self.type_params,
+                    outer.len(),
+                    receiver,
+                    (&f.params, &params),
+                    &ret,
+                );
+                self.hover.signatures.insert(f.name.span, sig);
                 let method = Method {
                     receiver: f.receiver.map(|r| r.mutable),
                     params,

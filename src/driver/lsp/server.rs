@@ -12,7 +12,7 @@ use lsp_types::{
     CompletionItem, CompletionParams, DidChangeConfigurationParams, DidChangeTextDocumentParams,
     DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
     GotoDefinitionParams, Hover, HoverParams, InitializeParams, Location, LogMessageParams,
-    MessageType, PublishDiagnosticsParams,
+    MessageType, PublishDiagnosticsParams, SignatureHelp, SignatureHelpParams,
 };
 use serde_json::Value;
 
@@ -22,6 +22,7 @@ use super::definition;
 use super::documents::{Documents, uri_to_path};
 use super::hover::{self, Snapshot};
 use super::publish::{self, Store};
+use super::signature;
 use super::targets::{self, Target};
 
 /// How long typing must pause before a changed document is checked.
@@ -242,6 +243,27 @@ impl Server {
             .filter_map(|t| checks.get(&t.main))
             .map(|s| &**s)
             .find(|s| s.has(file))
+    }
+
+    /// Answers signature help, from the last check that parsed as
+    /// completion does (decision 35).
+    pub(super) fn signature_help(
+        &mut self,
+        params: &SignatureHelpParams,
+        now: Instant,
+    ) -> (Option<SignatureHelp>, Vec<Message>) {
+        let at = &params.text_document_position_params;
+        let (file, out) = self.fresh(at.text_document.uri.as_str(), now);
+        let help = file.and_then(|f| {
+            let targets = self.plan(&f, &mut Vec::new());
+            let snapshot = Self::loaded(&self.last_good, &targets, &f)?;
+            let text = match self.docs.text(&f) {
+                Some(text) => text.to_string(),
+                None => std::fs::read_to_string(&f).ok()?,
+            };
+            signature::answer(snapshot, &f, &text, at.position)
+        });
+        (help, out)
     }
 
     /// Answers completion from the last check that parsed (decision 29),

@@ -64,18 +64,8 @@ pub(super) fn answer(
     let Some(context) = context(text, cursor) else {
         return Vec::new();
     };
-    let Some((base, old)) = snapshot.base(file) else {
+    let Some(here) = Here::new(snapshot, file, text) else {
         return Vec::new();
-    };
-    let Some(module) = snapshot.modules.iter().find(|m| m.base == base) else {
-        return Vec::new();
-    };
-    let here = Here {
-        snapshot,
-        module,
-        text,
-        base,
-        same: common_prefix(old, text),
     };
     match context.dot {
         Some(dot) => here.members(dot),
@@ -131,20 +121,52 @@ fn common_prefix(a: &str, b: &str) -> usize {
     n
 }
 
-/// The cursor's file in the last good check.
-struct Here<'a> {
-    snapshot: &'a Snapshot,
-    module: &'a Module,
-    text: &'a str,
+/// The cursor's file in the last good check; shared with signature help.
+pub(super) struct Here<'a> {
+    pub snapshot: &'a Snapshot,
+    pub module: &'a Module,
+    pub text: &'a str,
     /// Where the file starts in the check's offset space.
-    base: usize,
+    pub base: usize,
     /// How many leading bytes the check's text and the current text share.
-    same: usize,
+    pub same: usize,
 }
 
-impl Here<'_> {
+/// What a name before a `.` turned out to be.
+pub(super) enum Receiver {
+    /// A value's or a type's members.
+    Members(Vec<Member>),
+    /// The module at this path.
+    Module(Vec<String>),
+}
+
+impl<'a> Here<'a> {
+    /// `file`, whose current text is `text`, in `snapshot`.
+    pub(super) fn new(snapshot: &'a Snapshot, file: &Path, text: &'a str) -> Option<Here<'a>> {
+        let (base, old) = snapshot.base(file)?;
+        let module = snapshot.modules.iter().find(|m| m.base == base)?;
+        let same = common_prefix(old, text);
+        Some(Here {
+            snapshot,
+            module,
+            text,
+            base,
+            same,
+        })
+    }
+
     /// What can follow the `.` at `dot`.
     fn members(&self, dot: usize) -> Vec<CompletionItem> {
+        match self.receiver(dot) {
+            Some(Receiver::Members(members)) => self.items(&members),
+            Some(Receiver::Module(path)) => self.module_items(&path),
+            None => Vec::new(),
+        }
+    }
+
+    /// What the name before the `.` at `dot` is: from the check's expression
+    /// ending there when it is in the shared text, else by name.
+    pub(super) fn receiver(&self, dot: usize) -> Option<Receiver> {
         let partial = &self.snapshot.partial;
         if self.same >= dot {
             let end = self.base + dot;
@@ -152,10 +174,10 @@ impl Here<'_> {
             let named = partial.definitions.iter().filter(|(s, _)| s.end == end);
             if let Some(target) = smallest(named.map(|(s, t)| (*s, t))) {
                 match target {
-                    Target::Module(path) => return self.module_items(path),
+                    Target::Module(path) => return Some(Receiver::Module(path.clone())),
                     Target::Decl(decl) => {
                         if let Some(key) = self.type_at(*decl) {
-                            return self.items(&check::type_members(partial, &key));
+                            return Some(Receiver::Members(check::type_members(partial, &key)));
                         }
                     }
                 }
@@ -169,7 +191,7 @@ impl Here<'_> {
                 usable.then_some((span, ty))
             });
             if let Some(ty) = smallest(typed) {
-                return self.items(&check::value_members(partial, ty));
+                return Some(Receiver::Members(check::value_members(partial, ty)));
             }
         }
         // A name just before the dot that this check may not have seen
@@ -183,26 +205,26 @@ impl Here<'_> {
         let name_start = dot - name_len;
         let name = &self.text[name_start..dot];
         if name.is_empty() || self.text[..name_start].ends_with('.') {
-            return Vec::new();
+            return None;
         }
         if let Some(local) = self
             .locals(name_start)
             .into_iter()
             .find(|(n, _, _)| n == name)
         {
-            return self.items(&check::value_members(partial, &local.1));
+            return Some(Receiver::Members(check::value_members(partial, &local.1)));
         }
         let program = self.program();
         if let Some(n) = program.and_then(|p| p.imports.iter().position(|i| i.bound().name == name))
         {
             let path = self.module.imports.get(n).cloned().unwrap_or_default();
-            return self.module_items(&path);
+            return Some(Receiver::Module(path));
         }
         let key = check::qualify(&self.module.path, name);
         if partial.members.contains_key(&key) {
-            return self.items(&check::type_members(partial, &key));
+            return Some(Receiver::Members(check::type_members(partial, &key)));
         }
-        Vec::new()
+        None
     }
 
     /// Every name that may start at `word`.
@@ -245,7 +267,7 @@ impl Here<'_> {
     /// The locals and parameters declared before `limit` (a current-text
     /// offset) in the function around it, newest first: only those inside
     /// the text the check shares with the current one.
-    fn locals(&self, limit: usize) -> Vec<(String, Type, bool)> {
+    pub(super) fn locals(&self, limit: usize) -> Vec<(String, Type, bool)> {
         let shared = self.base + self.same.min(limit);
         let Some(function) = self.program().and_then(|p| enclosing(p, shared)) else {
             return Vec::new();
@@ -268,7 +290,7 @@ impl Here<'_> {
         found.into_iter().map(|(_, n, t, m)| (n, t, m)).collect()
     }
 
-    fn program(&self) -> Option<&Program> {
+    pub(super) fn program(&self) -> Option<&Program> {
         self.module.program.as_ref()
     }
 
@@ -360,7 +382,7 @@ impl Here<'_> {
     }
 
     /// A function's header as written, or its name when it has none.
-    fn header(&self, decl: Span, name: &str) -> String {
+    pub(super) fn header(&self, decl: Span, name: &str) -> String {
         declaration(self.snapshot, decl).map_or_else(|| name.to_string(), |(header, _)| header)
     }
 }

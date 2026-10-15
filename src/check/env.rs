@@ -92,6 +92,8 @@ impl Checker {
                     self.same_extern(text, &params, &ret_type, name.span);
                 }
                 self.register_item(&key, visibility);
+                let sig = super::Sig::of(&generics, 0, None, (declared, &params), &ret_type);
+                self.hover.signatures.insert(name.span, sig);
                 let signature = Signature {
                     generics,
                     params,

@@ -245,6 +245,46 @@ impl Server {
             .collect()
     }
 
+    /// Asks for signature help at a zero-based `line` and UTF-16
+    /// `character` of `uri`: the label, the active parameter's index and
+    /// text, and the documentation; `None` for no signature help.
+    pub fn signature_help(
+        &mut self,
+        uri: &str,
+        line: u32,
+        character: u32,
+    ) -> Option<(String, u64, String, String)> {
+        let reply = self.request(
+            "textDocument/signatureHelp",
+            json!({ "textDocument": { "uri": uri }, "position": { "line": line, "character": character } }),
+        );
+        assert!(reply.get("error").is_none(), "{reply}");
+        let help = &reply["result"];
+        if help.is_null() {
+            return None;
+        }
+        let sig = &help["signatures"][0];
+        let label = sig["label"].as_str()?.to_string();
+        let active = help["activeParameter"].as_u64().unwrap_or(0);
+        let units: Vec<u16> = label.encode_utf16().collect();
+        let text = match sig["parameters"].get(active as usize) {
+            Some(p) => {
+                let (a, b) = (
+                    p["label"][0].as_u64()? as usize,
+                    p["label"][1].as_u64()? as usize,
+                );
+                String::from_utf16_lossy(&units[a..b])
+            }
+            None => String::new(),
+        };
+        let doc = match &sig["documentation"] {
+            Value::String(d) => d.clone(),
+            Value::Object(d) => d["value"].as_str().unwrap_or_default().to_string(),
+            _ => String::new(),
+        };
+        Some((label, active, text, doc))
+    }
+
     /// `shutdown` then `exit`, returning the exit code.
     pub fn finish(mut self) -> Option<i32> {
         let reply = self.request("shutdown", Value::Null);

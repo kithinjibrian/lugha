@@ -13,6 +13,7 @@ mod documents;
 mod hover;
 mod publish;
 mod server;
+mod signature;
 mod targets;
 
 use std::io::Write;
@@ -22,8 +23,9 @@ use lsp_server::{Connection, ErrorCode, Message, ProtocolError, Response};
 use lsp_types::{
     CompletionOptions, CompletionParams, CompletionResponse, GotoDefinitionParams,
     GotoDefinitionResponse, HoverParams, HoverProviderCapability, InitializeParams, OneOf,
-    PositionEncodingKind, SaveOptions, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
-    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
+    PositionEncodingKind, SaveOptions, ServerCapabilities, ServerInfo, SignatureHelpOptions,
+    SignatureHelpParams, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+    TextDocumentSyncSaveOptions,
 };
 use thiserror::Error;
 
@@ -102,6 +104,21 @@ fn run(connection: &Connection) -> Result<u8, LspError> {
                             ),
                         }
                     }
+                    "textDocument/signatureHelp" => {
+                        match serde_json::from_value::<SignatureHelpParams>(request.params) {
+                            Ok(params) => {
+                                let (help, published) =
+                                    server.signature_help(&params, Instant::now());
+                                send(connection, published)?;
+                                Response::new_ok(request.id, help)
+                            }
+                            Err(error) => Response::new_err(
+                                request.id,
+                                ErrorCode::InvalidParams as i32,
+                                error.to_string(),
+                            ),
+                        }
+                    }
                     "textDocument/completion" => {
                         match serde_json::from_value::<CompletionParams>(request.params) {
                             Ok(params) => {
@@ -168,6 +185,11 @@ fn capabilities() -> ServerCapabilities {
         position_encoding: Some(PositionEncodingKind::UTF16),
         hover_provider: Some(HoverProviderCapability::Simple(true)),
         definition_provider: Some(OneOf::Left(true)),
+        signature_help_provider: Some(SignatureHelpOptions {
+            trigger_characters: Some(vec!["(".to_string(), ",".to_string()]),
+            retrigger_characters: Some(vec![",".to_string()]),
+            ..SignatureHelpOptions::default()
+        }),
         completion_provider: Some(CompletionOptions {
             trigger_characters: Some(vec![".".to_string()]),
             ..CompletionOptions::default()

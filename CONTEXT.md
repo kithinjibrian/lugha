@@ -6032,8 +6032,29 @@ Branch: main
 
 ---
 
-## SESSION 155 — 2026-10-15 — Signature help in the language server (milestone 74) — open
+## SESSION 155 — 2026-10-15 — Signature help in the language server (milestone 74) — closed
 Branch: prp-104-lsp_signature_help
+
+### WHAT WAS DONE
+- The user approved PRP-104 ("build it"); MEMORY 141. Built in a worktree (`../lugha-prp-104`), merged through a PR without waiting for CI.
+- Tests first: `check::signatures` (3), then `Sig` and its recording; `tests/lsp_signature.rs` (9), then `driver/lsp/signature.rs` (4 unit tests), the shared `Here::receiver`, the request and capability.
+- Spec v16 at milestone 74 (signature help in the `lughac lsp` paragraph, §11 row 74, summary); docs.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/signatures.rs`, `src/driver/lsp/signature.rs`, `tests/lsp_signature.rs`.
+- Modified: `src/check/{mod,partial,env,methods}.rs`, `src/driver/lsp/{mod,server,completion}.rs`, `tests/common/lsp_client.rs`; the v16 spec and draft; CLAUDE.md, README, the extension README, TODO, CHANGELOG, MEMORY (141, 142), PRP-104, CONTEXT.
+
+### TESTS WRITTEN
+- `check::signatures` (3), `driver::lsp::signature` (4), `tests/lsp_signature.rs` (9).
+
+### DECISIONS MADE
+- MEMORY 142.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual check of signature help in VS Code (extension README step 8).
 
 ---
 
@@ -6041,7 +6062,7 @@ Branch: prp-104-lsp_signature_help
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
 
-**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. **Milestone 73 done** (tag `m73`): completion; the user's manual checks of milestones 70–73 all passed (session 153). **Proposed: milestone 74, signature help** — v16 draft decisions 33–37 and PRP-104; it waits for the user's approval. Later for the extension (each a discovery + PRP): partial syntax trees, signature help and snippets, Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. **Milestone 73 done** (tag `m73`): completion; the user's manual checks of milestones 70–73 all passed (session 153). **Milestone 74 done** (tag `m74`): signature help. Later for the extension (each a discovery + PRP): partial syntax trees, signature help and snippets, Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

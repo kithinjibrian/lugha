@@ -59,6 +59,8 @@ pub struct Partial {
     pub members: HashMap<String, super::TypeMembers>,
     /// Every prelude function's declaration name, by its name.
     pub prelude: HashMap<String, Span>,
+    /// Each function's and method's signature, by its declaration's name.
+    pub signatures: HashMap<Span, super::Sig>,
     /// Every error and warning, as `check_modules` reports them.
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -69,6 +71,7 @@ pub(super) struct Recorder {
     pub spans: Vec<Option<Span>>,
     pub names: HashMap<Span, Name>,
     pub definitions: HashMap<Span, Target>,
+    pub signatures: HashMap<Span, super::Sig>,
     /// Each field's declaration by struct key and field name.
     fields: HashMap<(String, String), Span>,
     /// Each variant's declaration by enum key and variant name.
@@ -182,6 +185,7 @@ pub fn check_partial(units: &[Unit]) -> Partial {
         callees: checker.callees,
         names: checker.hover.names,
         definitions: checker.hover.definitions,
+        signatures: checker.hover.signatures,
         diagnostics: checker.diagnostics,
     }
 }
