@@ -4937,6 +4937,11 @@ Branch: main
 
 ---
 
+## SESSION 119 — 2026-10-15 — Owning arrays once per loop (milestone 56) — open
+Branch: prp-085-loop_ownership
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–55 complete.** **Milestone 56 (owning arrays once per loop) is proposed:** decisions 25–28 in `Language v15 Draft.md` and PRP-085. It waits for the user's explicit approval.
