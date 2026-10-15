@@ -9,14 +9,16 @@ use std::time::{Duration, Instant};
 use lsp_server::{Message, Notification};
 use lsp_types::notification::{LogMessage, Notification as _, PublishDiagnostics};
 use lsp_types::{
-    CompletionItem, CompletionParams, DidChangeConfigurationParams, DidChangeTextDocumentParams,
-    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
-    GotoDefinitionParams, Hover, HoverParams, InitializeParams, Location, LogMessageParams,
-    MessageType, PublishDiagnosticsParams, SignatureHelp, SignatureHelpParams,
+    CodeActionOrCommand, CodeActionParams, CompletionItem, CompletionParams,
+    DidChangeConfigurationParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
+    DidOpenTextDocumentParams, DidSaveTextDocumentParams, GotoDefinitionParams, Hover, HoverParams,
+    InitializeParams, Location, LogMessageParams, MessageType, PublishDiagnosticsParams,
+    SignatureHelp, SignatureHelpParams,
 };
 use serde_json::Value;
 
 use super::check;
+use super::code_actions;
 use super::completion;
 use super::definition;
 use super::documents::{Documents, uri_to_path};
@@ -212,6 +214,27 @@ impl Server {
         let (file, out) = self.fresh(at.text_document.uri.as_str(), now);
         let hover = file.and_then(|f| hover::answer(self.snapshot(&f)?, &f, at.position));
         (hover, out)
+    }
+
+    /// Answers the quick fixes for the diagnostics in `params` (milestone
+    /// 79), only from a current check of text that parsed.
+    pub(super) fn code_action(
+        &mut self,
+        params: &CodeActionParams,
+        now: Instant,
+    ) -> (Vec<CodeActionOrCommand>, Vec<Message>) {
+        let (file, out) = self.fresh(params.text_document.uri.as_str(), now);
+        let actions = file
+            .and_then(|f| {
+                let snapshot = self.snapshot(&f).filter(|s| !s.broken)?;
+                Some(code_actions::answer(
+                    snapshot,
+                    &f,
+                    &params.context.diagnostics,
+                ))
+            })
+            .unwrap_or_default();
+        (actions, out)
     }
 
     /// Answers Go to Definition, as fresh as a hover (decision 26).

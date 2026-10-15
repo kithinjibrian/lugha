@@ -60,20 +60,27 @@ None.
 - The server only proposes edits; the editor applies them on the user's choice. Nothing is read, run or written by the server.
 
 ## TESTS TO WRITE
-- [ ] **`check::partial` unit test:** `missing_arms` holds full patterns (`Rect(_, _)`, nested `Some(Dot)`) beyond the three the message shows; an integer match records an empty list.
-- [ ] **`driver::lsp::code_actions` unit tests:** arm text and placement for a multi-line match, a match whose last arm lacks a comma, a one-line match, an empty match.
-- [ ] **`tests/lsp_code_actions.rs`** (real server): `initialize` advertises `codeActionProvider`; on an E0417 for an enum both actions with the expected edits, and applying "Add missing arms" gives a program that checks; on an `Option<Shape>` match nested patterns; on an integer match only "Add a `_` arm"; no actions without an E0417 or in a file with a syntax error.
-- [ ] **Regression:** every existing test passes; E0417's text unchanged.
+- [x] **`check::partial` unit test:** `missing_arms` holds full patterns (`Rect(_, _)`, nested `Some(Dot)`) beyond the three the message shows; an integer match records an empty list.
+- [x] **`driver::lsp::code_actions` unit tests:** arm text and placement for a multi-line match, a match whose last arm lacks a comma, a one-line match, an empty match.
+- [x] **`tests/lsp_code_actions.rs`** (real server): `initialize` advertises `codeActionProvider`; on an E0417 for an enum both actions with the expected edits, and applying "Add missing arms" gives a program that checks; on an `Option<Shape>` match nested patterns; on an integer match only "Add a `_` arm"; no actions without an E0417 or in a file with a syntax error.
+- [x] **Regression:** every existing test passes; E0417's text unchanged.
 - [ ] **Manual check** (extension README), by the user: the lightbulb on a non-exhaustive match, both fixes.
+
+## BUILT (session 167)
+- As designed: `Partial.missing_arms` (recorded in `matching.rs::exhaustive`; 1 test written first); `driver/lsp/code_actions.rs` (5 unit tests); `textDocument/codeAction` with `codeActionProvider` (`quickfix`); `tests/lsp_code_actions.rs` (4), which applies every fix and runs `lughac check` on the result.
+- **Placement from text, not the AST:** the AST has no general expression walker, so the edit is found by scanning from the scrutinee's end to the matching `}` (strings, `char`s, line and nested block comments skipped); one replace edit covers the comma after the last arm, the new arms and the closing line.
+- An interface value's single missing case `_` yields only the `_` fix.
+- Extension 0.3.2 (README only).
+- The manual check in VS Code is left to the user (extension README, step 13).
 
 ## ROLLBACK PLAN
 - Branch `prp-109-missing_arms` from `main`; tag `m79`.
 - To abandon before merge: delete the branch. After: revert the merge.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test` (CI in the background).
-- [ ] Spec at milestone 79; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test` (CI in the background).
+- [x] Spec at milestone 79; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 - [ ] The manual check passes in VS Code.
 
 ## VALIDATION

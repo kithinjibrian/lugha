@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 79 — Add missing arms ✅
+- [x] PRP-109: quick fixes on E0417 (every missing arm, or `_`); tagged `m79`
+
 ### Milestone 78 — Snippets ✅
 - [x] PRP-108: static snippets (checked by `lughac`), call placeholders, postfix `.match`; tagged `m78`
 
@@ -395,7 +398,8 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [ ] **Lexer recovery** — tokens up to an unclosed string, so a fresh `"` without auto-closing doesn't lose the tree.
 - [x] **Signature help** — milestone 74, PRP-104.
 - [x] **Snippets** — milestone 78, PRP-108.
-- [ ] **Quick fix: add missing match arms** (E0417's witnesses as a code action).
+- [x] **Quick fix: add missing match arms** — milestone 79, PRP-109.
+- [ ] More quick fixes: remove an unused binding (W0103), add a missing import (E0312), `let mut` for E0405-style mutability errors.
 - [ ] **Find References** and **Go to Implementations** — the definitions table read backwards; implementations of interface methods.
 - [ ] **A read-only view of bundled sources** (`std`, the prelude) for hover and definitions that land there.
 - [ ] **Go-to-definition** — the PRP after hover.
