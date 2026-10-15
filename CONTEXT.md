@@ -5449,18 +5449,48 @@ Branch: prp-095-std_process
 
 ---
 
-## SESSION 135 — 2026-10-15 — Discovery: shared references (`Ref<T>`) — open
+## SESSION 135 — 2026-10-15 — Discovery: shared references (`Ref<T>`) — closed
 Branch: main
+
+### WHAT WAS DONE
+- Explained shared references, how to live without them, a `Ref<T>` design, and why there's no pointer arithmetic.
+- Built oyster's shell for the user earlier in this conversation (lexer, parser, executor, REPL; uncommitted in the user's repo).
+- Discovery for `Ref<T>`. The user chose every recommendation:
+  - `Ref<T>` opens v16;
+  - copy in and out only (`new`, `get`, `set`, `update`, `is`);
+  - not `Eq`; printing cuts cycles;
+  - no `let mut` needed to change a box;
+  - freeze v15, milestone 67.
+- Started `docs/specs/Language v16 Draft.md` (decisions 1–5); wrote PRP-096 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `docs/specs/Language v16 Draft.md`, `PRPs/prp-096-ref.md`.
+- Modified: CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: PRP-096 waits for approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-096.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–66 complete; the v15 TODO is done** (tags `m61` one `iter_sum`, `m62` C → Lugha, `m63` widths in characters, `m64` `std.env`, `m65` `std.fs`, `m66` `std.process`; built in one go, sessions 129–134). Nothing is proposed or in progress. The v15 spec could be declared complete and frozen once the user wants to start v16; that needs the user's say.
+**Milestones 51–66 complete (v15).** **Milestone 67, shared boxes (`Ref<T>`), is proposed** as the first of v16: `Language v16 Draft.md` (decisions 1–5) and PRP-096. It waits for the user's explicit approval. On approval:
+- freeze v15;
+- start `Language v16 Specification.md` and point `lughac spec` at it;
+- branch `prp-096-ref`, MEMORY 125, tests first.
 
-Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
+Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`. oyster's shell is written but uncommitted in the user's repo.
 
-Ideas for later live under "After v14 — noted, not scheduled" in `TODO.md` (shared references, file streams, timeouts for processes, …).
+See `TODO.md`.
 
 ### PENDING DECISIONS OPENED
 - None.
