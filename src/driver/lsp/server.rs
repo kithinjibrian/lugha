@@ -9,12 +9,13 @@ use lsp_server::{Message, Notification};
 use lsp_types::notification::{LogMessage, Notification as _, PublishDiagnostics};
 use lsp_types::{
     DidChangeConfigurationParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DidSaveTextDocumentParams, Hover, HoverParams, InitializeParams,
-    LogMessageParams, MessageType, PublishDiagnosticsParams,
+    DidOpenTextDocumentParams, DidSaveTextDocumentParams, GotoDefinitionParams, Hover, HoverParams,
+    InitializeParams, Location, LogMessageParams, MessageType, PublishDiagnosticsParams,
 };
 use serde_json::Value;
 
 use super::check;
+use super::definition;
 use super::documents::{Documents, uri_to_path};
 use super::hover::{self, Snapshot};
 use super::publish::{self, Store};
@@ -182,7 +183,27 @@ impl Server {
         now: Instant,
     ) -> (Option<Hover>, Vec<Message>) {
         let at = &params.text_document_position_params;
-        let Some(file) = uri_to_path(at.text_document.uri.as_str()) else {
+        let (file, out) = self.fresh(at.text_document.uri.as_str(), now);
+        let hover = file.and_then(|f| hover::answer(self.snapshot(&f)?, &f, at.position));
+        (hover, out)
+    }
+
+    /// Answers Go to Definition, as fresh as a hover (decision 26).
+    pub(super) fn definition(
+        &mut self,
+        params: &GotoDefinitionParams,
+        now: Instant,
+    ) -> (Option<Location>, Vec<Message>) {
+        let at = &params.text_document_position_params;
+        let (file, out) = self.fresh(at.text_document.uri.as_str(), now);
+        let found = file.and_then(|f| definition::answer(self.snapshot(&f)?, &f, at.position));
+        (found, out)
+    }
+
+    /// The path of `uri`, after running its pending check if it has one;
+    /// with what that check publishes.
+    fn fresh(&mut self, uri: &str, now: Instant) -> (Option<PathBuf>, Vec<Message>) {
+        let Some(file) = uri_to_path(uri) else {
             return (None, Vec::new());
         };
         let mut out = Vec::new();
@@ -190,14 +211,16 @@ impl Server {
             self.pending.insert(file.clone(), now);
             out = self.run_due(now);
         }
+        (Some(file), out)
+    }
+
+    /// The last check that loaded `file`, among the checks planned for it.
+    fn snapshot(&self, file: &Path) -> Option<&Snapshot> {
         // Planning again only reads: rejected entries were logged when checked.
-        let hover = self
-            .plan(&file, &mut Vec::new())
+        self.plan(file, &mut Vec::new())
             .iter()
             .filter_map(|t| self.snapshots.get(&t.main))
-            .find(|s| s.has(&file))
-            .and_then(|s| hover::answer(s, &file, at.position));
-        (hover, out)
+            .find(|s| s.has(file))
     }
 
     fn plan(&self, file: &Path, out: &mut Vec<Message>) -> Vec<Target> {

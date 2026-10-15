@@ -1,5 +1,6 @@
 //! What the checker found, even in a program with errors (v16 draft
-//! decision 20): the language server's hover reads it. `check_modules` and
+//! decisions 20 and 26): the language server's hover and go-to-definition
+//! read it. `check_modules` and
 //! everything codegen sees are unchanged.
 
 use std::collections::HashMap;
@@ -26,6 +27,15 @@ pub enum Name {
     Field { name: String, ty: Type },
 }
 
+/// Where a written name is defined (v16 draft decision 23).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Target {
+    /// A declaration's name, in the program's shared offset space.
+    Decl(Span),
+    /// The module with this path, as in `import geo;` or `geo.f`.
+    Module(Vec<String>),
+}
+
 /// The checker's findings for a whole program, errors or not.
 #[derive(Debug, Clone)]
 pub struct Partial {
@@ -43,6 +53,8 @@ pub struct Partial {
     pub callees: HashMap<ExprId, String>,
     /// Resolved names by span.
     pub names: HashMap<Span, Name>,
+    /// Where each written use (and declaration) is defined, by its span.
+    pub definitions: HashMap<Span, Target>,
     /// Every error and warning, as `check_modules` reports them.
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -52,13 +64,18 @@ pub struct Partial {
 pub(super) struct Recorder {
     pub spans: Vec<Option<Span>>,
     pub names: HashMap<Span, Name>,
+    pub definitions: HashMap<Span, Target>,
+    /// Each field's declaration by struct key and field name.
+    fields: HashMap<(String, String), Span>,
+    /// Each variant's declaration by enum key and variant name.
+    variants: HashMap<(String, String), Span>,
 }
 
 impl Recorder {
     pub(super) fn new(count: usize) -> Recorder {
         Recorder {
             spans: vec![None; count],
-            names: HashMap::new(),
+            ..Recorder::default()
         }
     }
 
@@ -68,7 +85,18 @@ impl Recorder {
         }
     }
 
+    /// A written name at `at` defined at the declaration `decl`.
+    pub(super) fn define(&mut self, at: Span, decl: Span) {
+        self.definitions.insert(at, Target::Decl(decl));
+    }
+
+    /// A written module name at `at` (a path segment, or `m` in `m.f`).
+    pub(super) fn module(&mut self, at: Span, path: &[String]) {
+        self.definitions.insert(at, Target::Module(path.to_vec()));
+    }
+
     pub(super) fn local(&mut self, name: &Ident, ty: &Type, mutable: bool) {
+        self.define(name.span, name.span);
         let local = Name::Local {
             name: name.name.clone(),
             ty: ty.clone(),
@@ -81,14 +109,42 @@ impl Recorder {
     pub(super) fn function(&mut self, at: Span, decl: Span, call: Option<&Expr>) {
         let call = call.map(|c| c.id);
         self.names.insert(at, Name::Function { decl, call });
+        self.define(at, decl);
     }
 
-    pub(super) fn field(&mut self, name: &Ident, ty: &Type) {
+    /// Field `name` of struct `key`, at its declaration.
+    pub(super) fn field(&mut self, key: &str, name: &Ident, ty: &Type) {
+        self.fields
+            .insert((key.to_string(), name.name.clone()), name.span);
+        self.define(name.span, name.span);
         let field = Name::Field {
             name: name.name.clone(),
             ty: ty.clone(),
         };
         self.names.insert(name.span, field);
+    }
+}
+
+impl Recorder {
+    /// A written use of field `name` of struct `key`, at `at`.
+    pub(super) fn field_use(&mut self, key: &str, name: &Ident) {
+        if let Some(decl) = self.fields.get(&(key.to_string(), name.name.clone())) {
+            self.define(name.span, *decl);
+        }
+    }
+
+    /// Variant `name` of enum `key`, at its declaration.
+    pub(super) fn variant(&mut self, key: &str, name: &Ident) {
+        self.variants
+            .insert((key.to_string(), name.name.clone()), name.span);
+        self.define(name.span, name.span);
+    }
+
+    /// A written use of variant `name` of enum `key`, at `at`.
+    pub(super) fn variant_use(&mut self, key: &str, name: &Ident) {
+        if let Some(decl) = self.variants.get(&(key.to_string(), name.name.clone())) {
+            self.define(name.span, *decl);
+        }
     }
 }
 
@@ -117,6 +173,7 @@ pub fn check_partial(units: &[Unit]) -> Partial {
         conversions: checker.conversions,
         callees: checker.callees,
         names: checker.hover.names,
+        definitions: checker.hover.definitions,
         diagnostics: checker.diagnostics,
     }
 }
@@ -243,5 +300,97 @@ mod tests {
             }
         }
         assert!(partial.diagnostics.is_empty());
+    }
+    const DEFS: &str = "struct P { x: f64 }
+enum Shape { Circle(f64), Dot }
+interface Area { fun area(self): f64; }
+impl P { fun len(self): f64 = self.x; }
+fun twice(n: i64): i64 = n * 2;
+fun measure(a: Area): f64 = a.area();
+fun main() {
+    let p = P { x: 1.0 };
+    let mut total = 0;
+    total += twice(3);
+    let f = twice;
+    println(p.x + p.len());
+    let s = Shape.Circle(2.0);
+    match s { Circle(r) => println(r), Dot => {} }
+    println(total);
+    println(f(1));
+}
+";
+
+    /// Where `definitions` sends the `word` inside the first `context`.
+    fn target(partial: &Partial, context: &str, word: &str) -> Option<Target> {
+        partial
+            .definitions
+            .get(&within(DEFS, context, word))
+            .cloned()
+    }
+
+    fn decl(context: &str, word: &str) -> Option<Target> {
+        Some(Target::Decl(within(DEFS, context, word)))
+    }
+
+    #[test]
+    fn locals_go_to_their_bindings() {
+        let partial = test_util::partial(DEFS);
+        assert_eq!(target(&partial, "p.x +", "p"), decl("let p", "p"));
+        assert_eq!(
+            target(&partial, "total += ", "total"),
+            decl("let mut total", "total")
+        );
+        assert_eq!(
+            target(&partial, "println(total", "total"),
+            decl("let mut total", "total")
+        );
+        assert_eq!(target(&partial, "n * 2", "n"), decl("(n: i64)", "n"));
+        assert_eq!(target(&partial, "f(1)", "f"), decl("let f", "f"));
+        assert_eq!(target(&partial, "(r), Dot", "r"), decl("(r)", "r"));
+    }
+
+    #[test]
+    fn functions_and_methods_go_to_their_declarations() {
+        let partial = test_util::partial(DEFS);
+        assert_eq!(
+            target(&partial, "+= twice", "twice"),
+            decl("fun twice", "twice")
+        );
+        assert_eq!(
+            target(&partial, "= twice;", "twice"),
+            decl("fun twice", "twice")
+        );
+        assert_eq!(target(&partial, "p.len()", "len"), decl("fun len", "len"));
+        assert_eq!(
+            target(&partial, "a.area()", "area"),
+            decl("fun area(self): f64;", "area")
+        );
+        // A declaration is its own definition.
+        assert_eq!(
+            target(&partial, "fun twice", "twice"),
+            decl("fun twice", "twice")
+        );
+    }
+
+    #[test]
+    fn types_fields_and_variants_go_to_their_declarations() {
+        let partial = test_util::partial(DEFS);
+        assert_eq!(target(&partial, "= P {", "P"), decl("struct P", "P"));
+        assert_eq!(target(&partial, "impl P", "P"), decl("struct P", "P"));
+        assert_eq!(
+            target(&partial, "(a: Area)", "Area"),
+            decl("interface Area", "Area")
+        );
+        assert_eq!(
+            target(&partial, "= Shape.Circle", "Shape"),
+            decl("enum Shape", "Shape")
+        );
+        assert_eq!(
+            target(&partial, "= Shape.Circle", "Circle"),
+            decl("{ Circle(f64)", "Circle")
+        );
+        assert_eq!(target(&partial, "Dot =>", "Dot"), decl("Dot }", "Dot"));
+        assert_eq!(target(&partial, "p.x +", "x"), decl("{ x: f64", "x"));
+        assert_eq!(target(&partial, "P { x: 1.0", "x"), decl("{ x: f64", "x"));
     }
 }

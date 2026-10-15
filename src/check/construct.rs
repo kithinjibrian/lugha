@@ -85,6 +85,7 @@ impl Checker {
             .iter()
             .find(|(v, _)| *v == variant.name)
             .cloned();
+        self.hover.variant_use(name, variant);
         let Some((_, payloads)) = found else {
             self.report(errors::no_variant(&variant.name, &ty, variant.span));
             args.iter().for_each(|a| {

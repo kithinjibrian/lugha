@@ -44,6 +44,12 @@ impl Checker {
         let (declared, generics) = (info.fields.clone(), info.generics.clone());
         let key = key.expect("found just above");
         self.literal_visible(&key, expr.span);
+        if let Some(decl) = self.type_decl(&key) {
+            self.hover.define(name.span, decl);
+        }
+        for (field, _) in given {
+            self.hover.field_use(&key, field);
+        }
         let ty = Type::Struct(key, params(&generics));
         let mut inputs = Vec::new();
         for (i, (field, value)) in given.iter().enumerate() {

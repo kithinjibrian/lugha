@@ -7,6 +7,7 @@
 //! file, opens no port.
 
 mod check;
+mod definition;
 mod documents;
 mod hover;
 mod publish;
@@ -18,9 +19,10 @@ use std::time::{Duration, Instant};
 
 use lsp_server::{Connection, ErrorCode, Message, ProtocolError, Response};
 use lsp_types::{
-    HoverParams, HoverProviderCapability, InitializeParams, PositionEncodingKind, SaveOptions,
-    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
+    GotoDefinitionParams, GotoDefinitionResponse, HoverParams, HoverProviderCapability,
+    InitializeParams, OneOf, PositionEncodingKind, SaveOptions, ServerCapabilities, ServerInfo,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
+    TextDocumentSyncSaveOptions,
 };
 use thiserror::Error;
 
@@ -99,7 +101,21 @@ fn run(connection: &Connection) -> Result<u8, LspError> {
                             ),
                         }
                     }
-                    // Go-to-definition comes with a later milestone.
+                    "textDocument/definition" => {
+                        match serde_json::from_value::<GotoDefinitionParams>(request.params) {
+                            Ok(params) => {
+                                let (found, published) = server.definition(&params, Instant::now());
+                                send(connection, published)?;
+                                let found = found.map(GotoDefinitionResponse::Scalar);
+                                Response::new_ok(request.id, found)
+                            }
+                            Err(error) => Response::new_err(
+                                request.id,
+                                ErrorCode::InvalidParams as i32,
+                                error.to_string(),
+                            ),
+                        }
+                    }
                     _ => Response::new_err(
                         request.id,
                         ErrorCode::MethodNotFound as i32,
@@ -136,6 +152,7 @@ fn capabilities() -> ServerCapabilities {
     ServerCapabilities {
         position_encoding: Some(PositionEncodingKind::UTF16),
         hover_provider: Some(HoverProviderCapability::Simple(true)),
+        definition_provider: Some(OneOf::Left(true)),
         text_document_sync: Some(TextDocumentSyncCapability::Options(
             TextDocumentSyncOptions {
                 open_close: Some(true),

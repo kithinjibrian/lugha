@@ -4,6 +4,7 @@ Syntax highlighting and live `lughac` diagnostics for [Lugha](../../README.md) (
 
 - **Highlighting:** keywords, types, numbers, `//` comments, strings with `{…}` interpolation and format specifiers (`{pi:.2}`), `format("{} {:>4}", …)` templates, `char` literals.
 - **Editing:** `Ctrl+/` toggles `//`; brackets and quotes close themselves.
+- **Go to Definition** (F12, Ctrl+click): from a variable, function or method, type, field, variant or module (`import geo;`, `geo.f`) to its declaration, across files; an interface call goes to the interface's method. Nothing for `std` and prelude names. Needs a `lughac` from milestone 72.
 - **Hover:** a value's type, a binding's declaration (`let total: i64`), a function's or method's header as written (`fun Circle.area(self): f64`), a field's type; with `instance: max<f64>` for a generic call and `converted to Shape` for a value converted to an interface. It works while the program has errors (not while a file doesn't parse). Needs a `lughac` from milestone 71.
 - **Diagnostics as you type:** the extension starts `lughac lsp`, a language server that checks the program a moment after you stop typing, saved or not. Unsaved changes in other open files count too. Errors and warnings appear in the files they belong to, with their codes (`E0403`…), labels as related information and `help` in the message.
 
@@ -41,4 +42,5 @@ code --install-extension lugha-0.2.0.vsix
 3. Open `geo.la` from the same folder, add that line there without saving: the error appears in `geo.la`, with no E0303.
 4. Undo it without saving: `main.la` and `geo.la` are clean again.
 5. Hover `let`-bound names, a method call and a generic call: their types and headers appear; add an error elsewhere and hover again: still there.
-6. Set `lugha.path` to `/nonexistent`: one notification.
+6. Ctrl+click a variable, a method call, a type and an `import`: each opens its declaration (the module's file for the import).
+7. Set `lugha.path` to `/nonexistent`: one notification.

@@ -139,6 +139,9 @@ impl Checker {
             self.report(errors::pattern_mismatch(ty, pattern.span));
             return vec![Pat::Wild];
         };
+        if let Type::Enum(key, _) = ty {
+            self.hover.variant_use(key, name);
+        }
         let Some((index, (_, payloads))) = variants
             .into_iter()
             .enumerate()

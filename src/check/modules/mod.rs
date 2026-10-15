@@ -161,6 +161,9 @@ impl Checker {
             .map(|(n, i)| {
                 let written = || i.path.iter().map(|s| s.name.clone()).collect();
                 let path: Vec<String> = unit.imports.get(n).cloned().unwrap_or_else(written);
+                for segment in i.path.iter().chain(&i.alias) {
+                    self.hover.module(segment.span, &path);
+                }
                 (i.bound().name.clone(), path)
             })
             .collect::<HashMap<_, _>>();

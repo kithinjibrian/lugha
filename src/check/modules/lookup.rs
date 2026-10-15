@@ -19,6 +19,17 @@ impl Checker {
         };
         let ty = self.named_type(&key)?;
         self.item_visible(&key, expr.span);
+        if let Some(decl) = self.type_decl(&key) {
+            match &expr.kind {
+                ExprKind::Field(base, t) => {
+                    self.hover.define(t.span, decl);
+                    if let ExprKind::Name(m) = &base.kind {
+                        self.module_named(base.span, m);
+                    }
+                }
+                _ => self.hover.define(expr.span, decl),
+            }
+        }
         Some(ty)
     }
 
@@ -62,7 +73,27 @@ impl Checker {
             return None;
         }
         self.item_visible(&key, span);
+        if let Some(decl) = self.type_decl(&key) {
+            self.hover.define(name.span, decl);
+        }
+        if let Some(m) = module {
+            self.module_named(m.span, &m.name);
+        }
         Some(key)
+    }
+
+    /// Where the struct, enum or interface with key `key` is declared.
+    pub(in crate::check) fn type_decl(&self, key: &str) -> Option<Span> {
+        (self.structs.get(key).map(|s| s.span))
+            .or_else(|| self.enums.get(key).map(|e| e.span))
+            .or_else(|| self.interfaces.get(key).map(|i| i.span))
+    }
+
+    /// Records `name` written at `at` as the module it is imported as.
+    pub(in crate::check) fn module_named(&mut self, at: Span, name: &str) {
+        if let Some((path, _)) = self.module_path(name) {
+            self.hover.module(at, &path);
+        }
     }
 
     /// `m.f(args)`: a call of function `f` of the module imported as `m`.
@@ -79,6 +110,9 @@ impl Checker {
         };
         let m = Self::module_name(base)?;
         self.module_path(&m)?;
+        if let ExprKind::Name(name) = &base.kind {
+            self.module_named(base.span, name);
+        }
         // A module and a function name aren't values: `void` marks them.
         self.record(base, Type::Void);
         self.record(callee, Type::Void);
