@@ -2,7 +2,7 @@
   "name": "lugha",
   "displayName": "Lugha",
   "description": "Syntax highlighting and live lughac diagnostics for the Lugha language",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "kithinjibrian",
   "license": "GPL-3.0-only",
   "repository": {
@@ -82,7 +82,8 @@
     ]
   },
   "scripts": {
-    "compile": "tsc -p .",
+    "clean": "node -e \"require('fs').rmSync('out', { recursive: true, force: true })\"",
+    "compile": "npm run clean && tsc -p .",
     "test": "npm run compile && node --test \"out/test/*.test.js\" && npm run test:grammar",
     "test:grammar": "vscode-tmgrammar-test \"test/grammar/*.la\"",
     "package": "npm run compile && vsce package --skip-license"
