@@ -5143,6 +5143,11 @@ Branch: prp-088-user_ord
 
 ---
 
+## SESSION 125 — 2026-10-15 — Discovery: lazy std modules — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–59 complete** (tags `m57` nested `mut self` calls, `m58` numbers as `T`, `m59` user-defined `Ord`; built in one go, sessions 122–124). Nothing is proposed or in progress.
