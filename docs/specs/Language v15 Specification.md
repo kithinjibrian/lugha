@@ -2,11 +2,11 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 51–56 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
+**Status:** in progress (milestones 51–57 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
 
 **v14.** This is v13 plus binary I/O, `char`, tuples, `format`, import aliases and whole-module re-exports, and git packages (milestones 45–50).
 
-**Changes since v14** (milestones 51–56):
+**Changes since v14** (milestones 51–57):
 - A package's `[package]` table may give its `name`, checked against the key a manifest lists it under (E0327), and its `source`, the folder its modules start in: with `source = "src"`, `src/array.la` of package `glowworm` is `glowworm.array` (section 6).
 - A program with no `lugha.toml` beside its main file uses the nearest one above it, looking no further than a folder with `.git` or the home folder; when that manifest names a package, the program imports it by that name, so `glowworm/examples/basics.la` writes `import glowworm.array;` with no manifest of its own (section 6).
 - A file imported as two modules is E0328 (section 6).
@@ -14,6 +14,7 @@ Oct 13, 2026 · @kithinji
 - Operator overloading: `a + b` on a struct, enum or interface value calls `a.add(b)`, and likewise `-` `sub`, `*` `mul`, `/` `div`, `%` `rem` and unary `-` `neg`, for a method of the operator's shape; `a += b` is `a = a.add(b)`. The prelude's `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` and `Num` are bounds that the numbers (and `string`, for `Add`) satisfy, so `fun add<T: Add>(a: T, b: T): T = a + b;` works for numbers, strings and your own types; `0` and `1` are values of a `T: Num`. An `impl` block may bound its parameters, `impl Grid<T: Num> { … }` (sections 3–5).
 - A standard library: `import std.math;` loads a module bundled with `lughac`, only when imported. `std.math` has `sqrt`, `pow`, `exp`, `ln`, `log10`, `sin`, `cos`, `tan`, `atan2`, `floor`, `ceil` and `round` for any `T: Float` (`f32` or `f64`, a new prelude bound), `abs`, `min`, `max` and `clamp`, and `pi()` and `e()`. `std` is a reserved package name (sections 4, 6, "The standard library").
 - Arrays are copy-on-write: a copy shares the array until either side writes to it, so copying costs a constant time and reading a copy never copies. Every copy still behaves as an independent value, and no program's output changes (sections 4, 5, 7, 9, 12). A loop makes the arrays it writes, and can't share, unique once before it starts, so its writes cost no more than before copy-on-write (milestone 56; section 9).
+- An argument of a `mut self` call may call methods on the receiver, `g.tanh(g.add(a, b))`, or read numbers and strings from it; only an argument that can be the receiver's own storage (`v.add(v)`, `v.add(v.inner)`) is E0508. The arguments run before the receiver is reached, and a change they make to a struct containing the receiver is no longer E0510 unless an array index lies between (milestone 57; sections 4–5).
 - `std.random`: `random.seeded(42)` or `random.from_os()` makes a generator (xoshiro256\*\*, not cryptographically secure) with `uniform`, `below`, `between`, `normal`, `chance`, `choice` and `shuffle` ("The standard library").
 
 Every valid v14 program and package is a valid v15 one: a module's own type or interface named `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` or `Num` still means its own, as for `Iter`.
@@ -525,7 +526,7 @@ Equality costs time proportional to the values compared. `f64` keeps IEEE semant
 - **`self` methods.** A method whose first parameter is `self` is called on a value: `v.len_sq()`. `self` is an immutable, borrowed parameter of type `T`: storing or returning it copies it, like any parameter.
 - **`mut self` methods.** A method whose first parameter is `mut self` changes the caller's value in place: `v.scale(2.0)`. The receiver must be a place whose root is `let mut` (E0501), not inside a string (E0506), and not an array being iterated (E0507); it may be a variable, a field or an element (`r.min.shift(1.0)`, `ps[1].scale(2.0)`). Inside, `self`, its fields and its elements can be assigned, and `self` can be replaced whole.
 - **Associated functions.** A function in an `impl` without `self` is called on the type: `Vec2.new(1.0, 2.0)`.
-- **No aliasing.** An argument of a `mut self` call may not mention the receiver's root variable (E0508): in `v.add(v)` the method would see its own edits through `o`. Copy first: `let w = v; v.add(w);`.
+- **No aliasing.** An argument of a `mut self` call may not be the receiver's own storage (E0508): a place rooted at the receiver's root variable whose type is passed by pointer (a struct, enum, `Option`, array, interface value or type parameter), written directly or as the tail of an `if`, block or `match`. In `v.add(v)` the method would see its own edits through `o`; `v.add(v.inner)`, `g.set(g.values)` and `v.add(if c { v } else { w })` are rejected the same way. Copy first: `let w = v; v.add(w);`. Any other mention is allowed (v15): calls on the receiver, `g.tanh(g.add(a, b))`, whose results are fresh values; operators; and reads of numbers, `bool`, `char` and strings, `g.scale(x, g.lr)`, which are passed by value.
 
 Calling a method that doesn't exist, a `self` method on a type or an associated function on a value is E0415. Strings and `Option` have no methods; arrays have only the built-ins below.
 
@@ -734,7 +735,7 @@ Every iterator `it` that yields `T` (a value whose type has `fun next(mut self):
 
 Float arithmetic follows IEEE 754: overflow gives an infinity and division by zero gives an infinity or NaN, never a panic. Explicit casts are the one place values wrap: narrowing with `as` truncates (section 4).
 
-**Method calls.** `x.m(a, b)` evaluates `x`, then `a`, then `b`; `xs.push(v)` evaluates the place `xs`, then `v`. For a `mut self` call the place `x` is evaluated once, before the arguments, like an assignment's place.
+**Method calls.** `x.m(a, b)` evaluates `x`, then `a`, then `b`; `xs.push(v)` evaluates the place `xs`, then `v`. For a `mut self` call the place `x` runs like an assignment's place (v15): its index expressions first, bounds-checked, then the arguments, then the place itself is reached and the method runs. Calls on the same receiver inside the arguments finish first, and the outer call sees their effects.
 
 **`match` evaluation.** A `match` evaluates its scrutinee once, then tests the arms from top to bottom and runs the first that matches, outside in for nested patterns; a guard runs only once its pattern has matched. A variant's payloads are evaluated left to right when it is built.
 
@@ -742,7 +743,7 @@ Float arithmetic follows IEEE 754: overflow gives an infinity and division by ze
 
 **Evaluation of `==`.** Both operands are evaluated left to right, then compared. Structs and arrays are compared in field or element order, stopping at the first difference. A comparison never panics.
 
-**Changing what a statement writes.** An assignment, a `swap` and a `mut self` call each fix their place before the rest of the statement runs: the value, the arguments, and the place's own indexes. The rest may not change anything that contains that place (E0510), because growing, shrinking or replacing an array would leave the write aimed at an array that is no longer there. `xs[0] = { xs.push(2); 9 };`, `xs[{ xs.clear(); 0 }] = 1;` and `g[0][0] = { g[1] = [5]; 1 };` are rejected (any two indexes might be equal). Changing the place itself, a place at the same depth, or a sibling is fine, and reading is always fine: `xs[0] = { xs[1] = 5; 9 };`, `p.items[0] = { p.n += 1; 7 };`, `xs[i] = xs[i] + 1;` and `xs = { xs.push(1); xs };` are valid. Make the change in its own statement instead.
+**Changing what a statement writes.** An assignment, a `swap` and a `mut self` call each fix their place before the rest of the statement runs: the value, the arguments, and the place's own indexes. The rest may not change anything that contains that place (E0510), because growing, shrinking or replacing an array would leave the write aimed at an array that is no longer there. `xs[0] = { xs.push(2); 9 };`, `xs[{ xs.clear(); 0 }] = 1;` and `g[0][0] = { g[1] = [5]; 1 };` are rejected (any two indexes might be equal). For a `mut self` receiver (v15), which is reached again after the arguments, a change counts only when an array index lies between the changed place and the receiver: `gs[0].f(gs.clear())` and `self.layers[i].f(self.reset())` are rejected, while `self.g.f(self.norm(x))` and `a.b.f(a.reset())` are valid. Changing the place itself, a place at the same depth, or a sibling is fine, and reading is always fine: `xs[0] = { xs[1] = 5; 9 };`, `p.items[0] = { p.n += 1; 7 };`, `xs[i] = xs[i] + 1;` and `xs = { xs.push(1); xs };` are valid. Make the change in its own statement instead.
 
 **Variable declarations.** Every variable must be initialized. A variable is in scope from the end of its declaration to the end of its enclosing block, so `let x = x + 1;` refers to an outer `x`. Shadowing is allowed, both in nested blocks and in the same block.
 
@@ -1303,9 +1304,9 @@ Name and type errors, reported by the checker:
 | E0505 | Block-like statement with a discarded value | `if big { 100 } else { 1 }` followed by more statements |
 | E0506 | Assignment into a string | `s[0] = 104;`, `s.len = 2;`, `for b of mut s` (v13) — strings are immutable (§4) |
 | E0507 | Assignment to the array being iterated | `for x of xs { xs[0] = x; }`, or a `mut self` call or `swap` on it; `it.next()` inside `for n of mut it` (v13) |
-| E0508 | Argument aliases a `mut self` receiver | `v.add(v)` where `add` takes `mut self` |
+| E0508 | Argument aliases a `mut self` receiver | `v.add(v)` where `add` takes `mut self`; `v.add(v.inner)`, `g.set(if c { g.vals } else { h })` (v15) |
 | E0509 | A place swapped with a part of itself | `swap(n, n.kids[0])` |
-| E0510 | A statement changes what contains the place it writes | `xs[0] = { xs.push(2); 9 };` (§5) |
+| E0510 | A statement changes what contains the place it writes | `xs[0] = { xs.push(2); 9 };`; for a `mut self` receiver only across an index, `gs[0].f(gs.clear())` (§5) |
 | E0511 | Changing a variable a closure captured | `let inc = fun() { count += 1; };` (v3) |
 | W0101 | Unreachable code (warning) | statements after `return`, `break` or `continue`; reported once per block |
 | W0102 | Unreachable `match` arm (warning) | an arm after `_`, or a variant already covered |
@@ -2805,6 +2806,33 @@ fun main() {
 }
 ```
 
+**Nested calls** (milestone 57). Prints `24.0`, `5`, `[3.0, 1.0, 4.0, 6.0, 24.0]` on three lines, exits with 0: the same as with one `let` per call.
+
+```
+// Nested `mut self` calls (v15): an argument may call methods on the
+// receiver, and runs before the receiver is reached. Only an argument that
+// could be the receiver's own storage is E0508.
+struct Tape { vals: f64[] }
+
+impl Tape {
+    fun put(mut self, x: f64): i64 {
+        self.vals.push(x);
+        self.vals.len - 1
+    }
+    fun add(mut self, a: i64, b: i64): i64 = self.put(self.vals[a] + self.vals[b]);
+    fun mul(mut self, a: i64, b: i64): i64 = self.put(self.vals[a] * self.vals[b]);
+}
+
+fun main() {
+    let mut t = Tape { vals: [] };
+    let x = t.put(3.0);
+    let y = t.mul(t.add(x, t.put(1.0)), t.add(x, x));
+    println(t.vals[y]);
+    println(t.vals.len);
+    println(t.vals);
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2867,6 +2895,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 54 | `std.random` (v15) | a xoshiro256\*\* `Rng`: `seeded`, `from_os`, `uniform`, `below`, `between`, `normal`, `chance`, `choice`, `shuffle`; runtime `lugha_rt_os_seed` | The random-numbers program in section 10 passes (done) |
 | 55 | Copy-on-write arrays (v15) | the shared flag in `cap`, marking at copy sites, cloning before writes, two-phase places, `for … of mut` through the place | The copy-on-write program in section 10 passes; every earlier program prints the same (done) |
 | 56 | Owning arrays once per loop (v15) | the loop scan, fixed paths, guarded hoists before every loop kind; writes inside skip the flag test | Every program prints the same; `tests/programs/m56/` (done) |
+| 57 | Nested `mut self` calls (v15) | E0508 only for arguments that can be the receiver's storage, `mut self` receivers reached after the arguments, E0510 for receivers only across an index | The nested-calls program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

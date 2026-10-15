@@ -170,14 +170,23 @@ impl Checker {
         ret
     }
 
-    /// E0508: no argument of a `mut self` call may mention its receiver's root.
+    /// E0508 (v15, milestone 57): no argument of a `mut self` call may be
+    /// the receiver's own storage, a place rooted at the receiver's root
+    /// whose type is passed by pointer, directly or as an `if`, block or
+    /// `match` tail. Any other mention is a fresh value: a call's result,
+    /// an operator's, or a number or string read before the call.
     fn no_alias(&mut self, base: &Expr, args: &[Expr]) {
         let Some(root) = root_name(base) else { return };
         let Some(local) = self.local(root) else {
             return;
         };
-        for arg in args {
-            let inside = |at: usize| arg.span.start <= at && at < arg.span.end;
+        let mut tails = Vec::new();
+        args.iter().for_each(|arg| value_tails(arg, &mut tails));
+        for tail in tails {
+            if root_name(tail) != Some(root) || !self.by_pointer(tail) {
+                continue;
+            }
+            let inside = |at: usize| tail.span.start <= at && at < tail.span.end;
             if let Some(m) = self
                 .mentions
                 .values()
@@ -188,6 +197,51 @@ impl Checker {
                 return;
             }
         }
+    }
+
+    /// Whether `e`'s value is passed as a pointer to its storage: anything
+    /// but numbers, `bool`, `char`, strings and function values. A type
+    /// parameter may be a struct, so it counts.
+    fn by_pointer(&self, e: &Expr) -> bool {
+        let ty = self.types[e.id.0 as usize].as_ref();
+        ty.is_some_and(|t| {
+            matches!(
+                t,
+                Type::Array(_)
+                    | Type::Struct(..)
+                    | Type::Enum(..)
+                    | Type::Option(_)
+                    | Type::Interface(..)
+                    | Type::Param(_)
+            )
+        })
+    }
+}
+
+/// The expressions whose value `e` may be: `e` itself, or the tails of its
+/// `if`/`else` branches, blocks and `match` arms.
+fn value_tails<'a>(e: &'a Expr, out: &mut Vec<&'a Expr>) {
+    let block = |b: &'a crate::ast::Block, out: &mut Vec<&'a Expr>| {
+        if let Some(tail) = &b.tail {
+            value_tails(tail, out);
+        }
+    };
+    match &e.kind {
+        ExprKind::If { then, else_, .. } => {
+            block(then, out);
+            if let Some(e) = else_ {
+                value_tails(e, out);
+            }
+        }
+        ExprKind::IfLet(parts) => {
+            block(&parts.then, out);
+            if let Some(e) = &parts.else_ {
+                value_tails(e, out);
+            }
+        }
+        ExprKind::Block(b) => block(b, out),
+        ExprKind::Match(_, arms) => arms.iter().for_each(|arm| value_tails(&arm.body, out)),
+        _ => out.push(e),
     }
 }
 
@@ -276,5 +330,53 @@ mod tests {
             errors("fun f() { let s = self; }\nfun main() {}"),
             [("E0301", "self")]
         );
+    }
+
+    const TAPE: &str = "struct V { x: f64 }
+        struct G { vals: f64[], name: string, lr: f64, inner: V, pair: (f64, f64) }
+        impl G {
+            fun put(mut self, x: f64): i64 { self.vals.push(x); self.vals.len - 1 }
+            fun sum(mut self, a: i64, b: i64): i64 = self.put(self.vals[a] + self.vals[b]);
+            fun tanh(mut self, a: i64): i64 = self.put(self.vals[a]);
+            fun scale(mut self, a: i64, k: f64): i64 = self.put(self.vals[a] * k);
+            fun label(mut self, s: string) { self.name = s; }
+            fun set(mut self, xs: f64[]) { self.vals = xs; }
+            fun take(mut self, v: V) { self.inner = v; }
+            fun takep(mut self, p: (f64, f64)) { self.pair = p; }
+            fun twin(self): G = self;
+            fun absorb(mut self, o: G) { self.lr = o.lr; }
+        }
+        fun main() { let mut g = G { vals: [], name: \"g\", lr: 0.5, inner: V { x: 1.0 }, pair: (1.0, 2.0) };
+            let h = g;";
+
+    #[test]
+    fn arguments_may_mention_the_receiver_unless_they_can_be_it() {
+        for body in [
+            "let a = g.put(1.0); let b = g.tanh(g.sum(a, a));",
+            "g.sum(g.put(1.0), g.put(2.0));",
+            "g.scale(0, g.lr);",
+            "g.label(g.name);",
+            "g.label(\"{g.name}!\");",
+            "g.absorb(g.twin());",
+            "g.take(V { x: g.lr });",
+            "g.scale(g.put(g.vals[0] * 2.0), g.inner.x);",
+        ] {
+            ok(&format!("{TAPE} {body} }}"));
+        }
+        for body in [
+            "g.absorb(g);",
+            "g.take(g.inner);",
+            "g.set(g.vals);",
+            "g.takep(g.pair);",
+            "g.absorb(if true { g } else { h });",
+            "g.absorb({ g });",
+            "g.absorb(match 1 { 0 => g, _ => h });",
+        ] {
+            assert_eq!(
+                errors(&format!("{TAPE} {body} }}")),
+                [("E0508", "g")],
+                "{body}"
+            );
+        }
     }
 }

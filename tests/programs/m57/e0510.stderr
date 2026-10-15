@@ -1,0 +1,10 @@
+error[E0510]: cannot change `w` while calling `add` on `w.vs[…]`
+   --> tests/programs/m57/e0510.la:11:17
+   |
+11 |     w.vs[0].add(w.reset());
+   |     -------     ^
+   |     |
+   |     this place's address was already taken
+   |
+   = help: make the change in its own statement, before or after this one
+

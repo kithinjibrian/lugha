@@ -34,6 +34,15 @@ impl Path {
             })
     }
 
+    /// Whether an index step lies deeper than `depth` steps: an array whose
+    /// length a change at that depth could alter after the bounds check.
+    pub(super) fn indexed_below(&self, depth: usize) -> bool {
+        self.steps
+            .iter()
+            .skip(depth)
+            .any(|s| matches!(s, Step::Index))
+    }
+
     /// How many steps the place takes into its root variable.
     pub(super) fn depth(&self) -> usize {
         self.steps.len()

@@ -5,10 +5,10 @@
 //! A write happens in two phases. `place_plan` evaluates the place's index
 //! operands, root outward, and bounds-checks them: the order §5 requires.
 //! `place_commit` then walks the place again with those indexes, owning
-//! each array, and gives the target's address. Statements that evaluate a
-//! value between the two (assignment, `push`) commit after the value, so a
-//! value that shares the target's array (`xs[0] = { c = xs; 1 }`) is never
-//! written through.
+//! each array, and gives the target's address. Statements that evaluate
+//! values between the two (assignment, `push`, a `mut self` call's
+//! arguments) commit after them, so a value that shares the target's array
+//! (`xs[0] = { c = xs; 1 }`) is never written through.
 
 use inkwell::values::{IntValue, PointerValue};
 
@@ -34,16 +34,6 @@ pub(super) struct Alias<'ctx> {
 }
 
 impl<'ctx> Lowerer<'ctx> {
-    /// The address of `place` for writing, owning every array on the way;
-    /// for writes with nothing evaluated between the place and the write.
-    pub(super) fn place_address(
-        &mut self,
-        place: &Expr,
-    ) -> Result<(PointerValue<'ctx>, Type, bool), CodegenError> {
-        let plan = self.place_plan(place)?;
-        Ok(self.place_commit(place, &plan))
-    }
-
     /// Evaluates `place`'s index operands in order and bounds-checks each
     /// against its array as it is now.
     pub(super) fn place_plan(&mut self, place: &Expr) -> Result<Plan<'ctx>, CodegenError> {

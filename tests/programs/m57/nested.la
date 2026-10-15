@@ -1,0 +1,48 @@
+// Nested `mut self` calls (v15, milestone 57): arguments may call methods
+// on the receiver. `flat.la` is the same program with one `let` per call,
+// and prints the same.
+struct G { vals: f64[] }
+
+impl G {
+    fun put(mut self, x: f64): i64 {
+        self.vals.push(x);
+        self.vals.len - 1
+    }
+    fun sum(mut self, a: i64, b: i64): i64 = self.put(self.vals[a] + self.vals[b]);
+    fun mul(mut self, a: i64, b: i64): i64 = self.put(self.vals[a] * self.vals[b]);
+    fun half(mut self, a: i64): i64 = self.put(self.vals[a] / 2.0);
+}
+
+interface Tape {
+    fun put(mut self, x: f64): i64;
+    fun sum(mut self, a: i64, b: i64): i64;
+    fun twice(mut self, a: i64): i64 = self.sum(a, a);
+}
+
+struct Model { g: G, gain: f64 }
+
+impl Model {
+    fun norm(mut self, x: i64): i64 = self.g.mul(x, self.g.put(self.gain));
+    fun layer(mut self, x: i64): i64 = self.g.sum(self.norm(x), self.g.half(self.norm(x)));
+}
+
+fun main() {
+    let mut g = G { vals: [] };
+    let y = g.mul(g.sum(g.put(1.0), g.put(2.0)), g.half(g.put(8.0)));
+    println("{y} {g.vals}");
+
+    let mut m = Model { g: G { vals: [3.0] }, gain: 2.0 };
+    let z = m.layer(0);
+    println("{z} {m.g.vals}");
+
+    let mut t: Tape = G { vals: [] };
+    let a = t.sum(t.put(1.0), t.put(5.0));
+    let b = t.twice(t.sum(a, t.put(1.0)));
+    println("{a} {b}");
+
+    let mut gs = [G { vals: [1.0] }, G { vals: [2.0] }];
+    let keep = gs;
+    let i = 1;
+    let c = gs[i].sum(gs[i].put(10.0), gs[i].half(gs[i].put(4.0)));
+    println("{c} {gs[0].vals} {gs[1].vals} {keep[1].vals}");
+}

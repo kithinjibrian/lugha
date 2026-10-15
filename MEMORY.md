@@ -1680,11 +1680,21 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** tape-style model code needed one `let` per op; the plan/commit places from M55 make re-reaching the receiver after the arguments safe.
 
+### 111. Nested `mut self` calls — milestone 57 (PRP-086)
+
+**Decision:** built as planned (MEMORY 110).
+- **E0508:** `method_calls.rs::no_alias` walks each argument's value tails (`if`/`if let`/block/`match`) and reports a tail rooted at the receiver whose type is passed by pointer (`by_pointer`: arrays, structs, enums, `Option`, interfaces, type parameters).
+- **E0510:** `conflicts.rs` skips a change for a `Receiver` target unless `Path::indexed_below(change depth)`.
+- **Codegen:** `methods.rs` and `dispatch.rs` plan the receiver, evaluate the arguments, then commit; `place_address` is removed.
+
+**Why:** the M55 plan/commit split made re-reaching the receiver after its arguments safe; only an index between a change and the receiver can invalidate a planned bounds check.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 57 complete**: PRP-086 nested `mut self` calls
 - **Milestone 56 complete**: PRP-085 owning arrays once per loop
 - **Milestone 55 complete**: PRP-084 copy-on-write arrays
 - **Milestone 54 complete**: PRP-083 `std.random`
@@ -1788,11 +1798,8 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–56 complete.** **Proposed, waiting for the user's approval** (the user wants to approve and build all three in one go, in this order):
-- **Milestone 57, nested `mut self` calls:** PRP-086, draft decisions 29–32.
-- **Milestone 58, numbers as `T`:** PRP-087, decisions 33–36.
-- **Milestone 59, user-defined `Ord`:** PRP-088, decisions 37–40.
+**Milestones 51–57 complete** (tag `m57`: nested `mut self` calls, PRP-086). **Approved and next, in one go** (session 122): milestone 58, numbers as `T` (PRP-087), then milestone 59, user-defined `Ord` (PRP-088). Each gets a session, a branch, a MEMORY plan entry (112, 114), tests first, and is merged on green CI and tagged.
 
-**On approval:** per PRP, a session, a branch `prp-NNN-…`, the "Add approved PRP" commit and a MEMORY plan entry (110, 112, 114). Then tests first, build, merge on green CI and tag (`m57`, `m58`, `m59`), one after another.
+firefly has two unpushed commits (`ce6f38b` layers, `a891512` nested layer); the user's `gpt-4x20k.log` is untracked there.
 
 See `TODO.md`.

@@ -1,0 +1,76 @@
+// The calls of `nested.la`, one `let` per call (valid before milestone 57).
+struct G { vals: f64[] }
+
+impl G {
+    fun put(mut self, x: f64): i64 {
+        self.vals.push(x);
+        self.vals.len - 1
+    }
+    fun sum(mut self, a: i64, b: i64): i64 {
+        let x = self.vals[a] + self.vals[b];
+        self.put(x)
+    }
+    fun mul(mut self, a: i64, b: i64): i64 {
+        let x = self.vals[a] * self.vals[b];
+        self.put(x)
+    }
+    fun half(mut self, a: i64): i64 {
+        let x = self.vals[a] / 2.0;
+        self.put(x)
+    }
+}
+
+interface Tape {
+    fun put(mut self, x: f64): i64;
+    fun sum(mut self, a: i64, b: i64): i64;
+    fun twice(mut self, a: i64): i64 = self.sum(a, a);
+}
+
+struct Model { g: G, gain: f64 }
+
+impl Model {
+    fun norm(mut self, x: i64): i64 {
+        let gain = self.gain;
+        let k = self.g.put(gain);
+        self.g.mul(x, k)
+    }
+    fun layer(mut self, x: i64): i64 {
+        let n1 = self.norm(x);
+        let n2 = self.norm(x);
+        let h = self.g.half(n2);
+        self.g.sum(n1, h)
+    }
+}
+
+fun main() {
+    let mut g = G { vals: [] };
+    let p1 = g.put(1.0);
+    let p2 = g.put(2.0);
+    let s = g.sum(p1, p2);
+    let p8 = g.put(8.0);
+    let h = g.half(p8);
+    let y = g.mul(s, h);
+    println("{y} {g.vals}");
+
+    let mut m = Model { g: G { vals: [3.0] }, gain: 2.0 };
+    let z = m.layer(0);
+    println("{z} {m.g.vals}");
+
+    let mut t: Tape = G { vals: [] };
+    let t1 = t.put(1.0);
+    let t5 = t.put(5.0);
+    let a = t.sum(t1, t5);
+    let o = t.put(1.0);
+    let s2 = t.sum(a, o);
+    let b = t.twice(s2);
+    println("{a} {b}");
+
+    let mut gs = [G { vals: [1.0] }, G { vals: [2.0] }];
+    let keep = gs;
+    let i = 1;
+    let q = gs[i].put(10.0);
+    let r = gs[i].put(4.0);
+    let hr = gs[i].half(r);
+    let c = gs[i].sum(q, hr);
+    println("{c} {gs[0].vals} {gs[1].vals} {keep[1].vals}");
+}

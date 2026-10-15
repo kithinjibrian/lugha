@@ -5031,19 +5031,51 @@ Branch: main
 
 ---
 
-## SESSION 122 — 2026-10-15 — Nested `mut self` calls (milestone 57) — open
+## SESSION 122 — 2026-10-15 — Nested `mut self` calls (milestone 57) — closed
 Branch: prp-086-nested_mut_self
+
+### WHAT WAS DONE
+- The user approved PRP-086, 087 and 088 ("approved. build in one go"); MEMORY 110.
+- Tests first:
+  - checker tests for every allowed and still-rejected E0508 form;
+  - E0510 receiver tests;
+  - a codegen order test;
+  - `m57/nested.la` against `m57/flat.la` (goldens from the flat form under M56);
+  - `e0508.la`, `e0510.la`.
+- Built:
+  - E0508 by value tails and pointer-passed types;
+  - E0510 for receivers only across an index (`Path::indexed_below`);
+  - receivers planned before the arguments and committed after (`methods.rs`, `dispatch.rs`); `place_address` removed.
+- Spec v15 at milestone 57 (§4 "No aliasing", §5 order and E0510, §9 rows, §10 "Nested calls", §11 row 57); draft; docs.
+- firefly: `layer`/`norm` written nested, identical output (`a891512`, not pushed).
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m57/` (nested, flat, e0508, e0510).
+- Modified:
+  - `src/check/method_calls.rs`, `conflicts.rs`, `array.rs`;
+  - `src/codegen/methods.rs`, `dispatch.rs`, `places.rs`;
+  - `tests/spec.rs`; the v15 spec and draft;
+  - CLAUDE.md, README, TODO, CHANGELOG, MEMORY (110, 111), PRP-086.
+
+### TESTS WRITTEN
+- `arguments_may_mention_the_receiver_unless_they_can_be_it`, `receivers_allow_changes_to_containers_without_an_index_between`, `mut_self_arguments_run_before_the_receiver_is_reached`; programs above; §10 "Nested calls".
+
+### DECISIONS MADE
+- MEMORY 111 records the built design.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m57`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–56 complete.** **Proposed, waiting for the user's approval** (the user wants to approve and build all three in one go, in this order):
-- **Milestone 57, nested `mut self` calls:** PRP-086, draft decisions 29–32.
-- **Milestone 58, numbers as `T`:** PRP-087, decisions 33–36.
-- **Milestone 59, user-defined `Ord`:** PRP-088, decisions 37–40.
+**Milestones 51–57 complete** (tag `m57`: nested `mut self` calls, PRP-086). **Approved and next, in one go** (session 122): milestone 58, numbers as `T` (PRP-087), then milestone 59, user-defined `Ord` (PRP-088). Each gets a session, a branch, a MEMORY plan entry (112, 114), tests first, and is merged on green CI and tagged.
 
-**On approval:** per PRP, a session, a branch `prp-NNN-…`, the "Add approved PRP" commit and a MEMORY plan entry (110, 112, 114). Then tests first, build, merge on green CI and tag (`m57`, `m58`, `m59`), one after another.
+firefly has two unpushed commits (`ce6f38b` layers, `a891512` nested layer); the user's `gpt-4x20k.log` is untracked there.
 
 See `TODO.md`.
 

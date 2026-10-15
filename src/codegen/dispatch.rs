@@ -84,8 +84,16 @@ impl<'ctx> Lowerer<'ctx> {
         // A `mut self` method writes the box in place, so the receiver is
         // reached as a place, making each array on the way unique (v15):
         // an array cloned that way copies its interface values' boxes.
-        let pair = if method.mutable {
-            let (address, place_ty, element) = self.place_address(base)?;
+        // Like any `mut self` call (v15, milestone 57), the place's indexes
+        // come first and the place itself after the arguments.
+        let (plan, early) = if method.mutable {
+            (Some(self.place_plan(base)?), None)
+        } else {
+            (None, Some(self.get(base, &ty)?.into_struct_value()))
+        };
+        let arguments = self.arguments(args, &method.params, false)?;
+        let pair = if let Some(plan) = &plan {
+            let (address, place_ty, element) = self.place_commit(base, plan);
             if element {
                 self.load_element(address, &place_ty)
             } else {
@@ -96,13 +104,13 @@ impl<'ctx> Lowerer<'ctx> {
             }
             .into_struct_value()
         } else {
-            self.get(base, &ty)?.into_struct_value()
+            early.expect("a `self` receiver was read before the arguments")
         };
         let (table, boxed) = self.parts(pair);
         let slot = u32::try_from(index).expect("method count fits in u32") + SLOTS;
         let code = self.slot(table, slot);
         let mut values = vec![boxed.into()];
-        values.extend(self.arguments(args, &method.params, false)?);
+        values.extend(arguments);
         let ptr = self.context.ptr_type(Default::default());
         let mut types: Vec<BasicMetadataTypeEnum> = vec![ptr.into()];
         types.extend(method.params.iter().map(|p| self.param_type(p)));

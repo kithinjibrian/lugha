@@ -1,0 +1,21 @@
+// An argument that can be the receiver's own storage is still E0508
+// (v15, milestone 57); calls and number reads are fine.
+struct V { x: f64 }
+struct G { vals: f64[], inner: V }
+
+impl G {
+    fun put(mut self, x: f64): i64 {
+        self.vals.push(x);
+        self.vals.len - 1
+    }
+    fun take(mut self, v: V) { self.inner = v; }
+    fun set(mut self, xs: f64[]) { self.vals = xs; }
+}
+
+fun main() {
+    let mut g = G { vals: [], inner: V { x: 1.0 } };
+    let h = g;
+    g.put(g.vals.len as f64 + g.inner.x);
+    g.take(g.inner);
+    g.set(if g.vals.len > 0 { g.vals } else { h.vals });
+}

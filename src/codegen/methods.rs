@@ -198,13 +198,24 @@ impl<'ctx> Lowerer<'ctx> {
         };
         let mut values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len() + 1);
         // `T.make(…)` through a bound names its type with `T`: no receiver.
-        if let Some(base) = receiver.filter(|_| method.receiver.is_some()) {
-            values.push(
-                self.receiver(base, &base_type, method.receiver == Some(true))?
-                    .into(),
-            );
+        let receiver = receiver.filter(|_| method.receiver.is_some());
+        // A `mut self` receiver runs like an assignment's place (v15,
+        // milestone 57): its indexes now, the place itself after the
+        // arguments, which may call methods on it. A `self` receiver is a
+        // copy taken first.
+        let (plan, copy) = match receiver {
+            Some(base) if method.receiver == Some(true) => (Some(self.place_plan(base)?), None),
+            Some(base) => (None, Some(self.receiver_copy(base, &base_type)?)),
+            None => (None, None),
+        };
+        let arguments = self.arguments(args, &method.signature.params, false)?;
+        if let (Some(base), Some(plan)) = (receiver, &plan) {
+            values.push(self.place_commit(base, plan).0.into());
         }
-        values.extend(self.arguments(args, &method.signature.params, false)?);
+        if let Some(copy) = copy {
+            values.push(copy.into());
+        }
+        values.extend(arguments);
         let site = self
             .builder
             .build_call(method.signature.function, &values, "method")
@@ -215,18 +226,12 @@ impl<'ctx> Lowerer<'ctx> {
         }))
     }
 
-    /// The receiver pointer: the caller's place for `mut self` (evaluated
-    /// once, before the arguments), else a pointer to a copy of the value.
-    fn receiver(
+    /// A `self` receiver: a pointer to a copy of the value.
+    fn receiver_copy(
         &mut self,
         base: &Expr,
         ty: &Type,
-        mutable: bool,
     ) -> Result<inkwell::values::PointerValue<'ctx>, CodegenError> {
-        if mutable {
-            let (address, _, _) = self.place_address(base)?;
-            return Ok(address);
-        }
         let value = self.get(base, ty)?;
         let slot = self.entry_alloca(ty, "self");
         self.builder.build_store(slot, value).expect(POSITIONED);
@@ -274,5 +279,21 @@ mod tests {
         let ok = main.find("bounds.ok:").expect("bounds check");
         let call = main.find("call void @lugha_fn_V.scale").expect("call");
         assert!(ok < call && main.contains("icmp ult i64"), "{ir}");
+    }
+
+    #[test]
+    fn mut_self_arguments_run_before_the_receiver_is_reached() {
+        // v15 (milestone 57): the receiver's arrays are made unique after the
+        // arguments, which may change it.
+        let ir = ir("struct V { x: i64 }
+            impl V { fun get(mut self): i64 { self.x += 1; self.x } fun add(mut self, k: i64) { self.x += k; } }
+            fun main() { let mut vs = [V { x: 1 }]; let keep = vs; vs[0].add(vs[0].get()); println(keep[0].x); }");
+        let main = &ir[ir.find("define void @lugha_fn_main").unwrap()..];
+        let inner = main.find("@lugha_fn_V.get(").expect("the inner call");
+        // The last test is the outer receiver's (LLVM numbers the labels).
+        let outer = main
+            .rfind("label %cow.clone")
+            .expect("the outer receiver's test");
+        assert!(inner < outer, "{main}");
     }
 }

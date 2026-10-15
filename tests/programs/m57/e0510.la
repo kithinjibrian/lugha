@@ -1,0 +1,12 @@
+// A change across an index is still E0510 for a `mut self` receiver
+// (v15, milestone 57); one without an index between is fine.
+struct V { x: i64 }
+impl V { fun add(mut self, k: i64) { self.x += k; } }
+struct W { v: V, vs: V[] }
+impl W { fun reset(mut self): i64 { self.vs.clear(); 1 } }
+
+fun main() {
+    let mut w = W { v: V { x: 1 }, vs: [V { x: 2 }] };
+    w.v.add(w.reset());
+    w.vs[0].add(w.reset());
+}

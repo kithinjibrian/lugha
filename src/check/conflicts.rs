@@ -1,7 +1,8 @@
 //! E0510 (v1.2 §5): an assignment, `swap` or `mut self` call fixes its
 //! place's address before the rest of the statement runs, so the rest may
 //! not change anything that contains that place: the write would land in an
-//! array that is no longer there.
+//! array that is no longer there. A `mut self` call reaches its receiver
+//! after the arguments (v15), so for it only a change across an index counts.
 
 use super::array::Path;
 use super::assign::PlaceUse;
@@ -53,7 +54,12 @@ impl Checker {
                 // Only a strict container moves the place: a same-depth or
                 // sibling change leaves its address valid.
                 let contains = change.path.overlaps(&at) && change.path.depth() < at.depth();
-                if change.reported || own.contains(&change.span) || !contains {
+                // A `mut self` call reaches its receiver again after the
+                // arguments (v15, milestone 57): only an array between the
+                // change and the receiver, bounds-checked first, can move it.
+                let moves = !matches!(place_use, PlaceUse::Receiver(_))
+                    || at.indexed_below(change.path.depth());
+                if change.reported || own.contains(&change.span) || !contains || !moves {
                     continue;
                 }
                 let d = errors::changed_while_writing(
@@ -172,5 +178,33 @@ mod tests {
         );
         // Nested writes to parts of `g` both conflict with `g.clear()`: one report.
         message("g[0][0] = { g[1][0] = { g.clear(); 1 }; 2 };");
+    }
+
+    const W: &str = "struct V { x: i64 }
+        impl V { fun add(mut self, k: i64) { self.x += k; } }
+        struct W { v: V, n: i64, vs: V[] }
+        impl W {
+            fun reset(mut self): i64 { self.n = 0; self.vs.clear(); 1 }
+            fun step(mut self) { self.v.add(self.reset()); }
+        }
+        fun main() { let mut w = W { v: V { x: 1 }, n: 2, vs: [V { x: 3 }] };";
+
+    #[test]
+    fn receivers_allow_changes_to_containers_without_an_index_between() {
+        ok(&format!("{W} w.v.add(w.reset()); }}"));
+        ok(&format!("{W} w.step(); }}"));
+        assert_eq!(
+            errors(&format!("{W} w.vs[0].add(w.reset()); }}")),
+            [("E0510", "w")]
+        );
+        ok(&format!(
+            "{W} let mut ws = [w]; ws[0].v.add(ws[0].reset()); }}"
+        ));
+        assert_eq!(
+            errors(&format!(
+                "{W} let mut ws = [w]; ws[0].v.add({{ ws.clear(); 1 }}); }}"
+            )),
+            [("E0510", "ws")]
+        );
     }
 }

@@ -1,6 +1,6 @@
 ## FEATURE: Nested `mut self` calls — an argument of a `mut self` call may call methods on the receiver (`g.tanh(g.add(a, b))`); milestone 57.
 
-**Status:** approved 2026-10-15 — session 122 ("approved. build in one go"); proposed in session 120.
+**Status:** merged 2026-10-15 — session 122 (approved the same session, "approved. build in one go"; proposed in session 120); tag `m57`.
 **Milestone:** 57 (one PRP; tag `m57` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 29–32, the milestone 57 choices); spec §4 (`mut self` methods, "No aliasing"), §5 (method-call order, "Changing what a statement writes"), §9 (E0508, E0510 rows), §10 (a program), §11 (row 57).
 
@@ -65,7 +65,7 @@ None.
 ## TESTS TO WRITE
 
 Checker unit tests (`method_calls.rs`, `conflicts.rs`):
-- [ ] **Allowed:**
+- [x] **Allowed:**
   - `g.tanh(g.add(a, b))`;
   - `g.f(g.h(x), g.k(y))`;
   - `g.scale(x, g.lr)` (f64);
@@ -73,7 +73,7 @@ Checker unit tests (`method_calls.rs`, `conflicts.rs`):
   - `v.add(v.scaled(2.0))`;
   - `v.add(V { x: v.x, y: 0.0 })`;
   - a closure capturing the receiver.
-- [ ] **Still E0508:**
+- [x] **Still E0508:**
   - `v.add(v)`;
   - `v.add(v.inner)`;
   - `g.set(g.values[0])` (array);
@@ -81,30 +81,30 @@ Checker unit tests (`method_calls.rs`, `conflicts.rs`):
   - `v.add({ v })`;
   - `v.add(match k { 0 => v, _ => w })`;
   - a tuple or `Option` field of the receiver.
-- [ ] **E0510 now allowed:** `self.g.f(self.norm(x))`, `a.b.f(a.reset())`.
-- [ ] **E0510 still reported:** `gs[i].f(gs.clear())`, `self.layers[i].f(self.reset())`, `gs[{ gs.clear(); 0 }].f()`; assignment's and `swap`'s cases unchanged.
+- [x] **E0510 now allowed:** `self.g.f(self.norm(x))`, `a.b.f(a.reset())`.
+- [x] **E0510 still reported:** `gs[i].f(gs.clear())`, `self.layers[i].f(self.reset())`, `gs[{ gs.clear(); 0 }].f()`; assignment's and `swap`'s cases unchanged.
 
 Codegen unit test:
-- [ ] A `mut self` call evaluates its arguments before reaching the receiver: in the IR, the argument's inner call comes before the receiver's `own` check.
+- [x] A `mut self` call evaluates its arguments before reaching the receiver: in the IR, the argument's inner call comes before the receiver's `own` check.
 
 Acceptance (`tests/programs/m57/`):
-- [ ] **`nested.la`:** a small tape (struct with `values: f64[]`, `push`-style ops returning ids). Nested calls on a local, on `self.g` inside a `mut self` method, through an interface value, through a default method, and on `gs[i]` with inner calls on `gs[i]`. Prints the same as `flat.la`, the same computations one `let` per op. Both goldens come from the flat form under the M56 compiler.
-- [ ] **`e0508.la`, `e0510.la`:** rejected programs (`.stderr`).
-- [ ] The §10 program.
+- [x] **`nested.la`:** a small tape (struct with `values: f64[]`, `push`-style ops returning ids). Nested calls on a local, on `self.g` inside a `mut self` method, through an interface value, through a default method, and on `gs[i]` with inner calls on `gs[i]`. Prints the same as `flat.la`, the same computations one `let` per op. Both goldens come from the flat form under the M56 compiler.
+- [x] **`e0508.la`, `e0510.la`:** rejected programs (`.stderr`).
+- [x] The §10 program.
 
 Regression:
-- [ ] Every earlier program passes unchanged; `v1_2/e0510*` keep their output.
+- [x] Every earlier program passes unchanged; `v1_2/e0510*` keep their output.
 
 ## ROLLBACK PLAN
 - Branch `prp-086-nested_mut_self`, merged into `main` after CI passes; tag `m57`.
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass at `-O0`, and the `m57/` programs at `-O2`.
-- [ ] firefly's nested `gpt.la` prints the same output as before on `./gpt` (small data).
-- [ ] The spec is at milestone 57; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] All tests pass at `-O0`, and the `m57/` programs at `-O2`.
+- [x] firefly's nested `gpt.la` prints the same output as before on `./gpt` (small data).
+- [x] The spec is at milestone 57; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -113,3 +113,14 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m57/nested.la
 ```
+
+## AMENDMENTS
+
+Session 122, while building:
+1. **Type parameters count as passed by pointer** for E0508 (a `T` may be a struct at an instance), with arrays, structs, enums, `Option` and interface values. Tuples are structs, so they're included too (`g.takep(g.pair)` is a test).
+2. **Interpolation, tuple, struct and array literals that mention the receiver are allowed:** they copy their parts, so they're fresh values.
+3. **E0510's relaxation applies to every `PlaceUse::Receiver`,** array built-ins included (`p.items.push({ p.reset(); 1 })` is now valid). Their value was already evaluated before the place was reached (M55).
+4. **Codegen:** `methods.rs` plans a `mut self` receiver, evaluates the arguments, then commits it; a `self` receiver is still a copy taken first (`receiver_copy`). `dispatch.rs` does the same for interface calls. Default methods go through these two paths. `places.rs::place_address` had no callers left and was removed.
+5. **Tests:** the codegen test compares against the last `cow.clone` branch, because LLVM numbers repeated labels with a function-wide counter.
+6. **firefly:** `a891512` (not pushed). `norm` and `layer` are written nested, keeping each op's order so graph ids match. `./gpt` prints identical output.
+
