@@ -1,6 +1,6 @@
 ## FEATURE: Lazy std modules — an imported std module's functions and methods are compiled only when the program reaches them, as the prelude's are; milestone 60.
 
-**Status:** proposed 2026-10-15 — session 125.
+**Status:** approved 2026-10-15 — session 126 ("yes build"); proposed in session 125.
 **Milestone:** 60 (one PRP; tag `m60` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 41–43); spec §6 (std modules), §9 (lowering), §11 (row 60).
 

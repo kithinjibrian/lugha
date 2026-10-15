@@ -1725,6 +1725,12 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** mirrors M52's operator methods; keying tables by printed names needed a unique name for the prelude's enum.
 
+### 116. Lazy std modules planned (session 125, approved session 126)
+
+**Decision (draft decisions 41–43, PRP-089):** an imported std module's bodies are all checked, but only the functions and methods a program reaches are compiled, as the prelude's are. Reached means called, through bounds or interface tables, used as values, or from reached bodies. Std only; milestone 60, IR tests.
+
+**Why:** std compiled every non-generic body on import (`from_os` in every `std.random` program); the prelude's mechanism already exists.
+
 ---
 
 ## CURRENT PROJECT STATE
