@@ -133,6 +133,10 @@ impl<'ctx> Lowerer<'ctx> {
             };
             return sign.into_int_value();
         }
+        // A struct or enum with `cmp` (v15, milestone 59).
+        if super::ordering::user_ordered(ty) {
+            return self.user_order(a, b, ty);
+        }
         if crate::check::tuple_elements(ty).is_some() {
             let helper = self.cmp_function(ty);
             let call = self

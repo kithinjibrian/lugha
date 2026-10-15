@@ -1,0 +1,16 @@
+error[E0419]: `P` doesn't satisfy `Ord`
+  --> tests/programs/m59/e0419.la:8:13
+  |
+8 |     let m = math.min(a, a);
+  |             ^^^^^^^^^^^^^^
+  |
+  = help: give `P` a `fun cmp(self, other: P): Ordering` to order it
+
+error[E0419]: `P` doesn't satisfy `Ord`
+  --> tests/programs/m59/e0419.la:9:13
+  |
+9 |     let s = [a].sort();
+  |             ^^^^^^^^^^
+  |
+  = help: give `P` a `fun cmp(self, other: P): Ordering` to order it
+

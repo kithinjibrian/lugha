@@ -12,7 +12,14 @@ impl Checker {
     /// names one rather than a local.
     fn enum_named(&mut self, expr: &Expr) -> Option<String> {
         let key = match &expr.kind {
-            ExprKind::Name(name) if self.local(name).is_none() => self.key(name),
+            // The prelude's `Ordering` (v15) unless the module declares its own.
+            ExprKind::Name(name) if self.local(name).is_none() => {
+                let key = self.key(name);
+                match self.prelude_type(name) {
+                    Some(prelude) if !self.enums.contains_key(&key) => prelude,
+                    _ => key,
+                }
+            }
             ExprKind::Field(base, e) => self.member_through(&Self::module_name(base)?, e)?,
             _ => return None,
         };

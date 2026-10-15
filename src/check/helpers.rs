@@ -10,7 +10,7 @@ use crate::modules::PRELUDE_PATH;
 /// helper: the array helpers keep their names, the others are prefixed by
 /// the receiver's kind (`str_trim`, `option_map`, `result_map_err`).
 fn helper_function(receiver: &Type, method: &str) -> Option<String> {
-    const ARRAY: [&str; 6] = ["map", "filter", "fold", "sort_by", "any", "all"];
+    const ARRAY: [&str; 7] = ["map", "filter", "fold", "sort_by", "sort", "any", "all"];
     const STRING: [&str; 6] = [
         "lines",
         "split",

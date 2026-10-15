@@ -3,4 +3,6 @@ error[E0404]: cannot apply `<` to P
   |
 6 |     let c = a < b;
   |             ^^^^^
+  |
+  = help: give `P` a `fun cmp(self, other: P): Ordering` to order it
 

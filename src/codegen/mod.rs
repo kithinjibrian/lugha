@@ -42,6 +42,7 @@ mod matching;
 mod methods;
 mod operators;
 mod or_patterns;
+mod ordering;
 mod patterns;
 mod places;
 mod results;

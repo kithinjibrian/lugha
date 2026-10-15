@@ -33,3 +33,12 @@ interface Float {
     fun rem(self, other: Self): Self;
     fun neg(self): Self;
 }
+
+// What `cmp` returns (v15, milestone 59): a type with
+// `fun cmp(self, other: Self): Ordering` is `Ord`, and `<` calls it.
+// Its variants are written `Ordering.Less`, like any enum's.
+enum Ordering { Less, Equal, Greater }
+
+// `xs.sort()`: `xs` in ascending order, stably, for any `T: Ord` (v15,
+// milestone 59), through `core.la`'s `sort_by`.
+fun sort<T: Ord>(xs: T[]): T[] = sort_by(xs, fun(a: T, b: T): bool = a < b);

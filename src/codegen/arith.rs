@@ -39,8 +39,11 @@ impl<'ctx> Lowerer<'ctx> {
             ty,
             Type::Struct(_, _) | Type::Enum(_, _) | Type::Option(_) | Type::Array(_)
         );
-        // `<` on tuples (v14): element by element.
-        if crate::check::tuple_elements(&ty).is_some() && !matches!(op, BinOp::Eq | BinOp::Ne) {
+        // `<` on tuples (v14): element by element; on a struct or enum, its
+        // `cmp` (v15).
+        let ordered =
+            crate::check::tuple_elements(&ty).is_some() || super::ordering::user_ordered(&ty);
+        if ordered && !matches!(op, BinOp::Eq | BinOp::Ne) {
             return Ok(self.tuple_order(op, a, b, &ty).into());
         }
         if composite && matches!(op, BinOp::Eq | BinOp::Ne) {

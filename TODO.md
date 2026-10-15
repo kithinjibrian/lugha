@@ -314,7 +314,7 @@ Found writing glowworm and firefly (session 115); each needs a discovery and a P
 - [ ] **Lazy std modules** (found in session 114): a std module's non-generic functions are compiled whenever it is imported (e.g. `from_os` in every `std.random` program), unlike the prelude, which compiles only what is reached. Make std lazy the same way; no visible change except smaller IR.
 
 - [ ] **`it.sum()` cleanup** (session 112, no language change): replace the ten `iter_sum_<type>` copies in `src/prelude/iter.la` and the per-type table in `check/iter_helpers.rs` with one `fun iter_sum<T: Num>(it: Iter<T>): T`. `["a"].iter().sum()` stays E0415; only the IR names change (`iter_sum<i64>`).
-- [ ] **User-defined `Ord`** (session 112, a milestone with a discovery). Recommended answers:
+- [x] **User-defined `Ord`** (session 112). Done in milestone 59 (PRP-088). The recommended answers below were chosen:
   - a type with `fun cmp(self, other: Self): Ordering` (a prelude `enum Ordering { Less, Equal, Greater }`) gets `<`, `<=`, `>` and `>=` and satisfies `Ord`;
   - `==` stays structural;
   - `Ord` doesn't imply `Eq`.

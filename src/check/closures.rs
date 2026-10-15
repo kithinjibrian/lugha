@@ -193,7 +193,13 @@ mod tests {
             "fun main() { let a = 1; let b = 2; let f = fun(x: i64): i64 = b + a + b + x; \
                           let g = fun(): i64 { let h = fun(): i64 = a; h() }; }",
         );
-        let mut all: Vec<Vec<String>> = checked.captures.values().cloned().collect();
+        // The prelude's closures (`sort`'s, v15) capture nothing: leave them out.
+        let mut all: Vec<Vec<String>> = checked
+            .captures
+            .values()
+            .filter(|c| !c.is_empty())
+            .cloned()
+            .collect();
         all.sort();
         assert_eq!(
             all,

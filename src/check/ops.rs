@@ -73,10 +73,19 @@ impl Checker {
             let wanted = self
                 .missing_bound(&l, ord)
                 .filter(|_| l == r && !arithmetic);
+            let help = super::ordering::cmp_help(&l).filter(|_| ord && l == r && wanted.is_none());
             let types = if l == r { vec![l] } else { vec![l, r] };
             let d = errors::bad_operands_on(op.symbol(), &types, expr.span);
-            self.report(errors::with_bound_help(d, wanted, ord));
+            let d = errors::with_bound_help(d, wanted, ord);
+            self.report(match help {
+                Some(help) => d.with_help(help),
+                None => d,
+            });
             return Type::Error;
+        }
+        // `<` on a type with `cmp` calls it (v15, milestone 59).
+        if matches!(op, BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge) {
+            self.order_uses(expr, &l);
         }
         if arithmetic { l } else { Type::Bool }
     }

@@ -1,0 +1,77 @@
+// User-defined order (v15, milestone 59): a type with
+// `fun cmp(self, other: Self): Ordering` is `Ord`.
+import std.math;
+
+struct Score { loss: f64, name: string }
+
+impl Score {
+    fun cmp(self, o: Score): Ordering =
+        if self.loss < o.loss {
+            Ordering.Less
+        } else if self.loss > o.loss {
+            Ordering.Greater
+        } else {
+            Ordering.Equal
+        };
+}
+
+enum Level { Low, Mid, High }
+
+impl Level {
+    fun rank(self): i64 = match self {
+        Low => 0,
+        Mid => 1,
+        High => 2,
+    };
+    fun cmp(self, o: Level): Ordering =
+        if self.rank() < o.rank() {
+            Ordering.Less
+        } else if self.rank() > o.rank() {
+            Ordering.Greater
+        } else {
+            Ordering.Equal
+        };
+}
+
+struct Box<T> { v: T }
+
+impl Box<T: Ord> {
+    fun cmp(self, o: Box<T>): Ordering =
+        if self.v < o.v {
+            Ordering.Less
+        } else if o.v < self.v {
+            Ordering.Greater
+        } else {
+            Ordering.Equal
+        };
+}
+
+fun largest<T: Ord>(xs: T[]): T {
+    let mut best = xs[0];
+    for x of xs {
+        if best < x {
+            best = x;
+        }
+    }
+    best
+}
+
+fun names(xs: Score[]): string = xs.map(fun(s: Score): string = s.name).join(" ");
+
+fun main() {
+    let a = Score { loss: 2.0, name: "a" };
+    let b = Score { loss: 1.0, name: "b" };
+    let c = Score { loss: 2.0, name: "c" };
+    println("{a < b} {a <= c} {a > b} {a >= c} {b < a} {a < c}");
+    println("{Level.Low < Level.High} {Level.High <= Level.Mid} {Level.Mid > Level.Low} {Level.Mid >= Level.Mid}");
+    println("{math.min(a, b).name} {math.max(a, b).name} {math.clamp(Level.High, Level.Low, Level.Mid).rank()}");
+    let scores = [a, b, c, Score { loss: 0.5, name: "d" }];
+    println("{scores.iter().min().unwrap().name} {scores.iter().max().unwrap().name}");
+    println(names(scores.sort()));
+    println("{(a, 2) < (c, 1)} {(c, 1) < (a, 2)}");
+    println(largest(scores).name);
+    let up = Box { v: 1 } < Box { v: 2 };
+    let top = largest([Box { v: "x" }, Box { v: "z" }, Box { v: "y" }]);
+    println("{up} {top.v}");
+    println(a == c);
+}

@@ -143,6 +143,12 @@ impl Checker {
                             .map(|a| subst(a, &generics, &args))
                             .collect(),
                     }],
+                    // `<` through `T: Ord` at a tuple reaches its elements'
+                    // `cmp` (v15, milestone 59).
+                    Some(param) if u.callee.key == "cmp" => {
+                        let concrete = subst(&Type::Param(param.clone()), &generics, &args);
+                        self.cmp_targets(&concrete)
+                    }
                     Some(param) => {
                         match self.bound_target(&generics, &args, param, &u.callee.key) {
                             Some(instance) => vec![instance],

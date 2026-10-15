@@ -1,0 +1,11 @@
+// `<` on a type without a `cmp` of the right shape is E0404 (v15, milestone 59).
+struct P { x: i64 }
+
+impl P {
+    fun cmp(self, o: P): i64 = self.x - o.x;
+}
+
+fun main() {
+    let a = P { x: 1 };
+    println(a < a);
+}

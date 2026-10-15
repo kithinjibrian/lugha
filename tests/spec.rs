@@ -123,6 +123,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Copy-on-write",
         "Nested calls",
         "Numbers as T",
+        "Ordering",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

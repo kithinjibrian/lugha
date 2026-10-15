@@ -207,8 +207,10 @@ impl fmt::Display for Type {
                 };
                 return write!(f, "{name}<{}>", args.join(", "));
             }
-            Type::Struct(name, _) => name,
-            Type::Enum(name, _) => name.strip_prefix("$prelude.").unwrap_or(name),
+            // A non-generic enum prints as its key, like a struct: the
+            // prelude's `Ordering` (v15) is `$prelude.Ordering`, so it can't
+            // be confused with a module's own `Ordering` in the layout tables.
+            Type::Struct(name, _) | Type::Enum(name, _) => name,
             Type::Param(name) | Type::Interface(name, _) => name,
             Type::Option(inner) => return write!(f, "Option<{inner}>"),
             Type::Void => "void",

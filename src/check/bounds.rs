@@ -17,7 +17,13 @@ impl Checker {
                 None
             };
             if let Some(bound) = unmet {
-                self.report(errors::unmet_bound(arg, bound, span));
+                let d = errors::unmet_bound(arg, bound, span);
+                // A struct or enum becomes `Ord` through `cmp` (v15).
+                let help = super::ordering::cmp_help(arg).filter(|_| bound == "Ord");
+                self.report(match help {
+                    Some(help) => d.with_help(help),
+                    None => d,
+                });
                 return false;
             }
             for interface in &g.bounds.interfaces {
@@ -75,6 +81,8 @@ impl Checker {
             Type::Struct(key, args) if key.starts_with(super::tuples::TUPLE) => {
                 args.iter().all(|a| self.ord_ok(a))
             }
+            // A struct or enum with `cmp` (v15, milestone 59).
+            Type::Struct(..) | Type::Enum(..) => self.has_cmp(ty),
             _ => ty.is_numeric() || matches!(ty, Type::String | Type::Char),
         }
     }

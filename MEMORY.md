@@ -1715,11 +1715,22 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** unlocks `min`/`max`/`clamp` and sorting for user types with one method, mirroring M52's operator methods.
 
+### 115. User-defined `Ord` — milestone 59 (PRP-088)
+
+**Decision:** built as planned (MEMORY 114).
+- **Checker:** `check/ordering.rs` (`has_cmp`, `bounds_hold`, `order_uses`, `cmp_targets`, `cmp_help`); `bounds.rs::ord_ok` asks `has_cmp`; `ops.rs` records uses and adds help; `monomorphize` lists `cmp_targets` for `cmp` through bounds.
+- **Codegen:** `codegen/ordering.rs::user_order` calls `cmp` and maps the tag to −1/0/1 by variant name; `arith.rs` and `tuples.rs::order_of` route user types there.
+- **Prelude:** `Ordering` and `sort` at the end of `ops.la`.
+- **Printing:** non-generic enums print by key (`$prelude.Ordering`).
+
+**Why:** mirrors M52's operator methods; keying tables by printed names needed a unique name for the prelude's enum.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 59 complete**: PRP-088 user-defined `Ord`
 - **Milestone 58 complete**: PRP-087 numbers as `T`
 - **Milestone 57 complete**: PRP-086 nested `mut self` calls
 - **Milestone 56 complete**: PRP-085 owning arrays once per loop
@@ -1825,8 +1836,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–58 complete** (tag `m58`: numbers as `T`, PRP-087). **Approved and next, in one go:** milestone 59, user-defined `Ord` (PRP-088): a session, branch `prp-088-user_ord`, MEMORY 114, tests first, merge on green CI, tag `m59`.
+**Milestones 51–59 complete** (tags `m57` nested `mut self` calls, `m58` numbers as `T`, `m59` user-defined `Ord`; built in one go, sessions 122–124). Nothing is proposed or in progress.
 
-Unpushed local commits: firefly `ce6f38b` (layers), `a891512` (nested layer); glowworm `b0683c3` (numbers as `T`). The user's `gpt-4x20k.log` is untracked in firefly.
+Unpushed local commits, for the user to push when they ask: firefly `ce6f38b` (layers) and `a891512` (nested layer); glowworm `b0683c3` (numbers as `T`). The user's `gpt-4x20k.log` is untracked in firefly.
+
+Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section): lazy std modules, the `sum()` cleanup, optional C → Lugha, std.fs/env/process, Unicode follow-ups.
 
 See `TODO.md`.

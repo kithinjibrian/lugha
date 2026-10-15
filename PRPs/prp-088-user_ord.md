@@ -1,6 +1,6 @@
 ## FEATURE: User-defined `Ord` — a type with `cmp(self, other: Self): Ordering` gets `<`, `<=`, `>`, `>=` and satisfies `T: Ord`; tuples compare through it; `xs.sort()`; milestone 59.
 
-**Status:** approved 2026-10-15 — session 122 ("approved. build in one go"); proposed in session 121.
+**Status:** merged 2026-10-15 — session 124 (approved in session 122, "approved. build in one go"; proposed in session 121); tag `m59`.
 **Milestone:** 59 (one PRP; tag `m59` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 37–40); spec §4 (bounds, `Ord`, tuples, operator methods, array helpers), §5 (comparison evaluation), §9 (E0404, E0419 rows; lowering), §10 (a program), §11 (row 59).
 
@@ -74,41 +74,41 @@ None.
 ## TESTS TO WRITE
 
 Checker unit tests:
-- [ ] **Satisfies `Ord`:** a struct with `cmp`; an enum with `cmp`; a generic struct with `cmp` in an `impl` with bounds.
-- [ ] **Not `Ord`:**
+- [x] **Satisfies `Ord`:** a struct with `cmp`; an enum with `cmp`; a generic struct with `cmp` in an `impl` with bounds.
+- [x] **Not `Ord`:**
   - `cmp` returning `i64`;
   - `cmp` taking `mut self`;
   - `cmp` with a parameter other than `Self`;
   - a struct without `cmp` (E0404 for `<`, E0419 for `math.min`);
   - interface values;
   - an array of an `Ord` type.
-- [ ] **Shadowing:** a module's own `Ordering` enum means its own; `sort` on a non-`Ord` element is E0419.
+- [x] **Shadowing:** a module's own `Ordering` enum means its own; `sort` on a non-`Ord` element is E0419.
 
 Codegen unit test:
-- [ ] `a < b` on a struct calls `lugha_fn_<Type>.cmp`.
+- [x] `a < b` on a struct calls `lugha_fn_<Type>.cmp`.
 
 Acceptance (`tests/programs/m59/`):
-- [ ] **`ordering.la`:**
+- [x] **`ordering.la`:**
   - `<`, `<=`, `>`, `>=` on a struct and an enum, all four outcomes;
   - `math.min`/`max`/`clamp`, `it.min()`/`max()`;
   - tuple tie-breaking;
   - `sort()`, stable on equal keys;
   - a generic `largest<T: Ord>`.
-- [ ] **`e0404.la`, `e0419.la`:** rejected programs.
-- [ ] The §10 program.
+- [x] **`e0404.la`, `e0419.la`:** rejected programs.
+- [x] The §10 program.
 
 Regression:
-- [ ] Every earlier program passes unchanged.
+- [x] Every earlier program passes unchanged.
 
 ## ROLLBACK PLAN
 - Branch `prp-088-user_ord`, merged into `main` after CI passes; tag `m59`.
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass at `-O0`, and the `m59/` programs at `-O2`.
-- [ ] The spec is at milestone 59; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] All tests pass at `-O0`, and the `m59/` programs at `-O2`.
+- [x] The spec is at milestone 59; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -117,3 +117,18 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m59/ordering.la
 ```
+
+## AMENDMENTS
+
+Session 124, while building:
+1. **Printing:** a non-generic enum now prints as its key, like a struct, so the prelude's is `$prelude.Ordering` in messages. Codegen's layout tables and LLVM type names use the printed name; with the prefix stripped, `$prelude.Ordering` was looked up as `Ordering`, which wasn't in the table (an internal error) and could have collided with a module's own `Ordering`. `Ordering` was the only non-generic prelude enum; `Result` is generic and still prints bare.
+2. **`Ordering` and `sort` live at the end of `src/prelude/ops.la`,** not `core.la`, so earlier prelude line numbers (in panic goldens such as `m18/split_panic`, `m36/overflow`) don't move.
+3. **Resolution:** `prelude_type` knows `Ordering`, so the bare name works as a type and in `Ordering.Less` (`construct.rs::enum_named`) unless the module declares its own.
+4. **Instances:** `order_uses` records `cmp` for generic types (through `used`) and through `T: Ord` (`bound_used(…, "cmp")`). For the latter, `monomorphize` lists `cmp_targets`, which include a tuple's elements', so `sort` over `(Box<i64>, i64)` compiles every `cmp` it calls.
+5. **`impl` bounds** are judged quietly (`bounds_hold`: `Eq`, `Ord` and the operator bounds). A `cmp` in an `impl` bounded by any other interface doesn't make the type `Ord`; conservative, and noted here.
+6. **The codegen IR test is an integration test,** `tests/ordering.rs`, because codegen unit tests check without the prelude.
+7. **Existing tests updated:**
+   - `m9/e0404_struct_order.stderr` gains the new help line;
+   - `calls_need_the_right_kind_of_method` uses `xs.shuffle()` (`sort` is a helper now);
+   - `captures_are_recorded_in_order` ignores capture-less closures (the prelude's `sort` has one).
+

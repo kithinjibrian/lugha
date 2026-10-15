@@ -5104,16 +5104,52 @@ Branch: prp-087-numbers_as_t
 
 ---
 
-## SESSION 124 — 2026-10-15 — User-defined `Ord` (milestone 59) — open
+## SESSION 124 — 2026-10-15 — User-defined `Ord` (milestone 59) — closed
 Branch: prp-088-user_ord
+
+### WHAT WAS DONE
+- MEMORY 114. Tests first:
+  - checker tests (`cmp` shapes, generic `impl` bounds, a module's own `Ordering`, `sort` E0419);
+  - `m59/ordering.la` (expected output by hand);
+  - `e0404.la`, `e0419.la`;
+  - `tests/ordering.rs` (IR calls `cmp`, tuple helper included).
+- Built:
+  - `check/ordering.rs`, `ord_ok` through `has_cmp`, uses and help;
+  - `cmp_targets` in `monomorphize`;
+  - `codegen/ordering.rs`;
+  - prelude `Ordering` and `sort` (in `ops.la`); `prelude_type` and `enum_named` resolve `Ordering`;
+  - non-generic enums print by key.
+- Spec v15 at milestone 59 (§4 order, the helper table, §9 rows and lowering, §10 "Ordering", §11 row 59, compatibility note); docs.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/ordering.rs`, `src/codegen/ordering.rs`, `tests/ordering.rs`, `tests/programs/m59/`.
+- Modified:
+  - `src/check/bounds.rs`, `ops.rs`, `instances.rs`, `results.rs`, `construct.rs`, `types.rs`, `helpers.rs`, `mod.rs`, `closures.rs`, `method_calls.rs`;
+  - `src/codegen/arith.rs`, `tuples.rs`, `mod.rs`; `src/prelude/ops.la`;
+  - `tests/programs/m9/e0404_struct_order.stderr`, `tests/spec.rs`; the v15 spec and draft;
+  - CLAUDE.md, README, TODO, CHANGELOG, MEMORY (114, 115), PRP-088.
+
+### TESTS WRITTEN
+- `a_type_with_cmp_is_ord`, `other_shapes_are_not_ord`, `a_module_s_own_ordering_means_its_own`, `ordering_a_user_type_calls_its_cmp`; the programs above; §10 "Ordering".
+
+### DECISIONS MADE
+- MEMORY 115 records the built design, including non-generic enums printing by key.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m59`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–58 complete** (tag `m58`: numbers as `T`, PRP-087). **Approved and next, in one go:** milestone 59, user-defined `Ord` (PRP-088): a session, branch `prp-088-user_ord`, MEMORY 114, tests first, merge on green CI, tag `m59`.
+**Milestones 51–59 complete** (tags `m57` nested `mut self` calls, `m58` numbers as `T`, `m59` user-defined `Ord`; built in one go, sessions 122–124). Nothing is proposed or in progress.
 
-Unpushed local commits: firefly `ce6f38b` (layers), `a891512` (nested layer); glowworm `b0683c3` (numbers as `T`). The user's `gpt-4x20k.log` is untracked in firefly.
+Unpushed local commits, for the user to push when they ask: firefly `ce6f38b` (layers) and `a891512` (nested layer); glowworm `b0683c3` (numbers as `T`). The user's `gpt-4x20k.log` is untracked in firefly.
+
+Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section): lazy std modules, the `sum()` cleanup, optional C → Lugha, std.fs/env/process, Unicode follow-ups.
 
 See `TODO.md`.
 

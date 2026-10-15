@@ -2,11 +2,11 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 51–58 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
+**Status:** in progress (milestones 51–59 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
 
 **v14.** This is v13 plus binary I/O, `char`, tuples, `format`, import aliases and whole-module re-exports, and git packages (milestones 45–50).
 
-**Changes since v14** (milestones 51–58):
+**Changes since v14** (milestones 51–59):
 - A package's `[package]` table may give its `name`, checked against the key a manifest lists it under (E0327), and its `source`, the folder its modules start in: with `source = "src"`, `src/array.la` of package `glowworm` is `glowworm.array` (section 6).
 - A program with no `lugha.toml` beside its main file uses the nearest one above it, looking no further than a folder with `.git` or the home folder; when that manifest names a package, the program imports it by that name, so `glowworm/examples/basics.la` writes `import glowworm.array;` with no manifest of its own (section 6).
 - A file imported as two modules is E0328 (section 6).
@@ -16,9 +16,10 @@ Oct 13, 2026 · @kithinji
 - Arrays are copy-on-write: a copy shares the array until either side writes to it, so copying costs a constant time and reading a copy never copies. Every copy still behaves as an independent value, and no program's output changes (sections 4, 5, 7, 9, 12). A loop makes the arrays it writes, and can't share, unique once before it starts, so its writes cost no more than before copy-on-write (milestone 56; section 9).
 - An argument of a `mut self` call may call methods on the receiver, `g.tanh(g.add(a, b))`, or read numbers and strings from it; only an argument that can be the receiver's own storage (`v.add(v)`, `v.add(v.inner)`) is E0508. The arguments run before the receiver is reached, and a change they make to a struct containing the receiver is no longer E0510 unless an array index lies between (milestone 57; sections 4–5).
 - Numbers as `T`: `n as T` and `x as f64` cast to and from a type parameter bounded by `Num` or `Float`, and any integer literal is a `T: Num` and any float literal a `T: Float` (`x * 2`, `x * 0.5`); a literal that doesn't fit an instance's type is E0402, naming the instance (milestone 58; section 4).
+- User-defined order: a struct or enum with `fun cmp(self, other: Self): Ordering`, the prelude's new `enum Ordering { Less, Equal, Greater }` (written `Ordering.Less`), is `Ord`: `<`, `<=`, `>` and `>=` call `cmp`, tuples compare through it, and `math.min`, `it.min()` and the new `xs.sort()` accept it. `==` stays structural (milestone 59; section 4).
 - `std.random`: `random.seeded(42)` or `random.from_os()` makes a generator (xoshiro256\*\*, not cryptographically secure) with `uniform`, `below`, `between`, `normal`, `chance`, `choice` and `shuffle` ("The standard library").
 
-Every valid v14 program and package is a valid v15 one: a module's own type or interface named `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` or `Num` still means its own, as for `Iter`.
+Every valid v14 program and package is a valid v15 one: a module's own type or interface named `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg`, `Num` or `Ordering` still means its own, as for `Iter`.
 
 **Changes in v14 since v13** (milestones 45–50):
 
@@ -586,6 +587,7 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 | `xs.filter(f)` | `f: fun(T): bool` | `T[]`: the elements for which `f` is true, in order |
 | `xs.fold(init, f)` | `init: A`, `f: fun(A, T): A` | `A`: `f(…f(f(init, xs[0]), xs[1])…)`, left to right |
 | `xs.sort_by(less)` | `less: fun(T, T): bool` | `T[]`: sorted so that `less` holds between neighbours or neither way, stably (equal elements keep their order) |
+| `xs.sort()` (v15) | — | `T[]` for a `T: Ord`: ascending, stably, through `<` (E0419 otherwise) |
 | `xs.any(f)` / `xs.all(f)` | `f: fun(T): bool` | `bool`, stopping at the first element that decides |
 
 `T` comes from the receiver, and the other type arguments (`U`, `A`) are inferred as for any generic call, so a closure argument needs no written types: `xs.map(fun(x) = "{x}")` is a `string[]`, its result type coming from the closure's body. Arity and argument types are checked at the call (E0405, E0403). `f` runs once per element it is given, in order; a panic inside it stops the program as usual. If `less` is inconsistent, `sort_by` still returns every element exactly once, in some order. The helpers chain: `people.filter(fun(p) = p.age >= 18).map(fun(p) = p.name)`. Functions named `map`, `filter` and so on in a program are unaffected: the helpers exist only as array methods.
@@ -603,7 +605,8 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 - **Type arguments:** a generic type is written with all its arguments in type positions: `Stack<i64>`, `Option<Vec2>`, `Pair<string, f64>`. A wrong count, or a bare `Stack` in a type position, is E0418.
 - **Inference:** at a call, a struct literal, a variant or an associated function, the type arguments are inferred, never written. They come first from the expected type, then from the arguments that can be typed alone, then from the ones that can't (number literals, `None`, `[]`), so `max(x, 3)` with `x: u8` makes `3` a `u8`. A method's `impl` parameters come from its receiver: `s.push(1)` on a `Stack<string>` is E0401.
 - **Can't infer:** a parameter still undecided is E0412, with help to annotate: `let s: Stack<i64> = Stack.new();`.
-- **Bounds at a use:** a type argument that doesn't satisfy its bound is E0419. For example, `largest([[1]])` fails because `i64[]` is not `Ord`. Every type is `Eq`, so only `Ord` can fail: it holds for the numbers, `string`, and type parameters declared `Ord`.
+- **Bounds at a use:** a type argument that doesn't satisfy its bound is E0419. For example, `largest([[1]])` fails because `i64[]` is not `Ord`. Every type is `Eq`, so only `Ord` can fail: it holds for the numbers, `string`, `char`, tuples of `Ord` elements, type parameters declared `Ord`, and (v15) a struct or enum with `cmp`, below.
+- **User-defined order** (v15, milestone 59): a struct or enum whose `impl` has exactly `fun cmp(self, other: Self): Ordering`, returning the prelude's `enum Ordering { Less, Equal, Greater }`, is `Ord`. `a < b` is `a.cmp(b) == Ordering.Less`, `a <= b` is `!= Greater`, `a > b` is `== Greater` and `a >= b` is `!= Less`; a generic type's `cmp` counts where its `impl`'s bounds hold. A `cmp` of another shape (a `mut self`, another parameter or result type) doesn't make a type `Ord`: `<` is E0404 and a bound E0419, each with help naming the shape. `==` stays structural and never calls `cmp`, and `Ord` still doesn't imply `Eq`. The numbers, `string` and `char` keep their built-in order and have no `cmp` method. `Ordering`'s variants are written `Ordering.Less`, like any enum's; a module's own `Ordering` means its own, and the prelude's prints as `$prelude.Ordering` in messages.
 
 **Interfaces.**
 - **Declaring one:** `interface Shape { fun area(self): f64; fun name(self): string; }` lists methods (with a `self` or `mut self` receiver) and associated functions (without one), each ending in `;`. Their signatures use concrete types, the interface's own type parameters (below) and `Self` (v6, below); an item has no type parameters of its own. An item name appears once (E0310).
@@ -1167,6 +1170,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 - **Text and option helpers** (v4) are prelude functions (`str_trim`, `option_map`, `result_map_err`, …) chosen by the receiver's type; `slice` is built in and calls `lugha_rt_str_slice`. A prelude function without type parameters is compiled only when user code reaches it, as generic helpers are.
 - **`Result`** (v4) is declared in the prelude, so it is the generic-enum machinery throughout; its LLVM type and helpers are named as it prints (`%"Result<i64, string>"`).
 - **Array helpers** (v3): `xs.map(f)` calls the prelude's `map` instance with `xs` first. The prelude is Lugha source like any other (`sort_by` is a bottom-up merge sort between two buffers), so it needs no special lowering; `--emit=tokens|ast` leaves it out, and an error inside it is reported as an internal compiler error.
+- **User-defined order** (v15): `<` on a struct or enum with `cmp` calls `lugha_fn_<Type>.cmp` (a generic type's instance) with a pointer to a copy of the left operand, and compares the returned `Ordering`'s tag with `Less` and `Greater` by variant; a tuple's `lugha_cmp_<type>` helper does the same for such elements, as −1, 0 or 1. Through `T: Ord`, each instance resolves `cmp` for its type.
 - **Calling a function value** (v3): extract its code and environment, and call the code indirectly with the environment as a hidden first argument, then the arguments as for any call (aggregates by pointer).
 - **Monomorphization:** after checking, the checker lists every generic function and method instance reachable from the non-generic code, at concrete type arguments, and every concrete type those instances use (E0420 when they nest too deep). Codegen compiles each instance from its one body by substituting the type arguments into the types the checker recorded; it still never infers a type. Generic structs and enums get one LLVM type per instance, named as they print (`%"Stack<i64>"`), and their own copy and equality helpers (`lugha_copy_10Stack<i64>`).
 - **Methods:** ordinary functions whose first parameter is the receiver. A `self` receiver is passed like a struct argument; a `mut self` receiver is the address of the caller's place itself, so the method's writes land there.
@@ -1268,7 +1272,7 @@ Name and type errors, reported by the checker:
 | E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
 | E0402 | Integer literal out of range for its type | `let b: u8 = 256;`; `x + 300` in a `fun big<T: Num>` called at `u8` (v15) |
 | E0403 | Type mismatch | `let n: i32 = ok;` where `ok` is `bool`; `if`/`else` of different types |
-| E0404 | Operator applied to invalid operand types | `true + 1`, `-u` where `u` is `u8`, `u16`, `u32` or `u64`; `a == b` on a `T` without `Eq` (with help to declare it); `s + 1` where `s`'s type has no `add` of the operator shape, `a + a` on a `T` without `Add` or `Num` (v15) |
+| E0404 | Operator applied to invalid operand types | `a < b` on a struct without a `cmp` of the right shape (v15); `true + 1`, `-u` where `u` is `u8`, `u16`, `u32` or `u64`; `a == b` on a `T` without `Eq` (with help to declare it); `s + 1` where `s`'s type has no `add` of the operator shape, `a + a` on a `T` without `Add` or `Num` (v15) |
 | E0405 | Wrong number of arguments | `add(1)` for `fun add(a: i64, b: i64)` |
 | E0406 | Not a function, or something that can't be a value | `let step = 2; step(1);`; `let a = Circle.area;` (a method), `let p = println;`, an extern (v3) |
 | E0407 | `void` used as a value | `let x = log();` where `log` returns nothing |
@@ -2859,6 +2863,34 @@ fun main() {
 }
 ```
 
+**Ordering** (milestone 59). Prints `gpt`, `gpt mlp bigram`, `true`, `true` on four lines, exits with 0.
+
+```
+// User-defined order (v15): `cmp` makes a type `Ord`, so `<`, `sort`,
+// `min` and tuples work on it. `==` stays structural.
+struct Run { loss: f64, name: string }
+
+impl Run {
+    fun cmp(self, o: Run): Ordering =
+        if self.loss < o.loss {
+            Ordering.Less
+        } else if self.loss > o.loss {
+            Ordering.Greater
+        } else {
+            Ordering.Equal
+        };
+}
+
+fun main() {
+    let runs = [Run { loss: 2.24, name: "gpt" }, Run { loss: 2.46, name: "bigram" }, Run { loss: 2.40, name: "mlp" }];
+    let best = runs.iter().min().unwrap();
+    println(best.name);
+    println(runs.sort().map(fun(r: Run): string = r.name).join(" "));
+    println(runs[0] < runs[1]);
+    println((runs[1], 0) < (runs[1], 1));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2923,6 +2955,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 56 | Owning arrays once per loop (v15) | the loop scan, fixed paths, guarded hoists before every loop kind; writes inside skip the flag test | Every program prints the same; `tests/programs/m56/` (done) |
 | 57 | Nested `mut self` calls (v15) | E0508 only for arguments that can be the receiver's storage, `mut self` receivers reached after the arguments, E0510 for receivers only across an index | The nested-calls program in section 10 passes (done) |
 | 58 | Numbers as `T` (v15) | `as` with `T: Num`/`Float`, any literal as `T`, E0402 per instance | The numbers-as-T program in section 10 passes (done) |
+| 59 | User-defined `Ord` (v15) | `cmp(self, other: Self): Ordering`, the prelude's `Ordering`, `<` through `cmp`, tuples, `xs.sort()` | The ordering program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

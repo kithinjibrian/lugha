@@ -1,0 +1,8 @@
+error[E0404]: cannot apply `<` to P
+   --> tests/programs/m59/e0404.la:10:13
+   |
+10 |     println(a < a);
+   |             ^^^^^
+   |
+   = help: give `P` a `fun cmp(self, other: P): Ordering` to order it
+

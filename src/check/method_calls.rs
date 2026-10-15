@@ -272,10 +272,11 @@ mod tests {
             errors(&format!("{base}fun main() {{ let n = V.len(); }}")),
             [("E0415", "len")]
         );
-        // Arrays have only `push`, `pop` and `clear` (milestone 8).
+        // Arrays have only `push`, `pop`, `clear` and the prelude's helpers
+        // (`sort` is one since v15).
         assert_eq!(
-            errors("fun main() { let mut xs = [1]; xs.sort(); }"),
-            [("E0415", "sort")]
+            errors("fun main() { let mut xs = [1]; xs.shuffle(); }"),
+            [("E0415", "shuffle")]
         );
         assert_eq!(
             errors(&format!(
