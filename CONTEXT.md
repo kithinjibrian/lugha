@@ -5664,6 +5664,11 @@ Branch: prp-099-vscode_extension
 
 ---
 
+## SESSION 141 — 2026-10-15 — Record the VS Code extension's manual check — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–68 complete.** **Milestone 69, `lughac init` (programs and libraries), is proposed:** v16 draft decisions 9–12 and PRP-098. It waits for the user's approval.
