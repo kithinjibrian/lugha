@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Changed
+- The VS Code extension is 0.3.0: it gained block-comment highlighting (milestone 76) and snippets (milestone 78) without a version bump, so a reinstalled `.vsix` could be skipped as already installed; its README now says to bump the version with every change
 - A panic inside the prelude or a std module reports a later line than before (`<prelude>:154:9` instead of `135:9`, …): the bundled sources gained doc comments; the panics and their messages are unchanged
 - The prelude moved into `src/prelude/`: `prelude.la` is `core.la`, and `prelude_iter.la`, `prelude_more.la`, `prelude_text.la` and `prelude_ops.la` are `iter.la`, `more.la`, `text.la` and `ops.la`; `lugha::PRELUDE` and compiled programs are unchanged
 - `Checked` moved verbatim from `check/mod.rs` into `check/checked.rs` (approved split; `check/mod.rs` had reached 300 lines).

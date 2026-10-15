@@ -23,9 +23,11 @@ Needs Node 22.
 cd editors/vscode
 npm ci
 npm test                    # server-command and grammar tests
-npm run package             # lugha-0.2.0.vsix
-code --install-extension lugha-0.2.0.vsix
+npm run package             # lugha-0.3.0.vsix
+code --install-extension lugha-0.3.0.vsix
 ```
+
+**After any change in `editors/vscode/`**, bump the version in `package.json` (`npm version minor --no-git-tag-version`), rebuild the `.vsix` and reinstall it, then run **Developer: Reload Window**. VS Code skips a `.vsix` whose version is already installed, so an unbumped rebuild needs `code --install-extension … --force`. The language-server features come from `lughac` itself: reinstall it too (`cargo install --path .`) when they changed.
 
 ## Settings
 
