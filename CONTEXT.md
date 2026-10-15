@@ -6243,6 +6243,11 @@ Branch: main
 
 ---
 
+## SESSION 163 — 2026-10-16 — Snippets (milestone 78) — open
+Branch: prp-108-snippets
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).

@@ -1,6 +1,6 @@
 ## FEATURE: Snippets — declaration and control-flow snippets in the VS Code extension, call placeholders and a postfix `.match` from the language server; milestone 78.
 
-**Status:** proposed 2026-10-16 — session 162 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-16 ("build it") — built in session 163; proposed in session 162.
 **Milestone:** 78 (one PRP; tag `m78` at merge).
 **Spec:** `Language v16 Draft.md` decisions 52–55; spec §9 (the `lughac lsp` paragraph), §11 (row 78). No language change.
 
