@@ -54,15 +54,13 @@ jobs:
         run: cargo test
 
       - name: Install Node
-        # The VS Code extension's tests (PRP-099); Node from the Ubuntu archive.
+        # The VS Code extension's tests (PRP-099, PRP-100); Node from the Ubuntu archive.
         run: apt-get install -y --no-install-recommends nodejs npm
 
       - name: VS Code extension
-        # Its runner tests check real programs with the lughac just built, and
-        # its keyword test reads the spec, so it runs on every change.
+        # Its keyword test reads the spec, so it runs on every change; the
+        # language server itself is tested by `cargo test` (tests/lsp.rs).
         working-directory: editors/vscode
-        env:
-          LUGHAC: ${{ github.workspace }}/target/debug/lughac
         run: |
           npm ci
           npm test

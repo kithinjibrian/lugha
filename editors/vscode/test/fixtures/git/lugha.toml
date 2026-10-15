@@ -1,2 +1,0 @@
-[packages]
-geo = { git = "https://example.com/geo.git", version = "1" }

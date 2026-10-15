@@ -1,5 +1,0 @@
-import geo;
-
-fun main() {
-    println(geo.name());
-}

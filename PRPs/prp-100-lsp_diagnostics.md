@@ -99,7 +99,7 @@ $ lughac lsp      # speaks LSP on stdin/stdout; editors start it, people don't
 - No `unsafe`, crypto or credentials. Logs carry file paths and compiler messages only.
 
 ## TESTS TO WRITE
-- [ ] **`tests/lsp.rs`** (spawns `lughac lsp`, writes framed JSON-RPC, reads replies with a timeout):
+- [x] **`tests/lsp.rs`** (spawns `lughac lsp`, writes framed JSON-RPC, reads replies with a timeout):
   - `initialize` returns full text sync and UTF-16; `shutdown` + `exit` → exit 0; `exit` alone → exit 1;
   - `didOpen` of a program with a type error (and `é` before it) → `publishDiagnostics` with `E0403`, the UTF-16 range, `source: "lughac"`, the help line;
   - `didChange` fixing it → an empty list for that file;
@@ -109,19 +109,28 @@ $ lughac lsp      # speaks LSP on stdin/stdout; editors start it, people don't
   - `entries` in `initializationOptions` and through `didChangeConfiguration`;
   - a git dependency not in the cache → E0325, no `git` run, no `lugha.lock` written;
   - an unknown request → `MethodNotFound`, and the server still answers afterwards; garbage between messages → the server survives or exits 2, never hangs (timeout).
-- [ ] **Unit tests** in `driver/lsp/`: `has_main` (tokens, not comments or strings); UTF-16 positions; ownership merges and clears; a panicking check becomes one internal-error diagnostic; `<std>` files skipped; entries validation.
-- [ ] **Extension:** `server.test.ts` (the command from `lugha.path`, args `["lsp"]`); grammar and spec-keyword tests unchanged; `npm run package` includes `vscode-languageclient`.
+- [x] **Unit tests** in `driver/lsp/`: `has_main` (tokens, not comments or strings); UTF-16 positions; ownership merges and clears; a panicking check becomes one internal-error diagnostic; `<std>` files skipped; entries validation.
+- [x] **Extension:** `server.test.ts` (the command from `lugha.path`, args `["lsp"]`); grammar and spec-keyword tests unchanged; `npm run package` includes `vscode-languageclient`.
 - [ ] **Manual check** (README), by the user: type an error and see it appear without saving; fix it; change a module without saving and see the main file update; a pre-m70 `lughac` gives the notification.
-- [ ] **Regression:** `cargo test` unchanged otherwise; `lughac check` output byte-identical (existing CLI tests).
+- [x] **Regression:** `cargo test` unchanged otherwise; `lughac check` output byte-identical (existing CLI tests).
+
+## BUILT (session 145)
+- As designed: `src/driver/lsp/` (`mod.rs`, `server.rs`, `documents.rs`, `targets.rs`, `check.rs`, `publish.rs`), `pipeline::front_with`/`loaded_with`, `guard::message`/`help` shared; 14 tests in `tests/lsp.rs`, 17 unit tests in `driver/lsp/`.
+- **Differences from the plan:**
+  - a malformed message ends the server with exit 2 instead of an error reply: `lsp-server`'s reader thread stops on it; the tests check exit 2 and no hang;
+  - E0325 for an uncached git package lands in `lugha.toml`, as `lughac check` reports it (the test expects it there);
+  - `lsp-types` 0.97 depends on `fluent-uri`, not `url`; new crates in all: `lsp-server`, `lsp-types`, `serde_json`, `serde`, `serde_core`, `serde_derive`, `serde_repr`, `crossbeam-channel`, `crossbeam-utils`, `fluent-uri`, `bitflags` 1, `itoa`, `log`, `memchr`, `zmij` — all MIT, MIT/Apache-2.0 or Unlicense/MIT;
+  - the extension needs Node16 module resolution and a log output channel for `vscode-languageclient` 10; it isn't bundled yet (vsce warns about 231 files; a TODO item).
+- The manual check in VS Code is left to the user (extension README).
 
 ## ROLLBACK PLAN
 - Branch `prp-100-lsp_diagnostics` from `main`; tag `m70`.
 - To abandon before merge: delete the branch. After: revert the merge; the extension returns to 0.1.0 and its on-save checks.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`, the extension's `npm test`; CI green.
-- [ ] Spec at milestone 70; docs updated.
-- [ ] No file over 500 lines; no `unsafe`; the new crates and their licenses listed in the PR.
+- [x] All tests pass; `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`, the extension's `npm test`; CI green.
+- [x] Spec at milestone 70; docs updated.
+- [x] No file over 500 lines; no `unsafe`; the new crates and their licenses listed in the PR.
 - [ ] The manual check passes in VS Code.
 
 ## VALIDATION

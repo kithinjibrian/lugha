@@ -1,39 +1,42 @@
 # Lugha for VS Code
 
-Syntax highlighting and `lughac` diagnostics for [Lugha](../../README.md) (`.la` files).
+Syntax highlighting and live `lughac` diagnostics for [Lugha](../../README.md) (`.la` files).
 
 - **Highlighting:** keywords, types, numbers, `//` comments, strings with `{…}` interpolation and format specifiers (`{pi:.2}`), `format("{} {:>4}", …)` templates, `char` literals.
 - **Editing:** `Ctrl+/` toggles `//`; brackets and quotes close themselves.
-- **Diagnostics:** opening or saving a file runs `lughac check --offline --diagnostics=json`. Errors and warnings appear in the files they belong to, with their codes (`E0403`…), labels as related information and `help` in the message.
+- **Diagnostics as you type:** the extension starts `lughac lsp`, a language server that checks the program a moment after you stop typing, saved or not. Unsaved changes in other open files count too. Errors and warnings appear in the files they belong to, with their codes (`E0403`…), labels as related information and `help` in the message.
+
+Needs a `lughac` from milestone 70 or later (one with `lughac lsp`).
 
 ## Build and install
 
-Needs Node 22 and a built `lughac`.
+Needs Node 22.
 
 ```bash
 cd editors/vscode
 npm ci
-LUGHAC=../../target/debug/lughac npm test   # unit, runner and grammar tests
-npm run package                              # lugha-0.1.0.vsix
-code --install-extension lugha-0.1.0.vsix
+npm test                    # server-command and grammar tests
+npm run package             # lugha-0.2.0.vsix
+code --install-extension lugha-0.2.0.vsix
 ```
 
 ## Settings
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `lugha.path` | `lughac` | The compiler: a name on `PATH` or an absolute path. Set in user settings only, so a folder you open can't choose what runs. |
+| `lugha.path` | `lughac` | The compiler whose `lsp` command serves diagnostics: a name on `PATH` or an absolute path. Set in user settings only, so a folder you open can't choose what runs. |
 | `lugha.entries` | `[]` | Main files, relative to the workspace folder, e.g. `["src/main.la", "examples/demo.la"]`. |
 
-**Which file is checked.** A file with `fun main` is checked itself. A module (no `main`) is checked through `lugha.entries`, so its errors appear as the main files see them; with no entries it is checked alone, and the "no `main`" error (E0303) is hidden. `lughac` has no default entry point, so the extension doesn't guess one.
+**Which file is checked.** A file with `fun main` is checked itself. A module (no `main`) is checked through the main files in `lugha.entries` and through every main file the server has already checked that imports it — so opening `src/main.la` once is usually enough. With neither, the module is checked alone and the "no `main`" error (E0303) is hidden. `lughac` has no default entry point, so nothing scans the folder for one.
 
-**Offline.** Checks never fetch git packages. A package not yet in the cache shows E0325 at its import: run `lughac update main.la` (or a build) in a terminal once.
+**Offline.** The server never runs `git` and never writes a file. A git package not yet in the cache shows E0325 in `lugha.toml`: run `lughac update main.la` (or a build) in a terminal once.
 
-**Problems.** A missing compiler shows one notification. If `lughac` fails (exit 2), its output goes to the **Lugha** output channel and a status-bar warning appears; earlier diagnostics stay.
+**Problems.** If `lughac lsp` can't start (a missing `lughac`, or one from before milestone 70), one notification offers to set `lugha.path`. The **Lugha** output channel (`Lugha: Show Output`) holds the server's log. A bug inside the compiler shows as one "internal compiler error" at the top of the file; the server keeps running.
 
 ## Manual check before a release
 
 1. Install the `.vsix`; open `tests/programs/m21/nested/main.la`: it is highlighted.
-2. Add `let z: i64 = "x";` to a function in `geo.la`, save `main.la`: the error appears in `geo.la`.
-3. Set `"lugha.entries": ["tests/programs/m21/nested/main.la"]`, save `geo.la`: the same error, no E0303.
-4. Set `lugha.path` to `/nonexistent`, save: one notification.
+2. Type `let z: i64 = "x";` inside a function, **without saving**: the error appears; delete it: it goes.
+3. Open `geo.la` from the same folder, add that line there without saving: the error appears in `geo.la`, with no E0303.
+4. Undo it without saving: `main.la` and `geo.la` are clean again.
+5. Set `lugha.path` to `/nonexistent`: one notification.

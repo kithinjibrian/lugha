@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 70 — `lughac lsp` ✅
+- [x] PRP-100: a language server with live diagnostics; the VS Code extension 0.2.0 uses it; tagged `m70`
+
 ### Milestone 69 — `lughac init` ✅
 - [x] PRP-098: program and library layouts, the name from the folder or `--name`, never overwrites; tagged `m69`
 
@@ -357,7 +360,10 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 ## Editor support
 
 - [x] **VS Code extension** — highlighting and `lughac check` diagnostics on open/save (PRP-099, `editors/vscode/`).
-- [ ] **A language server** (`lughac lsp`): hover types, go-to-definition, completion, check-as-you-type. Needs a crate (`lsp-server` or `tower-lsp`) and a way to check unsaved buffers.
+- [x] **A language server, live diagnostics** — `lughac lsp`, the extension on `vscode-languageclient` (milestone 70, PRP-100).
+- [ ] **Hover types** — the checker's type table at the cursor (the next PRP).
+- [ ] **Go-to-definition** — the PRP after hover.
+- [ ] **Bundling** the extension (vsce warns about 231 files; needs a bundler such as esbuild as a dev dependency).
 - [ ] **Publishing** the extension to the Marketplace and Open VSX (publisher accounts, a token as a CI secret).
 
 ## After v14 — noted, not scheduled (session 103)

@@ -1,7 +1,8 @@
 //! Driver — the `lughac` command line (spec §9).
 //!
 //! Parses arguments, runs the pipeline for `build`, `run` and `check`, prints
-//! the bundled spec for `spec`, starts a project for `init` (v16), prints
+//! the bundled spec for `spec`, starts a project for `init` and serves the
+//! language server for `lsp` (v16), prints
 //! diagnostics (human or JSON) and chooses the exit code: 0 success, 1 the
 //! program has errors, 2 bad usage or an internal error.
 //!
@@ -11,6 +12,7 @@ mod build;
 mod guard;
 mod init;
 mod json;
+mod lsp;
 mod pipeline;
 mod render;
 mod source;
@@ -102,6 +104,7 @@ where
             0
         }),
         Command::Spec => Ok(spec(out.stdout, out.stderr)),
+        Command::Lsp => Ok(lsp::serve(out.stderr)),
         Command::Init { folder, lib, name } => Ok(init::init(
             &init::Request {
                 folder: folder.as_deref(),
@@ -178,6 +181,8 @@ enum Command {
     },
     /// Print the LLM-ready spec bundled with this compiler version
     Spec,
+    /// Serve the Language Server Protocol on stdin/stdout, for editors (v16)
+    Lsp,
     /// Start a program (or with --lib a library) in a folder; never overwrites (v16)
     Init {
         /// The folder [default: the current one]
@@ -215,7 +220,7 @@ impl Command {
             Command::Check { diagnostics, .. } | Command::Update { diagnostics, .. } => {
                 *diagnostics
             }
-            Command::Spec | Command::Init { .. } => Format::Human,
+            Command::Spec | Command::Init { .. } | Command::Lsp => Format::Human,
         }
     }
 
@@ -226,7 +231,7 @@ impl Command {
             | Command::Run { file, .. }
             | Command::Check { file, .. }
             | Command::Update { file, .. } => Some(file.display().to_string()),
-            Command::Spec | Command::Init { .. } => None,
+            Command::Spec | Command::Init { .. } | Command::Lsp => None,
         }
     }
 }

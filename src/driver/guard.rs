@@ -38,15 +38,11 @@ pub(super) fn guarded(
     match panic::catch_unwind(AssertUnwindSafe(work)) {
         Ok(code) => code,
         Err(payload) => {
-            let location = LOCATION.lock().ok().and_then(|mut slot| slot.take());
             let mut report = Report::internal(
                 format!("internal compiler error: {}", message(&*payload)),
                 None,
             );
-            report.help = Some(match location {
-                Some(at) => format!("this is a bug in lughac ({at}); please report it"),
-                None => "this is a bug in lughac; please report it".to_string(),
-            });
+            report.help = Some(help());
             let source = Source::single(file.unwrap_or_default(), "");
             let text = match format {
                 Format::Human => render::human(&report, &source),
@@ -60,7 +56,17 @@ pub(super) fn guarded(
 }
 
 /// The text of a panic payload: `panic!` gives a `&str` or a `String`.
-fn message(payload: &(dyn Any + Send)) -> String {
+/// The help line for a caught panic, naming where it happened when the hook
+/// recorded it; taking the location clears it for the next panic.
+pub(super) fn help() -> String {
+    match LOCATION.lock().ok().and_then(|mut slot| slot.take()) {
+        Some(at) => format!("this is a bug in lughac ({at}); please report it"),
+        None => "this is a bug in lughac; please report it".to_string(),
+    }
+}
+
+/// A panic's message, from its payload.
+pub(super) fn message(payload: &(dyn Any + Send)) -> String {
     if let Some(text) = payload.downcast_ref::<&str>() {
         (*text).to_string()
     } else if let Some(text) = payload.downcast_ref::<String>() {

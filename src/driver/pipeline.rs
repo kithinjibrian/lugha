@@ -43,13 +43,25 @@ pub(super) struct Front {
 /// `mode` allows and writing a changed `lugha.lock` (v14). A file that
 /// can't be read is internal; mistakes in the program come back as diagnostics.
 pub(super) fn loaded(path: &Path, mode: Mode) -> Result<(Source, Loaded), Failure> {
-    let name = path.display().to_string();
     let mut read = |file: &Path| std::fs::read(file);
-    match modules::load(path, &mut read, update::env(mode)) {
+    loaded_with(path, mode, &mut read, true)
+}
+
+/// `loaded` reading files through `read`, and writing `lugha.lock` only if
+/// `write_lock`: the language server reads open documents' unsaved text
+/// and never writes (v16 draft decision 13).
+pub(super) fn loaded_with(
+    path: &Path,
+    mode: Mode,
+    read: &mut modules::Read<'_>,
+    write_lock: bool,
+) -> Result<(Source, Loaded), Failure> {
+    let name = path.display().to_string();
+    match modules::load(path, read, update::env(mode)) {
         Ok(loaded) => {
             let root = path.parent().unwrap_or(Path::new(""));
             let source = Source::of(&name, root, &loaded);
-            if let Some(text) = &loaded.lock {
+            if let (Some(text), true) = (&loaded.lock, write_lock) {
                 update::write_lock(path, text, &source)?;
             }
             Ok((source, loaded))
@@ -66,7 +78,10 @@ pub(super) fn loaded(path: &Path, mode: Mode) -> Result<(Source, Loaded), Failur
 
 /// Loads, lexes and parses every module — everything `--emit=ast` needs.
 pub(super) fn parsed(path: &Path, mode: Mode) -> Result<Front, Failure> {
-    let (source, loaded) = loaded(path, mode)?;
+    parse_loaded(loaded(path, mode)?)
+}
+
+fn parse_loaded((source, loaded): (Source, Loaded)) -> Result<Front, Failure> {
     if loaded
         .diagnostics
         .iter()
@@ -84,7 +99,20 @@ pub(super) fn parsed(path: &Path, mode: Mode) -> Result<Front, Failure> {
 
 /// Reads, lexes, parses and type-checks `path` (spec §9 stages 1–3).
 pub(super) fn front(path: &Path, mode: Mode) -> Result<Front, Failure> {
-    let mut front = parsed(path, mode)?;
+    check_parsed(parsed(path, mode)?)
+}
+
+/// `front` reading through `read` and never writing `lugha.lock`, for the
+/// language server.
+pub(super) fn front_with(
+    path: &Path,
+    mode: Mode,
+    read: &mut modules::Read<'_>,
+) -> Result<Front, Failure> {
+    check_parsed(parse_loaded(loaded_with(path, mode, read, false)?)?)
+}
+
+fn check_parsed(mut front: Front) -> Result<Front, Failure> {
     // The prelude's array helpers (v3) are checked and compiled with every program.
     let mut prelude_errors = Vec::new();
     modules::with_prelude(&mut front.modules, &mut prelude_errors);

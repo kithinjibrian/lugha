@@ -1,2 +1,0 @@
-// The `é` before the error makes its byte column differ from its UTF-16 one.
-fun f(): i32 { let s = "é"; return s; }
