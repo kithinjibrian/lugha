@@ -1,6 +1,6 @@
 # Lugha v15 — Draft (delta against v14)
 
-**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116), and built. Milestone 56 (owning arrays once per loop) approved in session 119 (proposed in session 118), and built. Milestone 57 (nested `mut self` calls) proposed in session 120 and built in session 122, and milestones 58 (numbers as `T`, built in session 123) and 59 (user-defined `Ord`, built in session 124) in session 121; all three approved in session 122. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
+**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116), and built. Milestone 56 (owning arrays once per loop) approved in session 119 (proposed in session 118), and built. Milestone 57 (nested `mut self` calls) proposed in session 120 and built in session 122, and milestones 58 (numbers as `T`, built in session 123) and 59 (user-defined `Ord`, built in session 124) in session 121; all three approved in session 122. Milestone 60 (lazy std modules) proposed in session 125. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
 **Base:** `Language v14 Specification.md`, complete (milestone 50). It stays the source of truth, and what `lughac spec` prints, until v15's first milestone starts `Language v15 Specification.md`. That file then grows milestone by milestone, and v14 is frozen.
 
 This draft lists only what changes, in the order of the v14 sections. Everything not mentioned keeps its v14 meaning.
@@ -264,6 +264,14 @@ Found writing glowworm and firefly: only `0` and `1` can be a `T: Num`, so gener
 39. **`xs.sort()`:** a prelude helper for `T: Ord` arrays, a stable sort returning a new array, next to `sort_by`. A module's own `Ordering` still means its own, as for `Iter`.
 40. **Success:** milestone 59, tag `m59`; checker tests (shapes, interface values still not `Ord`), programs (`<` on structs, `math.min`/`max`/`clamp`, `it.min()`, tuples, `sort()`), a §10 program. No library changes.
 
+## Decisions behind milestone 60 (discovery, session 125)
+
+Found in session 114: importing a std module compiles every non-generic function and method in it, so a program using `random.seeded` and `r.below` also gets `from_os`, `uniform`, `between`, `chance`, `math.pi` and `math.e` in its IR. The prelude compiles only what is reached.
+
+41. **Std compiles like the prelude:** every body of an imported std module is still checked, and only the functions and methods a program reaches are compiled. Reached means called directly, through a bound or an interface table, used as a function value, or reached from another reached body.
+42. **Std only:** a program's own modules and its packages still compile everything.
+43. **Success:** milestone 60, tag `m60`, with no language change. IR tests (unused std functions absent; std reached through generics, interface values and function values present), every program's output unchanged, and the IR size of the std programs before and after.
+
 ## §2–§5 — no changes for milestone 51
 
 ## §6 Functions and program structure — changes
@@ -289,6 +297,7 @@ Found writing glowworm and firefly: only `0` and `1` can be a `T: Num`, so gener
 
 ## §10 Example programs — additions (v15 acceptance tests)
 
+- **M60:** no new §10 program (no language change).
 - **M59:** a leaderboard: a struct with `cmp`, sorted with `sort()`, its best with `it.min()`, ties broken through a tuple.
 - **M58:** a generic `mean`, `arange` and `scale` at `i64`, `f32` and `f64`, using `as T` and literals as `T`.
 - **M57:** a tape-style program with nested calls on one receiver (`g.mul(g.add(a, b), g.add(a, b))`), printing the same as the one-`let`-per-op form.
@@ -312,6 +321,7 @@ Found writing glowworm and firefly: only `0` and `1` can be a `T: Num`, so gener
 | 57 | Nested `mut self` calls | E0508 only for arguments that can be the receiver's storage; `mut self` calls run their arguments before reaching the receiver; E0510 for receivers only across an index |
 | 58 | Numbers as `T` | `as` casts with `T: Num`/`Float`; integer literals as `T: Num`, float literals as `T: Float`; E0402 per instance |
 | 59 | User-defined `Ord` | `cmp(self, other: Self): Ordering`, the prelude `Ordering`, `<` through `cmp`, tuples, `xs.sort()` |
+| 60 | Lazy std modules | an imported std module's functions and methods compiled only when reached, as the prelude's |
 
 Later v15 milestones (directories, processes, environment variables, Unicode follow-ups) are added when their discovery resumes; processes need a security review.
 

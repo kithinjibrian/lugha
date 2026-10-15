@@ -5143,18 +5143,42 @@ Branch: prp-088-user_ord
 
 ---
 
-## SESSION 125 — 2026-10-15 — Discovery: lazy std modules — open
+## SESSION 125 — 2026-10-15 — Discovery: lazy std modules — closed
 Branch: main
+
+### WHAT WAS DONE
+- Explained "lazy std modules" with a measured example: a program using `random.seeded` and `r.below` also compiles `from_os`, `uniform`, `between`, `chance`, `math.pi` and `math.e`.
+- Discovery. The user chose every recommendation:
+  - keep checking every std body, compile only what's reached;
+  - std only (packages and program modules stay eager);
+  - milestone 60 with IR tests.
+- Added decisions 41–43 to `Language v15 Draft.md`; wrote PRP-089 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-089-lazy_std.md`.
+- Modified: `docs/specs/Language v15 Draft.md`, CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: PRP-089 waits for the user's approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-089.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–59 complete** (tags `m57` nested `mut self` calls, `m58` numbers as `T`, `m59` user-defined `Ord`; built in one go, sessions 122–124). Nothing is proposed or in progress.
+**Milestones 51–59 complete.** **Milestone 60 (lazy std modules) is proposed:** decisions 41–43 in `Language v15 Draft.md` and PRP-089. It waits for the user's explicit approval.
+- **On approval:** MEMORY 116, branch `prp-089-lazy_std`, tests first (`tests/lazy_std.rs`).
+- **Then build:** one "lazy" predicate (prelude or std) in `instances.rs` and codegen; function values and interface tables list what they reach.
 
-Unpushed local commits, for the user to push when they ask: firefly `ce6f38b` (layers) and `a891512` (nested layer); glowworm `b0683c3` (numbers as `T`). The user's `gpt-4x20k.log` is untracked in firefly.
-
-Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section): lazy std modules, the `sum()` cleanup, optional C → Lugha, std.fs/env/process, Unicode follow-ups.
+Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 
 See `TODO.md`.
 

@@ -1836,10 +1836,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–59 complete** (tags `m57` nested `mut self` calls, `m58` numbers as `T`, `m59` user-defined `Ord`; built in one go, sessions 122–124). Nothing is proposed or in progress.
+**Milestones 51–59 complete.** **Milestone 60 (lazy std modules) is proposed:** decisions 41–43 in `Language v15 Draft.md` and PRP-089. It waits for the user's explicit approval.
+- **On approval:** MEMORY 116, branch `prp-089-lazy_std`, tests first (`tests/lazy_std.rs`).
+- **Then build:** one "lazy" predicate (prelude or std) in `instances.rs` and codegen; function values and interface tables list what they reach.
 
-Unpushed local commits, for the user to push when they ask: firefly `ce6f38b` (layers) and `a891512` (nested layer); glowworm `b0683c3` (numbers as `T`). The user's `gpt-4x20k.log` is untracked in firefly.
-
-Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section): lazy std modules, the `sum()` cleanup, optional C → Lugha, std.fs/env/process, Unicode follow-ups.
+Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 
 See `TODO.md`.
