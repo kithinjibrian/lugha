@@ -1670,6 +1670,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Result:** write loops are back near eager-copy speed (matmul 131 eager, 173 M55, 133 M56 ms).
 
+### 110. Nested `mut self` calls planned (session 120, approved session 122)
+
+**Decision (draft decisions 29–32, PRP-086):**
+- **E0508:** only for an argument that can be the receiver's storage, i.e. a place rooted at the receiver (through `if`/block/`match` tails) of a pointer-passed type.
+- **Order:** a `mut self` call runs like an assignment: receiver indexes, arguments, then the receiver is reached.
+- **E0510:** for receivers only when an index lies between the change and the receiver.
+- **Success:** milestone 57, plus firefly's `layer` rewritten.
+
+**Why:** tape-style model code needed one `let` per op; the plan/commit places from M55 make re-reaching the receiver after the arguments safe.
+
 ---
 
 ## CURRENT PROJECT STATE

@@ -1,6 +1,6 @@
 ## FEATURE: Nested `mut self` calls — an argument of a `mut self` call may call methods on the receiver (`g.tanh(g.add(a, b))`); milestone 57.
 
-**Status:** proposed 2026-10-15 — session 120.
+**Status:** approved 2026-10-15 — session 122 ("approved. build in one go"); proposed in session 120.
 **Milestone:** 57 (one PRP; tag `m57` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 29–32, the milestone 57 choices); spec §4 (`mut self` methods, "No aliasing"), §5 (method-call order, "Changing what a statement writes"), §9 (E0508, E0510 rows), §10 (a program), §11 (row 57).
 

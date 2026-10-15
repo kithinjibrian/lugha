@@ -1,6 +1,6 @@
 ## FEATURE: User-defined `Ord` — a type with `cmp(self, other: Self): Ordering` gets `<`, `<=`, `>`, `>=` and satisfies `T: Ord`; tuples compare through it; `xs.sort()`; milestone 59.
 
-**Status:** proposed 2026-10-15 — session 121.
+**Status:** approved 2026-10-15 — session 122 ("approved. build in one go"); proposed in session 121.
 **Milestone:** 59 (one PRP; tag `m59` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 37–40); spec §4 (bounds, `Ord`, tuples, operator methods, array helpers), §5 (comparison evaluation), §9 (E0404, E0419 rows; lowering), §10 (a program), §11 (row 59).
 

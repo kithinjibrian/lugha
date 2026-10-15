@@ -1,6 +1,6 @@
 ## FEATURE: Numbers as `T` — `as` casts with numeric type parameters, and any literal as a `T: Num`/`T: Float`; milestone 58.
 
-**Status:** proposed 2026-10-15 — session 121.
+**Status:** approved 2026-10-15 — session 122 ("approved. build in one go"); proposed in session 121.
 **Milestone:** 58 (one PRP; tag `m58` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 33–36); spec §4 (casts, inference rules 3–5, operator bounds), §9 (E0401, E0402, E0408 rows), §10 (a program), §11 (row 58).
 
