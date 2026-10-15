@@ -1778,9 +1778,11 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–56 complete.** **Milestone 57 (nested `mut self` calls) is proposed:** decisions 29–32 in `Language v15 Draft.md` and PRP-086. It waits for the user's explicit approval.
-- **On approval:** record MEMORY 110, branch `prp-086-nested_mut_self`, commit the approved PRP; tests first.
-- **Then build:** E0508 by "evaluates to" places passed by pointer; E0510 for receivers only across an index; `mut self` receivers planned before the arguments and committed after (direct, dynamic, default calls); the firefly `gpt.la` rewrite.
-- **After M57,** the user picked (session 120): any number as a `T: Num`, then user-defined `Ord`, each with its own discovery.
+**Milestones 51–56 complete.** **Proposed, waiting for the user's approval** (the user wants to approve and build all three in one go, in this order):
+- **Milestone 57, nested `mut self` calls:** PRP-086, draft decisions 29–32.
+- **Milestone 58, numbers as `T`:** PRP-087, decisions 33–36.
+- **Milestone 59, user-defined `Ord`:** PRP-088, decisions 37–40.
+
+**On approval:** per PRP, a session, a branch `prp-NNN-…`, the "Add approved PRP" commit and a MEMORY plan entry (110, 112, 114). Then tests first, build, merge on green CI and tag (`m57`, `m58`, `m59`), one after another.
 
 See `TODO.md`.

@@ -1,6 +1,6 @@
 # Lugha v15 — Draft (delta against v14)
 
-**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116), and built. Milestone 56 (owning arrays once per loop) approved in session 119 (proposed in session 118), and built. Milestone 57 (nested `mut self` calls) proposed in session 120. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
+**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116), and built. Milestone 56 (owning arrays once per loop) approved in session 119 (proposed in session 118), and built. Milestone 57 (nested `mut self` calls) proposed in session 120. Milestones 58 (numbers as `T`) and 59 (user-defined `Ord`) proposed in session 121. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
 **Base:** `Language v14 Specification.md`, complete (milestone 50). It stays the source of truth, and what `lughac spec` prints, until v15's first milestone starts `Language v15 Specification.md`. That file then grows milestone by milestone, and v14 is frozen.
 
 This draft lists only what changes, in the order of the v14 sections. Everything not mentioned keeps its v14 meaning.
@@ -248,6 +248,22 @@ Found writing firefly: tape-style model code needs one `let` per op, because `g.
 31. **E0510 for a `mut self` receiver only when an index lies between:** a change made by the arguments to something that strictly contains the receiver is allowed when no array index lies on the receiver's path below the changed place (`self.g.f(self.norm(x))`, `a.b.f(a.reset())`); `gs[i].f(gs.clear())` and `self.layers[i].f(self.reset())` stay E0510, since the array could shrink after the bounds check. Assignment and `swap` keep their E0510.
 32. **Success:** milestone 57, tag `m57`; checker tests for every allowed and still-rejected case, programs whose output equals the one-`let`-per-op form, a §10 program; then firefly's `gpt.la` `layer` rewritten in the nested style, with the same losses (committed, not pushed).
 
+## Decisions behind milestone 58 (discovery, session 121)
+
+Found writing glowworm and firefly: only `0` and `1` can be a `T: Num`, so generic code counts up by `1` to make a number (`arange`, `linspace`, `mean`).
+
+33. **`as` casts with type parameters:** `e as T` and `x as U`, where `T` or `x`'s type is a type parameter bounded by `Num` or `Float`, are valid when the other side is numeric (or another such parameter). Each instance casts by the §4 rules for its types (truncating and saturating silently, as every `as` does). A type parameter without a numeric bound stays E0408.
+34. **Literals as `T`:** any integer literal may take a type `T: Num` (or `T: Float`), and any float literal a type `T: Float`, as `0` and `1` already do. A float literal where `T` is only `Num` is E0401.
+35. **Per-instance range check:** an integer literal that doesn't fit an instance's type (`300` with `T = u8`; `-1` with `T = u32`) is E0402 at the literal, naming the instance (`in big<u8>`). The checker reports it, from its instance list.
+36. **Success:** milestone 58, tag `m58`; checker tests, a program at several instances, a §10 program; glowworm's `arange`/`linspace`/`mean` and firefly's `mean` simplified with the same output (committed, not pushed).
+
+## Decisions behind milestone 59 (discovery, session 121)
+
+37. **A type with `fun cmp(self, other: Self): Ordering` is `Ord`:** a prelude `enum Ordering { Less, Equal, Greater }` (written `Ordering.Less`, like any enum). `<`, `<=`, `>` and `>=` on such a type call `cmp`, and it satisfies `T: Ord`. `==` stays structural; `Ord` still doesn't imply `Eq`. The numbers, `string` and `char` keep their built-in comparisons and get no `cmp` method (as with `add`, milestone 52). A `cmp` of another shape doesn't make a type `Ord` (E0419 with help naming the shape; E0404 for `<`).
+38. **Tuples compare through `cmp`:** a tuple is `Ord` when every element is, and compares element by element, calling `cmp` for user types.
+39. **`xs.sort()`:** a prelude helper for `T: Ord` arrays, a stable sort returning a new array, next to `sort_by`. A module's own `Ordering` still means its own, as for `Iter`.
+40. **Success:** milestone 59, tag `m59`; checker tests (shapes, interface values still not `Ord`), programs (`<` on structs, `math.min`/`max`/`clamp`, `it.min()`, tuples, `sort()`), a §10 program. No library changes.
+
 ## §2–§5 — no changes for milestone 51
 
 ## §6 Functions and program structure — changes
@@ -273,6 +289,8 @@ Found writing firefly: tape-style model code needs one `let` per op, because `g.
 
 ## §10 Example programs — additions (v15 acceptance tests)
 
+- **M59:** a leaderboard: a struct with `cmp`, sorted with `sort()`, its best with `it.min()`, ties broken through a tuple.
+- **M58:** a generic `mean`, `arange` and `scale` at `i64`, `f32` and `f64`, using `as T` and literals as `T`.
 - **M57:** a tape-style program with nested calls on one receiver (`g.mul(g.add(a, b), g.add(a, b))`), printing the same as the one-`let`-per-op form.
 - **M56:** no new §10 program (no language change); `tests/programs/m56/` hazards whose output equals v14's.
 - **M55:** a program printing the results of copies followed by writes — through every write path — showing every copy independent (the same output as v14), and a timing note for firefly's GPT.
@@ -292,6 +310,8 @@ Found writing firefly: tape-style model code needs one `let` per op, because `g.
 | 55 | Copy-on-write arrays | copy sites share and mark arrays; the first write to a shared array clones it; writes reach arrays through their slots after the value is computed; arrays unshared before `extern` calls |
 | 56 | Owning arrays once per loop | arrays a loop writes through, and can't share, are made unique before the loop; its writes skip the flag test |
 | 57 | Nested `mut self` calls | E0508 only for arguments that can be the receiver's storage; `mut self` calls run their arguments before reaching the receiver; E0510 for receivers only across an index |
+| 58 | Numbers as `T` | `as` casts with `T: Num`/`Float`; integer literals as `T: Num`, float literals as `T: Float`; E0402 per instance |
+| 59 | User-defined `Ord` | `cmp(self, other: Self): Ordering`, the prelude `Ordering`, `<` through `cmp`, tuples, `xs.sort()` |
 
 Later v15 milestones (directories, processes, environment variables, Unicode follow-ups) are added when their discovery resumes; processes need a security review.
 

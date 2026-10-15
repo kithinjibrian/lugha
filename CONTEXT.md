@@ -4998,17 +4998,47 @@ Branch: main
 
 ---
 
-## SESSION 121 — 2026-10-15 — Discovery: any number as `T: Num`, user-defined `Ord` — open
+## SESSION 121 — 2026-10-15 — Discovery: any number as `T: Num`, user-defined `Ord` — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user asked for all three PRPs to be written, to approve and build them in one go.
+- **Numbers as `T`:** the user chose every recommendation:
+  - `as` casts with `T: Num`/`Float`;
+  - integer literals as `T: Num` and float literals as `T: Float`, with E0402 per instance;
+  - milestone 58 plus the glowworm/firefly cleanup.
+- **User-defined `Ord`:** the user chose every recommendation:
+  - `cmp(self, other: Self): Ordering` with a prelude `Ordering`;
+  - tuples through `cmp`, `xs.sort()`, prefixed variants;
+  - milestone 59, tests only.
+- Added decisions 33–40 to `Language v15 Draft.md`; wrote PRP-087 and PRP-088 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-087-numbers_as_t.md`, `PRPs/prp-088-user_ord.md`.
+- Modified: `docs/specs/Language v15 Draft.md`, CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: PRP-086, 087 and 088 wait for the user's approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-086, PRP-087 and PRP-088.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–56 complete.** **Milestone 57 (nested `mut self` calls) is proposed:** decisions 29–32 in `Language v15 Draft.md` and PRP-086. It waits for the user's explicit approval.
-- **On approval:** record MEMORY 110, branch `prp-086-nested_mut_self`, commit the approved PRP; tests first.
-- **Then build:** E0508 by "evaluates to" places passed by pointer; E0510 for receivers only across an index; `mut self` receivers planned before the arguments and committed after (direct, dynamic, default calls); the firefly `gpt.la` rewrite.
-- **After M57,** the user picked (session 120): any number as a `T: Num`, then user-defined `Ord`, each with its own discovery.
+**Milestones 51–56 complete.** **Proposed, waiting for the user's approval** (the user wants to approve and build all three in one go, in this order):
+- **Milestone 57, nested `mut self` calls:** PRP-086, draft decisions 29–32.
+- **Milestone 58, numbers as `T`:** PRP-087, decisions 33–36.
+- **Milestone 59, user-defined `Ord`:** PRP-088, decisions 37–40.
+
+**On approval:** per PRP, a session, a branch `prp-NNN-…`, the "Add approved PRP" commit and a MEMORY plan entry (110, 112, 114). Then tests first, build, merge on green CI and tag (`m57`, `m58`, `m59`), one after another.
 
 See `TODO.md`.
 
