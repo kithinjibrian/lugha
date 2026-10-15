@@ -34,6 +34,14 @@ impl Checker {
                 None => self.unchecked(args),
             });
         }
+        // `Ref.new(v)` (v16): the predeclared box, unless the module has a `Ref`.
+        if let ExprKind::Name(t) = &base.kind
+            && self.predeclared_ref(t)
+        {
+            self.record(base, Type::Void);
+            self.record(callee, Type::Void);
+            return Some(self.ref_new(call, name, args, expect));
+        }
         if let Some(ty) = self.type_named_by(base) {
             let method = self.method(&ty, &name.name);
             if method.is_none() && matches!(ty, Type::Enum(_, _)) {

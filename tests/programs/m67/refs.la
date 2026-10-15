@@ -1,0 +1,66 @@
+// Shared boxes (v16, milestone 67): copying a `Ref` copies the handle, so
+// every copy sees one box; what `get` hands out is a value of its own.
+struct Holder { r: Ref<i64>, label: string }
+
+impl Holder {
+    fun read(self): i64 = self.r.get();
+}
+
+interface Reader { fun read(self): i64; }
+
+fun same(r: Ref<i64>): Ref<i64> = r;
+
+fun bump<T: Num>(r: Ref<T>) {
+    r.update(fun(x: T): T = x + 1);
+}
+
+fun main() {
+    // A closure with state.
+    let n = Ref.new(0);
+    let tick = fun(): i64 {
+        n.update(fun(x: i64): i64 = x + 1);
+        n.get()
+    };
+    tick();
+    tick();
+    println("counter {n.get()} {tick()}");
+
+    // One box through a struct, an array, an interface value and a return.
+    let h = Holder { r: n, label: "h" };
+    let refs = [n, Ref.new(100)];
+    let reader: Reader = h;
+    let back = same(n);
+    back.set(10);
+    println("{n.get()} {h.r.get()} {refs[0].get()} {reader.read()} {refs[1].get()}");
+    println("{n.is(back)} {n.is(refs[1])}");
+
+    // `get` and `set` copy: the box and the values never change each other.
+    let boxed = Ref.new([1, 2, 3]);
+    let mut taken = boxed.get();
+    taken[0] = 99;
+    println("{boxed.get()} {taken}");
+    let mut list = [7, 8];
+    boxed.set(list);
+    list[0] = 0;
+    println("{boxed.get()} {list}");
+    boxed.update(fun(xs: i64[]): i64[] {
+        let mut ys = xs;
+        ys.push(9);
+        ys
+    });
+    println(boxed.get());
+
+    // Generic code over boxes.
+    let f = Ref.new(1.5);
+    bump(f);
+    bump(n);
+    println("{f.get()} {n.get()}");
+
+    // Printing, and a struct copy that still shares its box.
+    println(n);
+    let mut h2 = h;
+    h2.label = "h2";
+    h2.r.set(42);
+    println("{h.r.get()} {h.label} {h2.label}");
+    println(h2);
+}

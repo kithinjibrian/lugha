@@ -119,6 +119,14 @@ impl<'ctx> Lowerer<'ctx> {
         let ExprKind::Field(base, name) = &callee.kind else {
             return Ok(None);
         };
+        // `Ref.new(v)` (v16).
+        if self
+            .callees
+            .get(&call.id)
+            .is_some_and(|k| k == crate::check::REF_NEW)
+        {
+            return self.ref_new(call, args).map(|v| Some(Value::Val(v)));
+        }
         let base_type = self.ty(base);
         // `xs.map(f)`, `s.trim()`, `o.unwrap_or(d)`: helpers call the prelude
         // with the receiver first (v3 PRP-041, v4 PRP-043).
@@ -159,6 +167,10 @@ impl<'ctx> Lowerer<'ctx> {
         }
         if let Type::Array(_) = base_type {
             return self.array_builtin(base, &name.name, args).map(Some);
+        }
+        // `r.get()` and the rest of a box's methods (v16).
+        if let Type::Ref(_) = base_type {
+            return self.ref_method(base, &name.name, args).map(Some);
         }
         // `s.area()` on an interface value: through its table (v5).
         if let Type::Interface(..) = &base_type {

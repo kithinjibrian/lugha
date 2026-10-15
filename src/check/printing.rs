@@ -72,7 +72,9 @@ impl Checker {
             return;
         }
         match ty {
-            Type::Array(inner) | Type::Option(inner) => self.reach(inner, seen, found),
+            Type::Array(inner) | Type::Option(inner) | Type::Ref(inner) => {
+                self.reach(inner, seen, found)
+            }
             Type::Struct(key, args) | Type::Enum(key, args) => {
                 if let Some(m) = self.own_show(key) {
                     if !args.is_empty() {

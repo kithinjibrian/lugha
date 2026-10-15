@@ -5481,17 +5481,53 @@ Branch: main
 
 ---
 
-## SESSION 136 — 2026-10-15 — Shared boxes `Ref<T>` (milestone 67, v16) — open
+## SESSION 136 — 2026-10-15 — Shared boxes `Ref<T>` (milestone 67, v16) — closed
 Branch: prp-096-ref
+
+### WHAT WAS DONE
+- The user approved PRP-096 ("build it"); MEMORY 125.
+- Tests first:
+  - checker tests in `check/refs.rs`;
+  - `m67/refs.la` (counter closure, one box through struct, array, interface value and return; `get`/`set` copies; generic `bump`; printing);
+  - `m67/linked.la` (a doubly linked list; self and two-node cycles printed);
+  - `m67/e0404.la`, and `m67/cow.la` (copy-on-write and loop ownership with boxes).
+- Built:
+  - `Type::Ref` and its checker arms; `Ref.new` and the four methods;
+  - codegen `refs.rs`; `call_pair`; the runtime print-cycle stack.
+- Froze v15 and started `Language v16 Specification.md` (`lughac spec` prints it), with §4, §7 and §9 text, §10 "Shared boxes", §11 row 67 and §12; docs.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/refs.rs`, `src/codegen/refs.rs`, `tests/programs/m67/`, `docs/specs/Language v16 Specification.md`.
+- Modified:
+  - `src/check/types.rs`, `generics.rs`, `infer.rs`, `bounds.rs`, `layouts.rs`, `printing.rs`, `levels.rs`, `builtins.rs`, `method_calls.rs`, `ops.rs`, `mod.rs`;
+  - `src/codegen/value.rs`, `structs.rs`, `enums.rs`, `copy.rs`, `show.rs`, `methods.rs`, `fun_values.rs`, `mod.rs`;
+  - `runtime/print.c`; `src/link.rs`, `src/lib.rs`;
+  - `tests/cli.rs`, `tests/spec.rs`;
+  - the v15 spec (frozen), the v16 draft, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (125, 126), PRP-096.
+
+### TESTS WRITTEN
+- `boxes_are_made_read_and_changed_without_mut`, `boxes_are_not_eq_v16`, `nothing_reaches_inside_a_box`, `recursion_through_a_box_and_shadowing`; the m67 programs; §10 "Shared boxes".
+
+### DECISIONS MADE
+- MEMORY 126.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m67`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–66 complete (v15).** **Milestone 67, shared boxes (`Ref<T>`), is proposed** as the first of v16: `Language v16 Draft.md` (decisions 1–5) and PRP-096. It waits for the user's explicit approval. On approval:
-- freeze v15;
-- start `Language v16 Specification.md` and point `lughac spec` at it;
-- branch `prp-096-ref`, MEMORY 125, tests first.
+**Lugha v16 has begun: milestone 67 complete** (tag `m67`: shared boxes `Ref<T>`, PRP-096). v15 is frozen (milestones 51–66), and `lughac spec` prints `Language v16 Specification.md`. Nothing is proposed or in progress.
+
+Candidates for v16 (TODO's v16 section; each needs a discovery):
+- changing the working directory (oyster's `cd`);
+- streaming pipes and timeouts for `std.process`;
+- a package entry module (`import glowworm;`);
+- editing a box in place; a bounds-checked byte buffer; file streams.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`. oyster's shell is written but uncommitted in the user's repo.
 

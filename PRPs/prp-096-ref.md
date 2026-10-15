@@ -1,6 +1,6 @@
 ## FEATURE: Shared boxes — `Ref<T>`, the one shared, changeable object, opening Lugha v16; milestone 67.
 
-**Status:** approved 2026-10-15 — session 136 ("build it"); proposed in session 135.
+**Status:** merged 2026-10-15 — session 136 (approved the same session; proposed in session 135); tag `m67`.
 **Milestone:** 67 (one PRP; tag `m67` at merge). The first milestone of v16; v15 is declared complete and frozen.
 **Spec:** `Language v16 Draft.md` (decisions 1–5); spec §4 (types, equality, copies), §5 (method calls), §7 (memory model), §9 (lowering), §10 (a program), §11 (row 67), §12.
 
@@ -91,39 +91,57 @@ None.
 
 ## TESTS TO WRITE
 **Checker unit tests:**
-- [ ] `Ref.new(1)` is `Ref<i64>`; `r.get()`, `r.set(2)`, `r.update(f)` and `r.is(s)` type-check, with plain `let` bindings.
-- [ ] A closure may call `set`/`update` on a captured `Ref`; assigning the captured `r` is E0511.
-- [ ] `r == s` is E0404 with help; a struct holding a `Ref` in `==` is E0404; `T: Eq` with `Ref<i64>` is E0419.
-- [ ] `r.value`, `r[0]` and `r.push(1)` are rejected.
-- [ ] `struct Node { next: Option<Ref<Node>> }` is accepted.
-- [ ] A module's own `Ref` shadows the predeclared one.
+- [x] `Ref.new(1)` is `Ref<i64>`; `r.get()`, `r.set(2)`, `r.update(f)` and `r.is(s)` type-check, with plain `let` bindings.
+- [x] A closure may call `set`/`update` on a captured `Ref`; assigning the captured `r` is E0511.
+- [x] `r == s` is E0404 with help; a struct holding a `Ref` in `==` is E0404; `T: Eq` with `Ref<i64>` is E0419.
+- [x] `r.value`, `r[0]` and `r.push(1)` are rejected.
+- [x] `struct Node { next: Option<Ref<Node>> }` is accepted.
+- [x] A module's own `Ref` shadows the predeclared one.
 
 **Acceptance (`tests/programs/m67/`):**
-- [ ] **`refs.la`:**
+- [x] **`refs.la`:**
   - a counter closure;
   - two handles through a struct field, an array element, an interface value and a function's return all see one box;
   - `get` copies (an array taken out, then the box `set`: the copy is unchanged; and the reverse);
   - `update`, `is`, generic `fun bump<T: Num>(r: Ref<T>)`.
-- [ ] **`linked.la`:** a doubly linked list built and walked both ways; a self-cycle and a two-node cycle printed with `Ref(…)`.
-- [ ] **`e0404.la`:** a rejected program.
-- [ ] **The §10 program "Shared boxes".**
+- [x] **`linked.la`:** a doubly linked list built and walked both ways; a self-cycle and a two-node cycle printed with `Ref(…)`.
+- [x] **`e0404.la`:** a rejected program.
+- [x] **The §10 program "Shared boxes".**
 
 **Regression:**
-- [ ] Every v15 program passes unchanged.
-- [ ] `lughac spec` prints v16.
+- [x] Every v15 program passes unchanged.
+- [x] `lughac spec` prints v16.
 
 ## ROLLBACK PLAN
 - Branch `prp-096-ref`; tag `m67`.
 - To abandon: delete the branch (v15 stays the current spec).
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass at `-O0`; `m67/` at `-O2`.
-- [ ] v15 frozen; the v16 spec at milestone 67; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] fmt, clippy and tests pass; CI green.
+- [x] All tests pass at `-O0`; `m67/` at `-O2`.
+- [x] v15 frozen; the v16 spec at milestone 67; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] fmt, clippy and tests pass; CI green.
 
 ## VALIDATION
 ```bash
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 cargo run -q -- run tests/programs/m67/refs.la
 ```
+
+## AMENDMENTS
+
+Session 136, while building:
+1. **The type:** `Type::Ref(Box<Type>)`, resolved from a written `Ref<T>` in `generics.rs::resolve_applied` unless the module declares a `Ref`.
+   - **Checker arms:** substitution, `has_param`, `unbound`/`unify` (inference through `Ref<T>`), layouts, printing reach and visibility walk into it.
+   - **Equality:** `eq_ok` and `holds_fun` treat it like a function value: no `==` for it or anything holding it.
+2. **`Ref.new`:** checked in `check/refs.rs` (`predeclared_ref`, `ref_new`) and recorded in `callees` as `REF_NEW` for codegen. An expected `Ref<U>` types the value.
+3. **The methods** are entries in `builtins.rs` with plain `self`. Codegen is in `codegen/refs.rs`; `update` uses `fun_values.rs::call_pair`, split out of `call_value`.
+4. **Codegen details:**
+   - `Ref` is a pointer in `llvm_type` and `layout` (8, 8), and `mangle` gives `<T>_ref`;
+   - `enums.rs::collect` looks inside it, so enums held only through boxes are declared;
+   - `is_deep` stays false, so copies copy the pointer.
+5. **Printing:** `show_box` asks the runtime's `lugha_rt_show_enter(box)` (a GC-held stack in `print.c`) and calls `lugha_rt_show_leave()` after.
+6. **E0404 help** names `a.is(b)` and `a.get() == b.get()`. The codes for reaching inside a box are E0410 (field), E0411 (index) and E0415 (method), as the tests pin.
+7. **Extra program `m67/cow.la`:** arrays moving in and out of a box inside loops (copy-on-write and M56 hoisting) never change each other.
+8. **Version change:** v15's status line says complete and frozen; `Language v16 Specification.md` is v15's text plus the v16 header, a "v15" summary and the `Ref` sections. `lugha::SPEC` and `tests/cli.rs` point at v16.
+

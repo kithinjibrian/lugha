@@ -231,3 +231,37 @@ LughaString *lugha_rt_str_quote(const LughaString *s) {
     *at = '\0';
     return out;
 }
+
+/* Boxes being printed, innermost last (v16, milestone 67): printing a box
+ * that is already on the stack would never end, so it prints as `Ref(…)`.
+ * The stack lives in GC memory, which Boehm scans through this root. */
+static void **show_stack = NULL;
+static int64_t show_len = 0;
+static int64_t show_cap = 0;
+
+/* 1 after pushing `box`, or 0 if it is already being printed. */
+int32_t lugha_rt_show_enter(void *box) {
+    for (int64_t i = 0; i < show_len; i++) {
+        if (show_stack[i] == box) {
+            return 0;
+        }
+    }
+    if (show_len == show_cap) {
+        int64_t cap = show_cap == 0 ? 16 : show_cap * 2;
+        void **bigger = lugha_rt_alloc(cap * (int64_t)sizeof(void *));
+        if (show_len > 0) {
+            memcpy(bigger, show_stack, (size_t)show_len * sizeof(void *));
+        }
+        show_stack = bigger;
+        show_cap = cap;
+    }
+    show_stack[show_len++] = box;
+    return 1;
+}
+
+/* Pops the box `lugha_rt_show_enter` pushed last. */
+void lugha_rt_show_leave(void) {
+    if (show_len > 0) {
+        show_len--;
+    }
+}

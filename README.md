@@ -69,6 +69,7 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **The standard library (v15, milestone 53):** `import std.math;` then `math.sqrt(2.0)`, `math.pow`, `math.sin`, `math.round`, `math.abs(-3)`, `math.max(2, 7)`, `math.clamp`, `math.pi()`; the float functions work for any `T: Float` (`f32`, `f64`). Std modules ship inside `lughac` and cost nothing unless imported.
 - **Copy-on-write arrays (v15, milestone 55):** `let g = grads[i];` no longer copies the array; it is shared until either side writes, and the writer copies it first. Programs print exactly what they did before, and read-heavy code such as firefly's autograd trains 13–35% faster.
 - **Lazy std modules (v15, milestone 60):** of an imported std module, only the functions your program reaches are compiled, as with the prelude; everything is still type-checked.
+- **Shared boxes (v16, milestone 67):** `let n = Ref.new(0);` is a box every copy shares: `n.get()`, `n.set(1)`, `n.update(f)`, `n.is(m)`. A closure can keep state in one, and `struct Node { next: Option<Ref<Node>> }` links to itself. Everything else is still a value.
 - **`std.process` (v15, milestone 66):** `process.run("git", ["rev-parse", "HEAD"])?` gives `{ code, stdout, stderr }`; `run_with` feeds stdin; `call` shares the terminal. Never a shell: arguments reach the program exactly as given.
 - **`std.fs` (v15, milestone 65):** `import std.fs;`, then `fs.make_dirs("out/runs")?`, `fs.list_dir("data")?` (sorted names), `fs.is_file(p)`, `fs.remove_file(p)?`, `fs.remove_dir(p)?` (empty folders only).
 - **`std.env` (v15, milestone 64):** `import std.env;`, then `env.get("DATA")` (an `Option<string>`) and `env.current_dir()`; read-only.
@@ -79,7 +80,7 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **Owning arrays once per loop (v15, milestone 56):** a loop that writes into arrays it can't share (`counts[c] += 1`, `out[i][j] += …`) makes them unique once before it starts, so copy-on-write costs nothing inside it.
 - **Random numbers (v15, milestone 54):** `import std.random;`, then `let mut rng = random.seeded(42);` (or `random.from_os()`), and `rng.uniform()`, `rng.below(6)`, `rng.between(lo, hi)`, `rng.normal(0.0, 1.0)`, `rng.chance(p)`, `rng.choice(xs)`, `rng.shuffle(xs)`. xoshiro256\*\*, repeatable for a seed; not cryptographically secure.
 
-Everything is a value: assigning an array, struct or enum gives you your own copy. The full definition is [`docs/specs/Language v15 Specification.md`](docs/specs/Language%20v15%20Specification.md) (what `lughac spec` prints, in progress); the approved plan it is built from is [`Language v15 Draft.md`](docs/specs/Language%20v15%20Draft.md), and v14 is frozen in [`Language v14 Specification.md`](docs/specs/Language%20v14%20Specification.md).
+Everything is a value: assigning an array, struct or enum gives you your own copy. The one exception is a `Ref<T>` box (v16), which copies share on purpose. The full definition is [`docs/specs/Language v16 Specification.md`](docs/specs/Language%20v16%20Specification.md) (what `lughac spec` prints, in progress); the approved plan it is built from is [`Language v16 Draft.md`](docs/specs/Language%20v16%20Draft.md), and v15 is frozen in [`Language v15 Specification.md`](docs/specs/Language%20v15%20Specification.md).
 
 ## Prerequisites
 

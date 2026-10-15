@@ -1,0 +1,30 @@
+// Boxes with copy-on-write and loop ownership (v16, milestone 67): arrays
+// moving in and out of a box inside loops never change each other.
+fun main() {
+    let r = Ref.new([1, 2, 3]);
+    let mut a = r.get();
+    for i in 0..3 {
+        a[i] = 0;
+    }
+    println("{r.get()} {a}");
+    let mut b = [5, 5];
+    for i in 0..2 {
+        b[i] += 1;
+        r.set(b);
+    }
+    b[0] = 100;
+    println("{r.get()} {b}");
+    let s = r;
+    let mut c = s.get();
+    c.push(7);
+    println("{r.get()} {c}");
+    let grid = Ref.new([[1, 2], [3, 4]]);
+    let mut g = grid.get();
+    g[1][0] = 9;
+    grid.update(fun(old: i64[][]): i64[][] {
+        let mut next = old;
+        next[0][0] = 8;
+        next
+    });
+    println("{grid.get()} {g}");
+}

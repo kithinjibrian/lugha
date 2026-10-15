@@ -5,7 +5,7 @@
 
 use inkwell::module::Linkage;
 use inkwell::types::{BasicMetadataTypeEnum, BasicType};
-use inkwell::values::{BasicValueEnum, FunctionValue, ValueKind};
+use inkwell::values::{BasicMetadataValueEnum, BasicValueEnum, FunctionValue, ValueKind};
 
 use super::CodegenError;
 use super::instances::instance_name;
@@ -96,6 +96,18 @@ impl<'ctx> Lowerer<'ctx> {
             unreachable!("checked: only function values are called this way")
         };
         let pair = self.get(callee, &ty)?.into_struct_value();
+        let values = self.arguments(args, params, false)?;
+        Ok(self.call_pair(pair, (params, ret), values))
+    }
+
+    /// Calls function value `pair` (`{ code, env }`) of parameter types
+    /// `params` and result `ret` with `values`, already lowered as arguments.
+    pub(super) fn call_pair(
+        &mut self,
+        pair: inkwell::values::StructValue<'ctx>,
+        (params, ret): (&[Type], &Type),
+        args: Vec<BasicMetadataValueEnum<'ctx>>,
+    ) -> Value<'ctx> {
         let code = self
             .builder
             .build_extract_value(pair, 0, "code")
@@ -105,11 +117,11 @@ impl<'ctx> Lowerer<'ctx> {
             .build_extract_value(pair, 1, "env")
             .expect("a pair has 2 fields");
         let mut values = vec![env.into()];
-        values.extend(self.arguments(args, params, false)?);
+        values.extend(args);
         let ptr = self.context.ptr_type(Default::default());
         let mut types: Vec<BasicMetadataTypeEnum> = vec![ptr.into()];
         types.extend(params.iter().map(|p| self.param_type(p)));
-        let fn_type = match &**ret {
+        let fn_type = match ret {
             Type::Void => self.context.void_type().fn_type(&types, false),
             ret => llvm_type(self.context, ret).fn_type(&types, false),
         };
@@ -117,10 +129,10 @@ impl<'ctx> Lowerer<'ctx> {
             .builder
             .build_indirect_call(fn_type, code.into_pointer_value(), &values, "call")
             .expect(POSITIONED);
-        Ok(match site.try_as_basic_value() {
+        match site.try_as_basic_value() {
             ValueKind::Basic(result) => Value::Val(result),
             ValueKind::Instruction(_) => Value::Void,
-        })
+        }
     }
 }
 

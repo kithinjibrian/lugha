@@ -1,0 +1,44 @@
+// A doubly linked list of shared boxes (v16, milestone 67), walked both
+// ways, and printed with its cycles cut short.
+struct Node { value: i64, next: Option<Ref<Node>>, prev: Option<Ref<Node>> }
+
+fun node(value: i64): Ref<Node> = Ref.new(Node { value: value, next: None, prev: None });
+
+fun link(a: Ref<Node>, b: Ref<Node>) {
+    let mut first = a.get();
+    first.next = Some(b);
+    a.set(first);
+    let mut second = b.get();
+    second.prev = Some(a);
+    b.set(second);
+}
+
+fun main() {
+    let a = node(1);
+    let b = node(2);
+    let c = node(3);
+    link(a, b);
+    link(b, c);
+    let mut forward: i64[] = [];
+    let mut at: Option<Ref<Node>> = Some(a);
+    while let Some(r) = at {
+        let n = r.get();
+        forward.push(n.value);
+        at = n.next;
+    }
+    let mut backward: i64[] = [];
+    at = Some(c);
+    while let Some(r) = at {
+        let n = r.get();
+        backward.push(n.value);
+        at = n.prev;
+    }
+    println("{forward} {backward}");
+    // A box that holds itself.
+    let s = node(9);
+    let mut inner = s.get();
+    inner.next = Some(s);
+    s.set(inner);
+    println(s);
+    println(b);
+}

@@ -2,7 +2,7 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 51–66 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
+**Status:** complete (milestones 51–66), frozen in session 136. `Language v16 Specification.md` describes the current language and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
 
 **v14.** This is v13 plus binary I/O, `char`, tuples, `format`, import aliases and whole-module re-exports, and git packages (milestones 45–50).
 

@@ -74,6 +74,13 @@ impl Checker {
                 .missing_bound(&l, ord)
                 .filter(|_| l == r && !arithmetic);
             let help = super::ordering::cmp_help(&l).filter(|_| ord && l == r && wanted.is_none());
+            // Boxes have no `==` (v16): say which comparison was meant.
+            let help = help.or_else(|| {
+                matches!(l, Type::Ref(_)).then(|| {
+                    "compare boxes with `a.is(b)` (the same box) or `a.get() == b.get()` (the same contents)"
+                        .to_string()
+                })
+            });
             let types = if l == r { vec![l] } else { vec![l, r] };
             let d = errors::bad_operands_on(op.symbol(), &types, expr.span);
             let d = errors::with_bound_help(d, wanted, ord);

@@ -32,7 +32,7 @@ pub(super) fn subst(ty: &Type, generics: &[Generic], args: &[Type]) -> Type {
 pub(super) fn has_param(ty: &Type) -> bool {
     match ty {
         Type::Param(_) => true,
-        Type::Array(inner) | Type::Option(inner) => has_param(inner),
+        Type::Array(inner) | Type::Option(inner) | Type::Ref(inner) => has_param(inner),
         Type::Struct(_, args) | Type::Enum(_, args) | Type::Interface(_, args) => {
             args.iter().any(has_param)
         }
@@ -89,6 +89,7 @@ pub(super) fn replace(ty: &Type, map: &HashMap<&str, &Type>) -> Type {
             .map_or_else(|| ty.clone(), |t| (*t).clone()),
         Type::Array(inner) => Type::Array(Box::new(replace(inner, map))),
         Type::Option(inner) => Type::Option(Box::new(replace(inner, map))),
+        Type::Ref(inner) => Type::Ref(Box::new(replace(inner, map))),
         Type::Fun(params, ret) => Type::Fun(
             params.iter().map(|p| replace(p, map)).collect(),
             Box::new(replace(ret, map)),
@@ -181,6 +182,14 @@ impl Checker {
     /// `m.T`, `T<args>` or `m.T<args>` (E0418 for the wrong count, E0419
     /// for an argument that doesn't meet its bound).
     pub(super) fn resolve_applied(&mut self, applied: &AppliedType, span: Span) -> Type {
+        // The predeclared `Ref<T>` (v16), unless the module declares a `Ref`.
+        if applied.module.is_none()
+            && applied.name.name == "Ref"
+            && applied.args.len() == 1
+            && self.named_type(&self.key("Ref")).is_none()
+        {
+            return Type::Ref(Box::new(self.resolve(&applied.args[0])));
+        }
         if let Some(ty) = self.interface_type(applied.module.as_ref(), &applied.name, span) {
             return self.no_type_args(ty, applied, span);
         }

@@ -129,7 +129,7 @@ fn substitute(ty: &Type, bound: &Bound) -> Type {
 pub(super) fn unbound(ty: &Type, names: &[&str], bound: &Bound) -> bool {
     match ty {
         Type::Param(n) => names.contains(&n.as_str()) && !bound.contains_key(n),
-        Type::Array(inner) | Type::Option(inner) => unbound(inner, names, bound),
+        Type::Array(inner) | Type::Option(inner) | Type::Ref(inner) => unbound(inner, names, bound),
         Type::Struct(_, args) | Type::Enum(_, args) | Type::Interface(_, args) => {
             args.iter().any(|a| unbound(a, names, bound))
         }
@@ -148,7 +148,9 @@ pub(super) fn unify(declared: &Type, actual: &Type, names: &[&str], bound: &mut 
         (Type::Param(n), _) if names.contains(&n.as_str()) => {
             bound.entry(n.clone()).or_insert_with(|| actual.clone());
         }
-        (Type::Array(d), Type::Array(a)) | (Type::Option(d), Type::Option(a)) => {
+        (Type::Array(d), Type::Array(a))
+        | (Type::Option(d), Type::Option(a))
+        | (Type::Ref(d), Type::Ref(a)) => {
             unify(d, a, names, bound);
         }
         (Type::Fun(dp, dr), Type::Fun(ap, ar)) => {

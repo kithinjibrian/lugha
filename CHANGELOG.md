@@ -15,6 +15,12 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- **Lugha v16 begins.** Shared boxes: `Ref<T>` is the one value that copies share.
+  - **API:** `Ref.new(v)`, `get` (a copy), `set`, `update(f)`, `is`. Nothing reaches inside a box in place (E0410, E0411, E0415), so copy-on-write and loop ownership stay sound.
+  - **Bindings:** `set`/`update` take plain `self`, so `let` bindings and closures' captures can change a box.
+  - **Equality:** boxes aren't `Eq` (E0404 with help, E0419).
+  - **Printing:** `Ref(…)` cuts cycles, through the runtime's `lugha_rt_show_enter`/`leave` (`RUNTIME_SYMBOLS` 55).
+  - **Version change:** `Language v15 Specification.md` is frozen and `lughac spec` prints `Language v16 Specification.md` — **milestone 67 complete**
 - `std.process`:
   - `run`, `run_with` and `call` run a program with an argument list, never through a shell (`posix_spawnp`, `PATH` lookup for bare names), and give `Output { code, stdout, stderr }` or the exit code;
   - the child inherits the environment and only fds 0–2 (pipes `O_CLOEXEC`, and the runtime's `fopen`s now use `"e"`);

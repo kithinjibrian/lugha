@@ -104,7 +104,9 @@ impl Checker {
                 }
                 args.iter().find_map(|a| self.hidden_inside(a, at))
             }
-            Type::Array(inner) | Type::Option(inner) => self.hidden_inside(inner, at),
+            Type::Array(inner) | Type::Option(inner) | Type::Ref(inner) => {
+                self.hidden_inside(inner, at)
+            }
             Type::Fun(params, ret) => params
                 .iter()
                 .chain([&**ret])

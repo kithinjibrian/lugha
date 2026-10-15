@@ -1800,11 +1800,21 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** stateful closures and linked data needed sharing. A narrow explicit box keeps value semantics everywhere else, and keeps copy-on-write and loop ownership sound (a box is one holder).
 
+### 126. Shared boxes `Ref<T>` — milestone 67 (PRP-096), v16 begins
+
+**Decision:** built as planned (MEMORY 125).
+- **Checker:** `Type::Ref`; `check/refs.rs` (`Ref.new`); the methods in `builtins.rs`; not `Eq` through `eq_ok`/`holds_fun`.
+- **Codegen:** `codegen/refs.rs`; printing with a runtime cycle stack.
+- **Version:** v15 is frozen, and `lughac spec` prints the v16 spec.
+
+**Why it stays sound:** boxes are pointer copies (`is_deep` false), `get` is a copy site and `set` follows the store rules, so a box is one holder for copy-on-write and loop ownership.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 67 complete — Lugha v16 begins**: PRP-096 shared boxes `Ref<T>`; v15 frozen (milestones 51–66)
 - **Milestone 66 complete — the v15 TODO is done**: PRP-095 `std.process`
 - **Milestone 65 complete**: PRP-094 `std.fs`
 - **Milestone 64 complete**: PRP-093 `std.env`
@@ -1918,10 +1928,13 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–66 complete (v15).** **Milestone 67, shared boxes (`Ref<T>`), is proposed** as the first of v16: `Language v16 Draft.md` (decisions 1–5) and PRP-096. It waits for the user's explicit approval. On approval:
-- freeze v15;
-- start `Language v16 Specification.md` and point `lughac spec` at it;
-- branch `prp-096-ref`, MEMORY 125, tests first.
+**Lugha v16 has begun: milestone 67 complete** (tag `m67`: shared boxes `Ref<T>`, PRP-096). v15 is frozen (milestones 51–66), and `lughac spec` prints `Language v16 Specification.md`. Nothing is proposed or in progress.
+
+Candidates for v16 (TODO's v16 section; each needs a discovery):
+- changing the working directory (oyster's `cd`);
+- streaming pipes and timeouts for `std.process`;
+- a package entry module (`import glowworm;`);
+- editing a box in place; a bounds-checked byte buffer; file streams.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`. oyster's shell is written but uncommitted in the user's repo.
 

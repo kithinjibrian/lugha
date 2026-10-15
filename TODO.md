@@ -340,11 +340,18 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
   - fuller `char` classification and case tables beyond Latin-1: **ruled out of v15 by the user** (session 127), keeping §11's "full Unicode tables" exclusion.
 - File streams (open, read in chunks, write incrementally) were offered and **not** chosen: they wait below.
 
+## v16 (draft approved, session 136 — `docs/specs/Language v16 Draft.md`)
+
+### Milestone 67 — Shared boxes ✅
+- [x] PRP-096: `Ref<T>`, `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing; v15 frozen; tagged `m67`
+
+Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer. Found with oyster: changing the working directory (`cd`), streaming pipes and timeouts for `std.process`, and a package entry module (`import glowworm;`).
+
 ## After v14 — noted, not scheduled (session 103)
 
 v15 takes system access and the Unicode follow-ups; everything else left at v14's close waits here. Each needs a discovery and an approved spec change.
 
-- [ ] **Shared references and closures that change their captures.** The biggest remaining change to the memory model; it would also let `xs.iter()` borrow instead of copying. A version of its own.
+- [x] **Shared references and closures that change their captures.** Done in v16 as shared boxes, `Ref<T>` (milestone 67, PRP-096); editing a box in place is a v16 open question. The biggest remaining change to the memory model; it would also let `xs.iter()` borrow instead of copying. A version of its own.
 - [ ] **A separate debug form, and parsing values back from text.** Also: module paths in printed type names, so two modules' `Point`s print differently.
 - [ ] **One-element tuples.**
 - [ ] **Packages, more:**

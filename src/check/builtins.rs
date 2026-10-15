@@ -16,6 +16,15 @@ pub(super) fn builtin(receiver: &Type, name: &str) -> Option<Method> {
         (Type::Array(element), "pop") => (Vec::new(), Type::Option(element.clone()), true),
         (Type::Array(_), "clear") => (Vec::new(), Type::Void, true),
         (Type::String, "slice") => (vec![Type::I64, Type::I64], Type::String, false),
+        // v16: a box's whole API besides `Ref.new`; plain `self`, since they
+        // change the box, not the handle (milestone 67).
+        (Type::Ref(inner), "get") => (Vec::new(), (**inner).clone(), false),
+        (Type::Ref(inner), "set") => (vec![(**inner).clone()], Type::Void, false),
+        (Type::Ref(inner), "update") => {
+            let f = Type::Fun(vec![(**inner).clone()], inner.clone());
+            (vec![f], Type::Void, false)
+        }
+        (Type::Ref(_), "is") => (vec![receiver.clone()], Type::Bool, false),
         (Type::String, "to_bytes") => (Vec::new(), Type::Array(Box::new(Type::U8)), false),
         // v9: the success payload, or a panic at the call.
         (Type::Option(inner), "unwrap") => (Vec::new(), (**inner).clone(), false),

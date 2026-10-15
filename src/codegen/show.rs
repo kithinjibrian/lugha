@@ -124,6 +124,7 @@ impl<'ctx> Lowerer<'ctx> {
             (Some(show), _) => self.call_show(&show, value, ty),
             (None, Type::Struct(..)) => self.show_fields(value, ty),
             (None, Type::Array(_)) => self.show_elements(value.into_pointer_value(), ty),
+            (None, Type::Ref(inner)) => self.show_box(value.into_pointer_value(), inner),
             (None, _) => self.show_variants(value, ty),
         };
         self.builder.build_return(Some(&text)).expect(POSITIONED);

@@ -127,6 +127,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Environment",
         "Directories",
         "Processes",
+        "Shared boxes",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),
