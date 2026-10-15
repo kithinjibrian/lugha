@@ -5635,14 +5635,40 @@ Branch: main
 
 ---
 
-## SESSION 140 — 2026-10-15 — VS Code extension (PRP-099) — open
+## SESSION 140 — 2026-10-15 — VS Code extension (PRP-099) — closed
 Branch: prp-099-vscode_extension
+
+### WHAT WAS DONE
+- The user approved the extension ("build it then merge to main").
+- A concurrent session had also taken PRP-098 and session 139 (`lughac init`); the user chose to renumber this PRP to 099. Built in a separate git worktree (`../lugha-prp-099`) so that session's checkout of `main` was never touched; merged through a GitHub PR.
+- Tests first: `node:test` for diagnostics, targets, store and runner (the runner against the real `lughac`, including an offline check whose fake `git` must never run), a spec-keyword test, `vscode-tmgrammar-test` scope tests.
+- Built `editors/vscode/`: grammar, language configuration, `targets`/`runner`/`diagnostics`/`store`, and `extension.ts`; exercised the glue with a stub `vscode` (not committed); the `.vsix` installs.
+- CI runs the extension's tests after `cargo test`; `Cargo.toml` excludes `editors/`.
+
+### FILES CREATED OR MODIFIED
+- New: `editors/vscode/` (package.json, package-lock.json, tsconfig.json, .gitignore, .vscodeignore, README.md, language-configuration.json, syntaxes/, src/, test/).
+- Renamed: `PRPs/prp-098-vscode_extension.md` → `PRPs/prp-099-vscode_extension.md`.
+- Modified: `.github/workflows/ci.yml`, `Cargo.toml`, CLAUDE.md (tree, COMMANDS, STACK), README, CHANGELOG, TODO, MEMORY (129), CONTEXT.
+
+### TESTS WRITTEN
+- `editors/vscode/test/`: diagnostics (9), targets (7), store (4), runner (8), spec keywords (1), grammar (`basics.la`, `strings.la`).
+
+### DECISIONS MADE
+- MEMORY 129. `@vscode/vsce` 4 instead of 3 (an `npm audit` advisory in 3's tree); `store.ts` added as a pure module.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual check in a real VS Code window (editors/vscode/README.md), and confirming `GPL-3.0-only` in `package.json` against `LICENSE`.
 
 ---
 
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–68 complete.** **Milestone 69, `lughac init` (programs and libraries), is proposed:** v16 draft decisions 9–12 and PRP-098. It waits for the user's approval.
+
+**VS Code extension built** (PRP-099, `editors/vscode/`, session 140); a language server is a later TODO item. Left for the user: the manual check in VS Code and the GPL variant in its `package.json`.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`. oyster is uncommitted in the user's repo.
 

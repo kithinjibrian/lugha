@@ -1819,11 +1819,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. `std.env.set_current_dir` over `$os.chdir` (`runtime/env.c::lugha_rt_chdir`), with `Err` for a NUL byte; oyster's `cd` uses it.
 
+### 129. A VS Code extension (PRP-099; discovery session 139, built session 140)
+
+**Decision:** `editors/vscode/` in this repo, so the grammar changes with the spec. Highlighting plus `lughac check --offline --diagnostics=json` on open and save; no `lughac` change. A file with `main` checks itself; a module checks the `lugha.entries` setting's main files (there is no default entry point), or itself with E0303 hidden. `lugha.path` is machine-scoped. Tests: `node:test` (pure modules, and the runner against the real `lughac`) and `vscode-tmgrammar-test`; a keyword test reads the newest spec's §2. Dev dependencies only; a local `.vsix`, no Marketplace. A language server is a later PRP.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **VS Code extension**: PRP-099, `editors/vscode/`
 - **Milestone 68 complete**: PRP-097 changing the working directory
 - **Milestone 67 complete — Lugha v16 begins**: PRP-096 shared boxes `Ref<T>`; v15 frozen (milestones 51–66)
 - **Milestone 66 complete — the v15 TODO is done**: PRP-095 `std.process`

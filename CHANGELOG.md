@@ -15,6 +15,11 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- A VS Code extension in `editors/vscode/` (PRP-099):
+  - **highlighting:** keywords, types, numbers, comments, strings with interpolation and format specifiers, `format` templates, `char` literals; comment toggling and auto-closing pairs;
+  - **diagnostics:** `lughac check --offline --diagnostics=json` on open and save, shown in the files they belong to with their codes, labels and help. A module is checked through the `lugha.entries` main files, or alone without E0303;
+  - **safety:** `lugha.path` is machine-scoped and `lughac` runs without a shell, so an opened folder can't choose what runs or make it fetch;
+  - **tests:** `node:test` (some against the real `lughac`) and grammar scope tests, run in CI; a local `.vsix` only. `lughac` is unchanged
 - `env.set_current_dir(path): Result<i64, string>` changes the program's working directory (`$os.chdir` → `lugha_rt_chdir` in `runtime/env.c`, `RUNTIME_SYMBOLS` 56). Environment variables stay read-only. Built for oyster's `cd` — **milestone 68 complete**
 - **Lugha v16 begins.** Shared boxes: `Ref<T>` is the one value that copies share.
   - **API:** `Ref.new(v)`, `get` (a copy), `set`, `update(f)`, `is`. Nothing reaches inside a box in place (E0410, E0411, E0415), so copy-on-write and loop ownership stay sound.

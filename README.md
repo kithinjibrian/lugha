@@ -136,7 +136,18 @@ cargo test
   - its expected output: `name.stdout` and `name.exit`;
   - for a program that must be rejected: `name.stderr`.
 
-CI runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` on every push and pull request.
+CI runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` and the VS Code extension's tests on every push and pull request.
+
+## Editor support
+
+`editors/vscode/` is a VS Code extension: syntax highlighting, and `lughac check` diagnostics when a file is opened or saved. Build it with Node 22:
+
+```sh
+cd editors/vscode && npm ci && npm run package
+code --install-extension lugha-0.1.0.vsix
+```
+
+Its [README](editors/vscode/README.md) covers the settings (`lugha.path`, `lugha.entries`) and how it picks the file to check.
 
 ## Contributing
 

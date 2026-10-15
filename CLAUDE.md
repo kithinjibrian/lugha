@@ -138,6 +138,10 @@ cargo run -q -- run prog.la                   # exit code = the program's
 cargo run -q -- check prog.la [--offline]     # lex, parse, type-check
 cargo run -q -- update prog.la                # re-resolve git packages, rewrite lugha.lock
 cargo run -q -- spec                          # print the bundled language spec
+
+cd editors/vscode && npm ci                   # the VS Code extension (PRP-099)
+LUGHAC=../../target/debug/lughac npm test     # its unit, runner and grammar tests
+npm run package                               # lugha-<version>.vsix
 ```
 
 Run fmt, clippy and tests after every non-trivial change. A task is not done until all pass.
@@ -154,6 +158,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - Boehm GC (`libgc`), `libc`, `libm` — linked into every compiled program via the system `cc`.
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
+- `editors/vscode/` — the VS Code extension (PRP-099): TypeScript on Node 22, dev dependencies only (`typescript`, `@types/vscode`, `@types/node`, `vscode-tmgrammar-test`, `@vscode/vsce`), tests with `node:test`. It runs only `lughac check --offline` through `execFile`; changes to how it starts `lughac` need the user's security review.
 
 The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestones 67–68 done: `env.set_current_dir`; shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
@@ -342,6 +347,12 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch/.envvars),
 │                      execute, report)
+├── editors/
+│   └── vscode/      — the VS Code extension (PRP-099): package.json (language, grammar, settings `lugha.path` (machine scope)
+│                      and `lugha.entries`), language-configuration.json, syntaxes/lugha.tmLanguage.json; src/ extension.ts
+│                      (the only file importing `vscode`), targets.ts (which file to check), runner.ts (`lughac check
+│                      --offline --diagnostics=json` via `execFile`), diagnostics.ts (JSON lines → UTF-16 ranges), store.ts
+│                      (diagnostics per check); test/ (`node:test`, fixtures/, grammar/ scope tests); not in the crate
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
 │   └── specs/       — Language v16 Specification.md (the language definition, in progress, printed by `lughac spec`);

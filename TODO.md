@@ -350,6 +350,13 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 
 Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer. Found with oyster: ~~changing the working directory (`cd`)~~ done in milestone 68 (PRP-097), streaming pipes and timeouts for `std.process`, and a package entry module (`import glowworm;`).
 
+
+## Editor support
+
+- [x] **VS Code extension** — highlighting and `lughac check` diagnostics on open/save (PRP-099, `editors/vscode/`).
+- [ ] **A language server** (`lughac lsp`): hover types, go-to-definition, completion, check-as-you-type. Needs a crate (`lsp-server` or `tower-lsp`) and a way to check unsaved buffers.
+- [ ] **Publishing** the extension to the Marketplace and Open VSX (publisher accounts, a token as a CI secret).
+
 ## After v14 — noted, not scheduled (session 103)
 
 v15 takes system access and the Unicode follow-ups; everything else left at v14's close waits here. Each needs a discovery and an approved spec change.
