@@ -6111,6 +6111,11 @@ Branch: prp-105-partial_trees
 
 ---
 
+## SESSION 158 — 2026-10-16 — Discovery: block comments — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
