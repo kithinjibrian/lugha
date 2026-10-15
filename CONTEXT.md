@@ -5382,6 +5382,11 @@ Branch: prp-093-std_env
 
 ---
 
+## SESSION 133 — 2026-10-15 — `std.fs` (milestone 65) — open
+Branch: prp-094-std_fs
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–64 complete.** **Approved and next, in one go:** milestone 65 `std.fs` (PRP-094), then 66 `std.process` (PRP-095, security-reviewed by approval). Add `$os` ops to `check::float_ops::os_signature` and `codegen/os.rs`, and new runtime fragments in `RUNTIME_PARTS`, `RUNTIME_SOURCE` and `RUNTIME_SYMBOLS`. MEMORY 118 is the plan.
