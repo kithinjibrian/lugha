@@ -79,7 +79,7 @@ code --install-extension lugha-0.1.0.vsix
    - `char` literals with their escapes and `\u{…}`;
    - operators per §2.
 8. **Language configuration:** line comment `//`; brackets `{}`, `[]`, `()`; auto-closing and surrounding pairs for those and `"`; `'` auto-closes outside strings; indent on `{`, outdent on `}`.
-9. **Packaging:** `npm run package` → `vsce package --skip-license` → `lugha-0.1.0.vsix`. `package.json` `"license": "GPL-3.0-only"` (the human confirms the variant against `LICENSE`, which the model may not read). Zero runtime dependencies, so the `.vsix` holds only `out/`, the grammar, the configuration, `package.json` and `README.md`.
+9. **Packaging:** `npm run package` → `vsce package --skip-license` → `lugha-0.1.0.vsix`. `package.json` `"license": "GPL-3.0-only"` (confirmed by the user against `LICENSE`, session 141). Zero runtime dependencies, so the `.vsix` holds only `out/`, the grammar, the configuration, `package.json` and `README.md`.
 
 ### Risk
 - **Low.** Nothing in `lughac` changes. The extension only runs `lughac check --offline` on files the user opens, which lexes, parses and type-checks; nothing is compiled or executed.
@@ -149,14 +149,14 @@ Written before the code they cover; `npm test` compiles and runs them.
   - a second run for the same target cancels the first → the first is `cancelled`.
 - [x] **`spec_keywords.test.ts`:** every keyword in §2's keyword block of `docs/specs/Language v16 Specification.md` appears in the grammar.
 - [x] **Grammar** (`vscode-tmgrammar-test`, `test/grammar/*.la`): keywords and types; numbers in each form; a comment; a string with escapes, `{{`, an interpolation with a nested string and a `:>6` spec; a `format("{} {:>4}", a, b)` template; `'a'`, `'\n'`, `'\u{1F600}'`; `Shape.Circle`, `Some(x)`, a generic `Stack<T>`.
-- [ ] **Manual smoke checklist** (in the README, done once before merge): install the `.vsix`; open `tests/programs/m21/nested/main.la`, see highlighting; add an error to `geo.la`, save `main.la`, see it in `geo.la`; set `lugha.entries`, save `geo.la`, see the same; set `lugha.path` to a bad path, see one notification.
+- [x] **Manual smoke checklist** (in the README; passed in VS Code by the user after the merge, session 141): install the `.vsix`; open `tests/programs/m21/nested/main.la`, see highlighting; add an error to `geo.la`, save `main.la`, see it in `geo.la`; set `lugha.entries`, save `geo.la`, see the same; set `lugha.path` to a bad path, see one notification.
 - [x] **Regression:** `cargo test` unchanged (nothing in `lughac` changes).
 
 ## BUILT (session 140)
 - As designed, plus `store.ts` and the vsce 4 change above.
 - The VS Code glue (`extension.ts`) was exercised with a stub `vscode` module (not committed): errors land in the imported file at UTF-16 columns, E0303 hidden for a lone module, a bad entry logged and skipped, one notification for a missing `lughac` over two saves, exit 2 → status warning and stderr logged. The `.vsix` installs into a clean extensions folder.
-- The manual checklist in a real VS Code window is left to the user (README "Manual check before a release").
-- `package.json` says `GPL-3.0-only`; the user confirms the variant against `LICENSE`.
+- The manual checklist in a real VS Code window was left to the user; it passed every step after the merge (session 141): highlighting, editing, errors in the same and an imported file, a module alone and through `lugha.entries`, one notification for a missing `lughac`.
+- `package.json` says `GPL-3.0-only`, confirmed by the user (session 141).
 
 ## ROLLBACK PLAN
 - Branch `prp-099-vscode_extension` from `main`.
@@ -165,7 +165,7 @@ Written before the code they cover; `npm test` compiles and runs them.
 ## ACCEPTANCE CRITERIA
 - [x] `npm test` in `editors/vscode` passes, with `LUGHAC` set, locally and in CI.
 - [x] `npm run package` builds `lugha-0.1.0.vsix` with no runtime dependencies inside.
-- [ ] The manual smoke checklist passes.
+- [x] The manual smoke checklist passes (session 141).
 - [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass (unchanged).
 - [x] Every exported TypeScript function has a `///`-style `/** … */` doc comment (CODE_STYLE's rule applied to TS).
 - [x] No file over 500 lines.

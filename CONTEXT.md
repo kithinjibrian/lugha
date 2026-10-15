@@ -5664,8 +5664,27 @@ Branch: prp-099-vscode_extension
 
 ---
 
-## SESSION 141 — 2026-10-15 — Record the VS Code extension's manual check — open
+## SESSION 141 — 2026-10-15 — Record the VS Code extension's manual check — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user installed the extension and passed every step of the manual check in VS Code; they confirmed `GPL-3.0-only`.
+- Recorded both in PRP-099; removed the build worktree `../lugha-prp-099` and its merged local branch (session 140's follow-up).
+
+### FILES CREATED OR MODIFIED
+- Modified: `PRPs/prp-099-vscode_extension.md`, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.
 
 ---
 
@@ -5673,7 +5692,7 @@ Branch: main
 
 **v16: milestones 67–68 complete.** **Milestone 69, `lughac init` (programs and libraries), is proposed:** v16 draft decisions 9–12 and PRP-098. It waits for the user's approval.
 
-**VS Code extension built** (PRP-099, `editors/vscode/`, session 140); a language server is a later TODO item. Left for the user: the manual check in VS Code and the GPL variant in its `package.json`.
+**VS Code extension done** (PRP-099, `editors/vscode/`, session 140; manually checked by the user and `GPL-3.0-only` confirmed, session 141). A language server and Marketplace publishing are later TODO items.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`. oyster is uncommitted in the user's repo.
 
