@@ -5875,6 +5875,11 @@ Branch: main
 
 ---
 
+## SESSION 149 — 2026-10-15 — Go to definition in the language server (milestone 72) — open
+Branch: prp-102-lsp_definition
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).

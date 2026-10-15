@@ -1,6 +1,6 @@
 ## FEATURE: Go to Definition in `lughac lsp` — from variables, functions and methods, types, fields, variants and modules to where they are declared; milestone 72.
 
-**Status:** proposed 2026-10-15 — session 148 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-15 ("build it") — built in session 149; proposed in session 148.
 **Milestone:** 72 (one PRP; tag `m72` at merge). The third language-server PRP (PRP-100 diagnostics, PRP-101 hover).
 **Spec:** `Language v16 Draft.md` decisions 23–27; spec §9 (the `lughac lsp` paragraph), §11 (row 72).
 
