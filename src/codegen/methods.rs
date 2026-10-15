@@ -43,8 +43,9 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn declare_methods(&mut self, unit: &Unit) {
         for item in &unit.program.items {
             let Item::Impl(i) = item else { continue };
-            // The prelude's methods are listed instances, compiled when reached (v10).
-            if super::declare::is_prelude(unit) {
+            // The prelude's and std's methods are listed instances, compiled
+            // when reached (v10, v15).
+            if super::declare::is_lazy(unit) {
                 continue;
             }
             let owner = qualify(unit.path, &i.ty.name);
@@ -90,7 +91,7 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn define_methods(&mut self, unit: &Unit) -> Result<(), CodegenError> {
         for item in &unit.program.items {
             let Item::Impl(i) = item else { continue };
-            if super::declare::is_prelude(unit) {
+            if super::declare::is_lazy(unit) {
                 continue;
             }
             let name = qualify(unit.path, &i.ty.name);

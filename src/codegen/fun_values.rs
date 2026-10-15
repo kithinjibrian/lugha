@@ -34,7 +34,12 @@ impl<'ctx> Lowerer<'ctx> {
             let args: Vec<Type> = args.iter().map(|a| self.concrete(a)).collect();
             return self.monos[&instance_name(key, &args)].signature.function;
         }
-        match self.functions.get(key) {
+        // A std function is a listed instance at no arguments (v15).
+        match self
+            .functions
+            .get(key)
+            .or_else(|| self.monos.get(key).map(|m| &m.signature))
+        {
             Some(signature) => signature.function,
             None => self.methods[key].signature.function,
         }

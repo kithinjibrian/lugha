@@ -1,6 +1,6 @@
 ## FEATURE: Lazy std modules — an imported std module's functions and methods are compiled only when the program reaches them, as the prelude's are; milestone 60.
 
-**Status:** approved 2026-10-15 — session 126 ("yes build"); proposed in session 125.
+**Status:** merged 2026-10-15 — session 126 (approved the same session, "yes build"; proposed in session 125); tag `m60`.
 **Milestone:** 60 (one PRP; tag `m60` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 41–43); spec §6 (std modules), §9 (lowering), §11 (row 60).
 
@@ -66,23 +66,23 @@ None.
 ## TESTS TO WRITE
 
 IR integration tests (`tests/lazy_std.rs`, through `lughac build --emit=ir`):
-- [ ] `seeded` and `below` only: `seeded`, `Rng.below` and `Rng.next_u64` are defined; `from_os`, `Rng.uniform`, `Rng.between`, `Rng.chance`, `math/pi` and `math/e` are not.
-- [ ] `math.sqrt` only: no other `std/math` function defined.
-- [ ] Reached through a function value (`let f = math.pi;`), through a generic function bounded by an interface `Rng` satisfies, through an interface value holding an `Rng`, and via a std function calling another: each is defined.
+- [x] `seeded` and `below` only: `seeded`, `Rng.below` and `Rng.next_u64` are defined; `from_os`, `Rng.uniform`, `Rng.between`, `Rng.chance`, `math/pi` and `math/e` are not.
+- [x] `math.sqrt` only: no other `std/math` function defined.
+- [x] Reached through a function value (`let f = math.pi;`), through a generic function bounded by an interface `Rng` satisfies, through an interface value holding an `Rng`, and via a std function calling another: each is defined.
 
 Regression:
-- [ ] Every earlier program passes unchanged (`m53`, `m54` and the §10 std programs included).
+- [x] Every earlier program passes unchanged (`m53`, `m54` and the §10 std programs included).
 
 ## ROLLBACK PLAN
 - Branch `prp-089-lazy_std`, merged into `main` after CI passes; tag `m60`.
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass at `-O0`; the std programs at `-O2` too.
-- [ ] IR sizes recorded.
-- [ ] The spec is at milestone 60; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] All tests pass at `-O0`; the std programs at `-O2` too.
+- [x] IR sizes recorded.
+- [x] The spec is at milestone 60; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -91,3 +91,17 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo test --test lazy_std
 ```
+
+## AMENDMENTS
+
+Session 126, while building:
+1. **The predicate:**
+   - `check::instances::lazy_key` (a `$prelude.` or `std.` key) replaces the three prelude-only tests (`used`, `bound_target`, the `monomorphize` roots);
+   - `codegen::declare::is_lazy` (the prelude unit, or a unit whose path starts with `std`) replaces `is_prelude` in `declare.rs`, `lower.rs` and `methods.rs`.
+2. **Function values** were the one way of reaching not yet recorded: `fun_values.rs::generic_value` now calls `used` for a non-generic function too. `used` drops non-lazy keys, so nothing else changes. Codegen's `value_target` falls back to `monos`.
+3. **Interface tables, bounds, direct calls and method calls** needed nothing new: they already recorded uses, and codegen already fell back to `monos` (`prelude_target`, `method_call`, `interfaces.rs`).
+4. **Checks:**
+   - firefly's `xor`, `gradcheck` and `bigram` and glowworm's examples print the same;
+   - the std programs pass at `-O2`.
+5. **Sizes:** IR lines with M59 → M60: a `seeded` + `below` program 423 → 314, `m54/below_panic` 430 → 321, `m54/random` 892 → 878, `m53/math` 246 → 241, firefly `mlp` 17,172 → 17,101 and `gpt` 17,927 → 17,856.
+

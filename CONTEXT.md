@@ -5172,18 +5172,45 @@ Branch: main
 
 ---
 
-## SESSION 126 — 2026-10-15 — Lazy std modules (milestone 60) — open
+## SESSION 126 — 2026-10-15 — Lazy std modules (milestone 60) — closed
 Branch: prp-089-lazy_std
+
+### WHAT WAS DONE
+- The user approved PRP-089 ("yes build"); MEMORY 116.
+- Tests first: `tests/lazy_std.rs` (unused std functions absent; reached through a call, a method, a bound, an interface value and a function value present).
+- Built: `lazy_key` in the checker, `is_lazy` in codegen, function values recorded as uses, a `monos` fallback for function values.
+- Spec v15 at milestone 60 (§6 std modules, §9 lowering note, §11 row 60, the changes summary); docs.
+- IR sizes: a `seeded` + `below` program 423 → 314 lines; firefly about 70 lines smaller; every output unchanged.
+
+### FILES CREATED OR MODIFIED
+- New: `tests/lazy_std.rs`.
+- Modified:
+  - `src/check/instances.rs`, `fun_values.rs`;
+  - `src/codegen/declare.rs`, `lower.rs`, `methods.rs`, `fun_values.rs`;
+  - the v15 spec and draft;
+  - CLAUDE.md, README, TODO, CHANGELOG, MEMORY (116, 117), PRP-089.
+
+### TESTS WRITTEN
+- `only_what_a_program_reaches_is_compiled`, `every_way_of_reaching_compiles_the_target`.
+
+### DECISIONS MADE
+- MEMORY 117 records the built design.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m60`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–59 complete.** **Milestone 60 (lazy std modules) is proposed:** decisions 41–43 in `Language v15 Draft.md` and PRP-089. It waits for the user's explicit approval.
-- **On approval:** MEMORY 116, branch `prp-089-lazy_std`, tests first (`tests/lazy_std.rs`).
-- **Then build:** one "lazy" predicate (prelude or std) in `instances.rs` and codegen; function values and interface tables list what they reach.
+**Milestones 51–60 complete** (tag `m60`: lazy std modules, PRP-089). Nothing is proposed or in progress.
 
-Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
+Unpushed local commits, for the user to push when they ask: firefly `ce6f38b` (layers) and `a891512` (nested layer); glowworm `b0683c3` (numbers as `T`). The user's `gpt-4x20k.log` is untracked in firefly.
+
+Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section): the `sum()` cleanup, optional C → Lugha, std.fs/env/process (processes need a security review), Unicode follow-ups.
 
 See `TODO.md`.
 

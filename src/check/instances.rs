@@ -10,6 +10,15 @@ use crate::span::Span;
 /// The start of every prelude item's key.
 const PRELUDE_KEY: &str = "$prelude.";
 
+/// The start of every std item's key (v15).
+const STD_KEY: &str = "std.";
+
+/// Whether `key` is an item compiled only when reached: the prelude's
+/// (PRP-043, v10) and, since milestone 60, std's.
+pub(super) fn lazy_key(key: &str) -> bool {
+    key.starts_with(PRELUDE_KEY) || key.starts_with(STD_KEY)
+}
+
 /// How deep instances may nest before it is E0420 (v2 draft §4, §12).
 pub(super) const MAX_DEPTH: usize = 64;
 
@@ -37,10 +46,10 @@ pub(super) struct Use {
 
 impl Checker {
     /// Records that the body being checked calls generic `key` at `args`.
-    /// A prelude function is recorded even when it isn't generic, so it is
-    /// compiled only if user code reaches it (PRP-043).
+    /// A prelude or std function is recorded even when it isn't generic, so
+    /// it is compiled only if user code reaches it (PRP-043, v15).
     pub(super) fn used(&mut self, call: &Expr, key: &str, args: &[Type]) {
-        if args.is_empty() && !key.starts_with(PRELUDE_KEY) {
+        if args.is_empty() && !lazy_key(key) {
             return;
         }
         let callee = Instance {
@@ -89,7 +98,7 @@ impl Checker {
         };
         let m = self.methods.get(owner)?.get(name)?;
         // A prelude type's methods compile only when reached, generic or not (v10).
-        let listed = !m.generics.is_empty() || m.key.starts_with(PRELUDE_KEY);
+        let listed = !m.generics.is_empty() || lazy_key(&m.key);
         listed.then(|| Instance {
             key: m.key.clone(),
             args: targs.clone(),
@@ -108,10 +117,11 @@ impl Checker {
         }
         let mut roots: Vec<&str> = Vec::new();
         for u in &self.uses {
-            // Prelude bodies are reached from user code, never roots themselves.
+            // Prelude and std bodies are reached from user code, never roots
+            // themselves (v15, milestone 60).
             if !roots.contains(&u.owner.as_str())
                 && self.params_of(&u.owner).is_empty()
-                && !u.owner.starts_with(PRELUDE_KEY)
+                && !lazy_key(&u.owner)
             {
                 roots.push(&u.owner);
             }

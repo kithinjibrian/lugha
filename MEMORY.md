@@ -1731,11 +1731,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** std compiled every non-generic body on import (`from_os` in every `std.random` program); the prelude's mechanism already exists.
 
+### 117. Lazy std modules — milestone 60 (PRP-089)
+
+**Decision:** built as planned (MEMORY 116):
+- **Checker:** `instances.rs::lazy_key` (prelude or std keys) decides what is listed when reached and what is never a root; `fun_values.rs` records non-generic function values.
+- **Codegen:** `declare.rs::is_lazy` skips unlisted prelude and std bodies, and `fun_values.rs::value_target` falls back to `monos`.
+
+**Result:** a `seeded` + `below` program's IR goes from 423 to 314 lines; outputs unchanged.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 60 complete**: PRP-089 lazy std modules
 - **Milestone 59 complete**: PRP-088 user-defined `Ord`
 - **Milestone 58 complete**: PRP-087 numbers as `T`
 - **Milestone 57 complete**: PRP-086 nested `mut self` calls
@@ -1842,10 +1851,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–59 complete.** **Milestone 60 (lazy std modules) is proposed:** decisions 41–43 in `Language v15 Draft.md` and PRP-089. It waits for the user's explicit approval.
-- **On approval:** MEMORY 116, branch `prp-089-lazy_std`, tests first (`tests/lazy_std.rs`).
-- **Then build:** one "lazy" predicate (prelude or std) in `instances.rs` and codegen; function values and interface tables list what they reach.
+**Milestones 51–60 complete** (tag `m60`: lazy std modules, PRP-089). Nothing is proposed or in progress.
 
-Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
+Unpushed local commits, for the user to push when they ask: firefly `ce6f38b` (layers) and `a891512` (nested layer); glowworm `b0683c3` (numbers as `T`). The user's `gpt-4x20k.log` is untracked in firefly.
+
+Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section): the `sum()` cleanup, optional C → Lugha, std.fs/env/process (processes need a security review), Unicode follow-ups.
 
 See `TODO.md`.

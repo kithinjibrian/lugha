@@ -186,7 +186,7 @@ pub(super) fn lower<'ctx>(
         for item in &unit.program.items {
             if let Item::Fun(f) = item
                 && f.type_params.is_empty()
-                && !super::declare::is_prelude(unit)
+                && !super::declare::is_lazy(unit)
             {
                 lowerer.define(unit.path, f)?;
             }

@@ -14,9 +14,11 @@ use super::value::{is_aggregate, llvm_type};
 use crate::ast::Item;
 use crate::check::{Type, Unit, qualify, symbol};
 
-/// True for the prelude module.
-pub(super) fn is_prelude(unit: &Unit) -> bool {
-    unit.path.len() == 1 && unit.path[0] == crate::modules::PRELUDE_PATH
+/// True for the modules compiled only as far as they are reached: the
+/// prelude, and since milestone 60 (v15) every std module.
+pub(super) fn is_lazy(unit: &Unit) -> bool {
+    (unit.path.len() == 1 && unit.path[0] == crate::modules::PRELUDE_PATH)
+        || unit.path.first().is_some_and(|p| p == "std")
 }
 
 impl<'ctx> Lowerer<'ctx> {
@@ -27,8 +29,9 @@ impl<'ctx> Lowerer<'ctx> {
             let (name, params, ret, is_extern) = match item {
                 // Generic functions are declared per instance (`instances.rs`).
                 Item::Fun(f) if !f.type_params.is_empty() => continue,
-                // The prelude's functions are compiled only when reached (`monos`, PRP-043).
-                Item::Fun(_) if is_prelude(unit) => continue,
+                // The prelude's and std's functions are compiled only when
+                // reached (`monos`, PRP-043, v15).
+                Item::Fun(_) if is_lazy(unit) => continue,
                 Item::Fun(f) => (&f.name.name, &f.params, f.ret.as_ref(), false),
                 Item::Extern(e) => (&e.name.name, &e.params, e.ret.as_ref(), true),
                 // Methods are declared by `declare_methods`.

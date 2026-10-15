@@ -41,6 +41,8 @@ impl Checker {
         expect: Option<&Expect>,
     ) -> Type {
         if generics.is_empty() {
+            // A std function used as a value is compiled only if listed (v15).
+            self.used(at, key, &[]);
             return ty;
         }
         match self.infer(at, generics, Default::default(), Some((&ty, expect)), &[]) {
