@@ -5601,6 +5601,7 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - Waiting for the user's approval of PRP-098, and their confirmation of the GPL variant for `package.json`.
+- Later: renumbered to PRP-099 in session 140 (a concurrent session also used 098 and session 139).
 
 ---
 
@@ -5631,6 +5632,11 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - Waiting for the user's approval of PRP-098.
+
+---
+
+## SESSION 140 — 2026-10-15 — VS Code extension (PRP-099) — open
+Branch: prp-099-vscode_extension
 
 ---
 

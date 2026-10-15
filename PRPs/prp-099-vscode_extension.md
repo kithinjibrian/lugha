@@ -1,6 +1,6 @@
 ## FEATURE: A VS Code extension for Lugha — syntax highlighting, editing basics and `lughac check` diagnostics on open and save, in `editors/vscode/`.
 
-**Status:** proposed 2026-10-15 — session 139 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-15 ("build it then merge to main") — built in session 140; proposed in session 139 as PRP-098 and renumbered to 099 because a concurrent session also took 098 (`prp-098-init.md`); the user chose to renumber this one.
 **Milestone:** none (tooling, not a language milestone; no spec change, no tag).
 **Spec:** §2 (lexical structure: keywords, comments, literals, interpolation, format specifiers, `char`), §5 (`format` templates), §9 (JSON diagnostics, exit codes 0/1/2), §11 (no default entry point).
 
@@ -151,7 +151,7 @@ Written before the code they cover; `npm test` compiles and runs them.
 - [ ] **Regression:** `cargo test` unchanged (nothing in `lughac` changes).
 
 ## ROLLBACK PLAN
-- Branch `prp-098-vscode_extension` from `main`.
+- Branch `prp-099-vscode_extension` from `main`.
 - To abandon: delete the branch; after a merge, delete `editors/` and revert the CI, `Cargo.toml`, `.gitignore` and doc changes — nothing else depends on it.
 
 ## ACCEPTANCE CRITERIA
