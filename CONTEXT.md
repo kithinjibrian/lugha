@@ -5204,6 +5204,11 @@ Branch: prp-089-lazy_std
 
 ---
 
+## SESSION 127 — 2026-10-15 — Discovery: the rest of the v15 TODO — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–60 complete** (tag `m60`: lazy std modules, PRP-089). Nothing is proposed or in progress.
