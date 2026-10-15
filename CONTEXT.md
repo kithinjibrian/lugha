@@ -5577,14 +5577,38 @@ Branch: prp-097-set_current_dir
 
 ---
 
-## SESSION 139 — 2026-10-15 — Discovery: VS Code extension — open
+## SESSION 139 — 2026-10-15 — Discovery: VS Code extension — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user asked how to build a VS Code extension for Lugha.
+- Discovery: same repo (`editors/vscode/`); highlighting + diagnostics (a language server later); checks on open and save; a file with `main` checks itself, a module checks `lugha.entries`; one notice / output channel on failure; always `--offline`; `node:test` + grammar tests; a local `.vsix` only.
+- Found: JSON `col` counts bytes; imported files are named relative to the main file's folder; a module checked alone gives E0303.
+- Wrote PRP-098 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-098-vscode_extension.md`.
+- Modified: CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: PRP-098 waits for approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-098, and their confirmation of the GPL variant for `package.json`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**v16: milestones 67–68 complete** (tags `m67` shared boxes, `m68` changing directory). oyster has `cd` (uncommitted in the user's repo, with the rest of oyster). Nothing is proposed or in progress.
+**v16: milestones 67–68 complete** (tags `m67` shared boxes, `m68` changing directory). oyster has `cd` (uncommitted in the user's repo, with the rest of oyster).
+
+**Proposed: PRP-098, a VS Code extension** (`editors/vscode/`: highlighting + `lughac check --offline` diagnostics on open/save; no `lughac` change). It waits for the user's approval; then build it on branch `prp-098-vscode_extension`.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams.
 
