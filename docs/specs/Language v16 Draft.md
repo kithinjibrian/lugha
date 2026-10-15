@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) proposed in session 146.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -67,6 +67,16 @@ The VS Code extension (PRP-099) checks a file only when it is saved, by running 
 16. **Crates:** `lsp-server` and `lsp-types` (rust-analyzer's; MIT/Apache), with `serde_json`. No async runtime. They are used only by the server; nothing else in lughac changes.
 17. **Success:** milestone 70, tag `m70`. Tests in `tests/lsp.rs` drive `lughac lsp` over stdio. The spec's CLI table gains `lsp`.
 
+## Decisions behind milestone 71 (discovery, session 146)
+
+The second language-server step: hovering shows types.
+
+18. **`textDocument/hover`** answers for any expression (its type) and any declared name: a `let`, parameter, `for` or `match` binding (`let total: i64`), a function or method at its declaration or call (`fun Circle.area(self): f64`), a struct field (`x: f64`). The innermost expression or name under the cursor wins.
+19. **The text** is a Lugha code block written as code would write it, then short notes when they apply: `instance: max<f64>` for a generic use, `converted to Shape` for a value converted to an interface. Types print as diagnostics print them.
+20. **With errors:** the checker's partial results are used, so hover works in a program with errors, except inside a module that doesn't parse and on the expression in error. `lughac check`, its output and codegen are unchanged: the partial results come through a separate entry point.
+21. **Fresh answers:** a hover first runs any check still waiting for typing to pause, so it never answers from older text.
+22. **Success:** milestone 71, tag `m71`. Tests in `tests/lsp.rs` (or a new `tests/lsp_hover.rs` if that file would pass 500 lines). The spec's `lughac lsp` paragraph gains hover.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -98,6 +108,7 @@ The VS Code extension (PRP-099) checks a file only when it is saved, by running 
 | 68 | Changing directory | `env.set_current_dir(path)` |
 | 69 | `lughac init` | program and library layouts; never overwrites |
 | 70 | `lughac lsp` | live diagnostics over the Language Server Protocol; the VS Code extension uses it |
+| 71 | Hover | types of expressions and declared names, also while the program has errors |
 
 ## §12 Open questions — additions
 

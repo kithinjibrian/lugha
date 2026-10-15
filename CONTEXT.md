@@ -5796,8 +5796,30 @@ Branch: prp-100-lsp_diagnostics
 
 ---
 
-## SESSION 146 — 2026-10-15 — Discovery: hover types in the language server — open
+## SESSION 146 — 2026-10-15 — Discovery: hover types in the language server — closed
 Branch: main
+
+### WHAT WAS DONE
+- Discovery for hover: expressions and declared names (bindings, parameters, functions and methods, fields); working while the program has errors, from the checker's partial results; a Lugha code block with `instance:` / `converted to` notes.
+- Found: the checker types expressions by `ExprId` and written types by span, carries on after errors but `check_modules` drops its tables then; every local goes through `env.rs::declare`; `tests/lsp.rs` is 484 lines, so hover's tests need the harness moved to `tests/common/`.
+- Added v16 draft decisions 18–22 (milestone 71); wrote PRP-101 (proposed).
+- Fixed CLAUDE.md's STACK line (milestones 67–70), left stale by session 145.
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-101-lsp_hover.md`.
+- Modified: `docs/specs/Language v16 Draft.md`, CLAUDE.md, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: PRP-101 waits for approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-101; the user's manual check of extension 0.2.0 is still open from session 145.
 
 ---
 
@@ -5805,7 +5827,7 @@ Branch: main
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
 
-**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. Next for the extension (TODO "Editor support"): hover types, then go-to-definition, each a discovery + PRP; bundling the extension; the user's manual check of 0.2.0. Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Proposed: milestone 71, hover** — v16 draft decisions 18–22 and PRP-101; it waits for the user's approval. Then go-to-definition (discovery + PRP); bundling the extension; the user's manual check of 0.2.0. Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 
