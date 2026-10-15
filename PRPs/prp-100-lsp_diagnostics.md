@@ -1,6 +1,6 @@
 ## FEATURE: `lughac lsp` — a language server with live diagnostics, and the VS Code extension switched to it; milestone 70.
 
-**Status:** proposed 2026-10-15 — session 144 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-15 ("build it", crates included) — built in session 145; proposed in session 144.
 **Milestone:** 70 (one PRP; tag `m70` at merge). The first of three language-server PRPs: hover types and go-to-definition follow, each its own PRP.
 **Spec:** `Language v16 Draft.md` decisions 13–17; spec §9 (the CLI table, diagnostics, exit codes), §11 (row 70).
 
