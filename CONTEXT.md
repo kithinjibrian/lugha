@@ -5767,11 +5767,40 @@ Branch: main
 
 ---
 
+## SESSION 145 — 2026-10-15 — `lughac lsp` live diagnostics (milestone 70) — closed
+Branch: prp-100-lsp_diagnostics
+
+### WHAT WAS DONE
+- The user approved PRP-100 and its crates ("build it"), then "finish it and merge"; MEMORY 132.
+- Built in a git worktree (`../lugha-prp-100`), merged through a GitHub PR.
+- Tests first: `tests/lsp.rs` (14, a real server over stdio), then `src/driver/lsp/` with unit tests; `pipeline::front_with` reads open documents and never writes a lock.
+- Extension 0.2.0 on `vscode-languageclient`; the on-save runner, store, diagnostics and targets modules and their tests removed.
+- Spec v16 at milestone 70 (§9 CLI table and `lughac lsp`, §11 row 70, summary); draft status; docs; CI no longer passes `LUGHAC`.
+
+### FILES CREATED OR MODIFIED
+- New: `src/driver/lsp/` (6 files), `tests/lsp.rs`, `editors/vscode/src/server.ts`, `editors/vscode/test/server.test.ts`.
+- Deleted: `editors/vscode/src/{runner,store,diagnostics,targets}.ts`, their tests, `test/fixtures/`.
+- Modified: `Cargo.toml` (+ `Cargo.lock` by cargo), `src/driver/{mod,pipeline,guard}.rs`, the extension's package files, tsconfig, README and extension.ts; CI; the v16 spec and draft; CLAUDE.md, README, TODO, CHANGELOG, MEMORY (132, 133), PRP-100, CONTEXT.
+
+### TESTS WRITTEN
+- `tests/lsp.rs` (14); `driver::lsp` unit tests (17); `server.test.ts` (3).
+
+### DECISIONS MADE
+- MEMORY 133: malformed messages end the server (exit 2); E0325 in `lugha.toml`; the extension unbundled for now.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual check of live diagnostics in VS Code (extension README).
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
 
-**Focus: the VS Code extension** (the user, session 144). **Proposed: milestone 70, `lughac lsp` with live diagnostics** — v16 draft decisions 13–17 and PRP-100; it waits for the user's approval (and review of the crates `lsp-server`, `lsp-types`, `serde_json`). Hover types and go-to-definition follow as their own PRPs. Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. Next for the extension (TODO "Editor support"): hover types, then go-to-definition, each a discovery + PRP; bundling the extension; the user's manual check of 0.2.0. Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

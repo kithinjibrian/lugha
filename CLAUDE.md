@@ -139,9 +139,10 @@ cargo run -q -- check prog.la [--offline]     # lex, parse, type-check
 cargo run -q -- update prog.la                # re-resolve git packages, rewrite lugha.lock
 cargo run -q -- spec                          # print the bundled language spec
 cargo run -q -- init [dir] [--lib] [--name N] # start a program or library (v16); never overwrites
+cargo run -q -- lsp                           # the language server on stdin/stdout (v16); editors start it
 
-cd editors/vscode && npm ci                   # the VS Code extension (PRP-099)
-LUGHAC=../../target/debug/lughac npm test     # its unit, runner and grammar tests
+cd editors/vscode && npm ci                   # the VS Code extension (PRP-099, PRP-100)
+npm test                                      # its server-command, keyword and grammar tests
 npm run package                               # lugha-<version>.vsix
 ```
 
@@ -158,8 +159,9 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - C (`lugha_rt.c`, kept as three fragments in `runtime/`) — the runtime linked into every compiled program.
 - Boehm GC (`libgc`), `libc`, `libm` — linked into every compiled program via the system `cc`.
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
+- `lsp-server` + `lsp-types` + `serde_json` — `lughac lsp` only (PRP-100): rust-analyzer's synchronous stdio loop and typed protocol structures; no async runtime. Nothing else in lughac uses them.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
-- `editors/vscode/` — the VS Code extension (PRP-099): TypeScript on Node 22, dev dependencies only (`typescript`, `@types/vscode`, `@types/node`, `vscode-tmgrammar-test`, `@vscode/vsce`), tests with `node:test`. It runs only `lughac check --offline` through `execFile`; changes to how it starts `lughac` need the user's security review.
+- `editors/vscode/` — the VS Code extension (PRP-099, PRP-100): TypeScript on Node 22, one runtime dependency (`vscode-languageclient`, MIT) and dev dependencies (`typescript`, `@types/vscode`, `@types/node`, `vscode-tmgrammar-test`, `@vscode/vsce`), tests with `node:test`. It starts only `lughac lsp`, which never runs `git` or writes a file; changes to how it starts `lughac`, or to what the server may do, need the user's security review.
 
 The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestones 67–69 done: `lughac init`; `env.set_current_dir`; shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
@@ -329,7 +331,10 @@ pub fn parse_number(src: &str) -> i64 {
 │                      (panics → internal error, exit 2), pipeline.rs (load all modules + the prelude, check, codegen),
 │                      source.rs (source map of all files, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines), update.rs (v14: the fetcher, writing
-│                      `lugha.lock`, `lughac update`), init.rs (v16: `lughac init`, the program and library layouts)
+│                      `lugha.lock`, `lughac update`), init.rs (v16: `lughac init`, the program and library layouts),
+│                      lsp/ (v16: `lughac lsp`: mod.rs the stdio loop and capabilities, server.rs state and debounced
+│                      scheduling, documents.rs open text and `file:` URIs, targets.rs which mains to check, check.rs one
+│                      guarded offline check via `pipeline::front_with`, publish.rs reports → UTF-16 LSP diagnostics, per-check store)
 ├── tests/
 │   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
 │   ├── spec.rs      — spec §10 acceptance: programs and expected results extracted from lugha::SPEC
@@ -343,6 +348,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── lazy_std.rs  — lazy std modules through lughac: only reached std functions in the IR (v15)
 │   ├── ordering.rs  — user-defined order through lughac: `<` and tuple helpers call `cmp` (v15)
 │   ├── init.rs      — `lughac init` through lughac: both layouts created, checked and run; refusals; kept files (v16)
+│   ├── lsp.rs       — `lughac lsp` over real stdio: live diagnostics, unsaved text, modules through seen mains, entries, offline (v16)
 │   ├── package_layout.rs — package layout through lughac: `source`, `examples/` by name, the `$HOME` bound, E0327/E0328
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
 │   ├── programs/    — m1/ … m68/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
@@ -352,9 +358,8 @@ pub fn parse_number(src: &str) -> i64 {
 ├── editors/
 │   └── vscode/      — the VS Code extension (PRP-099): package.json (language, grammar, settings `lugha.path` (machine scope)
 │                      and `lugha.entries`), language-configuration.json, syntaxes/lugha.tmLanguage.json; src/ extension.ts
-│                      (the only file importing `vscode`), targets.ts (which file to check), runner.ts (`lughac check
-│                      --offline --diagnostics=json` via `execFile`), diagnostics.ts (JSON lines → UTF-16 ranges), store.ts
-│                      (diagnostics per check); test/ (`node:test`, fixtures/, grammar/ scope tests); not in the crate
+│                      (the only file importing `vscode`: a `LanguageClient` running `lugha.path lsp`), server.ts (the server
+│                      command, start-failure text); test/ (`node:test`, spec keywords, grammar/ scope tests); not in the crate
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
 │   └── specs/       — Language v16 Specification.md (the language definition, in progress, printed by `lughac spec`);

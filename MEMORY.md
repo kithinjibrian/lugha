@@ -1833,11 +1833,22 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned in `driver/init.rs`, tests in `tests/init.rs`. Errors are exit 2 (`InitError`). The `.gitignore` lists only the executable `lughac build` writes (`/main` or `/hello`); the PRP's `/target` was dropped, as lughac writes no such folder.
 
+### 132. `lughac lsp` planned (session 144, approved session 145)
+
+**Decision:** v16 draft decisions 13–17: a language server in three PRPs (live diagnostics, hover, go-to-definition); `lsp-server` + `lsp-types` + `serde_json`, no async runtime; the extension on `vscode-languageclient` with no fallback to on-save checks; modules checked through entries and mains already seen (no workspace scan); panics caught per check.
+
+**Why:** the user chose to centre work on the VS Code extension (session 144), and live errors were its biggest gap.
+
+### 133. `lughac lsp` — milestone 70 (PRP-100)
+
+**Decision:** built in `driver/lsp/` over `pipeline::front_with` (a `Read` over open documents, no lock written). Checks are offline, 200 ms after typing stops, whole-program. A malformed message ends the server with exit 2 (`lsp-server`'s reader stops), not an error reply. E0325 from git packages lands in `lugha.toml`, as in `lughac check`. Extension 0.2.0: `engines.vscode` `^1.91.0`, Node16 module resolution, a log output channel; not bundled yet.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 70 complete**: PRP-100 `lughac lsp`, VS Code extension 0.2.0
 - **Milestone 69 complete**: PRP-098 `lughac init`
 - **VS Code extension**: PRP-099, `editors/vscode/`
 - **Milestone 68 complete**: PRP-097 changing the working directory

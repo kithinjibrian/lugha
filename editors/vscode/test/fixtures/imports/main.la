@@ -1,5 +1,0 @@
-import util;
-
-fun main(): i32 {
-    return util.f();
-}
