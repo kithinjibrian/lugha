@@ -1789,6 +1789,17 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Rule:** changes to `runtime/process.c` need the user's security review (CLAUDE.md anti-pattern 5).
 
+### 125. Shared boxes `Ref<T>` planned — v16 opens (session 135, approved session 136)
+
+**Decision (v16 draft decisions 1–5, PRP-096):**
+- **The box:** `Ref<T>` is the one shared, changeable object. `Ref.new`, `get` (a copy), `set`, `update` and `is` are all the API, with no in-place access.
+- **Equality:** not `Eq`.
+- **Printing:** `Ref(…)` cuts cycles.
+- **Bindings:** `set`/`update` need no `let mut`, so closures can update captured boxes.
+- **Version:** v15 is frozen; milestone 67 opens v16.
+
+**Why:** stateful closures and linked data needed sharing. A narrow explicit box keeps value semantics everywhere else, and keeps copy-on-write and loop ownership sound (a box is one holder).
+
 ---
 
 ## CURRENT PROJECT STATE

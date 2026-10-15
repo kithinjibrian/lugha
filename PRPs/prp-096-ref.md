@@ -1,6 +1,6 @@
 ## FEATURE: Shared boxes — `Ref<T>`, the one shared, changeable object, opening Lugha v16; milestone 67.
 
-**Status:** proposed 2026-10-15 — session 135.
+**Status:** approved 2026-10-15 — session 136 ("build it"); proposed in session 135.
 **Milestone:** 67 (one PRP; tag `m67` at merge). The first milestone of v16; v15 is declared complete and frozen.
 **Spec:** `Language v16 Draft.md` (decisions 1–5); spec §4 (types, equality, copies), §5 (method calls), §7 (memory model), §9 (lowering), §10 (a program), §11 (row 67), §12.
 
