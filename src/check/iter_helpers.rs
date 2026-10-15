@@ -73,7 +73,8 @@ impl Checker {
         }
         let element = self.next_of(receiver)?.element;
         let function = match name.name.as_str() {
-            "sum" if element.is_numeric() => format!("iter_sum_{element}"),
+            // One generic helper for every numeric type (v15, milestone 61).
+            "sum" if element.is_numeric() => "iter_sum".to_string(),
             "sum" => return None,
             other => format!("iter_{other}"),
         };

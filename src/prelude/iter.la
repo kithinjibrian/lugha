@@ -181,81 +181,10 @@ fun iter_find<T>(it: Iter<T>, f: fun(T): bool): Option<T> {
     None
 }
 
-// `it.sum()`, one per number type; `+` panics on overflow as usual.
-fun iter_sum_i8(it: Iter<i8>): i8 {
-    let mut total: i8 = 0;
-    for x of it {
-        total += x;
-    }
-    total
-}
-
-fun iter_sum_i16(it: Iter<i16>): i16 {
-    let mut total: i16 = 0;
-    for x of it {
-        total += x;
-    }
-    total
-}
-
-fun iter_sum_i32(it: Iter<i32>): i32 {
-    let mut total: i32 = 0;
-    for x of it {
-        total += x;
-    }
-    total
-}
-
-fun iter_sum_i64(it: Iter<i64>): i64 {
-    let mut total: i64 = 0;
-    for x of it {
-        total += x;
-    }
-    total
-}
-
-fun iter_sum_u8(it: Iter<u8>): u8 {
-    let mut total: u8 = 0;
-    for x of it {
-        total += x;
-    }
-    total
-}
-
-fun iter_sum_u16(it: Iter<u16>): u16 {
-    let mut total: u16 = 0;
-    for x of it {
-        total += x;
-    }
-    total
-}
-
-fun iter_sum_u32(it: Iter<u32>): u32 {
-    let mut total: u32 = 0;
-    for x of it {
-        total += x;
-    }
-    total
-}
-
-fun iter_sum_u64(it: Iter<u64>): u64 {
-    let mut total: u64 = 0;
-    for x of it {
-        total += x;
-    }
-    total
-}
-
-fun iter_sum_f32(it: Iter<f32>): f32 {
-    let mut total: f32 = 0.0;
-    for x of it {
-        total += x;
-    }
-    total
-}
-
-fun iter_sum_f64(it: Iter<f64>): f64 {
-    let mut total: f64 = 0.0;
+// `it.sum()` for every number type, through `T: Num` (v15, milestone 61);
+// `+` panics on overflow as usual.
+fun iter_sum<T: Num>(it: Iter<T>): T {
+    let mut total: T = 0;
     for x of it {
         total += x;
     }

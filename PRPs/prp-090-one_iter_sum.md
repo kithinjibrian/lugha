@@ -1,6 +1,6 @@
 ## FEATURE: One `iter_sum` — `it.sum()` through a single generic prelude function instead of ten per-type copies; milestone 61.
 
-**Status:** approved 2026-10-15 — session 129 ("approved"); proposed in session 128 (discovery in session 127).
+**Status:** merged 2026-10-15 — session 129 (approved the same session; proposed in session 128); tag `m61`.
 **Milestone:** 61 (one PRP; tag `m61` at merge)
 **Spec:** `Language v15 Draft.md` decision 44; spec §4 (iterator helpers), §9 (lowering), §11 (row 61).
 
@@ -51,22 +51,30 @@ None.
 - **No `unsafe`, dependencies or external input.**
 
 ## TESTS TO WRITE
-- [ ] **Checker:** `sum` on `i64`, `u8`, `f32` and `f64` iterators types as the element; `["a"].iter().sum()` stays E0415.
-- [ ] **Codegen IR:** a program summing `i64` and `f64` iterators defines `iter_sum<i64>` and `iter_sum<f64>` and no `iter_sum_i64`.
-- [ ] **Program `m61/sums.la`:** sums at all ten numeric types, including an overflow-free `u8` and `i8`; golden from the M60 compiler.
-- [ ] **Regression:** every earlier program unchanged (prelude-line goldens updated if lines moved).
+- [x] **Checker:** `sum` on `i64`, `u8`, `f32` and `f64` iterators types as the element; `["a"].iter().sum()` stays E0415.
+- [x] **Codegen IR:** a program summing `i64` and `f64` iterators defines `iter_sum<i64>` and `iter_sum<f64>` and no `iter_sum_i64`.
+- [x] **Program `m61/sums.la`:** sums at all ten numeric types, including an overflow-free `u8` and `i8`; golden from the M60 compiler.
+- [x] **Regression:** every earlier program unchanged (prelude-line goldens updated if lines moved).
 
 ## ROLLBACK PLAN
 - Branch `prp-090-one_iter_sum`; tag `m61`.
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass at `-O0`; `m61/` at `-O2`.
-- [ ] Spec at milestone 61; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] fmt, clippy and tests pass; CI green.
+- [x] All tests pass at `-O0`; `m61/` at `-O2`.
+- [x] Spec at milestone 61; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] fmt, clippy and tests pass; CI green.
 
 ## VALIDATION
 ```bash
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 ```
+
+## AMENDMENTS
+
+Session 129, while building:
+1. **The helper's symbol** is `lugha_fn_$prelude/iter_sum<T>`, like other prelude instances. The IR test is in `tests/lazy_std.rs`, which now also covers which prelude helpers a program compiles.
+2. **Only one golden moved:** `m36/overflow.stderr`, prelude line 472 → 449, the same `total += x;` statement.
+3. **No checker unit test was added:** the existing `iter_helpers.rs` tests (sum types, E0415 on strings) cover the behaviour, and they pass unchanged.
+

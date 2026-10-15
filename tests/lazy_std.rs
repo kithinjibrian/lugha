@@ -1,6 +1,7 @@
 //! Lazy std modules through the `lughac` binary (v15, milestone 60): an
 //! imported std module's functions and methods are compiled only when the
-//! program reaches them, however it reaches them.
+//! program reaches them, however it reaches them. Also which prelude
+//! helpers a program compiles (milestone 61).
 
 use std::path::PathBuf;
 use std::process::Command;
@@ -114,4 +115,25 @@ fun main() {
         !defined.iter().any(|d| d == "random/from_os"),
         "{defined:?}"
     );
+}
+
+#[test]
+fn every_sum_is_one_generic_helper() {
+    let dir = Dir::new("sum");
+    let src = "fun main() { let a: f64[] = [1.0]; println(a.iter().sum()); println([1, 2].iter().sum()); }\n";
+    std::fs::write(dir.0.join("main.la"), src).expect("temp dir is writable");
+    let out = Command::new(env!("CARGO_BIN_EXE_lughac"))
+        .args(["build", "--emit=ir", "main.la"])
+        .current_dir(&dir.0)
+        .output()
+        .expect("lughac runs");
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let ir = String::from_utf8_lossy(&out.stdout);
+    assert!(ir.contains("@\"lugha_fn_$prelude/iter_sum<f64>\"("), "{ir}");
+    assert!(ir.contains("@\"lugha_fn_$prelude/iter_sum<i64>\"("), "{ir}");
+    assert!(!ir.contains("iter_sum_"), "{ir}");
 }

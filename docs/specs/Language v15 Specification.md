@@ -2,11 +2,11 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 51–60 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
+**Status:** in progress (milestones 51–61 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
 
 **v14.** This is v13 plus binary I/O, `char`, tuples, `format`, import aliases and whole-module re-exports, and git packages (milestones 45–50).
 
-**Changes since v14** (milestones 51–60):
+**Changes since v14** (milestones 51–61):
 - A package's `[package]` table may give its `name`, checked against the key a manifest lists it under (E0327), and its `source`, the folder its modules start in: with `source = "src"`, `src/array.la` of package `glowworm` is `glowworm.array` (section 6).
 - A program with no `lugha.toml` beside its main file uses the nearest one above it, looking no further than a folder with `.git` or the home folder; when that manifest names a package, the program imports it by that name, so `glowworm/examples/basics.la` writes `import glowworm.array;` with no manifest of its own (section 6).
 - A file imported as two modules is E0328 (section 6).
@@ -18,6 +18,7 @@ Oct 13, 2026 · @kithinji
 - Numbers as `T`: `n as T` and `x as f64` cast to and from a type parameter bounded by `Num` or `Float`, and any integer literal is a `T: Num` and any float literal a `T: Float` (`x * 2`, `x * 0.5`); a literal that doesn't fit an instance's type is E0402, naming the instance (milestone 58; section 4).
 - User-defined order: a struct or enum with `fun cmp(self, other: Self): Ordering`, the prelude's new `enum Ordering { Less, Equal, Greater }` (written `Ordering.Less`), is `Ord`: `<`, `<=`, `>` and `>=` call `cmp`, tuples compare through it, and `math.min`, `it.min()` and the new `xs.sort()` accept it. `==` stays structural (milestone 59; section 4).
 - An imported std module's functions and methods are compiled only when the program reaches them, as the prelude's are; every one is still checked. No program's behaviour changes, only the size of its IR (milestone 60; sections 6, 9).
+- `it.sum()` goes through one generic prelude helper for every numeric type; nothing visible changes (milestone 61; section 9).
 - `std.random`: `random.seeded(42)` or `random.from_os()` makes a generator (xoshiro256\*\*, not cryptographically secure) with `uniform`, `below`, `between`, `normal`, `chance`, `choice` and `shuffle` ("The standard library").
 
 Every valid v14 program and package is a valid v15 one: a module's own type or interface named `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg`, `Num` or `Ordering` still means its own, as for `Iter`.
@@ -1173,6 +1174,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 - **Array helpers** (v3): `xs.map(f)` calls the prelude's `map` instance with `xs` first. The prelude is Lugha source like any other (`sort_by` is a bottom-up merge sort between two buffers), so it needs no special lowering; `--emit=tokens|ast` leaves it out, and an error inside it is reported as an internal compiler error.
 - **User-defined order** (v15): `<` on a struct or enum with `cmp` calls `lugha_fn_<Type>.cmp` (a generic type's instance) with a pointer to a copy of the left operand, and compares the returned `Ordering`'s tag with `Less` and `Greater` by variant; a tuple's `lugha_cmp_<type>` helper does the same for such elements, as −1, 0 or 1. Through `T: Ord`, each instance resolves `cmp` for its type.
 - **Compiled when reached** (v15, milestone 60): the prelude's and std's non-generic functions and methods are listed in the instance list like generic ones, from the uses in the program's bodies and in other listed bodies, and only listed ones are declared and defined. A function used as a value counts as a use, and so does converting a value to an interface for each method its table holds. A program's own modules and its packages are compiled whole.
+- **`it.sum()`** (v15, milestone 61) calls the prelude's `iter_sum<T: Num>` instance for the element type (`lugha_fn_$prelude/iter_sum<i64>`), one generic body instead of one per number type.
 - **Calling a function value** (v3): extract its code and environment, and call the code indirectly with the environment as a hidden first argument, then the arguments as for any call (aggregates by pointer).
 - **Monomorphization:** after checking, the checker lists every generic function and method instance reachable from the non-generic code, at concrete type arguments, and every concrete type those instances use (E0420 when they nest too deep). Codegen compiles each instance from its one body by substituting the type arguments into the types the checker recorded; it still never infers a type. Generic structs and enums get one LLVM type per instance, named as they print (`%"Stack<i64>"`), and their own copy and equality helpers (`lugha_copy_10Stack<i64>`).
 - **Methods:** ordinary functions whose first parameter is the receiver. A `self` receiver is passed like a struct argument; a `mut self` receiver is the address of the caller's place itself, so the method's writes land there.
@@ -2959,6 +2961,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 58 | Numbers as `T` (v15) | `as` with `T: Num`/`Float`, any literal as `T`, E0402 per instance | The numbers-as-T program in section 10 passes (done) |
 | 59 | User-defined `Ord` (v15) | `cmp(self, other: Self): Ordering`, the prelude's `Ordering`, `<` through `cmp`, tuples, `xs.sort()` | The ordering program in section 10 passes (done) |
 | 60 | Lazy std modules (v15) | std functions and methods compiled only when reached, as the prelude's | Every program prints the same; `tests/lazy_std.rs` (done) |
+| 61 | One `iter_sum` (v15) | `it.sum()` through `iter_sum<T: Num>` | Every program prints the same (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

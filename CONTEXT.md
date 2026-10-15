@@ -5260,22 +5260,36 @@ Branch: main
 
 ---
 
-## SESSION 129 — 2026-10-15 — One `iter_sum` (milestone 61) — open
+## SESSION 129 — 2026-10-15 — One `iter_sum` (milestone 61) — closed
 Branch: prp-090-one_iter_sum
+
+### WHAT WAS DONE
+- The user approved PRP-090 to PRP-095 ("approved"); PRP-095's approval is the security review. MEMORY 118.
+- Tests first: `m61/sums.la` (golden from M60) and `every_sum_is_one_generic_helper` in `tests/lazy_std.rs`.
+- Built: one `iter_sum<T: Num>` in `prelude/iter.la`; `iter_helpers.rs` maps `sum` to it. `m36/overflow`'s prelude line updated.
+- Spec v15 at milestone 61 (§9 note, §11 row 61, summary); docs.
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m61/`.
+- Modified: `src/prelude/iter.la`, `src/check/iter_helpers.rs`, `tests/lazy_std.rs`, `tests/programs/m36/overflow.stderr`, the v15 spec and draft, CLAUDE.md, TODO, CHANGELOG, MEMORY (118, 119), PRP-090 (and approval status in PRP-091 to PRP-095).
+
+### TESTS WRITTEN
+- `every_sum_is_one_generic_helper`; `m61/sums.la`.
+
+### DECISIONS MADE
+- MEMORY 119.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m61`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–60 complete.** **Proposed, waiting for one approval** (the user's choice in session 127: a PRP each, approved together, built back to back):
-- **PRP-090, milestone 61:** one `iter_sum`.
-- **PRP-091, milestone 62:** C → Lugha parsers and one UTF-8 decoder.
-- **PRP-092, milestone 63:** format widths in characters.
-- **PRP-093, milestone 64:** `std.env`.
-- **PRP-094, milestone 65:** `std.fs`.
-- **PRP-095, milestone 66:** `std.process`. **Its approval is the user's security review.**
-
-**On approval:** per PRP, a session, a branch, MEMORY plan and built entries (118 onwards), tests first, and a merge on green CI with its tag. Draft decisions 44–52.
+**Milestones 51–61 complete.** **Approved and next, in one go** (session 129): milestone 62, C → Lugha (PRP-091), then 63 widths (PRP-092), 64 `std.env` (PRP-093), 65 `std.fs` (PRP-094) and 66 `std.process` (PRP-095, security-reviewed by approval). Each gets a session, a branch, tests first, a merge on green CI, and a tag. MEMORY 118 is the plan.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 

@@ -1751,11 +1751,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** the user asked to finish the v15 TODO in one approval; each item stays its own PRP (scope rule).
 
+### 119. One `iter_sum` — milestone 61 (PRP-090)
+
+**Decision:** built as planned. The prelude has one `iter_sum<T: Num>`, and `check/iter_helpers.rs` maps numeric `sum` to it. Only the `m36/overflow` prelude line moved.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 61 complete**: PRP-090 one `iter_sum`
 - **Milestone 60 complete**: PRP-089 lazy std modules
 - **Milestone 59 complete**: PRP-088 user-defined `Ord`
 - **Milestone 58 complete**: PRP-087 numbers as `T`
@@ -1863,15 +1868,7 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–60 complete.** **Proposed, waiting for one approval** (the user's choice in session 127: a PRP each, approved together, built back to back):
-- **PRP-090, milestone 61:** one `iter_sum`.
-- **PRP-091, milestone 62:** C → Lugha parsers and one UTF-8 decoder.
-- **PRP-092, milestone 63:** format widths in characters.
-- **PRP-093, milestone 64:** `std.env`.
-- **PRP-094, milestone 65:** `std.fs`.
-- **PRP-095, milestone 66:** `std.process`. **Its approval is the user's security review.**
-
-**On approval:** per PRP, a session, a branch, MEMORY plan and built entries (118 onwards), tests first, and a merge on green CI with its tag. Draft decisions 44–52.
+**Milestones 51–61 complete.** **Approved and next, in one go** (session 129): milestone 62, C → Lugha (PRP-091), then 63 widths (PRP-092), 64 `std.env` (PRP-093), 65 `std.fs` (PRP-094) and 66 `std.process` (PRP-095, security-reviewed by approval). Each gets a session, a branch, tests first, a merge on green CI, and a tag. MEMORY 118 is the plan.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 
