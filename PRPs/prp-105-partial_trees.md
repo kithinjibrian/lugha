@@ -1,6 +1,6 @@
 ## FEATURE: Partial syntax trees for the language server — check the text being edited even with syntax errors, so hover, definitions, completion and signature help work in the rest of the file; milestone 75.
 
-**Status:** proposed 2026-10-15 — session 156 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-15 ("build it") — built in session 157; proposed in session 156.
 **Milestone:** 75 (one PRP; tag `m75` at merge).
 **Spec:** `Language v16 Draft.md` decisions 38–41; spec §3 (recovery), §9 (the `lughac lsp` paragraph), §11 (row 75).
 

@@ -6084,6 +6084,11 @@ Branch: main
 
 ---
 
+## SESSION 157 — 2026-10-15 — Partial syntax trees for the language server (milestone 75) — open
+Branch: prp-105-partial_trees
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
