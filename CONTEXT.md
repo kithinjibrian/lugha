@@ -5260,6 +5260,11 @@ Branch: main
 
 ---
 
+## SESSION 129 — 2026-10-15 — One `iter_sum` (milestone 61) — open
+Branch: prp-090-one_iter_sum
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–60 complete.** **Proposed, waiting for one approval** (the user's choice in session 127: a PRP each, approved together, built back to back):
