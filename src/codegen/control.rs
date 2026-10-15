@@ -9,6 +9,7 @@ use inkwell::IntPredicate;
 use inkwell::basic_block::BasicBlock;
 
 use super::CodegenError;
+use super::hoist::Head;
 use super::lower::{Lowerer, POSITIONED};
 use super::scope::Local;
 use super::value::{Value, int_type, is_signed, llvm_type};
@@ -121,6 +122,7 @@ impl<'ctx> Lowerer<'ctx> {
         let cond_block = self.append("while.cond");
         let body_block = self.append("while.body");
         let exit = self.append("while.end");
+        let hoists = self.hoist_loop(&[Head::Read(cond)], body)?;
         self.branch(cond_block);
 
         self.builder.position_at_end(cond_block);
@@ -139,6 +141,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(cond_block);
 
         self.builder.position_at_end(exit);
+        self.end_hoists(hoists);
         Ok(())
     }
 
@@ -179,6 +182,7 @@ impl<'ctx> Lowerer<'ctx> {
         let body_block = self.append("for.body");
         let step = self.append("for.step");
         let exit = self.append("for.end");
+        let hoists = self.hoist_loop(&[Head::Binds(&var.name)], body)?;
         self.branch(cond_block);
 
         self.builder.position_at_end(cond_block);
@@ -224,6 +228,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(cond_block);
 
         self.builder.position_at_end(exit);
+        self.end_hoists(hoists);
         Ok(())
     }
 

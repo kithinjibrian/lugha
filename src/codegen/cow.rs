@@ -37,6 +37,16 @@ impl<'ctx> Lowerer<'ctx> {
     /// The array in `slot` (an array of type `ty`), made unique first: if it
     /// is shared, a one-level clone is stored back into `slot`.
     pub(super) fn own(&mut self, slot: PointerValue<'ctx>, ty: &Type) -> PointerValue<'ctx> {
+        self.own_labelled(slot, ty, "cow")
+    }
+
+    /// `own`, its blocks named `<label>.clone` and `<label>.done`.
+    pub(super) fn own_labelled(
+        &mut self,
+        slot: PointerValue<'ctx>,
+        ty: &Type,
+        label: &str,
+    ) -> PointerValue<'ctx> {
         let ptr = self.context.ptr_type(Default::default());
         let array = self
             .builder
@@ -55,7 +65,10 @@ impl<'ctx> Lowerer<'ctx> {
             .build_int_compare(IntPredicate::SLT, cap, i64_type.const_zero(), "is_shared")
             .expect(POSITIONED);
         let from = self.builder.get_insert_block().expect(POSITIONED);
-        let (clone, done) = (self.append("cow.clone"), self.append("cow.done"));
+        let (clone, done) = (
+            self.append(&format!("{label}.clone")),
+            self.append(&format!("{label}.done")),
+        );
         let branch = self
             .builder
             .build_conditional_branch(shared, clone, done)

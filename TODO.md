@@ -302,7 +302,7 @@ Done when the printing-anything program passes and the v12 spec is complete.
 
 Found writing glowworm and firefly (session 115); each needs a discovery and a PRP. In order of value for numeric code:
 - [x] **Read without copying.** Done in milestone 55 (PRP-084): copy-on-write arrays.
-- [ ] **Own an array once per loop** (found in session 117). Copy-on-write tests a flag on every array along each write's path, which slows loops that only write (`counts[c] += 1`, a matrix multiply's `out[i][j] +=`) by up to about 50% and stops vectorization. When a loop body has no copy site for an array's root, its arrays could be made unique once before the loop. Needs a discovery: which loops, and how to prove no copy happens inside.
+- [x] **Own an array once per loop** (found in session 117). Done in milestone 56 (PRP-085). Copy-on-write tests a flag on every array along each write's path, which slows loops that only write (`counts[c] += 1`, a matrix multiply's `out[i][j] +=`) by up to about 50% and stops vectorization. When a loop body has no copy site for an array's root, its arrays could be made unique once before the loop. Needs a discovery: which loops, and how to prove no copy happens inside.
 - [ ] **Nested `mut self` calls whose arguments only read the receiver.**
   - **Today:** `g.tanh(g.add(a, b))` is E0508, so tape-style code needs one `let` per op.
   - **Proposal:** allow it when the inner call finishes before the outer one changes the receiver, i.e. arguments evaluated first, then the outer `mut self` call. Model code would then read like PyTorch.

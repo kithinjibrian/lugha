@@ -78,6 +78,9 @@ pub(super) struct Lowerer<'ctx> {
     /// keyed by its placeholder slot (`places.rs`).
     pub(super) aliases:
         std::collections::HashMap<inkwell::values::PointerValue<'ctx>, super::places::Alias<'ctx>>,
+    /// Arrays made unique before the enclosing loops (v15, `hoist.rs`): the
+    /// root variable's slot and the path from it.
+    pub(super) owned: Vec<(inkwell::values::PointerValue<'ctx>, crate::ast::Expr)>,
     /// Enclosing loops, innermost last, for `break` and `continue`.
     pub(super) loops: Vec<Loop<'ctx>>,
     /// String literals and the file name, emitted once each.
@@ -156,6 +159,7 @@ pub(super) fn lower<'ctx>(
         ret: None,
         scopes: Scopes::default(),
         aliases: std::collections::HashMap::new(),
+        owned: Vec::new(),
         loops: Vec::new(),
         constants: Constants::default(),
         source: OwnedSource {

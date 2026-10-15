@@ -4937,19 +4937,44 @@ Branch: main
 
 ---
 
-## SESSION 119 — 2026-10-15 — Owning arrays once per loop (milestone 56) — open
+## SESSION 119 — 2026-10-15 — Owning arrays once per loop (milestone 56) — closed
 Branch: prp-085-loop_ownership
+
+### WHAT WAS DONE
+- The user approved PRP-085 ("build in one go"); MEMORY 108.
+- Built the loop scan (`codegen/hoist_scan.rs`) and the hoists (`codegen/hoist.rs`): every loop kind, fixed paths, guarded bounds, `own_place` in the write paths.
+- Tests first: six IR unit tests; `m56/hoisting`, `hazards`, `bounds` (a panic golden), and `edges` (ten adversarial probes), all with the M55 compiler's output.
+- Spec v15 at milestone 56 (§7, §9 lowering note, §11 row 56, §12, the changes summary); draft notes; docs.
+- Timings: matmul 131 (eager) → 173 (M55) → 133 ms (M56); histogram 130 → 203 → 145 ms; firefly mlp 4.54 → 4.19 s and gpt 15.7 → 14.5 s (interleaved under load).
+- The user said "build in one go": merged on green CI.
+
+### FILES CREATED OR MODIFIED
+- New: `src/codegen/hoist.rs`, `src/codegen/hoist_scan.rs`, `tests/programs/m56/`.
+- Modified: codegen `array.rs`, `conditional.rs`, `control.rs`, `cow.rs`, `growth.rs`, `iterators.rs`, `lower.rs`, `mod.rs`, `places.rs`; the v15 spec and draft; CLAUDE.md, README, TODO, CHANGELOG, MEMORY (108, 109), PRP-085.
+
+### TESTS WRITTEN
+- Unit: `a_counting_loop_owns_its_array_once`, `nested_loops_own_each_fixed_path`, `every_kind_of_loop_hoists`, `reads_without_arrays_dont_block`, `copies_and_calls_keep_the_test`, `changing_indexes_are_not_fixed`; `of_mut_aliases_elements_and_steps_the_place_v13` updated.
+- Programs: `m56/hoisting.la`, `hazards.la`, `bounds.la`, `edges.la`.
+
+### DECISIONS MADE
+- MEMORY 109 records the built design.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m56`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–55 complete.** **Milestone 56 (owning arrays once per loop) is proposed:** decisions 25–28 in `Language v15 Draft.md` and PRP-085. It waits for the user's explicit approval.
-- **On approval:** record MEMORY 108, branch `prp-085-loop_ownership`, commit the approved PRP.
-- **Before changing code:** record the "before" timings with the M55 compiler (DECISION-010's benchmarks, best of 5; firefly `./mlp data/names-32k.txt` and `./gpt data/names-32k.txt 1000 32 4 0.1`).
-- **Then build:** `codegen/hoist.rs` (analysis), the hoists before each loop kind, `Lowerer.owned` consulted by `places.rs::walk`.
+**Milestones 51–56 complete** (tag `m56`: owning arrays once per loop, PRP-085). Copy-on-write now costs write loops almost nothing (matmul 131 ms eager, 133 ms now), and firefly keeps its copy-on-write gains.
 
-A wrong hoist silently breaks value semantics: test every exclusion against the M55 compiler's output.
+Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section):
+- nested `mut self` calls whose arguments only read the receiver;
+- any number as a `T: Num`;
+- lazy std modules; user-defined `Ord`; the `sum()` cleanup; std.fs/env/process; Unicode follow-ups.
 
 See `TODO.md`.
 

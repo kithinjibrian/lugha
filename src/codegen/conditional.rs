@@ -4,6 +4,7 @@
 
 use super::CodegenError;
 use super::control::Loop;
+use super::hoist::Head;
 use super::lower::{Lowerer, POSITIONED};
 use super::patterns::Subject;
 use super::value::{Value, llvm_type};
@@ -85,6 +86,7 @@ impl<'ctx> Lowerer<'ctx> {
         body: &Block,
     ) -> Result<(), CodegenError> {
         let (cond, exit) = (self.append("whilelet.cond"), self.append("whilelet.end"));
+        let hoists = self.hoist_loop(&[Head::Pattern(pattern), Head::Read(scrutinee)], body)?;
         self.branch(cond);
         self.builder.position_at_end(cond);
         self.scopes.push();
@@ -96,6 +98,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.scopes.pop();
         self.branch(cond);
         self.builder.position_at_end(exit);
+        self.end_hoists(hoists);
         Ok(())
     }
 

@@ -1,0 +1,101 @@
+// Loops that can share their arrays again keep a test on every write
+// (v15, milestone 56). Each copies inside the loop, then writes; the copy
+// must keep its values.
+struct S { v: i64[] }
+
+impl S {
+    fun first(self): i64 = self.v[0];
+    fun keep(self): S = self;
+}
+
+fun id(xs: i64[]): i64[] = xs;
+
+fun main() {
+    let mut xs = [1, 2];
+    let mut seen: i64[][] = [];
+    for i in 0..2 {
+        seen.push(xs);
+        xs[i] += 10;
+    }
+    println("{xs} {seen}");
+
+    let mut a = [1, 2];
+    let mut b: i64[] = [];
+    for i in 0..2 {
+        b = id(a);
+        a[i] = 0;
+    }
+    println("{a} {b}");
+
+    let mut s = S { v: [5, 6] };
+    let mut kept: S[] = [];
+    for i in 0..2 {
+        kept.push(s.keep());
+        s.v[i] = s.first() + 1;
+    }
+    println("{s.v} {kept[0].v} {kept[1].v}");
+
+    let mut c = [1, 2];
+    let mut fs: (fun(): i64[])[] = [];
+    for i in 0..2 {
+        fs.push(fun(): i64[] = c);
+        c[i] = 7;
+    }
+    println("{c} {fs[0]()} {fs[1]()}");
+
+    let mut p = [1, 2];
+    let mut q = [3, 4];
+    for i in 0..2 {
+        swap(p, q);
+        p[0] += 100;
+    }
+    println("{p} {q}");
+
+    let mut d = [1, 2];
+    let e = [8, 9];
+    let mut f: i64[] = [];
+    for i in 0..2 {
+        if i == 1 {
+            d = e;
+        }
+        d[0] += 1;
+        f = e;
+    }
+    println("{d} {e} {f}");
+
+    let mut g = [[1], [2]];
+    let row = [5];
+    for i in 0..2 {
+        g[i] = row;
+        g[i][0] += i;
+    }
+    println("{g} {row}");
+
+    let mut h = [[1], [2]];
+    let mut rows: i64[][] = [];
+    for i in 0..2 {
+        let r = h[i];
+        rows.push(r);
+        h[i][0] *= 10;
+    }
+    println("{h} {rows}");
+
+    let mut m = [[1, 2], [3, 4]];
+    let mut olds: i64[][] = [];
+    for r of mut m {
+        olds.push(r);
+        r[0] = 0;
+    }
+    println("{m} {olds}");
+
+    // An index changed inside the loop.
+    let mut n = [[1, 2], [3, 4]];
+    let mut k = 0;
+    let mut keep: i64[] = [];
+    for i in 0..2 {
+        keep = n[1];
+        n[k][1] = 0;
+        k = 1;
+    }
+    println("{n} {keep}");
+}

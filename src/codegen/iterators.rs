@@ -8,6 +8,7 @@ use inkwell::values::{BasicValueEnum, FunctionValue, PointerValue, ValueKind};
 
 use super::CodegenError;
 use super::control::Loop;
+use super::hoist::Head;
 use super::instances::instance_name;
 use super::interfaces::SLOTS;
 use super::lower::{Lowerer, POSITIONED};
@@ -58,6 +59,11 @@ impl<'ctx> Lowerer<'ctx> {
             self.append("iter.body"),
             self.append("iter.end"),
         );
+        let heads = match &plan {
+            Some(_) => vec![Head::Steps(iter), Head::Binds(&var.name)],
+            None => vec![Head::Binds(&var.name)],
+        };
+        let hoists = self.hoist_loop(&heads, body)?;
         self.branch(next);
 
         self.builder.position_at_end(next);
@@ -105,6 +111,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(next);
 
         self.builder.position_at_end(exit);
+        self.end_hoists(hoists);
         Ok(())
     }
 
@@ -211,7 +218,11 @@ mod tests {
             !main.contains("%x = alloca"),
             "the element is the variable: {main}"
         );
-        // Each write reaches the element through `xs`, owning it (v15).
-        assert!(main.contains("cow.clone"), "{main}");
+        // Each write reaches the element through `xs` (v15), which the loop
+        // owns once, before it starts (v15, milestone 56).
+        assert!(
+            main.contains("hoist.clone") && !main.contains("cow.clone"),
+            "{main}"
+        );
     }
 }

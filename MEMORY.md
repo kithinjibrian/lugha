@@ -1659,11 +1659,23 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** M55's per-write test slowed write-only loops (histogram +55%, matmul +30%, no vectorization). A syntactic rule can't be fooled by calls, because any call mentioning the root turns hoisting off.
 
+### 109. Owning arrays once per loop — milestone 56 (PRP-085)
+
+**Decision:** built as planned (MEMORY 108):
+- **Files:** `codegen/hoist_scan.rs` scans a loop's heads and body (roots that may share, changed and bound names, written arrays); `codegen/hoist.rs` keeps fixed paths, emits guarded hoists before each loop kind, and `hoisted` matches paths by root slot and shape.
+- **Writes:** `places.rs::own_place` skips `own` for hoisted paths (`walk`, `local_address`, `growth.rs`).
+- **Refinements:** methods on array-free values are fine; `push` of a deep value disqualifies; aliases map to their array's root.
+
+**Why it is safe:** at hoist time every array on the path is made unique; the per-root whitelist means nothing under the root is marked during the loop, and a clone (which re-marks inner arrays) needs a shared array.
+
+**Result:** write loops are back near eager-copy speed (matmul 131 eager, 173 M55, 133 M56 ms).
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 56 complete**: PRP-085 owning arrays once per loop
 - **Milestone 55 complete**: PRP-084 copy-on-write arrays
 - **Milestone 54 complete**: PRP-083 `std.random`
 - **Milestone 53 complete**: PRP-082 the std library and `std.math`
@@ -1766,11 +1778,11 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–55 complete.** **Milestone 56 (owning arrays once per loop) is proposed:** decisions 25–28 in `Language v15 Draft.md` and PRP-085. It waits for the user's explicit approval.
-- **On approval:** record MEMORY 108, branch `prp-085-loop_ownership`, commit the approved PRP.
-- **Before changing code:** record the "before" timings with the M55 compiler (DECISION-010's benchmarks, best of 5; firefly `./mlp data/names-32k.txt` and `./gpt data/names-32k.txt 1000 32 4 0.1`).
-- **Then build:** `codegen/hoist.rs` (analysis), the hoists before each loop kind, `Lowerer.owned` consulted by `places.rs::walk`.
+**Milestones 51–56 complete** (tag `m56`: owning arrays once per loop, PRP-085). Copy-on-write now costs write loops almost nothing (matmul 131 ms eager, 133 ms now), and firefly keeps its copy-on-write gains.
 
-A wrong hoist silently breaks value semantics: test every exclusion against the M55 compiler's output.
+Next candidates, each needing a discovery and a PRP (`TODO.md`, v15 section):
+- nested `mut self` calls whose arguments only read the receiver;
+- any number as a `T: Num`;
+- lazy std modules; user-defined `Ord`; the `sum()` cleanup; std.fs/env/process; Unicode follow-ups.
 
 See `TODO.md`.

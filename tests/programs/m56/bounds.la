@@ -1,0 +1,14 @@
+// A hoisted path whose index is out of bounds (v15, milestone 56): a loop
+// that never runs is fine; one that runs panics at the write, as before.
+fun main() {
+    let mut g = [[1, 2], [3, 4]];
+    let k = 5;
+    for j in 0..0 {
+        g[k][j] = 1;
+    }
+    println("{g}");
+    for j in 0..2 {
+        g[k][j] = 1;
+    }
+    println("unreachable");
+}

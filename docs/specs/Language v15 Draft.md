@@ -1,6 +1,6 @@
 # Lugha v15 — Draft (delta against v14)
 
-**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116), and built. Milestone 56 (owning arrays once per loop) approved in session 119 (proposed in session 118). Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
+**Status:** milestone 51 approved 2026-10-14 — session 105 (proposed in session 104), and built. Milestone 52 (operator overloading) approved in session 107 (proposed in session 106), and built. Milestone 53 (the std library and `std.math`) approved in session 111 (proposed in session 110), and built. Milestone 54 (`std.random`) approved in session 114 (proposed in session 113), with `uniform(): f64`, and built. Milestone 55 (copy-on-write arrays) approved in session 117 (proposed in session 116), and built. Milestone 56 (owning arrays once per loop) approved in session 119 (proposed in session 118), and built. Milestone 51 is planned here. The rest of v15 is planned in `TODO.md` (directories, processes, environment variables, Unicode follow-ups); it gets milestones in this draft once its discovery resumes.
 **Base:** `Language v14 Specification.md`, complete (milestone 50). It stays the source of truth, and what `lughac spec` prints, until v15's first milestone starts `Language v15 Specification.md`. That file then grows milestone by milestone, and v14 is frozen.
 
 This draft lists only what changes, in the order of the v14 sections. Everything not mentioned keeps its v14 meaning.
@@ -232,6 +232,12 @@ Measured after milestone 55: a write tests the shared flag of every array on its
     - A path is fixed when each of its indexes is a literal or a variable the loop never assigns, with no calls; so in matmul the `i` loop owns `out` and the `j` loop owns `out[i]`.
     - A hoisted index out of bounds skips that hoist instead of panicking; the write's own bounds check still reports it, at the same place as today.
 28. **Success:** milestone 56, tag `m56`. Every existing test unchanged, IR tests (no flag test in a hoisted loop; the test kept when the body copies), hazard programs; timings reported, not gated.
+
+**Found while building milestone 56 (session 119):**
+- **A method on a value without arrays** (`xs[i].abs()`, a `mut self` call on an array-free struct element) is a read or a write of that value, not a disqualifying call: it can't share an array.
+- **`push` of a value holding arrays,** like assigning one, disqualifies its root: the new element may be shared.
+- **A `for … of mut` variable stands for its array's root,** both when mentioned in the loop and when it is a hoisted path's root; one from an enclosing loop is never a fixed index.
+- **Paths match by the root variable's slot,** so code from another function lowered mid-loop never matches.
 
 ## §2–§5 — no changes for milestone 51
 

@@ -10,6 +10,7 @@ use inkwell::values::{BasicValueEnum, IntValue, PointerValue, ValueKind};
 use super::CodegenError;
 use super::control::Loop;
 use super::heap::{ARRAY_HEADER, element_of};
+use super::hoist::Head;
 use super::lower::{Lowerer, POSITIONED};
 use super::scope::Local;
 use crate::ast::{Block, Expr, Ident};
@@ -172,7 +173,8 @@ impl<'ctx> Lowerer<'ctx> {
         let array = match &plan {
             Some(plan) => {
                 let (slot, _, _) = self.place_commit(iter, plan);
-                self.own(slot, &array_type)
+                // Before the loop, so labelled apart from the writes' tests.
+                self.own_labelled(slot, &array_type, "of.own")
             }
             None => self.get(iter, &array_type)?.into_pointer_value(),
         };
@@ -188,6 +190,12 @@ impl<'ctx> Lowerer<'ctx> {
             self.append("of.step"),
             self.append("of.end"),
         );
+        let head = if in_place {
+            Head::Alias(&var.name, iter)
+        } else {
+            Head::Binds(&var.name)
+        };
+        let hoists = self.hoist_loop(&[head], body)?;
         self.branch(cond);
 
         self.builder.position_at_end(cond);
@@ -258,6 +266,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.builder.build_store(counter, next).expect(POSITIONED);
         self.branch(cond);
         self.builder.position_at_end(exit);
+        self.end_hoists(hoists);
         Ok(())
     }
 }

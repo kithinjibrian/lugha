@@ -1,0 +1,121 @@
+// Edge cases for owning arrays once per loop (v15, milestone 56); the
+// expected output is the milestone 55 compiler's.
+struct H { items: i64[] }
+struct Two { a: i64[], b: i64[] }
+struct It { n: i64, log: i64[] }
+impl It {
+    fun next(mut self): Option<i64> {
+        self.n += 1;
+        self.log.push(self.n);
+        if self.n > 2 { return None; }
+        Some(self.n)
+    }
+}
+
+fun fill<T>(xs: T[], v: T): T[] {
+    let mut ys = xs;
+    for i in 0..ys.len { ys[i] = v; }
+    ys
+}
+
+fun main() {
+    // 1. copy of the aliased array inside the inner loop
+    let mut hs = [H { items: [1, 2] }, H { items: [3, 4] }];
+    let mut cs: H[][] = [];
+    for h of mut hs {
+        for j in 0..2 {
+            cs.push(hs);
+            h.items[j] *= 10;
+        }
+    }
+    println("{hs[0].items} {hs[1].items} {cs[0][0].items} {cs[1][0].items} {cs[3][1].items}");
+
+    // 2. index changed by swap
+    let mut g = [[1, 2], [3, 4]];
+    let mut i = 0;
+    let mut one = 1;
+    let mut kept: i64[][] = [];
+    for r in 0..2 {
+        g[i][r] = 0;
+        swap(i, one);
+        kept.push(g[1]);
+    }
+    println("{g} {kept}");
+
+    // 3. index that is an outer alias
+    let mut ks = [0, 0];
+    let mut m = [[1, 2], [3, 4]];
+    let mut seen: i64[][] = [];
+    for k of mut ks {
+        for j in 0..2 {
+            m[k][j] += 1;
+            k = 1;
+            seen.push(m[1]);
+        }
+    }
+    println("{m} {seen} {ks}");
+
+    // 4. deep read of a sibling field
+    let mut t = Two { a: [1], b: [2] };
+    let mut bs: i64[][] = [];
+    for r in 0..2 {
+        t.a[0] += 1;
+        bs.push(t.b);
+        t.b[0] += 1;
+    }
+    println("{t.a} {t.b} {bs}");
+
+    // 5. generic with arrays as T
+    let rows = [[1], [2]];
+    let row = [9];
+    let filled = fill(rows, row);
+    println("{filled} {rows} {row}");
+
+    // 6. while condition copies
+    let mut w = [1, 2];
+    let mut wc: i64[] = [];
+    let mut n = 0;
+    while { wc = w; n < 2 } {
+        w[n] = 0;
+        n += 1;
+    }
+    println("{w} {wc}");
+
+    // 7. range bound copies (evaluated once, before the loop)
+    let mut v = [1, 2];
+    let mut vc: i64[] = [];
+    for q in 0..{ vc = v; 2 } {
+        v[q] = 7;
+    }
+    println("{v} {vc}");
+
+    // 8. iterator stepped in place inside an array, copied in the loop
+    let mut its = [It { n: 0, log: [] }];
+    let mut held: It[] = [];
+    for x of mut its[0] {
+        held.push(its[0]);
+        print("{x} ");
+    }
+    println("{its[0].log} {held[0].log} {held[1].log}");
+
+    // 9. break and a write after the loop
+    let mut z = [1, 2, 3];
+    let zc = z;
+    for r in 0..3 {
+        z[r] = 0;
+        if r == 1 { break; }
+    }
+    z[2] = 5;
+    println("{z} {zc}");
+
+    // 10. a closure in the loop not capturing the root
+    let mut y = [1, 2];
+    let yc = y;
+    let mut total = 0;
+    for r in 0..2 {
+        let f = fun(a: i64): i64 = a * 2;
+        y[r] = f(y[r]);
+        total += y[r];
+    }
+    println("{y} {yc} {total}");
+}

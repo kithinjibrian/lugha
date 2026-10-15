@@ -103,7 +103,7 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Index(base, _, _) => {
                 let (slot, base_ty, _) = self.walk(base, plan, next, own);
                 let array = if own {
-                    self.own(slot, &base_ty)
+                    self.own_place(slot, base, &base_ty)
                 } else {
                     self.load_pointer(slot)
                 };
@@ -129,7 +129,7 @@ impl<'ctx> Lowerer<'ctx> {
         };
         let (slot, array_ty, _) = self.walk(&alias.place, &alias.plan, &mut 0, own);
         let array = if own {
-            self.own(slot, &array_ty)
+            self.own_place(slot, &alias.place, &array_ty)
         } else {
             self.load_pointer(slot)
         };
@@ -156,6 +156,21 @@ impl<'ctx> Lowerer<'ctx> {
             self.builder
                 .build_load(llvm, address, "current")
                 .expect(POSITIONED)
+        }
+    }
+
+    /// The array in `slot`, which holds the array at `path`, made unique:
+    /// by `own`, unless an enclosing loop already did (`hoist.rs`, v15).
+    pub(super) fn own_place(
+        &mut self,
+        slot: PointerValue<'ctx>,
+        path: &Expr,
+        ty: &Type,
+    ) -> PointerValue<'ctx> {
+        if self.hoisted(path) {
+            self.load_pointer(slot)
+        } else {
+            self.own(slot, ty)
         }
     }
 

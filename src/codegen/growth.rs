@@ -30,12 +30,12 @@ impl<'ctx> Lowerer<'ctx> {
         if name == "push" {
             let value = self.value_for_store(&args[0], &element)?;
             let (place, _, _) = self.place_commit(base, &plan);
-            self.own(place, &ty);
+            self.own_place(place, base, &ty);
             self.push(place, &element, value);
             return Ok(Value::Void);
         }
         let (place, _, _) = self.place_commit(base, &plan);
-        self.own(place, &ty);
+        self.own_place(place, base, &ty);
         match name {
             "pop" => Ok(Value::Val(self.pop(place, &element))),
             "clear" => {

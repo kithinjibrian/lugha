@@ -1,6 +1,6 @@
 ## FEATURE: Owning arrays once per loop — writes inside a loop skip the copy-on-write flag test when the loop can't share their arrays; milestone 56.
 
-**Status:** approved 2026-10-15 — session 119 ("build in one go"); proposed in session 118.
+**Status:** merged 2026-10-15 — session 119 (approved the same session, "build in one go"; proposed in session 118); tag `m56`.
 **Milestone:** 56 (one PRP; tag `m56` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 25–28, the milestone 56 choices); spec §7 (copy-on-write), §9 (lowering), §11 (row 56), §12 ("Cost of array copies").
 
@@ -78,19 +78,19 @@ None.
 ## TESTS TO WRITE
 
 Unit (codegen, `hoist.rs` and IR):
-- [ ] `counts[c] += 1` in a loop: `counts` is owned before the loop, and no `cow.clone` block is inside the loop.
-- [ ] matmul's `out[i][j] +=`: the `i` loop hoists `out`, the `j` loop hoists `out[i]`.
-- [ ] Each exclusion keeps the per-write test: `let c = xs;`, `f(xs)`, `xs.m()`, a closure capturing `xs`, `swap(xs, ys)`, `xs = ys`, `g[i] = row`, `let row = g[i];`, `for x of xs`, an alias `x` copied.
-- [ ] A variable index that the loop assigns, or that a `let` redeclares, is not fixed; an index that contains a call is not fixed.
-- [ ] Reads with no arrays (`xs[i]`, `xs.len`, `p.x`) don't block hoisting.
+- [x] `counts[c] += 1` in a loop: `counts` is owned before the loop, and no `cow.clone` block is inside the loop.
+- [x] matmul's `out[i][j] +=`: the `i` loop hoists `out`, the `j` loop hoists `out[i]`.
+- [x] Each exclusion keeps the per-write test: `let c = xs;`, `f(xs)`, `xs.m()`, a closure capturing `xs`, `swap(xs, ys)`, `xs = ys`, `g[i] = row`, `let row = g[i];`, `for x of xs`, an alias `x` copied.
+- [x] A variable index that the loop assigns, or that a `let` redeclares, is not fixed; an index that contains a call is not fixed.
+- [x] Reads with no arrays (`xs[i]`, `xs.len`, `p.x`) don't block hoisting.
 
 Acceptance (`tests/programs/m56/`):
-- [ ] **`hoisting.la`:** histogram- and matmul-shaped loops over arrays that were copied before the loop; both copies printed after.
-- [ ] **`hazards.la`:** one case per exclusion, each copying inside the loop and then writing, with both sides printed. Expected output from the M55 compiler.
-- [ ] **`bounds.la`:** a hoisted `out[i]` with `i` out of bounds in a loop that runs zero times prints normally; the same in a loop that runs panics at the write (`.stderr` and `.exit` goldens as M55 produces).
+- [x] **`hoisting.la`:** histogram- and matmul-shaped loops over arrays that were copied before the loop; both copies printed after.
+- [x] **`hazards.la`:** one case per exclusion, each copying inside the loop and then writing, with both sides printed. Expected output from the M55 compiler.
+- [x] **`bounds.la`:** a hoisted `out[i]` with `i` out of bounds in a loop that runs zero times prints normally; the same in a loop that runs panics at the write (`.stderr` and `.exit` goldens as M55 produces).
 
 Regression:
-- [ ] Every earlier program passes with unchanged output.
+- [x] Every earlier program passes with unchanged output.
 
 ## ROLLBACK PLAN
 
@@ -98,11 +98,11 @@ Regression:
 - To abandon: delete the branch. M55 behaviour is unaffected.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass at `-O0`, and the `m56/` programs at `-O2` too.
-- [ ] Timings recorded.
-- [ ] The spec is at milestone 56; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] All tests pass at `-O0`, and the `m56/` programs at `-O2` too.
+- [x] Timings recorded.
+- [x] The spec is at milestone 56; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -111,3 +111,18 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m56/hazards.la
 ```
+
+## AMENDMENTS
+
+Session 119, while building:
+1. **Two files, not one:** the scan is `codegen/hoist_scan.rs` (334 lines) and the entry, emission, matching and tests are `codegen/hoist.rs` (321 lines). Written as one file it was 639 lines; both files are new in this PRP, so no existing file was split.
+2. **Whitelist details** (recorded in the draft's "Found while building milestone 56"):
+   - a method on a value without arrays is a read or a write of it, not a disqualifying call;
+   - `push` of a value holding arrays disqualifies its root, like assigning one;
+   - a `for … of mut` variable stands for its array's root, both when mentioned and as a path's root; one from an enclosing loop is never a fixed index;
+   - paths match by the root variable's slot.
+3. **Labels:** `own` became `own_labelled(slot, ty, label)`; hoists are labelled `hoist.*` and the `for … of mut` pre-loop own `of.own.*`, so IR tests can tell them from per-write `cow.*` tests. `places.rs::own_place` is the one place writes ask whether a path is hoisted (`walk`, `local_address`, `growth.rs`).
+4. **Extra tests:** `m56/edges.la`, ten more probes (an outer alias's array copied in an inner loop, an index changed by `swap` or through an alias, a deep read of a sibling field, generic `T = i64[]`, copies in a `while` condition and a range bound, an iterator stepped in place, `break`, a non-capturing closure), all with the M55 compiler's output.
+5. **Hazard found while designing:** cloning an outer array marks its inner arrays shared. A hoisted `out[i]` is safe only because every array on its path is made unique at hoist time, and nothing under the root can be shared during the loop. The whitelist is per root for exactly this reason.
+6. **Timings:** DECISION-010's benchmarks on a quiet machine, best of 7 (pre-copy-on-write → M55 → M56): histogram 130 → 203 → 145 ms, matmul 131 → 173 → 133 ms, life 411 → 415 → 413 ms, sort 146 → 150 → 140 ms; interleaved M55 → M56 under load: particles 107 → 85 ms, sort_swap 134 → 123 ms, firefly mlp 4.54 → 4.19 s, gpt 1000 steps 15.7 → 14.5 s; every output identical.
+

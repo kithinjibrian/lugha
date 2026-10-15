@@ -28,6 +28,8 @@ mod fun_values;
 mod function;
 mod growth;
 mod heap;
+mod hoist;
+mod hoist_scan;
 mod input;
 mod instances;
 mod int_checked;
