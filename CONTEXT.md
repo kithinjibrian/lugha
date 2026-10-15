@@ -5740,6 +5740,11 @@ Branch: main
 
 ---
 
+## SESSION 144 — 2026-10-15 — Discovery: a language server for the VS Code extension — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`). Nothing is proposed or in progress.
