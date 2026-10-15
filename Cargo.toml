@@ -6,6 +6,8 @@ rust-version = "1.99"
 description = "Compiler for Lugha, a small statically typed language compiled through LLVM"
 license-file = "LICENSE"
 repository = "https://github.com/kithinjibrian/lugha"
+# The VS Code extension (PRP-099) is Node, not part of the crate.
+exclude = ["editors/"]
 
 [[bin]]
 name = "lughac"

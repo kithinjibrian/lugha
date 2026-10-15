@@ -1,0 +1,91 @@
+{
+  "name": "lugha",
+  "displayName": "Lugha",
+  "description": "Syntax highlighting and lughac diagnostics for the Lugha language",
+  "version": "0.1.0",
+  "publisher": "kithinjibrian",
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kithinjibrian/lugha",
+    "directory": "editors/vscode"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "main": "./out/src/extension.js",
+  "activationEvents": [
+    "onLanguage:lugha"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true,
+      "description": "Checks only run `lughac check --offline`, and `lugha.path` can't be set by a workspace."
+    }
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "lugha",
+        "aliases": [
+          "Lugha",
+          "lugha"
+        ],
+        "extensions": [
+          ".la"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "lugha",
+        "scopeName": "source.lugha",
+        "path": "./syntaxes/lugha.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "Lugha",
+      "properties": {
+        "lugha.path": {
+          "type": "string",
+          "default": "lughac",
+          "scope": "machine",
+          "description": "The lughac executable used for checks: a name on PATH or an absolute path."
+        },
+        "lugha.entries": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "resource",
+          "description": "Main files (workspace-relative .la paths) checked when a module without `fun main` is saved, e.g. [\"src/main.la\"]."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "lugha.showOutput",
+        "title": "Lugha: Show Output"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "test": "npm run compile && node --test \"out/test/*.test.js\" && npm run test:grammar",
+    "test:grammar": "vscode-tmgrammar-test \"test/grammar/*.la\"",
+    "package": "npm run compile && vsce package --skip-license"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/vscode": "~1.90.0",
+    "@vscode/vsce": "^4.0.0",
+    "typescript": "^5.9.3",
+    "vscode-tmgrammar-test": "^0.1.3"
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Lugha",
+  "scopeName": "source.lugha",
+  "fileTypes": ["la"],
+  "patterns": [{ "include": "#code" }],
+  "repository": {
+    "code": {
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#format-template" },
+        { "include": "#string" },
+        { "include": "#char" },
+        { "include": "#number" },
+        { "include": "#declaration" },
+        { "include": "#keyword" },
+        { "include": "#builtin" },
+        { "include": "#call" },
+        { "include": "#type" },
+        { "include": "#operator" },
+        { "include": "#punctuation" }
+      ]
+    },
+    "comment": {
+      "name": "comment.line.double-slash.lugha",
+      "begin": "//",
+      "beginCaptures": { "0": { "name": "punctuation.definition.comment.lugha" } },
+      "end": "$"
+    },
+    "declaration": {
+      "patterns": [
+        {
+          "match": "\\b(fun)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.other.fun.lugha" },
+            "2": { "name": "entity.name.function.lugha" }
+          }
+        },
+        {
+          "match": "\\b(struct|enum|interface)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.other.$1.lugha" },
+            "2": { "name": "entity.name.type.lugha" }
+          }
+        }
+      ]
+    },
+    "keyword": {
+      "patterns": [
+        { "name": "keyword.control.lugha", "match": "\\b(if|else|while|for|in|of|match|return|break|continue)\\b" },
+        { "name": "keyword.other.$1.lugha", "match": "\\b(fun|extern|struct|enum|impl|interface|let|import)\\b" },
+        { "name": "storage.modifier.lugha", "match": "\\b(mut|private|public)\\b" },
+        { "name": "keyword.operator.as.lugha", "match": "\\bas\\b" },
+        { "name": "constant.language.boolean.lugha", "match": "\\b(true|false)\\b" },
+        { "name": "variable.language.self.lugha", "match": "\\bself\\b" },
+        { "name": "storage.type.primitive.lugha", "match": "\\b(i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|string|char)\\b" }
+      ]
+    },
+    "builtin": {
+      "patterns": [
+        { "name": "support.constant.lugha", "match": "\\b(Some|None|Ok|Err)\\b" },
+        { "name": "support.type.lugha", "match": "\\b(Self|Option|Result|Ref)\\b" }
+      ]
+    },
+    "call": {
+      "match": "\\b([a-z_][A-Za-z0-9_]*)\\s*(?=\\()",
+      "captures": { "1": { "name": "entity.name.function.call.lugha" } }
+    },
+    "type": {
+      "name": "entity.name.type.lugha",
+      "match": "\\b[A-Z][A-Za-z0-9_]*\\b"
+    },
+    "number": {
+      "patterns": [
+        { "name": "constant.numeric.hex.lugha", "match": "\\b0x[0-9a-fA-F](?:_?[0-9a-fA-F])*\\b" },
+        { "name": "constant.numeric.binary.lugha", "match": "\\b0b[01](?:_?[01])*\\b" },
+        { "name": "constant.numeric.float.lugha", "match": "\\b[0-9]+\\.[0-9]+(?:[eE][+-]?[0-9]+)?\\b" },
+        { "name": "constant.numeric.decimal.lugha", "match": "\\b[0-9](?:_?[0-9])*\\b" }
+      ]
+    },
+    "operator": {
+      "patterns": [
+        { "name": "keyword.operator.range.lugha", "match": "\\.\\." },
+        { "name": "keyword.operator.lugha", "match": "=>|==|!=|<=|>=|&&|\\|\\||<<=?|[-+*/%&|^]=?|[<>!~=?]" }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        { "name": "punctuation.separator.lugha", "match": "[,;:]" },
+        { "name": "punctuation.accessor.lugha", "match": "\\." }
+      ]
+    },
+    "escape": {
+      "name": "constant.character.escape.lugha",
+      "match": "\\\\[ntr0\\\\\"']"
+    },
+    "string": {
+      "name": "string.quoted.double.lugha",
+      "begin": "\"",
+      "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.lugha" } },
+      "end": "\"|$",
+      "endCaptures": { "0": { "name": "punctuation.definition.string.end.lugha" } },
+      "patterns": [
+        { "include": "#escape" },
+        { "name": "constant.character.escape.lugha", "match": "\\{\\{|\\}\\}" },
+        { "include": "#interpolation" }
+      ]
+    },
+    "interpolation": {
+      "name": "meta.interpolation.lugha",
+      "begin": "\\{",
+      "beginCaptures": { "0": { "name": "punctuation.section.interpolation.begin.lugha" } },
+      "end": "\\}",
+      "endCaptures": { "0": { "name": "punctuation.section.interpolation.end.lugha" } },
+      "patterns": [
+        { "name": "constant.other.format-spec.lugha", "match": ":[^{}\"]*(?=\\})" },
+        { "include": "#braces" },
+        { "include": "#code" }
+      ]
+    },
+    "braces": {
+      "begin": "\\{",
+      "end": "\\}",
+      "patterns": [{ "include": "#braces" }, { "include": "#code" }]
+    },
+    "format-template": {
+      "comment": "A string literal right after `format(` is a template (spec §2): its braces are holes, never interpolations.",
+      "begin": "(?<!\\.)\\b(format)\\s*(\\()\\s*(\")",
+      "beginCaptures": {
+        "1": { "name": "support.function.format.lugha" },
+        "2": { "name": "punctuation.parenthesis.lugha" },
+        "3": { "name": "string.quoted.double.template.lugha punctuation.definition.string.begin.lugha" }
+      },
+      "end": "\"|$",
+      "endCaptures": { "0": { "name": "string.quoted.double.template.lugha punctuation.definition.string.end.lugha" } },
+      "contentName": "string.quoted.double.template.lugha",
+      "patterns": [
+        { "include": "#escape" },
+        { "name": "constant.character.escape.lugha", "match": "\\{\\{|\\}\\}" },
+        { "name": "constant.other.placeholder.lugha", "match": "\\{(?::[^{}\"]*)?\\}" }
+      ]
+    },
+    "char": {
+      "name": "string.quoted.single.lugha",
+      "begin": "'",
+      "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.lugha" } },
+      "end": "'|$",
+      "endCaptures": { "0": { "name": "punctuation.definition.string.end.lugha" } },
+      "patterns": [
+        { "name": "constant.character.escape.lugha", "match": "\\\\u\\{[0-9a-fA-F]{1,6}\\}" },
+        { "include": "#escape" }
+      ]
+    }
+  }
+}

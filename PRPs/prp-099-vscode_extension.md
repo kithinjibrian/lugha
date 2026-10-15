@@ -1,6 +1,6 @@
 ## FEATURE: A VS Code extension for Lugha — syntax highlighting, editing basics and `lughac check` diagnostics on open and save, in `editors/vscode/`.
 
-**Status:** proposed 2026-10-15 — session 139 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-15 ("build it then merge to main") — built in session 140; proposed in session 139 as PRP-098 and renumbered to 099 because a concurrent session also took 098 (`prp-098-init.md`); the user chose to renumber this one.
 **Milestone:** none (tooling, not a language milestone; no spec change, no tag).
 **Spec:** §2 (lexical structure: keywords, comments, literals, interpolation, format specifiers, `char`), §5 (`format` templates), §9 (JSON diagnostics, exit codes 0/1/2), §11 (no default entry point).
 
@@ -40,6 +40,7 @@ code --install-extension lugha-0.1.0.vsix
     - `src/diagnostics.ts` — pure: a JSON line → a plain record (file resolved, range in UTF-16 lines/columns, severity, code, message + help, related labels);
     - `src/targets.ts` — pure: `hasMain(text)`, which files to check for a saved file, validating `lugha.entries`;
     - `src/runner.ts` — runs `lughac` (Node `child_process.execFile`, no shell), cancellation, timeout, result kinds;
+    - `src/store.ts` — pure: which check reported what (design 5), added while building so ownership is tested without `vscode`;
     - `test/*.test.ts` (`node:test`), `test/fixtures/` (`.la` programs), `test/grammar/*.la` (grammar scope assertions).
   - Modified: `.github/workflows/ci.yml` (extension steps), `Cargo.toml` (`exclude = ["editors/"]`), `.gitignore` (`node_modules/`, `out/`, `*.vsix`), CLAUDE.md (tree, COMMANDS, STACK), README (an "Editor support" section), CHANGELOG, TODO, MEMORY, CONTEXT.
 - **Related existing code:** `src/driver/json.rs`, `src/driver/source.rs`, `src/driver/mod.rs` (exit codes, `--offline`), `src/lexer/` (what the grammar mirrors), `tests/programs/` (sample programs for grammar fixtures).
@@ -106,7 +107,7 @@ All **dev-only** (in `devDependencies`, not in the `.vsix`), all GPL-3.0-compati
 - `@types/vscode` (matching `engines.vscode` `^1.90.0`) — MIT — the extension API types.
 - `@types/node` 22.x — MIT — Node API types.
 - `vscode-tmgrammar-test` 0.1.x — MIT — grammar scope assertions.
-- `@vscode/vsce` 3.x — MIT — builds the `.vsix`.
+- `@vscode/vsce` 4.x — MIT — builds the `.vsix`. (Planned as 3.x; `npm audit` flagged a high-severity `braces` advisory in 3.x's tree, fixed in 4.0.0, which needs Node ≥ 22.)
 
 No Rust crates.
 
@@ -126,7 +127,7 @@ No Rust crates.
 
 ## TESTS TO WRITE
 Written before the code they cover; `npm test` compiles and runs them.
-- [ ] **`diagnostics.test.ts`** (pure):
+- [x] **`diagnostics.test.ts`** (pure):
   - the spec's E0401 JSON line → error, code `E0401`, range at the right UTF-16 columns, label in the message, one related label;
   - a line with `é`/`👋` before the span → UTF-16 columns differ from byte columns correctly;
   - `help` appended as `help: …`; a warning (`W0101`) → warning severity;
@@ -134,34 +135,41 @@ Written before the code they cover; `npm test` compiles and runs them.
   - skipped: not JSON, missing `message`, `<std>/math.la`;
   - `span: null` → line 1 of the target, plus a log entry;
   - two identical diagnostics from two targets → one.
-- [ ] **`targets.test.ts`** (pure):
+- [x] **`targets.test.ts`** (pure):
   - `hasMain`: `fun main()`, `fun main(): i32`, `public fun main()`, indented; not `// fun main()`, not `fun mainly()`, not `let s = "fun main()";` (only a line starting with `fun main`);
   - a file with main → itself; a module with entries → the entries; a module without entries → itself with E0303 dropped;
   - entries rejected: absolute, `../outside.la`, `src/main.txt`, missing file.
-- [ ] **`runner.test.ts`** (real `lughac` from `$LUGHAC`; skipped with a message when unset):
+- [x] **`store.test.ts`** (pure): a check's diagnostics per file; a new result clears the target's old files; a file two targets report keeps the other's, once; a deleted file is forgotten everywhere.
+- [x] **`runner.test.ts`** (real `lughac` from `$LUGHAC`; skipped with a message when unset):
   - a clean fixture → `ok`, no diagnostics;
   - a fixture with a type error in an imported module → `ok`, the diagnostic in the module's file;
   - a module fixture checked alone → E0303 present in raw output (the dropping is `targets`' job);
   - a `lugha.toml` with a git dependency not in the cache → E0325 and no `git` process (an empty `HOME`/cache dir);
   - a missing executable → `notFound`; bad usage forcing exit 2 (a nonexistent file) → `failed` with exit 2;
   - a second run for the same target cancels the first → the first is `cancelled`.
-- [ ] **`spec_keywords.test.ts`:** every keyword in §2's keyword block of `docs/specs/Language v16 Specification.md` appears in the grammar.
-- [ ] **Grammar** (`vscode-tmgrammar-test`, `test/grammar/*.la`): keywords and types; numbers in each form; a comment; a string with escapes, `{{`, an interpolation with a nested string and a `:>6` spec; a `format("{} {:>4}", a, b)` template; `'a'`, `'\n'`, `'\u{1F600}'`; `Shape.Circle`, `Some(x)`, a generic `Stack<T>`.
+- [x] **`spec_keywords.test.ts`:** every keyword in §2's keyword block of `docs/specs/Language v16 Specification.md` appears in the grammar.
+- [x] **Grammar** (`vscode-tmgrammar-test`, `test/grammar/*.la`): keywords and types; numbers in each form; a comment; a string with escapes, `{{`, an interpolation with a nested string and a `:>6` spec; a `format("{} {:>4}", a, b)` template; `'a'`, `'\n'`, `'\u{1F600}'`; `Shape.Circle`, `Some(x)`, a generic `Stack<T>`.
 - [ ] **Manual smoke checklist** (in the README, done once before merge): install the `.vsix`; open `tests/programs/m21/nested/main.la`, see highlighting; add an error to `geo.la`, save `main.la`, see it in `geo.la`; set `lugha.entries`, save `geo.la`, see the same; set `lugha.path` to a bad path, see one notification.
-- [ ] **Regression:** `cargo test` unchanged (nothing in `lughac` changes).
+- [x] **Regression:** `cargo test` unchanged (nothing in `lughac` changes).
+
+## BUILT (session 140)
+- As designed, plus `store.ts` and the vsce 4 change above.
+- The VS Code glue (`extension.ts`) was exercised with a stub `vscode` module (not committed): errors land in the imported file at UTF-16 columns, E0303 hidden for a lone module, a bad entry logged and skipped, one notification for a missing `lughac` over two saves, exit 2 → status warning and stderr logged. The `.vsix` installs into a clean extensions folder.
+- The manual checklist in a real VS Code window is left to the user (README "Manual check before a release").
+- `package.json` says `GPL-3.0-only`; the user confirms the variant against `LICENSE`.
 
 ## ROLLBACK PLAN
-- Branch `prp-098-vscode_extension` from `main`.
+- Branch `prp-099-vscode_extension` from `main`.
 - To abandon: delete the branch; after a merge, delete `editors/` and revert the CI, `Cargo.toml`, `.gitignore` and doc changes — nothing else depends on it.
 
 ## ACCEPTANCE CRITERIA
-- [ ] `npm test` in `editors/vscode` passes, with `LUGHAC` set, locally and in CI.
-- [ ] `npm run package` builds `lugha-0.1.0.vsix` with no runtime dependencies inside.
+- [x] `npm test` in `editors/vscode` passes, with `LUGHAC` set, locally and in CI.
+- [x] `npm run package` builds `lugha-0.1.0.vsix` with no runtime dependencies inside.
 - [ ] The manual smoke checklist passes.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass (unchanged).
-- [ ] Every exported TypeScript function has a `///`-style `/** … */` doc comment (CODE_STYLE's rule applied to TS).
-- [ ] No file over 500 lines.
-- [ ] CHANGELOG, README, CLAUDE.md updated.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` pass (unchanged).
+- [x] Every exported TypeScript function has a `///`-style `/** … */` doc comment (CODE_STYLE's rule applied to TS).
+- [x] No file over 500 lines.
+- [x] CHANGELOG, README, CLAUDE.md updated.
 
 ## VALIDATION
 - `cargo fmt --check`
