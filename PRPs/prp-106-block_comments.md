@@ -1,6 +1,6 @@
 ## FEATURE: Block comments — `/* … */`, nested, in the compiler and the VS Code grammar; milestone 76.
 
-**Status:** proposed 2026-10-16 — session 158 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-16 ("build it") — built in session 159; proposed in session 158.
 **Milestone:** 76 (one PRP; tag `m76` at merge). The first of two: `/** … */` doc comments in the language server follow as milestone 77 (its own discovery and PRP).
 **Spec:** `Language v16 Draft.md` decisions 42–46; spec §2 (whitespace and comments, lexical errors), §10 (a program), §11 (row 76).
 

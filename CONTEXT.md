@@ -6137,6 +6137,11 @@ Branch: main
 
 ---
 
+## SESSION 159 — 2026-10-16 — Block comments (milestone 76) — open
+Branch: prp-106-block_comments
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
