@@ -5172,6 +5172,11 @@ Branch: main
 
 ---
 
+## SESSION 126 — 2026-10-15 — Lazy std modules (milestone 60) — open
+Branch: prp-089-lazy_std
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–59 complete.** **Milestone 60 (lazy std modules) is proposed:** decisions 41–43 in `Language v15 Draft.md` and PRP-089. It waits for the user's explicit approval.
