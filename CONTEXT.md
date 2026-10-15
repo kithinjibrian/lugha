@@ -5901,6 +5901,11 @@ Branch: prp-102-lsp_definition
 
 ---
 
+## SESSION 150 — 2026-10-15 — CI once per PR, never waited on — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
