@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built. Milestone 76 (block comments) approved in session 159 (proposed in session 158), and built. Milestone 77 (doc comments) approved in session 161 (proposed in session 160), and built. Milestone 78 (snippets) approved in session 163 (proposed in session 162), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built. Milestone 76 (block comments) approved in session 159 (proposed in session 158), and built. Milestone 77 (doc comments) approved in session 161 (proposed in session 160), and built. Milestone 78 (snippets) approved in session 163 (proposed in session 162), and built. Milestone 79 (the add-missing-arms quick fix) proposed in session 166.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -145,6 +145,15 @@ Snippets for the editor; no language change.
 54. **Postfix `.match`:** on a value whose type is an enum, `Option` or `Result`, completion after `.` offers `match`, which replaces `value.` with a `match value { … }` holding every variant, a placeholder per payload slot.
 55. **Success:** milestone 78, tag `m78`. Tests: the snippets file expands and checks; `tests/lsp_snippets.rs` for the server's.
 
+## Decisions behind milestone 79 (discovery, session 166)
+
+The language server's first code actions: fixing a non-exhaustive `match`.
+
+56. **On an E0417**, `textDocument/codeAction` offers two quick fixes: **Add missing arms** — one arm per missing pattern, every one the checker found (not only the three the message lists), each pattern complete (`Rect(_, _)`, `Some(Dot)`); and **Add a `_` arm** — one catch-all. A match on integers, strings or interface values gets only the second.
+57. **Each new arm's body is `panic("not handled")`:** it fits any match's type, so the error clears at once, and running into one says why.
+58. **Placement:** the arms go before the match's closing `}`, one per line at its arms' indentation; a comma is added after the last existing arm if it lacks one. Only offered when the file's current check is free of syntax errors.
+59. **Success:** milestone 79, tag `m79`. Tests in `tests/lsp_code_actions.rs`.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -184,6 +193,7 @@ Snippets for the editor; no language change.
 | 76 | Block comments | `/* … */`, nested; E0113 |
 | 77 | Doc comments | `/** … */` before declarations, `@param`/`@returns`; shown by the language server; std and the prelude documented |
 | 78 | Snippets | static declaration and control-flow snippets; call placeholders; postfix `.match` |
+| 79 | Add missing arms | quick fixes on E0417: every missing arm, or a `_` arm, bodies `panic("not handled")` |
 
 ## §12 Open questions — additions
 
