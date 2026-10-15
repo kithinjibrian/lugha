@@ -1851,15 +1851,15 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–60 complete.** **Discovery for the rest of the v15 TODO is done** (session 127; decisions 44–52 in `Language v15 Draft.md`). The six PRPs are **not yet written** (the user interrupted):
-- PRP-090: milestone 61, one `iter_sum`;
-- PRP-091: milestone 62, C → Lugha (parsers, one UTF-8 decoder);
-- PRP-092: milestone 63, format widths in characters;
-- PRP-093: milestone 64, `std.env`;
-- PRP-094: milestone 65, `std.fs`;
-- PRP-095: milestone 66, `std.process` (its approval is the user's security review).
+**Milestones 51–60 complete.** **Proposed, waiting for one approval** (the user's choice in session 127: a PRP each, approved together, built back to back):
+- **PRP-090, milestone 61:** one `iter_sum`.
+- **PRP-091, milestone 62:** C → Lugha parsers and one UTF-8 decoder.
+- **PRP-092, milestone 63:** format widths in characters.
+- **PRP-093, milestone 64:** `std.env`.
+- **PRP-094, milestone 65:** `std.fs`.
+- **PRP-095, milestone 66:** `std.process`. **Its approval is the user's security review.**
 
-**Next:** write them from decisions 44–52, then get one approval and build them back to back.
+**On approval:** per PRP, a session, a branch, MEMORY plan and built entries (118 onwards), tests first, and a merge on green CI with its tag. Draft decisions 44–52.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 

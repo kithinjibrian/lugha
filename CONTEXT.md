@@ -5235,22 +5235,42 @@ Branch: main
 
 ---
 
-## SESSION 128 — 2026-10-15 — PRPs for milestones 61–66 — open
+## SESSION 128 — 2026-10-15 — PRPs for milestones 61–66 — closed
 Branch: main
+
+### WHAT WAS DONE
+- Wrote PRP-090 to PRP-095 from draft decisions 44–52 (all proposed).
+- PRP-095 (`std.process`) carries a full security section for the user's review: `posix_spawnp`, no shell, NUL rejected, close-on-exec, `poll`, `128 + signal`, UTF-8 output.
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-090-one_iter_sum.md`, `prp-091-c_to_lugha.md`, `prp-092-widths_in_chars.md`, `prp-093-std_env.md`, `prp-094-std_fs.md`, `prp-095-std_process.md`.
+- Modified: CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: the PRPs wait for approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-090 to PRP-095 (PRP-095 as a security review).
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–60 complete.** **Discovery for the rest of the v15 TODO is done** (session 127; decisions 44–52 in `Language v15 Draft.md`). The six PRPs are **not yet written** (the user interrupted):
-- PRP-090: milestone 61, one `iter_sum`;
-- PRP-091: milestone 62, C → Lugha (parsers, one UTF-8 decoder);
-- PRP-092: milestone 63, format widths in characters;
-- PRP-093: milestone 64, `std.env`;
-- PRP-094: milestone 65, `std.fs`;
-- PRP-095: milestone 66, `std.process` (its approval is the user's security review).
+**Milestones 51–60 complete.** **Proposed, waiting for one approval** (the user's choice in session 127: a PRP each, approved together, built back to back):
+- **PRP-090, milestone 61:** one `iter_sum`.
+- **PRP-091, milestone 62:** C → Lugha parsers and one UTF-8 decoder.
+- **PRP-092, milestone 63:** format widths in characters.
+- **PRP-093, milestone 64:** `std.env`.
+- **PRP-094, milestone 65:** `std.fs`.
+- **PRP-095, milestone 66:** `std.process`. **Its approval is the user's security review.**
 
-**Next:** write them from decisions 44–52, then get one approval and build them back to back.
+**On approval:** per PRP, a session, a branch, MEMORY plan and built entries (118 onwards), tests first, and a merge on green CI with its tag. Draft decisions 44–52.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 
