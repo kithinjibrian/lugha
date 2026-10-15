@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built. Milestone 76 (block comments) approved in session 159 (proposed in session 158), and built. Milestone 77 (doc comments) approved in session 161 (proposed in session 160), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built. Milestone 76 (block comments) approved in session 159 (proposed in session 158), and built. Milestone 77 (doc comments) approved in session 161 (proposed in session 160), and built. Milestone 78 (snippets) proposed in session 162.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -136,6 +136,15 @@ The second step the user asked for: JSDoc-style documentation.
 50. **std and the prelude are documented:** every public `std` function and every prelude helper completion offers gets a doc comment, its text from the spec's tables; a test fails on one without.
 51. **Success:** milestone 77, tag `m77`. Tests in `tests/lsp_docs.rs`; the spec's §2 names the convention.
 
+## Decisions behind milestone 78 (discovery, session 162)
+
+Snippets for the editor; no language change.
+
+52. **Static snippets** in the VS Code extension: declarations (`fun`, `main`, `struct`, `enum`, `impl`, `interface`, `import`, a `/** … */` doc comment) and control flow (`if`, `ifelse`, `while`, `for … of`, `for … in a..b`, `if let`, `let … else`, `match`). Each expands to valid Lugha once its placeholders are filled with their defaults; a test checks it with `lughac check`.
+53. **Call placeholders:** choosing a function, method, associated function or variant with a payload from completion inserts its call with a placeholder per parameter (`max(${1:a}, ${2:b})`), when the editor supports snippets and no `(` already follows.
+54. **Postfix `.match`:** on a value whose type is an enum, `Option` or `Result`, completion after `.` offers `match`, which replaces `value.` with a `match value { … }` holding every variant, a placeholder per payload slot.
+55. **Success:** milestone 78, tag `m78`. Tests: the snippets file expands and checks; `tests/lsp_snippets.rs` for the server's.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -174,6 +183,7 @@ The second step the user asked for: JSDoc-style documentation.
 | 75 | Partial syntax trees | the language server checks text with syntax errors; the CLI unchanged |
 | 76 | Block comments | `/* … */`, nested; E0113 |
 | 77 | Doc comments | `/** … */` before declarations, `@param`/`@returns`; shown by the language server; std and the prelude documented |
+| 78 | Snippets | static declaration and control-flow snippets; call placeholders; postfix `.match` |
 
 ## §12 Open questions — additions
 
