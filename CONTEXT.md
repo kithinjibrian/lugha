@@ -5577,6 +5577,11 @@ Branch: prp-097-set_current_dir
 
 ---
 
+## SESSION 139 — 2026-10-15 — Discovery: VS Code extension — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–68 complete** (tags `m67` shared boxes, `m68` changing directory). oyster has `cd` (uncommitted in the user's repo, with the rest of oyster). Nothing is proposed or in progress.
