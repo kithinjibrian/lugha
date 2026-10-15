@@ -5519,6 +5519,11 @@ Branch: prp-096-ref
 
 ---
 
+## SESSION 137 — 2026-10-15 — Discovery: changing the working directory — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Lugha v16 has begun: milestone 67 complete** (tag `m67`: shared boxes `Ref<T>`, PRP-096). v15 is frozen (milestones 51–66), and `lughac spec` prints `Language v16 Specification.md`. Nothing is proposed or in progress.
