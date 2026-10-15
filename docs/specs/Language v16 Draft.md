@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built. Milestone 76 (block comments) approved in session 159 (proposed in session 158), and built. Milestone 77 (doc comments) approved in session 161 (proposed in session 160), and built. Milestone 78 (snippets) approved in session 163 (proposed in session 162), and built. Milestone 79 (the add-missing-arms quick fix) approved in session 167 (proposed in session 166), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built. Milestone 76 (block comments) approved in session 159 (proposed in session 158), and built. Milestone 77 (doc comments) approved in session 161 (proposed in session 160), and built. Milestone 78 (snippets) approved in session 163 (proposed in session 162), and built. Milestone 79 (the add-missing-arms quick fix) approved in session 167 (proposed in session 166), and built. Milestone 80 (`lughac fmt`) proposed in session 168.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -154,6 +154,17 @@ The language server's first code actions: fixing a non-exhaustive `match`.
 58. **Placement:** the arms go before the match's closing `}`, one per line at its arms' indentation; a comma is added after the last existing arm if it lacks one. Only offered when the file's current check is free of syntax errors.
 59. **Success:** milestone 79, tag `m79`. Tests in `tests/lsp_code_actions.rs`.
 
+## Decisions behind milestone 80 (discovery, session 168)
+
+A formatter, tree-based like rustfmt (the user's choice over a token-based one); the editor's Format Document and format-on-save follow as milestone 81.
+
+60. **`lughac fmt [paths…] [--check]`** rewrites each `.la` file (a folder: every `.la` file under it) in the one canonical style; `--check` writes nothing and lists the files that would change (exit 1 if any). A file with syntax errors is reported, not formatted.
+61. **The style:** 4-space indents; at most 100 characters a line; `{` on the line of what opens it; a call, array, tuple, struct literal, parameter list or `import { … }` that doesn't fit breaks one element per line with a trailing comma; one space around binary operators and `=>`, after `,` and `:`; one blank line at most between items or statements, kept where written; parentheses only where precedence needs them; literals and names exactly as written.
+62. **Comments:** a comment on its own line goes above the item, statement, field, variant or arm after it; a comment at the end of a line stays at the end of that construct's line. A comment anywhere else (inside a multi-line expression) leaves that whole statement or item exactly as written.
+63. **Safety:** before writing, the formatter re-parses its output and compares the tree with the original's (positions ignored) and the comments' texts with the original's; on any difference it writes nothing and fails with an internal error (exit 2).
+64. **Idempotent:** formatting formatted code changes nothing.
+65. **Success:** milestone 80, tag `m80`. Tests: every program in the repo formats, verifies and is idempotent; style cases one by one.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -194,6 +205,7 @@ The language server's first code actions: fixing a non-exhaustive `match`.
 | 77 | Doc comments | `/** … */` before declarations, `@param`/`@returns`; shown by the language server; std and the prelude documented |
 | 78 | Snippets | static declaration and control-flow snippets; call placeholders; postfix `.match` |
 | 79 | Add missing arms | quick fixes on E0417: every missing arm, or a `_` arm, bodies `panic("not handled")` |
+| 80 | `lughac fmt` | the tree-based formatter: canonical style, comments kept, self-verified, `--check` |
 
 ## §12 Open questions — additions
 
