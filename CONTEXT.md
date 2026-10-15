@@ -4967,6 +4967,11 @@ Branch: prp-085-loop_ownership
 
 ---
 
+## SESSION 120 — 2026-10-15 — Discovery: nested `mut self` calls — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–56 complete** (tag `m56`: owning arrays once per loop, PRP-085). Copy-on-write now costs write loops almost nothing (matmul 131 ms eager, 133 ms now), and firefly keeps its copy-on-write gains.
