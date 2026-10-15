@@ -5071,6 +5071,11 @@ Branch: prp-086-nested_mut_self
 
 ---
 
+## SESSION 123 — 2026-10-15 — Numbers as `T` (milestone 58) — open
+Branch: prp-087-numbers_as_t
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–57 complete** (tag `m57`: nested `mut self` calls, PRP-086). **Approved and next, in one go** (session 122): milestone 58, numbers as `T` (PRP-087), then milestone 59, user-defined `Ord` (PRP-088). Each gets a session, a branch, a MEMORY plan entry (112, 114), tests first, and is merged on green CI and tagged.

@@ -1689,6 +1689,15 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** the M55 plan/commit split made re-reaching the receiver after its arguments safe; only an index between a change and the receiver can invalidate a planned bounds check.
 
+### 112. Numbers as `T` planned (session 121, approved session 122)
+
+**Decision (draft decisions 33–36, PRP-087):**
+- **Casts:** `as` with type parameters bounded by `Num`/`Float`, both ways, by §4's rules per instance.
+- **Literals:** any integer literal as `T: Num`, any float literal as `T: Float`; E0402 per instance, naming it.
+- **Success:** milestone 58, plus the glowworm/firefly cleanup.
+
+**Why:** generic numeric code counted up by `1` to make numbers; casts reuse the existing per-instance lowering.
+
 ---
 
 ## CURRENT PROJECT STATE
