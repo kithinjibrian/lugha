@@ -5,10 +5,11 @@ use std::path::{Path, PathBuf};
 
 use lsp_types::{Hover, HoverContents, MarkupContent, MarkupKind, Position, Range};
 
+use super::docs;
 use super::documents::normalize;
 use super::publish::{file_path, position};
 use crate::ast::{FunDecl, Item};
-use crate::check::{Name, Partial, Type};
+use crate::check::{self, Name, Partial, Type};
 use crate::driver::source::Source;
 use crate::modules::Module;
 use crate::span::Span;
@@ -22,6 +23,8 @@ pub(super) struct Snapshot {
     pub partial: Partial,
     /// The text had syntax errors: the tree is partial (milestone 75).
     pub broken: bool,
+    /// Each file's doc comments, found on first use (milestone 77).
+    pub docs: super::docs::DocCache,
 }
 
 impl Snapshot {
@@ -45,6 +48,8 @@ impl Snapshot {
 enum Found<'a> {
     Name(&'a Name),
     Expr(usize, &'a Type),
+    /// A struct, enum, interface or variant name: its declaration and line (v16).
+    Type(Span, String),
 }
 
 /// The hover at `at` in `file`, or `None` when nothing there has one.
@@ -68,6 +73,22 @@ pub(super) fn answer(snapshot: &Snapshot, file: &Path, at: Position) -> Option<H
         }
         consider(&mut best, *span, Found::Name(name));
     }
+    // Type and variant names (milestone 77): through their definitions.
+    let mut types: Vec<(Span, Span)> = partial
+        .definitions
+        .iter()
+        .filter(|(s, _)| contains(s))
+        .filter_map(|(s, t)| match t {
+            check::Target::Decl(d) => Some((*s, *d)),
+            check::Target::Module(_) => None,
+        })
+        .collect();
+    types.sort_by_key(|(s, _)| (s.end - s.start, s.start));
+    for (span, decl) in types {
+        if let Some(line) = type_line(snapshot, decl) {
+            consider(&mut best, span, Found::Type(decl, line));
+        }
+    }
     for (id, span) in partial.spans.iter().enumerate() {
         let (Some(span), Some(ty)) = (span, partial.types.get(id).and_then(Option::as_ref)) else {
             continue;
@@ -82,6 +103,19 @@ pub(super) fn answer(snapshot: &Snapshot, file: &Path, at: Position) -> Option<H
     for note in notes {
         value.push_str("\n\n");
         value.push_str(&note);
+    }
+    let documented = match &found {
+        Found::Name(Name::Function { decl, .. }) | Found::Type(decl, _) => Some(*decl),
+        // A field's name at its declaration.
+        Found::Name(Name::Field { .. }) => Some(span),
+        _ => None,
+    };
+    if let Some(doc) = documented.and_then(|d| docs::doc_for(snapshot, d)) {
+        let doc = doc.markdown();
+        if !doc.is_empty() {
+            value.push_str("\n\n");
+            value.push_str(&doc);
+        }
     }
     let range = Range {
         start: position(text, span.start - base),
@@ -107,11 +141,43 @@ fn consider<'a>(best: &mut Option<(Span, Found<'a>)>, span: Span, found: Found<'
     }
 }
 
+/// `struct Point`, `enum Shape`, `interface Area` or a variant as written
+/// (`Circle(f64)`), for the type or variant named at `decl`.
+fn type_line(snapshot: &Snapshot, decl: Span) -> Option<String> {
+    for program in snapshot.modules.iter().filter_map(|m| m.program.as_ref()) {
+        for item in &program.items {
+            match item {
+                Item::Struct(s) if s.name.span == decl => {
+                    return Some(format!("struct {}", s.name.name));
+                }
+                Item::Interface(i) if i.name.span == decl => {
+                    return Some(format!("interface {}", i.name.name));
+                }
+                Item::Enum(e) if e.name.span == decl => {
+                    return Some(format!("enum {}", e.name.name));
+                }
+                Item::Enum(e) => {
+                    if let Some(v) = e.variants.iter().find(|v| v.name.span == decl) {
+                        let file = snapshot.source.file_at(v.span.start);
+                        let text = file
+                            .text
+                            .get(v.span.start - file.base..v.span.end - file.base)?;
+                        return Some(text.split_whitespace().collect::<Vec<_>>().join(" "));
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    None
+}
+
 /// The code line and notes for what was found; `None` for a function whose
 /// declaration isn't in the program's source (an interface's method).
 fn render(snapshot: &Snapshot, found: &Found) -> Option<(String, Vec<String>)> {
     let partial = &snapshot.partial;
     Some(match found {
+        Found::Type(_, line) => (line.clone(), Vec::new()),
         Found::Name(Name::Local { name, ty, mutable }) => {
             let mutable = if *mutable { "mut " } else { "" };
             (format!("let {mutable}{name}: {ty}"), Vec::new())

@@ -19,6 +19,7 @@ impl Zip<A, B> {
     }
 }
 
+/** An iterator of pairs, one item from each, until either ends: `it.zip(other)`. */
 fun iter_zip<A, B>(it: Iter<A>, other: Iter<B>): Zip<A, B> = Zip { a: it, b: other };
 
 // `a`'s values, then `b`'s: `a.chain(b)`.
@@ -36,6 +37,7 @@ impl Chain<T> {
     }
 }
 
+/** The items of `it`, then those of `other`: `it.chain(other)`. */
 fun iter_chain<T>(it: Iter<T>, other: Iter<T>): Chain<T> = Chain { a: it, b: other, second: false };
 
 // Values while `keep` holds, then nothing more: `it.take_while(keep)`.
@@ -56,6 +58,7 @@ impl TakeWhile<T> {
     }
 }
 
+/** The items while `keep` holds; it stops at the first that fails: `it.take_while(keep)`. */
 fun iter_take_while<T>(it: Iter<T>, keep: fun(T): bool): TakeWhile<T> = TakeWhile { src: it, keep: keep, done: false };
 
 // Values from the first one `skip` fails for: `it.skip_while(skip)`.
@@ -76,6 +79,7 @@ impl SkipWhile<T> {
     }
 }
 
+/** The items from the first one `skip` doesn't hold for: `it.skip_while(skip)`. */
 fun iter_skip_while<T>(it: Iter<T>, skip: fun(T): bool): SkipWhile<T> = SkipWhile { src: it, skip: skip, started: false };
 
 // Each value's iterator, one after another: `it.flat_map(f)`. The current
@@ -100,9 +104,10 @@ impl FlatMap<T, U, I> {
     }
 }
 
+/** The items of each iterator `f` gives, in turn: `it.flat_map(f)`. */
 fun iter_flat_map<T, U, I: Iter<U>>(it: Iter<T>, f: fun(T): I): FlatMap<T, U, I> = FlatMap { src: it, f: f, cur: [] };
 
-// The first smallest value: `it.min()`.
+/** The smallest item (the first of equal ones), or `None` for none: `it.min()`. */
 fun iter_min<T: Ord>(it: Iter<T>): Option<T> {
     let mut best: T[] = [];
     for x of it {
@@ -114,7 +119,7 @@ fun iter_min<T: Ord>(it: Iter<T>): Option<T> {
     if best.len == 0 { None } else { Some(best[0]) }
 }
 
-// The first largest value: `it.max()`.
+/** The largest item (the last of equal ones), or `None` for none: `it.max()`. */
 fun iter_max<T: Ord>(it: Iter<T>): Option<T> {
     let mut best: T[] = [];
     for x of it {
@@ -126,7 +131,7 @@ fun iter_max<T: Ord>(it: Iter<T>): Option<T> {
     if best.len == 0 { None } else { Some(best[0]) }
 }
 
-// The index of the first value `f` holds for: `it.position(f)`.
+/** The index of the first item `f` holds for, or `None`: `it.position(f)`. */
 fun iter_position<T>(it: Iter<T>, f: fun(T): bool): Option<i64> {
     let mut at = 0;
     for x of it {

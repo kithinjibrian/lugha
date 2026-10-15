@@ -348,9 +348,13 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 77 — Doc comments ✅
+- [x] PRP-107: `/** */` with `@param`/`@returns` in hover, completion and signature help; std and the prelude documented; tagged `m77`
+- [ ] Later: a `lughac doc` tool (HTML from doc comments)
+
 ### Milestone 76 — Block comments ✅
 - [x] PRP-106: `/* … */`, nested, E0113; highlighted and toggled in VS Code; tagged `m76`
-- [ ] Next: `/** … */` doc comments in the language server (milestone 77; discovery first)
+- [x] `/** … */` doc comments in the language server — milestone 77, PRP-107
 
 ### Milestone 75 — Partial syntax trees ✅
 - [x] PRP-105: the language server checks the parser's recovered program; only syntax errors shown meanwhile; tagged `m75`

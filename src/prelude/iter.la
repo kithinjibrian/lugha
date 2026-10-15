@@ -19,6 +19,7 @@ impl ArrayIter<T> {
     }
 }
 
+/** An iterator over the elements of `xs`, in order: `xs.iter()`. */
 fun array_iter<T>(xs: T[]): ArrayIter<T> = ArrayIter { xs: xs, at: 0 };
 
 // The bytes of a string: `s.bytes()`.
@@ -34,6 +35,7 @@ impl Bytes {
     }
 }
 
+/** An iterator over the bytes of `s` (`u8`): `s.bytes()`. */
 fun str_bytes(s: string): Bytes = Bytes { s: s, at: 0 };
 
 // `from`, `from + 1`, … up to `to - 1`: `range(from, to)`.
@@ -49,6 +51,7 @@ impl Range {
     }
 }
 
+/** Used by `for i in a..b`: an iterator from `from` up to, not including, `to`. */
 fun range(from: i64, to: i64): Range = Range { at: from, end: to };
 
 // `f` of each value: `it.map(f)`.
@@ -61,6 +64,7 @@ impl Map<T, U> {
     };
 }
 
+/** An iterator of `f` applied to each item, lazily: `it.map(f)`. */
 fun iter_map<T, U>(it: Iter<T>, f: fun(T): U): Map<T, U> = Map { src: it, f: f };
 
 // The values `keep` is true for: `it.filter(keep)`.
@@ -77,6 +81,7 @@ impl Filter<T> {
     }
 }
 
+/** An iterator of the items `keep` accepts, lazily: `it.filter(keep)`. */
 fun iter_filter<T>(it: Iter<T>, keep: fun(T): bool): Filter<T> = Filter { src: it, keep: keep };
 
 // The first `n` values, then nothing more is pulled: `it.take(n)`.
@@ -92,6 +97,7 @@ impl Take<T> {
     }
 }
 
+/** An iterator of at most the first `n` items: `it.take(n)`. */
 fun iter_take<T>(it: Iter<T>, n: i64): Take<T> = Take { src: it, left: n };
 
 // Every value after the first `n`: `it.skip(n)`.
@@ -110,6 +116,7 @@ impl Skip<T> {
     }
 }
 
+/** An iterator without the first `n` items: `it.skip(n)`. */
 fun iter_skip<T>(it: Iter<T>, n: i64): Skip<T> = Skip { src: it, left: n };
 
 // A value with its position, counting from 0: what `it.enumerate()` yields.
@@ -127,9 +134,10 @@ impl Enumerate<T> {
     };
 }
 
+/** An iterator of `(index, item)` pairs, from 0: `it.enumerate()`. */
 fun iter_enumerate<T>(it: Iter<T>): Enumerate<T> = Enumerate { src: it, at: 0 };
 
-// Every value, in order: `it.collect()`.
+/** Every remaining item, in an array: `it.collect()`. */
 fun iter_collect<T>(it: Iter<T>): T[] {
     let mut out: T[] = [];
     for x of it {
@@ -138,6 +146,7 @@ fun iter_collect<T>(it: Iter<T>): T[] {
     out
 }
 
+/** How many items remain, using them up: `it.count()`. */
 fun iter_count<T>(it: Iter<T>): i64 {
     let mut n = 0;
     for x of it {
@@ -146,6 +155,7 @@ fun iter_count<T>(it: Iter<T>): i64 {
     n
 }
 
+/** Combines the items left to right, starting from `init`: `it.fold(init, f)`. */
 fun iter_fold<T, A>(it: Iter<T>, init: A, f: fun(A, T): A): A {
     let mut acc = init;
     for x of it {
@@ -154,6 +164,7 @@ fun iter_fold<T, A>(it: Iter<T>, init: A, f: fun(A, T): A): A {
     acc
 }
 
+/** Whether `f` holds for some item, stopping at the first: `it.any(f)`. */
 fun iter_any<T>(it: Iter<T>, f: fun(T): bool): bool {
     for x of it {
         if f(x) {
@@ -163,6 +174,7 @@ fun iter_any<T>(it: Iter<T>, f: fun(T): bool): bool {
     false
 }
 
+/** Whether `f` holds for every item, stopping at the first that fails: `it.all(f)`. */
 fun iter_all<T>(it: Iter<T>, f: fun(T): bool): bool {
     for x of it {
         if !f(x) {
@@ -172,6 +184,7 @@ fun iter_all<T>(it: Iter<T>, f: fun(T): bool): bool {
     true
 }
 
+/** The first item `f` holds for, or `None`: `it.find(f)`. */
 fun iter_find<T>(it: Iter<T>, f: fun(T): bool): Option<T> {
     for x of it {
         if f(x) {
@@ -183,6 +196,7 @@ fun iter_find<T>(it: Iter<T>, f: fun(T): bool): Option<T> {
 
 // `it.sum()` for every number type, through `T: Num` (v15, milestone 61);
 // `+` panics on overflow as usual.
+/** The sum of the items (`0` for none); panics on overflow: `it.sum()`. */
 fun iter_sum<T: Num>(it: Iter<T>): T {
     let mut total: T = 0;
     for x of it {

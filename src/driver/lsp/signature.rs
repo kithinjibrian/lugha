@@ -5,11 +5,12 @@
 use std::path::Path;
 
 use lsp_types::{
-    Documentation, ParameterInformation, ParameterLabel, Position, SignatureHelp,
-    SignatureInformation,
+    Documentation, MarkupContent, MarkupKind, ParameterInformation, ParameterLabel, Position,
+    SignatureHelp, SignatureInformation,
 };
 
 use super::completion::{Here, Receiver};
+use super::docs;
 use super::hover::{Snapshot, byte_offset, declaration};
 use crate::ast::Item;
 use crate::check::{Detail, Member, Name, Type};
@@ -66,13 +67,42 @@ pub(super) fn answer(
     let cursor = byte_offset(text, at)?;
     let call = call(text, cursor)?;
     let here = Here::new(snapshot, file, text)?;
-    let (label, doc) = signature(&here, &call)?;
-    let parameters = parameters(&label);
+    let (label, note, decl) = signature(&here, &call)?;
+    let doc = decl.and_then(|d| docs::doc_for(snapshot, d));
+    let mut parameters = parameters(&label);
+    // Each parameter's `@param` text under its highlight (milestone 77).
+    if let Some(doc) = &doc {
+        let units: Vec<u16> = label.encode_utf16().collect();
+        for p in &mut parameters {
+            if let ParameterLabel::LabelOffsets([a, b]) = p.label {
+                let text = String::from_utf16_lossy(&units[a as usize..b as usize]);
+                let name = text.split(':').next().unwrap_or_default().trim();
+                p.documentation = doc
+                    .param(name)
+                    .map(|t| Documentation::String(t.to_string()));
+            }
+        }
+    }
+    let summary = doc.map(|d| d.summary()).filter(|s| !s.is_empty());
+    let documentation = match (note, summary) {
+        (None, None) => None,
+        (Some(note), None) => Some(Documentation::String(note)),
+        (note, Some(summary)) => {
+            let value = match note {
+                Some(note) => format!("```lugha\n{note}\n```\n\n{summary}"),
+                None => summary,
+            };
+            Some(Documentation::MarkupContent(MarkupContent {
+                kind: MarkupKind::Markdown,
+                value,
+            }))
+        }
+    };
     let active = call.active.min(parameters.len().saturating_sub(1) as u32);
     Some(SignatureHelp {
         signatures: vec![SignatureInformation {
             label,
-            documentation: doc.map(Documentation::String),
+            documentation,
             parameters: Some(parameters),
             active_parameter: None,
         }],
@@ -148,7 +178,9 @@ fn call(text: &str, cursor: usize) -> Option<Call> {
 }
 
 /// The label and documentation for `call`.
-fn signature(here: &Here, call: &Call) -> Option<(String, Option<String>)> {
+/// The label, a note (the written header under a filled-in generic) and
+/// the declaration whose doc applies.
+fn signature(here: &Here, call: &Call) -> Option<(String, Option<String>, Option<Span>)> {
     let name = &here.text[call.name.0..call.name.1];
     let partial = &here.snapshot.partial;
     // The callee as the last good check resolved it, with its call's instance.
@@ -170,8 +202,8 @@ fn signature(here: &Here, call: &Call) -> Option<(String, Option<String>)> {
                         .filled(name, owner.as_deref(), args)
                 });
             return Some(match filled {
-                Some(text) => (text, Some(header)),
-                None => (header, None),
+                Some(text) => (text, Some(header), Some(*decl)),
+                None => (header, None, Some(*decl)),
             });
         }
     }
@@ -179,7 +211,7 @@ fn signature(here: &Here, call: &Call) -> Option<(String, Option<String>)> {
         return match here.receiver(dot)? {
             Receiver::Members(members) => {
                 let m = members.into_iter().find(|m| m.name == name)?;
-                Some((member_text(here, &m), None))
+                Some((member_text(here, &m), None, m.decl))
             }
             Receiver::Module(path) => {
                 let module = here.snapshot.modules.iter().find(|m| m.path == path)?;
@@ -193,7 +225,7 @@ fn signature(here: &Here, call: &Call) -> Option<(String, Option<String>)> {
         .find(|(n, ..)| n == name)
     {
         let params: Vec<String> = params.iter().map(Type::to_string).collect();
-        return Some((format!("{name}({}): {ret}", params.join(", ")), None));
+        return Some((format!("{name}({}): {ret}", params.join(", ")), None, None));
     }
     if let Some(found) = here.program().and_then(|p| function_named(here, p, name)) {
         return Some(found);
@@ -201,16 +233,18 @@ fn signature(here: &Here, call: &Call) -> Option<(String, Option<String>)> {
     INTRINSIC_SIGNATURES
         .iter()
         .find(|(n, _)| *n == name)
-        .map(|(_, form)| (form.to_string(), None))
+        .map(|(_, form)| (form.to_string(), None, None))
 }
 
 fn function_named(
     here: &Here,
     program: &crate::ast::Program,
     name: &str,
-) -> Option<(String, Option<String>)> {
+) -> Option<(String, Option<String>, Option<Span>)> {
     program.items.iter().find_map(|item| match item {
-        Item::Fun(f) if f.name.name == name => Some((here.header(f.name.span, name), None)),
+        Item::Fun(f) if f.name.name == name => {
+            Some((here.header(f.name.span, name), None, Some(f.name.span)))
+        }
         _ => None,
     })
 }

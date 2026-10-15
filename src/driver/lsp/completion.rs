@@ -4,8 +4,11 @@
 
 use std::path::Path;
 
-use lsp_types::{CompletionItem, CompletionItemKind as Kind, Position};
+use lsp_types::{
+    CompletionItem, CompletionItemKind as Kind, Documentation, MarkupContent, MarkupKind, Position,
+};
 
+use super::docs;
 use super::hover::{Snapshot, byte_offset, declaration};
 use crate::ast::{FunDecl, Item, Program, VisibilityKind};
 use crate::check::{self, Detail, Member, MemberKind, Name, Target, Type};
@@ -319,46 +322,48 @@ impl<'a> Here<'a> {
         };
         let mut out = Vec::new();
         for it in &program.items {
-            match it {
-                Item::Fun(f) if shown(&f.visibility) && f.name.name != "main" => {
-                    out.push(item(
-                        &f.name.name,
-                        Kind::FUNCTION,
-                        self.header(f.name.span, &f.name.name),
-                    ));
-                }
-                Item::Extern(e) if shown(&e.visibility) => {
-                    out.push(item(
-                        &e.name.name,
-                        Kind::FUNCTION,
-                        format!("extern fun {}", e.name.name),
-                    ));
-                }
+            let (name, kind, detail) = match it {
+                Item::Fun(f) if shown(&f.visibility) && f.name.name != "main" => (
+                    &f.name,
+                    Kind::FUNCTION,
+                    self.header(f.name.span, &f.name.name),
+                ),
+                Item::Extern(e) if shown(&e.visibility) => (
+                    &e.name,
+                    Kind::FUNCTION,
+                    format!("extern fun {}", e.name.name),
+                ),
                 Item::Struct(s) if shown(&s.visibility) => {
-                    out.push(item(
-                        &s.name.name,
-                        Kind::STRUCT,
-                        format!("struct {}", s.name.name),
-                    ));
+                    (&s.name, Kind::STRUCT, format!("struct {}", s.name.name))
                 }
                 Item::Enum(e) if shown(&e.visibility) => {
-                    out.push(item(
-                        &e.name.name,
-                        Kind::ENUM,
-                        format!("enum {}", e.name.name),
-                    ));
+                    (&e.name, Kind::ENUM, format!("enum {}", e.name.name))
                 }
-                Item::Interface(i) if shown(&i.visibility) => {
-                    out.push(item(
-                        &i.name.name,
-                        Kind::INTERFACE,
-                        format!("interface {}", i.name.name),
-                    ));
-                }
-                _ => {}
-            }
+                Item::Interface(i) if shown(&i.visibility) => (
+                    &i.name,
+                    Kind::INTERFACE,
+                    format!("interface {}", i.name.name),
+                ),
+                _ => continue,
+            };
+            out.push(self.documented(item(&name.name, kind, detail), Some(name.span)));
         }
         out
+    }
+
+    /// `item` with the doc comment of the declaration named at `decl`
+    /// (milestone 77), if it has one.
+    fn documented(&self, mut item: CompletionItem, decl: Option<Span>) -> CompletionItem {
+        let doc = decl
+            .and_then(|d| docs::doc_for(self.snapshot, d))
+            .map(|d| d.markdown());
+        item.documentation = doc.filter(|d| !d.is_empty()).map(|value| {
+            Documentation::MarkupContent(MarkupContent {
+                kind: MarkupKind::Markdown,
+                value,
+            })
+        });
+        item
     }
 
     fn items(&self, members: &[Member]) -> Vec<CompletionItem> {
@@ -376,7 +381,7 @@ impl<'a> Here<'a> {
                     Detail::Decl(decl) => self.header(*decl, &m.name),
                     Detail::Text(text) => text.clone(),
                 };
-                item(&m.name, kind, detail)
+                self.documented(item(&m.name, kind, detail), m.decl)
             })
             .collect()
     }

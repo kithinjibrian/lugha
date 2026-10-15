@@ -41,6 +41,9 @@ pub struct Member {
     pub name: String,
     pub kind: MemberKind,
     pub detail: Detail,
+    /// Its declaration's name, for its doc comment (v16, milestone 77);
+    /// `None` for a built-in.
+    pub decl: Option<Span>,
 }
 
 /// A struct's, enum's or interface's members.
@@ -133,6 +136,7 @@ impl Checker {
                     name: name.clone(),
                     kind: MemberKind::Field,
                     detail: Detail::Type(ty.clone()),
+                    decl: self.hover.fields.get(&(key.clone(), name.clone())).copied(),
                 })
                 .collect();
             members.extend(self.methods_of(key));
@@ -153,6 +157,11 @@ impl Checker {
                     name: name.clone(),
                     kind: MemberKind::Variant,
                     detail: Detail::Text(variant_text(name, payloads)),
+                    decl: self
+                        .hover
+                        .variants
+                        .get(&(key.clone(), name.clone()))
+                        .copied(),
                 })
                 .collect();
             members.extend(self.methods_of(key));
@@ -182,6 +191,7 @@ impl Checker {
                         &item.params,
                         &item.ret,
                     )),
+                    decl: Some(item.span),
                 })
                 .collect();
             out.insert(
@@ -210,6 +220,7 @@ impl Checker {
                     MemberKind::Associated
                 },
                 detail: Detail::Decl(m.span),
+                decl: Some(m.span),
             })
             .collect();
         methods.sort_by(|a, b| a.name.cmp(&b.name));
@@ -257,6 +268,7 @@ pub fn value_members(partial: &Partial, ty: &Type) -> Vec<Member> {
             name: "len".into(),
             kind: MemberKind::Field,
             detail: Detail::Type(Type::I64),
+            decl: None,
         });
     }
     for name in CANDIDATES.iter().chain(&MORE_CANDIDATES) {
@@ -269,6 +281,7 @@ pub fn value_members(partial: &Partial, ty: &Type) -> Vec<Member> {
                 name: name.to_string(),
                 kind: MemberKind::Method,
                 detail: Detail::Text(text),
+                decl: None,
             });
         } else if let Some(function) = helpers::helper_function(ty, name) {
             out.push(helper(partial, name, &function));
@@ -316,6 +329,7 @@ fn helper(partial: &Partial, name: &str, function: &str) -> Member {
         name: name.to_string(),
         kind: MemberKind::Method,
         detail,
+        decl: partial.prelude.get(function).copied(),
     }
 }
 
@@ -394,8 +408,11 @@ fun main() { }
                 name: "area".into(),
                 kind: MemberKind::Method,
                 detail: Detail::Text("fun area(self): f64".into()),
+                decl: members[0].decl,
             }]
         );
+        let at = members[0].decl.expect("its declaration");
+        assert_eq!(&SRC[at.start..at.end], "area");
     }
 
     #[test]

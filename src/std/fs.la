@@ -2,7 +2,11 @@
 // with the intrinsics (`read_file`, `write_file`, …). Nothing here deletes
 // recursively: `remove_dir` takes only an empty folder.
 
-// The names in folder `path`, sorted by their bytes, without `.` and `..`.
+/**
+ * The names in a folder, sorted by their bytes, without `.` and `..`.
+ * @param path the folder
+ * @returns the names, or `Err` with the system's message (or when a name isn't UTF-8)
+ */
 public fun list_dir(path: string): Result<string[], string> {
     let raw = $os.list_dir(path)?;
     let mut names: string[] = [];
@@ -17,10 +21,18 @@ public fun list_dir(path: string): Result<string[], string> {
     Ok(names.sort())
 }
 
-// Makes folder `path`; its parent must exist.
+/**
+ * Makes a folder; its parent must exist.
+ * @param path the folder to make
+ * @returns `Ok(0)`, or `Err` with the system's message
+ */
 public fun make_dir(path: string): Result<i64, string> = $os.make_dir(path);
 
-// Makes folder `path` and any missing parents; fine if it exists already.
+/**
+ * Makes a folder and any missing parents; fine if it exists already.
+ * @param path the folder to make
+ * @returns `Ok(0)`, or `Err` with the system's message
+ */
 public fun make_dirs(path: string): Result<i64, string> {
     let mut prefix = if path.starts_with("/") { "/" } else { "" };
     for part of path.split("/") {
@@ -35,17 +47,25 @@ public fun make_dirs(path: string): Result<i64, string> {
     Ok(0)
 }
 
-// Removes file (or symbolic link) `path`; never a folder.
+/**
+ * Removes a file (or a symbolic link); never a folder.
+ * @param path the file
+ * @returns `Ok(0)`, or `Err` with the system's message
+ */
 public fun remove_file(path: string): Result<i64, string> = $os.remove_file(path);
 
-// Removes folder `path`, which must be empty.
+/**
+ * Removes a folder, which must be empty: nothing here deletes recursively.
+ * @param path the folder
+ * @returns `Ok(0)`, or `Err` with the system's message
+ */
 public fun remove_dir(path: string): Result<i64, string> = $os.remove_dir(path);
 
-// Whether something exists at `path`, following symbolic links.
+/** Whether something exists at `path`, following symbolic links. */
 public fun exists(path: string): bool = $os.stat_kind(path) != 0;
 
-// Whether `path` is a folder.
+/** Whether `path` is a folder. */
 public fun is_dir(path: string): bool = $os.stat_kind(path) == 2;
 
-// Whether `path` is a regular file.
+/** Whether `path` is a regular file. */
 public fun is_file(path: string): bool = $os.stat_kind(path) == 1;

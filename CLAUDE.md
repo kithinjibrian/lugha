@@ -163,7 +163,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 - `editors/vscode/` — the VS Code extension (PRP-099, PRP-100): TypeScript on Node 22, one runtime dependency (`vscode-languageclient`, MIT) and dev dependencies (`typescript`, `@types/vscode`, `@types/node`, `vscode-tmgrammar-test`, `@vscode/vsce`), tests with `node:test`. It starts only `lughac lsp`, which never runs `git` or writes a file; changes to how it starts `lughac`, or to what the server may do, need the user's security review.
 
-The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestones 67–76 done: block comments `/* … */` (nested), partial syntax trees for the language server, signature help, completion, go-to-definition, hover and `lughac lsp`; `lughac init`; `env.set_current_dir`; shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
+The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestones 67–77 done: doc comments `/** … */` shown by the language server (std and the prelude documented), block comments `/* … */` (nested), partial syntax trees for the language server, signature help, completion, go-to-definition, hover and `lughac lsp`; `lughac init`; `env.set_current_dir`; shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -256,7 +256,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── template.rs  — `format` templates (v14): `pieces`, `holes`, `parts`, shared by the checker and codegen
 │   ├── diagnostic.rs — Diagnostic record (spec §9 fields), no rendering
 │   ├── lexer/       — mod.rs (lex, main loop), token.rs, punct.rs (operators), number.rs, string.rs,
-│   │                  interp.rs (string interpolation, E0111), format_spec.rs (the `FmtSpec` token, v13), char_lit.rs (`char` literals, E0112, v14); mod.rs also skips block comments, nested, E0113 (v16); string.rs also reads `format` templates raw (v14); `lex_bundled` lets `$` start a name in bundled sources (v15)
+│   │                  interp.rs (string interpolation, E0111), format_spec.rs (the `FmtSpec` token, v13), char_lit.rs (`char` literals, E0112, v14); mod.rs also skips block comments, nested, E0113, and `doc_comments` finds `/** */` spans (v16); string.rs also reads `format` templates raw (v14); `lex_bundled` lets `$` start a name in bundled sources (v15)
 │   ├── ast/         — mod.rs (items, statements), types.rs (written types), expr.rs (expressions, ExprId, StructLiteral, Part),
 │   │                  pattern.rs (arms, nested patterns, guards), header.rs (imports, type parameters, bounds,
 │   │                  interfaces)
@@ -334,7 +334,7 @@ pub fn parse_number(src: &str) -> i64 {
 │                      `lugha.lock`, `lughac update`), init.rs (v16: `lughac init`, the program and library layouts),
 │                      lsp/ (v16: `lughac lsp`: mod.rs the stdio loop and capabilities, server.rs state and debounced
 │                      scheduling, documents.rs open text and `file:` URIs, targets.rs which mains to check, check.rs one
-│                      guarded offline check via `pipeline::front_partial`, publish.rs reports → UTF-16 LSP diagnostics, per-check store, hover.rs `Snapshot` and the hover under a position, definition.rs the declaration of the name under a position, completion.rs members and names from the last check that parsed (`Here`, `Receiver`, shared with signature help), signature.rs the call around the cursor and its signature)
+│                      guarded offline check via `pipeline::front_partial`, publish.rs reports → UTF-16 LSP diagnostics, per-check store, hover.rs `Snapshot` and the hover under a position, definition.rs the declaration of the name under a position, completion.rs members and names from the last check that parsed (`Here`, `Receiver`, shared with signature help), signature.rs the call around the cursor and its signature, docs.rs doc comments: parsing, `@param`/`@returns`, attachment, a per-snapshot cache)
 ├── tests/
 │   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
 │   ├── spec.rs      — spec §10 acceptance: programs and expected results extracted from lugha::SPEC
@@ -351,6 +351,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── lsp.rs       — `lughac lsp` over real stdio: live diagnostics, unsaved text, modules through seen mains, entries, offline (v16)
 │   ├── lsp_hover.rs — hover through `lughac lsp`: bindings, functions and methods, fields, expressions, notes, with errors (v16)
 │   ├── lsp_definition.rs — go-to-definition through `lughac lsp`: names, types, fields, variants, modules, none for std (v16)
+│   ├── lsp_docs.rs  — doc comments through `lughac lsp`: hover, completion, signature help, type and variant names, the library (v16)
 │   ├── lsp_partial.rs — the language server in files with syntax errors: only syntax errors shown, hover, definitions, completion, signature help (v16)
 │   ├── lsp_signature.rs — signature help through `lughac lsp`: functions, generics filled in, methods, modules, variants, built-ins, intrinsics (v16)
 │   ├── lsp_completion.rs — completion through `lughac lsp`: members, modules, variants, names in scope, while the text doesn't parse (v16)

@@ -80,6 +80,10 @@ impl Checker {
             .map(|(a, t)| (a, Expect::of(t.clone())))
             .collect();
         self.callees.insert(call.id, key.clone());
+        // Hover, definitions and docs reach the prelude function (v16).
+        if let Some(decl) = self.functions.get(&key).map(|sig| sig.span) {
+            self.hover.function(name.span, decl, Some(call));
+        }
         Some(
             match self.infer(call, &generics, bound, Some((&ret, expect)), &inputs) {
                 Some(targs) => {

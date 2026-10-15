@@ -41,4 +41,5 @@ enum Ordering { Less, Equal, Greater }
 
 // `xs.sort()`: `xs` in ascending order, stably, for any `T: Ord` (v15,
 // milestone 59), through `core.la`'s `sort_by`.
+/** A sorted copy, stable, in the type's order (`<`, or its `cmp`): `xs.sort()`. */
 fun sort<T: Ord>(xs: T[]): T[] = sort_by(xs, fun(a: T, b: T): bool = a < b);

@@ -1,6 +1,6 @@
 ## FEATURE: Doc comments — `/** … */` before a declaration, Markdown with `@param`/`@returns`, shown by the language server; std and the prelude documented; milestone 77.
 
-**Status:** proposed 2026-10-16 — session 160 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-16 ("build it") — built in session 161; proposed in session 160.
 **Milestone:** 77 (one PRP; tag `m77` at merge). The second of the two steps the user asked for (milestone 76 added block comments).
 **Spec:** `Language v16 Draft.md` decisions 47–51; spec §2 (comments: the doc-comment convention), §9 (the `lughac lsp` paragraph), §11 (row 77).
 
@@ -79,21 +79,28 @@ None.
 - Doc text comes from the user's files and the bundled sources and is sent to the editor as Markdown, which VS Code renders without HTML or scripts (`MarkupContent`); nothing is executed. No new reads, runs or writes.
 
 ## TESTS TO WRITE
-- [ ] **`lexer` unit tests:** `doc_comments` finds `/** a */` and nested ones, skips `/**/`, `/* */`, and `/**` inside strings and line comments.
-- [ ] **`driver::lsp::docs` unit tests:** text cleanup (star prefixes, indentation, blank lines); `@param`/`@returns` with continuation lines; unknown tags kept; attachment through `public`, a blank line, and broken by code between.
-- [ ] **`tests/lsp_docs.rs`** (real server): hover on a documented function, method, struct, field, enum, variant and interface method (and on a type and a variant name in use); completion items carry the documentation; signature help carries the description and the active `@param`; an undocumented declaration shows no doc; `math.sqrt`, `xs.map` and `s.split` show their library docs.
-- [ ] **Library coverage test:** every `public` std function and method, and every prelude function behind a completion helper or callable by name, has a doc comment.
-- [ ] **Regression:** every existing test passes (the std and prelude still check; CLI output unchanged).
+- [x] **`lexer` unit tests:** `doc_comments` finds `/** a */` and nested ones, skips `/**/`, `/* */`, and `/**` inside strings and line comments.
+- [x] **`driver::lsp::docs` unit tests:** text cleanup (star prefixes, indentation, blank lines); `@param`/`@returns` with continuation lines; unknown tags kept; attachment through `public`, a blank line, and broken by code between.
+- [x] **`tests/lsp_docs.rs`** (real server): hover on a documented function, method, struct, field, enum, variant and interface method (and on a type and a variant name in use); completion items carry the documentation; signature help carries the description and the active `@param`; an undocumented declaration shows no doc; `math.sqrt`, `xs.map` and `s.split` show their library docs.
+- [x] **Library coverage test:** every `public` std function and method, and every prelude function behind a completion helper or callable by name, has a doc comment.
+- [x] **Regression:** every existing test passes (the std and prelude still check; CLI output unchanged).
 - [ ] **Manual check** (extension README), by the user: write a `/** */` on a function and see it in hover, completion and signature help; hover `math.sqrt`.
+
+## BUILT (session 161)
+- As designed: `lexer::doc_comments`; `driver/lsp/docs.rs` (`Doc`, `parse`, `attached`, `DocCache`, `doc_for`); docs in hover (plus `struct`/`enum`/`interface`/variant names through `definitions`), completion (`documentation`, `Member.decl`), signature help (description, written header for a filled-in generic, per-parameter `@param`). Helper calls (`xs.map`, `it.filter`) now record their name, so hover and docs reach the prelude function.
+- Library: 44 doc comments in `src/std/` (every public function and method), 67 in `src/prelude/` (every top-level function: user-facing helpers describe their method form, `xs.map(f)`; internal ones say what uses them). Implementation notes that were `//` comments above a function are kept, moved above its doc (a comment between a doc and its declaration would detach it).
+- Tests: lexer (1), `driver::lsp::docs` (4, incl. the coverage test and a check that it catches a miss), `tests/lsp_docs.rs` (5).
+- **Visible side effect:** the bundled sources grew, so a panic inside them reports a later line (`<prelude>:135:9` → `154:9`, `<std>/math.la:40:9` → `60:9`, …); four `.stderr` expectations updated after checking each still names the same statement. Noted in the CHANGELOG.
+- The manual check in VS Code is left to the user (extension README, step 11).
 
 ## ROLLBACK PLAN
 - Branch `prp-107-doc_comments` from `main`; tag `m77`.
 - To abandon before merge: delete the branch. After: revert the merge; the docs in std and the prelude are comments and harmless either way.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test` (CI in the background).
-- [ ] Spec at milestone 77; docs updated.
-- [ ] No file over 500 lines (the std/prelude files included); no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test` (CI in the background).
+- [x] Spec at milestone 77; docs updated.
+- [x] No file over 500 lines (the std/prelude files included); no new dependencies; no `unsafe`.
 - [ ] The manual check passes in VS Code.
 
 ## VALIDATION
