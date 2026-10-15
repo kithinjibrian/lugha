@@ -1,6 +1,6 @@
 ## FEATURE: `lughac init` — start a Lugha program or library in a folder, with the right files for each; milestone 69.
 
-**Status:** approved 2026-10-15 — session 140 ("build"); proposed in session 139.
+**Status:** approved 2026-10-15 ("approve PRP-098 lughac init, build it") — built in session 142; proposed in session 139.
 **Milestone:** 69 (one PRP; tag `m69` at merge)
 **Spec:** `Language v16 Draft.md` decisions 9–12; spec §6 (packages, `[package]`), §9 (the CLI table), §11 (row 69).
 

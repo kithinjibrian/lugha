@@ -5688,6 +5688,11 @@ Branch: main
 
 ---
 
+## SESSION 142 — 2026-10-15 — `lughac init` (milestone 69) — open
+Branch: prp-098-init
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–68 complete.** **Milestone 69, `lughac init` (programs and libraries), is proposed:** v16 draft decisions 9–12 and PRP-098. It waits for the user's approval.
