@@ -9,6 +9,7 @@
 mod check;
 mod completion;
 mod definition;
+mod docs;
 mod documents;
 mod hover;
 mod publish;

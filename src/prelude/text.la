@@ -24,8 +24,10 @@ impl Chars {
     }
 }
 
+/** An iterator over the characters of `s` (UTF-8 decoded): `s.chars()`. */
 fun str_chars(s: string): Chars = Chars { s: s, at: 0 };
 
+/** How many characters `s` has, which may be fewer than its bytes: `s.char_count()`. */
 fun str_char_count(s: string): i64 {
     let mut n = 0;
     for c of str_chars(s) {
@@ -34,7 +36,7 @@ fun str_char_count(s: string): i64 {
     n
 }
 
-// `n` as a `char` when it is a Unicode scalar value.
+/** The character with code point `n`, or `None` for a surrogate or a value above `0x10FFFF`. */
 fun char_from(n: u32): Option<char> {
     if n < 55296 || (n >= 57344 && n <= 1114111) {
         return Some(n as char);
@@ -42,29 +44,35 @@ fun char_from(n: u32): Option<char> {
     None
 }
 
+/** Whether `c` is `0` to `9`: `c.is_digit()`. */
 fun char_is_digit(c: char): bool = c >= '0' && c <= '9';
 
+/** Whether `c` is a space, tab, line break or another ASCII/Latin-1 space: `c.is_whitespace()`. */
 fun char_is_whitespace(c: char): bool {
     let n = c as u32;
     n == 32 || (n >= 9 && n <= 13) || n == 133 || n == 160
 }
 
+/** Whether `c` is an upper-case ASCII or Latin-1 letter: `c.is_upper()`. */
 fun char_is_upper(c: char): bool {
     let n = c as u32;
     (n >= 65 && n <= 90) || (n >= 192 && n <= 222 && n != 215)
 }
 
+/** Whether `c` is a lower-case ASCII or Latin-1 letter: `c.is_lower()`. */
 fun char_is_lower(c: char): bool {
     let n = c as u32;
     (n >= 97 && n <= 122) || n == 181 || (n >= 223 && n <= 255 && n != 247)
 }
 
+/** Whether `c` is an ASCII or Latin-1 letter: `c.is_alphabetic()`. */
 fun char_is_alphabetic(c: char): bool {
     let n = c as u32;
     char_is_upper(c) || char_is_lower(c) || n == 170 || n == 186
 }
 
 // Latin-1's cased letters pair 32 apart; `ß`, `ÿ` and `µ` have no partner here.
+/** The upper-case letter for `c` in ASCII and Latin-1; any other character as it is: `c.to_upper()`. */
 fun char_to_upper(c: char): char {
     let n = c as u32;
     if (n >= 97 && n <= 122) || (n >= 224 && n <= 254 && n != 247) {
@@ -73,6 +81,7 @@ fun char_to_upper(c: char): char {
     c
 }
 
+/** The lower-case letter for `c` in ASCII and Latin-1; any other character as it is: `c.to_lower()`. */
 fun char_to_lower(c: char): char {
     let n = c as u32;
     if (n >= 65 && n <= 90) || (n >= 192 && n <= 222 && n != 215) {
@@ -86,6 +95,7 @@ fun char_to_lower(c: char): char {
 // the end) and how many bytes remain from the first, its length and code,
 // or (0, 0) when it isn't valid there: no overlong forms, no surrogates,
 // nothing above U+10FFFF, no truncation.
+/** Used by `chars` and `string_from_utf8`: the length and code point of the UTF-8 sequence starting with these bytes; length 0 for an invalid one. */
 fun utf8_decode(b0: u32, b1: u32, b2: u32, b3: u32, avail: i64): (i64, u32) {
     if b0 < 128 {
         return (1, b0);
@@ -126,13 +136,14 @@ fun utf8_decode(b0: u32, b1: u32, b2: u32, b3: u32, avail: i64): (i64, u32) {
     (n, code)
 }
 
-// Byte `i` of `s`, or 0 past its end.
+/** Used by the decoder: byte `i` of `s`, or 0 past its end. */
 fun text_byte(s: string, i: i64): u32 = if i < s.len { s[i] as u32 } else { 0 };
 
-// Byte `i` of `b`, or 0 past its end.
+/** Used by the decoder: byte `i` of `b`, or 0 past its end. */
 fun bytes_byte(b: u8[], i: i64): u32 = if i < b.len { b[i] as u32 } else { 0 };
 
 // `string_from_utf8(bytes)` (v14; in Lugha since v15, milestone 62).
+/** Used by `string_from_utf8(data)`: the text, or `Err` naming the first invalid byte. */
 fun text_from_utf8(bytes: u8[]): Result<string, string> {
     let mut i = 0;
     while i < bytes.len {
@@ -149,6 +160,7 @@ fun text_from_utf8(bytes: u8[]): Result<string, string> {
 // `parse_i64(s)` (v3; in Lugha since v15, milestone 62): an optional `-`,
 // then one or more digits and nothing else. It accumulates negatively,
 // so `i64.MIN` fits, and checks before each step, so overflow is `None`.
+/** Used by `parse_i64(s)`: the number `s` writes in decimal (an optional `-`), or `None`. */
 fun text_parse_i64(s: string): Option<i64> {
     let negative = s.len > 0 && s[0] == 45;
     let mut i = if negative { 1 } else { 0 };
@@ -179,6 +191,7 @@ fun text_parse_i64(s: string): Option<i64> {
 
 // `parse_u64(s)` (v10; in Lugha since v15, milestone 62): one or more
 // digits and nothing else, checked before each step.
+/** Used by `parse_u64(s)`: the number `s` writes in decimal, or `None`. */
 fun text_parse_u64(s: string): Option<u64> {
     if s.len == 0 {
         return None;

@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Changed
+- A panic inside the prelude or a std module reports a later line than before (`<prelude>:154:9` instead of `135:9`, …): the bundled sources gained doc comments; the panics and their messages are unchanged
 - The prelude moved into `src/prelude/`: `prelude.la` is `core.la`, and `prelude_iter.la`, `prelude_more.la`, `prelude_text.la` and `prelude_ops.la` are `iter.la`, `more.la`, `text.la` and `ops.la`; `lugha::PRELUDE` and compiled programs are unchanged
 - `Checked` moved verbatim from `check/mod.rs` into `check/checked.rs` (approved split; `check/mod.rs` had reached 300 lines).
 - Checker housekeeping: function bodies moved to `check/body.rs` and the array built-in methods to `check/builtins.rs`, keeping `stmt.rs` and `method_calls.rs` well under 300 lines
@@ -18,6 +19,7 @@ Never deleted. Older entries are never modified.
 - The language server published a `lugha.toml` error (E0325) to nothing once a program with loader errors was checked: the prelude's offsets overlapped the manifests'. The server now places the prelude after every loaded file (`modules::with_prelude_at`); the CLI never checked such programs and is unchanged
 
 ### Added
+- Doc comments: `/** … */` right before a declaration, in Markdown with `@param` and `@returns`, show in `lughac lsp`'s hover (also on type and variant names now), completion items and signature help (the active parameter's text included). Every public std function and method and every prelude function is documented, enforced by a test — **milestone 77 complete**
 - Block comments `/* … */`: over any number of lines, nesting, wherever whitespace may be; `/**` is an ordinary one for now. An unclosed one is E0113 at the outermost open `/*`. Inside an interpolation one ends with its line, as the string does (E0102). The VS Code grammar highlights them (nested too) and `Shift+Alt+A` toggles them — **milestone 76 complete**
 - Partial syntax trees for `lughac lsp`: the parser's recovered program (`parse_partial_from`; every import, item and statement that parsed) is checked while a file has syntax errors, so hover, go-to-definition, completion and signature help keep working everywhere but the broken statement; only the syntax errors are shown meanwhile. A module with a syntax error now has its imports followed in the server. `lughac check`, `build` and `run` are unchanged — **milestone 75 complete**
 - Signature help in `lughac lsp` (on `(` and `,`): the innermost call's signature with its active parameter — declared functions and methods as written, generic calls filled in when the last good check knew the instance, variants, built-ins and intrinsics (their spec call forms, kept in sync by a test). The checker's partial results gain each function's parameter names and types (`Sig`) — **milestone 74 complete**

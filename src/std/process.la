@@ -5,20 +5,33 @@
 // path. The program gets this one's environment, and only stdin, stdout
 // and stderr: every other descriptor is closed on exec.
 
-// What a finished program left: its exit code (`128 + n` when signal `n`
-// ended it), and everything it wrote to stdout and stderr.
+/** What a finished program left: its exit code (`128 + n` when signal `n` ended it), and everything it wrote to stdout and stderr. */
 public struct Output { public code: i32, public stdout: string, public stderr: string }
 
-// Runs `cmd` with `args`, its stdin empty, capturing its output. `Err` only
-// when it couldn't start or its output isn't UTF-8; any exit code is `Ok`.
+/**
+ * Runs a program with an argument list, its stdin empty, capturing its output. Never through a shell: `cmd` and each argument reach it exactly as given; a `cmd` without `/` is looked up on `PATH`.
+ * @param cmd the program
+ * @param args its arguments
+ * @returns its `Output` (any exit code is `Ok`), or `Err` when it couldn't start or its output isn't UTF-8
+ */
 public fun run(cmd: string, args: string[]): Result<Output, string> = spawn(cmd, args, "", 1);
 
-// `run`, with `input` written to the program's stdin.
+/**
+ * `run`, with `input` written to the program's stdin.
+ * @param cmd the program
+ * @param args its arguments
+ * @param input what it reads on stdin
+ * @returns its `Output`, or `Err` when it couldn't start or its output isn't UTF-8
+ */
 public fun run_with(cmd: string, args: string[], input: string): Result<Output, string> =
     spawn(cmd, args, input, 2);
 
-// Runs `cmd` with `args`, sharing this program's stdin, stdout and stderr,
-// and gives its exit code.
+/**
+ * Runs a program sharing this one's stdin, stdout and stderr, and waits for it.
+ * @param cmd the program
+ * @param args its arguments
+ * @returns its exit code, or `Err` when it couldn't start
+ */
 public fun call(cmd: string, args: string[]): Result<i32, string> {
     let (code, _, _) = $os.spawn(cmd, args, "", 0)?;
     Ok(code)

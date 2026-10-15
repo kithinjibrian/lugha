@@ -1897,11 +1897,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned in `lexer/mod.rs::skip_block_comment` (a depth counter, no recursion; nothing special inside but `/*` and `*/`). **Correction found while building:** a line break inside an interpolation is E0102 (the string ends), not E0111 as the draft first said; inside an interpolation the comment stops at its line, so that existing rule applies. VS Code: `comment.block.lugha` (nested) and `blockComment` in the language configuration.
 
+### 147. Doc comments planned (session 160, approved session 161)
+
+**Decision:** v16 draft decisions 47–51: `/** … */` before any named declaration, Markdown with `@param`/`@returns` (JSDoc style, the user's choice), shown in hover, completion and signature help; hover on type and variant names; std and the prelude documented.
+
+### 148. Doc comments — milestone 77 (PRP-107)
+
+**Decision:** built as planned. `lexer::doc_comments` (the lexer's own scan records `/**` spans), `driver/lsp/docs.rs` (parse, attach through whitespace and `fun`/`struct`/… /`public`, a per-snapshot `DocCache`), `Member.decl` for fields, variants and helpers; helper calls now record their name for hover. Library: every public std function and method and every prelude function has a doc (a unit test fails otherwise); implementation `//` notes kept above the docs, since anything between a doc and its declaration detaches it. **Visible side effect:** panic locations inside bundled sources moved down (four `.stderr` expectations updated, same statements).
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 77 complete**: PRP-107 doc comments
 - **Milestone 76 complete**: PRP-106 block comments
 - **Milestone 75 complete**: PRP-105 partial syntax trees
 - **Milestone 74 complete**: PRP-104 signature help

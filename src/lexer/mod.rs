@@ -50,15 +50,17 @@ pub fn lex_bundled(source: &str) -> Result<(Vec<Token>, Vec<Diagnostic>), Vec<Di
     lex_with(source, true)
 }
 
+/// The spans of `source`'s doc comments: block comments starting `/**`,
+/// other than `/**/` (v16, milestone 77). Found by the lexer's own scan, so
+/// strings and line comments are respected; errors elsewhere don't matter.
+pub fn doc_comments(source: &str) -> Vec<Span> {
+    let mut lexer = Lexer::new(source, true);
+    lexer.run();
+    lexer.docs
+}
+
 fn lex_with(source: &str, bundled: bool) -> Result<(Vec<Token>, Vec<Diagnostic>), Vec<Diagnostic>> {
-    let mut lexer = Lexer {
-        src: source,
-        pos: 0,
-        tokens: Vec::new(),
-        diagnostics: Vec::new(),
-        interp: Vec::new(),
-        bundled,
-    };
+    let mut lexer = Lexer::new(source, bundled);
     lexer.run();
     if lexer
         .diagnostics
@@ -82,6 +84,22 @@ struct Lexer<'a> {
     interp: Vec<interp::Interp>,
     /// A bundled source, where `$` may start an identifier (v15).
     bundled: bool,
+    /// Doc comments seen, outermost only (v16).
+    docs: Vec<Span>,
+}
+
+impl<'a> Lexer<'a> {
+    fn new(src: &'a str, bundled: bool) -> Lexer<'a> {
+        Lexer {
+            src,
+            pos: 0,
+            tokens: Vec::new(),
+            diagnostics: Vec::new(),
+            interp: Vec::new(),
+            bundled,
+            docs: Vec::new(),
+        }
+    }
 }
 
 impl Lexer<'_> {
@@ -180,6 +198,10 @@ impl Lexer<'_> {
                     i += 2;
                     if depth == 0 {
                         self.pos = i;
+                        // `/**…*/` but not `/**/` documents what follows (v16).
+                        if bytes.get(start + 2) == Some(&b'*') && i - start > 4 {
+                            self.docs.push(Span::new(start, i));
+                        }
                         return;
                     }
                 }
@@ -407,5 +429,27 @@ mod tests {
             .collect();
         // The line break ends the string, as any line break there does.
         assert!(codes.contains(&"E0102"), "{codes:?}");
+    }
+    #[test]
+    fn doc_comments_are_the_block_comments_starting_with_two_stars_v16() {
+        let texts = |src: &str| -> Vec<String> {
+            super::doc_comments(src)
+                .iter()
+                .map(|s| src[s.start..s.end].to_string())
+                .collect()
+        };
+        assert_eq!(texts("/** a */ fun f() {}"), ["/** a */"]);
+        assert_eq!(texts("/** a /* b */ c */ x"), ["/** a /* b */ c */"]);
+        assert!(
+            texts("/**/ /* x */ /*** stars */")
+                .iter()
+                .all(|t| t.starts_with("/***"))
+        );
+        assert_eq!(
+            texts("let s = \"/** no */\"; // /** nor */\n"),
+            Vec::<String>::new()
+        );
+        // Found even when the file has errors elsewhere.
+        assert_eq!(texts("/** kept */ fun @"), ["/** kept */"]);
     }
 }

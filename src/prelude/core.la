@@ -11,7 +11,10 @@
 // `Result.` in programs, and `?` returns an `Err` early.
 enum Result<T, E> { Ok(T), Err(E) }
 
-// `f` applied to each element, in order.
+/**
+ * A new array of `f` applied to each element, in order: `xs.map(f)`.
+ * @param f the function for each element
+ */
 fun map<T, U>(xs: T[], f: fun(T): U): U[] {
     let mut out: U[] = [];
     for x of xs {
@@ -20,7 +23,10 @@ fun map<T, U>(xs: T[], f: fun(T): U): U[] {
     out
 }
 
-// The elements for which `keep` is true, in order.
+/**
+ * A new array of the elements `keep` accepts, in order: `xs.filter(keep)`.
+ * @param keep true for an element to keep
+ */
 fun filter<T>(xs: T[], keep: fun(T): bool): T[] {
     let mut out: T[] = [];
     for x of xs {
@@ -31,7 +37,11 @@ fun filter<T>(xs: T[], keep: fun(T): bool): T[] {
     out
 }
 
-// `f(…f(f(init, xs[0]), xs[1])…)`, left to right.
+/**
+ * Combines the elements left to right, starting from `init`: `xs.fold(0, add)`.
+ * @param init the starting value
+ * @param f the running value and an element, giving the next value
+ */
 fun fold<T, A>(xs: T[], init: A, f: fun(A, T): A): A {
     let mut acc = init;
     for x of xs {
@@ -40,7 +50,7 @@ fun fold<T, A>(xs: T[], init: A, f: fun(A, T): A): A {
     acc
 }
 
-// True at the first element for which `f` is true; later ones aren't tested.
+/** Whether `f` holds for some element (false for an empty array): `xs.any(f)`. */
 fun any<T>(xs: T[], f: fun(T): bool): bool {
     for x of xs {
         if f(x) {
@@ -50,7 +60,7 @@ fun any<T>(xs: T[], f: fun(T): bool): bool {
     false
 }
 
-// False at the first element for which `f` is false; later ones aren't tested.
+/** Whether `f` holds for every element (true for an empty array): `xs.all(f)`. */
 fun all<T>(xs: T[], f: fun(T): bool): bool {
     for x of xs {
         if !f(x) {
@@ -65,6 +75,10 @@ fun all<T>(xs: T[], f: fun(T): bool): bool {
 // tie the left run's element goes first, which keeps equal elements in
 // their original order. An inconsistent `less` still gives back every
 // element exactly once, in some order.
+/**
+ * A sorted copy, stable, ordered by `less`: `xs.sort_by(less)`.
+ * @param less whether its first argument goes before its second
+ */
 fun sort_by<T>(xs: T[], less: fun(T, T): bool): T[] {
     let n = xs.len;
     let mut src = xs;
@@ -106,6 +120,7 @@ fun sort_by<T>(xs: T[], less: fun(T, T): bool): T[] {
 
 // The lines of `s`: split at `\n`, one trailing `\r` dropped from each, and
 // no empty last line after a final `\n`.
+/** The lines of `s`, without their `\n` (or `\r\n`): `s.lines()`. */
 fun str_lines(s: string): string[] {
     let mut out: string[] = [];
     let mut start = 0;
@@ -121,7 +136,7 @@ fun str_lines(s: string): string[] {
     out
 }
 
-// The bytes `from..to` of `s` without a final `\r`.
+/** Used by `lines`: the text of `s` from `from` to `to`, without a trailing `\r`. */
 fun str_line(s: string, from: i64, to: i64): string {
     if to > from && s[to - 1] == 13 {
         return s.slice(from, to - 1);
@@ -130,6 +145,10 @@ fun str_line(s: string, from: i64, to: i64): string {
 }
 
 // The parts of `s` between occurrences of `sep`, empty parts kept.
+/**
+ * The parts of `s` between each `sep`: `s.split(",")`.
+ * @param sep the separator; an empty one splits nothing
+ */
 fun str_split(s: string, sep: string): string[] {
     if sep.len == 0 {
         panic("split with an empty separator");
@@ -150,7 +169,7 @@ fun str_split(s: string, sep: string): string[] {
     out
 }
 
-// True if `p` occurs in `s` starting at byte `at`.
+/** Used by `starts_with` and the others: whether `p` occurs in `s` at byte `at`. */
 fun str_at(s: string, at: i64, p: string): bool {
     if at + p.len > s.len {
         return false;
@@ -163,10 +182,10 @@ fun str_at(s: string, at: i64, p: string): bool {
     true
 }
 
-// ASCII whitespace: space, `\t`, `\n`, `\r`.
+/** Used by `trim`: whether `b` is a space, tab, `\n` or `\r`. */
 fun str_is_space(b: u8): bool = b == 32 || b == 9 || b == 10 || b == 13;
 
-// `s` without leading and trailing ASCII whitespace.
+/** `s` without spaces, tabs and line breaks at both ends: `s.trim()`. */
 fun str_trim(s: string): string {
     let mut from = 0;
     let mut to = s.len;
@@ -179,6 +198,7 @@ fun str_trim(s: string): string {
     s.slice(from, to)
 }
 
+/** Whether `sub` occurs in `s`: `s.contains(sub)`. */
 fun str_contains(s: string, sub: string): bool {
     for i in 0..s.len - sub.len + 1 {
         if str_at(s, i, sub) {
@@ -188,11 +208,13 @@ fun str_contains(s: string, sub: string): bool {
     false
 }
 
+/** Whether `s` begins with `p`: `s.starts_with(p)`. */
 fun str_starts_with(s: string, p: string): bool = str_at(s, 0, p);
 
+/** Whether `s` ends with `p`: `s.ends_with(p)`. */
 fun str_ends_with(s: string, p: string): bool = p.len <= s.len && str_at(s, s.len - p.len, p);
 
-// The strings of `xs` with `sep` between them.
+/** The strings of `xs` with `sep` between each two: `xs.join(", ")`. */
 fun str_join(xs: string[], sep: string): string {
     let mut out = "";
     for i in 0..xs.len {
@@ -206,53 +228,64 @@ fun str_join(xs: string[], sep: string): string {
 
 // ---- Option and Result (v4 draft §4) ----
 
+/** The value inside, or `default` for `None`: `o.unwrap_or(default)`. */
 fun option_unwrap_or<T>(o: Option<T>, default: T): T = match o {
     Some(x) => x,
     None => default,
 };
 
+/** `Ok` with the value inside, or `Err(error)` for `None`: `o.ok_or(error)`. */
 fun option_ok_or<T, E>(o: Option<T>, error: E): Result<T, E> = match o {
     Some(x) => Ok(x),
     None => Err(error),
 };
 
+/** `Some` with `f` applied to the value inside; `None` stays `None`: `o.map(f)`. */
 fun option_map<T, U>(o: Option<T>, f: fun(T): U): Option<U> = match o {
     Some(x) => Some(f(x)),
     None => None,
 };
 
+/** Whether there is a value: `o.is_some()`. */
 fun option_is_some<T>(o: Option<T>): bool = match o {
     Some(_) => true,
     None => false,
 };
 
+/** Whether there is no value: `o.is_none()`. */
 fun option_is_none<T>(o: Option<T>): bool = !option_is_some(o);
 
+/** The `Ok` value, or `default` for an `Err`: `r.unwrap_or(default)`. */
 fun result_unwrap_or<T, E>(r: Result<T, E>, default: T): T = match r {
     Ok(x) => x,
     Err(_) => default,
 };
 
+/** `Some` with the `Ok` value, or `None` for an `Err`: `r.ok()`. */
 fun result_ok<T, E>(r: Result<T, E>): Option<T> = match r {
     Ok(x) => Some(x),
     Err(_) => None,
 };
 
+/** `Ok` with `f` applied to the value; an `Err` stays as it is: `r.map(f)`. */
 fun result_map<T, E, U>(r: Result<T, E>, f: fun(T): U): Result<U, E> = match r {
     Ok(x) => Ok(f(x)),
     Err(e) => Err(e),
 };
 
+/** `Err` with `f` applied to the error; an `Ok` stays as it is: `r.map_err(f)`. */
 fun result_map_err<T, E, F>(r: Result<T, E>, f: fun(E): F): Result<T, F> = match r {
     Ok(x) => Ok(x),
     Err(e) => Err(f(e)),
 };
 
+/** Whether it is `Ok`: `r.is_ok()`. */
 fun result_is_ok<T, E>(r: Result<T, E>): bool = match r {
     Ok(_) => true,
     Err(_) => false,
 };
 
+/** Whether it is `Err`: `r.is_err()`. */
 fun result_is_err<T, E>(r: Result<T, E>): bool = !result_is_ok(r);
 
 // Anything that can be stepped through (v6 draft §4): `for x of e` loops

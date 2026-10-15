@@ -4,6 +4,7 @@ Syntax highlighting and live `lughac` diagnostics for [Lugha](../../README.md) (
 
 - **Highlighting:** keywords, types, numbers, `//` and `/* … */` comments (nested ones too), strings with `{…}` interpolation and format specifiers (`{pi:.2}`), `format("{} {:>4}", …)` templates, `char` literals.
 - **Editing:** `Ctrl+/` toggles `//`, `Shift+Alt+A` toggles `/* … */`; brackets and quotes close themselves.
+- **Doc comments:** `/** … */` above a function, method, type, field or variant (Markdown, `@param name text`, `@returns text`) shows under its header in hover and completion, and in signature help with the active parameter's text. Hovering a type or variant name shows it too. std and the prelude are documented. Needs a `lughac` from milestone 77.
 - **While a file has a syntax error** (a missing `;`, a half-typed line), all of the below keep working everywhere but the broken statement, and only the syntax errors are underlined. Needs a `lughac` from milestone 75.
 - **Signature help:** while you type a call's arguments, its signature with the current parameter highlighted — functions, methods, module functions, variants, built-ins, intrinsics; a generic call with its types filled in when they're known. Needs a `lughac` from milestone 74.
 - **Completion:** after `.`, a value's fields and methods (built-in and prelude ones too), a module's items, an enum's variants and associated functions; otherwise the names in scope, the module's functions and types, imports, intrinsics and keywords — each with its type or header. It works while the line you're typing doesn't parse yet, from the last check that did. Needs a `lughac` from milestone 73.
@@ -63,4 +64,5 @@ Also make sure the `lughac` VS Code starts is from milestone 73 or later (`cargo
 8. Type `twice(`, `p.scale(`, `max(1.5, ` and `println(`: the signature appears with the right parameter highlighted, moving on each `,`.
 9. Delete a `;` in a function: only that syntax error is underlined, and hover, Ctrl+click and `p.` completion still work on the other lines.
 10. Write a `/* … */` comment with a nested one inside: all of it is coloured as a comment; select lines and press `Shift+Alt+A`: they become a block comment.
-11. Set `lugha.path` to `/nonexistent`: one notification.
+11. Write `/** Doubles. @param n the number */` above a function: hover it, complete it and type its call — the doc shows each time; hover `math.sqrt` and `xs.map`: their library docs show.
+12. Set `lugha.path` to `/nonexistent`: one notification.

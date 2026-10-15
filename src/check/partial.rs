@@ -73,9 +73,9 @@ pub(super) struct Recorder {
     pub definitions: HashMap<Span, Target>,
     pub signatures: HashMap<Span, super::Sig>,
     /// Each field's declaration by struct key and field name.
-    fields: HashMap<(String, String), Span>,
+    pub(super) fields: HashMap<(String, String), Span>,
     /// Each variant's declaration by enum key and variant name.
-    variants: HashMap<(String, String), Span>,
+    pub(super) variants: HashMap<(String, String), Span>,
 }
 
 impl Recorder {

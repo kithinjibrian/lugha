@@ -4,37 +4,57 @@
 // `sqrt(-1.0)` is `NaN` and `ln(0.0)` is `-inf`. `abs`, `min`, `max` and
 // `clamp` work on any number (`abs`) or ordered value.
 
-// π and e, as `f64`.
+/** π, as `f64`. */
 public fun pi(): f64 = 3.141592653589793;
+/** e, the base of the natural logarithm, as `f64`. */
 public fun e(): f64 = 2.718281828459045;
 
+/** The square root; `NaN` for a negative `x` (IEEE 754). */
 public fun sqrt<T: Float>(x: T): T = $float.sqrt(x);
+/** `x` to the power `y`. */
 public fun pow<T: Float>(x: T, y: T): T = $float.pow(x, y);
+/** e to the power `x`. */
 public fun exp<T: Float>(x: T): T = $float.exp(x);
 
-// The natural logarithm, and the logarithm to base 10.
+/** The natural logarithm; `-inf` for `0.0`, `NaN` below it. */
 public fun ln<T: Float>(x: T): T = $float.ln(x);
+/** The logarithm to base 10. */
 public fun log10<T: Float>(x: T): T = $float.log10(x);
 
-// Trigonometry, in radians; `atan2(y, x)` is the angle of the point (x, y).
+/** The sine of `x`, in radians. */
 public fun sin<T: Float>(x: T): T = $float.sin(x);
+/** The cosine of `x`, in radians. */
 public fun cos<T: Float>(x: T): T = $float.cos(x);
+/** The tangent of `x`, in radians. */
 public fun tan<T: Float>(x: T): T = $float.tan(x);
+/**
+ * The angle of the point (x, y) from the positive x axis, in radians.
+ * @param y the point's y
+ * @param x the point's x
+ */
 public fun atan2<T: Float>(y: T, x: T): T = $float.atan2(y, x);
 
-// Rounding: `round` takes halves away from zero (`round(-2.5)` is `-3.0`).
+/** The largest whole number not above `x`. */
 public fun floor<T: Float>(x: T): T = $float.floor(x);
+/** The smallest whole number not below `x`. */
 public fun ceil<T: Float>(x: T): T = $float.ceil(x);
+/** The nearest whole number, halves away from zero (`round(-2.5)` is `-3.0`). */
 public fun round<T: Float>(x: T): T = $float.round(x);
 
-// `-x` for a negative `x`; the minimum integer has no positive twin, so
-// it panics with `integer overflow`, as `-x` does.
+/** `x` without its sign; the minimum integer has no positive twin, so it panics with `integer overflow`, as `-x` does. */
 public fun abs<T: Num>(x: T): T = if x < 0 { -x } else { x };
 
+/** The smaller of `a` and `b`; `a` when they are equal. */
 public fun min<T: Ord>(a: T, b: T): T = if b < a { b } else { a };
+/** The larger of `a` and `b`; `a` when they are equal. */
 public fun max<T: Ord>(a: T, b: T): T = if a < b { b } else { a };
 
-// `x` within `lo..=hi`; panics when `lo` is above `hi`.
+/**
+ * `x` within `lo..=hi`.
+ * @param x the value
+ * @param lo the lower bound
+ * @param hi the upper bound; panics when it is below `lo`
+ */
 public fun clamp<T: Ord>(x: T, lo: T, hi: T): T {
     if hi < lo {
         panic("clamp: the lower bound is above the upper bound");

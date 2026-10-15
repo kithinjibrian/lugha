@@ -117,6 +117,7 @@ fn check_with(
         modules,
         partial,
         broken,
+        docs: Default::default(),
     });
     outcome
 }
