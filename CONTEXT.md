@@ -5796,6 +5796,11 @@ Branch: prp-100-lsp_diagnostics
 
 ---
 
+## SESSION 146 — 2026-10-15 — Discovery: hover types in the language server — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
