@@ -1,6 +1,6 @@
 ## FEATURE: The add-missing-arms quick fix — code actions on E0417 that add every missing arm, or a `_` arm; milestone 79.
 
-**Status:** proposed 2026-10-16 — session 166 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-16 ("build it") — built in session 167; proposed in session 166.
 **Milestone:** 79 (one PRP; tag `m79` at merge). The language server's first code actions.
 **Spec:** `Language v16 Draft.md` decisions 56–59; spec §5 (exhaustiveness, E0417), §9 (the `lughac lsp` paragraph), §11 (row 79). No language change.
 

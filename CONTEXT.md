@@ -6343,6 +6343,11 @@ Branch: main
 
 ---
 
+## SESSION 167 — 2026-10-16 — The add-missing-arms quick fix (milestone 79) — open
+Branch: prp-109-missing_arms
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
