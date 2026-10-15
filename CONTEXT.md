@@ -5413,6 +5413,11 @@ Branch: prp-094-std_fs
 
 ---
 
+## SESSION 134 — 2026-10-15 — `std.process` (milestone 66) — open
+Branch: prp-095-std_process
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–65 complete.** **Approved and next:** milestone 66 `std.process` (PRP-095; the user's approval in session 129 was its security review). Follow the PRP's Design 3–7 exactly: `posix_spawnp`, no shell, NUL rejected, `pipe2(O_CLOEXEC)`, runtime fds close-on-exec, `poll` loop, `SIGPIPE` blocked around writes, `128 + signal`, UTF-8 output or `Err`. MEMORY 118 is the plan.
