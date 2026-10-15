@@ -4907,6 +4907,11 @@ Branch: prp-084-copy_on_write
 
 ---
 
+## SESSION 118 — 2026-10-15 — Discovery: owning arrays once per loop — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–55 complete** (tag `m55`: copy-on-write arrays, PRP-084). firefly trains 13–35% faster; write-only loops pay a flag test per write (histogram +55%, matmul +30%).
