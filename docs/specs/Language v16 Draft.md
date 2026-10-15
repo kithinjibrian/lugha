@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) proposed in session 151.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -87,6 +87,16 @@ The third language-server step: Go to Definition (F12, Ctrl+click).
 26. **As hover:** the checker's partial results, so it works while the program has errors; a pending check runs first.
 27. **Success:** milestone 72, tag `m72`. Tests in `tests/lsp_definition.rs`. The spec's `lughac lsp` paragraph gains go-to-definition.
 
+## Decisions behind milestone 73 (discovery, session 151)
+
+The fourth language-server step: completion.
+
+28. **`textDocument/completion`**, triggered by `.` and by typing a name. After `.`: a value's fields and methods (built-in array and string methods too), a module's items (`geo.` → `double`), an enum's variants and a type's associated functions (`Shape.` → `Circle`, `Stack.` → `new`). A plain name: the locals and parameters declared before the cursor in the enclosing function, the program's functions, types and imported modules, the intrinsics (`println`, …), `Some`/`None`/`Ok`/`Err`, and the keywords. Each item carries its type or header as detail, as hover shows them. No snippets.
+29. **Incomplete code:** completion reads the last check that parsed. Its offsets are trusted only while the text before the receiver (or before the word being typed) is unchanged since that check — the usual case when typing `p.` after `p`. Otherwise member completion offers nothing that time and plain names come from the last good check without locals. The parser is unchanged.
+30. **Visibility:** another module's members are offered as code may use them — what `private` hides is left out.
+31. **Ordering and filtering** are the editor's: the server returns every candidate for the position, with a kind (field, method, function, variable, type, module, enum member, keyword).
+32. **Success:** milestone 73, tag `m73`. Tests in `tests/lsp_completion.rs`. The spec's `lughac lsp` paragraph gains completion.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -120,6 +130,7 @@ The third language-server step: Go to Definition (F12, Ctrl+click).
 | 70 | `lughac lsp` | live diagnostics over the Language Server Protocol; the VS Code extension uses it |
 | 71 | Hover | types of expressions and declared names, also while the program has errors |
 | 72 | Go to definition | variables, functions and methods, types, fields, variants, modules |
+| 73 | Completion | members after `.`, plain names in scope, keywords; from the last check that parsed |
 
 ## §12 Open questions — additions
 
