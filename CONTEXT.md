@@ -5481,6 +5481,11 @@ Branch: main
 
 ---
 
+## SESSION 136 — 2026-10-15 — Shared boxes `Ref<T>` (milestone 67, v16) — open
+Branch: prp-096-ref
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–66 complete (v15).** **Milestone 67, shared boxes (`Ref<T>`), is proposed** as the first of v16: `Language v16 Draft.md` (decisions 1–5) and PRP-096. It waits for the user's explicit approval. On approval:
