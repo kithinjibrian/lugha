@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 73 — Completion ✅
+- [x] PRP-103: members after `.` and names in scope, from the last check that parsed; tagged `m73`
+
 ### Milestone 72 — Go to definition ✅
 - [x] PRP-102: definitions from names, types, fields, variants and modules; tagged `m72`
 
@@ -369,6 +372,9 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [x] **A language server, live diagnostics** — `lughac lsp`, the extension on `vscode-languageclient` (milestone 70, PRP-100).
 - [x] **Hover types** — milestone 71, PRP-101.
 - [x] **Go to Definition** — milestone 72, PRP-102.
+- [x] **Completion** — milestone 73, PRP-103.
+- [ ] **Partial syntax trees** — the parser keeping a tree with error nodes, so completion and hover work on code that doesn't parse yet without the last-good-check rule.
+- [ ] **Signature help** and **snippets**.
 - [ ] **Find References** and **Go to Implementations** — the definitions table read backwards; implementations of interface methods.
 - [ ] **A read-only view of bundled sources** (`std`, the prelude) for hover and definitions that land there.
 - [ ] **Go-to-definition** — the PRP after hover.

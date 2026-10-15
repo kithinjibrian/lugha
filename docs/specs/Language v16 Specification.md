@@ -2,15 +2,15 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–72 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–73 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestones 67–72):
+**Changes since v15** (milestones 67–73):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
 - `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
 - `lughac init [folder] [--lib] [--name N]` starts a program, or a library with an example, in a folder; it never overwrites a file (milestone 69; section 9).
-- `lughac lsp` is a language server: editors get `lughac check`'s diagnostics as you type, for unsaved text too (milestone 70; section 9), and hovering shows the type of an expression or a declared name, also while the program has errors (milestone 71); Go to Definition jumps from a name to its declaration (milestone 72).
+- `lughac lsp` is a language server: editors get `lughac check`'s diagnostics as you type, for unsaved text too (milestone 70; section 9), and hovering shows the type of an expression or a declared name, also while the program has errors (milestone 71); Go to Definition jumps from a name to its declaration (milestone 72); completion offers members after `.` and the names in scope (milestone 73).
 
 Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type; a module's own type `Ref` still means its own.
 
@@ -1325,7 +1325,8 @@ It prints `created <path>` for each file and then how to run the result.
 
   Notes follow the block: `instance: max<f64>` for a generic call, `converted to Shape` for a value converted to an interface. Hover uses what the checker found even when the program has errors; an expression the checker couldn't type, whitespace, comments and keywords have none (`null`). While a module of the program doesn't parse, nothing has a hover. A hover first runs a check still waiting for typing to pause.
 - **Go to Definition** (milestone 72): `textDocument/definition` answers the declaration of the smallest name under the cursor: a variable or parameter → its binding; a function or method (at a call, a value or the declaration itself) → its declaration; `s.area()` on an interface value → the interface's method; a type name (an annotation, a literal, an `impl`, a construction) → its struct, enum or interface; `p.x` and a literal's `x:` → the field; a variant → its declaration in the enum; a module in an `import` or a prefix (`geo` in `geo.f`) → the module's file, from its top. A declaration inside `std` or the prelude has no file, so there is none (`null`); so for anything else under the cursor. As hover, it uses what the checker found even with errors, and runs a pending check first.
-- **Exit codes:** 0 after `shutdown` and `exit`; 1 after `exit` without `shutdown`; 2 when the connection breaks (a malformed message, a closed stream). Requests other than `initialize`, `shutdown`, `textDocument/hover` and `textDocument/definition` get `MethodNotFound`.
+- **Completion** (milestone 73): `textDocument/completion`, also triggered by `.`. After `.`: a value's fields and methods, the built-in methods and prelude helpers its type accepts (the iterator helpers for an iterator), a module's items except another module's `private` ones, and a type's variants and associated functions. Otherwise: the locals and parameters declared earlier in the enclosing function, the module's functions and types, imported modules, the intrinsics, `Some`, `None`, `Ok`, `Err` and the keywords. Each item has a kind and a detail as hover shows it; the editor filters and orders them. Nothing is offered in a comment or a string. Completion reads the last check of the file that parsed, so it works while the text being typed doesn't; it uses that check's positions only within the leading text the check and the current text share, and a receiver written past that point is looked up by name among the locals, imports and types. Otherwise the list is empty, never a guess.
+- **Exit codes:** 0 after `shutdown` and `exit`; 1 after `exit` without `shutdown`; 2 when the connection breaks (a malformed message, a closed stream). Requests other than `initialize`, `shutdown`, `textDocument/hover`, `textDocument/definition` and `textDocument/completion` get `MethodNotFound`.
 
 **Diagnostics.** Errors print the file, line and column, the offending source line, a caret under the span with its label, and any secondary labels, in a rustc-like layout rendered by the `codespan-reporting` crate. Each diagnostic is followed by a blank line, and lines carry no trailing whitespace. The checker reports as many errors as it can find instead of stopping at the first one.
 
@@ -3192,6 +3193,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 70 | `lughac lsp` (v16) | a language server publishing `check`'s diagnostics for unsaved text; offline, no writes, panics caught; the VS Code extension uses it | `tests/lsp.rs` drives it over stdio (done) |
 | 71 | Hover (v16) | `textDocument/hover`: types of expressions, bindings, functions and methods (headers as written), fields; notes for generic instances and interface conversions; also with errors | `tests/lsp_hover.rs` drives it over stdio (done) |
 | 72 | Go to definition (v16) | `textDocument/definition`: variables, functions and methods, interface methods, types, fields, variants, modules; none for `std` and the prelude; also with errors | `tests/lsp_definition.rs` drives it over stdio (done) |
+| 73 | Completion (v16) | `textDocument/completion`: members after `.` (fields, methods, built-ins, helpers, module items, variants), names in scope, intrinsics, keywords; from the last check that parsed | `tests/lsp_completion.rs` drives it over stdio (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

@@ -1865,11 +1865,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** the user found waiting on CI too slow for rapid development; it stays as a safety net for what only breaks on a clean machine.
 
+### 139. Completion planned (session 151, approved session 152)
+
+**Decision:** v16 draft decisions 28–32: completion after `.` and for plain names, with details, no snippets; from the last check that parsed, trusted while the texts agree; no parser change.
+
+### 140. Completion — milestone 73 (PRP-103)
+
+**Decision:** built as planned. `check/members.rs` (`TypeMembers` from the checker's struct, enum, interface and method tables; built-ins and helpers by filtering one candidate list through `builtins::builtin` and `helpers::helper_function`, so they can't drift; iterator helpers for types with `next`); `Partial.members`, `Partial.prelude`; `check::intrinsics()`. The server keeps `last_good` beside `snapshots` (shared `Rc`). **Refinement of decision 29:** offsets are trusted up to the longest prefix the check's text and the current text share; a receiver past it is looked up by name among locals declared within that prefix, imports and types — this is what makes `p.` on a new line work.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 73 complete**: PRP-103 completion
 - **Milestone 72 complete**: PRP-102 go-to-definition
 - **Milestone 71 complete**: PRP-101 hover
 - **Milestone 70 complete**: PRP-100 `lughac lsp`, VS Code extension 0.2.0

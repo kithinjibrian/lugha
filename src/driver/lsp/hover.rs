@@ -146,7 +146,7 @@ fn instance(name: &str, args: &[Type]) -> String {
 /// The header of the function or method whose name is at `decl`, as
 /// written (`fun max<T: Ord>(a: T, b: T): T`), a method's with its type
 /// (`fun Circle.area(self): f64`); and its name.
-fn declaration(snapshot: &Snapshot, decl: Span) -> Option<(String, String)> {
+pub(super) fn declaration(snapshot: &Snapshot, decl: Span) -> Option<(String, String)> {
     for program in snapshot.modules.iter().filter_map(|m| m.program.as_ref()) {
         for item in &program.items {
             let found = match item {

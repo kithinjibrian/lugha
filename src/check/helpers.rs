@@ -9,7 +9,7 @@ use crate::modules::PRELUDE_PATH;
 /// The prelude function behind method `method` on `receiver`, if it is a
 /// helper: the array helpers keep their names, the others are prefixed by
 /// the receiver's kind (`str_trim`, `option_map`, `result_map_err`).
-fn helper_function(receiver: &Type, method: &str) -> Option<String> {
+pub(super) fn helper_function(receiver: &Type, method: &str) -> Option<String> {
     const ARRAY: [&str; 7] = ["map", "filter", "fold", "sort_by", "sort", "any", "all"];
     const STRING: [&str; 6] = [
         "lines",

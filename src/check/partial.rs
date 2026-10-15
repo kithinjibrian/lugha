@@ -55,6 +55,10 @@ pub struct Partial {
     pub names: HashMap<Span, Name>,
     /// Where each written use (and declaration) is defined, by its span.
     pub definitions: HashMap<Span, Target>,
+    /// Each struct's, enum's and interface's members, by key, for completion.
+    pub members: HashMap<String, super::TypeMembers>,
+    /// Every prelude function's declaration name, by its name.
+    pub prelude: HashMap<String, Span>,
     /// Every error and warning, as `check_modules` reports them.
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -165,7 +169,11 @@ pub(super) fn callee_name(call: &Expr) -> Option<Span> {
 /// when there are errors.
 pub fn check_partial(units: &[Unit]) -> Partial {
     let checker = modules::run(units).0;
+    let members = checker.type_members();
+    let prelude = checker.prelude_functions();
     Partial {
+        members,
+        prelude,
         types: checker.types,
         spans: checker.hover.spans,
         annotations: checker.annotations,

@@ -7,6 +7,7 @@
 //! file, opens no port.
 
 mod check;
+mod completion;
 mod definition;
 mod documents;
 mod hover;
@@ -19,10 +20,10 @@ use std::time::{Duration, Instant};
 
 use lsp_server::{Connection, ErrorCode, Message, ProtocolError, Response};
 use lsp_types::{
-    GotoDefinitionParams, GotoDefinitionResponse, HoverParams, HoverProviderCapability,
-    InitializeParams, OneOf, PositionEncodingKind, SaveOptions, ServerCapabilities, ServerInfo,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-    TextDocumentSyncSaveOptions,
+    CompletionOptions, CompletionParams, CompletionResponse, GotoDefinitionParams,
+    GotoDefinitionResponse, HoverParams, HoverProviderCapability, InitializeParams, OneOf,
+    PositionEncodingKind, SaveOptions, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
+    TextDocumentSyncKind, TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
 };
 use thiserror::Error;
 
@@ -101,6 +102,20 @@ fn run(connection: &Connection) -> Result<u8, LspError> {
                             ),
                         }
                     }
+                    "textDocument/completion" => {
+                        match serde_json::from_value::<CompletionParams>(request.params) {
+                            Ok(params) => {
+                                let (items, published) = server.completion(&params, Instant::now());
+                                send(connection, published)?;
+                                Response::new_ok(request.id, CompletionResponse::Array(items))
+                            }
+                            Err(error) => Response::new_err(
+                                request.id,
+                                ErrorCode::InvalidParams as i32,
+                                error.to_string(),
+                            ),
+                        }
+                    }
                     "textDocument/definition" => {
                         match serde_json::from_value::<GotoDefinitionParams>(request.params) {
                             Ok(params) => {
@@ -153,6 +168,10 @@ fn capabilities() -> ServerCapabilities {
         position_encoding: Some(PositionEncodingKind::UTF16),
         hover_provider: Some(HoverProviderCapability::Simple(true)),
         definition_provider: Some(OneOf::Left(true)),
+        completion_provider: Some(CompletionOptions {
+            trigger_characters: Some(vec![".".to_string()]),
+            ..CompletionOptions::default()
+        }),
         text_document_sync: Some(TextDocumentSyncCapability::Options(
             TextDocumentSyncOptions {
                 open_close: Some(true),

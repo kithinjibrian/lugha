@@ -3,18 +3,21 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use lsp_server::{Message, Notification};
 use lsp_types::notification::{LogMessage, Notification as _, PublishDiagnostics};
 use lsp_types::{
-    DidChangeConfigurationParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DidSaveTextDocumentParams, GotoDefinitionParams, Hover, HoverParams,
-    InitializeParams, Location, LogMessageParams, MessageType, PublishDiagnosticsParams,
+    CompletionItem, CompletionParams, DidChangeConfigurationParams, DidChangeTextDocumentParams,
+    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
+    GotoDefinitionParams, Hover, HoverParams, InitializeParams, Location, LogMessageParams,
+    MessageType, PublishDiagnosticsParams,
 };
 use serde_json::Value;
 
 use super::check;
+use super::completion;
 use super::definition;
 use super::documents::{Documents, uri_to_path};
 use super::hover::{self, Snapshot};
@@ -34,7 +37,10 @@ pub(super) struct Server {
     /// For each main file checked, every file its last check loaded.
     seen: HashMap<PathBuf, Vec<PathBuf>>,
     /// Each main file's last check, for hover.
-    snapshots: HashMap<PathBuf, Snapshot>,
+    snapshots: HashMap<PathBuf, Rc<Snapshot>>,
+    /// Each main file's last check that parsed, for completion while the
+    /// text being typed doesn't (decision 29).
+    last_good: HashMap<PathBuf, Rc<Snapshot>>,
     store: Store,
 }
 
@@ -65,6 +71,7 @@ impl Server {
             pending: HashMap::new(),
             seen: HashMap::new(),
             snapshots: HashMap::new(),
+            last_good: HashMap::new(),
             store: Store::default(),
         };
         let mut out = Vec::new();
@@ -164,7 +171,11 @@ impl Server {
                 self.seen.insert(target.main.clone(), outcome.loaded);
             }
             match outcome.snapshot {
-                Some(snapshot) => self.snapshots.insert(target.main.clone(), snapshot),
+                Some(snapshot) => {
+                    let snapshot = Rc::new(snapshot);
+                    self.last_good.insert(target.main.clone(), snapshot.clone());
+                    self.snapshots.insert(target.main.clone(), snapshot)
+                }
                 // A program that no longer loads or parses has nothing to hover.
                 None => self.snapshots.remove(&target.main),
             };
@@ -216,11 +227,44 @@ impl Server {
 
     /// The last check that loaded `file`, among the checks planned for it.
     fn snapshot(&self, file: &Path) -> Option<&Snapshot> {
+        Self::loaded(&self.snapshots, &self.plan(file, &mut Vec::new()), file)
+    }
+
+    /// The first of `checks` for `targets` that loaded `file`.
+    fn loaded<'a>(
+        checks: &'a HashMap<PathBuf, Rc<Snapshot>>,
+        targets: &[Target],
+        file: &Path,
+    ) -> Option<&'a Snapshot> {
         // Planning again only reads: rejected entries were logged when checked.
-        self.plan(file, &mut Vec::new())
+        targets
             .iter()
-            .filter_map(|t| self.snapshots.get(&t.main))
+            .filter_map(|t| checks.get(&t.main))
+            .map(|s| &**s)
             .find(|s| s.has(file))
+    }
+
+    /// Answers completion from the last check that parsed (decision 29),
+    /// as fresh as a hover.
+    pub(super) fn completion(
+        &mut self,
+        params: &CompletionParams,
+        now: Instant,
+    ) -> (Vec<CompletionItem>, Vec<Message>) {
+        let at = &params.text_document_position;
+        let (file, out) = self.fresh(at.text_document.uri.as_str(), now);
+        let items = file
+            .and_then(|f| {
+                let targets = self.plan(&f, &mut Vec::new());
+                let snapshot = Self::loaded(&self.last_good, &targets, &f)?;
+                let text = match self.docs.text(&f) {
+                    Some(text) => text.to_string(),
+                    None => std::fs::read_to_string(&f).ok()?,
+                };
+                Some(completion::answer(snapshot, &f, &text, at.position))
+            })
+            .unwrap_or_default();
+        (items, out)
     }
 
     fn plan(&self, file: &Path, out: &mut Vec<Message>) -> Vec<Target> {
