@@ -10,6 +10,7 @@ use lsp_types::{
 
 use super::docs;
 use super::hover::{Snapshot, byte_offset, declaration};
+use super::snippets;
 use crate::ast::{FunDecl, Item, Program, VisibilityKind};
 use crate::check::{self, Detail, Member, MemberKind, Name, Target, Type};
 use crate::modules::Module;
@@ -60,6 +61,7 @@ pub(super) fn answer(
     file: &Path,
     text: &str,
     at: Position,
+    snippets: bool,
 ) -> Vec<CompletionItem> {
     let Some(cursor) = byte_offset(text, at) else {
         return Vec::new();
@@ -67,11 +69,17 @@ pub(super) fn answer(
     let Some(context) = context(text, cursor) else {
         return Vec::new();
     };
-    let Some(here) = Here::new(snapshot, file, text) else {
+    let Some(mut here) = Here::new(snapshot, file, text) else {
         return Vec::new();
     };
+    // A `(` already there: no call snippets (milestone 78).
+    here.snippets = snippets && !text[cursor..].starts_with('(');
     match context.dot {
-        Some(dot) => here.members(dot),
+        Some(dot) => {
+            let mut items = here.members(dot);
+            items.extend(snippets::postfix_match(&here, dot, at));
+            items
+        }
         None => here.names(context.word),
     }
 }
@@ -133,6 +141,8 @@ pub(super) struct Here<'a> {
     pub base: usize,
     /// How many leading bytes the check's text and the current text share.
     pub same: usize,
+    /// Completion may insert snippets (milestone 78).
+    pub snippets: bool,
 }
 
 /// What a name before a `.` turned out to be.
@@ -155,6 +165,7 @@ impl<'a> Here<'a> {
             text,
             base,
             same,
+            snippets: false,
         })
     }
 
@@ -363,6 +374,7 @@ impl<'a> Here<'a> {
                 value,
             })
         });
+        snippets::call(self, &mut item, decl);
         item
     }
 

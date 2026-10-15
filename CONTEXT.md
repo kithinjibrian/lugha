@@ -6243,8 +6243,29 @@ Branch: main
 
 ---
 
-## SESSION 163 — 2026-10-16 — Snippets (milestone 78) — open
+## SESSION 163 — 2026-10-16 — Snippets (milestone 78) — closed
 Branch: prp-108-snippets
+
+### WHAT WAS DONE
+- The user approved PRP-108 ("build it"); MEMORY 149. Built in a worktree (`../lugha-prp-108`), merged through a PR without waiting for CI.
+- Tests first: `tests/snippets.rs`, then the 16 static snippets; `tests/lsp_snippets.rs`, then `driver/lsp/snippets.rs`, the capability and the completion hooks.
+- Spec v16 at milestone 78 (§9 snippets, §11 row 78, summary); docs.
+
+### FILES CREATED OR MODIFIED
+- New: `editors/vscode/snippets/lugha.json`, `editors/vscode/test/snippets.test.ts`, `src/driver/lsp/snippets.rs`, `tests/snippets.rs`, `tests/lsp_snippets.rs`.
+- Modified: `editors/vscode/package.json`, `src/driver/lsp/{mod,server,completion}.rs`, `tests/common/lsp_client.rs`; the v16 spec and draft; CLAUDE.md, README, the extension README, TODO, CHANGELOG, MEMORY (149, 150), PRP-108, CONTEXT.
+
+### TESTS WRITTEN
+- `tests/snippets.rs` (3), `tests/lsp_snippets.rs` (4), `driver::lsp::snippets` (3), `snippets.test.ts` (1).
+
+### DECISIONS MADE
+- MEMORY 150.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual checks in VS Code (extension README steps 8–12).
 
 ---
 
@@ -6252,7 +6273,7 @@ Branch: prp-108-snippets
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
 
-**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. **Milestone 73 done** (tag `m73`): completion; the user's manual checks of milestones 70–73 all passed (session 153). **Milestone 74 done** (tag `m74`): signature help. **Milestone 75 done** (tag `m75`): partial syntax trees. **Milestone 76 done** (tag `m76`): block comments. **Milestone 77 done** (tag `m77`): doc comments. **Proposed: milestone 78, snippets** — v16 draft decisions 52–55 and PRP-108; it waits for the user's approval. Later: a `lughac doc` tool, expression error nodes, lexer recovery, snippets, bundling the extension. Later for the extension: expression error nodes, lexer recovery, snippets, bundling. Later for the extension (each a discovery + PRP): partial syntax trees, signature help and snippets, Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. **Milestone 73 done** (tag `m73`): completion; the user's manual checks of milestones 70–73 all passed (session 153). **Milestone 74 done** (tag `m74`): signature help. **Milestone 75 done** (tag `m75`): partial syntax trees. **Milestone 76 done** (tag `m76`): block comments. **Milestone 77 done** (tag `m77`): doc comments. **Milestone 78 done** (tag `m78`): snippets. Later: a `lughac doc` tool, the add-missing-arms quick fix, expression error nodes, lexer recovery, bundling the extension. Later for the extension: expression error nodes, lexer recovery, snippets, bundling. Later for the extension (each a discovery + PRP): partial syntax trees, signature help and snippets, Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

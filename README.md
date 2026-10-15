@@ -69,6 +69,7 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **The standard library (v15, milestone 53):** `import std.math;` then `math.sqrt(2.0)`, `math.pow`, `math.sin`, `math.round`, `math.abs(-3)`, `math.max(2, 7)`, `math.clamp`, `math.pi()`; the float functions work for any `T: Float` (`f32`, `f64`). Std modules ship inside `lughac` and cost nothing unless imported.
 - **Copy-on-write arrays (v15, milestone 55):** `let g = grads[i];` no longer copies the array; it is shared until either side writes, and the writer copies it first. Programs print exactly what they did before, and read-heavy code such as firefly's autograd trains 13–35% faster.
 - **Lazy std modules (v15, milestone 60):** of an imported std module, only the functions your program reaches are compiled, as with the prelude; everything is still type-checked.
+- **Snippets (v16, milestone 78):** `fun`, `struct`, `forof`, `match`… in VS Code; completing a call fills in its parameters as tab stops; `value.match` writes out every variant.
 - **Doc comments (v16, milestone 77):** `/** … */` above a declaration, with `@param` and `@returns`, shows in VS Code's hover, completion and signature help; std and the prelude are documented the same way.
 - **Block comments (v16, milestone 76):** `/* … */` anywhere whitespace may be, over several lines, nested, so code holding one can be commented out.
 - **Editing with mistakes (v16, milestone 75):** hover, Ctrl+click, completion and signature help keep working in a file with a syntax error, everywhere but the broken statement.

@@ -67,6 +67,11 @@ impl Server {
     /// Starts the server in `cwd` with `$HOME` and the git cache inside it,
     /// `fake_git` first on `PATH`, and initializes it with `options`.
     pub fn start(t: &Temp, options: Value) -> Server {
+        Server::start_with(t, options, json!({}))
+    }
+
+    /// `start`, telling the server the client's `capabilities`.
+    pub fn start_with(t: &Temp, options: Value, capabilities: Value) -> Server {
         let bin = t.path(".bin");
         std::fs::create_dir_all(&bin).unwrap();
         let marker = t.path(".git-ran");
@@ -119,7 +124,7 @@ impl Server {
                 "processId": null,
                 "rootUri": t.uri(""),
                 "workspaceFolders": [{ "uri": t.uri("").trim_end_matches('/'), "name": "w" }],
-                "capabilities": {},
+                "capabilities": capabilities,
                 "initializationOptions": options,
             }),
         );

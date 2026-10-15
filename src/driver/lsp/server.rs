@@ -43,6 +43,8 @@ pub(super) struct Server {
     /// signature help while the current text doesn't lex (decisions 29, 39).
     last_good: HashMap<PathBuf, Rc<Snapshot>>,
     store: Store,
+    /// The client accepts snippets in completion items (milestone 78).
+    snippets: bool,
 }
 
 impl Server {
@@ -74,6 +76,14 @@ impl Server {
             snapshots: HashMap::new(),
             last_good: HashMap::new(),
             store: Store::default(),
+            snippets: params
+                .capabilities
+                .text_document
+                .as_ref()
+                .and_then(|t| t.completion.as_ref())
+                .and_then(|c| c.completion_item.as_ref())
+                .and_then(|i| i.snippet_support)
+                .unwrap_or(false),
         };
         let mut out = Vec::new();
         if let Some(options) = &params.initialization_options {
@@ -303,7 +313,13 @@ impl Server {
                     Some(text) => text.to_string(),
                     None => std::fs::read_to_string(&f).ok()?,
                 };
-                Some(completion::answer(snapshot, &f, &text, at.position))
+                Some(completion::answer(
+                    snapshot,
+                    &f,
+                    &text,
+                    at.position,
+                    self.snippets,
+                ))
             })
             .unwrap_or_default();
         (items, out)
