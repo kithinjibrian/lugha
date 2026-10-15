@@ -6163,6 +6163,11 @@ Branch: prp-106-block_comments
 
 ---
 
+## SESSION 160 — 2026-10-16 — Discovery: `/** … */` doc comments in the language server — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
