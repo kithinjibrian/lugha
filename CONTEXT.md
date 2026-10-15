@@ -6058,8 +6058,29 @@ Branch: prp-104-lsp_signature_help
 
 ---
 
-## SESSION 156 — 2026-10-15 — Discovery: partial syntax trees — open
+## SESSION 156 — 2026-10-15 — Discovery: partial syntax trees — closed
 Branch: main
+
+### WHAT WAS DONE
+- Discovery for partial syntax trees: statement- and item-level (what the parser already recovers), no expression error nodes or lexer recovery; while a file has a syntax error, only syntax errors are shown.
+- Found: `parse_from` builds the recovered `(imports, items)` and discards it on any error; `parse_module` then stores `program: None`, so imports of a broken module aren't followed.
+- Added v16 draft decisions 38–41 (milestone 75); wrote PRP-105 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-105-partial_trees.md`.
+- Modified: `docs/specs/Language v16 Draft.md`, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: PRP-105 waits for approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-105; the manual check of signature help.
 
 ---
 
@@ -6067,7 +6088,7 @@ Branch: main
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
 
-**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. **Milestone 73 done** (tag `m73`): completion; the user's manual checks of milestones 70–73 all passed (session 153). **Milestone 74 done** (tag `m74`): signature help. Later for the extension (each a discovery + PRP): partial syntax trees, signature help and snippets, Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. **Milestone 73 done** (tag `m73`): completion; the user's manual checks of milestones 70–73 all passed (session 153). **Milestone 74 done** (tag `m74`): signature help. **Proposed: milestone 75, partial syntax trees** — v16 draft decisions 38–41 and PRP-105; it waits for the user's approval. Later for the extension (each a discovery + PRP): partial syntax trees, signature help and snippets, Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

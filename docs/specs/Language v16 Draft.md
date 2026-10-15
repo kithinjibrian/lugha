@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) proposed in session 156.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -107,6 +107,15 @@ The fifth language-server step: signature help.
 36. **Nothing found** (not in a call, an unknown callee, a string or comment) → no signature help (`null`).
 37. **Success:** milestone 74, tag `m74`. Tests in `tests/lsp_signature.rs`. The spec's `lughac lsp` paragraph gains signature help.
 
+## Decisions behind milestone 75 (discovery, session 156)
+
+The language server's features read the checker's findings, and the checker needs a tree: until now one syntax error anywhere left none. The parser already recovers at statements and items to report more errors, and discarded what it had built.
+
+38. **Partial trees, for the language server only:** the parser can hand back the program it recovered: every import, item and statement that parsed, without the broken statements and items. `lughac check`, `build` and `run` are unchanged: a syntax error stops them before checking, with the same diagnostics.
+39. **The server checks the current text** whenever every module lexes, syntax errors or not. Hover, go-to-definition, completion and signature help then answer from it everywhere but the broken statements. Only when a module doesn't lex do completion and signature help fall back to the last check that produced a tree (milestone 73's rule).
+40. **Diagnostics:** while a module has a syntax error, the server publishes only the syntax errors, as before; what the checker finds in the partial program is used, not shown, since a dropped statement makes later names look undefined.
+41. **Success:** milestone 75, tag `m75`. Tests: the parser's partial results, and the server's features in files with syntax errors.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -142,6 +151,7 @@ The fifth language-server step: signature help.
 | 72 | Go to definition | variables, functions and methods, types, fields, variants, modules |
 | 73 | Completion | members after `.`, plain names in scope, keywords; from the last check that parsed |
 | 74 | Signature help | every callable; generic instances filled in when known; intrinsics in the spec's call form |
+| 75 | Partial syntax trees | the language server checks text with syntax errors; the CLI unchanged |
 
 ## §12 Open questions — additions
 
