@@ -1,6 +1,6 @@
 ## FEATURE: Hover in `lughac lsp` — the type of the expression or declared name under the cursor, also while the program has errors; milestone 71.
 
-**Status:** proposed 2026-10-15 — session 146 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-15 ("build it") — built in session 147; proposed in session 146.
 **Milestone:** 71 (one PRP; tag `m71` at merge). The second language-server PRP (PRP-100 was live diagnostics; go-to-definition follows).
 **Spec:** `Language v16 Draft.md` decisions 18–22; spec §9 (the `lughac lsp` paragraph), §11 (row 71).
 

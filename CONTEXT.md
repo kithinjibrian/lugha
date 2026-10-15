@@ -5823,6 +5823,11 @@ Branch: main
 
 ---
 
+## SESSION 147 — 2026-10-15 — Hover in the language server (milestone 71) — open
+Branch: prp-101-lsp_hover
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
