@@ -6058,6 +6058,11 @@ Branch: prp-104-lsp_signature_help
 
 ---
 
+## SESSION 156 — 2026-10-15 — Discovery: partial syntax trees — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
