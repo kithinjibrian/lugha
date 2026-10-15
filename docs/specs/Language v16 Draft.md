@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) proposed in session 154.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -97,6 +97,16 @@ The fourth language-server step: completion.
 31. **Ordering and filtering** are the editor's: the server returns every candidate for the position, with a kind (field, method, function, variable, type, module, enum member, keyword).
 32. **Success:** milestone 73, tag `m73`. Tests in `tests/lsp_completion.rs`. The spec's `lughac lsp` paragraph gains completion.
 
+## Decisions behind milestone 74 (discovery, session 154)
+
+The fifth language-server step: signature help.
+
+33. **`textDocument/signatureHelp`**, triggered by `(` and `,`: the signature of the call the cursor is inside, with the current parameter marked. Every callable: functions, module functions (`geo.double(`), methods (`p.scale(`), associated functions (`Shape.new(`), variants with payloads (`Shape.Circle(` → `Circle(f64)`), built-in methods and prelude helpers (`xs.push(`), and the intrinsics (`println(`).
+34. **The text:** a declared function's header as written; a generic one with its type parameters filled in when the last good check knows the instance at that call (`fun max(a: f64, b: f64): f64`, with the written header as a note), as written otherwise. Built-ins and variants show types only; intrinsics show the spec's call form (`println(x)`, `read_file(path)`).
+35. **Finding the call:** from the cursor back to the unclosed `(` of the current line or lines, commas at that depth giving the parameter; the callee is the name (or `x.name`, `m.name`, `T.name`) before the `(`, resolved as completion resolves a receiver — from the last check that parsed, by its shared prefix or by name.
+36. **Nothing found** (not in a call, an unknown callee, a string or comment) → no signature help (`null`).
+37. **Success:** milestone 74, tag `m74`. Tests in `tests/lsp_signature.rs`. The spec's `lughac lsp` paragraph gains signature help.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -131,6 +141,7 @@ The fourth language-server step: completion.
 | 71 | Hover | types of expressions and declared names, also while the program has errors |
 | 72 | Go to definition | variables, functions and methods, types, fields, variants, modules |
 | 73 | Completion | members after `.`, plain names in scope, keywords; from the last check that parsed |
+| 74 | Signature help | every callable; generic instances filled in when known; intrinsics in the spec's call form |
 
 ## §12 Open questions — additions
 
