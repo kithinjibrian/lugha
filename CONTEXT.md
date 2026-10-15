@@ -5604,6 +5604,11 @@ Branch: main
 
 ---
 
+## SESSION 139 — 2026-10-15 — Discovery: `lughac init` for programs and libraries — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–68 complete** (tags `m67` shared boxes, `m68` changing directory). oyster has `cd` (uncommitted in the user's repo, with the rest of oyster).
