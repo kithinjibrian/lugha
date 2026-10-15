@@ -1,11 +1,18 @@
-# fmt, clippy and the full test suite on every push and pull request
-# (PRP-017). Runs in the same Ubuntu release as development, so LLVM 21 and
-# libgc come from the stock archive — no third-party apt source.
+# fmt, clippy and the full test suite (PRP-017), once per pull request:
+# a background safety net that merges never wait on (session 150). Runs in
+# the same Ubuntu release as development, so LLVM 21 and libgc come from the
+# stock archive — no third-party apt source.
 name: CI
 
 on:
-  push:
   pull_request:
+  # By hand: `gh workflow run CI --ref <branch>` or the Actions tab.
+  workflow_dispatch:
+
+# A newer push to the same pull request replaces the run still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

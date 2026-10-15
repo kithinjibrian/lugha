@@ -146,7 +146,7 @@ npm test                                      # its server-command, keyword and 
 npm run package                               # lugha-<version>.vsix
 ```
 
-Run fmt, clippy and tests after every non-trivial change. A task is not done until all pass.
+Run fmt, clippy and tests after every non-trivial change. A task is not done until all pass. These local runs are the merge gate: CI runs once per pull request as a background safety net and merges don't wait for it (the user, session 150).
 
 > End-to-end tests also need `llvm-21-dev`, `cc`, and `libgc-dev` installed.
 
@@ -227,7 +227,7 @@ pub fn parse_number(src: &str) -> i64 {
 ├── TODO.md          — outstanding tasks
 ├── .llmignore       — protected paths
 ├── .claude/         — settings.json: harness deny rules mirroring .llmignore
-├── .github/         — workflows/ci.yml: fmt, clippy, test in ubuntu:26.04 (LLVM 21, libgc)
+├── .github/         — workflows/ci.yml: fmt, clippy, test in ubuntu:26.04 (LLVM 21, libgc), once per pull request or by hand; merges don't wait for it
 ├── README.md        — overview, prerequisites, usage, tests
 ├── Cargo.toml       — package `lugha`, binary `lughac`
 ├── runtime/         — the C runtime, embedded in lughac (DECISION-009): lugha_rt.c (core: includes, types,

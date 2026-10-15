@@ -1859,6 +1859,12 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. `Partial.definitions` (use span → `Target::Decl(span)` or `Target::Module(path)`) is recorded where the checker resolves: `expr.rs` local reads (assignments resolve through them too), hover's function hook (declarations point at themselves), `type_key`, `type_named_by`, `interface_type`, `impl` headers, struct literals, field access, constructions, patterns, import paths and module prefixes; field and variant declaration spans live in the `Recorder`. The server shares hover's `fresh`/`snapshot` path.
 
+### 138. CI once per pull request, never waited on (session 150)
+
+**Decision:** `ci.yml` runs on `pull_request` and by hand (`workflow_dispatch`), not on every push; a newer push to a pull request cancels the older run. Merges don't wait for it: local fmt, clippy and `cargo test` (and the extension's `npm test`) are the gate.
+
+**Why:** the user found waiting on CI too slow for rapid development; it stays as a safety net for what only breaks on a clean machine.
+
 ---
 
 ## CURRENT PROJECT STATE

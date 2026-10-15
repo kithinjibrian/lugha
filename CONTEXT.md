@@ -5901,8 +5901,28 @@ Branch: prp-102-lsp_definition
 
 ---
 
-## SESSION 150 — 2026-10-15 — CI once per PR, never waited on — open
+## SESSION 150 — 2026-10-15 — CI once per PR, never waited on — closed
 Branch: main
+
+### WHAT WAS DONE
+- Merged PR #5 (milestone 72) and tagged `m72`, finishing session 149's work.
+- The user asked for CI to run once per PR and be optional, choosing "runs on PRs, never waited on".
+- `ci.yml`: `pull_request` and `workflow_dispatch` only (no `push`), with `concurrency` cancelling an older run of the same ref. README and CLAUDE.md (tree, the merge gate under COMMANDS) say so; MEMORY 138.
+
+### FILES CREATED OR MODIFIED
+- Modified: `.github/workflows/ci.yml`, README.md, CLAUDE.md, MEMORY.md, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (the workflow file was checked to parse).
+
+### DECISIONS MADE
+- MEMORY 138.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual checks in VS Code: live errors, hover and go-to-definition.
 
 ---
 

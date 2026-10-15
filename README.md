@@ -153,7 +153,7 @@ cargo test
   - its expected output: `name.stdout` and `name.exit`;
   - for a program that must be rejected: `name.stderr`.
 
-CI runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` and the VS Code extension's tests on every push and pull request.
+CI runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` and the VS Code extension's tests once per pull request (a newer push cancels the older run), or by hand with `gh workflow run CI --ref <branch>`. Merges don't wait for it: the same checks run locally first.
 
 ## Editor support
 
