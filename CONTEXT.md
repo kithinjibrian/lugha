@@ -5604,20 +5604,41 @@ Branch: main
 
 ---
 
-## SESSION 139 — 2026-10-15 — Discovery: `lughac init` for programs and libraries — open
+## SESSION 139 — 2026-10-15 — Discovery: `lughac init` for programs and libraries — closed
 Branch: main
+
+### WHAT WAS DONE
+- Explained why Lugha has no `target/` folder (whole-program builds, nothing cached; firefly's GPT builds in 0.4 s at `-O0`, 1.3 s at `-O2`).
+- Discovery for `lughac init`. The user chose every recommendation:
+  - `--lib` flag, a program by default;
+  - a program gets `src/main.la`; a library gets `src/<name>.la` plus `examples/hello.la`;
+  - never overwrite; refuse an existing manifest or a bad name (exit 2); no git;
+  - milestone 69.
+- Added v16 draft decisions 9–12; wrote PRP-098 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-098-init.md`.
+- Modified: `docs/specs/Language v16 Draft.md`, CONTEXT.md, MEMORY.md (start point).
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: PRP-098 waits for approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-098.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**v16: milestones 67–68 complete** (tags `m67` shared boxes, `m68` changing directory). oyster has `cd` (uncommitted in the user's repo, with the rest of oyster).
+**v16: milestones 67–68 complete.** **Milestone 69, `lughac init` (programs and libraries), is proposed:** v16 draft decisions 9–12 and PRP-098. It waits for the user's approval.
 
-**Proposed: PRP-098, a VS Code extension** (`editors/vscode/`: highlighting + `lughac check --offline` diagnostics on open/save; no `lughac` change). It waits for the user's approval; then build it on branch `prp-098-vscode_extension`.
-
-Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams.
-
-Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
+Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`. oyster is uncommitted in the user's repo.
 
 See `TODO.md`.
 

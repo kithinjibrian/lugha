@@ -1939,10 +1939,8 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**v16: milestones 67–68 complete** (tags `m67` shared boxes, `m68` changing directory). oyster has `cd` (uncommitted in the user's repo, with the rest of oyster). Nothing is proposed or in progress.
+**v16: milestones 67–68 complete.** **Milestone 69, `lughac init` (programs and libraries), is proposed:** v16 draft decisions 9–12 and PRP-098. It waits for the user's approval.
 
-Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams.
-
-Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
+Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`. oyster is uncommitted in the user's repo.
 
 See `TODO.md`.

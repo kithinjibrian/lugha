@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) proposed in session 139.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -41,6 +41,22 @@ Found building oyster, a shell in Lugha: `cd` was impossible, because v15's `std
 7. **Shell conveniences are the program's job:** `~`, `cd` alone and `cd -` are oyster's, not the language's.
 8. **Success:** milestone 68, tag `m68`. Tests: `current_dir`, a relative `read_file`, `std.fs` and a child process all see the new directory; `Err` for a missing folder, a file and a NUL. Then oyster's `cd` (`cd dir`, `cd` to `$HOME`, `cd -`, `~`), left uncommitted with the rest of oyster.
 
+## Decisions behind milestone 69 (discovery, session 139)
+
+There is no command to start a Lugha project: `lugha.toml` and the first source file are written by hand. A library and a program need different starting files.
+
+9. **`lughac init [folder] [--lib] [--name N]`** starts a project in `folder` (default: the current one), making it if needed. Without `--lib` it's a program; with it, a library. It never prompts.
+10. **The layouts:**
+    - **both:** `lugha.toml` (`[package]` `name`, `version = "0.1.0"`, `source = "src"`) and a `.gitignore`;
+    - **a program:** `src/main.la`, a `fun main()` printing a greeting;
+    - **a library:** `src/<name>.la`, a documented `public fun`, and `examples/hello.la`, a program importing the library by name (`import <name>.<name>;`), runnable at once through v15's package layout. Naming the module after the package fits a later entry module (`import <name>;`).
+11. **Safety:**
+    - an existing `lugha.toml` stops it before anything is written (exit 2);
+    - no file is ever overwritten: one that exists is kept and reported as `kept`;
+    - the name comes from the folder unless `--name` is given; it must be an identifier that is neither a keyword nor `std`, else exit 2 with a hint (`--name my_shell`);
+    - no `git`, no network.
+12. **Success:** milestone 69, tag `m69`. Tests in `tests/cli.rs`: each layout created, then checked, built and run; each refusal; `kept` files untouched. The spec's CLI table gains `init`.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -70,6 +86,7 @@ Found building oyster, a shell in Lugha: `cd` was impossible, because v15's `std
 | --- | --- | --- |
 | 67 | Shared boxes | `Ref<T>`: `new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing |
 | 68 | Changing directory | `env.set_current_dir(path)` |
+| 69 | `lughac init` | program and library layouts; never overwrites |
 
 ## §12 Open questions — additions
 
