@@ -6317,6 +6317,11 @@ Branch: extension-clean-build
 
 ---
 
+## SESSION 166 — 2026-10-16 — Discovery: the add-missing-arms quick fix — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
