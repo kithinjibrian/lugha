@@ -26,6 +26,7 @@ pub const STD: &[(&str, &str)] = &[
     ("random", include_str!("std/random.la")),
     ("env", include_str!("std/env.la")),
     ("fs", include_str!("std/fs.la")),
+    ("process", include_str!("std/process.la")),
 ];
 
 /// The prelude: the array helpers, written in Lugha and loaded with every

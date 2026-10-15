@@ -118,7 +118,7 @@ int32_t lugha_rt_read_file(const LughaString *path, LughaString **out, LughaStri
     if (!path_ok(path, error)) {
         return 0;
     }
-    FILE *file = fopen(path->bytes, "rb");
+    FILE *file = fopen(path->bytes, "rbe"); /* "e": close-on-exec (v15) */
     if (file == NULL) {
         *error = error_text(errno);
         return 0;
@@ -160,7 +160,7 @@ int32_t lugha_rt_write_file(const LughaString *path, const LughaString *text, in
     if (!path_ok(path, error)) {
         return 0;
     }
-    FILE *file = fopen(path->bytes, append ? "ab" : "wb");
+    FILE *file = fopen(path->bytes, append ? "abe" : "wbe"); /* "e": close-on-exec (v15) */
     if (file == NULL) {
         *error = error_text(errno);
         return 0;

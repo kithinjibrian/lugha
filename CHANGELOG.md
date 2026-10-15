@@ -15,6 +15,13 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- `std.process`:
+  - `run`, `run_with` and `call` run a program with an argument list, never through a shell (`posix_spawnp`, `PATH` lookup for bare names), and give `Output { code, stdout, stderr }` or the exit code;
+  - the child inherits the environment and only fds 0–2 (pipes `O_CLOEXEC`, and the runtime's `fopen`s now use `"e"`);
+  - a `poll` loop serves stdin, stdout and stderr together; `SIGPIPE` is blocked while writing; a signal gives `128 + n`; output must be UTF-8;
+  - runtime fragment `runtime/process.c` (`RUNTIME_SYMBOLS` 53).
+
+  Security-reviewed by the user's approval of PRP-095 — **milestone 66 complete; the v15 TODO is done**
 - `std.fs`: `list_dir` (sorted names, UTF-8 checked in Lugha), `make_dir`, `make_dirs`, `remove_file`, `remove_dir` (empty folders only), `exists`, `is_dir`, `is_file`; runtime fragment `runtime/fs.c` (`RUNTIME_SYMBOLS` 52; `<dirent.h>` and `<sys/stat.h>` in the core) — **milestone 65 complete**
 - `std.env`: `env.get(name): Option<string>` and `env.current_dir(): Result<string, string>`, read-only. Lugha over `$os.env`/`$os.cwd` (bytes, checked as UTF-8 in Lugha), with a new runtime fragment `runtime/env.c` (`RUNTIME_SYMBOLS` 47), `codegen/os.rs`, and `$os` signatures as a table (`check::float_ops::os_signature`). The test runner takes `<name>.envvars` (`KEY=VALUE` lines) — **milestone 64 complete**
 - Format widths count characters, not bytes, and a fill may be any character (`{n:é^9}`); `runtime/format.c` pads by UTF-8 characters and writes the fill's UTF-8. `m46/more.stdout`'s `[{'é':^5}]` line becomes `[  é  ]` (was `[ é  ]`) — **milestone 63 complete**

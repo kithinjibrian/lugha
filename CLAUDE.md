@@ -155,7 +155,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v15 Specification.md` (`lughac spec` prints it): Lugha v15, in progress (milestones 51–65 done: `std.fs`; `std.env`; format widths in characters; `parse_i64`/`parse_u64` and UTF-8 in Lugha; one generic `iter_sum`; lazy std modules — std compiled only as far as reached; user-defined `Ord` — `cmp(self, other: Self): Ordering`, `<` through it, `xs.sort()`; numbers as `T` — `as` with `T: Num`/`Float`, any literal as `T`, E0402 per instance; nested `mut self` calls — E0508 only for arguments that can be the receiver's storage, receivers reached after the arguments; owning arrays once per loop — writes in a loop that can't share its arrays skip the flag test; copy-on-write arrays — a shared flag in `cap`, cloning before writes, two-phase places; `std.random`; the std library — bundled `std.<module>` modules, `std.math`, the `Float` bound; package layout — `[package] name` and `source`, the program's manifest from a parent folder and its implicit package, E0327, E0328; operator overloading — `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, the prelude's `Add`…`Neg` and `Num` bounds, bounds on `impl` blocks). `Language v15 Draft.md` is the approved plan; the rest of v15 (directories, processes, env, Unicode follow-ups) is planned in `TODO.md`. The v0–v14 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
+The language itself is defined by `docs/specs/Language v15 Specification.md` (`lughac spec` prints it): Lugha v15, in progress (milestones 51–66 done, the v15 TODO complete: `std.process`; `std.fs`; `std.env`; format widths in characters; `parse_i64`/`parse_u64` and UTF-8 in Lugha; one generic `iter_sum`; lazy std modules — std compiled only as far as reached; user-defined `Ord` — `cmp(self, other: Self): Ordering`, `<` through it, `xs.sort()`; numbers as `T` — `as` with `T: Num`/`Float`, any literal as `T`, E0402 per instance; nested `mut self` calls — E0508 only for arguments that can be the receiver's storage, receivers reached after the arguments; owning arrays once per loop — writes in a loop that can't share its arrays skip the flag test; copy-on-write arrays — a shared flag in `cap`, cloning before writes, two-phase places; `std.random`; the std library — bundled `std.<module>` modules, `std.math`, the `Float` bound; package layout — `[package] name` and `source`, the program's manifest from a parent folder and its implicit package, E0327, E0328; operator overloading — `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, the prelude's `Add`…`Neg` and `Num` bounds, bounds on `impl` blocks). `Language v15 Draft.md` is the approved plan; the rest of v15 (directories, processes, env, Unicode follow-ups) is planned in `TODO.md`. The v0–v14 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -225,7 +225,7 @@ pub fn parse_number(src: &str) -> i64 {
 ├── runtime/         — the C runtime, embedded in lughac (DECISION-009): lugha_rt.c (core: includes, types,
 │                      init, alloc, panics, strings), stack.c (overflow handler), print.c (formatting),
 │                      input.c (args, parse_i64/f64, stdin lines, files, stderr, exit), format.c (format
-│                      specifiers, v13), bytes.c (binary I/O, UTF-8 check, v14), chars.c (`char` printing and quoting, v14), random.c (`lugha_rt_os_seed`, v15), env.c (`lugha_rt_env`, `lugha_rt_cwd`, v15), fs.c (folders and `stat`, v15); fragments joined in that order
+│                      specifiers, v13), bytes.c (binary I/O, UTF-8 check, v14), chars.c (`char` printing and quoting, v14), random.c (`lugha_rt_os_seed`, v15), env.c (`lugha_rt_env`, `lugha_rt_cwd`, v15), fs.c (folders and `stat`, v15), process.c (`lugha_rt_spawn`: `posix_spawnp`, no shell, v15); fragments joined in that order
 │                      into one lugha_rt.c (PRP-028)
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
@@ -234,7 +234,8 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  math.la (`std.math`: float functions over `T: Float` via `$float.*` built-ins, abs/min/max/clamp, pi/e),
 │   │                  random.la (`std.random`: xoshiro256** `Rng`, `seeded`/`from_os` via `$os.seed`),
 │   │                  env.la (`std.env`: `get`, `current_dir` via `$os.env`/`$os.cwd`),
-│   │                  fs.la (`std.fs`: `list_dir`, `make_dir(s)`, `remove_file`, `remove_dir`, `exists`, `is_dir`, `is_file`)
+│   │                  fs.la (`std.fs`: `list_dir`, `make_dir(s)`, `remove_file`, `remove_dir`, `exists`, `is_dir`, `is_file`),
+│   │                  process.la (`std.process`: `run`, `run_with`, `call` via `$os.spawn`)
 │   ├── prelude/     — the prelude in Lugha, joined in this order into the one module `$prelude` (`lugha::PRELUDE`):
 │   │                  core.la (Result<T, E>, Iter<T> (v6), the array helpers, the string/Option/Result helpers),
 │   │                  iter.la (iterator sources, adapters and consumers, v10; `Display`, v12), more.la (`zip` yielding
@@ -337,7 +338,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── ordering.rs  — user-defined order through lughac: `<` and tuple helpers call `cmp` (v15)
 │   ├── package_layout.rs — package layout through lughac: `source`, `examples/` by name, the `$HOME` bound, E0327/E0328
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m65/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m66/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch/.envvars),
 │                      execute, report)
@@ -363,7 +364,7 @@ Update this tree when modules or `tests/` are added.
 2. **Never write `unsafe` without human approval.** It voids the guarantees every other rule relies on.
 3. **Never silence a clippy lint with `#[allow(...)]` without a comment saying why.** Silent allows hide real bugs.
 4. **Never add an implicit conversion or coercion.** Spec §4 forbids them, except the one it names: a value to an interface where one is expected (v5, recorded in `Checked.conversions`). Every other one is a type hole the checker can't see.
-5. **Never implement a §11 "out of scope" feature** (a package registry, `ssh` URLs, a default entry point, full Unicode tables, streams…) even partially, nor a v15 feature that `Language v15 Draft.md` doesn't plan yet: the rest of v15 waits for its discovery. Changes to how `git` runs (`modules/git.rs`) need the user's security review, as PRP-079 had.
+5. **Never implement a §11 "out of scope" feature** (a package registry, `ssh` URLs, a default entry point, full Unicode tables, streams…) even partially, nor a v15 feature that `Language v15 Draft.md` doesn't plan yet: the rest of v15 waits for its discovery. Changes to how `git` runs (`modules/git.rs`) need the user's security review, as PRP-079 had, and so do changes to how programs are started (`runtime/process.c`, PRP-095).
 6. **Never stop the checker at the first error.** Spec §9 requires reporting as many as it can find.
 7. **Never print diagnostics directly from a stage.** Stages return records; only the driver renders. Otherwise human and JSON output diverge.
 

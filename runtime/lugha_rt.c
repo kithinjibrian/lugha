@@ -24,10 +24,13 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <gc.h>
+#include <poll.h>
 #include <pthread.h>
 #include <signal.h>
+#include <spawn.h>
 #include <sys/random.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <inttypes.h>
 #include <math.h>
@@ -36,6 +39,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 /* A Lugha string: length, then the bytes and a terminating NUL (spec §7). */
 typedef struct {

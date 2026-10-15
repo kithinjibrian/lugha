@@ -49,6 +49,17 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         "list_dir" => (vec![Type::String], result(Type::Array(Box::new(bytes())))),
         "make_dir" | "remove_file" | "remove_dir" => (vec![Type::String], result(Type::I64)),
         "stat_kind" => (vec![Type::String], Type::I64),
+        // `std.process` (milestone 66): the result's tuple is built by
+        // `os_call`, which can register it; `Void` stands in here.
+        "spawn" => (
+            vec![
+                Type::String,
+                Type::Array(Box::new(Type::String)),
+                Type::String,
+                Type::I32,
+            ],
+            Type::Void,
+        ),
         _ => return None,
     })
 }
@@ -145,6 +156,15 @@ impl Checker {
             Some((params, ret)) if params.len() == args.len() => {
                 for (arg, ty) in args.iter().zip(params) {
                     self.expect_type(arg, &Expect::of(ty));
+                }
+                if op == "spawn" {
+                    // `(code, stdout bytes, stderr bytes)`, or the reason it didn't start.
+                    let bytes = Type::Array(Box::new(Type::U8));
+                    let outcome = self.tuple_type(vec![Type::I32, bytes.clone(), bytes]);
+                    return Type::Enum(
+                        super::results::RESULT.to_string(),
+                        vec![outcome, Type::String],
+                    );
                 }
                 ret
             }

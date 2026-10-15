@@ -5413,18 +5413,49 @@ Branch: prp-094-std_fs
 
 ---
 
-## SESSION 134 — 2026-10-15 — `std.process` (milestone 66) — open
+## SESSION 134 — 2026-10-15 — `std.process` (milestone 66) — closed
 Branch: prp-095-std_process
+
+### WHAT WAS DONE
+- Tests first: `m66/process.la` with `.scratch` (expected output by hand). It covers:
+  - arguments with spaces, stdin, exit codes and signals;
+  - a missing program; shell syntax kept as text; stderr;
+  - output order around `call`; NULs; non-UTF-8 output;
+  - 1 MB on both pipes; and the child's fds.
+- Built: `src/std/process.la`; `$os.spawn` (tuple result); `runtime/process.c` (`posix_spawnp`, pipes, `poll`, `SIGPIPE`, `waitpid`); `fopen` mode `"e"`; includes in the core.
+- Five repeated `-O2` runs gave identical output.
+- Spec v15 at milestone 66 (the std.process section with the PATH caveat, §9 notes and runtime row, §10 "Processes", §11 row 66); docs; the security rule added to CLAUDE.md.
+
+### FILES CREATED OR MODIFIED
+- New: `src/std/process.la`, `runtime/process.c`, `tests/programs/m66/`.
+- Modified:
+  - `src/lib.rs`, `src/link.rs`;
+  - `runtime/lugha_rt.c`, `runtime/input.c`;
+  - `src/check/float_ops.rs`, `src/codegen/os.rs`;
+  - `tests/programs/m53/e0312.stderr`, `tests/spec.rs`;
+  - the v15 spec and draft, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (124), PRP-095.
+
+### TESTS WRITTEN
+- `m66/process.la`, §10 "Processes".
+
+### DECISIONS MADE
+- MEMORY 124.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m66`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–65 complete.** **Approved and next:** milestone 66 `std.process` (PRP-095; the user's approval in session 129 was its security review). Follow the PRP's Design 3–7 exactly: `posix_spawnp`, no shell, NUL rejected, `pipe2(O_CLOEXEC)`, runtime fds close-on-exec, `poll` loop, `SIGPIPE` blocked around writes, `128 + signal`, UTF-8 output or `Err`. MEMORY 118 is the plan.
+**Milestones 51–66 complete; the v15 TODO is done** (tags `m61` one `iter_sum`, `m62` C → Lugha, `m63` widths in characters, `m64` `std.env`, `m65` `std.fs`, `m66` `std.process`; built in one go, sessions 129–134). Nothing is proposed or in progress. The v15 spec could be declared complete and frozen once the user wants to start v16; that needs the user's say.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 
-See `TODO.md`.
+Ideas for later live under "After v14 — noted, not scheduled" in `TODO.md` (shared references, file streams, timeouts for processes, …).
 
 ### PENDING DECISIONS OPENED
 - None.

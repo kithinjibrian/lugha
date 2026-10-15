@@ -1,0 +1,15 @@
+0 ["a b c", ""] [""]
+0 ["a", "b", ""] [""]
+3 [""] [""]
+137 [""] [""]
+err no-such-program-xyz: No such file or directory
+0 ["; echo injected", ""] [""]
+0 ["out", ""] ["err", ""]
+before call
+hi
+call 0
+err args[0] contains a NUL byte
+err command contains a NUL byte
+err stdout is not valid UTF-8
+1000000 1000000
+0 ["0", "1", "2", "3", ""] [""]

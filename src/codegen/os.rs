@@ -81,6 +81,64 @@ impl<'ctx> Lowerer<'ctx> {
                     }
                 }
             }
+            // `std.process` (milestone 66): `Ok((code, stdout, stderr))` or `Err(reason)`.
+            "spawn" => {
+                let cmd = self.get(&args[0], &Type::String)?;
+                let list = self.get(&args[1], &Type::Array(Box::new(Type::String)))?;
+                let input = self.get(&args[2], &Type::String)?;
+                let mode = self.get(&args[3], &Type::I32)?;
+                let code = self.out_slot(&Type::I64);
+                let (out, err) = (self.out_slot(&bytes), self.out_slot(&bytes));
+                let error = self.out_slot(&Type::String);
+                let params = [
+                    Type::String,
+                    Type::String,
+                    Type::String,
+                    Type::I32,
+                    Type::String,
+                    Type::String,
+                    Type::String,
+                    Type::String,
+                ];
+                let values = [
+                    cmd,
+                    list,
+                    input,
+                    mode,
+                    code.into(),
+                    out.into(),
+                    err.into(),
+                    error.into(),
+                ];
+                let ok = self.call_flag("lugha_rt_spawn", &params, &values);
+                let result = self.ty(call);
+                let crate::check::Type::Enum(_, parts) = &result else {
+                    unreachable!("checked: `$os.spawn` gives a `Result`")
+                };
+                let tuple = parts[0].clone();
+                let code64 = self.load_slot(code, &Type::I64).into_int_value();
+                let code32 = self
+                    .builder
+                    .build_int_truncate(code64, self.context.i32_type(), "code")
+                    .expect(super::lower::POSITIONED);
+                let stdout = self.load_slot(out, &bytes);
+                let stderr = self.load_slot(err, &bytes);
+                let llvm = super::value::llvm_type(self.context, &tuple).into_struct_type();
+                let mut value = llvm.get_undef();
+                for (i, part) in [code32.into(), stdout, stderr].into_iter().enumerate() {
+                    let index = u32::try_from(i).expect("three elements");
+                    value = self
+                        .builder
+                        .build_insert_value(value, part, index, "outcome")
+                        .expect(super::lower::POSITIONED)
+                        .into_struct_value();
+                }
+                let slot = self.entry_alloca(&tuple, "outcome");
+                self.builder
+                    .build_store(slot, value)
+                    .expect(super::lower::POSITIONED);
+                self.result(call, ok, (slot, &tuple), error)
+            }
             _ => unreachable!("checked: `$os.{op}` is a known built-in"),
         })
     }

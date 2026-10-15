@@ -1,6 +1,6 @@
 ## FEATURE: `std.process` — run another program with an argument list (never a shell), wait, and get its exit code and output; milestone 66.
 
-**Status:** approved 2026-10-15 — session 129 ("approved"); proposed in session 128 (discovery in session 127). Its approval is the user's security review.
+**Status:** merged 2026-10-15 — session 134 (approved in session 129 as its security review; proposed in session 128); tag `m66`.
 **This PRP needs the user's security review.** Approving it is that review (draft decision 51).
 **Milestone:** 66 (one PRP; tag `m66` at merge)
 **Spec:** `Language v15 Draft.md` decisions 50–51; spec "The standard library", §9 (runtime table), §10 (a program), §11 (row 66).
@@ -82,7 +82,7 @@ None (libc's `posix_spawn`, `pipe2`, `poll` and `waitpid`).
 - **No `unsafe`, no dependencies.**
 
 ## TESTS TO WRITE
-- [ ] **Program `m66/process.la`:**
+- [x] **Program `m66/process.la`:**
   - `run("echo", ["a b", "c"])` gives stdout `"a b c\n"` and code 0, showing an argument with a space stays one argument;
   - `run_with("sort", [], "b\na\n")` gives `"a\nb\n"`;
   - `run("sh", ["-c", "exit 3"])` gives code 3;
@@ -91,25 +91,41 @@ None (libc's `posix_spawn`, `pipe2`, `poll` and `waitpid`).
   - `run("echo", ["; echo injected"])` prints the literal text;
   - `call("echo", ["hi"])` lets `hi` through;
   - a NUL argument gives `Err`.
-- [ ] **Descriptor test:**
+- [x] **Descriptor test:**
   - after using `random.from_os()` and reading and appending to files, a program runs `sh -c 'ls /proc/self/fd'`;
   - only 0, 1, 2 and the listing's own descriptor appear.
-- [ ] **Deadlock test:** a child writing 1 MB to stderr and 1 MB to stdout completes.
-- [ ] **E0312 help** lists `std.process`.
-- [ ] **Regression.**
+- [x] **Deadlock test:** a child writing 1 MB to stderr and 1 MB to stdout completes.
+- [x] **E0312 help** lists `std.process`.
+- [x] **Regression.**
 
 ## ROLLBACK PLAN
 - Branch `prp-095-std_process`; tag `m66`.
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] The user approved this PRP as its security review.
-- [ ] All tests pass at `-O0`; `m66/` at `-O2`.
-- [ ] Spec at milestone 66; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] fmt, clippy and tests pass; CI green.
+- [x] The user approved this PRP as its security review.
+- [x] All tests pass at `-O0`; `m66/` at `-O2`.
+- [x] Spec at milestone 66; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] fmt, clippy and tests pass; CI green.
 
 ## VALIDATION
 ```bash
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 ```
+
+## AMENDMENTS
+
+Session 134, while building:
+1. **One built-in,** `$os.spawn(cmd, args, input, mode): Result<(i32, u8[], u8[]), string>`. Mode 0 is `call`, 1 is `run`, 2 is `run_with`. The checker builds the tuple type in `os_call` (`tuple_type`); codegen packs the code and both outputs into it.
+2. **Flushing:** `fflush(NULL)` runs before spawning, so what the program printed comes before the child's output. That matters for `call`, which shares stdout; the program test checks the order.
+3. **The NUL message** names the array index: `"args[0] contains a NUL byte"`, and `"command contains a NUL byte"`.
+4. **`Output`'s fields are `public`** (`public code: i32`, …) so other packages can read them.
+5. **Close-on-exec:**
+   - the runtime's `fopen`s (`read_file`, `write_file`, `append_file`, and the byte variants through the same code) use mode `"e"`;
+   - `random.c` already used `O_CLOEXEC`, and glibc's `opendir` does too;
+   - the program test lists `/proc/self/fd` in a child after files and `from_os` were used: only 0, 1, 2 and `ls`'s own 3.
+6. **Pending `SIGPIPE`:** one raised while blocked is consumed with `sigtimedwait` before the mask is restored, so it can't end the program afterwards.
+7. **Checks:** five repeated `-O2` runs of `m66/process.la` gave identical output, including the 1 MB-each deadlock case.
+8. **Changed golden:** `m53/e0312.stderr` lists `std.process`.
+

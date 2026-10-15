@@ -329,7 +329,7 @@ Found writing glowworm and firefly (session 115); each needs a discovery and a P
 The user chose this scope; the discovery stopped after its first answer, so v15 starts by resuming it (one question at a time), then a draft spec, then PRPs.
 
 - [x] **Directories:** done in milestone 65 (PRP-094) as `std.fs`.
-- [ ] **Processes:** run a program with an argument list (never a shell), wait, and get its exit code and output. *(chosen; needs a security review like PRP-079)*
+- [x] **Processes:** done in milestone 66 (PRP-095, security-reviewed by the user's approval) as `std.process`.
   - Open: the API's shape. The proposal not yet answered:
     - `run(cmd, args): Result<Output, string>` with a prelude `Output { code, stdout, stderr }` that captures;
     - `call(cmd, args): Result<i32, string>` that passes output through to the terminal;

@@ -1,0 +1,41 @@
+// std.process (v15, milestone 66): programs run with an argument list,
+// never through a shell, in a fresh scratch directory.
+import std.process;
+import std.random;
+
+fun show(r: Result<process.Output, string>): string = match r {
+    Ok(o) => "{o.code} {o.stdout.split("\n")} {o.stderr.split("\n")}",
+    Err(e) => "err {e}",
+};
+
+fun main() {
+    // An argument with a space stays one argument.
+    println(show(process.run("echo", ["a b", "c"])));
+    println(show(process.run_with("sort", [], "b\na\n")));
+    println(show(process.run("sh", ["-c", "exit 3"])));
+    println(show(process.run("sh", ["-c", "kill -9 $$"])));
+    println(show(process.run("no-such-program-xyz", [])));
+    // Shell syntax in an argument is just text.
+    println(show(process.run("echo", ["; echo injected"])));
+    println(show(process.run("sh", ["-c", "echo out; echo err >&2"])));
+    println("before call");
+    match process.call("echo", ["hi"]) {
+        Ok(code) => println("call {code}"),
+        Err(e) => println(e),
+    }
+    println(show(process.run("echo", ["a\0b"])));
+    println(show(process.run("ec\0ho", [])));
+    println(show(process.run("printf", ["\\377"])));
+    // Both pipes full at once can't deadlock.
+    let big = "head -c 1000000 /dev/zero | tr '\\0' a; head -c 1000000 /dev/zero | tr '\\0' b >&2";
+    match process.run("sh", ["-c", big]) {
+        Ok(o) => println("{o.stdout.len} {o.stderr.len}"),
+        Err(e) => println(e),
+    }
+    // Only 0, 1 and 2 reach a child, even after the runtime opened files.
+    let mut rng = random.from_os();
+    let w = write_file("note.txt", "x");
+    let a = append_file("note.txt", "y");
+    let r = read_file("note.txt");
+    println(show(process.run("ls", ["/proc/self/fd"])));
+}

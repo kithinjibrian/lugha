@@ -1779,11 +1779,22 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. `src/std/fs.la` sits over `$os.list_dir`, `make_dir`, `remove_file`, `remove_dir` and `stat_kind` (`runtime/fs.c`); names are bytes checked and sorted in Lugha, and `make_dirs` is Lugha.
 
+### 124. `std.process` — milestone 66 (PRP-095)
+
+**Decision:** built as the user security-reviewed it. `src/std/process.la` sits over `$os.spawn`, and `runtime/process.c` does the work:
+- **Starting:** `posix_spawnp`, no shell; NUL is refused.
+- **Descriptors:** `pipe2(O_CLOEXEC)`, and the runtime's `fopen`s use `"e"`.
+- **I/O:** a `poll` loop; `SIGPIPE` is blocked while writing, and a pending one is consumed.
+- **Results:** `fflush(NULL)` before spawning; `128 + signal`; output must be UTF-8.
+
+**Rule:** changes to `runtime/process.c` need the user's security review (CLAUDE.md anti-pattern 5).
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 66 complete — the v15 TODO is done**: PRP-095 `std.process`
 - **Milestone 65 complete**: PRP-094 `std.fs`
 - **Milestone 64 complete**: PRP-093 `std.env`
 - **Milestone 63 complete**: PRP-092 widths in characters
@@ -1896,8 +1907,8 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–65 complete.** **Approved and next:** milestone 66 `std.process` (PRP-095; the user's approval in session 129 was its security review). Follow the PRP's Design 3–7 exactly: `posix_spawnp`, no shell, NUL rejected, `pipe2(O_CLOEXEC)`, runtime fds close-on-exec, `poll` loop, `SIGPIPE` blocked around writes, `128 + signal`, UTF-8 output or `Err`. MEMORY 118 is the plan.
+**Milestones 51–66 complete; the v15 TODO is done** (tags `m61` one `iter_sum`, `m62` C → Lugha, `m63` widths in characters, `m64` `std.env`, `m65` `std.fs`, `m66` `std.process`; built in one go, sessions 129–134). Nothing is proposed or in progress. The v15 spec could be declared complete and frozen once the user wants to start v16; that needs the user's say.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 
-See `TODO.md`.
+Ideas for later live under "After v14 — noted, not scheduled" in `TODO.md` (shared references, file streams, timeouts for processes, …).
