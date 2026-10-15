@@ -5849,6 +5849,11 @@ Branch: prp-101-lsp_hover
 
 ---
 
+## SESSION 148 — 2026-10-15 — Discovery: go-to-definition in the language server — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
