@@ -1873,11 +1873,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. `check/members.rs` (`TypeMembers` from the checker's struct, enum, interface and method tables; built-ins and helpers by filtering one candidate list through `builtins::builtin` and `helpers::helper_function`, so they can't drift; iterator helpers for types with `next`); `Partial.members`, `Partial.prelude`; `check::intrinsics()`. The server keeps `last_good` beside `snapshots` (shared `Rc`). **Refinement of decision 29:** offsets are trusted up to the longest prefix the check's text and the current text share; a receiver past it is looked up by name among locals declared within that prefix, imports and types — this is what makes `p.` on a new line work.
 
+### 141. Signature help planned (session 154, approved session 155)
+
+**Decision:** v16 draft decisions 33–37: every callable; generic calls filled in when the last good check knows the instance (the user's choice over "as written"), the written header as documentation; intrinsics from a table matching spec §5.
+
+### 142. Signature help — milestone 74 (PRP-104)
+
+**Decision:** built as planned. `check/signatures.rs` (`Sig`, recorded in `env.rs::collect` and `methods.rs`, in `Partial.signatures`); `driver/lsp/signature.rs` scans forward from a line start up to 2,000 bytes back with a bracket stack (strings, chars, comments skipped); the receiver logic moved into `completion.rs`'s shared `Here::receiver`. The intrinsic table is tested against `check::intrinsics()` and the embedded spec — it caught three guessed parameter names during the build.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 74 complete**: PRP-104 signature help
 - **Milestone 73 complete**: PRP-103 completion
 - **Milestone 72 complete**: PRP-102 go-to-definition
 - **Milestone 71 complete**: PRP-101 hover
