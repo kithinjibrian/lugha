@@ -20,6 +20,8 @@ pub(super) struct Snapshot {
     pub source: Source,
     pub modules: Vec<Module>,
     pub partial: Partial,
+    /// The text had syntax errors: the tree is partial (milestone 75).
+    pub broken: bool,
 }
 
 impl Snapshot {

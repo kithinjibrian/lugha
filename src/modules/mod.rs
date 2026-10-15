@@ -164,8 +164,14 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
                 }
                 Err(source) => return Err(LoadError::Io { path: file, source }),
             };
-        let mut module =
-            parse::parse_module(path, file, (base, next_id), bytes, &mut loaded.diagnostics);
+        let mut module = parse::parse_module(
+            path,
+            file,
+            (base, next_id),
+            bytes,
+            &mut loaded.diagnostics,
+            env.partial,
+        );
         module.package = package.clone();
         // One byte of gap, so a span at a file's very end isn't the next file's start.
         base = base
@@ -221,6 +227,14 @@ pub const PRELUDE_PATH: &str = "$prelude";
 /// Its diagnostics, which only a compiler bug can cause, go to `diagnostics`.
 pub fn with_prelude(modules: &mut Vec<Module>, diagnostics: &mut Vec<Diagnostic>) {
     let base = modules.last().map_or(0, |m| m.base + m.text.len() + 1);
+    with_prelude_at(modules, diagnostics, base);
+}
+
+/// [`with_prelude`] with the prelude at offset `base`, for a program whose
+/// manifests sit after its last module: the language server places it past
+/// every file it loaded, so a manifest's diagnostic is never taken for the
+/// prelude's (milestone 75).
+pub fn with_prelude_at(modules: &mut Vec<Module>, diagnostics: &mut Vec<Diagnostic>, base: usize) {
     let first_id = modules
         .iter()
         .filter_map(|m| m.program.as_ref())
@@ -230,7 +244,7 @@ pub fn with_prelude(modules: &mut Vec<Module>, diagnostics: &mut Vec<Diagnostic>
     let path = vec![PRELUDE_PATH.to_string()];
     let bytes = crate::PRELUDE.as_bytes().to_vec();
     let file = PathBuf::from("<prelude>");
-    let module = parse::parse_module(path, file, (base, first_id), bytes, diagnostics);
+    let module = parse::parse_module(path, file, (base, first_id), bytes, diagnostics, false);
     modules.push(module);
 }
 

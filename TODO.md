@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 75 — Partial syntax trees ✅
+- [x] PRP-105: the language server checks the parser's recovered program; only syntax errors shown meanwhile; tagged `m75`
+
 ### Milestone 74 — Signature help ✅
 - [x] PRP-104: the call being typed and its active parameter; generics filled in when known; tagged `m74`
 
@@ -376,7 +379,9 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [x] **Hover types** — milestone 71, PRP-101.
 - [x] **Go to Definition** — milestone 72, PRP-102.
 - [x] **Completion** — milestone 73, PRP-103.
-- [ ] **Partial syntax trees** — the parser keeping a tree with error nodes, so completion and hover work on code that doesn't parse yet without the last-good-check rule.
+- [x] **Partial syntax trees** (statements and items) — milestone 75, PRP-105.
+- [ ] **Expression error nodes** — keep a broken statement with a hole, so `foo(p).` on the broken line completes too.
+- [ ] **Lexer recovery** — tokens up to an unclosed string, so a fresh `"` without auto-closing doesn't lose the tree.
 - [x] **Signature help** — milestone 74, PRP-104.
 - [ ] **Snippets**.
 - [ ] **Find References** and **Go to Implementations** — the definitions table read backwards; implementations of interface methods.

@@ -16,6 +16,7 @@ pub(super) fn parse_module(
     (base, first_id): (usize, u32),
     bytes: Vec<u8>,
     diagnostics: &mut Vec<Diagnostic>,
+    partial: bool,
 ) -> Module {
     let text = match String::from_utf8(bytes) {
         Ok(text) => text,
@@ -60,14 +61,20 @@ pub(super) fn parse_module(
                 token.span = Span::new(token.span.start + base, token.span.end + base);
             }
             // The parser's spans all come from these tokens, so they are already shifted.
-            match parser::parse_from(&tokens, first_id) {
-                Ok((program, warnings)) => {
-                    diagnostics.extend(warnings);
-                    Some(program)
-                }
-                Err(errors) => {
-                    diagnostics.extend(errors);
-                    None
+            if partial {
+                let (program, found) = parser::parse_partial_from(&tokens, first_id);
+                diagnostics.extend(found);
+                Some(program)
+            } else {
+                match parser::parse_from(&tokens, first_id) {
+                    Ok((program, warnings)) => {
+                        diagnostics.extend(warnings);
+                        Some(program)
+                    }
+                    Err(errors) => {
+                        diagnostics.extend(errors);
+                        None
+                    }
                 }
             }
         }

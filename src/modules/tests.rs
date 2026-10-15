@@ -9,6 +9,11 @@ use super::{LoadError, Loaded, load};
 
 /// Loads `dir/main.la` from `files` (paths relative to `dir`).
 pub(super) fn run(files: &[(&str, &[u8])]) -> Result<Loaded, LoadError> {
+    run_with(files, LoadEnv::plain())
+}
+
+/// `run` with `env`.
+fn run_with(files: &[(&str, &[u8])], env: LoadEnv) -> Result<Loaded, LoadError> {
     let table: HashMap<PathBuf, Vec<u8>> = files
         .iter()
         .map(|(p, bytes)| (Path::new("dir").join(p), bytes.to_vec()))
@@ -22,7 +27,7 @@ pub(super) fn run(files: &[(&str, &[u8])]) -> Result<Loaded, LoadError> {
         }
         None => Err(io::Error::from(io::ErrorKind::NotFound)),
     };
-    load(Path::new("dir/main.la"), &mut read, LoadEnv::plain())
+    load(Path::new("dir/main.la"), &mut read, env)
 }
 
 fn ok(files: &[(&str, &[u8])]) -> Loaded {
@@ -290,4 +295,45 @@ fn packages_may_import_each_other() {
     ]);
     assert!(loaded.diagnostics.is_empty(), "{:?}", codes(&loaded));
     assert_eq!(paths(&loaded), ["", "a.x", "b.y"]);
+}
+
+#[test]
+fn partial_loading_keeps_a_broken_module_and_follows_its_imports() {
+    let files: &[(&str, &[u8])] = &[
+        ("main.la", b"import util;\nfun main() { }\n"),
+        (
+            "util.la",
+            b"import geo;\nfun f() { let x = ; }\nfun g() { }\n",
+        ),
+        ("geo.la", b"fun h() { }\n"),
+    ];
+    let strict = ok(files);
+    let util = |l: &Loaded| {
+        l.modules
+            .iter()
+            .find(|m| m.path == ["util"])
+            .cloned()
+            .expect("util")
+    };
+    assert!(util(&strict).program.is_none());
+    assert_eq!(
+        strict.modules.len(),
+        2,
+        "geo isn't reached through a broken util"
+    );
+    let partial = run_with(
+        files,
+        LoadEnv {
+            partial: true,
+            ..LoadEnv::plain()
+        },
+    )
+    .expect("loads");
+    assert_eq!(partial.diagnostics, strict.diagnostics);
+    let program = util(&partial).program.expect("the recovered program");
+    assert_eq!(program.items.len(), 2);
+    assert!(
+        partial.modules.iter().any(|m| m.path == ["geo"]),
+        "geo is loaded"
+    );
 }

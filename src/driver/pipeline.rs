@@ -44,20 +44,25 @@ pub(super) struct Front {
 /// can't be read is internal; mistakes in the program come back as diagnostics.
 pub(super) fn loaded(path: &Path, mode: Mode) -> Result<(Source, Loaded), Failure> {
     let mut read = |file: &Path| std::fs::read(file);
-    loaded_with(path, mode, &mut read, true)
+    loaded_with(path, mode, &mut read, (true, false))
 }
 
-/// `loaded` reading files through `read`, and writing `lugha.lock` only if
-/// `write_lock`: the language server reads open documents' unsaved text
-/// and never writes (v16 draft decision 13).
+/// `loaded` reading files through `read`, writing `lugha.lock` only if
+/// `write_lock`, and keeping modules' recovered programs if `partial`: the
+/// language server reads open documents' unsaved text, never writes (v16
+/// draft decision 13) and checks text with syntax errors (decision 38).
 pub(super) fn loaded_with(
     path: &Path,
     mode: Mode,
     read: &mut modules::Read<'_>,
-    write_lock: bool,
+    (write_lock, partial): (bool, bool),
 ) -> Result<(Source, Loaded), Failure> {
     let name = path.display().to_string();
-    match modules::load(path, read, update::env(mode)) {
+    let env = modules::layout::LoadEnv {
+        partial,
+        ..update::env(mode)
+    };
+    match modules::load(path, read, env) {
         Ok(loaded) => {
             let root = path.parent().unwrap_or(Path::new(""));
             let source = Source::of(&name, root, &loaded);
@@ -108,7 +113,8 @@ pub(super) struct PartialFront {
     pub source: Source,
     /// Every module, the main file first and the prelude last.
     pub modules: Vec<Module>,
-    /// The loader's warnings; the checker's diagnostics are in `partial`.
+    /// The loader's diagnostics: its warnings, and the syntax errors of a
+    /// program checked partially (milestone 75); the checker's are in `partial`.
     pub warnings: Vec<Diagnostic>,
     pub partial: check::Partial,
 }
@@ -121,9 +127,29 @@ pub(super) fn front_partial(
     mode: Mode,
     read: &mut modules::Read<'_>,
 ) -> Result<PartialFront, Failure> {
-    let mut front = parse_loaded(loaded_with(path, mode, read, false)?)?;
+    let (source, loaded) = loaded_with(path, mode, read, (false, true))?;
+    // A module that didn't lex has no program: nothing to check.
+    if loaded.modules.iter().any(|m| m.program.is_none()) {
+        return Err(Failure::Program(source, loaded.diagnostics));
+    }
+    // Past every file loaded, manifests too: the loader's diagnostics stay
+    // in the files they name.
+    let end = loaded
+        .manifests
+        .iter()
+        .map(|m| (m.base, &m.text))
+        .chain(loaded.modules.iter().map(|m| (m.base, &m.text)))
+        .map(|(base, text)| base + text.len() + 1)
+        .max()
+        .unwrap_or(0);
+    let mut front = Front {
+        source,
+        modules: loaded.modules,
+        warnings: loaded.diagnostics,
+        checked: None,
+    };
     let mut prelude_errors = Vec::new();
-    modules::with_prelude(&mut front.modules, &mut prelude_errors);
+    modules::with_prelude_at(&mut front.modules, &mut prelude_errors, end);
     let prelude = front.modules.last().expect("the prelude was just added");
     front.source.add("<prelude>", prelude.base, &prelude.text);
     let start = prelude.base;

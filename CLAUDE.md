@@ -163,7 +163,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 - `editors/vscode/` — the VS Code extension (PRP-099, PRP-100): TypeScript on Node 22, one runtime dependency (`vscode-languageclient`, MIT) and dev dependencies (`typescript`, `@types/vscode`, `@types/node`, `vscode-tmgrammar-test`, `@vscode/vsce`), tests with `node:test`. It starts only `lughac lsp`, which never runs `git` or writes a file; changes to how it starts `lughac`, or to what the server may do, need the user's security review.
 
-The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestones 67–74 done: signature help, completion, go-to-definition, hover and `lughac lsp`; `lughac init`; `env.set_current_dir`; shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
+The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestones 67–75 done: partial syntax trees for the language server, signature help, completion, go-to-definition, hover and `lughac lsp`; `lughac init`; `env.set_current_dir`; shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -260,7 +260,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── ast/         — mod.rs (items, statements), types.rs (written types), expr.rs (expressions, ExprId, StructLiteral, Part),
 │   │                  pattern.rs (arms, nested patterns, guards), header.rs (imports, type parameters, bounds,
 │   │                  interfaces)
-│   ├── parser/      — mod.rs (parse, cursor, errors), recover.rs, describe.rs, operators.rs (operator tables, `>>` as two `>`), conditional.rs (`if let`, `while let`, `let … else`), self_type.rs (`Self` in `impl` blocks, v10, and in struct and enum declarations, v13),
+│   ├── parser/      — mod.rs (parse, cursor, errors; `parse_partial_from`: the recovered program for the language server, v16), recover.rs, describe.rs, operators.rs (operator tables, `>>` as two `>`), conditional.rs (`if let`, `while let`, `let … else`), self_type.rs (`Self` in `impl` blocks, v10, and in struct and enum declarations, v13),
 │   │                  expr.rs (Pratt), primary.rs, stmt.rs, item.rs, decl.rs (enum, impl, receivers),
 │   │                  pattern.rs (match, patterns, guards), generic.rs (type params, m.T / T<args>),
 │   │                  import.rs (import, pub), interface.rs (interfaces, bounds), closure.rs (closure
@@ -325,7 +325,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  lock, cache, clone, E0325/E0326; fetch_tests.rs with a fake `Git`), parse.rs (one module: decode, lex,
 │   │                  parse), paths.rs (`exists`, `normalized`, E0320), package_table.rs (v15: `[package]` version, name,
 │   │                  source), layout.rs (v15: `LoadEnv`, the bounded manifest lookup, `name`/`source`, the implicit
-│   │                  package, E0327/E0328; layout_tests.rs), std_tests.rs (v15: `std` modules from `lugha::STD`, reserved `std`)
+│   │                  package, E0327/E0328, `LoadEnv.partial` keeping broken modules' programs for the language server (v16); layout_tests.rs), std_tests.rs (v15: `std` modules from `lugha::STD`, reserved `std`)
 │   ├── link.rs      — `cc … lugha_rt.c -lgc -lm -o out`, RUNTIME_PARTS, RUNTIME_SOURCE, RUNTIME_SYMBOLS, LinkError
 │   └── driver/      — mod.rs (clap CLI, exit codes, Output), build.rs (build, --emit per module), guard.rs
 │                      (panics → internal error, exit 2), pipeline.rs (load all modules + the prelude, check, codegen),
@@ -351,6 +351,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── lsp.rs       — `lughac lsp` over real stdio: live diagnostics, unsaved text, modules through seen mains, entries, offline (v16)
 │   ├── lsp_hover.rs — hover through `lughac lsp`: bindings, functions and methods, fields, expressions, notes, with errors (v16)
 │   ├── lsp_definition.rs — go-to-definition through `lughac lsp`: names, types, fields, variants, modules, none for std (v16)
+│   ├── lsp_partial.rs — the language server in files with syntax errors: only syntax errors shown, hover, definitions, completion, signature help (v16)
 │   ├── lsp_signature.rs — signature help through `lughac lsp`: functions, generics filled in, methods, modules, variants, built-ins, intrinsics (v16)
 │   ├── lsp_completion.rs — completion through `lughac lsp`: members, modules, variants, names in scope, while the text doesn't parse (v16)
 │   ├── package_layout.rs — package layout through lughac: `source`, `examples/` by name, the `$HOME` bound, E0327/E0328
