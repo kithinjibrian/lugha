@@ -1,0 +1,38 @@
+// std.fs (v15, milestone 65), in a fresh scratch directory: making,
+// listing, testing and removing files and folders.
+import std.fs;
+
+fun show(r: Result<i64, string>): string = match r {
+    Ok(n) => "ok {n}",
+    Err(e) => "err {e}",
+};
+
+fun list(path: string): string = match fs.list_dir(path) {
+    Ok(names) => "{names}",
+    Err(e) => e,
+};
+
+fun main() {
+    println(show(fs.make_dir("box")));
+    println(show(fs.make_dir("box")));
+    println(show(fs.make_dirs("deep/er/est")));
+    println(show(fs.make_dirs("deep/er/est")));
+    let a = write_file("box/b.txt", "b");
+    let b = write_file("box/a.txt", "a");
+    let c = write_file("box/Z.txt", "z");
+    println(list("box"));
+    println("{fs.exists("box")} {fs.is_dir("box")} {fs.is_file("box")}");
+    println("{fs.exists("box/a.txt")} {fs.is_dir("box/a.txt")} {fs.is_file("box/a.txt")}");
+    println("{fs.exists("nope")} {fs.is_dir("nope")} {fs.is_file("nope")}");
+    println(show(fs.remove_file("box")));
+    println(show(fs.remove_dir("box")));
+    println(show(fs.remove_file("box/a.txt")));
+    println(show(fs.remove_file("box/b.txt")));
+    println(show(fs.remove_file("box/Z.txt")));
+    println(show(fs.remove_dir("box")));
+    println(fs.exists("box"));
+    println(list("nope"));
+    println(list("deep"));
+    println(show(fs.make_dir("bad\0name")));
+    println(fs.exists("bad\0name"));
+}

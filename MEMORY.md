@@ -1775,11 +1775,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 - **Built-ins:** `$os.*` now go through a checker table (`os_signature`) and `codegen/os.rs`.
 - **Tests:** the runner has `.envvars`.
 
+### 123. `std.fs` — milestone 65 (PRP-094)
+
+**Decision:** built as planned. `src/std/fs.la` sits over `$os.list_dir`, `make_dir`, `remove_file`, `remove_dir` and `stat_kind` (`runtime/fs.c`); names are bytes checked and sorted in Lugha, and `make_dirs` is Lugha.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 65 complete**: PRP-094 `std.fs`
 - **Milestone 64 complete**: PRP-093 `std.env`
 - **Milestone 63 complete**: PRP-092 widths in characters
 - **Milestone 62 complete**: PRP-091 C → Lugha
@@ -1891,7 +1896,7 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–64 complete.** **Approved and next, in one go:** milestone 65 `std.fs` (PRP-094), then 66 `std.process` (PRP-095, security-reviewed by approval). Add `$os` ops to `check::float_ops::os_signature` and `codegen/os.rs`, and new runtime fragments in `RUNTIME_PARTS`, `RUNTIME_SOURCE` and `RUNTIME_SYMBOLS`. MEMORY 118 is the plan.
+**Milestones 51–65 complete.** **Approved and next:** milestone 66 `std.process` (PRP-095; the user's approval in session 129 was its security review). Follow the PRP's Design 3–7 exactly: `posix_spawnp`, no shell, NUL rejected, `pipe2(O_CLOEXEC)`, runtime fds close-on-exec, `poll` loop, `SIGPIPE` blocked around writes, `128 + signal`, UTF-8 output or `Err`. MEMORY 118 is the plan.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 

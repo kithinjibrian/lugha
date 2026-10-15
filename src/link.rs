@@ -14,7 +14,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// The runtime's source files, in the order they are joined: the core first,
 /// since it holds every `#include`, then the fragments that rely on it.
-pub const RUNTIME_PARTS: [(&str, &str); 9] = [
+pub const RUNTIME_PARTS: [(&str, &str); 10] = [
     ("lugha_rt.c", include_str!("../runtime/lugha_rt.c")),
     ("stack.c", include_str!("../runtime/stack.c")),
     ("print.c", include_str!("../runtime/print.c")),
@@ -24,10 +24,11 @@ pub const RUNTIME_PARTS: [(&str, &str); 9] = [
     ("chars.c", include_str!("../runtime/chars.c")),
     ("random.c", include_str!("../runtime/random.c")),
     ("env.c", include_str!("../runtime/env.c")),
+    ("fs.c", include_str!("../runtime/fs.c")),
 ];
 
 /// Every runtime function codegen may call; `lugha_rt.c` defines them all.
-pub const RUNTIME_SYMBOLS: [&str; 47] = [
+pub const RUNTIME_SYMBOLS: [&str; 52] = [
     "lugha_rt_init",
     "lugha_rt_read_line",
     "lugha_rt_read_file",
@@ -63,6 +64,11 @@ pub const RUNTIME_SYMBOLS: [&str; 47] = [
     "lugha_rt_str_from_bytes",
     "lugha_rt_env",
     "lugha_rt_cwd",
+    "lugha_rt_list_dir",
+    "lugha_rt_make_dir",
+    "lugha_rt_remove_file",
+    "lugha_rt_remove_dir",
+    "lugha_rt_stat_kind",
     "lugha_rt_print_char",
     "lugha_rt_to_string_char",
     "lugha_rt_char_quote",
@@ -89,6 +95,7 @@ pub const RUNTIME_SOURCE: &str = concat!(
     include_str!("../runtime/chars.c"),
     include_str!("../runtime/random.c"),
     include_str!("../runtime/env.c"),
+    include_str!("../runtime/fs.c"),
 );
 
 /// Why linking failed.

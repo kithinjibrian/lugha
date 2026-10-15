@@ -1,6 +1,6 @@
 ## FEATURE: `std.fs` — list, create and remove directories and files, and test what exists; milestone 65.
 
-**Status:** approved 2026-10-15 — session 129 ("approved"); proposed in session 128 (discovery in session 127).
+**Status:** merged 2026-10-15 — session 133 (approved in session 129; proposed in session 128); tag `m65`.
 **Milestone:** 65 (one PRP; tag `m65` at merge)
 **Spec:** `Language v15 Draft.md` decision 49; spec §5 (file intrinsics, for consistency), "The standard library", §9 (runtime table), §10 (a program), §11 (row 65).
 
@@ -63,27 +63,37 @@ None.
 - **No `unsafe`, no dependencies.**
 
 ## TESTS TO WRITE
-- [ ] **Program `m65/fs.la`** (in the case's scratch directory, `.scratch`):
+- [x] **Program `m65/fs.la`** (in the case's scratch directory, `.scratch`):
   - `make_dir`, `make_dirs` (nested, then again: still `Ok`);
   - write files with `write_file`; `list_dir` sorted;
   - `is_dir`/`is_file`/`exists`;
   - `remove_file` on a folder gives `Err`; `remove_dir` on a non-empty folder gives `Err`, then on an empty one `Ok`;
   - `list_dir` on a missing path gives `Err("No such file or directory")`.
-- [ ] **NUL path** gives `Err`.
-- [ ] **E0312 help** lists `std.fs`.
-- [ ] **Regression.**
+- [x] **NUL path** gives `Err`.
+- [x] **E0312 help** lists `std.fs`.
+- [x] **Regression.**
 
 ## ROLLBACK PLAN
 - Branch `prp-094-std_fs`; tag `m65`.
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass at `-O0`; `m65/` at `-O2`.
-- [ ] Spec at milestone 65; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] fmt, clippy and tests pass; CI green.
+- [x] All tests pass at `-O0`; `m65/` at `-O2`.
+- [x] Spec at milestone 65; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] fmt, clippy and tests pass; CI green.
 
 ## VALIDATION
 ```bash
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 ```
+
+## AMENDMENTS
+
+Session 133, while building:
+1. **The `$os` built-ins** are `list_dir` (`Result<u8[][], string>`), `make_dir`, `remove_file`, `remove_dir` (`Result<i64, string>`) and `stat_kind` (`i64`). `stat_kind` serves `exists`, `is_dir` and `is_file`, and the codegen for each sits beside M64's in `codegen/os.rs`.
+2. **`list_dir`'s names** are bytes checked with `string_from_utf8`; sorting uses `xs.sort()` (M59).
+3. **`<dirent.h>` and `<sys/stat.h>`** joined the core fragment's includes (only the core may include).
+4. **Changed golden:** `m53/e0312.stderr` lists `std.fs`.
+5. **The §10 program** runs in the spec test's temp folder and removes what it makes.
+

@@ -36,7 +36,8 @@ pub fn os_op(callee: &Expr) -> Option<&str> {
 }
 
 /// The parameters and result of `$os.op` (v15): `seed` for `std.random`,
-/// `env` and `cwd` for `std.env` (as bytes, checked as UTF-8 in Lugha).
+/// `env` and `cwd` for `std.env`, the folder operations for `std.fs` (text
+/// as bytes, checked as UTF-8 in Lugha).
 pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
     let bytes = || Type::Array(Box::new(Type::U8));
     let result = |t: Type| Type::Enum(super::results::RESULT.to_string(), vec![t, Type::String]);
@@ -44,6 +45,10 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         "seed" => (Vec::new(), Type::U64),
         "env" => (vec![Type::String], Type::Option(Box::new(bytes()))),
         "cwd" => (Vec::new(), result(bytes())),
+        // `std.fs` (milestone 65).
+        "list_dir" => (vec![Type::String], result(Type::Array(Box::new(bytes())))),
+        "make_dir" | "remove_file" | "remove_dir" => (vec![Type::String], result(Type::I64)),
+        "stat_kind" => (vec![Type::String], Type::I64),
         _ => return None,
     })
 }

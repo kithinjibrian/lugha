@@ -1,0 +1,51 @@
+// std.fs (v15, milestone 65): folders and what exists. File contents stay
+// with the intrinsics (`read_file`, `write_file`, …). Nothing here deletes
+// recursively: `remove_dir` takes only an empty folder.
+
+// The names in folder `path`, sorted by their bytes, without `.` and `..`.
+public fun list_dir(path: string): Result<string[], string> {
+    let raw = $os.list_dir(path)?;
+    let mut names: string[] = [];
+    for bytes of raw {
+        match string_from_utf8(bytes) {
+            Ok(name) => names.push(name),
+            Err(_) => {
+                return Err("a name in {path} is not valid UTF-8");
+            }
+        }
+    }
+    Ok(names.sort())
+}
+
+// Makes folder `path`; its parent must exist.
+public fun make_dir(path: string): Result<i64, string> = $os.make_dir(path);
+
+// Makes folder `path` and any missing parents; fine if it exists already.
+public fun make_dirs(path: string): Result<i64, string> {
+    let mut prefix = if path.starts_with("/") { "/" } else { "" };
+    for part of path.split("/") {
+        if part.len == 0 {
+            continue;
+        }
+        prefix = if prefix.len == 0 || prefix.ends_with("/") { prefix + part } else { prefix + "/" + part };
+        if !is_dir(prefix) {
+            make_dir(prefix)?;
+        }
+    }
+    Ok(0)
+}
+
+// Removes file (or symbolic link) `path`; never a folder.
+public fun remove_file(path: string): Result<i64, string> = $os.remove_file(path);
+
+// Removes folder `path`, which must be empty.
+public fun remove_dir(path: string): Result<i64, string> = $os.remove_dir(path);
+
+// Whether something exists at `path`, following symbolic links.
+public fun exists(path: string): bool = $os.stat_kind(path) != 0;
+
+// Whether `path` is a folder.
+public fun is_dir(path: string): bool = $os.stat_kind(path) == 2;
+
+// Whether `path` is a regular file.
+public fun is_file(path: string): bool = $os.stat_kind(path) == 1;

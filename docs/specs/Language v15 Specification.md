@@ -2,11 +2,11 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 51–64 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
+**Status:** in progress (milestones 51–65 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
 
 **v14.** This is v13 plus binary I/O, `char`, tuples, `format`, import aliases and whole-module re-exports, and git packages (milestones 45–50).
 
-**Changes since v14** (milestones 51–64):
+**Changes since v14** (milestones 51–65):
 - A package's `[package]` table may give its `name`, checked against the key a manifest lists it under (E0327), and its `source`, the folder its modules start in: with `source = "src"`, `src/array.la` of package `glowworm` is `glowworm.array` (section 6).
 - A program with no `lugha.toml` beside its main file uses the nearest one above it, looking no further than a folder with `.git` or the home folder; when that manifest names a package, the program imports it by that name, so `glowworm/examples/basics.la` writes `import glowworm.array;` with no manifest of its own (section 6).
 - A file imported as two modules is E0328 (section 6).
@@ -22,6 +22,7 @@ Oct 13, 2026 · @kithinji
 - `parse_i64`, `parse_u64` and `string_from_utf8` are written in Lugha in the prelude, and `string_from_utf8` and `s.chars()` share one UTF-8 decoder; results and messages are unchanged (milestone 62; section 9).
 - A format width counts characters, not bytes (`{"Zoë":<6}` pads with three spaces, not two), and any character may fill (`{n:é^9}`); text without non-ASCII characters prints as before (milestone 63; section 5).
 - `std.env`: `env.get(name)` reads an environment variable as an `Option<string>`, and `env.current_dir()` gives the working directory; nothing sets either (milestone 64; "The standard library").
+- `std.fs`: `fs.list_dir`, `make_dir`, `make_dirs`, `remove_file`, `remove_dir` (empty folders only), `exists`, `is_dir` and `is_file` (milestone 65; "The standard library").
 - `std.random`: `random.seeded(42)` or `random.from_os()` makes a generator (xoshiro256\*\*, not cryptographically secure) with `uniform`, `below`, `between`, `normal`, `chance`, `choice` and `shuffle` ("The standard library").
 
 Every valid v14 program and package is a valid v15 one: a module's own type or interface named `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg`, `Num` or `Ordering` still means its own, as for `Iter`.
@@ -928,7 +929,7 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 - **Loading.** Every file is read once, so packages may import each other. A package has no main file; `main` in one is E0304, and importing the program's main file is E0319, as for any module.
 - **Visibility.** Another package sees only what is `public` (below).
 
-**The standard library** (v15). Version 15 has `std.math`, `std.random` and `std.env`.
+**The standard library** (v15). Version 15 has `std.math`, `std.random`, `std.env` and `std.fs`.
 
 `std.math` (milestone 53). The float functions take and return any `T: Float` (`f32` or `f64`) and follow IEEE 754: they never panic, `sqrt(-1.0)` is `NaN`, `ln(0.0)` is `-inf` and `pow(0.0, -1.0)` is `inf`.
 
@@ -968,6 +969,17 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 | --- | --- |
 | `get(name: string): Option<string>` | the variable's value, or `None` when it is unset, isn't valid UTF-8, or `name` contains a NUL byte |
 | `current_dir(): Result<string, string>` | the absolute path of the working directory, or `Err` with the system's message (e.g. when it was deleted) |
+
+`std.fs` (milestone 65). Folders and what exists; a file's contents stay with the intrinsics (`read_file`, `write_file`, …). Errors are the system's message, as for `read_file`; a path holding a NUL byte is `Err("path contains a NUL byte")` (or `false`). Nothing deletes recursively.
+
+| Function | Result |
+| --- | --- |
+| `list_dir(path): Result<string[], string>` | the entries' names sorted by their bytes, without `.` and `..`; a name that isn't UTF-8 is `Err("a name in <path> is not valid UTF-8")` |
+| `make_dir(path): Result<i64, string>` | `Ok(0)` after making one folder (mode 0777 less the umask); its parent must exist |
+| `make_dirs(path): Result<i64, string>` | `Ok(0)` after making the folder and any missing parents; already existing is fine |
+| `remove_file(path): Result<i64, string>` | `Ok(0)` after removing a file or symbolic link; a folder is `Err` |
+| `remove_dir(path): Result<i64, string>` | `Ok(0)` after removing an empty folder; a non-empty one is `Err` |
+| `exists(path)`, `is_dir(path)`, `is_file(path)`: `bool` | whether something, a folder or a regular file is at `path`, following symbolic links; never an error |
 
 
 **Using another module.** `import shapes.circle;` binds the name `circle` in that file only.
@@ -1133,6 +1145,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - The v13 iterator helpers are Lugha in the prelude's third file, compiled only when reached like the others. `flat_map` keeps its current inner iterator in a 0- or 1-element array, so `next` steps it in place.
 - A format specifier (v13) is parsed once by the checker (E0431) and again by codegen, which passes its parts to `lugha_rt_fmt_int`, `lugha_rt_fmt_float` or `lugha_rt_pad`, from a runtime fragment `format.c`. Programs without specifiers give byte-identical IR.
 - `format` (v14) splits its template into text and holes in the checker and again in codegen, then lowers like an interpolated string with the arguments as its parts. Programs without `format` give byte-identical IR.
+- `std.fs` (v15) is Lugha code over `$os.list_dir` (names as bytes, sorted in Lugha), `$os.make_dir`, `$os.remove_file`, `$os.remove_dir` (`mkdir`, `unlink`, `rmdir`) and `$os.stat_kind` (`stat`: 0 none, 1 file, 2 folder, 3 other); `make_dirs` is Lugha over `make_dir` and `is_dir`.
 - `std.env` (v15) is Lugha code over `$os.env(name): Option<u8[]>` (`lugha_rt_env`, `getenv`, a copy) and `$os.cwd(): Result<u8[], string>` (`lugha_rt_cwd`, `getcwd` with a growing buffer); the bytes become strings through `string_from_utf8`, so C never decides what UTF-8 is.
 - `std.random` (v15) is Lugha code except `$os.seed()`, which calls the runtime's `lugha_rt_os_seed() -> u64`, and `$float.from_f64(x)`, which is a no-op at `f64` and `fptrunc` at `f32`; both built-ins can be named only in bundled sources.
 - A std module (v15) is embedded in `lughac` (`lugha::STD`) and joins the program's offset space like a file when imported; its items' symbols carry its path, `lugha_fn_std/math/sqrt<f64>`. A `$float.<op>` built-in at `f32` or `f64` lowers to LLVM's intrinsic at that width (`llvm.sqrt.f64`, `llvm.log` for `ln`, `llvm.round`, `llvm.atan2`, …), so `std.math` makes no call into libm. Programs that import nothing from `std` give byte-identical IR.
@@ -1207,6 +1220,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_str_quote(s)` | `s` quoted and escaped, for strings inside a printed value (v12) |
 | `lugha_rt_os_seed()` | 64 bits of OS entropy for `std.random`'s `from_os()` (v15): `getrandom`, else `/dev/urandom`, else a panic |
 | `lugha_rt_env(name, out)` / `lugha_rt_cwd(out, error)` | `std.env` (v15): a variable's bytes, or 0 when unset or the name holds a NUL; the working directory's bytes, or 0 and the system's message |
+| `lugha_rt_list_dir(path, out, error)` / `lugha_rt_make_dir` / `lugha_rt_remove_file` / `lugha_rt_remove_dir(path, error)` / `lugha_rt_stat_kind(path)` | `std.fs` (v15): a folder's names as bytes, one folder made or removed, a file removed, each with the system's message on failure; the kind of thing at a path |
 | `lugha_rt_fmt_int(v, bits, signed, kind, alt, fill, align, width, zero)` / `lugha_rt_fmt_float(v, f32, precision, fill, align, width, zero)` / `lugha_rt_pad(text, fill, align, width)` | Format specifiers (v13): an integer (sign- or zero-extended to `i64`), a float (as `f64`), or any other value's text, padded; all arguments are plain numbers |
 | `lugha_rt_print_newline()` | The newline `println` adds |
 | `lugha_rt_args()` | A new `string[]` of the program's arguments (v3) |
@@ -2922,6 +2936,34 @@ fun main() {
 }
 ```
 
+**Directories** (milestone 65). Prints `["a.log", "b.log"]`, `true true false`, `Directory not empty`, `false` on four lines, exits with 0, and leaves nothing behind.
+
+```
+// std.fs (v15): folders and what exists, cleaned up afterwards.
+import std.fs;
+
+fun main() {
+    let made = fs.make_dirs("runs/2026");
+    let a = write_file("runs/2026/b.log", "b");
+    let b = write_file("runs/2026/a.log", "a");
+    match fs.list_dir("runs/2026") {
+        Ok(names) => println(names),
+        Err(e) => println(e),
+    }
+    println("{fs.is_dir("runs")} {fs.is_file("runs/2026/a.log")} {fs.exists("runs/x")}");
+    match fs.remove_dir("runs/2026") {
+        Ok(_) => println("removed"),
+        Err(e) => println(e),
+    }
+    for name of fs.list_dir("runs/2026").unwrap_or([]) {
+        let gone = fs.remove_file("runs/2026/{name}");
+    }
+    let x = fs.remove_dir("runs/2026");
+    let y = fs.remove_dir("runs");
+    println(fs.exists("runs"));
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2992,6 +3034,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 62 | C → Lugha (v15) | `parse_i64`/`parse_u64` and one UTF-8 decoder in the prelude, `$string.from_bytes` | Every program prints the same; `m62/decode.la` matches the C implementation (done) |
 | 63 | Widths in characters (v15) | format widths count characters, any character fills | `m63/widths.la` (done) |
 | 64 | `std.env` (v15) | `get`, `current_dir`, read-only; `$os.env`, `$os.cwd` | The environment program in section 10 passes (done) |
+| 65 | `std.fs` (v15) | folders and what exists; no recursive delete; `$os.list_dir` … `$os.stat_kind` | The directories program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

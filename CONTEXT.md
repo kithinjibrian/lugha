@@ -5382,14 +5382,40 @@ Branch: prp-093-std_env
 
 ---
 
-## SESSION 133 — 2026-10-15 — `std.fs` (milestone 65) — open
+## SESSION 133 — 2026-10-15 — `std.fs` (milestone 65) — closed
 Branch: prp-094-std_fs
+
+### WHAT WAS DONE
+- Tests first: `m65/fs.la` with `.scratch` (expected output by hand: POSIX messages, sorting, the NUL path).
+- Built: `src/std/fs.la`; five `$os` built-ins (checker table, `codegen/os.rs`); `runtime/fs.c`; includes in the core.
+- `m53/e0312.stderr` lists `std.fs`.
+- Spec v15 at milestone 65 (std.fs table, §9 notes and runtime row, §10 "Directories", §11 row 65); docs.
+
+### FILES CREATED OR MODIFIED
+- New: `src/std/fs.la`, `runtime/fs.c`, `tests/programs/m65/`.
+- Modified:
+  - `src/lib.rs`, `src/link.rs`, `runtime/lugha_rt.c`;
+  - `src/check/float_ops.rs`, `src/codegen/os.rs`;
+  - `tests/programs/m53/e0312.stderr`, `tests/spec.rs`;
+  - the v15 spec and draft, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (123), PRP-094.
+
+### TESTS WRITTEN
+- `m65/fs.la`, §10 "Directories".
+
+### DECISIONS MADE
+- MEMORY 123.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m65`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–64 complete.** **Approved and next, in one go:** milestone 65 `std.fs` (PRP-094), then 66 `std.process` (PRP-095, security-reviewed by approval). Add `$os` ops to `check::float_ops::os_signature` and `codegen/os.rs`, and new runtime fragments in `RUNTIME_PARTS`, `RUNTIME_SOURCE` and `RUNTIME_SYMBOLS`. MEMORY 118 is the plan.
+**Milestones 51–65 complete.** **Approved and next:** milestone 66 `std.process` (PRP-095; the user's approval in session 129 was its security review). Follow the PRP's Design 3–7 exactly: `posix_spawnp`, no shell, NUL rejected, `pipe2(O_CLOEXEC)`, runtime fds close-on-exec, `poll` loop, `SIGPIPE` blocked around writes, `128 + signal`, UTF-8 output or `Err`. MEMORY 118 is the plan.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 
