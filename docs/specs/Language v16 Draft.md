@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) proposed in session 137.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -33,6 +33,14 @@ Found while writing firefly and oyster, and discussed in session 135: without an
 
    No library changes.
 
+## Decisions behind milestone 68 (discovery, session 137)
+
+Found building oyster, a shell in Lugha: `cd` was impossible, because v15's `std.env` was read-only (session 127, decision 48) and `std.process` takes no directory.
+
+6. **`env.set_current_dir(path): Result<i64, string>`** changes the program's working directory (`chdir`): `Ok(0)`, or `Err` with the system's message (a missing folder, a file, no permission); a NUL byte in `path` is `Err("path contains a NUL byte")`. It is process-wide, so relative paths in the file intrinsics and `std.fs` resolve against it, and every program `std.process` starts afterwards runs there. Environment variables stay read-only.
+7. **Shell conveniences are the program's job:** `~`, `cd` alone and `cd -` are oyster's, not the language's.
+8. **Success:** milestone 68, tag `m68`. Tests: `current_dir`, a relative `read_file`, `std.fs` and a child process all see the new directory; `Err` for a missing folder, a file and a NUL. Then oyster's `cd` (`cd dir`, `cd` to `$HOME`, `cd -`, `~`), left uncommitted with the rest of oyster.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -61,6 +69,7 @@ Found while writing firefly and oyster, and discussed in session 135: without an
 | # | Milestone | Scope |
 | --- | --- | --- |
 | 67 | Shared boxes | `Ref<T>`: `new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing |
+| 68 | Changing directory | `env.set_current_dir(path)` |
 
 ## §12 Open questions — additions
 

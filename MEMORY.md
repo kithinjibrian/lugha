@@ -1928,14 +1928,8 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Lugha v16 has begun: milestone 67 complete** (tag `m67`: shared boxes `Ref<T>`, PRP-096). v15 is frozen (milestones 51–66), and `lughac spec` prints `Language v16 Specification.md`. Nothing is proposed or in progress.
+**v16: milestone 67 complete.** **Milestone 68, changing the working directory (`env.set_current_dir`), is proposed:** v16 draft decisions 6–8 and PRP-097. It waits for the user's approval. Then the language change, then oyster's `cd` (left uncommitted with the rest of oyster).
 
-Candidates for v16 (TODO's v16 section; each needs a discovery):
-- changing the working directory (oyster's `cd`);
-- streaming pipes and timeouts for `std.process`;
-- a package entry module (`import glowworm;`);
-- editing a box in place; a bounds-checked byte buffer; file streams.
-
-Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`. oyster's shell is written but uncommitted in the user's repo.
+Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 
 See `TODO.md`.
