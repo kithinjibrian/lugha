@@ -6163,8 +6163,30 @@ Branch: prp-106-block_comments
 
 ---
 
-## SESSION 160 — 2026-10-16 — Discovery: `/** … */` doc comments in the language server — open
+## SESSION 160 — 2026-10-16 — Discovery: `/** … */` doc comments in the language server — closed
 Branch: main
+
+### WHAT WAS DONE
+- Merged milestone 76 (block comments, PR #9, tag `m76`) in session 159; this session is the doc-comments discovery the user asked for next.
+- Discovery: Markdown with `@param`/`@returns`; docs on every named declaration (so hover gains type and variant names); std and the prelude documented from the spec's tables.
+- Checked: the std and prelude files stay under 500 lines with docs (core.la 260 → about 370).
+- Added v16 draft decisions 47–51 (milestone 77); wrote PRP-107 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-107-doc_comments.md`.
+- Modified: `docs/specs/Language v16 Draft.md`, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: PRP-107 waits for approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-107.
 
 ---
 
@@ -6172,7 +6194,7 @@ Branch: main
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
 
-**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. **Milestone 73 done** (tag `m73`): completion; the user's manual checks of milestones 70–73 all passed (session 153). **Milestone 74 done** (tag `m74`): signature help. **Milestone 75 done** (tag `m75`): partial syntax trees. **Milestone 76 done** (tag `m76`): block comments. **Next: milestone 77, `/** … */` doc comments in the language server** (the user asked for it; discovery first). Later for the extension: expression error nodes, lexer recovery, snippets, bundling. Later for the extension (each a discovery + PRP): partial syntax trees, signature help and snippets, Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. **Milestone 73 done** (tag `m73`): completion; the user's manual checks of milestones 70–73 all passed (session 153). **Milestone 74 done** (tag `m74`): signature help. **Milestone 75 done** (tag `m75`): partial syntax trees. **Milestone 76 done** (tag `m76`): block comments. **Proposed: milestone 77, doc comments** — v16 draft decisions 47–51 and PRP-107; it waits for the user's approval. Later for the extension: expression error nodes, lexer recovery, snippets, bundling. Later for the extension (each a discovery + PRP): partial syntax trees, signature help and snippets, Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built. Milestone 76 (block comments) approved in session 159 (proposed in session 158), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built. Milestone 76 (block comments) approved in session 159 (proposed in session 158), and built. Milestone 77 (doc comments) proposed in session 160.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -126,6 +126,16 @@ The user wants JSDoc-style documentation, `/** … */`, shown by the editor. Lug
 45. **Compatibility:** every valid program stays valid with the same meaning. Outside strings and `//` comments, `/*` never occurs in valid code today, since `*` is never a prefix operator (`a / *b` is a syntax error).
 46. **Success:** milestone 76, tag `m76`. Lexer tests, a `tests/programs/m76/` case and a rejected one, a §10 program; the VS Code grammar highlights them (nested) and `Shift+Alt+A` toggles them.
 
+## Decisions behind milestone 77 (discovery, session 160)
+
+The second step the user asked for: JSDoc-style documentation.
+
+47. **A doc comment** is a `/** … */` block comment (not `/**/`) followed, apart from whitespace and a `public`/`private`, by a declaration: a function, method, extern, struct, field, enum, variant, interface or interface method. To the compiler it stays a comment; nothing about a program changes.
+48. **Its text** is Markdown, with each line's leading `*` removed. `@param name text` documents a parameter, `@returns text` the result; other `@tags` show as written.
+49. **Where it shows:** hover (under the header; hover now also answers on type and variant names: `struct Point`, `Circle(f64)`), completion items, and signature help (the description, and the active parameter's `@param` text).
+50. **std and the prelude are documented:** every public `std` function and every prelude helper completion offers gets a doc comment, its text from the spec's tables; a test fails on one without.
+51. **Success:** milestone 77, tag `m77`. Tests in `tests/lsp_docs.rs`; the spec's §2 names the convention.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -163,6 +173,7 @@ The user wants JSDoc-style documentation, `/** … */`, shown by the editor. Lug
 | 74 | Signature help | every callable; generic instances filled in when known; intrinsics in the spec's call form |
 | 75 | Partial syntax trees | the language server checks text with syntax errors; the CLI unchanged |
 | 76 | Block comments | `/* … */`, nested; E0113 |
+| 77 | Doc comments | `/** … */` before declarations, `@param`/`@returns`; shown by the language server; std and the prelude documented |
 
 ## §12 Open questions — additions
 
