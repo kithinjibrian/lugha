@@ -6369,6 +6369,11 @@ Branch: prp-109-missing_arms
 
 ---
 
+## SESSION 168 — 2026-10-16 — Discovery: a formatter — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
