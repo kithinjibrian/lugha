@@ -50,7 +50,7 @@ pub fn discover(root: &Path) -> Result<Vec<Case>, Vec<Malformed>> {
             Some("stdout") => group.stdout = Some(rel),
             Some("stderr") => group.stderr = Some(rel),
             Some("exit") => group.exit = Some(rel),
-            Some("args" | "stdin" | "scratch") => group.extra.push(rel),
+            Some("args" | "stdin" | "scratch" | "envvars") => group.extra.push(rel),
             // Other files (notes, READMEs) are not part of any case.
             _ => {}
         }

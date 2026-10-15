@@ -124,6 +124,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Nested calls",
         "Numbers as T",
         "Ordering",
+        "Environment",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

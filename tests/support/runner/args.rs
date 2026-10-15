@@ -1,7 +1,8 @@
 //! What a run case may have beside its expectations:
 //! - `<name>.args` (PRP-038): one argument per line, passed after `lughac run <file> --`;
 //! - `<name>.stdin` (PRP-044): fed to the program's stdin;
-//! - `<name>.scratch` (PRP-044, empty): run in a fresh temporary directory.
+//! - `<name>.scratch` (PRP-044, empty): run in a fresh temporary directory;
+//! - `<name>.envvars` (v15, PRP-093): `KEY=VALUE` lines set in the program's environment.
 
 use std::path::PathBuf;
 
@@ -14,6 +15,8 @@ pub struct Extras {
     /// `None` gives the program an empty stdin.
     pub stdin: Option<Vec<u8>>,
     pub scratch: bool,
+    /// Environment variables to set, in file order.
+    pub envvars: Vec<(String, String)>,
 }
 
 /// `mode` with the extras its `files` give; only a run case takes any.
@@ -34,6 +37,7 @@ pub fn extras(
         match kind {
             "args" => extras.args = parse_args(&read(file)?),
             "stdin" => extras.stdin = Some(read(file)?),
+            "envvars" => extras.envvars = parse_envvars(&read(file)?)?,
             _ => extras.scratch = true,
         }
     }
@@ -50,11 +54,40 @@ pub fn parse_args(bytes: &[u8]) -> Vec<String> {
     text.split('\n').map(str::to_string).collect()
 }
 
+/// The variables in an `.envvars` file: `KEY=VALUE` per line; a line
+/// without `=` or with an empty key is an error.
+pub fn parse_envvars(bytes: &[u8]) -> Result<Vec<(String, String)>, String> {
+    let text = String::from_utf8_lossy(bytes);
+    let mut vars = Vec::new();
+    for line in text.lines().filter(|l| !l.is_empty()) {
+        match line.split_once('=') {
+            Some((key, value)) if !key.is_empty() => {
+                vars.push((key.to_string(), value.to_string()))
+            }
+            _ => return Err(format!("`{line}` in an .envvars file isn't KEY=VALUE")),
+        }
+    }
+    Ok(vars)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::parse_args;
+    use super::{parse_args, parse_envvars};
     use crate::support::fixture::Fixture;
     use crate::support::runner::discover;
+
+    #[test]
+    fn envvars_are_key_value_lines() {
+        assert_eq!(
+            parse_envvars(b"A=1\nB=x=y\n").unwrap(),
+            [
+                ("A".to_string(), "1".to_string()),
+                ("B".to_string(), "x=y".to_string())
+            ]
+        );
+        assert!(parse_envvars(b"NOEQUALS\n").is_err());
+        assert!(parse_envvars(b"=v\n").is_err());
+    }
 
     #[test]
     fn each_line_is_one_argument() {

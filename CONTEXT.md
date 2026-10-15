@@ -5351,14 +5351,40 @@ Branch: prp-092-widths_in_chars
 
 ---
 
-## SESSION 132 — 2026-10-15 — `std.env` (milestone 64) — open
+## SESSION 132 — 2026-10-15 — `std.env` (milestone 64) — closed
 Branch: prp-093-std_env
+
+### WHAT WAS DONE
+- Tests first: `m64/env.la` with `env.envvars`; runner `.envvars` support and `envvars_are_key_value_lines`.
+- Built: `src/std/env.la`; `$os.env`/`$os.cwd` (checker table `os_signature`, `codegen/os.rs`); `runtime/env.c`.
+- `m53/e0312.stderr` lists `std.env`.
+- Spec v15 at milestone 64 (std.env table, §9 notes and runtime row, §10 "Environment", §11 row 64); docs.
+
+### FILES CREATED OR MODIFIED
+- New: `src/std/env.la`, `src/codegen/os.rs`, `runtime/env.c`, `tests/programs/m64/`.
+- Modified:
+  - `src/lib.rs`, `src/link.rs`;
+  - `src/check/float_ops.rs`; `src/codegen/expr.rs`, `io.rs`, `mod.rs`;
+  - `tests/support/runner/args.rs`, `discover.rs`, `execute.rs`; `tests/programs/m53/e0312.stderr`, `tests/spec.rs`;
+  - the v15 spec and draft, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (122), PRP-093.
+
+### TESTS WRITTEN
+- `m64/env.la`, `envvars_are_key_value_lines`, §10 "Environment".
+
+### DECISIONS MADE
+- MEMORY 122.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m64`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–63 complete.** **Approved and next, in one go:** milestone 64 `std.env` (PRP-093), 65 `std.fs` (PRP-094) and 66 `std.process` (PRP-095, security-reviewed by approval). MEMORY 118 is the plan.
+**Milestones 51–64 complete.** **Approved and next, in one go:** milestone 65 `std.fs` (PRP-094), then 66 `std.process` (PRP-095, security-reviewed by approval). Add `$os` ops to `check::float_ops::os_signature` and `codegen/os.rs`, and new runtime fragments in `RUNTIME_PARTS`, `RUNTIME_SOURCE` and `RUNTIME_SYMBOLS`. MEMORY 118 is the plan.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 

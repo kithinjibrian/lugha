@@ -1768,11 +1768,19 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. `format.rs` makes the fill a `char`, `format.c::pad_bytes` counts non-continuation bytes and writes the fill's UTF-8, and only `m46/more` changed.
 
+### 122. `std.env` — milestone 64 (PRP-093)
+
+**Decision:** built as planned.
+- **Module:** `src/std/env.la` over `$os.env`/`$os.cwd`, which return bytes checked by `string_from_utf8`; `runtime/env.c`.
+- **Built-ins:** `$os.*` now go through a checker table (`os_signature`) and `codegen/os.rs`.
+- **Tests:** the runner has `.envvars`.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 64 complete**: PRP-093 `std.env`
 - **Milestone 63 complete**: PRP-092 widths in characters
 - **Milestone 62 complete**: PRP-091 C → Lugha
 - **Milestone 61 complete**: PRP-090 one `iter_sum`
@@ -1883,7 +1891,7 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–63 complete.** **Approved and next, in one go:** milestone 64 `std.env` (PRP-093), 65 `std.fs` (PRP-094) and 66 `std.process` (PRP-095, security-reviewed by approval). MEMORY 118 is the plan.
+**Milestones 51–64 complete.** **Approved and next, in one go:** milestone 65 `std.fs` (PRP-094), then 66 `std.process` (PRP-095, security-reviewed by approval). Add `$os` ops to `check::float_ops::os_signature` and `codegen/os.rs`, and new runtime fragments in `RUNTIME_PARTS`, `RUNTIME_SOURCE` and `RUNTIME_SYMBOLS`. MEMORY 118 is the plan.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 

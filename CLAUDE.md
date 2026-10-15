@@ -155,7 +155,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v15 Specification.md` (`lughac spec` prints it): Lugha v15, in progress (milestones 51–63 done: format widths in characters; `parse_i64`/`parse_u64` and UTF-8 in Lugha; one generic `iter_sum`; lazy std modules — std compiled only as far as reached; user-defined `Ord` — `cmp(self, other: Self): Ordering`, `<` through it, `xs.sort()`; numbers as `T` — `as` with `T: Num`/`Float`, any literal as `T`, E0402 per instance; nested `mut self` calls — E0508 only for arguments that can be the receiver's storage, receivers reached after the arguments; owning arrays once per loop — writes in a loop that can't share its arrays skip the flag test; copy-on-write arrays — a shared flag in `cap`, cloning before writes, two-phase places; `std.random`; the std library — bundled `std.<module>` modules, `std.math`, the `Float` bound; package layout — `[package] name` and `source`, the program's manifest from a parent folder and its implicit package, E0327, E0328; operator overloading — `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, the prelude's `Add`…`Neg` and `Num` bounds, bounds on `impl` blocks). `Language v15 Draft.md` is the approved plan; the rest of v15 (directories, processes, env, Unicode follow-ups) is planned in `TODO.md`. The v0–v14 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
+The language itself is defined by `docs/specs/Language v15 Specification.md` (`lughac spec` prints it): Lugha v15, in progress (milestones 51–64 done: `std.env`; format widths in characters; `parse_i64`/`parse_u64` and UTF-8 in Lugha; one generic `iter_sum`; lazy std modules — std compiled only as far as reached; user-defined `Ord` — `cmp(self, other: Self): Ordering`, `<` through it, `xs.sort()`; numbers as `T` — `as` with `T: Num`/`Float`, any literal as `T`, E0402 per instance; nested `mut self` calls — E0508 only for arguments that can be the receiver's storage, receivers reached after the arguments; owning arrays once per loop — writes in a loop that can't share its arrays skip the flag test; copy-on-write arrays — a shared flag in `cap`, cloning before writes, two-phase places; `std.random`; the std library — bundled `std.<module>` modules, `std.math`, the `Float` bound; package layout — `[package] name` and `source`, the program's manifest from a parent folder and its implicit package, E0327, E0328; operator overloading — `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, the prelude's `Add`…`Neg` and `Num` bounds, bounds on `impl` blocks). `Language v15 Draft.md` is the approved plan; the rest of v15 (directories, processes, env, Unicode follow-ups) is planned in `TODO.md`. The v0–v14 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -225,14 +225,15 @@ pub fn parse_number(src: &str) -> i64 {
 ├── runtime/         — the C runtime, embedded in lughac (DECISION-009): lugha_rt.c (core: includes, types,
 │                      init, alloc, panics, strings), stack.c (overflow handler), print.c (formatting),
 │                      input.c (args, parse_i64/f64, stdin lines, files, stderr, exit), format.c (format
-│                      specifiers, v13), bytes.c (binary I/O, UTF-8 check, v14), chars.c (`char` printing and quoting, v14), random.c (`lugha_rt_os_seed`, v15); fragments joined in that order
+│                      specifiers, v13), bytes.c (binary I/O, UTF-8 check, v14), chars.c (`char` printing and quoting, v14), random.c (`lugha_rt_os_seed`, v15), env.c (`lugha_rt_env`, `lugha_rt_cwd`, v15); fragments joined in that order
 │                      into one lugha_rt.c (PRP-028)
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
 │   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints), PRELUDE, STD (v15)
 │   ├── std/         — the standard library in Lugha (v15), embedded as `lugha::STD` and loaded only when imported:
 │   │                  math.la (`std.math`: float functions over `T: Float` via `$float.*` built-ins, abs/min/max/clamp, pi/e),
-│   │                  random.la (`std.random`: xoshiro256** `Rng`, `seeded`/`from_os` via `$os.seed`)
+│   │                  random.la (`std.random`: xoshiro256** `Rng`, `seeded`/`from_os` via `$os.seed`),
+│   │                  env.la (`std.env`: `get`, `current_dir` via `$os.env`/`$os.cwd`)
 │   ├── prelude/     — the prelude in Lugha, joined in this order into the one module `$prelude` (`lugha::PRELUDE`):
 │   │                  core.la (Result<T, E>, Iter<T> (v6), the array helpers, the string/Option/Result helpers),
 │   │                  iter.la (iterator sources, adapters and consumers, v10; `Display`, v12), more.la (`zip` yielding
@@ -302,7 +303,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  (dynamic calls, interface copies, type-pattern tests), defaults.rs (default instances, `?` boxing),
 │   │                  instances.rs (generic instances:
 │   │                  substitution, instance symbols),
-│   │                  swap.rs (swap: loads and crossed stores), bits.rs (bit operators, the shift range check), int_methods.rs (wrapping and counting methods), int_checked.rs (v10 checked/saturating/rotating methods, `I.MIN`/`I.MAX`), or_patterns.rs (alternatives in the arm chain, `mut` copies), format.rs (format specifiers → `lugha_rt_fmt_*`), show.rs (printing: `text`, `lugha_show_<type>` helpers), show_iface.rs (printing interface values by identity), unwrap.rs (`unwrap`/`expect`), conditional.rs (`if let`, `while let`, `let … else`), iterators.rs (iterator loops: a hidden copy, `next` until `None`), tuples.rs (tuple literals, patterns, printing, `lugha_cmp_` order), operators.rs (v15: operator method calls; numbers keep the built-in operators), float_ops.rs (v15: `$float.<op>` → `llvm.<op>.f32/f64`), ordering.rs (v15: `<` through `cmp`, `user_order`),
+│   │                  swap.rs (swap: loads and crossed stores), bits.rs (bit operators, the shift range check), int_methods.rs (wrapping and counting methods), int_checked.rs (v10 checked/saturating/rotating methods, `I.MIN`/`I.MAX`), or_patterns.rs (alternatives in the arm chain, `mut` copies), format.rs (format specifiers → `lugha_rt_fmt_*`), show.rs (printing: `text`, `lugha_show_<type>` helpers), show_iface.rs (printing interface values by identity), unwrap.rs (`unwrap`/`expect`), conditional.rs (`if let`, `while let`, `let … else`), iterators.rs (iterator loops: a hidden copy, `next` until `None`), tuples.rs (tuple literals, patterns, printing, `lugha_cmp_` order), operators.rs (v15: operator method calls; numbers keep the built-in operators), float_ops.rs (v15: `$float.<op>` → `llvm.<op>.f32/f64`), os.rs (v15: `$os.<op>` → runtime calls with flags and out-slots), ordering.rs (v15: `<` through `cmp`, `user_order`),
 │   │                  upcast.rs (between interfaces: table registry, derived tables, `lugha_up_` lookups)
 │   ├── modules/     — mod.rs (load: the main file and every import, one offset space; with_prelude), resolve.rs
 │   │                  (import checks, E0312/E0314/E0319), manifest.rs (`lugha.toml`, E0321), inline.rs (inline
@@ -335,9 +336,9 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── ordering.rs  — user-defined order through lughac: `<` and tuple helpers call `cmp` (v15)
 │   ├── package_layout.rs — package layout through lughac: `source`, `examples/` by name, the `$HOME` bound, E0327/E0328
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m63/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m64/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
-│   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
+│   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch/.envvars),
 │                      execute, report)
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
 ├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/

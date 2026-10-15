@@ -334,7 +334,7 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
     - `run(cmd, args): Result<Output, string>` with a prelude `Output { code, stdout, stderr }` that captures;
     - `call(cmd, args): Result<i32, string>` that passes output through to the terminal;
     - optionally stdin text.
-- [ ] **Environment variables:** `env(name): Option<string>` and the current directory, read-only. *(chosen)*
+- [x] **Environment variables:** done in milestone 64 (PRP-093) as `std.env`: `get(name)` and `current_dir()`, read-only.
 - [ ] **Unicode follow-ups:**
   - [x] format widths counted in characters, not bytes (done in milestone 63, PRP-092);
   - fuller `char` classification and case tables beyond Latin-1: **ruled out of v15 by the user** (session 127), keeping §11's "full Unicode tables" exclusion.

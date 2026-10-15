@@ -148,7 +148,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// A stack slot for a runtime out-parameter, cleared first.
-    fn out_slot(&mut self, ty: &Type) -> PointerValue<'ctx> {
+    pub(super) fn out_slot(&mut self, ty: &Type) -> PointerValue<'ctx> {
         let slot = self.entry_alloca(ty, "out");
         let zero: BasicValueEnum = match llvm_type(self.context, ty) {
             inkwell::types::BasicTypeEnum::PointerType(t) => t.const_null().into(),
@@ -158,7 +158,11 @@ impl<'ctx> Lowerer<'ctx> {
         slot
     }
 
-    fn load_slot(&mut self, slot: PointerValue<'ctx>, ty: &Type) -> BasicValueEnum<'ctx> {
+    pub(super) fn load_slot(
+        &mut self,
+        slot: PointerValue<'ctx>,
+        ty: &Type,
+    ) -> BasicValueEnum<'ctx> {
         let llvm = llvm_type(self.context, ty);
         self.builder
             .build_load(llvm, slot, "value")
@@ -166,7 +170,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Calls runtime function `name`, which returns a success flag.
-    fn call_flag(
+    pub(super) fn call_flag(
         &mut self,
         name: &str,
         params: &[Type],
@@ -188,7 +192,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// `Ok` with the value in `value`'s slot, or `Err` with the message, by `ok`.
-    fn result(
+    pub(super) fn result(
         &mut self,
         call: &Expr,
         ok: IntValue<'ctx>,
@@ -203,7 +207,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.choose(ok, good, bad)
     }
 
-    fn choose(
+    pub(super) fn choose(
         &mut self,
         flag: IntValue<'ctx>,
         yes: BasicValueEnum<'ctx>,

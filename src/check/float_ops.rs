@@ -35,6 +35,19 @@ pub fn os_op(callee: &Expr) -> Option<&str> {
     builtin_op(callee, "$os")
 }
 
+/// The parameters and result of `$os.op` (v15): `seed` for `std.random`,
+/// `env` and `cwd` for `std.env` (as bytes, checked as UTF-8 in Lugha).
+pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
+    let bytes = || Type::Array(Box::new(Type::U8));
+    let result = |t: Type| Type::Enum(super::results::RESULT.to_string(), vec![t, Type::String]);
+    Some(match op {
+        "seed" => (Vec::new(), Type::U64),
+        "env" => (vec![Type::String], Type::Option(Box::new(bytes()))),
+        "cwd" => (Vec::new(), result(bytes())),
+        _ => return None,
+    })
+}
+
 /// The built-in a `$string.op(…)` callee names (v15, milestone 62).
 pub fn string_op(callee: &Expr) -> Option<&str> {
     builtin_op(callee, "$string")
@@ -111,7 +124,8 @@ impl Checker {
         }
     }
 
-    /// `$os.seed()`: 64 bits of entropy from the operating system (v15).
+    /// `$os.op(args)` in a std module (v15): the operating system's
+    /// services, typed by `os_signature`.
     pub(super) fn os_call(
         &mut self,
         call: &Expr,
@@ -122,16 +136,23 @@ impl Checker {
         if let ExprKind::Field(base, _) = &callee.kind {
             self.record(base, Type::Void);
         }
-        if op != "seed" || !args.is_empty() {
-            let d = Diagnostic::error(
-                "E0415",
-                format!("no `$os` built-in `{op}` with these arguments"),
-                call.span,
-            );
-            self.report(d);
-            return self.unchecked_args(args);
+        match os_signature(op) {
+            Some((params, ret)) if params.len() == args.len() => {
+                for (arg, ty) in args.iter().zip(params) {
+                    self.expect_type(arg, &Expect::of(ty));
+                }
+                ret
+            }
+            _ => {
+                let d = Diagnostic::error(
+                    "E0415",
+                    format!("no `$os` built-in `{op}` with these arguments"),
+                    call.span,
+                );
+                self.report(d);
+                self.unchecked_args(args)
+            }
         }
-        Type::U64
     }
 }
 

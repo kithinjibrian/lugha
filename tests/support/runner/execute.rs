@@ -35,6 +35,7 @@ fn case_command(lughac: &Path, workdir: &Path, case: &Case) -> (Command, Option<
             cmd.arg(subcommand).arg(arg).current_dir(workdir)
         }
     };
+    cmd.envs(case.extras.envvars.iter().map(|(k, v)| (k, v)));
     if !case.extras.args.is_empty() {
         cmd.arg("--").args(&case.extras.args);
     }

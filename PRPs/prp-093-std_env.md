@@ -1,6 +1,6 @@
 ## FEATURE: `std.env` — read-only environment variables and the current directory; milestone 64.
 
-**Status:** approved 2026-10-15 — session 129 ("approved"); proposed in session 128 (discovery in session 127).
+**Status:** merged 2026-10-15 — session 132 (approved in session 129; proposed in session 128); tag `m64`.
 **Milestone:** 64 (one PRP; tag `m64` at merge)
 **Spec:** `Language v15 Draft.md` decision 48; spec §6 (std modules), "The standard library", §9 (runtime table), §10 (a program), §11 (row 64).
 
@@ -61,25 +61,35 @@ None.
 - **No `unsafe`, no dependencies.**
 
 ## TESTS TO WRITE
-- [ ] **Program `m64/env.la`:**
+- [x] **Program `m64/env.la`:**
   - `env.get("LUGHA_TEST_VALUE")`, where the test runner sets the variable from a new optional `<name>.envvars` file beside the case (one `KEY=VALUE` per line), read like `.args` and `.stdin`;
   - an unset name gives `None`;
   - `current_dir()` ends with the case's run directory (printed as a suffix check: `true`).
-- [ ] **Runner unit test** for `.envvars` parsing (reject lines without `=`).
-- [ ] **E0312 help** lists `std.env`.
-- [ ] **Regression.**
+- [x] **Runner unit test** for `.envvars` parsing (reject lines without `=`).
+- [x] **E0312 help** lists `std.env`.
+- [x] **Regression.**
 
 ## ROLLBACK PLAN
 - Branch `prp-093-std_env`; tag `m64`.
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass at `-O0`; `m64/` at `-O2`.
-- [ ] Spec at milestone 64; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] fmt, clippy and tests pass; CI green.
+- [x] All tests pass at `-O0`; `m64/` at `-O2`.
+- [x] Spec at milestone 64; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] fmt, clippy and tests pass; CI green.
 
 ## VALIDATION
 ```bash
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 ```
+
+## AMENDMENTS
+
+Session 132, while building:
+1. **Bytes, not strings, from C:** `$os.env(name): Option<u8[]>` and `$os.cwd(): Result<u8[], string>` return bytes, and `std/env.la` turns them into strings with `string_from_utf8`. So M62's single decoder decides UTF-8, and `env.c` has no UTF-8 code.
+2. **`$os` built-ins are a table** (`os_signature`) in the checker and one `os_call` in codegen (`codegen/os.rs`, using `io.rs`'s flag/out-slot helpers, now `pub(super)`), ready for `std.fs` and `std.process`.
+3. **Test runner:** `.envvars` lines are set with `Command::envs`; `parse_envvars` rejects lines without `=` or with an empty key.
+4. **Changed golden:** `m53/e0312.stderr`'s help now lists `std.env` (the help is built from `lugha::STD`).
+5. **Strings write NUL as `\0`;** the program tests `env.get("BAD\0NAME")`, which is `None`.
+
