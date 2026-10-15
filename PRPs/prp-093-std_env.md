@@ -1,6 +1,6 @@
 ## FEATURE: `std.env` — read-only environment variables and the current directory; milestone 64.
 
-**Status:** proposed 2026-10-15 — session 128 (discovery in session 127).
+**Status:** approved 2026-10-15 — session 129 ("approved"); proposed in session 128 (discovery in session 127).
 **Milestone:** 64 (one PRP; tag `m64` at merge)
 **Spec:** `Language v15 Draft.md` decision 48; spec §6 (std modules), "The standard library", §9 (runtime table), §10 (a program), §11 (row 64).
 

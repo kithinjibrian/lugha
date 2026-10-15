@@ -1,6 +1,6 @@
 ## FEATURE: C → Lugha — `parse_i64`, `parse_u64` and UTF-8 decoding written in the prelude, over one shared decoder; milestone 62.
 
-**Status:** proposed 2026-10-15 — session 128 (discovery in session 127).
+**Status:** approved 2026-10-15 — session 129 ("approved"); proposed in session 128 (discovery in session 127).
 **Milestone:** 62 (one PRP; tag `m62` at merge)
 **Spec:** `Language v15 Draft.md` decisions 45–46; spec §4 (strings, `char`, `chars()`), §5 (`parse_i64`, `parse_u64`, `string_from_utf8`), §9 (runtime table), §11 (row 62).
 

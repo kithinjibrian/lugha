@@ -1,6 +1,6 @@
 ## FEATURE: One `iter_sum` — `it.sum()` through a single generic prelude function instead of ten per-type copies; milestone 61.
 
-**Status:** proposed 2026-10-15 — session 128 (discovery in session 127).
+**Status:** approved 2026-10-15 — session 129 ("approved"); proposed in session 128 (discovery in session 127).
 **Milestone:** 61 (one PRP; tag `m61` at merge)
 **Spec:** `Language v15 Draft.md` decision 44; spec §4 (iterator helpers), §9 (lowering), §11 (row 61).
 

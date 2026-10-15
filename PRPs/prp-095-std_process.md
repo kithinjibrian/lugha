@@ -1,6 +1,6 @@
 ## FEATURE: `std.process` — run another program with an argument list (never a shell), wait, and get its exit code and output; milestone 66.
 
-**Status:** proposed 2026-10-15 — session 128 (discovery in session 127).
+**Status:** approved 2026-10-15 — session 129 ("approved"); proposed in session 128 (discovery in session 127). Its approval is the user's security review.
 **This PRP needs the user's security review.** Approving it is that review (draft decision 51).
 **Milestone:** 66 (one PRP; tag `m66` at merge)
 **Spec:** `Language v15 Draft.md` decisions 50–51; spec "The standard library", §9 (runtime table), §10 (a program), §11 (row 66).

@@ -1,6 +1,6 @@
 ## FEATURE: Format widths in characters — `{name:<8}` pads by Unicode scalar values, not bytes, and a fill may be any `char`; milestone 63.
 
-**Status:** proposed 2026-10-15 — session 128 (discovery in session 127).
+**Status:** approved 2026-10-15 — session 129 ("approved"); proposed in session 128 (discovery in session 127).
 **Milestone:** 63 (one PRP; tag `m63` at merge)
 **Spec:** `Language v15 Draft.md` decision 47; spec §4/§5 (format specifiers), §9 (`lugha_rt_pad`), §11 (row 63).
 

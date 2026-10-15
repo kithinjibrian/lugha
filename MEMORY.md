@@ -1739,6 +1739,18 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Result:** a `seeded` + `below` program's IR goes from 423 to 314 lines; outputs unchanged.
 
+### 118. Milestones 61–66 planned (sessions 127–128, approved session 129)
+
+**Decision (draft decisions 44–52, PRP-090 to PRP-095):**
+- **M61:** one `iter_sum<T: Num>`.
+- **M62:** `parse_i64`/`parse_u64` and one UTF-8 decoder in the prelude (`$string.from_bytes`).
+- **M63:** format widths in characters (the tables stay Latin-1, §11).
+- **M64:** read-only `std.env`.
+- **M65:** `std.fs` with no recursive delete.
+- **M66:** `std.process`: `posix_spawnp`, no shell, `PATH` lookup, inherited environment, only fds 0–2, UTF-8 output or `Err`, `128 + signal`. The user's approval was the security review.
+
+**Why:** the user asked to finish the v15 TODO in one approval; each item stays its own PRP (scope rule).
+
 ---
 
 ## CURRENT PROJECT STATE

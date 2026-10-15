@@ -1,6 +1,6 @@
 ## FEATURE: `std.fs` — list, create and remove directories and files, and test what exists; milestone 65.
 
-**Status:** proposed 2026-10-15 — session 128 (discovery in session 127).
+**Status:** approved 2026-10-15 — session 129 ("approved"); proposed in session 128 (discovery in session 127).
 **Milestone:** 65 (one PRP; tag `m65` at merge)
 **Spec:** `Language v15 Draft.md` decision 49; spec §5 (file intrinsics, for consistency), "The standard library", §9 (runtime table), §10 (a program), §11 (row 65).
 
