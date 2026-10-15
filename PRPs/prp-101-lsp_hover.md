@@ -90,7 +90,7 @@ None (`lsp-types` already has `Hover`).
   - right after an unsaved change (no wait) → the new text's types;
   - on whitespace, a comment, a keyword → `null`; in a file never opened → `null`.
 - [x] **Regression:** `tests/lsp.rs` unchanged in behaviour after the harness move; every existing test passes (`check_modules` byte-identical).
-- [ ] **Manual check** (extension README), by the user: hovers in VS Code on a variable, a method call and a generic call; still working with an error in the file.
+- [x] **Manual check** (passed in VS Code, the user, session 153) (extension README), by the user: hovers in VS Code on a variable, a method call and a generic call; still working with an error in the file.
 
 ## BUILT (session 147)
 - As designed: `check/partial.rs` (`check_partial`, `Partial`, `Name`, the `Recorder`), `check_modules` and `check_partial` sharing `modules::run`; recording at `env.rs::declare`, function and method declarations, `call_key`, method calls, function values and field declarations; `pipeline::front_partial` (replacing PRP-100's `front_with`); `driver/lsp/hover.rs`; hover in `server.rs` and `mod.rs`.
@@ -109,7 +109,7 @@ None (`lsp-types` already has `Hover`).
 - [x] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test`; CI green.
 - [x] Spec at milestone 71; docs updated.
 - [x] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] The manual check passes in VS Code.
+- [x] The manual check passes in VS Code (session 153).
 
 ## VALIDATION
 ```bash

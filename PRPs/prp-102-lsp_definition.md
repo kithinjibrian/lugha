@@ -90,7 +90,7 @@ None.
   - with an unrelated error in the program → still jumps;
   - right after an unsaved change (no wait) → the new text's declaration.
 - [x] **Regression:** every existing test passes; hover unchanged (`tests/lsp_hover.rs`).
-- [ ] **Manual check** (extension README), by the user: Ctrl+click a variable, a method call, a type and an import in VS Code.
+- [x] **Manual check** (passed in VS Code, the user, session 153) (extension README), by the user: Ctrl+click a variable, a method call, a type and an import in VS Code.
 
 ## BUILT (session 149)
 - As designed: `Target` and `Partial.definitions` in `check/partial.rs`, with field and variant declaration spans kept in its `Recorder`; recorded at `expr.rs` (locals), the existing function hook, `modules/lookup.rs` (`type_key`, `type_named_by`, `module_call`, new `type_decl` and `module_named`), `iface_values.rs`, `methods.rs` (`impl` headers), `struct_literal.rs`, `access.rs`, `construct.rs`, `patterns.rs`, `structs.rs`/`enums.rs`/`interfaces.rs` declarations, and import paths in `modules/mod.rs::enter`. `driver/lsp/definition.rs`; the server's hover and definition share `fresh` and `snapshot`.
@@ -106,7 +106,7 @@ None.
 - [x] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test`; CI green.
 - [x] Spec at milestone 72; docs updated.
 - [x] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] The manual check passes in VS Code.
+- [x] The manual check passes in VS Code (session 153).
 
 ## VALIDATION
 ```bash

@@ -5979,8 +5979,29 @@ Branch: prp-103-lsp_completion
 
 ---
 
-## SESSION 153 — 2026-10-15 — Record the language server's manual checks; completion settings note — open
+## SESSION 153 — 2026-10-15 — Record the language server's manual checks; completion settings note — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user reported completion not working: their VS Code user settings had `editor.quickSuggestions` off and `editor.suggestOnTriggerCharacters` false. With their approval, added a `[lugha]` block to `~/.config/Code/User/settings.json` turning both on for Lugha only; the user confirmed it works.
+- The user confirmed the manual checks of live errors, hover, go-to-definition and completion: marked in PRP-100 to PRP-103.
+- Extension README: a "No suggestions popping up?" section with that block.
+- CI on PR #6 (milestone 73) came back green after the merge.
+
+### FILES CREATED OR MODIFIED
+- Modified: `PRPs/prp-100-lsp_diagnostics.md`, `prp-101-lsp_hover.md`, `prp-102-lsp_definition.md`, `prp-103-lsp_completion.md`, `editors/vscode/README.md`, CONTEXT.md. Outside the repo: the user's VS Code `settings.json`.
+
+### TESTS WRITTEN
+- None (docs).
+
+### DECISIONS MADE
+- None.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.
 
 ---
 
@@ -5988,7 +6009,7 @@ Branch: main
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
 
-**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. **Milestone 73 done** (tag `m73`): completion. Later for the extension (each a discovery + PRP): partial syntax trees, signature help and snippets, Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. **Milestone 73 done** (tag `m73`): completion; the user's manual checks of milestones 70–73 all passed (session 153). Later for the extension (each a discovery + PRP): partial syntax trees, signature help and snippets, Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

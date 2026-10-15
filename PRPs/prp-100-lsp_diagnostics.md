@@ -111,7 +111,7 @@ $ lughac lsp      # speaks LSP on stdin/stdout; editors start it, people don't
   - an unknown request → `MethodNotFound`, and the server still answers afterwards; garbage between messages → the server survives or exits 2, never hangs (timeout).
 - [x] **Unit tests** in `driver/lsp/`: `has_main` (tokens, not comments or strings); UTF-16 positions; ownership merges and clears; a panicking check becomes one internal-error diagnostic; `<std>` files skipped; entries validation.
 - [x] **Extension:** `server.test.ts` (the command from `lugha.path`, args `["lsp"]`); grammar and spec-keyword tests unchanged; `npm run package` includes `vscode-languageclient`.
-- [ ] **Manual check** (README), by the user: type an error and see it appear without saving; fix it; change a module without saving and see the main file update; a pre-m70 `lughac` gives the notification.
+- [x] **Manual check** (passed in VS Code, the user, session 153) (README), by the user: type an error and see it appear without saving; fix it; change a module without saving and see the main file update; a pre-m70 `lughac` gives the notification.
 - [x] **Regression:** `cargo test` unchanged otherwise; `lughac check` output byte-identical (existing CLI tests).
 
 ## BUILT (session 145)
@@ -131,7 +131,7 @@ $ lughac lsp      # speaks LSP on stdin/stdout; editors start it, people don't
 - [x] All tests pass; `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`, the extension's `npm test`; CI green.
 - [x] Spec at milestone 70; docs updated.
 - [x] No file over 500 lines; no `unsafe`; the new crates and their licenses listed in the PR.
-- [ ] The manual check passes in VS Code.
+- [x] The manual check passes in VS Code (session 153).
 
 ## VALIDATION
 ```bash

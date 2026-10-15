@@ -36,6 +36,19 @@ code --install-extension lugha-0.2.0.vsix
 
 **Problems.** If `lughac lsp` can't start (a missing `lughac`, or one from before milestone 70), one notification offers to set `lugha.path`. The **Lugha** output channel (`Lugha: Show Output`) holds the server's log. A bug inside the compiler shows as one "internal compiler error" at the top of the file; the server keeps running.
 
+## No suggestions popping up?
+
+If your user settings turn suggestions off (`"editor.quickSuggestions"` off, or `"editor.suggestOnTriggerCharacters": false`), completion still answers **Ctrl+Space** but never pops up on its own. Turn it back on for Lugha only in your user `settings.json`:
+
+```json
+"[lugha]": {
+    "editor.quickSuggestions": { "other": "on", "comments": "off", "strings": "off" },
+    "editor.suggestOnTriggerCharacters": true
+}
+```
+
+Also make sure the `lughac` VS Code starts is from milestone 73 or later (`cargo install --path .` in the lugha repo), then run **Developer: Reload Window**.
+
 ## Manual check before a release
 
 1. Install the `.vsix`; open `tests/programs/m21/nested/main.la`: it is highlighted.

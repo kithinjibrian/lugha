@@ -91,7 +91,7 @@ None.
   - an edit earlier in the file since the last good check → member completion empty, plain names without locals;
   - no snapshot (a file never opened) → empty.
 - [x] **Regression:** hover and definitions unchanged (`tests/lsp_hover.rs`, `tests/lsp_definition.rs`); every existing test passes.
-- [ ] **Manual check** (extension README), by the user: `p.`, `geo.`, `Shape.` and a plain word in VS Code.
+- [x] **Manual check** (passed in VS Code, the user, session 153) (extension README), by the user: `p.`, `geo.`, `Shape.` and a plain word in VS Code.
 
 ## BUILT (session 152)
 - `check/members.rs` (new, beside `partial.rs` to keep both under 500 lines): `TypeMembers`, `Member`, `MemberKind`, `Detail`, `value_members`, `type_members`; built-ins and helpers come from one candidate list filtered through `builtins::builtin` and `helpers::helper_function` (made `pub(super)`), and a test fails on a candidate no receiver accepts; iterator helpers (`iter_helpers::HELPERS`, now `pub(super)`) for any type with a `next` method. `Partial.members` and `Partial.prelude`; `check::intrinsics()`.
@@ -108,7 +108,7 @@ None.
 - [x] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test` (CI runs in the background, not waited on).
 - [x] Spec at milestone 73; docs updated.
 - [x] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] The manual check passes in VS Code.
+- [x] The manual check passes in VS Code (session 153).
 
 ## VALIDATION
 ```bash
