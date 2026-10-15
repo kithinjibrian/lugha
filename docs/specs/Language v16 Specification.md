@@ -2,15 +2,15 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–70 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–71 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestones 67–70):
+**Changes since v15** (milestones 67–71):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
 - `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
 - `lughac init [folder] [--lib] [--name N]` starts a program, or a library with an example, in a folder; it never overwrites a file (milestone 69; section 9).
-- `lughac lsp` is a language server: editors get `lughac check`'s diagnostics as you type, for unsaved text too (milestone 70; section 9).
+- `lughac lsp` is a language server: editors get `lughac check`'s diagnostics as you type, for unsaved text too (milestone 70; section 9), and hovering shows the type of an expression or a declared name, also while the program has errors (milestone 71).
 
 Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type; a module's own type `Ref` still means its own.
 
@@ -1317,7 +1317,14 @@ It prints `created <path>` for each file and then how to run the result.
 - **What is checked:** a file with `fun main` checks itself. A module checks through the main files the client lists in its `lugha.entries` setting (relative `.la` paths inside the workspace folder, sent as `initializationOptions` or through `workspace/didChangeConfiguration`) and through every main file the server has already checked that loaded it; with neither, it is checked alone and E0303 is left out.
 - **Diagnostics** carry the code, `source: "lughac"`, the message with the label and `help:` on their own lines, and secondary labels as related information; ranges count UTF-16 units. Each lands in the file it belongs to; a manifest error lands in `lugha.toml`; errors inside `<std>` modules have no file and are dropped.
 - **Safety:** it is always offline (as `--offline`: no `git`), writes no file (not `lugha.lock` either) and opens no port. A panic inside the compiler is caught and shown as one internal error at the top of the file; the server keeps running.
-- **Exit codes:** 0 after `shutdown` and `exit`; 1 after `exit` without `shutdown`; 2 when the connection breaks (a malformed message, a closed stream). Requests other than `initialize` and `shutdown` get `MethodNotFound`.
+- **Hover** (milestone 71): `textDocument/hover` shows what is under the cursor as a Lugha code block — the smallest expression or declared name there, a name winning a tie:
+  - a `let`, parameter, `for` or `match` binding: `let total: i64` (`let mut n: i64`);
+  - a function or method, at its declaration or a use: its header as written, a method's with its type, `fun Circle.area(self): f64`;
+  - a struct field at its declaration: `x: f64`;
+  - an expression: its type, printed as diagnostics print types.
+
+  Notes follow the block: `instance: max<f64>` for a generic call, `converted to Shape` for a value converted to an interface. Hover uses what the checker found even when the program has errors; an expression the checker couldn't type, whitespace, comments and keywords have none (`null`). While a module of the program doesn't parse, nothing has a hover. A hover first runs a check still waiting for typing to pause.
+- **Exit codes:** 0 after `shutdown` and `exit`; 1 after `exit` without `shutdown`; 2 when the connection breaks (a malformed message, a closed stream). Requests other than `initialize`, `shutdown` and `textDocument/hover` get `MethodNotFound`.
 
 **Diagnostics.** Errors print the file, line and column, the offending source line, a caret under the span with its label, and any secondary labels, in a rustc-like layout rendered by the `codespan-reporting` crate. Each diagnostic is followed by a blank line, and lines carry no trailing whitespace. The checker reports as many errors as it can find instead of stopping at the first one.
 
@@ -3182,6 +3189,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 68 | Changing directory (v16) | `env.set_current_dir(path)`; `$os.chdir` | The changing-directory program in section 10 passes (done) |
 | 69 | `lughac init` (v16) | program and library layouts; the name from the folder or `--name`; never overwrites | A program and a library are created, checked and run, and every refusal is exit 2 (`tests/init.rs`; done) |
 | 70 | `lughac lsp` (v16) | a language server publishing `check`'s diagnostics for unsaved text; offline, no writes, panics caught; the VS Code extension uses it | `tests/lsp.rs` drives it over stdio (done) |
+| 71 | Hover (v16) | `textDocument/hover`: types of expressions, bindings, functions and methods (headers as written), fields; notes for generic instances and interface conversions; also with errors | `tests/lsp_hover.rs` drives it over stdio (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

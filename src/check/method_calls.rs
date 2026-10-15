@@ -72,6 +72,7 @@ impl Checker {
     ) -> Type {
         match method {
             Some(m) if m.receiver.is_none() => {
+                self.hover.function(name.span, m.span, Some(call));
                 if let Type::Struct(owner, _) | Type::Enum(owner, _) = ty {
                     self.method_visible(owner, &name.name, name.span);
                     // Codegen finds `T.f` / `m.T.f` by this key (PRP-034).
@@ -154,6 +155,7 @@ impl Checker {
             self.report(errors::no_method(&name.name, receiver, name.span, help));
             return self.unchecked(args);
         };
+        self.hover.function(name.span, m.span, Some(call));
         if let Type::Struct(owner, _) | Type::Enum(owner, _) = receiver {
             self.method_visible(owner, &name.name, name.span);
             // A prelude type's method compiles only when reached (v10).

@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use lsp_types::Diagnostic;
 
 use super::documents::Documents;
+use super::hover::Snapshot;
 use super::publish;
 use crate::driver::guard;
 use crate::driver::pipeline::{self, Failure};
@@ -26,6 +27,8 @@ pub(super) struct Outcome {
     pub loaded: Vec<PathBuf>,
     /// Lines for the client's log.
     pub log: Vec<String>,
+    /// What hover reads; `None` when the program didn't load or parse.
+    pub snapshot: Option<Snapshot>,
 }
 
 /// Checks `main` with `docs`' unsaved text, dropping E0303 when `alone`.
@@ -37,7 +40,7 @@ pub(super) fn check(main: &Path, docs: &Documents, alone: bool) -> Outcome {
             offline: true,
             update: false,
         };
-        pipeline::front_with(main, mode, &mut read)
+        pipeline::front_partial(main, mode, &mut read)
     })
 }
 
@@ -45,17 +48,24 @@ pub(super) fn check(main: &Path, docs: &Documents, alone: bool) -> Outcome {
 fn check_with(
     main: &Path,
     alone: bool,
-    front: impl FnOnce() -> Result<pipeline::Front, Failure>,
+    front: impl FnOnce() -> Result<pipeline::PartialFront, Failure>,
 ) -> Outcome {
     let root = main.parent().unwrap_or(Path::new("/"));
     let mut outcome = Outcome::default();
     // The compiler's state for this check is dropped after a panic, so
     // nothing observes it half-updated: unwind safety holds.
+    let mut kept = None;
     let (source, reports) = match panic::catch_unwind(AssertUnwindSafe(front)) {
-        Ok(Ok(front)) => (
-            front.source,
-            front.warnings.iter().map(Report::from).collect(),
-        ),
+        Ok(Ok(front)) => {
+            let reports = front
+                .warnings
+                .iter()
+                .chain(&front.partial.diagnostics)
+                .map(Report::from)
+                .collect();
+            kept = Some((front.modules, front.partial));
+            (front.source, reports)
+        }
         Ok(Err(Failure::Program(source, diagnostics))) => {
             (source, diagnostics.iter().map(Report::from).collect())
         }
@@ -91,6 +101,12 @@ fn check_with(
         };
         outcome.files.entry(file).or_default().push(diagnostic);
     }
+    outcome.snapshot = kept.map(|(modules, partial)| Snapshot {
+        root: root.to_path_buf(),
+        source,
+        modules,
+        partial,
+    });
     outcome
 }
 

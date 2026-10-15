@@ -102,14 +102,49 @@ pub(super) fn front(path: &Path, mode: Mode) -> Result<Front, Failure> {
     check_parsed(parsed(path, mode)?)
 }
 
-/// `front` reading through `read` and never writing `lugha.lock`, for the
-/// language server.
-pub(super) fn front_with(
+/// A program checked for the language server: what the checker found,
+/// errors or not, with the modules and files it came from.
+pub(super) struct PartialFront {
+    pub source: Source,
+    /// Every module, the main file first and the prelude last.
+    pub modules: Vec<Module>,
+    /// The loader's warnings; the checker's diagnostics are in `partial`.
+    pub warnings: Vec<Diagnostic>,
+    pub partial: check::Partial,
+}
+
+/// Reads through `read` (never writing `lugha.lock`), lexes, parses and
+/// checks `path` for the language server, keeping the checker's findings
+/// even when the program has errors (v16 draft decision 20).
+pub(super) fn front_partial(
     path: &Path,
     mode: Mode,
     read: &mut modules::Read<'_>,
-) -> Result<Front, Failure> {
-    check_parsed(parse_loaded(loaded_with(path, mode, read, false)?)?)
+) -> Result<PartialFront, Failure> {
+    let mut front = parse_loaded(loaded_with(path, mode, read, false)?)?;
+    let mut prelude_errors = Vec::new();
+    modules::with_prelude(&mut front.modules, &mut prelude_errors);
+    let prelude = front.modules.last().expect("the prelude was just added");
+    front.source.add("<prelude>", prelude.base, &prelude.text);
+    let start = prelude.base;
+    if !prelude_errors.is_empty() {
+        return Err(prelude_failure(&front.source, &prelude_errors));
+    }
+    let partial = check::check_partial(&units(&front.modules));
+    // A mistake inside the prelude is the compiler's, not the program's.
+    let in_prelude = partial
+        .diagnostics
+        .iter()
+        .any(|d| d.severity == Severity::Error && d.span.start >= start);
+    if in_prelude {
+        return Err(prelude_failure(&front.source, &partial.diagnostics));
+    }
+    Ok(PartialFront {
+        source: front.source,
+        modules: front.modules,
+        warnings: front.warnings,
+        partial,
+    })
 }
 
 fn check_parsed(mut front: Front) -> Result<Front, Failure> {

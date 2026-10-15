@@ -76,6 +76,10 @@ impl Checker {
         expect: Option<&Expect>,
     ) -> Type {
         self.callees.insert(call.id, key.to_string());
+        if let Some(at) = super::partial::callee_name(call) {
+            let decl = self.functions[key].span;
+            self.hover.function(at, decl, Some(call));
+        }
         let signature = &self.functions[key];
         let (params, ret) = (signature.params.clone(), signature.ret.clone());
         let generics = signature.generics.clone();

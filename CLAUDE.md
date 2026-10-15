@@ -163,7 +163,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 - `editors/vscode/` — the VS Code extension (PRP-099, PRP-100): TypeScript on Node 22, one runtime dependency (`vscode-languageclient`, MIT) and dev dependencies (`typescript`, `@types/vscode`, `@types/node`, `vscode-tmgrammar-test`, `@vscode/vsce`), tests with `node:test`. It starts only `lughac lsp`, which never runs `git` or writes a file; changes to how it starts `lughac`, or to what the server may do, need the user's security review.
 
-The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestones 67–70 done: `lughac lsp`; `lughac init`; `env.set_current_dir`; shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
+The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestones 67–71 done: hover and `lughac lsp`; `lughac init`; `env.set_current_dir`; shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -295,7 +295,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  numbers.rs (v7/v10 numeric types: `is_float`, `is_unsigned`, keyword types, `I.MIN`/`I.MAX`), slots.rs (enum payload slots),
 │   │                  or_patterns.rs (or-pattern alternatives and bindings E0428, `mut` bindings), conditional.rs
 │   │                  (`if let`, `while let`, `let … else`, E0429), concrete_defaults.rs (default methods on
-│   │                  concrete types, E0430), named_imports.rs (`import m { X }`, re-exports: aliases, `member`, E0318), printing.rs (what prints, `show` instances, `$print` uses), for_mut.rs (`for x of mut e`: place checks, E0501/E0502/E0506), iter_helpers.rs (iterator helpers as prelude calls, prelude iterator type names), tuples.rs (tuples as `$tuple<n>` structs, patterns, E0433, v14), templates.rs (`format`: holes against arguments, E0432, v14), operators.rs (v15: operators as method calls, built-in satisfaction of the operator bounds, `Num`; operators_tests.rs), impl_bounds.rs (v15: bounds on `impl` blocks), float_ops.rs (v15: `$float.<op>` and `$os.seed` built-ins, `float_op`, `os_op`), ordering.rs (v15: `cmp` makes a type `Ord`, `has_cmp`, `order_uses`, `cmp_targets`, `ORDERING`), reexports.rs (`as`, whole-module re-exports: `module_path`, `member_through`, `m.v.X`, v14), refs.rs (v16: `Ref<T>`: `Ref.new`, `predeclared_ref`, `REF_NEW`; tests)
+│   │                  concrete types, E0430), named_imports.rs (`import m { X }`, re-exports: aliases, `member`, E0318), printing.rs (what prints, `show` instances, `$print` uses), for_mut.rs (`for x of mut e`: place checks, E0501/E0502/E0506), iter_helpers.rs (iterator helpers as prelude calls, prelude iterator type names), tuples.rs (tuples as `$tuple<n>` structs, patterns, E0433, v14), templates.rs (`format`: holes against arguments, E0432, v14), operators.rs (v15: operators as method calls, built-in satisfaction of the operator bounds, `Num`; operators_tests.rs), impl_bounds.rs (v15: bounds on `impl` blocks), float_ops.rs (v15: `$float.<op>` and `$os.seed` built-ins, `float_op`, `os_op`), ordering.rs (v15: `cmp` makes a type `Ord`, `has_cmp`, `order_uses`, `cmp_targets`, `ORDERING`), reexports.rs (`as`, whole-module re-exports: `module_path`, `member_through`, `m.v.X`, v14), refs.rs (v16: `Ref<T>`: `Ref.new`, `predeclared_ref`, `REF_NEW`; tests), partial.rs (v16: `check_partial`, `Partial`, `Name`: the checker's findings even with errors, for hover; the `Recorder` of names and expression spans)
 │   ├── codegen/     — mod.rs (emit_ir, emit_object, CodegenError), lower.rs (module, C main),
 │   │                  value.rs (Value, Type → LLVM), scope.rs (locals), expr.rs, arith.rs (ops at
 │   │                  each width), cast.rs (§4 casts), control.rs (blocks, if, loops, jumps), stmt.rs,
@@ -334,7 +334,7 @@ pub fn parse_number(src: &str) -> i64 {
 │                      `lugha.lock`, `lughac update`), init.rs (v16: `lughac init`, the program and library layouts),
 │                      lsp/ (v16: `lughac lsp`: mod.rs the stdio loop and capabilities, server.rs state and debounced
 │                      scheduling, documents.rs open text and `file:` URIs, targets.rs which mains to check, check.rs one
-│                      guarded offline check via `pipeline::front_with`, publish.rs reports → UTF-16 LSP diagnostics, per-check store)
+│                      guarded offline check via `pipeline::front_partial`, publish.rs reports → UTF-16 LSP diagnostics, per-check store, hover.rs `Snapshot` and the hover under a position)
 ├── tests/
 │   ├── programs.rs  — end-to-end acceptance test (runs every tests/programs/ case)
 │   ├── spec.rs      — spec §10 acceptance: programs and expected results extracted from lugha::SPEC
@@ -349,8 +349,9 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── ordering.rs  — user-defined order through lughac: `<` and tuple helpers call `cmp` (v15)
 │   ├── init.rs      — `lughac init` through lughac: both layouts created, checked and run; refusals; kept files (v16)
 │   ├── lsp.rs       — `lughac lsp` over real stdio: live diagnostics, unsaved text, modules through seen mains, entries, offline (v16)
+│   ├── lsp_hover.rs — hover through `lughac lsp`: bindings, functions and methods, fields, expressions, notes, with errors (v16)
 │   ├── package_layout.rs — package layout through lughac: `source`, `examples/` by name, the `$HOME` bound, E0327/E0328
-│   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
+│   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec; lsp_client.rs: a `lughac lsp` client over stdio
 │   ├── programs/    — m1/ … m68/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch/.envvars),

@@ -78,6 +78,7 @@ impl Checker {
                     .entry(owner.clone())
                     .or_default()
                     .insert(name.clone(), method);
+                self.hover.function(f.name.span, f.name.span, None);
             }
         }
         self.type_params.clear();

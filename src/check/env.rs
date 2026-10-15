@@ -100,6 +100,7 @@ impl Checker {
                     is_extern,
                 };
                 self.functions.insert(key, signature);
+                self.hover.function(name.span, name.span, None);
             }
         }
     }
@@ -158,6 +159,8 @@ impl Checker {
     /// Declares a local in the innermost scope, shadowing earlier bindings.
     pub(super) fn declare(&mut self, name: &Ident, ty: Type, binding: Binding) {
         self.check_local_name(name);
+        let mutable = matches!(binding, Binding::Let { mutable: true } | Binding::SelfMut);
+        self.hover.local(name, &ty, mutable);
         let scope = self
             .scopes
             .last_mut()

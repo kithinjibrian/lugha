@@ -7,9 +7,9 @@ use crate::diagnostic::Diagnostic;
 use crate::modules::{Module, with_prelude};
 use crate::{lexer, parser};
 
-/// Checks `program` as the main file, with the prelude after it as in
+/// Runs `f` on `program` as the main file, with the prelude after it as in
 /// every real program (PRP-041).
-fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
+fn with_units<R>(program: &Program, f: impl FnOnce(&[Unit]) -> R) -> R {
     let main = Module {
         path: Vec::new(),
         file: "test.la".into(),
@@ -36,7 +36,16 @@ fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic
             package: m.package.as_deref(),
         })
         .collect();
-    check_modules(&units)
+    f(&units)
+}
+
+fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
+    with_units(program, check_modules)
+}
+
+/// What `check_partial` finds in `src`, errors or not.
+pub fn partial(src: &str) -> super::Partial {
+    with_units(&program(src), super::check_partial)
 }
 
 fn program(src: &str) -> crate::ast::Program {

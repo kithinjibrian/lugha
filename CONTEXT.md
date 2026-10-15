@@ -5823,8 +5823,29 @@ Branch: main
 
 ---
 
-## SESSION 147 — 2026-10-15 — Hover in the language server (milestone 71) — open
+## SESSION 147 — 2026-10-15 — Hover in the language server (milestone 71) — closed
 Branch: prp-101-lsp_hover
+
+### WHAT WAS DONE
+- The user approved PRP-101 ("build it"); MEMORY 134. Built in a worktree (`../lugha-prp-101`), merged through a PR.
+- Tests first: `check::partial` (6), then the checker's `Recorder` and `check_partial` (`check_modules` shares `modules::run`, output unchanged); the stdio harness moved to `tests/common/lsp_client.rs`; `tests/lsp_hover.rs` (10), then `pipeline::front_partial`, `driver/lsp/hover.rs`, hover in the server.
+- Spec v16 at milestone 71 (hover in the `lughac lsp` paragraph, §11 row 71, summary); docs.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/partial.rs`, `src/driver/lsp/hover.rs`, `tests/lsp_hover.rs`, `tests/common/lsp_client.rs`.
+- Modified: `src/check/{mod,env,methods,call,method_calls,fun_values,structs,test_util}.rs`, `src/check/modules/mod.rs`, `src/driver/pipeline.rs`, `src/driver/lsp/{mod,server,check}.rs`, `tests/lsp.rs` (harness moved out); the v16 spec and draft; CLAUDE.md, README, the extension README, TODO, CHANGELOG, MEMORY (134, 135), PRP-101, CONTEXT.
+
+### TESTS WRITTEN
+- `check::partial` (6), `driver::lsp::hover` (1), `tests/lsp_hover.rs` (10).
+
+### DECISIONS MADE
+- MEMORY 135: no hover anywhere while a module doesn't parse; names map uses to declaration spans (reusable for go-to-definition); interface methods fall back to the call's type.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual checks in VS Code: extension 0.2.0 (live errors) and hover (extension README steps 2–5).
 
 ---
 
@@ -5832,7 +5853,7 @@ Branch: prp-101-lsp_hover
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
 
-**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Proposed: milestone 71, hover** — v16 draft decisions 18–22 and PRP-101; it waits for the user's approval. Then go-to-definition (discovery + PRP); bundling the extension; the user's manual check of 0.2.0. Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. Next for the extension: go-to-definition (discovery + PRP; the checker's `names` already map uses to declaration spans); bundling the extension; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 
