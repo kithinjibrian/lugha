@@ -41,6 +41,24 @@ pub(in crate::check) fn out_of_range(ty: Type, span: Span) -> Diagnostic {
     .with_help(format!("{ty} holds {min} to {max}"))
 }
 
+/// E0402 at a literal typed as a type parameter, out of range at one instance (v15).
+pub(in crate::check) fn out_of_range_in(ty: Type, span: Span, instance: &str) -> Diagnostic {
+    let (max, neg) = ty.literal_range();
+    let min = if neg == 0 {
+        "0".to_string()
+    } else {
+        format!("-{neg}")
+    };
+    Diagnostic::error(
+        "E0402",
+        format!("integer literal out of range for {ty} in the instance {instance}"),
+        span,
+    )
+    .with_help(format!(
+        "{ty} holds {min} to {max}; this literal is {ty} in {instance}"
+    ))
+}
+
 pub(in crate::check) fn mismatch(
     expected: Type,
     found: Type,

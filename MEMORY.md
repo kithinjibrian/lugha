@@ -1698,11 +1698,19 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Why:** generic numeric code counted up by `1` to make numbers; casts reuse the existing per-instance lowering.
 
+### 113. Numbers as `T` — milestone 58 (PRP-087)
+
+**Decision:** built as planned (MEMORY 112).
+- **Casts:** `check/ops.rs::numeric` treats a `Num`/`Float`-bounded parameter as numeric; codegen needed no change (casts and literals already lower at each instance's concrete type).
+- **Literals:** `literal.rs` types any integer literal as `T: Num` and any float literal as `T: Float`, records the integer ones (`ParamLiteral`), and `instance_literals` reports E0402 per (literal, type) after `monomorphize`.
+- **Libraries:** glowworm's `arange`/`linspace`/`mean` simplified (`b0683c3`, local); firefly needed nothing.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 58 complete**: PRP-087 numbers as `T`
 - **Milestone 57 complete**: PRP-086 nested `mut self` calls
 - **Milestone 56 complete**: PRP-085 owning arrays once per loop
 - **Milestone 55 complete**: PRP-084 copy-on-write arrays
@@ -1807,8 +1815,8 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–57 complete** (tag `m57`: nested `mut self` calls, PRP-086). **Approved and next, in one go** (session 122): milestone 58, numbers as `T` (PRP-087), then milestone 59, user-defined `Ord` (PRP-088). Each gets a session, a branch, a MEMORY plan entry (112, 114), tests first, and is merged on green CI and tagged.
+**Milestones 51–58 complete** (tag `m58`: numbers as `T`, PRP-087). **Approved and next, in one go:** milestone 59, user-defined `Ord` (PRP-088): a session, branch `prp-088-user_ord`, MEMORY 114, tests first, merge on green CI, tag `m59`.
 
-firefly has two unpushed commits (`ce6f38b` layers, `a891512` nested layer); the user's `gpt-4x20k.log` is untracked there.
+Unpushed local commits: firefly `ce6f38b` (layers), `a891512` (nested layer); glowworm `b0683c3` (numbers as `T`). The user's `gpt-4x20k.log` is untracked in firefly.
 
 See `TODO.md`.

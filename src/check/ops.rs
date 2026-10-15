@@ -136,11 +136,29 @@ impl Checker {
         // `char` casts to and from any integer (v14).
         let char_cast =
             (from == Type::Char && to.is_integer()) || (to == Type::Char && from.is_integer());
-        if (from.is_numeric() && to.is_numeric()) || char_cast {
+        // A type parameter bounded by `Num` or `Float` is a number at every
+        // instance, so it casts like one (v15, milestone 58).
+        if (self.numeric(&from) && self.numeric(&to)) || char_cast {
             return to;
         }
-        self.report(errors::bad_cast(from, to, expr.span));
+        let unbounded = [&from, &to].into_iter().find_map(|t| match t {
+            Type::Param(p) if !self.has_num(p) => Some(p.clone()),
+            _ => None,
+        });
+        let d = errors::bad_cast(from, to, expr.span);
+        self.report(match unbounded {
+            Some(p) => d.with_help(format!("bound it to cast it: `{p}: Num`")),
+            None => d,
+        });
         Type::Error
+    }
+
+    /// A number, or a type parameter that is one at every instance.
+    fn numeric(&self, ty: &Type) -> bool {
+        match ty {
+            Type::Param(p) => self.has_num(p),
+            _ => ty.is_numeric(),
+        }
     }
 }
 

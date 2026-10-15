@@ -1,0 +1,38 @@
+// Numbers as `T` (v15, milestone 58): `as` with numeric type parameters,
+// and any literal as a `T: Num` or `T: Float`, at several instances.
+fun mean<T: Num>(xs: T[]): T {
+    let mut s: T = 0;
+    for x of xs {
+        s += x;
+    }
+    s / xs.len as T
+}
+
+fun arange<T: Num>(n: i64): T[] {
+    let mut out: T[] = [];
+    for i in 0..n {
+        out.push(i as T);
+    }
+    out
+}
+
+fun scale<T: Num>(x: T): T = x * 3 - 2;
+fun half<T: Float>(x: T): T = x * 0.5;
+fun widen<T: Num>(x: T): f64 = x as f64 / 4.0;
+fun narrow<T: Num, U: Num>(x: T): U = x as U;
+
+fun main() {
+    println("{mean([1, 2, 4])} {mean([1 as i32, 2, 4])} {mean([10 as u8, 20, 31])}");
+    println("{mean([1.0, 2.0, 4.0])} {mean([1.0 as f32, 2.0, 4.5])}");
+    let is: i64[] = arange(4);
+    let fs: f64[] = arange(3);
+    let bs: u8[] = arange(3);
+    println("{is} {fs} {bs}");
+    println("{scale(5)} {scale(5 as u8)} {scale(2.5)} {scale(1.5 as f32)}");
+    println("{half(3.0)} {half(5.0 as f32)}");
+    println("{widen(10)} {widen(10 as u8)} {widen(2.0 as f32)}");
+    let a: u8 = narrow(300);
+    let b: i64 = narrow(2.9);
+    let c: f32 = narrow(7 as u16);
+    println("{a} {b} {c}");
+}

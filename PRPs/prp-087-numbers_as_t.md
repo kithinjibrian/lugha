@@ -1,6 +1,6 @@
 ## FEATURE: Numbers as `T` — `as` casts with numeric type parameters, and any literal as a `T: Num`/`T: Float`; milestone 58.
 
-**Status:** approved 2026-10-15 — session 122 ("approved. build in one go"); proposed in session 121.
+**Status:** merged 2026-10-15 — session 123 (approved in session 122, "approved. build in one go"; proposed in session 121); tag `m58`.
 **Milestone:** 58 (one PRP; tag `m58` at merge)
 **Spec:** `Language v15 Draft.md` (decisions 33–36); spec §4 (casts, inference rules 3–5, operator bounds), §9 (E0401, E0402, E0408 rows), §10 (a program), §11 (row 58).
 
@@ -73,10 +73,10 @@ None.
 ## TESTS TO WRITE
 
 Checker unit tests:
-- [ ] **Allowed casts:** `n as T` (`T: Num`), `x as f64` (`x: T`, `T: Num`), `x as T` (`x: U`, both `Num`), `x as T` with `T: Float`.
-- [ ] **E0408:** `n as T` with unbounded `T`; `T: Eq` only; `b as T` where `b: bool`.
-- [ ] **Literals:** `x * 2` and `x - 10` (`T: Num`); `x * 0.5` (`T: Float`); `x * 0.5` with `T: Num` only is E0401.
-- [ ] **E0402 per instance:**
+- [x] **Allowed casts:** `n as T` (`T: Num`), `x as f64` (`x: T`, `T: Num`), `x as T` (`x: U`, both `Num`), `x as T` with `T: Float`.
+- [x] **E0408:** `n as T` with unbounded `T`; `T: Eq` only; `b as T` where `b: bool`.
+- [x] **Literals:** `x * 2` and `x - 10` (`T: Num`); `x * 0.5` (`T: Float`); `x * 0.5` with `T: Num` only is E0401.
+- [x] **E0402 per instance:**
   - `x + 300` at `u8`;
   - `-1` at `u32`;
   - a generic method of a generic struct;
@@ -84,23 +84,23 @@ Checker unit tests:
   - one report per (literal, type).
 
 Acceptance (`tests/programs/m58/`):
-- [ ] **`numbers.la`:** generic `mean`, `arange`, `scale`, `half` at `i32`, `u8`, `i64`, `f32`, `f64`. The golden is computed from the same functions written concretely per type (built with the M57 compiler).
-- [ ] **`e0402_instance.la`:** a rejected program (`.stderr`).
-- [ ] The §10 program.
+- [x] **`numbers.la`:** generic `mean`, `arange`, `scale`, `half` at `i32`, `u8`, `i64`, `f32`, `f64`. The golden is computed from the same functions written concretely per type (built with the M57 compiler).
+- [x] **`e0402_instance.la`:** a rejected program (`.stderr`).
+- [x] The §10 program.
 
 Regression:
-- [ ] Every earlier program passes unchanged.
+- [x] Every earlier program passes unchanged.
 
 ## ROLLBACK PLAN
 - Branch `prp-087-numbers_as_t`, merged into `main` after CI passes; tag `m58`.
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass at `-O0`, and the `m58/` programs at `-O2`.
-- [ ] glowworm's and firefly's examples print the same after the cleanup.
-- [ ] The spec is at milestone 58; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
+- [x] All tests pass at `-O0`, and the `m58/` programs at `-O2`.
+- [x] glowworm's and firefly's examples print the same after the cleanup.
+- [x] The spec is at milestone 58; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass, and CI is green.
 
 ## VALIDATION
 ```bash
@@ -109,3 +109,13 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run -q -- run tests/programs/m58/numbers.la
 ```
+
+## AMENDMENTS
+
+Session 123, while building:
+1. **firefly needed no change:** its `mean` calls glowworm's `NdArray.mean`, and nothing else in firefly counts up to make a number. Only glowworm changed (`b0683c3`, not pushed): `arange` uses `i as T`, `linspace` uses `(n - 1) as T`, `mean` uses `self.data.len as T`. Its examples, and firefly's `xor`, `gradcheck` and `bigram`, print the same.
+2. **`T` ↔ `char` casts stay E0408,** since a `T: Num` may be a float and `char` casts only to and from integers.
+3. **E0408's help** names the bound to add: "bound it to cast it: `T: Num`".
+4. **Range per instance:** literals typed as a type parameter are recorded with their owner key (`Checker::param_literals`). After `monomorphize`, `instance_literals` checks each against each instance's concrete type (`instances::show` names it). Closures and generic methods use the enclosing body's key, which the tests confirm.
+5. **An M52 test changed:** `a * 2` on a `T: Num` was E0401 in M52 and is now valid; the test now expects E0401 for `a * 2.5`.
+

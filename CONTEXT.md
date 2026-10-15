@@ -5071,16 +5071,44 @@ Branch: prp-086-nested_mut_self
 
 ---
 
-## SESSION 123 — 2026-10-15 — Numbers as `T` (milestone 58) — open
+## SESSION 123 — 2026-10-15 — Numbers as `T` (milestone 58) — closed
 Branch: prp-087-numbers_as_t
+
+### WHAT WAS DONE
+- MEMORY 112. Tests first:
+  - checker tests (casts both ways and E0408, literals and E0401, E0402 per instance incl. methods and closures);
+  - `m58/numbers.la` (golden from hand-instantiated code under M57);
+  - `m58/e0402_instance.la`.
+- Built: `numeric` casts in `check/ops.rs`; any literal as `T` and `instance_literals` in `check/literal.rs`; `errors::out_of_range_in`.
+- Spec v15 at milestone 58 (§4 casts and operator bounds, §9 rows, §10 "Numbers as T", §11 row 58); docs.
+- glowworm `arange`/`linspace`/`mean` simplified (`b0683c3`, local); firefly unchanged (amendment 1).
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m58/`.
+- Modified:
+  - `src/check/literal.rs`, `ops.rs`, `instances.rs`, `mod.rs`, `modules/mod.rs`, `errors/types.rs`, `operators_tests.rs`;
+  - `tests/spec.rs`; the v15 spec and draft;
+  - CLAUDE.md, README, TODO, CHANGELOG, MEMORY (112, 113), PRP-087.
+
+### TESTS WRITTEN
+- `numeric_type_parameters_cast_both_ways_v15`, `any_literal_is_a_numeric_type_parameter_v15`, `literals_out_of_range_for_an_instance_are_e0402_v15`; the programs above; §10 "Numbers as T".
+
+### DECISIONS MADE
+- MEMORY 113 records the built design.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m58`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–57 complete** (tag `m57`: nested `mut self` calls, PRP-086). **Approved and next, in one go** (session 122): milestone 58, numbers as `T` (PRP-087), then milestone 59, user-defined `Ord` (PRP-088). Each gets a session, a branch, a MEMORY plan entry (112, 114), tests first, and is merged on green CI and tagged.
+**Milestones 51–58 complete** (tag `m58`: numbers as `T`, PRP-087). **Approved and next, in one go:** milestone 59, user-defined `Ord` (PRP-088): a session, branch `prp-088-user_ord`, MEMORY 114, tests first, merge on green CI, tag `m59`.
 
-firefly has two unpushed commits (`ce6f38b` layers, `a891512` nested layer); the user's `gpt-4x20k.log` is untracked there.
+Unpushed local commits: firefly `ce6f38b` (layers), `a891512` (nested layer); glowworm `b0683c3` (numbers as `T`). The user's `gpt-4x20k.log` is untracked in firefly.
 
 See `TODO.md`.
 

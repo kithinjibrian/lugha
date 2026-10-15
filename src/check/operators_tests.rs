@@ -61,13 +61,14 @@ fn misuse_is_reported() {
         ["E0404"]
     );
     assert_eq!(codes("fun main() { let s = \"a\" - \"b\"; }"), ["E0404"]);
-    // A bare `T`, a literal other than 0/1, and a non-number for `Num`.
+    // A bare `T`, a float literal for a `T` that is only `Num` (any integer
+    // literal is one since milestone 58), and a non-number for `Num`.
     assert_eq!(
         codes("fun f<T>(a: T): T = a + a;\nfun main() {}"),
         ["E0404"]
     );
     assert_eq!(
-        codes("fun f<T: Num>(a: T): T = a * 2;\nfun main() {}"),
+        codes("fun f<T: Num>(a: T): T = a * 2.5;\nfun main() {}"),
         ["E0401"]
     );
     assert_eq!(

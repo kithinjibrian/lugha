@@ -38,6 +38,7 @@ pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<D
     let mut checker = Checker::new(count as usize);
     checker.modules(units);
     let monos = checker.monomorphize();
+    checker.instance_literals(&monos);
     let (layouts, used) = checker.type_instances(&monos);
     if checker
         .diagnostics

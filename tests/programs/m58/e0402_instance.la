@@ -1,0 +1,8 @@
+// A literal that doesn't fit an instance's type is E0402 at the literal,
+// naming the instance (v15, milestone 58).
+fun big<T: Num>(x: T): T = x + 300;
+
+fun main() {
+    println(big(1));
+    println(big(1 as u8));
+}

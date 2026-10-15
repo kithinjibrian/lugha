@@ -155,7 +155,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 
-The language itself is defined by `docs/specs/Language v15 Specification.md` (`lughac spec` prints it): Lugha v15, in progress (milestones 51–57 done: nested `mut self` calls — E0508 only for arguments that can be the receiver's storage, receivers reached after the arguments; owning arrays once per loop — writes in a loop that can't share its arrays skip the flag test; copy-on-write arrays — a shared flag in `cap`, cloning before writes, two-phase places; `std.random`; the std library — bundled `std.<module>` modules, `std.math`, the `Float` bound; package layout — `[package] name` and `source`, the program's manifest from a parent folder and its implicit package, E0327, E0328; operator overloading — `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, the prelude's `Add`…`Neg` and `Num` bounds, bounds on `impl` blocks). `Language v15 Draft.md` is the approved plan; the rest of v15 (directories, processes, env, Unicode follow-ups) is planned in `TODO.md`. The v0–v14 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
+The language itself is defined by `docs/specs/Language v15 Specification.md` (`lughac spec` prints it): Lugha v15, in progress (milestones 51–58 done: numbers as `T` — `as` with `T: Num`/`Float`, any literal as `T`, E0402 per instance; nested `mut self` calls — E0508 only for arguments that can be the receiver's storage, receivers reached after the arguments; owning arrays once per loop — writes in a loop that can't share its arrays skip the flag test; copy-on-write arrays — a shared flag in `cap`, cloning before writes, two-phase places; `std.random`; the std library — bundled `std.<module>` modules, `std.math`, the `Float` bound; package layout — `[package] name` and `source`, the program's manifest from a parent folder and its implicit package, E0327, E0328; operator overloading — `+ - * / %` and unary `-` through `add`/`sub`/`mul`/`div`/`rem`/`neg`, the prelude's `Add`…`Neg` and `Num` bounds, bounds on `impl` blocks). `Language v15 Draft.md` is the approved plan; the rest of v15 (directories, processes, env, Unicode follow-ups) is planned in `TODO.md`. The v0–v14 files are frozen. `Result`, `Iter`, `Display`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -256,7 +256,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   │                  literals, E0209), sexp/ (mod.rs exprs,
 │   │                  item.rs items and types), test_util.rs, tuples.rs (tuple types, literals, patterns, `t.0`, `for (i, w)`, v14), format.rs (`format("…", …)` with a literal template, v14)
 │   ├── check/       — mod.rs (check), checked.rs (the `Checked` output), test_util.rs, types.rs, env.rs (globals, main, scopes),
-│   │                  expr.rs, literal.rs, call.rs, ops.rs (operators, casts), body.rs (function bodies), stmt.rs,
+│   │                  expr.rs, literal.rs (literals; any literal as `T: Num`/`Float` and its range per instance, v15), call.rs, ops.rs (operators, casts), body.rs (function bodies), stmt.rs,
 │   │                  assign.rs (places, mutability), flow.rs (returns, loops, W0101), access.rs
 │   │                  (fields, indexing), array.rs (literals, for … of, E0507 guard), structs.rs
 │   │                  (declarations, E0307/E0308, literals), liveness/ (mod.rs move on last use; walk.rs the walk), enums.rs
@@ -333,7 +333,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── git_packages.rs — git packages through lughac and a real `file://` repository (lock, offline, E0325/E0326)
 │   ├── package_layout.rs — package layout through lughac: `source`, `examples/` by name, the `$HOME` bound, E0327/E0328
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec
-│   ├── programs/    — m1/ … m57/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m58/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch),
 │                      execute, report)

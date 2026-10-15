@@ -122,6 +122,7 @@ fn the_extractor_finds_every_section_10_program() {
         "Random numbers",
         "Copy-on-write",
         "Nested calls",
+        "Numbers as T",
     ] {
         assert!(
             titles.iter().any(|t| t == expected),

@@ -307,7 +307,7 @@ Found writing glowworm and firefly (session 115); each needs a discovery and a P
   - **Today:** `g.tanh(g.add(a, b))` is E0508, so tape-style code needs one `let` per op.
   - **Proposal:** allow it when the inner call finishes before the outer one changes the receiver, i.e. arguments evaluated first, then the outer `mut self` call. Model code would then read like PyTorch.
   - **Must keep:** E0508's protection against real aliasing.
-- [ ] **Any number as a `T: Num`.**
+- [x] **Any number as a `T: Num`.** Done in milestone 58 (PRP-087).
   - **Today:** only `0` and `1` are `T` literals, so generic code counts up by `1` to make `n` (glowworm's `arange` and `linspace`, firefly's mean).
   - **Proposal:** a conversion such as `T.from_i64(n)` / `T.from_f64(x)`, or `n as T` under a numeric bound.
 

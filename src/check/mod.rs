@@ -146,6 +146,7 @@ impl Checker {
             default_args: HashMap::new(),
             iterations: HashMap::new(),
             owner: String::new(),
+            param_literals: Vec::new(),
             uses: Vec::new(),
             body_types: HashMap::new(),
         }
@@ -246,6 +247,8 @@ pub(super) struct Checker {
     iterations: HashMap<ExprId, Iteration>,
     /// The key of the function or method whose body is being checked.
     owner: String,
+    /// Integer literals typed as type parameters (v15, milestone 58).
+    param_literals: Vec<literal::ParamLiteral>,
     /// Every generic call, with the body it is in (PRP-036).
     uses: Vec<instances::Use>,
     /// The types in each generic body that mention its parameters, by the

@@ -198,7 +198,7 @@ fn chain(found: &[(Instance, usize, Option<usize>)], mut last: Option<usize>) ->
 }
 
 /// An instance as written: `f<i64>`.
-fn show(i: &Instance) -> String {
+pub(super) fn show(i: &Instance) -> String {
     let args: Vec<String> = i.args.iter().map(Type::to_string).collect();
     format!("{}<{}>", i.key, args.join(", "))
 }

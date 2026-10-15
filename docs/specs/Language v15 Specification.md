@@ -2,11 +2,11 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 51–57 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
+**Status:** in progress (milestones 51–58 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
 
 **v14.** This is v13 plus binary I/O, `char`, tuples, `format`, import aliases and whole-module re-exports, and git packages (milestones 45–50).
 
-**Changes since v14** (milestones 51–57):
+**Changes since v14** (milestones 51–58):
 - A package's `[package]` table may give its `name`, checked against the key a manifest lists it under (E0327), and its `source`, the folder its modules start in: with `source = "src"`, `src/array.la` of package `glowworm` is `glowworm.array` (section 6).
 - A program with no `lugha.toml` beside its main file uses the nearest one above it, looking no further than a folder with `.git` or the home folder; when that manifest names a package, the program imports it by that name, so `glowworm/examples/basics.la` writes `import glowworm.array;` with no manifest of its own (section 6).
 - A file imported as two modules is E0328 (section 6).
@@ -15,6 +15,7 @@ Oct 13, 2026 · @kithinji
 - A standard library: `import std.math;` loads a module bundled with `lughac`, only when imported. `std.math` has `sqrt`, `pow`, `exp`, `ln`, `log10`, `sin`, `cos`, `tan`, `atan2`, `floor`, `ceil` and `round` for any `T: Float` (`f32` or `f64`, a new prelude bound), `abs`, `min`, `max` and `clamp`, and `pi()` and `e()`. `std` is a reserved package name (sections 4, 6, "The standard library").
 - Arrays are copy-on-write: a copy shares the array until either side writes to it, so copying costs a constant time and reading a copy never copies. Every copy still behaves as an independent value, and no program's output changes (sections 4, 5, 7, 9, 12). A loop makes the arrays it writes, and can't share, unique once before it starts, so its writes cost no more than before copy-on-write (milestone 56; section 9).
 - An argument of a `mut self` call may call methods on the receiver, `g.tanh(g.add(a, b))`, or read numbers and strings from it; only an argument that can be the receiver's own storage (`v.add(v)`, `v.add(v.inner)`) is E0508. The arguments run before the receiver is reached, and a change they make to a struct containing the receiver is no longer E0510 unless an array index lies between (milestone 57; sections 4–5).
+- Numbers as `T`: `n as T` and `x as f64` cast to and from a type parameter bounded by `Num` or `Float`, and any integer literal is a `T: Num` and any float literal a `T: Float` (`x * 2`, `x * 0.5`); a literal that doesn't fit an instance's type is E0402, naming the instance (milestone 58; section 4).
 - `std.random`: `random.seeded(42)` or `random.from_os()` makes a generator (xoshiro256\*\*, not cryptographically secure) with `uniform`, `below`, `between`, `normal`, `chance`, `choice` and `shuffle` ("The standard library").
 
 Every valid v14 program and package is a valid v15 one: a module's own type or interface named `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg` or `Num` still means its own, as for `Iter`.
@@ -517,7 +518,7 @@ Equality costs time proportional to the values compared. `f64` keeps IEEE semant
 - **Methods:** `c.is_alphabetic()`, `is_digit()` (`0`–`9`), `is_whitespace()`, `is_upper()`, `is_lower()`, `to_upper()` and `to_lower()` cover ASCII and Latin-1 (U+0000–U+00FF) only: other characters are neither letters nor cased, and `ß`, `ÿ` and `µ` keep their case.
 - **Names:** `char_from` and `Chars` are the prelude's, visible like `range` unless a module declares its own.
 
-**Casts.** `expr as T` converts between numeric types (`i32`, `i64`, `u8`, `u32`, `u64`, `f32`, `f64`; every pair, v7). `f64` to `f32` rounds to nearest, and `f32` to `f64` is exact. Integer narrowing truncates. Integer to float rounds to nearest. Float to integer truncates toward zero and saturates at the target's range; NaN becomes 0. `bool` cannot be cast; write `if b { 1 } else { 0 }` instead.
+**Casts.** `expr as T` converts between numeric types (`i32`, `i64`, `u8`, `u32`, `u64`, `f32`, `f64`; every pair, v7). `f64` to `f32` rounds to nearest, and `f32` to `f64` is exact. Integer narrowing truncates. Integer to float rounds to nearest. Float to integer truncates toward zero and saturates at the target's range; NaN becomes 0. `bool` cannot be cast; write `if b { 1 } else { 0 }` instead. A type parameter bounded by `Num` or `Float` casts like a number, to and from any numeric type or other such parameter (v15): `n as T`, `x as f64`; each instance casts by these rules at its own types. An unbounded `T` is E0408.
 
 **Names of types.** A local — a `let`, a parameter, a `for` variable or a `match` binding — may not be named like a struct, an enum or `Option` (E0311). So a name before `.` is always unambiguous: a type, meaning a variant or associated function follows, or a local, meaning a field or method follows.
 
@@ -593,7 +594,7 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 - **Scope:** a type parameter is a type inside its declaration (fields, payloads, signature and body), and a method also sees its `impl`'s parameters. It may not be named like a type, a module or another parameter of the same declaration, nor a method's like its `impl`'s (E0316).
 - **Bounds:** `T: Eq`, `T: Ord`, interfaces (below), or several (`T: Shape + Eq`). Anything else is E0315. `Ord` doesn't imply `Eq`; write both if both are used.
 - **`Float`** (v15, milestone 53): a prelude bound satisfied by `f32` and `f64` only (E0419 otherwise, with help to write `2.0` or convert), allowing everything `Num` does. `std.math`'s float functions take a `T: Float`.
-- **Operator bounds** (v15): the prelude's interfaces `Add`, `Sub`, `Mul`, `Div`, `Rem` (each `fun op(self, other: Self): Self;`), `Neg` (`fun neg(self): Self;`) and `Num` (all six). `T: Add` allows `a + b` and `a.add(b)` on `T`, and so on; `T: Num` allows every arithmetic operator, `==` and `<`, and the literals `0` and `1` as values of `T` (`let mut s: T = 0;`; other literals are E0401). The numbers satisfy all of them as built-ins and `string` satisfies `Add`; other types satisfy the single-operator ones by having the method, and only the numbers satisfy `Num` (E0419). They are visible in every module unless the module declares the name, like `Iter`. Through a bound, each instance uses the built-in operator at a number or string type, panics included, and calls the method otherwise.
+- **Operator bounds** (v15): the prelude's interfaces `Add`, `Sub`, `Mul`, `Div`, `Rem` (each `fun op(self, other: Self): Self;`), `Neg` (`fun neg(self): Self;`) and `Num` (all six). `T: Add` allows `a + b` and `a.add(b)` on `T`, and so on; `T: Num` allows every arithmetic operator, `==` and `<`, and any integer literal as a value of `T` (`let mut s: T = 0;`, `x * 2`; v15, milestone 58), as `T: Float` also allows any float literal (`x * 0.5`); a float literal where `T` is only `Num` is E0401. Each instance gives the literal its own type, and a literal that doesn't fit one is E0402 at the literal, naming the instance (`300` in `big<u8>`). The numbers satisfy all of them as built-ins and `string` satisfies `Add`; other types satisfy the single-operator ones by having the method, and only the numbers satisfy `Num` (E0419). They are visible in every module unless the module declares the name, like `Iter`. Through a bound, each instance uses the built-in operator at a number or string type, panics included, and calls the method otherwise.
 - **What a bare `T` allows:** being stored, moved, copied, passed, returned and put in arrays, structs and enums. `==` needs `T: Eq`, `<` needs `T: Ord`, and a method call needs an interface bound that declares it. Using `==` or `<` without its bound is E0404, with help suggesting the bound.
 - **What `T` never allows:** arithmetic without an operator bound (v15), casts, `.len`, or indexing. Those need a concrete type or a bound. A `T` prints (v12), each instance by its concrete type's rules.
 - **Checked once:** a generic body is checked once, with its parameters abstract, so every instance compiles.
@@ -1265,7 +1266,7 @@ Name and type errors, reported by the checker:
 | E0328 | One file imported as two modules (v15) | `src/main.la` importing `cli` and `tool.cli` when `tool`'s `source` is `src` |
 | E0324 | A package version that doesn't meet a requirement, or a requirement on a package without a version (v11) | `geo = { path = "libs/geo", version = "1.2" }` when geo's `lugha.toml` says `version = "2.0.0"`, or nothing |
 | E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
-| E0402 | Integer literal out of range for its type | `let b: u8 = 256;` |
+| E0402 | Integer literal out of range for its type | `let b: u8 = 256;`; `x + 300` in a `fun big<T: Num>` called at `u8` (v15) |
 | E0403 | Type mismatch | `let n: i32 = ok;` where `ok` is `bool`; `if`/`else` of different types |
 | E0404 | Operator applied to invalid operand types | `true + 1`, `-u` where `u` is `u8`, `u16`, `u32` or `u64`; `a == b` on a `T` without `Eq` (with help to declare it); `s + 1` where `s`'s type has no `add` of the operator shape, `a + a` on a `T` without `Add` or `Num` (v15) |
 | E0405 | Wrong number of arguments | `add(1)` for `fun add(a: i64, b: i64)` |
@@ -1296,7 +1297,7 @@ Name and type errors, reported by the checker:
 | E0431 | A bad format specifier (v13) | `"{n:.2}"` with `n: i64`; `"{x:q}"`; `"{f:x}"` with `f: f64`; `"{n:#}"`; `"{s:05}"` with `s: string`; `"{n:2000}"` |
 | E0432 | A bad `format` template (v14) | `format(t, 1)` with `t` a variable; `format("{} and {}", 1)`; `format("{x}", 1)`; `format("a {")` |
 | E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum, `Option`, function or interface parameters or returns (§8) |
-| E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool` |
+| E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool`; `n as T` for a `T` without `Num` or `Float` (v15) |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut`; `for x of mut xs` where `xs` isn't (v13) |
 | E0502 | Assignment to something that isn't a place | `(a + b) = 3;`; `for x of mut [1, 2]` (v13) |
 | E0503 | Missing return | a non-void function whose body can end without a value (§6); a stray `;` after the result gets a "remove this semicolon" label |
@@ -2833,6 +2834,31 @@ fun main() {
 }
 ```
 
+**Numbers as T** (milestone 58). Prints `3`, `3.0`, `13`, `1.5`, `3` on five lines, exits with 0.
+
+```
+// Numbers as `T` (v15): `as` converts to and from a `T: Num`, and any
+// integer literal is a `T: Num` and any float literal a `T: Float`.
+fun mean<T: Num>(xs: T[]): T {
+    let mut s: T = 0;
+    for x of xs {
+        s += x;
+    }
+    s / xs.len as T
+}
+
+fun scale<T: Num>(x: T): T = x * 3 - 2;
+fun half<T: Float>(x: T): T = x * 0.5;
+
+fun main() {
+    println(mean([1, 2, 6]));
+    println(mean([1.0, 2.0, 6.0]));
+    println(scale(5 as u8));
+    println(half(3.0 as f32));
+    println(mean([2.5, 3.5]) as i64);
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -2896,6 +2922,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 55 | Copy-on-write arrays (v15) | the shared flag in `cap`, marking at copy sites, cloning before writes, two-phase places, `for … of mut` through the place | The copy-on-write program in section 10 passes; every earlier program prints the same (done) |
 | 56 | Owning arrays once per loop (v15) | the loop scan, fixed paths, guarded hoists before every loop kind; writes inside skip the flag test | Every program prints the same; `tests/programs/m56/` (done) |
 | 57 | Nested `mut self` calls (v15) | E0508 only for arguments that can be the receiver's storage, `mut self` receivers reached after the arguments, E0510 for receivers only across an index | The nested-calls program in section 10 passes (done) |
+| 58 | Numbers as `T` (v15) | `as` with `T: Num`/`Float`, any literal as `T`, E0402 per instance | The numbers-as-T program in section 10 passes (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
