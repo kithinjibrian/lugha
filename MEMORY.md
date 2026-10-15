@@ -1823,6 +1823,15 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** `editors/vscode/` in this repo, so the grammar changes with the spec. Highlighting plus `lughac check --offline --diagnostics=json` on open and save; no `lughac` change. A file with `main` checks itself; a module checks the `lugha.entries` setting's main files (there is no default entry point), or itself with E0303 hidden. `lugha.path` is machine-scoped. Tests: `node:test` (pure modules, and the runner against the real `lughac`) and `vscode-tmgrammar-test`; a keyword test reads the newest spec's §2. Dev dependencies only; a local `.vsix`, no Marketplace. A language server is a later PRP.
 
+### 129. `lughac init` planned (session 139, approved session 140)
+
+**Decision (v16 draft decisions 9–12, PRP-098):**
+- **Command:** `lughac init [folder] [--lib] [--name N]`, a program by default.
+- **Layouts:** a program gets `src/main.la`; a library gets `src/<name>.la` plus `examples/hello.la`; both get `lugha.toml` and `.gitignore`.
+- **Safety:** never overwrites; an existing manifest or a bad name is exit 2; no git.
+
+**Why:** starting a project by hand was error-prone, and a library needs something runnable at once.
+
 ---
 
 ## CURRENT PROJECT STATE
