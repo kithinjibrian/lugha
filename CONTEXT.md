@@ -5324,6 +5324,11 @@ Branch: prp-091-c_to_lugha
 
 ---
 
+## SESSION 131 — 2026-10-15 — Format widths in characters (milestone 63) — open
+Branch: prp-092-widths_in_chars
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–62 complete.** **Approved and next, in one go:** milestone 63, widths in characters (PRP-092), then 64 `std.env` (PRP-093), 65 `std.fs` (PRP-094) and 66 `std.process` (PRP-095, security-reviewed by approval). MEMORY 118 is the plan.
