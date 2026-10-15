@@ -5031,6 +5031,11 @@ Branch: main
 
 ---
 
+## SESSION 122 — 2026-10-15 — Nested `mut self` calls (milestone 57) — open
+Branch: prp-086-nested_mut_self
+
+---
+
 ## NEXT SESSION START POINT
 
 **Milestones 51–56 complete.** **Proposed, waiting for the user's approval** (the user wants to approve and build all three in one go, in this order):
