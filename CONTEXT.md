@@ -6293,6 +6293,11 @@ Branch: extension-0.3.0
 
 ---
 
+## SESSION 165 — 2026-10-16 — Clean builds for the VS Code extension — open
+Branch: extension-clean-build
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
