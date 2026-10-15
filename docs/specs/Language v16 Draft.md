@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 140 (proposed in session 139).
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -55,7 +55,7 @@ There is no command to start a Lugha project: `lugha.toml` and the first source 
     - no file is ever overwritten: one that exists is kept and reported as `kept`;
     - the name comes from the folder unless `--name` is given; it must be an identifier that is neither a keyword nor `std`, else exit 2 with a hint (`--name my_shell`);
     - no `git`, no network.
-12. **Success:** milestone 69, tag `m69`. Tests in `tests/cli.rs`: each layout created, then checked, built and run; each refusal; `kept` files untouched. The spec's CLI table gains `init`.
+12. **Success:** milestone 69, tag `m69`. Tests in `tests/init.rs` (PRP-098: `tests/cli.rs` is near the file limit): each layout created, then checked, built and run; each refusal; `kept` files untouched. The spec's CLI table gains `init`.
 
 ## §4 Type system — changes
 

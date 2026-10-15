@@ -1,7 +1,7 @@
 //! Driver — the `lughac` command line (spec §9).
 //!
 //! Parses arguments, runs the pipeline for `build`, `run` and `check`, prints
-//! the bundled spec for `spec`, prints
+//! the bundled spec for `spec`, starts a project for `init` (v16), prints
 //! diagnostics (human or JSON) and chooses the exit code: 0 success, 1 the
 //! program has errors, 2 bad usage or an internal error.
 //!
@@ -9,6 +9,7 @@
 
 mod build;
 mod guard;
+mod init;
 mod json;
 mod pipeline;
 mod render;
@@ -101,6 +102,15 @@ where
             0
         }),
         Command::Spec => Ok(spec(out.stdout, out.stderr)),
+        Command::Init { folder, lib, name } => Ok(init::init(
+            &init::Request {
+                folder: folder.as_deref(),
+                lib: *lib,
+                name: name.as_deref(),
+            },
+            out.stdout,
+            out.stderr,
+        )),
     };
     match result {
         Ok(code) => code,
@@ -168,6 +178,17 @@ enum Command {
     },
     /// Print the LLM-ready spec bundled with this compiler version
     Spec,
+    /// Start a program (or with --lib a library) in a folder; never overwrites (v16)
+    Init {
+        /// The folder [default: the current one]
+        folder: Option<PathBuf>,
+        /// Make a library: src/<name>.la and examples/hello.la
+        #[arg(long)]
+        lib: bool,
+        /// The package name [default: the folder's name]
+        #[arg(long, value_name = "NAME")]
+        name: Option<String>,
+    },
 }
 
 /// `lughac spec`: the embedded spec, byte for byte (spec §9).
@@ -194,7 +215,7 @@ impl Command {
             Command::Check { diagnostics, .. } | Command::Update { diagnostics, .. } => {
                 *diagnostics
             }
-            Command::Spec => Format::Human,
+            Command::Spec | Command::Init { .. } => Format::Human,
         }
     }
 
@@ -205,7 +226,7 @@ impl Command {
             | Command::Run { file, .. }
             | Command::Check { file, .. }
             | Command::Update { file, .. } => Some(file.display().to_string()),
-            Command::Spec => None,
+            Command::Spec | Command::Init { .. } => None,
         }
     }
 }

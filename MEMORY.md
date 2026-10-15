@@ -1823,20 +1823,22 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** `editors/vscode/` in this repo, so the grammar changes with the spec. Highlighting plus `lughac check --offline --diagnostics=json` on open and save; no `lughac` change. A file with `main` checks itself; a module checks the `lugha.entries` setting's main files (there is no default entry point), or itself with E0303 hidden. `lugha.path` is machine-scoped. Tests: `node:test` (pure modules, and the runner against the real `lughac`) and `vscode-tmgrammar-test`; a keyword test reads the newest spec's §2. Dev dependencies only; a local `.vsix`, no Marketplace. A language server is a later PRP.
 
-### 129. `lughac init` planned (session 139, approved session 140)
+### 130. `lughac init` planned (session 139, approved session 142)
 
-**Decision (v16 draft decisions 9–12, PRP-098):**
-- **Command:** `lughac init [folder] [--lib] [--name N]`, a program by default.
-- **Layouts:** a program gets `src/main.la`; a library gets `src/<name>.la` plus `examples/hello.la`; both get `lugha.toml` and `.gitignore`.
-- **Safety:** never overwrites; an existing manifest or a bad name is exit 2; no git.
+**Decision:** v16 draft decisions 9–12: `lughac init [folder] [--lib] [--name N]`; a program (`src/main.la`) or a library (`src/<name>.la`, `examples/hello.la` importing `<name>.<name>`), both with `[package]` `name`, `version`, `source = "src"`; never overwrites, never prompts, no `git`.
 
-**Why:** starting a project by hand was error-prone, and a library needs something runnable at once.
+**Why:** starting a project by hand was error-prone, and a library needs something runnable at once. (A concurrent session first recorded this plan as 129, a number already taken, with the approval under its own session number; folded in here.)
+
+### 131. `lughac init` — milestone 69 (PRP-098)
+
+**Decision:** built as planned in `driver/init.rs`, tests in `tests/init.rs`. Errors are exit 2 (`InitError`). The `.gitignore` lists only the executable `lughac build` writes (`/main` or `/hello`); the PRP's `/target` was dropped, as lughac writes no such folder.
 
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 69 complete**: PRP-098 `lughac init`
 - **VS Code extension**: PRP-099, `editors/vscode/`
 - **Milestone 68 complete**: PRP-097 changing the working directory
 - **Milestone 67 complete — Lugha v16 begins**: PRP-096 shared boxes `Ref<T>`; v15 frozen (milestones 51–66)

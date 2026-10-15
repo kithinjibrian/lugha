@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 69 — `lughac init` ✅
+- [x] PRP-098: program and library layouts, the name from the folder or `--name`, never overwrites; tagged `m69`
+
 Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer. Found with oyster: ~~changing the working directory (`cd`)~~ done in milestone 68 (PRP-097), streaming pipes and timeouts for `std.process`, and a package entry module (`import glowworm;`).
 
 

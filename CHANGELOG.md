@@ -15,6 +15,7 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- `lughac init [folder] [--lib] [--name N]` starts a program (`lugha.toml`, `src/main.la`, `.gitignore`) or a library (`src/<name>.la` and a runnable `examples/hello.la`). The name is the folder's unless `--name` gives one, and must be an identifier other than a keyword or `std` (exit 2 with a suggestion). An existing `lugha.toml` stops it; any other existing file is kept — **milestone 69 complete**
 - A VS Code extension in `editors/vscode/` (PRP-099):
   - **highlighting:** keywords, types, numbers, comments, strings with interpolation and format specifiers, `format` templates, `char` literals; comment toggling and auto-closing pairs;
   - **diagnostics:** `lughac check --offline --diagnostics=json` on open and save, shown in the files they belong to with their codes, labels and help. A module is checked through the `lugha.entries` main files, or alone without E0303;

@@ -2,13 +2,14 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–68 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–69 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestones 67–68):
+**Changes since v15** (milestones 67–69):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
 - `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
+- `lughac init [folder] [--lib] [--name N]` starts a program, or a library with an example, in a folder; it never overwrites a file (milestone 69; section 9).
 
 Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type; a module's own type `Ref` still means its own.
 
@@ -1287,12 +1288,28 @@ The C `main(argc, argv)` emitted by the compiler calls `lugha_rt_init(argc, argv
 | `lughac check prog.la` | Lex, parse and type-check only; no codegen or linking (type checking from milestone 3) |
 | `lughac spec` | Print the LLM-ready spec bundled with this compiler version |
 | `lughac update prog.la` | Re-resolve every git package to its newest matching tag and rewrite `lugha.lock` (v14) |
+| `lughac init [folder] [--lib] [--name N]` | Start a program, or with `--lib` a library, in `folder` (default: the current one); see below (v16) |
 | `--offline` | On `build`, `run` and `check`: run no `git`; every git package must be locked and cached (v14) |
 | `lughac build --emit=tokens\|ast\|ir prog.la` | Print an intermediate stage and stop; with several modules, `tokens` and `ast` print each after a `; module <name>` line (`main` for the main file) |
 | `--diagnostics=human\|json` | Diagnostic format for `build`, `run` and `check`; `human` is the default |
 | `-O0` / `-O2` | Optimization level; `-O0` is the default |
 
 Exit codes: 0 on success, 1 when the program has errors, 2 for bad command-line usage or an internal compiler error.
+
+**`lughac init`** (v16, milestone 69) makes `folder` if needed and writes, for a package named `N`:
+
+| File | Program | Library (`--lib`) |
+| --- | --- | --- |
+| `lugha.toml` | `[package]` with `name = "N"`, `version = "0.1.0"`, `source = "src"` | the same |
+| `src/main.la` | `fun main()` printing `Hello from N!` | — |
+| `src/N.la` | — | `public fun greet(who: string): string`, giving `Hello, <who>, from N!` |
+| `examples/hello.la` | — | `import N.N;` and a `main` printing `N.greet("world")`, runnable at once through the implicit package (section 6) |
+| `.gitignore` | `/main`, the executable `lughac build src/main.la` writes | `/hello` |
+
+It prints `created <path>` for each file and then how to run the result.
+- **The name** is `--name`, else the folder's last component once `.` and `..` are resolved (`lughac init` in `~/oyster` makes `oyster`). It must be an identifier that is neither a keyword nor `std`; otherwise it is exit 2 with a suggestion: `` `my-shell` isn't a valid package name `` and help `` try `lughac init my-shell --name my_shell` ``.
+- **Nothing is overwritten.** A `lugha.toml` already in the folder stops `init` before it writes anything (exit 2). Any other file that exists is kept, reported as `kept <path> (already exists)`, and `init` still succeeds.
+- An I/O failure is exit 2 with the system's message; files written before it stay. `init` runs no `git`, uses no network and never asks a question.
 
 **Diagnostics.** Errors print the file, line and column, the offending source line, a caret under the span with its label, and any secondary labels, in a rustc-like layout rendered by the `codespan-reporting` crate. Each diagnostic is followed by a blank line, and lines carry no trailing whitespace. The checker reports as many errors as it can find instead of stopping at the first one.
 
@@ -3155,6 +3172,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 66 | `std.process` (v15) | `run`, `run_with`, `call`; no shell, `PATH` lookup, inherited environment, fds 0–2 only; `$os.spawn` | The processes program in section 10 passes (done: the v15 TODO complete) |
 | 67 | Shared boxes (v16) | `Ref<T>`: `new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing | The shared-boxes program in section 10 passes (done) |
 | 68 | Changing directory (v16) | `env.set_current_dir(path)`; `$os.chdir` | The changing-directory program in section 10 passes (done) |
+| 69 | `lughac init` (v16) | program and library layouts; the name from the folder or `--name`; never overwrites | A program and a library are created, checked and run, and every refusal is exit 2 (`tests/init.rs`; done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

@@ -5688,9 +5688,38 @@ Branch: main
 
 ---
 
+## SESSION 142 — 2026-10-15 — `lughac init` (milestone 69) — closed
+Branch: prp-098-init
+
+### WHAT WAS DONE
+- The user approved PRP-098 ("approve PRP-098 lughac init, build it"); MEMORY 130.
+- Built in a git worktree (`../lugha-prp-098`), as session 140 did, so another session's checkout of `main` is never switched; merged through a GitHub PR.
+- Tests first: `tests/init.rs` (9: both layouts created, checked and run; current folder and `.`; `--name`; an existing manifest; bad names with hints; keywords and `std`; kept files; an I/O failure), then `driver/init.rs` (3 unit tests).
+- Spec v16 at milestone 69 (§9 CLI table and an `init` section, §11 row 69, the changes summary); draft status; docs.
+
+### FILES CREATED OR MODIFIED
+- New: `src/driver/init.rs`, `tests/init.rs`.
+- Modified: `src/driver/mod.rs`; the v16 spec and draft; CLAUDE.md, README, TODO, CHANGELOG, MEMORY (130, 131), PRP-098, CONTEXT.
+
+### TESTS WRITTEN
+- `tests/init.rs` (9); `driver::init` unit tests (3).
+
+### DECISIONS MADE
+- MEMORY 131: the `.gitignore` drops the PRP's `/target` (lughac writes no such folder); tests in `tests/init.rs`, not `tests/cli.rs`.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m69`.
+
+---
+
 ## NEXT SESSION START POINT
 
-**v16: milestones 67–68 complete.** **Milestone 69, `lughac init` (programs and libraries), is proposed:** v16 draft decisions 9–12 and PRP-098. It waits for the user's approval.
+**v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`). Nothing is proposed or in progress.
+
+Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 
 **VS Code extension done** (PRP-099, `editors/vscode/`, session 140; manually checked by the user and `GPL-3.0-only` confirmed, session 141). A language server and Marketplace publishing are later TODO items.
 
