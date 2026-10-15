@@ -6293,8 +6293,27 @@ Branch: extension-0.3.0
 
 ---
 
-## SESSION 165 — 2026-10-16 — Clean builds for the VS Code extension — open
+## SESSION 165 — 2026-10-16 — Clean builds for the VS Code extension — closed
 Branch: extension-clean-build
+
+### WHAT WAS DONE
+- The user's checkout had compiled files of the 0.1.0 extension in `editors/vscode/out/`, which `npm test` ran and `npm run package` shipped. Added a `clean` script (Node's `fs.rmSync`, no new dependency) that `compile` runs first; bumped the extension to 0.3.1 (the version rule from session 164).
+- Checked: a planted stale test no longer runs and a planted stale file isn't packaged. Installed 0.3.1 in the user's VS Code.
+
+### FILES CREATED OR MODIFIED
+- Modified: `editors/vscode/{package.json,package-lock.json,README.md}`, README.md, CHANGELOG.md, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (a build script; checked by hand as above). The extension's `npm test` passes (5).
+
+### DECISIONS MADE
+- None.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.
 
 ---
 
