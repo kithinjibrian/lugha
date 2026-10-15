@@ -336,9 +336,8 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
     - optionally stdin text.
 - [ ] **Environment variables:** `env(name): Option<string>` and the current directory, read-only. *(chosen)*
 - [ ] **Unicode follow-ups:**
-  - format widths counted in characters, not bytes;
-  - fuller `char` classification and case tables beyond Latin-1.
-  - *(recommended; not yet confirmed in discovery)*
+  - [x] format widths counted in characters, not bytes (done in milestone 63, PRP-092);
+  - fuller `char` classification and case tables beyond Latin-1: **ruled out of v15 by the user** (session 127), keeping §11's "full Unicode tables" exclusion.
 - File streams (open, read in chunks, write incrementally) were offered and **not** chosen: they wait below.
 
 ## After v14 — noted, not scheduled (session 103)

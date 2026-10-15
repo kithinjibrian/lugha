@@ -86,6 +86,10 @@ enum { FORMAT_CAP = 64 };
 /* Called by the C `main` before the program starts (spec §6). */
 static void install_stack_overflow_handler(void);
 
+/* A scalar value's UTF-8 (`chars.c`), also used by `format.c`'s padding,
+ * which comes earlier in the joined file (v15). */
+static int utf8_encode(uint32_t code, char *out);
+
 /* The C `main`'s arguments, for `args()` (v3). */
 static int32_t program_argc;
 static char **program_argv;

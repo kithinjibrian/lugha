@@ -1,6 +1,6 @@
 ## FEATURE: Format widths in characters — `{name:<8}` pads by Unicode scalar values, not bytes, and a fill may be any `char`; milestone 63.
 
-**Status:** approved 2026-10-15 — session 129 ("approved"); proposed in session 128 (discovery in session 127).
+**Status:** merged 2026-10-15 — session 131 (approved in session 129; proposed in session 128); tag `m63`.
 **Milestone:** 63 (one PRP; tag `m63` at merge)
 **Spec:** `Language v15 Draft.md` decision 47; spec §4/§5 (format specifiers), §9 (`lugha_rt_pad`), §11 (row 63).
 
@@ -55,25 +55,33 @@ None.
 - **The C buffer arithmetic changes:** each size computation keeps an overflow check (huge widths still `die` with out of memory, as now). No `unsafe`, no dependencies.
 
 ## TESTS TO WRITE
-- [ ] **Program `m63/widths.la`:**
+- [x] **Program `m63/widths.la`:**
   - `<`, `>` and `^` with `é`, `ñ`, `日`, an emoji, mixed text, a non-ASCII fill, and widths smaller than the text;
   - `format(…)`, and a char and a struct printed with a width.
 
   Expected output written by hand (character counts).
-- [ ] **Unit (`src/format.rs`):** a non-ASCII fill parses.
-- [ ] **Regression:** every earlier program; any golden that changes is listed.
+- [x] **Unit (`src/format.rs`):** a non-ASCII fill parses.
+- [x] **Regression:** every earlier program; any golden that changes is listed.
 
 ## ROLLBACK PLAN
 - Branch `prp-092-widths_in_chars`; tag `m63`.
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass at `-O0`; `m63/` at `-O2`.
-- [ ] Spec at milestone 63; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] fmt, clippy and tests pass; CI green.
+- [x] All tests pass at `-O0`; `m63/` at `-O2`.
+- [x] Spec at milestone 63; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] fmt, clippy and tests pass; CI green.
 
 ## VALIDATION
 ```bash
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 ```
+
+## AMENDMENTS
+
+Session 131, while building:
+1. **`FormatSpec.fill` is a `char`;** any character but `{` and `}` fills. Codegen passes its code point, and the runtime writes its UTF-8 through `chars.c`'s `utf8_encode`, forward-declared in the core fragment because `format.c` comes first in the joined runtime.
+2. **Changed golden:** `m46/more.stdout`, `[{'é':^5}]` → `[  é  ]`, was `[ é  ]` (byte-counted). It was the only one.
+3. **Unit tests:** `"é<5"` moved from the refused list to the parsing test (with `"😀^3"`), and `"}>2"` joined the refused list.
+

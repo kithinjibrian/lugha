@@ -25,8 +25,8 @@ pub enum Kind {
 /// A parsed specifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FormatSpec {
-    /// One ASCII byte; a space unless given.
-    pub fill: u8,
+    /// Any character but `{` and `}` (v15; ASCII before); a space unless given.
+    pub fill: char,
     pub align: Option<Align>,
     /// `#`: a `0x`, `0b` or `0o` prefix.
     pub alternate: bool,
@@ -75,7 +75,7 @@ pub fn parse(text: &str) -> Result<FormatSpec, String> {
         return Err("an empty format specifier: remove the `:` or add a format".to_string());
     }
     let mut spec = FormatSpec {
-        fill: b' ',
+        fill: ' ',
         align: None,
         alternate: false,
         zero: false,
@@ -87,10 +87,10 @@ pub fn parse(text: &str) -> Result<FormatSpec, String> {
     let (first, second) = (chars.next(), chars.next());
     let mut rest = text;
     if let (Some(fill), Some(a)) = (first, second.and_then(align_of)) {
-        if !fill.is_ascii() || fill == '{' || fill == '}' {
-            return Err(format!("`{fill}` can't be a fill: use one ASCII character"));
+        if fill == '{' || fill == '}' {
+            return Err(format!("`{fill}` can't be a fill: use another character"));
         }
-        spec.fill = fill as u8;
+        spec.fill = fill;
         spec.align = Some(a);
         rest = &text[fill.len_utf8() + 1..];
     } else if let Some(a) = first.and_then(align_of) {
@@ -163,7 +163,7 @@ mod tests {
                 s.kind
             ),
             (
-                b'*',
+                '*',
                 Some(Align::Centre),
                 true,
                 true,
@@ -173,18 +173,21 @@ mod tests {
             )
         );
         let s = parse(">6").unwrap();
-        assert_eq!((s.fill, s.align, s.width), (b' ', Some(Align::Right), 6));
+        assert_eq!((s.fill, s.align, s.width), (' ', Some(Align::Right), 6));
         assert_eq!(parse(".2").unwrap().precision, Some(2));
         assert!(parse("05").unwrap().zero);
         assert_eq!(parse("<").unwrap().align, Some(Align::Left));
         assert_eq!(parse("X").unwrap().kind, Some(Kind::UpperHex));
-        assert_eq!(parse("-<4").unwrap().fill, b'-');
+        assert_eq!(parse("-<4").unwrap().fill, '-');
+        // Any character can fill (v15, milestone 63).
+        assert_eq!(parse("é<5").unwrap().fill, 'é');
+        assert_eq!(parse("😀^3").unwrap().fill, '😀');
     }
 
     #[test]
     fn bad_specifiers_are_refused() {
         for bad in [
-            "", "q", "5q", ".", "2000", ".2000", "é<5", "{<5", "5.2.1", ">>>",
+            "", "q", "5q", ".", "2000", ".2000", "{<5", "}>2", "5.2.1", ">>>",
         ] {
             assert!(parse(bad).is_err(), "{bad:?}");
         }

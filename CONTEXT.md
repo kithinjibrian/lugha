@@ -5324,14 +5324,36 @@ Branch: prp-091-c_to_lugha
 
 ---
 
-## SESSION 131 — 2026-10-15 — Format widths in characters (milestone 63) — open
+## SESSION 131 — 2026-10-15 — Format widths in characters (milestone 63) — closed
 Branch: prp-092-widths_in_chars
+
+### WHAT WAS DONE
+- Tests first: `m63/widths.la` (expected output by hand); format.rs unit tests for non-ASCII fills.
+- Built: `FormatSpec.fill: char`; codegen passes the code point; `pad_bytes` counts characters and writes the fill's UTF-8; `utf8_encode` forward-declared in the core.
+- `m46/more.stdout` updated for its `é` padding line (the intended fix).
+- Spec v15 at milestone 63 (format specifiers, row 63, summary); docs; TODO records the tables ruling.
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m63/`.
+- Modified: `src/format.rs`, `src/codegen/format.rs`, `runtime/format.c`, `runtime/lugha_rt.c`, `tests/programs/m46/more.stdout`, the v15 spec and draft, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (121), PRP-092.
+
+### TESTS WRITTEN
+- `m63/widths.la`; format.rs fill tests.
+
+### DECISIONS MADE
+- MEMORY 121.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m63`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–62 complete.** **Approved and next, in one go:** milestone 63, widths in characters (PRP-092), then 64 `std.env` (PRP-093), 65 `std.fs` (PRP-094) and 66 `std.process` (PRP-095, security-reviewed by approval). MEMORY 118 is the plan.
+**Milestones 51–63 complete.** **Approved and next, in one go:** milestone 64 `std.env` (PRP-093), 65 `std.fs` (PRP-094) and 66 `std.process` (PRP-095, security-reviewed by approval). MEMORY 118 is the plan.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 

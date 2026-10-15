@@ -1,20 +1,35 @@
 
 /* Format specifiers (v13 draft §9): `{x:spec}` in an interpolation. The
  * compiler checks every specifier, so these trust their arguments: `fill`
- * is one ASCII byte, `align` 0 (left), 1 (right) or 2 (centre), `width`
- * and `precision` at most 1024. */
+ * is a Unicode scalar value, `align` 0 (left), 1 (right) or 2 (centre),
+ * `width` and `precision` at most 1024. Widths count characters, not
+ * bytes (v15, milestone 63). */
 
-/* `len` bytes of `text` padded with `fill` to `width`, never cut. */
+/* `len` bytes of `text`, UTF-8, padded with `fill` to `width` characters,
+ * never cut: a character is a byte that isn't a continuation byte. */
 static LughaString *pad_bytes(const char *text, int64_t len, int32_t fill, int32_t align,
                               int64_t width) {
-    int64_t total = len < width ? width : len;
-    int64_t gap = total - len;
+    int64_t chars = 0;
+    for (int64_t i = 0; i < len; i++) {
+        chars += ((unsigned char)text[i] & 0xC0u) != 0x80u;
+    }
+    int64_t gap = chars < width ? width - chars : 0;
     int64_t left = align == 1 ? gap : (align == 2 ? gap / 2 : 0);
+    char unit[4];
+    int64_t step = utf8_encode((uint32_t)fill, unit);
+    /* `gap` is at most 1024 and `step` at most 4, so this can't overflow. */
+    int64_t total = len + gap * step;
     LughaString *out = lugha_rt_alloc((int64_t)sizeof(LughaString) + total + 1);
     out->len = total;
-    memset(out->bytes, fill, (size_t)left);
-    memcpy(out->bytes + left, text, (size_t)len);
-    memset(out->bytes + left + len, fill, (size_t)(gap - left));
+    char *at = out->bytes;
+    for (int64_t k = 0; k < left; k++, at += step) {
+        memcpy(at, unit, (size_t)step);
+    }
+    memcpy(at, text, (size_t)len);
+    at += len;
+    for (int64_t k = left; k < gap; k++, at += step) {
+        memcpy(at, unit, (size_t)step);
+    }
     out->bytes[total] = '\0';
     return out;
 }

@@ -15,6 +15,7 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- Format widths count characters, not bytes, and a fill may be any character (`{n:é^9}`); `runtime/format.c` pads by UTF-8 characters and writes the fill's UTF-8. `m46/more.stdout`'s `[{'é':^5}]` line becomes `[  é  ]` (was `[ é  ]`) — **milestone 63 complete**
 - C → Lugha:
   - `parse_i64`, `parse_u64` and `string_from_utf8` are prelude functions (`text_parse_i64`, `text_parse_u64`, `text_from_utf8`);
   - `s.chars()` and `string_from_utf8` share one decoder (`utf8_decode`);

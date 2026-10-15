@@ -1,0 +1,21 @@
+// Format widths count characters, not bytes, and any character can fill
+// (v15, milestone 63).
+fun main() {
+    let n = "Zoë";
+    println("[{n:<6}]");
+    println("[{n:>6}]");
+    println("[{n:^7}]");
+    let j = "日本";
+    println("[{j:<4}]");
+    let e = "😀";
+    println("[{e:>3}]");
+    println("[{n:é^9}]");
+    println("[{n:<2}]");
+    let c = 'ñ';
+    println("[{c:>3}]");
+    println(format("[{:*<5}]", "añb"));
+    let k = 42;
+    println("[{k:é>5}]");
+    let o = Some("é");
+    println("[{o:<12}]");
+}

@@ -2,11 +2,11 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 51–62 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
+**Status:** in progress (milestones 51–63 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
 
 **v14.** This is v13 plus binary I/O, `char`, tuples, `format`, import aliases and whole-module re-exports, and git packages (milestones 45–50).
 
-**Changes since v14** (milestones 51–62):
+**Changes since v14** (milestones 51–63):
 - A package's `[package]` table may give its `name`, checked against the key a manifest lists it under (E0327), and its `source`, the folder its modules start in: with `source = "src"`, `src/array.la` of package `glowworm` is `glowworm.array` (section 6).
 - A program with no `lugha.toml` beside its main file uses the nearest one above it, looking no further than a folder with `.git` or the home folder; when that manifest names a package, the program imports it by that name, so `glowworm/examples/basics.la` writes `import glowworm.array;` with no manifest of its own (section 6).
 - A file imported as two modules is E0328 (section 6).
@@ -20,6 +20,7 @@ Oct 13, 2026 · @kithinji
 - An imported std module's functions and methods are compiled only when the program reaches them, as the prelude's are; every one is still checked. No program's behaviour changes, only the size of its IR (milestone 60; sections 6, 9).
 - `it.sum()` goes through one generic prelude helper for every numeric type; nothing visible changes (milestone 61; section 9).
 - `parse_i64`, `parse_u64` and `string_from_utf8` are written in Lugha in the prelude, and `string_from_utf8` and `s.chars()` share one UTF-8 decoder; results and messages are unchanged (milestone 62; section 9).
+- A format width counts characters, not bytes (`{"Zoë":<6}` pads with three spaces, not two), and any character may fill (`{n:é^9}`); text without non-ASCII characters prints as before (milestone 63; section 5).
 - `std.random`: `random.seeded(42)` or `random.from_os()` makes a generator (xoshiro256\*\*, not cryptographically secure) with `uniform`, `below`, `between`, `normal`, `chance`, `choice` and `shuffle` ("The standard library").
 
 Every valid v14 program and package is a valid v15 one: a module's own type or interface named `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg`, `Num` or `Ordering` still means its own, as for `Iter`.
@@ -860,13 +861,13 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 **Interpolated strings** (v3). Each `{expr}` is evaluated left to right and formatted exactly as `print` would write it (floats as below); the parts are joined into one new `string`. Any value interpolates (v12); only a `void` expression can't (E0407).
 
 **Format specifiers** (v13). An interpolation may end in `:` and a specifier, `{expr:spec}`, which changes how its value is written. The lexer splits the specifier off at the first `:` outside every `(`, `[` and `{` of the expression and outside strings, and takes everything up to the closing `}`; an expression that needs such a `:` goes in parentheses. A specifier is `[[fill]align][#][0][width][.precision][kind]`:
-- **`align`:** `<` left, `>` right, `^` centre (an odd gap's extra byte goes right). Without one, numbers align right and everything else left. **`fill`**, written before an alignment, is one ASCII character other than `{` and `}`; the default is a space.
-- **`width`:** at most 1024, counted in bytes. Shorter text is padded to it; longer text is never cut.
+- **`align`:** `<` left, `>` right, `^` centre (an odd gap's extra character goes right). Without one, numbers align right and everything else left. **`fill`**, written before an alignment, is any character other than `{` and `}` (v15; ASCII only before); the default is a space.
+- **`width`:** at most 1024, counted in characters (Unicode scalar values) since v15 (milestone 63), in bytes before: `{"Zoë":<6}` adds three spaces. Shorter text is padded to it; longer text is never cut. A character counts as one whatever its displayed width; there are no grapheme clusters or East Asian widths.
 - **`#`:** with a kind, prefixes `0x`, `0b` or `0o`. **`0`:** pads a number with zeros after its sign and prefix (`{-42:05}` is `-0042`, `{255:#06x}` is `0x00ff`), and is ignored when an alignment is given.
 - **`.precision`:** floats only, at most 1024: that many decimals, as C's `%.*f` (`{3.14159:.2}` is `3.14`). Without it a float prints as `print` writes it.
 - **`kind`:** integers only. `x` hex, `X` upper-case hex, `b` binary, `o` octal; a negative value prints its two's complement at its type's width (`{-1 as i8:b}` is `11111111`).
 - **Other values** take only fill, alignment and width, applied to the text `print` would write: `{p:>20}` right-aligns a struct.
-- **Errors:** an empty specifier, an unknown kind, trailing text, a width or precision over 1024, a non-ASCII or brace fill, precision on a non-float, a kind on a non-integer, `#` without a kind, or `0` on a non-number is E0431 at the specifier.
+- **Errors:** an empty specifier, an unknown kind, trailing text, a width or precision over 1024, a brace fill, precision on a non-float, a kind on a non-integer, `#` without a kind, or `0` on a non-number is E0431 at the specifier.
 
 **`format`** (v14). `format(template, a, b, …)` returns a `string`: the template's text with each hole replaced by the next argument, written as an interpolation would write it. The template must be a string literal, read raw (section 2). In it, `{}` is a hole, `{:spec}` a hole with a format specifier as above, and `{{` and `}}` are literal braces. `format("{} has {:>4} items", "box", 12)` is `"box has   12 items"`. Any value that prints may be an argument; `format` is the only function that takes any number of them. Errors (E0432): a template that isn't a literal, `{x}` or any other text inside a hole, a `{` never closed, a lone `}`, or a number of holes unlike the number of further arguments. A bad specifier is E0431, as in an interpolation.
 
@@ -2964,6 +2965,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 60 | Lazy std modules (v15) | std functions and methods compiled only when reached, as the prelude's | Every program prints the same; `tests/lazy_std.rs` (done) |
 | 61 | One `iter_sum` (v15) | `it.sum()` through `iter_sum<T: Num>` | Every program prints the same (done) |
 | 62 | C → Lugha (v15) | `parse_i64`/`parse_u64` and one UTF-8 decoder in the prelude, `$string.from_bytes` | Every program prints the same; `m62/decode.la` matches the C implementation (done) |
+| 63 | Widths in characters (v15) | format widths count characters, any character fills | `m63/widths.la` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

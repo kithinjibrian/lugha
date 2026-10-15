@@ -30,7 +30,8 @@ impl<'ctx> Lowerer<'ctx> {
             None if ty.is_numeric() => 1,
             None => 0,
         };
-        let (fill, align) = (int(u64::from(spec.fill)), int(align));
+        // The fill as a code point; the runtime writes its UTF-8 (v15).
+        let (fill, align) = (int(u64::from(u32::from(spec.fill))), int(align));
         let width: BasicValueEnum = i64_type.const_int(u64::from(spec.width), false).into();
         // `0` pads with zeros only when no alignment is given.
         let zero = int(u64::from(spec.zero && spec.align.is_none()));
