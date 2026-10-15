@@ -1,6 +1,7 @@
 //! Input and interpolation in codegen (v3 draft §5, §9; milestone 13):
 //! `"a {x} b"` as a chain of `lugha_rt_str_concat`, and the intrinsics
-//! `args`, `parse_i64` and `parse_f64` through the runtime.
+//! `args` and `parse_f64` through the runtime; `parse_i64`, `parse_u64`
+//! and `string_from_utf8` as calls of their prelude helpers (v15).
 
 use inkwell::IntPredicate;
 use inkwell::values::{BasicValueEnum, ValueKind};
@@ -93,7 +94,41 @@ impl<'ctx> Lowerer<'ctx> {
         }
     }
 
-    /// `args()`, `parse_i64(s)`, `parse_u64(s)` (v10) or `parse_f64(s)`.
+    /// `parse_i64(s)`, `parse_u64(s)` or `string_from_utf8(bytes)`: a call
+    /// of `helper`, the prelude function that implements it (v15).
+    pub(super) fn prelude_intrinsic(
+        &mut self,
+        helper: &str,
+        args: &[Expr],
+    ) -> Result<Value<'ctx>, CodegenError> {
+        let key = crate::check::qualify(&[crate::modules::PRELUDE_PATH.to_string()], helper);
+        let method = self
+            .monos
+            .get(&key)
+            .cloned()
+            .unwrap_or_else(|| panic!("checked: `{key}` is listed where it is used"));
+        let values = self.arguments(args, &method.signature.params, false)?;
+        let site = self
+            .builder
+            .build_call(method.signature.function, &values, helper)
+            .expect(POSITIONED);
+        match site.try_as_basic_value() {
+            ValueKind::Basic(value) => Ok(Value::Val(value)),
+            ValueKind::Instruction(_) => unreachable!("`{helper}` returns a value"),
+        }
+    }
+
+    /// `$string.from_bytes(bytes)` in the prelude (v15): bytes already
+    /// checked as UTF-8, copied into a new string.
+    pub(super) fn string_from_bytes(
+        &mut self,
+        args: &[Expr],
+    ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
+        let bytes = self.get(&args[0], &Type::Array(Box::new(Type::U8)))?;
+        Ok(self.call_runtime_value("lugha_rt_str_from_bytes", &[Type::String], &[bytes]))
+    }
+
+    /// `args()` or `parse_f64(s)`.
     pub(super) fn input_intrinsic(
         &mut self,
         name: &str,
@@ -107,17 +142,10 @@ impl<'ctx> Lowerer<'ctx> {
             )));
         }
         let text = self.get(&args[0], &Type::String)?;
-        let ty = match name {
-            "parse_i64" => Type::I64,
-            "parse_u64" => Type::U64,
-            _ => Type::F64,
-        };
+        let ty = Type::F64;
         // The runtime writes the number here and returns whether it parsed.
         let out = self.entry_alloca(&ty, "parsed");
-        let zero: BasicValueEnum = match ty {
-            Type::I64 | Type::U64 => self.context.i64_type().const_zero().into(),
-            _ => self.context.f64_type().const_zero().into(),
-        };
+        let zero: BasicValueEnum = self.context.f64_type().const_zero().into();
         self.builder.build_store(out, zero).expect(POSITIONED);
         let parse = self.runtime(
             &format!("lugha_rt_{name}"),

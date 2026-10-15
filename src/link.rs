@@ -26,7 +26,7 @@ pub const RUNTIME_PARTS: [(&str, &str); 8] = [
 ];
 
 /// Every runtime function codegen may call; `lugha_rt.c` defines them all.
-pub const RUNTIME_SYMBOLS: [&str; 47] = [
+pub const RUNTIME_SYMBOLS: [&str; 45] = [
     "lugha_rt_init",
     "lugha_rt_read_line",
     "lugha_rt_read_file",
@@ -35,8 +35,6 @@ pub const RUNTIME_SYMBOLS: [&str; 47] = [
     "lugha_rt_exit",
     "lugha_rt_str_slice",
     "lugha_rt_args",
-    "lugha_rt_parse_i64",
-    "lugha_rt_parse_u64",
     "lugha_rt_parse_f64",
     "lugha_rt_alloc",
     "lugha_rt_panic",
@@ -61,7 +59,7 @@ pub const RUNTIME_SYMBOLS: [&str; 47] = [
     "lugha_rt_write_bytes",
     "lugha_rt_read_stdin_bytes",
     "lugha_rt_str_to_bytes",
-    "lugha_rt_utf8_check",
+    "lugha_rt_str_from_bytes",
     "lugha_rt_print_char",
     "lugha_rt_to_string_char",
     "lugha_rt_char_quote",
@@ -202,6 +200,25 @@ mod tests {
             assert!(
                 RUNTIME_SOURCE.contains(&format!("{name}(")),
                 "lugha_rt.c lacks {name}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_runtime_no_longer_parses_or_checks_utf8_v15() {
+        // Written in Lugha in the prelude since milestone 62.
+        for name in [
+            "lugha_rt_parse_i64",
+            "lugha_rt_parse_u64",
+            "lugha_rt_utf8_check",
+        ] {
+            assert!(
+                !RUNTIME_SOURCE.contains(name),
+                "{name} is still in the runtime"
+            );
+            assert!(
+                !super::RUNTIME_SYMBOLS.contains(&name),
+                "{name} is still listed"
             );
         }
     }

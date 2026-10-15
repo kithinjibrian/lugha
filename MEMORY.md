@@ -1755,11 +1755,21 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. The prelude has one `iter_sum<T: Num>`, and `check/iter_helpers.rs` maps numeric `sum` to it. Only the `m36/overflow` prelude line moved.
 
+### 120. C → Lugha — milestone 62 (PRP-091)
+
+**Decision:** built as planned, with a closure-free decoder.
+- **Prelude:** `utf8_decode(b0..b3, avail)` is shared by `Chars.next` and `text_from_utf8`; `text_parse_i64`/`u64` are the parsers.
+- **Checker:** `check::prelude_helper` maps the intrinsics to their helpers and records uses.
+- **Codegen:** `prelude_intrinsic` calls the helpers.
+- **Built-in:** `$string.from_bytes` → `lugha_rt_str_from_bytes`.
+- **Runtime:** `RUNTIME_SYMBOLS` 45.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 62 complete**: PRP-091 C → Lugha
 - **Milestone 61 complete**: PRP-090 one `iter_sum`
 - **Milestone 60 complete**: PRP-089 lazy std modules
 - **Milestone 59 complete**: PRP-088 user-defined `Ord`
@@ -1868,7 +1878,7 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–61 complete.** **Approved and next, in one go** (session 129): milestone 62, C → Lugha (PRP-091), then 63 widths (PRP-092), 64 `std.env` (PRP-093), 65 `std.fs` (PRP-094) and 66 `std.process` (PRP-095, security-reviewed by approval). Each gets a session, a branch, tests first, a merge on green CI, and a tag. MEMORY 118 is the plan.
+**Milestones 51–62 complete.** **Approved and next, in one go:** milestone 63, widths in characters (PRP-092), then 64 `std.env` (PRP-093), 65 `std.fs` (PRP-094) and 66 `std.process` (PRP-095, security-reviewed by approval). MEMORY 118 is the plan.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 

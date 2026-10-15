@@ -90,22 +90,6 @@ impl<'ctx> Lowerer<'ctx> {
                 &[],
                 &[],
             ))),
-            "string_from_utf8" => {
-                let data = self.get(&args[0], &Type::Array(Box::new(Type::U8)))?;
-                let (text, error) = (self.out_slot(&Type::String), self.out_slot(&Type::String));
-                let params = [Type::String, Type::String, Type::String];
-                let ok = self.call_flag(
-                    "lugha_rt_utf8_check",
-                    &params,
-                    &[data, text.into(), error.into()],
-                );
-                Ok(Value::Val(self.result(
-                    call,
-                    ok,
-                    (text, &Type::String),
-                    error,
-                )))
-            }
             "write_file" | "append_file" => {
                 let path = self.get(&args[0], &Type::String)?;
                 let text = self.get(&args[1], &Type::String)?;

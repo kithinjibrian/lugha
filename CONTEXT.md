@@ -5287,14 +5287,46 @@ Branch: prp-090-one_iter_sum
 
 ---
 
-## SESSION 130 — 2026-10-15 — C → Lugha (milestone 62) — open
+## SESSION 130 — 2026-10-15 — C → Lugha (milestone 62) — closed
 Branch: prp-091-c_to_lugha
+
+### WHAT WAS DONE
+- Tests first:
+  - `m62/decode.la` (parser edge cases, all 65,536 two-byte inputs, and chosen 3- and 4-byte sequences; golden from the M61 C implementation);
+  - `m62/dollar.la` (E0101);
+  - a link test that the C functions are gone.
+- Built:
+  - `utf8_decode`, `text_byte`, `bytes_byte`, `text_from_utf8`, `text_parse_i64`/`u64` in `prelude/text.la`; `Chars.next` uses the decoder;
+  - `check::prelude_helper`, `$string.from_bytes` (checker and codegen);
+  - `prelude_intrinsic` in codegen; `lugha_rt_str_from_bytes`; three C functions removed.
+- Spec v15 at milestone 62 (§9 runtime rows, §11 row 62, summary); docs.
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m62/`.
+- Modified:
+  - `src/prelude/text.la`;
+  - `src/check/input.rs`, `float_ops.rs`, `expr.rs`, `mod.rs`;
+  - `src/codegen/input.rs`, `io.rs`, `function.rs`, `expr.rs`;
+  - `runtime/input.c`, `bytes.c`, `lugha_rt.c`; `src/link.rs`;
+  - the v15 spec and draft, CLAUDE.md, TODO, CHANGELOG, MEMORY (120), PRP-091.
+
+### TESTS WRITTEN
+- `m62/decode.la`, `m62/dollar.la`, `the_runtime_no_longer_parses_or_checks_utf8_v15`.
+
+### DECISIONS MADE
+- MEMORY 120.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; merged and tagged `m62`.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**Milestones 51–61 complete.** **Approved and next, in one go** (session 129): milestone 62, C → Lugha (PRP-091), then 63 widths (PRP-092), 64 `std.env` (PRP-093), 65 `std.fs` (PRP-094) and 66 `std.process` (PRP-095, security-reviewed by approval). Each gets a session, a branch, tests first, a merge on green CI, and a tag. MEMORY 118 is the plan.
+**Milestones 51–62 complete.** **Approved and next, in one go:** milestone 63, widths in characters (PRP-092), then 64 `std.env` (PRP-093), 65 `std.fs` (PRP-094) and 66 `std.process` (PRP-095, security-reviewed by approval). MEMORY 118 is the plan.
 
 Unpushed local commits, for the user to push when they ask: firefly `ce6f38b`, `a891512`; glowworm `b0683c3`.
 

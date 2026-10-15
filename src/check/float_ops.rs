@@ -35,6 +35,11 @@ pub fn os_op(callee: &Expr) -> Option<&str> {
     builtin_op(callee, "$os")
 }
 
+/// The built-in a `$string.op(…)` callee names (v15, milestone 62).
+pub fn string_op(callee: &Expr) -> Option<&str> {
+    builtin_op(callee, "$string")
+}
+
 fn builtin_op<'e>(callee: &'e Expr, namespace: &str) -> Option<&'e str> {
     let ExprKind::Field(base, name) = &callee.kind else {
         return None;
@@ -127,6 +132,33 @@ impl Checker {
             return self.unchecked_args(args);
         }
         Type::U64
+    }
+}
+
+impl Checker {
+    /// `$string.from_bytes(bytes)`: already-checked UTF-8 bytes as a
+    /// string (v15, milestone 62); only bundled sources can name it.
+    pub(super) fn string_call(
+        &mut self,
+        call: &Expr,
+        (callee, op): (&Expr, &str),
+        args: &[Expr],
+    ) -> Type {
+        self.record(callee, Type::Void);
+        if let ExprKind::Field(base, _) = &callee.kind {
+            self.record(base, Type::Void);
+        }
+        if op != "from_bytes" || args.len() != 1 {
+            let d = Diagnostic::error(
+                "E0415",
+                format!("no `$string` built-in `{op}` with these arguments"),
+                call.span,
+            );
+            self.report(d);
+            return self.unchecked_args(args);
+        }
+        self.expect_type(&args[0], &Expect::of(Type::Array(Box::new(Type::U8))));
+        Type::String
     }
 }
 

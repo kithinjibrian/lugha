@@ -1,0 +1,6 @@
+error[E0101]: unexpected character '$'
+  --> tests/programs/m62/dollar.la:3:13
+  |
+3 |     let s = $string.from_bytes([104, 105]);
+  |             ^
+

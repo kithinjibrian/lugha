@@ -32,6 +32,16 @@ pub(super) const INPUT: [&str; 17] = [
     "format",
 ];
 
+/// The prelude function behind an intrinsic written in Lugha (v15).
+pub fn prelude_helper(intrinsic: &str) -> Option<&'static str> {
+    Some(match intrinsic {
+        "parse_i64" => "text_parse_i64",
+        "parse_u64" => "text_parse_u64",
+        "string_from_utf8" => "text_from_utf8",
+        _ => return None,
+    })
+}
+
 impl Checker {
     /// `args()`, `parse_i64(s)`, `parse_f64(s)`, or an I/O intrinsic.
     pub(super) fn input_intrinsic(&mut self, call: &Expr, name: &str, args: &[Expr]) -> Type {
@@ -62,6 +72,12 @@ impl Checker {
         }
         for (arg, ty) in args.iter().zip(params) {
             self.expect_type(arg, &Expect::of(ty));
+        }
+        // Written in Lugha in the prelude since v15 (milestone 62), and
+        // compiled only when a program uses them.
+        if let Some(helper) = prelude_helper(name) {
+            let key = super::qualify(&[crate::modules::PRELUDE_PATH.to_string()], helper);
+            self.used(call, &key, &[]);
         }
         ret
     }

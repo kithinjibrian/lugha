@@ -120,6 +120,9 @@ impl Checker {
             ExprKind::Call(callee, args) if let Some(op) = super::float_ops::os_op(callee) => {
                 self.os_call(expr, (callee, op), args)
             }
+            ExprKind::Call(callee, args) if let Some(op) = super::float_ops::string_op(callee) => {
+                self.string_call(expr, (callee, op), args)
+            }
             ExprKind::Call(callee, args) => {
                 if let Some(ty) = self.module_call(expr, callee, args, expect) {
                     ty

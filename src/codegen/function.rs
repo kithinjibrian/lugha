@@ -148,7 +148,11 @@ impl<'ctx> Lowerer<'ctx> {
             let ExprKind::Name(name) = &callee.kind else {
                 unreachable!("checked: E0406 rejects non-name callees")
             };
-            if ["args", "parse_i64", "parse_u64", "parse_f64"].contains(&name.as_str()) {
+            // Written in Lugha in the prelude (v15, milestone 62).
+            if let Some(helper) = crate::check::prelude_helper(name) {
+                return self.prelude_intrinsic(helper, args);
+            }
+            if ["args", "parse_f64"].contains(&name.as_str()) {
                 return self.input_intrinsic(name, args);
             }
             const IO: [&str; 12] = [

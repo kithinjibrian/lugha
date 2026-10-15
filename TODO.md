@@ -320,7 +320,7 @@ Found writing glowworm and firefly (session 115); each needs a discovery and a P
   - `Ord` doesn't imply `Eq`.
 
   This unlocks `iter().min()/max()`, `math.min/max/clamp` and generic sorting for structs.
-- [ ] **Optional C → Lugha:** `parse_i64`/`parse_u64`, and sharing the UTF-8 decoder between `string_from_utf8` and `s.chars()`.
+- [x] **Optional C → Lugha** (done in milestone 62, PRP-091): `parse_i64`/`parse_u64`, and sharing the UTF-8 decoder between `string_from_utf8` and `s.chars()`.
 
 - [x] **Std library first** (session 109; built as milestone 53, `std.math`): bundled Lugha modules imported as `std.<module>` (`import std.math;`), embedded in `lughac` like the prelude and loaded only when imported, so they cost nothing otherwise. `std` is a reserved package name, always available, versioned with the compiler. The prelude stays small; new features go in std modules. `std.math` comes first; the directories/processes/env items below become `std.fs`, `std.process` and `std.env`.
   - **Agreed with the user: no opt-out mechanism** (no `no_std`, no `[package] deny` list). Lazy loading already makes std free when unused; a `deny` list for policy can be reconsidered later.

@@ -2,11 +2,11 @@
 
 Oct 13, 2026 · @kithinji
 
-**Status:** in progress (milestones 51–61 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
+**Status:** in progress (milestones 51–62 of v15). It is built from the approved plan, `Language v15 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v14 Specification.md` keeps v14 frozen.
 
 **v14.** This is v13 plus binary I/O, `char`, tuples, `format`, import aliases and whole-module re-exports, and git packages (milestones 45–50).
 
-**Changes since v14** (milestones 51–61):
+**Changes since v14** (milestones 51–62):
 - A package's `[package]` table may give its `name`, checked against the key a manifest lists it under (E0327), and its `source`, the folder its modules start in: with `source = "src"`, `src/array.la` of package `glowworm` is `glowworm.array` (section 6).
 - A program with no `lugha.toml` beside its main file uses the nearest one above it, looking no further than a folder with `.git` or the home folder; when that manifest names a package, the program imports it by that name, so `glowworm/examples/basics.la` writes `import glowworm.array;` with no manifest of its own (section 6).
 - A file imported as two modules is E0328 (section 6).
@@ -19,6 +19,7 @@ Oct 13, 2026 · @kithinji
 - User-defined order: a struct or enum with `fun cmp(self, other: Self): Ordering`, the prelude's new `enum Ordering { Less, Equal, Greater }` (written `Ordering.Less`), is `Ord`: `<`, `<=`, `>` and `>=` call `cmp`, tuples compare through it, and `math.min`, `it.min()` and the new `xs.sort()` accept it. `==` stays structural (milestone 59; section 4).
 - An imported std module's functions and methods are compiled only when the program reaches them, as the prelude's are; every one is still checked. No program's behaviour changes, only the size of its IR (milestone 60; sections 6, 9).
 - `it.sum()` goes through one generic prelude helper for every numeric type; nothing visible changes (milestone 61; section 9).
+- `parse_i64`, `parse_u64` and `string_from_utf8` are written in Lugha in the prelude, and `string_from_utf8` and `s.chars()` share one UTF-8 decoder; results and messages are unchanged (milestone 62; section 9).
 - `std.random`: `random.seeded(42)` or `random.from_os()` makes a generator (xoshiro256\*\*, not cryptographically secure) with `uniform`, `below`, `between`, `normal`, `chance`, `choice` and `shuffle` ("The standard library").
 
 Every valid v14 program and package is a valid v15 one: a module's own type or interface named `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Neg`, `Num` or `Ordering` still means its own, as for `Iter`.
@@ -1198,9 +1199,9 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_fmt_int(v, bits, signed, kind, alt, fill, align, width, zero)` / `lugha_rt_fmt_float(v, f32, precision, fill, align, width, zero)` / `lugha_rt_pad(text, fill, align, width)` | Format specifiers (v13): an integer (sign- or zero-extended to `i64`), a float (as `f64`), or any other value's text, padded; all arguments are plain numbers |
 | `lugha_rt_print_newline()` | The newline `println` adds |
 | `lugha_rt_args()` | A new `string[]` of the program's arguments (v3) |
-| `lugha_rt_parse_i64(s, out)` / `lugha_rt_parse_u64(s, out)` / `lugha_rt_parse_f64(s, out)` | Parse `s` into `*out`; return 1, or 0 for `None` (v3; `u64` v10) |
+| `lugha_rt_parse_f64(s, out)` | Parse `s` into `*out`; return 1, or 0 for `None` (v3). `parse_i64` and `parse_u64` are prelude functions since v15 (milestone 62) |
 | `lugha_rt_str_slice(s, from, to, file, line, col)` | `s.slice(from, to)`: a new string of those bytes, or the bounds panic (v4) |
-| `lugha_rt_read_bytes` / `lugha_rt_write_bytes` / `lugha_rt_read_stdin_bytes` / `lugha_rt_str_to_bytes` / `lugha_rt_utf8_check` | Bytes (v14): file and stdin bytes, a string's bytes, and the UTF-8 check behind `string_from_utf8`, failing ones by flag and out-pointers as the v4 file functions do |
+| `lugha_rt_read_bytes` / `lugha_rt_write_bytes` / `lugha_rt_read_stdin_bytes` / `lugha_rt_str_to_bytes` / `lugha_rt_str_from_bytes` | Bytes (v14): file and stdin bytes, a string's bytes, failing ones by flag and out-pointers as the v4 file functions do; and (v15) checked bytes as a new string, behind the prelude's `$string.from_bytes`. The UTF-8 check behind `string_from_utf8` and `s.chars()` is one prelude decoder, `utf8_decode` (milestone 62) |
 | `lugha_rt_print_char` / `lugha_rt_to_string_char` / `lugha_rt_char_quote` | A `char` written as UTF-8, as a string, and quoted for a built-in form (v14) |
 | `lugha_rt_read_line(out)` | `read_line()`: 1 and the line, or 0 at the end of input (v4) |
 | `lugha_rt_read_file(path, out, error)` / `lugha_rt_write_file(path, text, append, count, error)` | The file intrinsics: 1 and the value, or 0 and the C library's `strerror` message (v4) |
@@ -2962,6 +2963,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 59 | User-defined `Ord` (v15) | `cmp(self, other: Self): Ordering`, the prelude's `Ordering`, `<` through `cmp`, tuples, `xs.sort()` | The ordering program in section 10 passes (done) |
 | 60 | Lazy std modules (v15) | std functions and methods compiled only when reached, as the prelude's | Every program prints the same; `tests/lazy_std.rs` (done) |
 | 61 | One `iter_sum` (v15) | `it.sum()` through `iter_sum<T: Num>` | Every program prints the same (done) |
+| 62 | C → Lugha (v15) | `parse_i64`/`parse_u64` and one UTF-8 decoder in the prelude, `$string.from_bytes` | Every program prints the same; `m62/decode.la` matches the C implementation (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

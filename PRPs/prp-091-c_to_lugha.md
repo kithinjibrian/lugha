@@ -1,6 +1,6 @@
 ## FEATURE: C → Lugha — `parse_i64`, `parse_u64` and UTF-8 decoding written in the prelude, over one shared decoder; milestone 62.
 
-**Status:** approved 2026-10-15 — session 129 ("approved"); proposed in session 128 (discovery in session 127).
+**Status:** merged 2026-10-15 — session 130 (approved in session 129; proposed in session 128); tag `m62`.
 **Milestone:** 62 (one PRP; tag `m62` at merge)
 **Spec:** `Language v15 Draft.md` decisions 45–46; spec §4 (strings, `char`, `chars()`), §5 (`parse_i64`, `parse_u64`, `string_from_utf8`), §9 (runtime table), §11 (row 62).
 
@@ -71,22 +71,32 @@ None.
 - **The new built-in:** `$string.from_bytes` is reachable only from bundled sources, and only after validation.
 
 ## TESTS TO WRITE
-- [ ] **Differential program `m62/decode.la`:** parser edge cases; `string_from_utf8` on every 2-byte pattern and on chosen 3- and 4-byte sequences (valid, overlong, surrogate, too high, truncated); `chars()` on the same bytes with U+FFFD. Golden from M61.
-- [ ] **Checker:** `$string.from_bytes` in a program is E0101.
-- [ ] **Link:** `RUNTIME_SYMBOLS` no longer lists the three; a test that the runtime source doesn't define them.
-- [ ] **Regression:** every earlier program unchanged.
+- [x] **Differential program `m62/decode.la`:** parser edge cases; `string_from_utf8` on every 2-byte pattern and on chosen 3- and 4-byte sequences (valid, overlong, surrogate, too high, truncated); `chars()` on the same bytes with U+FFFD. Golden from M61.
+- [x] **Checker:** `$string.from_bytes` in a program is E0101.
+- [x] **Link:** `RUNTIME_SYMBOLS` no longer lists the three; a test that the runtime source doesn't define them.
+- [x] **Regression:** every earlier program unchanged.
 
 ## ROLLBACK PLAN
 - Branch `prp-091-c_to_lugha`; tag `m62`.
 - To abandon: delete the branch.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass at `-O0`; `m62/` at `-O2`.
-- [ ] Spec at milestone 62; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
-- [ ] fmt, clippy and tests pass; CI green.
+- [x] All tests pass at `-O0`; `m62/` at `-O2`.
+- [x] Spec at milestone 62; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] fmt, clippy and tests pass; CI green.
 
 ## VALIDATION
 ```bash
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 ```
+
+## AMENDMENTS
+
+Session 130, while building:
+1. **The decoder's shape:** instead of a byte-reading closure (`at: fun(i64): i64`), `utf8_decode(b0, b1, b2, b3, avail): (i64, u32)` takes the first byte, the next three (0 past the end) and how many bytes remain. `text_byte`/`bytes_byte` read them. It is still one decoder, with no closure call per byte in `chars()`.
+2. **Names:** the prelude functions are `text_parse_i64`, `text_parse_u64` and `text_from_utf8`. The intrinsics keep their names; the checker records a use of the helper (`check::prelude_helper`), and codegen calls it (`prelude_intrinsic`), compiled only when used (M60).
+3. **Runtime:** `lugha_rt_str_from_bytes` (in `bytes.c`) backs `$string.from_bytes`. `RUNTIME_SYMBOLS` goes 47 → 45, and a test checks that the three removed functions are gone.
+4. **`$string.from_bytes` in a program** is E0101, like every `$` name outside bundled sources (`m62/dollar.la`).
+5. **firefly's `bigram` and `xor`** print the same.
+

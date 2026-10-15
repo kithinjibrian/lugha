@@ -15,6 +15,11 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Added
+- C → Lugha:
+  - `parse_i64`, `parse_u64` and `string_from_utf8` are prelude functions (`text_parse_i64`, `text_parse_u64`, `text_from_utf8`);
+  - `s.chars()` and `string_from_utf8` share one decoder (`utf8_decode`);
+  - a bundled-only `$string.from_bytes` (`lugha_rt_str_from_bytes`) replaces `lugha_rt_utf8_check`, and `lugha_rt_parse_i64`/`_u64` are gone (`RUNTIME_SYMBOLS` 47 → 45);
+  - a differential program matches the C implementation on every parser edge case and every two-byte UTF-8 input — **milestone 62 complete**
 - One generic `iter_sum<T: Num>` behind `it.sum()` replaces the ten per-type prelude copies; nothing visible changes except the prelude line in `m36/overflow`'s panic (472 → 449) — **milestone 61 complete**
 - Lazy std modules: an imported std module's non-generic functions and methods are compiled only when reached (calls, bounds, interface tables, function values), as the prelude's are; every body is still checked. One predicate (`check::instances::lazy_key`, `codegen::declare::is_lazy`) covers the prelude and std. IR lines with M59 → M60: a `seeded` + `below` program 423 → 314, `m54/below_panic` 430 → 321, `m54/random` 892 → 878, `m53/math` 246 → 241, firefly `mlp` 17,172 → 17,101 and `gpt` 17,927 → 17,856 — **milestone 60 complete**
 - User-defined order: a struct or enum with `fun cmp(self, other: Self): Ordering` (a new prelude `enum Ordering { Less, Equal, Greater }`) is `Ord`; `<` `<=` `>` `>=` call `cmp`, tuples compare through it, and the new prelude helper `xs.sort()` sorts any `T: Ord` stably. E0404/E0419 help names the shape. A non-generic enum now prints by its key, so the prelude's is `$prelude.Ordering` in messages (and can't collide with a module's own `Ordering` in codegen's tables) — **milestone 59 complete**

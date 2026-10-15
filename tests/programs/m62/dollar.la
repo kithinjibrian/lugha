@@ -1,0 +1,4 @@
+// Programs can't name the prelude's built-ins (v15, milestone 62).
+fun main() {
+    let s = $string.from_bytes([104, 105]);
+}

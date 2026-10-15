@@ -103,6 +103,10 @@ impl<'ctx> Lowerer<'ctx> {
             }
             // `$os.seed()` in `std.random` (v15).
             ExprKind::Call(callee, _) if crate::check::os_op(callee).is_some() => self.os_seed(),
+            // `$string.from_bytes(bytes)` in the prelude (v15).
+            ExprKind::Call(callee, args) if crate::check::string_op(callee).is_some() => {
+                self.string_from_bytes(args)?
+            }
             ExprKind::Call(callee, args) if matches!(self.ty(callee), Type::Fun(..)) => {
                 return self.call_value(callee, args);
             }

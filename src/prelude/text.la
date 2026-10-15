@@ -9,47 +9,13 @@ struct Chars { s: string, at: i64 }
 
 impl Chars {
     fun next(mut self): Option<char> {
-        if self.at >= self.s.len {
+        let avail = self.s.len - self.at;
+        if avail <= 0 {
             return None;
         }
-        let b0 = self.s[self.at] as u32;
-        if b0 < 128 {
-            self.at += 1;
-            return Some(b0 as char);
-        }
-        // The sequence's length, its first bits, and the smallest code it
-        // may encode (anything less is an overlong form).
-        let mut n: i64 = 0;
-        let mut code: u32 = 0;
-        let mut min: u32 = 0;
-        if b0 >= 194 && b0 <= 223 {
-            n = 2;
-            code = b0 & 31;
-            min = 128;
-        } else if b0 >= 224 && b0 <= 239 {
-            n = 3;
-            code = b0 & 15;
-            min = 2048;
-        } else if b0 >= 240 && b0 <= 244 {
-            n = 4;
-            code = b0 & 7;
-            min = 65536;
-        }
-        if n == 0 || self.at + n > self.s.len {
-            self.at += 1;
-            return Some('\u{FFFD}');
-        }
-        let mut k: i64 = 1;
-        while k < n {
-            let b = self.s[self.at + k] as u32;
-            if (b & 192) != 128 {
-                self.at += 1;
-                return Some('\u{FFFD}');
-            }
-            code = (code << 6) | (b & 63);
-            k += 1;
-        }
-        if code < min || code > 1114111 || (code >= 55296 && code <= 57343) {
+        let (n, code) = utf8_decode(text_byte(self.s, self.at), text_byte(self.s, self.at + 1),
+            text_byte(self.s, self.at + 2), text_byte(self.s, self.at + 3), avail);
+        if n == 0 {
             self.at += 1;
             return Some('\u{FFFD}');
         }
@@ -113,4 +79,123 @@ fun char_to_lower(c: char): char {
         return (n + 32) as char;
     }
     c
+}
+
+// UTF-8 (v15, milestone 62): the one decoder behind `s.chars()` and
+// `string_from_utf8`. Given a sequence's first byte, the next three (0 past
+// the end) and how many bytes remain from the first, its length and code,
+// or (0, 0) when it isn't valid there: no overlong forms, no surrogates,
+// nothing above U+10FFFF, no truncation.
+fun utf8_decode(b0: u32, b1: u32, b2: u32, b3: u32, avail: i64): (i64, u32) {
+    if b0 < 128 {
+        return (1, b0);
+    }
+    // The sequence's length, its first bits, and the smallest code it may
+    // encode (anything less is an overlong form).
+    let mut n: i64 = 0;
+    let mut code: u32 = 0;
+    let mut min: u32 = 0;
+    if b0 >= 194 && b0 <= 223 {
+        n = 2;
+        code = b0 & 31;
+        min = 128;
+    } else if b0 >= 224 && b0 <= 239 {
+        n = 3;
+        code = b0 & 15;
+        min = 2048;
+    } else if b0 >= 240 && b0 <= 244 {
+        n = 4;
+        code = b0 & 7;
+        min = 65536;
+    }
+    if n == 0 || n > avail {
+        return (0, 0);
+    }
+    let mut k: i64 = 1;
+    while k < n {
+        let b = if k == 1 { b1 } else if k == 2 { b2 } else { b3 };
+        if (b & 192) != 128 {
+            return (0, 0);
+        }
+        code = (code << 6) | (b & 63);
+        k += 1;
+    }
+    if code < min || code > 1114111 || (code >= 55296 && code <= 57343) {
+        return (0, 0);
+    }
+    (n, code)
+}
+
+// Byte `i` of `s`, or 0 past its end.
+fun text_byte(s: string, i: i64): u32 = if i < s.len { s[i] as u32 } else { 0 };
+
+// Byte `i` of `b`, or 0 past its end.
+fun bytes_byte(b: u8[], i: i64): u32 = if i < b.len { b[i] as u32 } else { 0 };
+
+// `string_from_utf8(bytes)` (v14; in Lugha since v15, milestone 62).
+fun text_from_utf8(bytes: u8[]): Result<string, string> {
+    let mut i = 0;
+    while i < bytes.len {
+        let (n, _) = utf8_decode(bytes_byte(bytes, i), bytes_byte(bytes, i + 1),
+            bytes_byte(bytes, i + 2), bytes_byte(bytes, i + 3), bytes.len - i);
+        if n == 0 {
+            return Err("invalid UTF-8 at byte {i}");
+        }
+        i += n;
+    }
+    Ok($string.from_bytes(bytes))
+}
+
+// `parse_i64(s)` (v3; in Lugha since v15, milestone 62): an optional `-`,
+// then one or more digits and nothing else. It accumulates negatively,
+// so `i64.MIN` fits, and checks before each step, so overflow is `None`.
+fun text_parse_i64(s: string): Option<i64> {
+    let negative = s.len > 0 && s[0] == 45;
+    let mut i = if negative { 1 } else { 0 };
+    if i == s.len {
+        return None;
+    }
+    let mut value: i64 = 0;
+    while i < s.len {
+        let c = s[i];
+        if c < 48 || c > 57 {
+            return None;
+        }
+        let digit = (c - 48) as i64;
+        if value < (i64.MIN + digit) / 10 {
+            return None;
+        }
+        value = value * 10 - digit;
+        i += 1;
+    }
+    if negative {
+        return Some(value);
+    }
+    if value == i64.MIN {
+        return None;
+    }
+    Some(-value)
+}
+
+// `parse_u64(s)` (v10; in Lugha since v15, milestone 62): one or more
+// digits and nothing else, checked before each step.
+fun text_parse_u64(s: string): Option<u64> {
+    if s.len == 0 {
+        return None;
+    }
+    let mut value: u64 = 0;
+    let mut i = 0;
+    while i < s.len {
+        let c = s[i];
+        if c < 48 || c > 57 {
+            return None;
+        }
+        let digit = (c - 48) as u64;
+        if value > (u64.MAX - digit) / 10 {
+            return None;
+        }
+        value = value * 10 + digit;
+        i += 1;
+    }
+    Some(value)
 }

@@ -20,63 +20,6 @@ LughaArray *lugha_rt_args(void) {
     return array;
 }
 
-/* `parse_i64(s)`: an optional `-`, then one or more decimal digits and
- * nothing else; 1 with `*out` set, or 0 (spec: `None`) on anything else,
- * including overflow. Accumulates negatively so `INT64_MIN` fits. */
-int32_t lugha_rt_parse_i64(const LughaString *s, int64_t *out) {
-    int64_t i = 0;
-    bool negative = s->len > 0 && s->bytes[0] == '-';
-    if (negative) {
-        i = 1;
-    }
-    if (i == s->len) {
-        return 0;
-    }
-    int64_t value = 0;
-    for (; i < s->len; i++) {
-        char c = s->bytes[i];
-        if (c < '0' || c > '9') {
-            return 0;
-        }
-        int64_t digit = c - '0';
-        if (value < (INT64_MIN + digit) / 10) {
-            return 0;
-        }
-        value = value * 10 - digit;
-    }
-    if (!negative) {
-        if (value == INT64_MIN) {
-            return 0;
-        }
-        value = -value;
-    }
-    *out = value;
-    return 1;
-}
-
-/* `parse_u64(s)` (v10): one or more decimal digits and nothing else; 1
- * with `*out` set, or 0 (spec: `None`) on anything else, including a sign
- * and values above `UINT64_MAX`, checked before each step. */
-int32_t lugha_rt_parse_u64(const LughaString *s, uint64_t *out) {
-    if (s->len == 0) {
-        return 0;
-    }
-    uint64_t value = 0;
-    for (int64_t i = 0; i < s->len; i++) {
-        char c = s->bytes[i];
-        if (c < '0' || c > '9') {
-            return 0;
-        }
-        uint64_t digit = (uint64_t)(c - '0');
-        if (value > (UINT64_MAX - digit) / 10) {
-            return 0;
-        }
-        value = value * 10 + digit;
-    }
-    *out = value;
-    return 1;
-}
-
 /* Skips decimal digits from `*i`; true if there was at least one. */
 static bool digits(const LughaString *s, int64_t *i) {
     int64_t start = *i;

@@ -50,7 +50,6 @@ typedef struct {
 
 void lugha_rt_init(int32_t argc, char **argv);
 LughaArray *lugha_rt_args(void);
-int32_t lugha_rt_parse_i64(const LughaString *s, int64_t *out);
 int32_t lugha_rt_parse_f64(const LughaString *s, double *out);
 int32_t lugha_rt_read_line(LughaString **out);
 int32_t lugha_rt_read_file(const LughaString *path, LughaString **out, LughaString **error);
