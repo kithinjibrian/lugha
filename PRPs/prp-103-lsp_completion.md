@@ -1,6 +1,6 @@
 ## FEATURE: Completion in `lughac lsp` — members after `.` and names in scope, with types and headers, from the last check that parsed; milestone 73.
 
-**Status:** proposed 2026-10-15 — session 151 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-15 ("build it") — built in session 152; proposed in session 151.
 **Milestone:** 73 (one PRP; tag `m73` at merge). The fourth language-server PRP (diagnostics, hover, go-to-definition).
 **Spec:** `Language v16 Draft.md` decisions 28–32; spec §9 (the `lughac lsp` paragraph), §11 (row 73).
 
