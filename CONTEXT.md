@@ -5740,14 +5740,38 @@ Branch: main
 
 ---
 
-## SESSION 144 — 2026-10-15 — Discovery: a language server for the VS Code extension — open
+## SESSION 144 — 2026-10-15 — Discovery: a language server for the VS Code extension — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user wants work to centre on the VS Code extension from now on, and chose a language server as its next step.
+- Discovery: three PRPs (live diagnostics, then hover, then go-to-definition); `lsp-server` + `lsp-types`; `vscode-languageclient` replacing the on-save runner, no fallback; modules checked through entries and mains already seen; panics caught per check.
+- Found: `modules::load` already takes a `Read`, so unsaved text needs no loader change; real programs check in ~30–50 ms (debug).
+- Added v16 draft decisions 13–17 (milestone 70); wrote PRP-100 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-100-lsp_diagnostics.md`.
+- Modified: `docs/specs/Language v16 Draft.md`, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: PRP-100 waits for approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-100, including their review of the new crates.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`). Nothing is proposed or in progress.
+**v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
+
+**Focus: the VS Code extension** (the user, session 144). **Proposed: milestone 70, `lughac lsp` with live diagnostics** — v16 draft decisions 13–17 and PRP-100; it waits for the user's approval (and review of the crates `lsp-server`, `lsp-types`, `serde_json`). Hover types and go-to-definition follow as their own PRPs. Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

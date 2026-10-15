@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) proposed in session 144.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -57,6 +57,16 @@ There is no command to start a Lugha project: `lugha.toml` and the first source 
     - no `git`, no network.
 12. **Success:** milestone 69, tag `m69`. Tests in `tests/init.rs` (PRP-098: `tests/cli.rs` is near the file limit): each layout created, then checked, built and run; each refusal; `kept` files untouched. The spec's CLI table gains `init`.
 
+## Decisions behind milestone 70 (discovery, session 144)
+
+The VS Code extension (PRP-099) checks a file only when it is saved, by running `lughac check`. The user chose a language server, built in three steps: live diagnostics (milestone 70), then hover types, then go-to-definition. This milestone is the first.
+
+13. **`lughac lsp`** speaks the Language Server Protocol over stdin and stdout, for any editor. It reports the same diagnostics as `lughac check`, for the text in the editor, saved or not, a moment after typing stops. It never runs `git` (always offline), never writes a file (not even `lugha.lock`), and opens no network port.
+14. **What is checked:** a file with `fun main` checks itself. A module checks through every main file listed in the client's `lugha.entries` setting and every main file the server has already checked that loaded it; with none, it is checked alone and E0303 is dropped.
+15. **A panic inside the compiler** while checking is caught: the server stays up and shows one internal-error diagnostic at the top of the file.
+16. **Crates:** `lsp-server` and `lsp-types` (rust-analyzer's; MIT/Apache), with `serde_json`. No async runtime. They are used only by the server; nothing else in lughac changes.
+17. **Success:** milestone 70, tag `m70`. Tests in `tests/lsp.rs` drive `lughac lsp` over stdio. The spec's CLI table gains `lsp`.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -87,6 +97,7 @@ There is no command to start a Lugha project: `lugha.toml` and the first source 
 | 67 | Shared boxes | `Ref<T>`: `new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing |
 | 68 | Changing directory | `env.set_current_dir(path)` |
 | 69 | `lughac init` | program and library layouts; never overwrites |
+| 70 | `lughac lsp` | live diagnostics over the Language Server Protocol; the VS Code extension uses it |
 
 ## §12 Open questions — additions
 
