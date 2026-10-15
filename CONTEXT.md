@@ -5849,8 +5849,29 @@ Branch: prp-101-lsp_hover
 
 ---
 
-## SESSION 148 — 2026-10-15 — Discovery: go-to-definition in the language server — open
+## SESSION 148 — 2026-10-15 — Discovery: go-to-definition in the language server — closed
 Branch: main
+
+### WHAT WAS DONE
+- Discovery for go-to-definition: jumps from variables, functions and methods, types, fields, variants and modules; nothing for `std`/prelude definitions; an interface call goes to the interface's method.
+- Found: declaration spans exist for locals, structs, enums, interfaces, functions and methods, not for fields or variants; hover's `names` already maps function uses to declarations.
+- Added v16 draft decisions 23–27 (milestone 72); wrote PRP-102 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-102-lsp_definition.md`.
+- Modified: `docs/specs/Language v16 Draft.md`, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: PRP-102 waits for approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-102; the user's manual checks of live errors and hover are still open.
 
 ---
 
@@ -5858,7 +5879,7 @@ Branch: main
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
 
-**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. Next for the extension: go-to-definition (discovery + PRP; the checker's `names` already map uses to declaration spans); bundling the extension; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Proposed: milestone 72, go-to-definition** — v16 draft decisions 23–27 and PRP-102; it waits for the user's approval. Later for the extension: Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 
