@@ -24,6 +24,7 @@ impl Checker {
             (Type::String | Type::Array(_), "len") => Type::I64,
             (Type::Struct(s, args), name) if self.struct_field(&s, name).is_some() => {
                 self.field_visible(&s, name, field.span);
+                self.hover.field_use(&s, field);
                 self.field_type(&s, &args, name).expect("just found")
             }
             (ty, name) => {

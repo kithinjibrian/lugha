@@ -91,7 +91,7 @@ pub use instances::Instance;
 pub use iterators::Iteration;
 pub use modules::{Unit, check_modules, qualify, symbol};
 pub use ordering::ORDERING;
-pub use partial::{Name, Partial, check_partial};
+pub use partial::{Name, Partial, Target, check_partial};
 pub use refs::REF_NEW;
 pub use slots::{indirect_slot, slot_names_variant};
 pub use templates::exact as template_exact;

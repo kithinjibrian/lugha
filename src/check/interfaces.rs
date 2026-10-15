@@ -68,6 +68,7 @@ impl Checker {
                     name: p.name.name.clone(),
                     bounds: Bounds::default(),
                 });
+                self.hover.define(span, span);
                 let info = InterfaceInfo {
                     generics: generics.collect(),
                     items: Vec::new(),
@@ -125,6 +126,7 @@ impl Checker {
                     self.report(d);
                     continue;
                 }
+                self.hover.define(it.name.span, it.name.span);
                 items.push(Requirement {
                     name: name.clone(),
                     receiver: it.receiver.map(|r| r.mutable),

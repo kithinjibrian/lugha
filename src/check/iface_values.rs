@@ -23,6 +23,12 @@ impl Checker {
         };
         let key = self.or_prelude_interface(key, module, &name.name);
         let info = self.interfaces.get(&key)?;
+        let decl = info.span;
+        self.hover.define(name.span, decl);
+        if let Some(m) = module {
+            self.module_named(m.span, &m.name);
+        }
+        let info = &self.interfaces[&key];
         if let Some(item) = info.not_value.clone() {
             let shown = module.map_or_else(
                 || name.name.clone(),

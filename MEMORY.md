@@ -1851,11 +1851,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. The checker records names (`check/partial.rs`'s `Recorder`) at `env.rs::declare`, function and method declarations, calls (`call_key`, method calls), function values and field declarations; each use maps to its declaration's name span, which go-to-definition can reuse. A function's hover is its header sliced from the source. `check_modules` shares `modules::run` with `check_partial`. **Difference:** while any module fails to parse, there is no hover anywhere (the pipeline stops before checking), not just in that module. The test harness moved to `tests/common/lsp_client.rs`.
 
+### 136. Go to definition planned (session 148, approved session 149)
+
+**Decision:** v16 draft decisions 23–27: definitions from names, types, fields, variants and modules; none for `std`/prelude (no file, no virtual documents); interface calls to the interface's method; same freshness and error tolerance as hover.
+
+### 137. Go to definition — milestone 72 (PRP-102)
+
+**Decision:** built as planned. `Partial.definitions` (use span → `Target::Decl(span)` or `Target::Module(path)`) is recorded where the checker resolves: `expr.rs` local reads (assignments resolve through them too), hover's function hook (declarations point at themselves), `type_key`, `type_named_by`, `interface_type`, `impl` headers, struct literals, field access, constructions, patterns, import paths and module prefixes; field and variant declaration spans live in the `Recorder`. The server shares hover's `fresh`/`snapshot` path.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 72 complete**: PRP-102 go-to-definition
 - **Milestone 71 complete**: PRP-101 hover
 - **Milestone 70 complete**: PRP-100 `lughac lsp`, VS Code extension 0.2.0
 - **Milestone 69 complete**: PRP-098 `lughac init`

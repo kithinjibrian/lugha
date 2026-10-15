@@ -5875,8 +5875,29 @@ Branch: main
 
 ---
 
-## SESSION 149 — 2026-10-15 — Go to definition in the language server (milestone 72) — open
+## SESSION 149 — 2026-10-15 — Go to definition in the language server (milestone 72) — closed
 Branch: prp-102-lsp_definition
+
+### WHAT WAS DONE
+- The user approved PRP-102 ("build it"); MEMORY 136. Built in a worktree (`../lugha-prp-102`), merged through a PR.
+- Tests first: `check::partial` definitions tests, then the `Target` table and its recording points; `tests/lsp_definition.rs` (8), then `driver/lsp/definition.rs` and the request in the server.
+- Spec v16 at milestone 72 (go-to-definition in the `lughac lsp` paragraph, §11 row 72, summary); docs.
+
+### FILES CREATED OR MODIFIED
+- New: `src/driver/lsp/definition.rs`, `tests/lsp_definition.rs`.
+- Modified: `src/check/{partial,mod,expr,iface_values,methods,struct_literal,access,construct,patterns,structs,enums,interfaces}.rs`, `src/check/modules/{mod,lookup}.rs`, `src/driver/lsp/{mod,server,hover}.rs`, `tests/common/lsp_client.rs`; the v16 spec and draft; CLAUDE.md, README, the extension README, TODO, CHANGELOG, MEMORY (136, 137), PRP-102, CONTEXT.
+
+### TESTS WRITTEN
+- `check::partial` (3 more), `driver::lsp::definition` (1), `tests/lsp_definition.rs` (8).
+
+### DECISIONS MADE
+- MEMORY 137.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual checks in VS Code: live errors, hover and go-to-definition (extension README steps 2–6).
 
 ---
 
@@ -5884,7 +5905,7 @@ Branch: prp-102-lsp_definition
 
 **v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
 
-**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Proposed: milestone 72, go-to-definition** — v16 draft decisions 23–27 and PRP-102; it waits for the user's approval. Later for the extension: Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. Next for the extension (each a discovery + PRP): Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

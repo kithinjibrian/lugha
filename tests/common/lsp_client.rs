@@ -205,6 +205,17 @@ impl Server {
         reply["result"].clone()
     }
 
+    /// Asks for the definition at a zero-based `line` and UTF-16
+    /// `character` of `uri`; returns the result (`null` for none).
+    pub fn definition(&mut self, uri: &str, line: u32, character: u32) -> Value {
+        let reply = self.request(
+            "textDocument/definition",
+            json!({ "textDocument": { "uri": uri }, "position": { "line": line, "character": character } }),
+        );
+        assert!(reply.get("error").is_none(), "{reply}");
+        reply["result"].clone()
+    }
+
     /// `shutdown` then `exit`, returning the exit code.
     pub fn finish(mut self) -> Option<i32> {
         let reply = self.request("shutdown", Value::Null);

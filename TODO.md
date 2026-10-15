@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 72 — Go to definition ✅
+- [x] PRP-102: definitions from names, types, fields, variants and modules; tagged `m72`
+
 ### Milestone 71 — Hover ✅
 - [x] PRP-101: hover over expressions and declared names, also with errors; `check_partial`; tagged `m71`
 
@@ -365,6 +368,9 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [x] **VS Code extension** — highlighting and `lughac check` diagnostics on open/save (PRP-099, `editors/vscode/`).
 - [x] **A language server, live diagnostics** — `lughac lsp`, the extension on `vscode-languageclient` (milestone 70, PRP-100).
 - [x] **Hover types** — milestone 71, PRP-101.
+- [x] **Go to Definition** — milestone 72, PRP-102.
+- [ ] **Find References** and **Go to Implementations** — the definitions table read backwards; implementations of interface methods.
+- [ ] **A read-only view of bundled sources** (`std`, the prelude) for hover and definitions that land there.
 - [ ] **Go-to-definition** — the PRP after hover.
 - [ ] **Bundling** the extension (vsce warns about 231 files; needs a bundler such as esbuild as a dev dependency).
 - [ ] **Publishing** the extension to the Marketplace and Open VSX (publisher accounts, a token as a CI secret).

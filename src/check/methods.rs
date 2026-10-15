@@ -41,6 +41,9 @@ impl Checker {
                 self.report(errors::unknown_type(&i.ty.name, i.ty.span));
                 continue;
             };
+            if let Some(decl) = self.type_decl(owner) {
+                self.hover.define(i.ty.span, decl);
+            }
             let declared = self.generics_of(owner);
             if i.params.len() != declared.len() {
                 let d = errors::type_args(&i.ty.name, declared.len(), i.params.len(), i.ty.span);

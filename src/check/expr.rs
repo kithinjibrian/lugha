@@ -96,6 +96,7 @@ impl Checker {
             }
             ExprKind::Name(name) => {
                 if let Some(local) = self.local(name) {
+                    self.hover.define(expr.span, local.span);
                     // A capture is never moved from: the closure may run again (v3).
                     let captured = self.note_capture(name);
                     let mention = liveness::Mention {

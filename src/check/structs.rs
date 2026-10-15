@@ -37,6 +37,7 @@ impl Checker {
                 for field in &s.fields {
                     self.register_field(&key, &field.name.name, field.visibility);
                 }
+                self.hover.define(s.name.span, s.name.span);
                 let info = StructInfo {
                     fields: Vec::new(),
                     span: s.name.span,
@@ -80,7 +81,7 @@ impl Checker {
                     ));
                     continue;
                 }
-                self.hover.field(&field.name, &ty);
+                self.hover.field(&key, &field.name, &ty);
                 fields.push((field.name.name.clone(), ty));
             }
             self.structs

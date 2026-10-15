@@ -29,7 +29,7 @@ impl Snapshot {
     }
 
     /// Where `file` starts in the check's shared offset space, and its text.
-    fn base(&self, file: &Path) -> Option<(usize, &str)> {
+    pub(super) fn base(&self, file: &Path) -> Option<(usize, &str)> {
         let file = normalize(file);
         self.source
             .files

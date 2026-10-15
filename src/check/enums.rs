@@ -36,6 +36,7 @@ impl Checker {
                 self.report(errors::duplicate(name, e.name.span, first));
             } else {
                 self.register_item(&key, e.visibility);
+                self.hover.define(e.name.span, e.name.span);
                 let info = EnumInfo {
                     variants: Vec::new(),
                     span: e.name.span,
@@ -76,6 +77,7 @@ impl Checker {
                     self.report(d);
                     continue;
                 }
+                self.hover.variant(&key, &v.name);
                 variants.push((v.name.name.clone(), payloads));
             }
             self.enums

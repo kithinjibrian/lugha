@@ -81,25 +81,31 @@ None.
 - Nothing new is read, run or written: answers come from results already computed. Module targets are files the check already loaded. Offline, no writes (PRP-100).
 
 ## TESTS TO WRITE
-- [ ] **`check::partial` unit tests:** `definitions` holds, for one program: a local read and an assignment → its `let`; a parameter use → the parameter; a function call and value → its declaration; a method call → the method; an interface call → the interface's method; a type in an annotation, a struct literal, an `impl` header → the struct; an enum in a construction → the enum, the variant → the variant; `p.x` and a literal's `x:` → the field; `import geo;` and `geo.f` → `Module(["geo"])`; declarations → themselves.
-- [ ] **`driver::lsp::definition` unit tests:** smallest span wins; a `<std>`/`<prelude>` target → `None`; a module target → its file at 0:0.
-- [ ] **`tests/lsp_definition.rs`** (real server over stdio):
+- [x] **`check::partial` unit tests:** `definitions` holds, for one program: a local read and an assignment → its `let`; a parameter use → the parameter; a function call and value → its declaration; a method call → the method; an interface call → the interface's method; a type in an annotation, a struct literal, an `impl` header → the struct; an enum in a construction → the enum, the variant → the variant; `p.x` and a literal's `x:` → the field; `import geo;` and `geo.f` → `Module(["geo"])`; declarations → themselves.
+- [x] **`driver::lsp::definition` unit tests:** smallest span wins; a `<std>`/`<prelude>` target → `None`; a module target → its file at 0:0.
+- [x] **`tests/lsp_definition.rs`** (real server over stdio):
   - `initialize` advertises `definitionProvider`;
   - each row of the objective's table jumps to the expected file and range (two files: `main.la`, `geo.la`);
   - `math.sqrt` → `null`; whitespace, a comment, a keyword → `null`; a file never opened → `null`;
   - with an unrelated error in the program → still jumps;
   - right after an unsaved change (no wait) → the new text's declaration.
-- [ ] **Regression:** every existing test passes; hover unchanged (`tests/lsp_hover.rs`).
+- [x] **Regression:** every existing test passes; hover unchanged (`tests/lsp_hover.rs`).
 - [ ] **Manual check** (extension README), by the user: Ctrl+click a variable, a method call, a type and an import in VS Code.
+
+## BUILT (session 149)
+- As designed: `Target` and `Partial.definitions` in `check/partial.rs`, with field and variant declaration spans kept in its `Recorder`; recorded at `expr.rs` (locals), the existing function hook, `modules/lookup.rs` (`type_key`, `type_named_by`, `module_call`, new `type_decl` and `module_named`), `iface_values.rs`, `methods.rs` (`impl` headers), `struct_literal.rs`, `access.rs`, `construct.rs`, `patterns.rs`, `structs.rs`/`enums.rs`/`interfaces.rs` declarations, and import paths in `modules/mod.rs::enter`. `driver/lsp/definition.rs`; the server's hover and definition share `fresh` and `snapshot`.
+- Tests: 3 more in `check::partial` (9 in all), 1 in `driver::lsp::definition`, 8 in `tests/lsp_definition.rs`; hover's 10 and the server's 14 unchanged.
+- **Differences from the plan:** none in behaviour. Assignments needed no hook of their own: their places are checked as expressions, so `total += …` already resolves through `expr.rs`.
+- The manual check in VS Code is left to the user (extension README, step 6).
 
 ## ROLLBACK PLAN
 - Branch `prp-102-lsp_definition` from `main`; tag `m72`.
 - To abandon before merge: delete the branch. After: revert the merge; hover and diagnostics unchanged.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test`; CI green.
-- [ ] Spec at milestone 72; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test`; CI green.
+- [x] Spec at milestone 72; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 - [ ] The manual check passes in VS Code.
 
 ## VALIDATION
