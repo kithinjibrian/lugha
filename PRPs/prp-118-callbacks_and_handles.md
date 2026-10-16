@@ -1,6 +1,6 @@
 ## FEATURE: Callbacks and handles — Lugha functions and closures passed to C as callbacks, and opaque handle types for C pointers (`extern type`); milestone 88.
 
-**Status:** proposed 2026-10-16 (session 187).
+**Status:** approved 2026-10-16 ("yes build") — building in session 188; proposed in session 187.
 **Milestone:** 88 (one PRP; tag `m88` at merge).
 **Spec:** `Language v16 Draft.md` decisions 105–114; spec §2/§3 (`extern type`, the grammar), §4 (handle types), §7 (pinned closures), §8 (C interop: handles, callbacks, `data`, `release`), §9 (symbols, trampolines, the runtime, diagnostics), §11 (row 88).
 
