@@ -7459,3 +7459,26 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - Actor discussion: stopping, panics/supervision.
+
+---
+
+## SESSION 210 — 2026-10-16 — Actors: discussion, continued — closed
+Branch: main
+
+### WHAT WAS DONE
+- The user chose stopping option A: a built-in `stop()` message handled in order after what is queued, `c.join()` to wait for the end, a call to a stopped actor panics, every actor ends when `main` returns. Asked the next question: what an actor's panic does (recommended: only that actor dies, its message printed; waiting and later value calls panic in the caller; `c.join()` returns `Option<string>`, the panic message, as the base for supervision). Noted for the PRP: no destructors, so a panicking fiber can simply be abandoned (no unwinding).
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- Actor stopping: built-in `stop()`, `join()`, everything ends with `main` (the user's choice).
+
+### PENDING DECISIONS OPENED
+- None (the discussion continues).
+
+### STILL OPEN AT CLOSE
+- Actor discussion: panics and supervision.
