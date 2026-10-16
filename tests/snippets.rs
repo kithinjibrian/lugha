@@ -24,12 +24,13 @@ const DECLARATIONS: [&str; 12] = [
     "externstruct",
     "externcb",
 ];
-const STATEMENTS: [&str; 8] = [
-    "if", "ifelse", "while", "forof", "forin", "iflet", "letelse", "match",
+const STATEMENTS: [&str; 11] = [
+    "if", "ifelse", "while", "forof", "forin", "iflet", "letelse", "match", "spawn", "chan",
+    "select",
 ];
 
 /// What a statement snippet's defaults may name.
-const LOCALS: &str = "    let x = 1;\n    let xs = [1, 2, 3];\n    let cond = true;\n    let o: Option<i64> = Some(1);\n";
+const LOCALS: &str = "    let x = 1;\n    let xs = [1, 2, 3];\n    let cond = true;\n    let o: Option<i64> = Some(1);\n    let c: Chan<i64> = Chan.buffered(1);\n";
 
 fn snippets() -> Vec<(String, String)> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("editors/vscode/snippets/lugha.json");

@@ -1,0 +1,23 @@
+// SYNTAX TEST "source.lugha" "green threads: spawn, select and its contextual arms"
+
+fun main() {
+    let t = spawn work(3);
+//          ^^^^^ keyword.control.lugha
+    select {
+//  ^^^^^^ keyword.control.lugha
+        m = c.recv() => m,
+        after(10) => 1,
+//      ^^^^^ keyword.control.lugha
+        default => 2,
+//      ^^^^^^^ keyword.control.lugha
+    }
+    let after = 1;
+//      ^^^^^ - keyword.control.lugha
+    let default = after(2);
+//      ^^^^^^^ - keyword.control.lugha
+//                ^^^^^ - keyword.control.lugha
+}
+
+fun drain(c: Chan<i64>, t: Task<i64>) {}
+//           ^^^^ support.type.lugha
+//                         ^^^^ support.type.lugha

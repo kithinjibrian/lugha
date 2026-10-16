@@ -434,7 +434,7 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 
 ### Next
 - [ ] **Actors** (the user's next goal): a green thread owning a channel as its mailbox; supervision and catching a thread's panic. Needs discovery and a PRP.
-- [ ] **VS Code:** highlighting for `spawn`/`select` (and `after`/`default` in arms), snippets `spawn`, `select`; bump the extension version.
+- [x] **VS Code:** highlighting for `spawn`/`select` (and `after`/`default` in arms), snippets `spawn`, `chan`, `select`; extension 0.11.0 (session 205).
 - [ ] Non-blocking input and output (a waiting read pauses only its green thread); green threads on several OS threads.
 - [ ] `probe-stack` on functions of programs that spawn, so a frame over 64 KiB can't skip a green stack's guard (PRP-122 BUILT notes).
 

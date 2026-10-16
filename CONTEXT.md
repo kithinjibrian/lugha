@@ -7345,5 +7345,25 @@ Branch: main
 
 ---
 
-## SESSION 205 — 2026-10-16 — VS Code extension: spawn and select — open
+## SESSION 205 — 2026-10-16 — VS Code extension: spawn and select — closed
 Branch: vscode-green-threads
+
+### WHAT WAS DONE
+- The user saw `spawn` uncoloured in VS Code. Treated as upkeep of approved syntax (as session 193), no PRP: the grammar colours `spawn` and `select` as control keywords, `after(…) =>` and `default =>` only at a `select` arm, and `Task`/`Chan` as built-in types. Snippets `spawn`, `chan`, `select`. README features, snippets and manual step 21.
+- Version 0.11.0, packaged and installed (`code --install-extension`).
+
+### FILES CREATED OR MODIFIED
+- New: `editors/vscode/test/grammar/tasks.la`.
+- Modified: `editors/vscode/{syntaxes/lugha.tmLanguage.json,snippets/lugha.json,README.md,package.json,package-lock.json}`, `tests/snippets.rs` (three prefixes; a channel `c` among the locals), CHANGELOG, TODO, CONTEXT.
+
+### TESTS WRITTEN
+- `test/grammar/tasks.la` (keywords, contextual `after`/`default`, names stay plain, `Task`/`Chan`); `tests/snippets.rs` requires and checks `spawn`, `chan`, `select`. The spec-keywords test (which failed on the v17 spec) passes again. `npm test` (15 + 6 grammar files) and `cargo test --test snippets` pass.
+
+### DECISIONS MADE
+- `after`/`default` are coloured only when followed by `=>` (after `after(…)`), matching where the parser gives them meaning.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual check (extension README step 21). Actors next (needs discovery).
