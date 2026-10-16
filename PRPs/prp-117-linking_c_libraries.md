@@ -1,6 +1,6 @@
 ## FEATURE: Linking C libraries — a `[link]` table in `lugha.toml` naming libraries, search folders, pkg-config packages and C files to compile into the program; milestone 87.
 
-**Status:** proposed 2026-10-16 (session 184).
+**Status:** approved 2026-10-16 ("yes build", security review included) — building in session 185; proposed in session 184.
 **Milestone:** 87 (one PRP; tag `m87` at merge).
 **Spec:** `Language v16 Draft.md` decisions 98–104; spec §6 (Packages: the manifest), §8 (C interop: what is linked), §9 (stage 6, the diagnostics table), §11 (row 87).
 

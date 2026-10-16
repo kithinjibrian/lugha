@@ -6811,6 +6811,14 @@ Branch: main
 
 ---
 
+## SESSION 185 — 2026-10-16 — Linking C libraries (milestone 87) — open
+Branch: prp-117-linking_c_libraries
+
+### WHAT WAS DONE
+- In progress: the user approved PRP-117 ("yes build"), security review included; building in worktree `../lugha-prp-117`.
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–86 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`).
