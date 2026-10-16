@@ -7822,3 +7822,8 @@ Branch: prp-130-module_docs
 
 ### STILL OPEN AT CLOSE
 - PRP-130 awaits approval; build on branch `prp-130-module_docs`.
+
+---
+
+## SESSION 225 — 2026-10-17 — Module doc comments (milestone 98) — open
+Branch: prp-130-module_docs

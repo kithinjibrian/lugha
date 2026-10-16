@@ -1,6 +1,6 @@
 ## FEATURE: Module doc comments — a `/** … */` at the top of a file documents its module, shown when hovering the module's name; the std modules documented; milestone 98 (v17).
 
-**Status:** proposed in session 224, after two questions answered by the user (the rule, std included).
+**Status:** approved 2026-10-17 ("build", session 225); proposed in session 224, after two questions answered by the user (the rule, std included).
 
 ## OBJECTIVE
 Hovering `diff` in `import kivuli.diff;` or in `diff.patch(x)` shows `module kivuli.diff` and the doc comment at the top of `diff.la`, the way hovering a function shows its doc. Files written like kivuli's (a `/** … */`, a blank line, then the imports) need no change. `import std.math;` shows `std.math`'s description.
