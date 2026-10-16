@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built. Milestone 76 (block comments) approved in session 159 (proposed in session 158), and built. Milestone 77 (doc comments) approved in session 161 (proposed in session 160), and built. Milestone 78 (snippets) approved in session 163 (proposed in session 162), and built. Milestone 79 (the add-missing-arms quick fix) approved in session 167 (proposed in session 166), and built. Milestone 80 (`lughac fmt`) approved in session 169 (proposed in session 168), and built. Milestone 81 (formatting in the editor) approved in session 171 (proposed in session 170), and built. Milestone 82 (more quick fixes) approved in session 173 (proposed in session 172), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built. Milestone 76 (block comments) approved in session 159 (proposed in session 158), and built. Milestone 77 (doc comments) approved in session 161 (proposed in session 160), and built. Milestone 78 (snippets) approved in session 163 (proposed in session 162), and built. Milestone 79 (the add-missing-arms quick fix) approved in session 167 (proposed in session 166), and built. Milestone 80 (`lughac fmt`) approved in session 169 (proposed in session 168), and built. Milestone 81 (formatting in the editor) approved in session 171 (proposed in session 170), and built. Milestone 82 (more quick fixes) approved in session 173 (proposed in session 172), and built. Milestone 83 (Find References and Rename) proposed in session 174.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -185,6 +185,16 @@ Three more quick fixes in `lughac lsp` (the user's choice of three of four candi
 74. **Each fix is marked preferred** (the editor's auto-fix applies it) and comes only from a check of the current text that parsed, as milestone 79's.
 75. **Success:** milestone 82, tag `m82`. Tests in `tests/lsp_code_actions.rs`; each fixed program checks clean of the fixed diagnostic.
 
+## Decisions behind milestone 83 (discovery, session 174)
+
+Find References and Rename in `lughac lsp` (the user's choices; Go to Implementations later).
+
+76. **Find References** (`textDocument/references`): from a name — at a use or its declaration — every place written that resolves to the same declaration, in every file the server has checked (open files, their imports, the mains in `lugha.entries` and the mains already seen), with the declaration itself when the client asks for it. Locals, parameters, functions, methods, types, fields, variants and interface methods; a module (`geo` in `geo.f`) finds its uses too. Names declared in `std` or the prelude: their uses in the checked files.
+77. **Rename** (`textDocument/prepareRename`, `textDocument/rename`): the same places, each replaced by the new name. Refused, with the reason as the error message, for: a name declared in `std` or the prelude; a module (it would rename a file); a new name that isn't an identifier or is a keyword; a module-level item visible outside its file (not `private`) declared in a module no checked main imports ("open or list in `lugha.entries` a main file that uses it").
+78. **Self-check:** before answering, the server applies the rename in memory and checks every affected main again. Every renamed place must resolve to the renamed declaration, nothing else may newly resolve to it, and no file may gain an error. Otherwise the rename is refused with the first problem found ("`total` would clash with …", "a use would point elsewhere").
+79. **Safety:** as before — the server writes no file and runs no `git`; the edits go to the client.
+80. **Success:** milestone 83, tag `m83`. Tests in `tests/lsp_references.rs` and `tests/lsp_rename.rs`.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -228,6 +238,7 @@ Three more quick fixes in `lughac lsp` (the user's choice of three of four candi
 | 80 | `lughac fmt` | the tree-based formatter: canonical style, comments kept, self-verified, `--check` |
 | 81 | Formatting in the editor | `textDocument/formatting` in `lughac lsp`; the extension the default Lugha formatter |
 | 82 | More quick fixes | `let mut` for E0501, a misspelled variant for W0103, a std import for E0301 |
+| 83 | Find References and Rename | every use of a name across the checked files; renaming them, refused unless safe and self-checked |
 
 ## §12 Open questions — additions
 
