@@ -7937,3 +7937,8 @@ Branch: fix-import-names
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 230 — 2026-10-17 — Named imports of extern types (kivuli's report) — open
+Branch: fix-import-extern-type
