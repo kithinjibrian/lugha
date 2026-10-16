@@ -76,7 +76,8 @@
     },
     "keyword": {
       "patterns": [
-        { "name": "keyword.control.lugha", "match": "\\b(if|else|while|for|in|of|match|return|break|continue)\\b" },
+        { "name": "keyword.control.lugha", "match": "\\b(if|else|while|for|in|of|match|return|break|continue|spawn|select)\\b" },
+        { "comment": "`after(ms) =>` and `default =>` open a `select` arm (v17); elsewhere they are names.", "name": "keyword.control.lugha", "match": "\\b(?:after(?=\\s*\\([^()]*\\)\\s*=>)|default(?=\\s*=>))" },
         { "name": "keyword.other.$1.lugha", "match": "\\b(fun|extern|struct|enum|impl|interface|let|import)\\b" },
         { "name": "storage.modifier.lugha", "match": "\\b(mut|private|public)\\b" },
         { "name": "keyword.operator.as.lugha", "match": "\\bas\\b" },
@@ -88,7 +89,7 @@
     "builtin": {
       "patterns": [
         { "name": "support.constant.lugha", "match": "\\b(Some|None|Ok|Err)\\b" },
-        { "name": "support.type.lugha", "match": "\\b(Self|Option|Result|Ref)\\b" }
+        { "name": "support.type.lugha", "match": "\\b(Self|Option|Result|Ref|Task|Chan)\\b" }
       ]
     },
     "call": {

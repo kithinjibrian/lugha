@@ -177,5 +177,32 @@
       "}"
     ],
     "description": "A match"
+  },
+  "Spawn": {
+    "prefix": "spawn",
+    "body": [
+      "let ${1:t} = spawn fun() {",
+      "\t$0",
+      "}();",
+      "${1:t}.join();"
+    ],
+    "description": "Run a closure in a green thread, then wait for it (v17)"
+  },
+  "Channel": {
+    "prefix": "chan",
+    "body": [
+      "let ${1:ch}: Chan<${2:i64}> = Chan.buffered(${3:1});"
+    ],
+    "description": "A channel between green threads (v17)"
+  },
+  "Select": {
+    "prefix": "select",
+    "body": [
+      "select {",
+      "\t${1:m} = ${2:c}.recv() => ${3:println(m)},",
+      "\tafter(${4:100}) => ${5:println(\"timed out\")},",
+      "}"
+    ],
+    "description": "Wait on channels, with a timeout (v17)"
   }
 }
