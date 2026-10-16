@@ -1937,11 +1937,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned: `driver/lsp/formatting.rs` (`Formatted`: `Edits` / `Unchanged` / `Failed`; the formatter run under `catch_unwind`, so a panic is a `Failed` too; `reply` builds the response and the `window/showMessage`), answered in `mod.rs` before the other requests from the open document's text (`Server::formatting`, no check needed); one whole-document edit, which VS Code reduces to the changed lines. Extension 0.4.0: `configurationDefaults` `[lugha].editor.defaultFormatter = kithinjibrian.lugha`, README "Formatting" and manual step 14; no TypeScript change.
 
+### 157. More quick fixes planned (session 172, approved session 173)
+
+**Decision:** v16 draft decisions 71–75: `let mut` for E0501, the closest variant for W0103 (only within 2 edits or by case, no tie), `import std.<m>;` for E0301; no general did-you-mean (the user's choices).
+
+### 158. More quick fixes — milestone 82 (PRP-112)
+
+**Decision:** built as planned: `Partial.variants` (by an unused binding's span, from `variants_of` the binding's type, `$tuple` constructors dropped) recorded in `matching.rs::unused`; `driver/lsp/fixes.rs` (`fix` by code; the place's root through `partial.definitions`, `after_let` on the text before the binding; Levenshtein `distance`, `closest`; `after_imports` scanning top-level `import` lines to the next `;`); `code_actions.rs` dispatches and shares an `action` builder. Found while testing: at the top of an enum `match` a bare name is a variant (E0415), so W0103 only arises in payload slots (`Some(Emtpy)`). Extension 0.5.0 (README only).
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 82 complete**: PRP-112 more quick fixes, VS Code extension 0.5.0
 - **Milestone 81 complete**: PRP-111 formatting in the editor, VS Code extension 0.4.0
 - **Milestone 80 complete**: PRP-110 `lughac fmt`
 - **Milestone 79 complete**: PRP-109 the add-missing-arms quick fix

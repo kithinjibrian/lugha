@@ -57,22 +57,30 @@ None.
 - Unchanged: the server reads only the editor's text and the files it already loads; the fixes are edits the client applies. It writes nothing and runs nothing.
 
 ## TESTS TO WRITE
-- [ ] **`fixes.rs` unit tests:** edit distance (equal, one edit, case only, ties); the root of `x`, `p.x.y`, `xs[0]`; the `let ` check (`let x`, `let mut x`, a parameter, a `for` variable).
-- [ ] **`check::Partial`:** a W0103 records its slot type's variants; a non-enum slot records none.
-- [ ] **`tests/lsp_code_actions.rs`** over real stdio, each fix applied and the result re-checked by the server without that diagnostic:
+- [x] **`fixes.rs` unit tests:** edit distance (equal, one edit, case only, ties); the root of `x`, `p.x.y`, `xs[0]`; the `let ` check (`let x`, `let mut x`, a parameter, a `for` variable).
+- [x] **`check::Partial`:** a W0103 records its slot type's variants; a non-enum slot records none.
+- [x] **`tests/lsp_code_actions.rs`** over real stdio, each fix applied and the result re-checked by the server without that diagnostic:
   - E0501 on `x = 5`, `p.x = 1`, `xs[0] = 1` and `for v of mut xs` → `let mut`; a parameter and a `for` variable → no fix;
   - W0103 `Some(Emtpy)` → `Empty`; `Some(empty)` → `Empty`; a binding far from every variant → no fix; a tie → no fix;
   - E0301 `math.sqrt(2.0)` with other imports → inserted after them; with none → at the top; `nope.x` → no fix; `math` used without `.` → no fix.
-- [ ] **Regression:** the E0417 fixes unchanged; every existing test passes; `npm test`.
+- [x] **Regression:** the E0417 fixes unchanged; every existing test passes; `npm test`.
+
+## BUILT (session 173)
+- As designed: `Partial.variants` (recorded in `matching.rs::unused` through `variants_of`; `$tuple` constructors dropped; 1 test); `driver/lsp/fixes.rs` (`fix` by code, 5 unit tests: edit distance, `closest` with case and ties, `root`, `after_let`, imports placement); `code_actions.rs` dispatches by code and shares an `action` builder.
+- `tests/lsp_code_actions.rs` gained 6 end-to-end tests: each fix applied through the server and the result re-checked by `lughac check`; the no-fix cases assert their diagnostic is reported first, so they can't pass by accident.
+- Found while testing: at the top level of an enum `match` a bare name is a variant (E0415, "no variant"), so W0103 — and its fix — arise in payload slots (`Some(Emtpy)`).
+- The std import fix doesn't check for an existing import binding the name: an undefined `math` means none binds it.
+- Extension 0.5.0 (README and manual step 15 only).
+- The manual check in VS Code is left to the user.
 
 ## ROLLBACK PLAN
 - Branch `prp-112-more_quick_fixes` from `main`; tag `m82`.
 - To abandon before merge: delete the branch. After: revert the merge.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test`, `npm test` (CI in the background).
-- [ ] Spec at milestone 82; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test`, `npm test` (CI in the background).
+- [x] Spec at milestone 82; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 - [ ] The manual check passes in VS Code (README step).
 
 ## VALIDATION

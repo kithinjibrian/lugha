@@ -6501,16 +6501,38 @@ Branch: main
 
 ---
 
-## SESSION 173 — 2026-10-16 — More quick fixes (milestone 82) — open
+## SESSION 173 — 2026-10-16 — More quick fixes (milestone 82) — closed
 Branch: prp-112-more_quick_fixes
+
+### WHAT WAS DONE
+- The user approved PRP-112 ("build"); built it in the worktree `../lugha-prp-112`.
+- `Partial.variants` at each W0103; `driver/lsp/fixes.rs`: **Make `x` mutable** (E0501), **Change to `V`** (W0103), **Add `import std.m;`** (E0301); `code_actions.rs` dispatches.
+- Extension 0.5.0 (README, manual step 15), packaged and installed.
+- Spec v16 §9 (More quick fixes), §11 row 82, changes list; draft status; docs; the stale go-to-definition TODO ticked.
+
+### FILES CREATED OR MODIFIED
+- New: `src/driver/lsp/fixes.rs`.
+- Modified: `src/check/{partial,matching}.rs`, `src/driver/lsp/{code_actions,mod}.rs`, `tests/lsp_code_actions.rs`, `editors/vscode/{package.json,package-lock.json,README.md}`, the v16 spec and draft, PRP-112, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (157–158), CONTEXT.
+
+### TESTS WRITTEN
+- 1 checker test, 5 unit tests in `fixes.rs`, 6 end-to-end tests; written before the code. Full suite, fmt, clippy and `npm test` pass.
+
+### DECISIONS MADE
+- Built as PRP-112 planned; details in its BUILT notes and MEMORY 158.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual check in VS Code (extension README step 15).
 
 ---
 
 ## NEXT SESSION START POINT
 
-**v16: milestones 67–81 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor).
+**v16: milestones 67–82 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes).
 
-**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Proposed: milestone 82, more quick fixes** — v16 draft decisions 71–75 and PRP-112; it waits for the user's approval. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. Next: a new discovery (Find References / Go to Implementations recommended). Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

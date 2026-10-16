@@ -137,10 +137,22 @@ impl Checker {
 
     /// W0103 for each binding that nothing in its arm mentions.
     pub(super) fn unused(&mut self, bindings: &[(Ident, Type, bool)]) {
-        for (name, _, _) in bindings {
+        for (name, ty, _) in bindings {
             // A binding named like a type is already E0311.
             let named_like_type = self.type_span(&name.name).is_some();
             if !named_like_type && !self.mentions.values().any(|m| m.decl == name.span) {
+                // Often a misspelled variant: keep the type's, for the quick
+                // fix (milestone 82). Tuples' hidden constructors aren't names.
+                let variants: Vec<String> = self
+                    .variants_of(ty)
+                    .into_iter()
+                    .flatten()
+                    .map(|(v, _)| v)
+                    .filter(|v| !v.starts_with('$'))
+                    .collect();
+                if !variants.is_empty() {
+                    self.hover.unused_variants.insert(name.span, variants);
+                }
                 self.report(errors::unused_binding(&name.name, name.span));
             }
         }

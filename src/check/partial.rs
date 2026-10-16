@@ -64,6 +64,9 @@ pub struct Partial {
     /// Every missing pattern of each non-exhaustive `match`, in full
     /// (`Rect(_, _)`), by its E0417 span; empty when only `_` applies.
     pub missing_arms: HashMap<Span, Vec<String>>,
+    /// The variant names of the enum each unused `match` binding (W0103)
+    /// matches, by the binding's span, for the misspelled-variant fix.
+    pub variants: HashMap<Span, Vec<String>>,
     /// Every error and warning, as `check_modules` reports them.
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -76,6 +79,7 @@ pub(super) struct Recorder {
     pub definitions: HashMap<Span, Target>,
     pub signatures: HashMap<Span, super::Sig>,
     pub missing_arms: HashMap<Span, Vec<String>>,
+    pub unused_variants: HashMap<Span, Vec<String>>,
     /// Each field's declaration by struct key and field name.
     pub(super) fields: HashMap<(String, String), Span>,
     /// Each variant's declaration by enum key and variant name.
@@ -191,6 +195,7 @@ pub fn check_partial(units: &[Unit]) -> Partial {
         definitions: checker.hover.definitions,
         signatures: checker.hover.signatures,
         missing_arms: checker.hover.missing_arms,
+        variants: checker.hover.unused_variants,
         diagnostics: checker.diagnostics,
     }
 }
@@ -410,6 +415,29 @@ fun main() {
         assert_eq!(target(&partial, "p.x +", "x"), decl("{ x: f64", "x"));
         assert_eq!(target(&partial, "P { x: 1.0", "x"), decl("{ x: f64", "x"));
     }
+    #[test]
+    fn an_unused_bindings_variants_are_recorded() {
+        let src = "enum Shape { Circle(f64), Dot, Empty }
+fun main() {
+    let o: Option<Shape> = None;
+    match o { Some(Emtpy) => {}, None => {} }
+    match 3 { n => {} }
+}
+";
+        let partial = test_util::partial(src);
+        let at = |needle: &str| {
+            let start = src.find(needle).expect("a binding");
+            partial
+                .variants
+                .get(&Span::new(start, start + 1))
+                .cloned()
+                .or_else(|| partial.variants.get(&Span::new(start, start + 5)).cloned())
+        };
+        assert_eq!(at("Emtpy").expect("recorded"), ["Circle", "Dot", "Empty"]);
+        // `n` matches an integer: no variants to offer.
+        assert_eq!(at("n =>"), None);
+    }
+
     #[test]
     fn missing_arms_are_recorded_in_full() {
         let src = "enum Shape { Circle(f64), Rect(f64, f64), Dot, Tri(f64), Hex }

@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 82 — More quick fixes ✅
+- [x] PRP-112: `let mut` (E0501), the closest variant (W0103), a std import (E0301); tagged `m82`
+
 ### Milestone 81 — Formatting in the editor ✅
 - [x] PRP-111: Format Document in `lughac lsp`; the extension the default Lugha formatter (0.4.0); tagged `m81`
 
@@ -409,10 +412,11 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [x] **Format Document and format on save** — milestone 81, PRP-111.
 - [ ] Format Selection (the statements or items a selection touches).
 - [ ] Formatter: break long binary chains and method chains; `fmt --check` in CI once the repo's own `.la` files are formatted (moves panic lines).
-- [ ] More quick fixes: remove an unused binding (W0103), add a missing import (E0312), `let mut` for E0405-style mutability errors.
+- [x] More quick fixes — milestone 82, PRP-112 (`let mut`, a misspelled variant, a std import).
+- [ ] Later quick fixes: did-you-mean for any undefined name (E0301), an import for a user module.
 - [ ] **Find References** and **Go to Implementations** — the definitions table read backwards; implementations of interface methods.
 - [ ] **A read-only view of bundled sources** (`std`, the prelude) for hover and definitions that land there.
-- [ ] **Go-to-definition** — the PRP after hover.
+- [x] **Go-to-definition** — milestone 72, PRP-102.
 - [ ] **Bundling** the extension (vsce warns about 231 files; needs a bundler such as esbuild as a dev dependency).
 - [ ] **Publishing** the extension to the Marketplace and Open VSX (publisher accounts, a token as a CI secret).
 

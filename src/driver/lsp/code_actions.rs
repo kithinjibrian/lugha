@@ -1,6 +1,7 @@
 //! Code actions (v16 draft decisions 56–58): on a non-exhaustive `match`
 //! (E0417), add every missing arm, or a `_` arm, each with the body
-//! `panic("not handled")`.
+//! `panic("not handled")`; and the fixes of `fixes.rs` for E0501, W0103
+//! and E0301 (milestone 82).
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -10,6 +11,7 @@ use lsp_types::{
     WorkspaceEdit,
 };
 
+use super::fixes;
 use super::hover::{Snapshot, byte_offset};
 use super::publish::{position, uri};
 
@@ -30,12 +32,27 @@ pub(super) fn answer(
     };
     let mut actions = Vec::new();
     for d in diagnostics {
-        if d.code != Some(NumberOrString::String("E0417".to_string())) {
+        let Some(NumberOrString::String(code)) = &d.code else {
             continue;
-        }
+        };
         let Some(start) = byte_offset(text, d.range.start) else {
             continue;
         };
+        if code != "E0417" {
+            let found = byte_offset(text, d.range.end)
+                .and_then(|end| fixes::fix(&snapshot.partial, code, base, text, (start, end)));
+            if let Some(fix) = found {
+                let edit = TextEdit {
+                    range: Range {
+                        start: position(text, fix.from),
+                        end: position(text, fix.to),
+                    },
+                    new_text: fix.new_text,
+                };
+                actions.push(action(&fix.title, d, &uri, edit, true));
+            }
+            continue;
+        }
         let Some((span, missing)) = snapshot
             .partial
             .missing_arms
@@ -63,20 +80,31 @@ pub(super) fn answer(
                 },
                 new_text,
             };
-            actions.push(CodeActionOrCommand::CodeAction(CodeAction {
-                title: title.to_string(),
-                kind: Some(CodeActionKind::QUICKFIX),
-                diagnostics: Some(vec![d.clone()]),
-                edit: Some(WorkspaceEdit {
-                    changes: Some(HashMap::from([(uri.clone(), vec![edit])])),
-                    ..WorkspaceEdit::default()
-                }),
-                is_preferred: Some(preferred),
-                ..CodeAction::default()
-            }));
+            actions.push(action(title, d, &uri, edit, preferred));
         }
     }
     actions
+}
+
+/// A quick fix titled `title` for `d`: one edit in the file at `uri`.
+fn action(
+    title: &str,
+    d: &Diagnostic,
+    uri: &lsp_types::Uri,
+    edit: TextEdit,
+    preferred: bool,
+) -> CodeActionOrCommand {
+    CodeActionOrCommand::CodeAction(CodeAction {
+        title: title.to_string(),
+        kind: Some(CodeActionKind::QUICKFIX),
+        diagnostics: Some(vec![d.clone()]),
+        edit: Some(WorkspaceEdit {
+            changes: Some(HashMap::from([(uri.clone(), vec![edit])])),
+            ..WorkspaceEdit::default()
+        }),
+        is_preferred: Some(preferred),
+        ..CodeAction::default()
+    })
 }
 
 /// The edit adding `arms` to the match at `match_start` (its scrutinee ends
