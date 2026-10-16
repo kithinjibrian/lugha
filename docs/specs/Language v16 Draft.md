@@ -239,6 +239,21 @@ Linking C libraries, the first step toward GUI programs (the user's choices: dec
 103. **Nothing runs while checking:** `lughac check` and the language server read and check `[link]` (E0321, E0322) but never start `pkg-config` or the C compiler.
 104. **Success:** milestone 87, tag `m87`. Tests: `tests/link_libs.rs` (a static library built by the test, a path package carrying `[link]`, a C file, a fake `pkg-config`, E0321/E0322/E0329–E0331, `check` starting nothing), unit tests for the table, the order and the flag filter; manually, the system zlib.
 
+## Decisions behind milestone 88 (discovery, session 187)
+
+Callbacks from C and handles for C objects, the second step toward GUI programs (the user's choices: named functions and closures, through `user_data` as Rust, Swift, Zig and Go do, never run-time code generation; a `data` marker the caller doesn't write; closures kept alive until exit unless C releases them; handle types in the same milestone).
+
+105. **`extern type Name;`** declares a handle type: an opaque C pointer (`GtkWidget*`), with the usual visibility. Each declaration is its own type. Handles go anywhere a type goes; `==`/`!=` compare addresses (they are `Eq`); nothing else applies — no order, arithmetic, casts, literals, fields or methods. They print as `<Name>`. Only C makes them: an extern's result, or a callback's parameter.
+106. **`Option<H>`** of a handle `H` may appear in extern signatures and callbacks: C's `NULL` is `None`, and `None` passes `NULL`. A plain `H` from C is assumed non-null.
+107. **A callback parameter** in an extern is written as a function type, `fun(T…): R`, and is a C function pointer. Its parameter and result types are extern types (numbers, `bool`, handles, `Option` of a handle), and one parameter may be written `data`: the `void *` user data C hands back. No strings, arrays, structs, enums or functions inside; no callback as a result or inside another callback (E0409).
+108. **`data` and `release` parameters:** an extern parameter written `data` receives the user data, and one written `release` a function `void (*)(void *)` that C calls when it drops the callback. Callers write neither; lughac fills them. An extern has a `data` parameter exactly when one of its callbacks has `data`, at most one of each, and `release` only with `data`; `data` and `release` mean nothing outside extern signatures (E0435).
+109. **Arguments:** a callback's argument is a function value of the callback's type without `data`. Where the callback has no `data`, it must be a non-generic function's name or a closure literal that captures nothing, since C keeps no captures (E0436). Where it has `data`, any function value.
+110. **Renamed externs:** `extern "symbol" fun name(…)` declares the C function `symbol` under the Lugha name `name`, so one C function can be declared several times with different callback types (GTK's `g_signal_connect_data`). E0306 compares declarations by their Lugha names; `symbol` must be a C identifier not starting with `lugha_`.
+111. **Lifetimes:** a closure passed to C is copied into memory Boehm scans but never collects, so it and its captures stay alive while C may call it: until the program exits, or until C calls the `release` function. Calling a callback after releasing it, or releasing it twice, is C's error.
+112. **Threads and panics:** C must call a callback on the thread that registered it (calling it from another thread is undefined). A panic inside a callback ends the program as anywhere else.
+113. **No `unsafe`:** the `extern` declaration stays the one place a program vouches for C (§7 "Safety"); a wrong callback type is undefined behavior, as a wrong extern signature already is.
+114. **Success:** milestone 88, tag `m88`. Tests: `tests/callbacks.rs` (C files through `[link]`: handles, `NULL`, named functions, closures kept across collections, `release`, renamed externs, E0409/E0435/E0436), unit tests; byte-identical IR for programs without them; manually, a GTK 4 window counting clicks.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -287,6 +302,7 @@ Linking C libraries, the first step toward GUI programs (the user's choices: dec
 | 85 | Tests in the editor | `lughac test --list`/`--json`/`--exact`; VS Code's Testing view and gutter; never in untrusted folders |
 | 86 | `lughac explain` | an explanation for every code, examples checked; the hint after diagnostics; code links in the editor |
 | 87 | Linking C libraries | `[link]` in `lugha.toml`: `libs`, `paths`, `include`, `c`, `pkg-config`; every used package's table; E0329–E0331 |
+| 88 | Callbacks and handles | `extern type`; functions and closures passed to C (`data`, `release`); `extern "symbol" fun`; E0435, E0436 |
 
 ## §12 Open questions — additions
 
