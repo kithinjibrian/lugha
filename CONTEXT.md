@@ -7679,3 +7679,11 @@ Branch: fix-fmt-arm-comma
 
 ### STILL OPEN AT CLOSE
 - The user's go on discovery for kivuli quirks 2–8.
+
+---
+
+## SESSION 219 — 2026-10-17 — Discovery: kivuli's lughac quirks 2–8 — open
+Branch: main
+
+### WHAT WAS DONE
+- In progress: the user ("let's fix the rest") — discovery for formatter hugging (2), inference from sibling arguments (3), and packages/testing (4–8), as three PRPs.
