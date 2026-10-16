@@ -22,6 +22,7 @@ use super::code_actions;
 use super::completion;
 use super::definition;
 use super::documents::{Documents, uri_to_path};
+use super::formatting;
 use super::hover::{self, Snapshot};
 use super::publish::{self, Store};
 use super::signature;
@@ -235,6 +236,18 @@ impl Server {
             })
             .unwrap_or_default();
         (actions, out)
+    }
+
+    /// Formats the open document at `uri` (milestone 81): its file name
+    /// and the result, or `None` for a document the server doesn't hold.
+    pub(super) fn formatting(&self, uri: &str) -> Option<(String, formatting::Formatted)> {
+        let file = uri_to_path(uri)?;
+        let text = self.docs.text(&file)?;
+        let name = file.file_name().map_or_else(
+            || file.display().to_string(),
+            |n| n.to_string_lossy().into_owned(),
+        );
+        Some((name, formatting::format(text)))
     }
 
     /// Answers Go to Definition, as fresh as a hover (decision 26).

@@ -1929,11 +1929,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned in `src/formatter/`: `doc.rs` (a hand-written Wadler-style document printer: groups flat when they fit in 100 columns, else broken; a hard line breaks every enclosing group; a list whose last element spans lines hugs its delimiters, `f(a, fun(x) {` … `})`), `items.rs`, `stmts.rs`, `exprs.rs`, `leaves.rs` (types, patterns, parameters), `comments.rs` (sequences: leading, trailing and dangling comments; an element with a comment no sequence placed falls back to its source text, re-indented), `verify.rs`. Literals, names and interpolated strings are copied from their spans (so `0xFF`, `Self` and escapes survive); parentheses come from precedence, plus `(fun(): T)[]`, `(x as T) < y`, struct literals in conditions, and block-likes the user parenthesised as operands. `for (i, w) of` is recognised from the parser's hidden `$item<offset>` binding, and verification ignores those offsets. Blocks, structs and enums are always multi-line; binary chains never break (a known limit). `lexer::comments` is the lexer's own scan. `lughac fmt [paths…] [--check]` (`driver/fmt.rs`): folders sorted, hidden ones and `target/` skipped, symlinks never followed, unchanged files not rewritten, temp file + rename keeping permissions. The repo's own `.la` files are not reformatted (it would move panic lines).
 
+### 155. Formatting in the editor planned (session 170, approved session 171)
+
+**Decision:** v16 draft decisions 66–70: Format Document only (no range or on-type); format-on-save left to the user, the extension only the default Lugha formatter; syntax errors quiet, a verification failure one error message (the user's choices).
+
+### 156. Formatting in the editor — milestone 81 (PRP-111)
+
+**Decision:** built as planned: `driver/lsp/formatting.rs` (`Formatted`: `Edits` / `Unchanged` / `Failed`; the formatter run under `catch_unwind`, so a panic is a `Failed` too; `reply` builds the response and the `window/showMessage`), answered in `mod.rs` before the other requests from the open document's text (`Server::formatting`, no check needed); one whole-document edit, which VS Code reduces to the changed lines. Extension 0.4.0: `configurationDefaults` `[lugha].editor.defaultFormatter = kithinjibrian.lugha`, README "Formatting" and manual step 14; no TypeScript change.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 81 complete**: PRP-111 formatting in the editor, VS Code extension 0.4.0
 - **Milestone 80 complete**: PRP-110 `lughac fmt`
 - **Milestone 79 complete**: PRP-109 the add-missing-arms quick fix
 - **Milestone 78 complete**: PRP-108 snippets

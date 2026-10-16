@@ -12,6 +12,7 @@ mod completion;
 mod definition;
 mod docs;
 mod documents;
+mod formatting;
 mod hover;
 mod publish;
 mod server;
@@ -25,11 +26,11 @@ use std::time::{Duration, Instant};
 use lsp_server::{Connection, ErrorCode, Message, ProtocolError, Response};
 use lsp_types::{
     CodeActionKind, CodeActionOptions, CodeActionParams, CodeActionProviderCapability,
-    CompletionOptions, CompletionParams, CompletionResponse, GotoDefinitionParams,
-    GotoDefinitionResponse, HoverParams, HoverProviderCapability, InitializeParams, OneOf,
-    PositionEncodingKind, SaveOptions, ServerCapabilities, ServerInfo, SignatureHelpOptions,
-    SignatureHelpParams, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-    TextDocumentSyncSaveOptions,
+    CompletionOptions, CompletionParams, CompletionResponse, DocumentFormattingParams,
+    GotoDefinitionParams, GotoDefinitionResponse, HoverParams, HoverProviderCapability,
+    InitializeParams, OneOf, PositionEncodingKind, SaveOptions, ServerCapabilities, ServerInfo,
+    SignatureHelpOptions, SignatureHelpParams, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
 };
 use thiserror::Error;
 
@@ -92,6 +93,26 @@ fn run(connection: &Connection) -> Result<u8, LspError> {
             Ok(Message::Request(request)) => {
                 if connection.handle_shutdown(&request)? {
                     return Ok(0);
+                }
+                if request.method == "textDocument/formatting" {
+                    let reply =
+                        match serde_json::from_value::<DocumentFormattingParams>(request.params) {
+                            Ok(params) => {
+                                let found = server.formatting(params.text_document.uri.as_str());
+                                let name = found.as_ref().map_or(String::new(), |(n, _)| n.clone());
+                                formatting::reply(request.id, &name, found.map(|(_, f)| f))
+                            }
+                            Err(error) => vec![
+                                Response::new_err(
+                                    request.id,
+                                    ErrorCode::InvalidParams as i32,
+                                    error.to_string(),
+                                )
+                                .into(),
+                            ],
+                        };
+                    send(connection, reply)?;
+                    continue;
                 }
                 let reply = match request.method.as_str() {
                     "textDocument/hover" => {
@@ -204,6 +225,7 @@ fn capabilities() -> ServerCapabilities {
         position_encoding: Some(PositionEncodingKind::UTF16),
         hover_provider: Some(HoverProviderCapability::Simple(true)),
         definition_provider: Some(OneOf::Left(true)),
+        document_formatting_provider: Some(OneOf::Left(true)),
         code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
             code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
             ..CodeActionOptions::default()
