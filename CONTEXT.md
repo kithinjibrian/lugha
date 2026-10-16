@@ -6840,11 +6840,27 @@ Branch: prp-117-linking_c_libraries
 
 ---
 
-## SESSION 186 — 2026-10-16 — Clearer `[link]` list messages — open
+## SESSION 186 — 2026-10-16 — Clearer `[link]` list messages — closed
 Branch: link-messages
 
 ### WHAT WAS DONE
-- In progress: the user hit E0321 on `libs = ["z]` (an unclosed string) and asked for a clearer message.
+- The user hit E0321 with an old installed `lughac` (from before milestone 87, so `[link]` was unknown) and a typo, `libs = ["z]`; they asked for a clearer message.
+- `link_table::strings` now names the mistake: an unclosed string (`` `"z` in `libs` is missing its closing `"`: write `"z"` ``), a missing `]`, an unquoted item, a `\` in a path. Code and E0321 unchanged; no PRP (a message fix).
+
+### FILES CREATED OR MODIFIED
+- Modified: `src/modules/link_table.rs`, CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- `list_mistakes_say_exactly_what_is_missing` (exact messages); three expectations in `bad_lines_are_refused_with_a_reason` updated. Full suite (932), fmt, clippy pass.
+
+### DECISIONS MADE
+- None.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's installed `lughac` (`~/.cargo/bin`, 15:43) predates `[link]`: reinstall with `cargo install --path .`.
 
 ---
 

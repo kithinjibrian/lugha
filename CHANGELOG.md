@@ -18,6 +18,7 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Fixed
+- `[link]` list mistakes say exactly what's wrong: `` `"z` in `libs` is missing its closing `"`: write `"z"` ``, a missing `]`, an unquoted item (`` write `"raylib"` ``), a `\` in a path; before, all four were one generic message (session 186)
 - `lughac build`/`run`/`test` place the prelude after every loaded file, `lugha.toml` included, as the language server does: a diagnostic in a manifest found after checking (the new link codes) was otherwise shown in `<prelude>` (milestone 87)
 - The language server published a `lugha.toml` error (E0325) to nothing once a program with loader errors was checked: the prelude's offsets overlapped the manifests'. The server now places the prelude after every loaded file (`modules::with_prelude_at`); the CLI never checked such programs and is unchanged
 
