@@ -6840,6 +6840,14 @@ Branch: prp-117-linking_c_libraries
 
 ---
 
+## SESSION 186 — 2026-10-16 — Clearer `[link]` list messages — open
+Branch: link-messages
+
+### WHAT WAS DONE
+- In progress: the user hit E0321 on `libs = ["z]` (an unclosed string) and asked for a clearer message.
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–87 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries).
