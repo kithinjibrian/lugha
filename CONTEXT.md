@@ -6919,6 +6919,14 @@ Branch: prp-118-callbacks_handles
 
 ---
 
+## SESSION 189 — 2026-10-16 — Discovery: the rest of the GUI work — open
+Branch: main
+
+### WHAT WAS DONE
+- In progress: the user asked for the remaining GUI work (strings into callbacks, C structs by value, a GTK binding package); planning the order and running discoveries.
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–88 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles).
