@@ -2,18 +2,19 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–95 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–96 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–95):
+**Changes since v16** (milestones 91–96):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
 - `lughac fmt` hugs a call's trailing array or struct literal (`column([` … `])`) and keeps a function's header whole while its body breaks (milestone 95; section 9).
+- A generic call only its result can type takes its type from its siblings: `assert_eq(text("hi"), expected)`, `text("hi") == expected` (milestone 96; section 4).
 
 Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select` or `actor` as a name (keywords now). A module's own `Task` or `Chan` still means its own, as for `Ref`.
 
@@ -639,7 +640,7 @@ let e: f64 = 5;       // error: integer literal where f64 expected
 
 Equality costs time proportional to the values compared. `f64` keeps IEEE semantics, so a `NaN` anywhere makes the values unequal, even a value compared with itself.
 
-**Operand types.** In `==`, `!=` and the comparisons, an operand that can't be typed on its own (a number literal, `None`, `[]`, or a list or `Some` around one) takes its type from the other operand, whichever side it is on. So `o == None`, `None == o` and `xs == []` work. If neither side can be typed alone (`None == None`), it is E0412. A number literal never takes a non-numeric type this way: `"a" == 1` is E0404.
+**Operand types.** In `==`, `!=` and the comparisons, an operand that can't be typed on its own (a number literal, `None`, `[]`, or a list or `Some` around one, and (v17, milestone 96) a call of a generic function whose type parameters appear only in its result, `text<M>(s): View<M>`) takes its type from the other operand, whichever side it is on. `assert_eq` and `assert_ne` (v16) type their two operands the same way. So `o == None`, `None == o` and `xs == []` work. If neither side can be typed alone (`None == None`), it is E0412. A number literal never takes a non-numeric type this way: `"a" == 1` is E0404.
 
 **Characters** (v14). A `char` literal is one character between single quotes, `'a'`, `'é'`, `'😀'`, or an escape: `'\n'`, `'\t'`, `'\r'`, `'\0'`, `'\\'`, `'\''`, `'\"'`, `'\u{1F600}'` (one to six hex digits naming a scalar value). Anything else is E0112.
 - **Comparison:** `==` and `<` compare code points, so `char` is `Ord`. There is no arithmetic (E0404).
@@ -732,7 +733,7 @@ Strings are bytes: every position is a byte offset, and `slice` can cut a multi-
 
 **Using a generic.**
 - **Type arguments:** a generic type is written with all its arguments in type positions: `Stack<i64>`, `Option<Vec2>`, `Pair<string, f64>`. A wrong count, or a bare `Stack` in a type position, is E0418.
-- **Inference:** at a call, a struct literal, a variant or an associated function, the type arguments are inferred, never written. They come first from the expected type, then from the arguments that can be typed alone, then from the ones that can't (number literals, `None`, `[]`), so `max(x, 3)` with `x: u8` makes `3` a `u8`. A method's `impl` parameters come from its receiver: `s.push(1)` on a `Stack<string>` is E0401.
+- **Inference:** at a call, a struct literal, a variant or an associated function, the type arguments are inferred, never written. They come first from the expected type, then from the arguments that can be typed alone, then from the ones that can't (number literals, `None`, `[]`, and (v17) calls only their result can type), so `max(x, 3)` with `x: u8` makes `3` a `u8` and `pair(text("a"), v)` with `v: View<Msg>` makes `text`'s `M` a `Msg`. A method's `impl` parameters come from its receiver: `s.push(1)` on a `Stack<string>` is E0401.
 - **Can't infer:** a parameter still undecided is E0412, with help to annotate: `let s: Stack<i64> = Stack.new();`.
 - **Bounds at a use:** a type argument that doesn't satisfy its bound is E0419. For example, `largest([[1]])` fails because `i64[]` is not `Ord`. Every type is `Eq`, so only `Ord` can fail: it holds for the numbers, `string`, `char`, tuples of `Ord` elements, type parameters declared `Ord`, and (v15) a struct or enum with `cmp`, below.
 - **User-defined order** (v15, milestone 59): a struct or enum whose `impl` has exactly `fun cmp(self, other: Self): Ordering`, returning the prelude's `enum Ordering { Less, Equal, Greater }`, is `Ord`. `a < b` is `a.cmp(b) == Ordering.Less`, `a <= b` is `!= Greater`, `a > b` is `== Greater` and `a >= b` is `!= Less`; a generic type's `cmp` counts where its `impl`'s bounds hold. A `cmp` of another shape (a `mut self`, another parameter or result type) doesn't make a type `Ord`: `<` is E0404 and a bound E0419, each with help naming the shape. `==` stays structural and never calls `cmp`, and `Ord` still doesn't imply `Eq`. The numbers, `string` and `char` keep their built-in order and have no `cmp` method. `Ordering`'s variants are written `Ordering.Less`, like any enum's; a module's own `Ordering` means its own, and the prelude's prints as `$prelude.Ordering` in messages.
@@ -3586,6 +3587,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 93 | Struct update syntax (v17) | `S { f: e, ..base }`: Rust's rules; E0440, W0104 | `tests/programs/m93` (done) |
 | 94 | Variants as functions (v17) | `Msg.Named`, `Some`, `Ok`, `Err` as function values; generic ones typed by what's expected | `tests/programs/m94` (done) |
 | 95 | Formatter hugging (v17) | a call's trailing array or struct literal hugs; headers kept whole | `src/formatter/tests.rs` (done) |
+| 96 | Inference from siblings (v17) | result-only generic calls typed by their siblings; `assert_eq`/`assert_ne`, `==`/`!=` | `tests/programs/m96` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

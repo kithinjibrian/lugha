@@ -1,6 +1,6 @@
 ## FEATURE: Inference from sibling arguments — a generic call whose type arguments only its result decides (`text<M>("hi"): View<M>`) takes them from what the other arguments fix (`assert_eq(text("hi"), expected)`); milestone 96 (v17).
 
-**Status:** approved 2026-10-17 ("approved all and build in one go", session 220); proposed in session 219, with PRP-126 and PRP-128.
+**Status:** built in session 221; approved 2026-10-17 ("approved all and build in one go", session 220); proposed in session 219, with PRP-126 and PRP-128.
 **Milestone:** 96 (tag `m96` at merge).
 **Spec:** `Language v17 Draft.md` decisions 39–42; v17 spec §4 (type inference), §11 (row 96).
 
@@ -57,3 +57,9 @@ fun buttons_send_their_message() {
 
 ## VALIDATION
 - `cargo test --lib`, `cargo test --test programs`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`
+
+## BUILT (session 221)
+- As planned: `check/siblings.rs` (`waits`, `result_only_call`), used by `infer`, `ops::operands` and `assertion`.
+- Not covered: associated functions (`T.f(…)`) — only plain and module functions are recognised; noted for later if kivuli needs it.
+- `assert_eq` now also types a literal first operand from the second (`assert_eq(3, x)`), and `assert_eq(1, "a")` reports E0401 at `1` (was E0403 at `"a"`), matching `1 == "a"`.
+- Tests: `check/siblings.rs` (5), one updated assertion test, `tests/programs/m96/siblings.la`. Targeted: `--lib`, `--test programs`, `--test test_runner`, fmt, clippy. Full suite not run (the user).

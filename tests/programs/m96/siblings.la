@@ -1,0 +1,25 @@
+// Inference from siblings (v17, milestone 96): a call that only its result
+// can type takes the type its siblings fix — kivuli's `text("hi")` compared
+// with a `View<Msg>`.
+enum View<M> { Text(string), Button(string, M) }
+
+enum Msg { Go, Stop }
+
+fun text<M>(s: string): View<M> = View.Text(s);
+
+fun button<M>(label: string, on: M): View<M> = View.Button(label, on);
+
+fun pair<A>(a: A, b: A): A[] = [a, b];
+
+fun main() {
+    let expected: View<Msg> = View.Text("hi");
+    assert_eq(text("hi"), expected);
+    assert_eq(expected, text("hi"));
+    assert_ne(text("ho"), expected);
+    println(text("hi") == expected);
+    println(expected != text("hi"));
+    println(pair(text("a"), button("b", Msg.Go)));
+    let x: u8 = 3;
+    assert_eq(3, x);
+    println("ok");
+}

@@ -59,8 +59,14 @@ impl Checker {
             self.expect_type(&args[0], &Expect::of(Type::Bool));
             return Type::Void;
         }
-        let ty = self.value(&args[0], None);
-        self.expect_type(&args[1], &Expect::of(ty.clone()));
+        // The side that can't be typed alone (a literal, a call only its
+        // result types) takes the other side's type (v17).
+        let (first, second) = match self.waits(&args[0]) && !self.waits(&args[1]) {
+            true => (&args[1], &args[0]),
+            false => (&args[0], &args[1]),
+        };
+        let ty = self.value(first, None);
+        self.expect_type(second, &Expect::of(ty.clone()));
         if matches!(ty, Type::Error | Type::Never) {
             return Type::Void;
         }
@@ -112,7 +118,8 @@ mod tests {
         ));
         ok(&wrap("let x: u8 = 3; assert_eq(x, 3);"));
         assert_eq!(errors(&wrap("assert(1);")), [("E0401", "1")]);
-        assert_eq!(errors(&wrap("assert_eq(1, \"a\");")), [("E0403", "\"a\"")]);
+        // The literal takes the other side's type, as in `1 == "a"` (v17).
+        assert_eq!(errors(&wrap("assert_eq(1, \"a\");")), [("E0401", "1")]);
         assert_eq!(errors(&wrap("assert_eq(1);"))[0].0, "E0405");
         let boxes = wrap("let r = Ref.new(1); assert_eq(r, r);");
         assert_eq!(errors(&boxes)[0].0, "E0404");

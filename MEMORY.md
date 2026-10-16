@@ -2028,11 +2028,17 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned (the user: "approved all and build in one go. no full tests"). `doc.rs` gained `Hug(normal, hugged)` (Prettier's conditional group: flat if it fits, else the hugged form if its first line fits, else broken), `Broken` (a group forced broken) and `Huggable` (marks arrays and struct literals); `call_args` builds the two forms for a call whose last argument is huggable. **`fits` now measures what follows a doc with its groups as broken** (Prettier's rule), so a header stays whole while its body breaks — this changed nothing in the corpus beyond hugging. Closures already hugged (a last element with a hard break). kivuli's `view` formats as `column([` … `])`.
 
+
+### 179. Inference from siblings — milestone 96 (PRP-127)
+
+**Decision:** built as planned. `check/siblings.rs`: `waits(e)` = `defers(e)` or a call (`f(…)`, `m.f(…)`) of a generic function with a type parameter only its result mentions (key found silently: `module_path` + `qualify` + `follow`, never reporting). Used in `infer` (such arguments go with the literals, checked against what siblings fixed), `ops::operands` (the swap for `==`/`!=`), and `assertion` (`assert_eq`/`assert_ne` check the waiting side second). Associated functions (`View.text(…)`) aren't covered (they aren't in `functions`). One expectation moved: `assert_eq(1, "a")` is now E0401 at `1`, as `1 == "a"` is.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 96 complete**: PRP-127 inference from siblings
 - **Milestone 95 complete**: PRP-126 formatter hugging
 - **Milestone 94 complete**: PRP-125 variants as function values
 - **Milestone 93 complete**: PRP-124 struct update syntax
