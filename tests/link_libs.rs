@@ -192,6 +192,27 @@ fn pkg_config_flags_link_the_library() {
 }
 
 #[test]
+fn c_files_build_with_gtks_sse_cflags_v17() {
+    let t = Temp::with(&[
+        (
+            "main.la",
+            "extern fun shim_twice(x: i64): i64;\nfun main() { println(shim_twice(21)); }\n",
+        ),
+        (
+            "lugha.toml",
+            "[link]\nc = [\"shim.c\"]\npkg-config = [\"gtkish\"]\n",
+        ),
+        ("shim.c", "long shim_twice(long x) { return 2 * x; }\n"),
+    ]);
+    let fake = t.script(
+        "fake-pkg-config",
+        "[ \"$1\" = --cflags ] && echo \"-mfpmath=sse -msse -msse2 -pthread\" && exit 0\n\
+         [ \"$1\" = --libs ] && echo \"-pthread\" && exit 0\nexit 1",
+    );
+    ran(&t.lughac(&["run", "main.la"], Some(&fake)), "42\n");
+}
+
+#[test]
 fn pkg_config_problems_are_e0329() {
     let t = Temp::with(&[
         ("main.la", ADD),

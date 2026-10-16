@@ -94,7 +94,7 @@ impl Plan {
                     Flag::Lib(name) => plan.add_lib(&name),
                     Flag::Pthread => plan.pthread = true,
                     // `flags` keeps only the three above for `--libs`.
-                    Flag::Include(_) | Flag::Define(_) => {}
+                    Flag::Include(_) | Flag::Define(_) | Flag::X86_64(_) => {}
                 }
             }
             let mut flags: Vec<OsString> = table

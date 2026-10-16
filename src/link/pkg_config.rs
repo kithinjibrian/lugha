@@ -1,8 +1,9 @@
 //! Running the system `pkg-config` for a `[link]` table's `pkg-config`
 //! names (v16, milestone 87, PRP-117), and keeping only the flags lughac
-//! passes on: `-l`, `-L` and `-pthread` from `--libs`; `-I`, `-D` and
-//! `-pthread` from `--cflags`. Anything else is refused, never dropped, so
-//! a package can't slip linker or compiler options into a build.
+//! passes on: `-l`, `-L` and `-pthread` from `--libs`; `-I`, `-D`,
+//! `-pthread` and [`X86_64_DEFAULTS`] from `--cflags`. Anything else is
+//! refused, never dropped, so a package can't slip linker or compiler
+//! options into a build.
 //!
 //! The program is `$PKG_CONFIG` when set (the usual convention, and how the
 //! tests substitute a fake), else `pkg-config` on `PATH`; it runs from an
@@ -12,6 +13,12 @@
 use std::ffi::OsString;
 use std::io;
 use std::process::Command;
+
+/// The `-m` flags `--cflags` may give, exactly (v17, PRP-129): GTK's on
+/// x86-64. They select what x86-64 System V, Lugha's only target, already
+/// has (SSE2 is its baseline, SSE its floating point), so they change
+/// nothing; every other `-m` flag can change the ABI and stays refused.
+pub const X86_64_DEFAULTS: [&str; 3] = ["-mfpmath=sse", "-msse", "-msse2"];
 
 /// Which flags are asked for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,6 +42,8 @@ pub enum Flag {
     Define(String),
     /// `-pthread`.
     Pthread,
+    /// One of [`X86_64_DEFAULTS`], from `--cflags` (v17).
+    X86_64(&'static str),
 }
 
 impl Flag {
@@ -46,6 +55,7 @@ impl Flag {
             Flag::Include(folder) => format!("-I{folder}"),
             Flag::Define(text) => format!("-D{text}"),
             Flag::Pthread => "-pthread".to_string(),
+            Flag::X86_64(flag) => flag.to_string(),
         }
     }
 }
@@ -63,12 +73,18 @@ pub fn flags(out: &str, query: Query) -> Result<Vec<Flag>, String> {
                     .or_else(|| after("-L").map(|f| Flag::Search(f.into()))),
                 Query::Cflags => after("-I")
                     .map(|f| Flag::Include(f.into()))
-                    .or_else(|| after("-D").map(|d| Flag::Define(d.into()))),
+                    .or_else(|| after("-D").map(|d| Flag::Define(d.into())))
+                    .or_else(|| {
+                        let known = X86_64_DEFAULTS.iter().find(|f| **f == token);
+                        known.map(|f| Flag::X86_64(f))
+                    }),
             };
             flag.ok_or_else(|| {
                 let allowed = match query {
                     Query::Libs => "`-l`, `-L` and `-pthread` from `--libs`",
-                    Query::Cflags => "`-I`, `-D` and `-pthread` from `--cflags`",
+                    Query::Cflags => {
+                        "`-I`, `-D`, `-pthread`, `-mfpmath=sse`, `-msse` and `-msse2` from `--cflags`"
+                    }
                 };
                 format!("pkg-config gave `{token}`, which lughac doesn't pass on; it keeps only {allowed}")
             })
@@ -148,6 +164,22 @@ mod tests {
     }
 
     #[test]
+    fn cflags_keep_gtks_x86_64_defaults_v17() {
+        let out = "-I/usr/include/gtk-4.0 -mfpmath=sse -msse -msse2 -pthread\n";
+        assert_eq!(
+            flags(out, Query::Cflags).unwrap(),
+            [
+                Flag::Include("/usr/include/gtk-4.0".into()),
+                Flag::X86_64("-mfpmath=sse"),
+                Flag::X86_64("-msse"),
+                Flag::X86_64("-msse2"),
+                Flag::Pthread,
+            ]
+        );
+        assert_eq!(Flag::X86_64("-msse2").arg(), "-msse2");
+    }
+
+    #[test]
     fn anything_else_is_refused_by_name() {
         for (out, query, bad) in [
             ("-lx -Wl,-rpath,/x", Query::Libs, "-Wl,-rpath,/x"),
@@ -156,7 +188,11 @@ mod tests {
             ("-I/x", Query::Libs, "-I/x"),
             ("-lx", Query::Cflags, "-lx"),
             ("-l", Query::Libs, "-l"),
-            ("-msse2", Query::Cflags, "-msse2"),
+            ("-m32", Query::Cflags, "-m32"),
+            ("-march=native", Query::Cflags, "-march=native"),
+            ("-mno-red-zone", Query::Cflags, "-mno-red-zone"),
+            ("-msse3", Query::Cflags, "-msse3"),
+            ("-msse2", Query::Libs, "-msse2"),
         ] {
             let err = flags(out, query).expect_err(out);
             assert!(err.contains(&format!("`{bad}`")), "{out}: {err}");

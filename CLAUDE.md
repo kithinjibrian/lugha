@@ -161,7 +161,7 @@ Run fmt, clippy and the targeted tests (see TESTING RULE) after every non-trivia
 - `inkwell` 0.10, feature `llvm21-1-prefer-dynamic` + LLVM 21 (`llvm-21-dev`) — codegen. Never use another LLVM major; never switch to static LLVM linking (fails on Ubuntu, see DECISION-005).
 - C (`lugha_rt.c`, kept as three fragments in `runtime/`) — the runtime linked into every compiled program.
 - Boehm GC (`libgc`), `libc`, `libm` — linked into every compiled program via the system `cc`.
-- `[link]` tables (v16, PRP-117) add C libraries, folders, C files (each compiled alone with `cc -c`) and `pkg-config` flags (`$PKG_CONFIG` or `pkg-config`, output filtered to `-l`/`-L`/`-I`/`-D`/`-pthread`) — only at build time (`build`/`run`/`test`), never in `check` or `lsp`; all through `src/link/`.
+- `[link]` tables (v16, PRP-117) add C libraries, folders, C files (each compiled alone with `cc -c`) and `pkg-config` flags (`$PKG_CONFIG` or `pkg-config`, output filtered to `-l`/`-L`/`-I`/`-D`/`-pthread`, and from `--cflags` exactly `-mfpmath=sse`/`-msse`/`-msse2`, PRP-129) — only at build time (`build`/`run`/`test`), never in `check` or `lsp`; all through `src/link/`.
 - `codespan-reporting` (ASCII chars) — human diagnostics. `clap` (derive) — CLI. `thiserror` — internal errors.
 - `lsp-server` + `lsp-types` + `serde_json` — `lughac lsp` only (PRP-100): rust-analyzer's synchronous stdio loop and typed protocol structures; no async runtime. Nothing else in lughac uses them.
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.

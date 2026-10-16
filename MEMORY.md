@@ -2039,6 +2039,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Consequences:** `lughac check src/main.la` with `import N.x` inside its own package is E0312 (as in any package module); E0303's program case moved to `tests/cli.rs` because the runner checks rejected programs with `check`.
 
+### 181. pkg-config's SSE flags (PRP-129)
+
+**Decision:** the user approved (security decision, session 223) accepting exactly `-mfpmath=sse`, `-msse`, `-msse2` from `pkg-config --cflags` (`X86_64_DEFAULTS`, `Flag::X86_64`), rather than dropping unrecognised `-m…` flags. They restate x86-64 System V defaults; every other `-m…` flag, and these from `--libs`, stay refused (E0329). Found by the kivuli/lugha-gtk session: C shims plus GTK failed.
+
 ---
 
 ## CURRENT PROJECT STATE
