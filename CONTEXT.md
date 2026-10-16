@@ -6785,6 +6785,14 @@ Branch: prp-116-explain
 
 ---
 
+## SESSION 184 — 2026-10-16 — Discovery: linking C libraries — open
+Branch: main
+
+### WHAT WAS DONE
+- In progress: discovery interview for linking programs against any C library (the first step toward GUI apps).
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–86 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`).
