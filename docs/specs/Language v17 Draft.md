@@ -1,13 +1,13 @@
 # Lugha v17 — Draft (delta against v16)
 
-**Status:** milestone 91 (green threads) approved in session 201 (proposed in session 200, after discovery in sessions 195–200), and built.
+**Status:** milestone 91 (green threads) approved in session 201 (proposed in session 200, after discovery in sessions 195–200), and built. Milestone 92 (actors) proposed in session 213, after discussion in sessions 207–212. Not approved.
 **Base:** `Language v16 Specification.md` (milestones 67–90), frozen when milestone 91 started. `Language v17 Specification.md` starts from it and grows milestone by milestone; it is what `lughac spec` prints.
 
 **Theme:** concurrency without async/await. Every function stays an ordinary function: a green thread pauses only where it waits (`join`, a channel, `select`, `sleep`), and the scheduler preempts long loops on its own, so nothing is marked `async` and nothing is awaited: no function colouring. Milestone 91 brings green threads and channels. Actors, which build on them (a green thread owning a channel as its mailbox), follow in a later v17 milestone.
 
 This draft lists only what changes, in the order of the v16 sections. Everything not mentioned keeps its v16 meaning.
 
-**Compatibility.** Every valid v16 program stays valid unless it uses `spawn` or `select` as a name (keywords now). A module's own `Task` or `Chan` still means its own, as for `Ref`. `after` and `default` are keywords only at the start of a `select` arm.
+**Compatibility.** Every valid v16 program stays valid unless it uses `spawn`, `select` or (from milestone 92) `actor` as a name (keywords now). A module's own `Task` or `Chan` still means its own, as for `Ref`. `after` and `default` are keywords only at the start of a `select` arm.
 
 ## Decisions behind milestone 91 (discovery, sessions 195–200)
 
@@ -54,6 +54,33 @@ Decided by me, for review:
 12. **C and green threads:** an extern called from a green thread runs on that thread's stack (1 MiB). A callback C calls runs in the green thread that called into C; it may spawn and use channels like any code. The v16 rule stands: a callback is called on the OS thread that registered it, which is now always the one thread.
 13. **`spawn` of a `mut self` method call** (`spawn xs.push(1)`, `spawn p.move_by(1)`) or of `push`/`pop`/`clear`/`swap` is E0438: the change would happen to a copy nobody sees.
 
+## Decisions behind milestone 92 (discussion, sessions 207–212)
+
+The user's choices:
+
+14. **An `actor` declaration**, not a library of channels and message enums: the compiler writes the mailbox, the message loop and the reply plumbing.
+    ```
+    public actor Counter {
+        count: i64,
+        fun new(start: i64): Self = Self { count: start };
+        fun add(mut self, n: i64) { self.count += n; }
+        fun get(self): i64 = self.count;
+    }
+    ```
+    Fields and methods are declared together in the actor's body. An actor runs on its own green thread and handles its messages one at a time, so its state is never touched by two calls at once.
+15. **Calls:** calling a method on a handle sends a message. A method that returns a value makes the caller wait for the reply, a copy of the result; a method that returns nothing is queued and the caller goes on (Erlang's call and cast). Messages from one caller are handled in the order sent; from several, in the order they arrive. Two actors waiting on each other is the existing deadlock panic.
+16. **Stopping:** every handle has a built-in `stop()`, a message like any other: what is queued before it is still handled, then the actor ends. `join(): Option<string>` waits until the actor has ended. Calling a method on an ended actor panics in the caller (`actor `Counter` has stopped`). When `main` returns, every actor ends.
+17. **Panics stay in the actor:** a panic inside an actor's method prints its message and ends only that actor. A caller waiting for a reply, and any later value-returning call, panics in the caller (`actor `Counter` panicked`); later void calls panic the same way. `join()` gives `None` for an actor that stopped, `Some(message)` for one that panicked, so a supervisor can be written by hand. Plain `spawn f()` threads keep decision 4: a panic there ends the program.
+18. **Actors share nothing:** a `Ref`, or any type that holds or may hold one, in an actor's fields, method parameters or method results is E0439. Function values (a closure may have captured a `Ref`) and interface values (the value inside may hold one) count as holding one. Channels and actor handles may cross, since they are messaging. This keeps a later multi-core step free of data races.
+
+Mine, approved by the user (session 212):
+
+19. **Starting:** `spawn Counter { count: 0 }` or `spawn Counter.new(10)` (an associated function returning `Self`) starts an actor and gives its handle. An actor's state is never a value outside its actor: a literal or `Self`-returning associated call of an actor type anywhere but right after `spawn` is E0439.
+20. **The handle's type is the actor's name:** outside the actor, `Counter` means the handle (`fun log(c: Counter)`, `Counter[]`). Handles are shared like channels, aren't `Eq` (`a.is(b)` compares them) and print as `<actor Counter>`. Inside the actor's methods, `self` is the state and `self.helper()` an ordinary call.
+21. **Private fields:** reading or assigning an actor's field from outside is E0439; methods are the way in. A method named `stop`, `join` or `is` is E0439.
+22. **An unbounded mailbox:** void calls never wait, so the queue grows as needed. A bounded mailbox with waiting senders is later work.
+23. **Not in this milestone:** generic actors (`actor Cache<T>` is E0439), actors satisfying interfaces, built-in supervisors, several OS threads.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
@@ -67,8 +94,11 @@ Decided by me, for review:
 - **§10:** the green-threads programs (fan-out with `join`, a producer and consumer over a buffered channel, a `select` with a timeout, a deadlock).
 - **§11:** row 91.
 
+For milestone 92: **§2** keyword `actor`; **§3** `actor_decl = [ visibility ] "actor" IDENT "{" { field "," | fun_decl } "}"`; **§4** actor handles, calls, `stop`/`join`/`is`, private fields, the share-nothing rule; **§5** call and cast; **§6** actors among green threads, panics in actors; **§7** an actor's state lives in its green thread, the mailbox in the GC heap; **§9** lowering (the actor loop, message handlers `lugha_actor_<Actor>.<method>`), runtime `lugha_rt_actor_*`, E0439; **§10** the actors programs; **§11** row 92.
+
 ## Milestones
 
 | # | Milestone | Spec subset | Done when |
 | --- | --- | --- | --- |
 | 91 | Green threads (v17) | `spawn`, `Task`, `Chan`, `select`, `std.task`; preemption; deadlock; E0211, E0438 | The §10 green-threads programs pass; `tests/programs/m91/` |
+| 92 | Actors (v17) | `actor` declarations, `spawn` of an actor, call and cast, `stop`, `join`, panics isolated to the actor, share-nothing; E0439 | The §10 actors programs pass; `tests/programs/m92/` |

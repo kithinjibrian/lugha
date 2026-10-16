@@ -7531,5 +7531,23 @@ Branch: main
 
 ---
 
-## SESSION 213 — 2026-10-16 — Actors: PRP-123 and the v17 draft's milestone 92 — open
+## SESSION 213 — 2026-10-16 — Actors: PRP-123 and the v17 draft's milestone 92 — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user approved the proposed actor defaults (session 212). Wrote `PRPs/prp-123-actors.md` and the v17 draft's decisions 14–23 and milestone 92 row. Decision 18 makes function and interface values count as possibly holding a `Ref`. Not built: waiting for the user's approval of the PRP.
+
+### FILES CREATED OR MODIFIED
+- Created: PRPs/prp-123-actors.md. Modified: docs/specs/Language v17 Draft.md, CONTEXT.
+
+### TESTS WRITTEN
+- None (proposal only).
+
+### DECISIONS MADE
+- Recorded in the draft (decisions 14–23).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Approval of PRP-123. Known limitation to flag: a stack overflow inside an actor still ends the program.
