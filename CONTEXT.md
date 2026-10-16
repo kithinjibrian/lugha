@@ -7482,3 +7482,26 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - Actor discussion: panics and supervision.
+
+---
+
+## SESSION 211 — 2026-10-16 — Actors: discussion, continued — closed
+Branch: main
+
+### WHAT WAS DONE
+- The user chose panic option B: only the panicking actor dies (message printed), waiting and later value calls panic in the caller, `c.join(): Option<string>` (None = stopped, Some(msg) = crashed) so supervision can be written by hand; built-in supervision is a later milestone; plain `spawn f()` threads keep "a panic ends the program". Asked the next question: may `Ref` cross into an actor (recommended: no — actors share nothing, which keeps a later multi-core step safe).
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- Actor panics: isolated to the actor; `join()` reports it (the user's choice).
+
+### PENDING DECISIONS OPENED
+- None (the discussion continues).
+
+### STILL OPEN AT CLOSE
+- Actor discussion: sharing (`Ref` across actors), then the remaining details for a PRP.
