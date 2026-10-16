@@ -172,7 +172,9 @@ impl<'ctx> Lowerer<'ctx> {
                 self.construct(&ty, &field.name, &[])?
             }
             ExprKind::Field(base, field) => self.field(base, field)?,
-            ExprKind::StructLit(lit) => self.struct_literal(expr, &lit.fields)?,
+            ExprKind::StructLit(lit) => {
+                self.struct_literal(expr, &lit.fields, lit.base.as_deref())?
+            }
             ExprKind::Array(elements) => self.array_literal(expr, elements)?,
             ExprKind::Tuple(elements) => self.tuple_literal(expr, elements)?,
             ExprKind::Repeat(value, count) => self.repeat(expr, value, count)?,

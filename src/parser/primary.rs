@@ -120,15 +120,34 @@ impl Parser<'_> {
 
     fn struct_lit(&mut self, start: usize, module: Option<Ident>, name: Ident) -> PResult<Expr> {
         let open = self.bump();
-        let fields = self.comma_list(open, TokenKind::RBrace, |p| {
+        let entries = self.comma_list(open, TokenKind::RBrace, |p| {
+            // `..base` (v17): the fields not written come from `base`.
+            if p.at(&TokenKind::DotDot) {
+                let at = p.bump();
+                return Ok(Err((at, p.expr()?)));
+            }
             let field = p.ident("field name")?;
             p.expect(&TokenKind::Colon)?;
-            Ok((field, p.expr()?))
+            Ok(Ok((field, p.expr()?)))
         })?;
+        let (mut fields, mut base) = (Vec::new(), None);
+        let last = entries.len().saturating_sub(1);
+        for (i, entry) in entries.into_iter().enumerate() {
+            match entry {
+                Ok(field) => fields.push(field),
+                Err((_, value)) if i == last && base.is_none() => base = Some(Box::new(value)),
+                Err((at, _)) => {
+                    let message = "`..base` must come last in a struct literal, once";
+                    let help = "write the fields first, then `..base`: `P { x: 1, ..p }`";
+                    self.error(Diagnostic::error("E0201", message, at).with_help(help));
+                }
+            }
+        }
         let literal = StructLiteral {
             module,
             name,
             fields,
+            base,
         };
         Ok(self.mk(start, ExprKind::StructLit(Box::new(literal))))
     }
@@ -298,6 +317,25 @@ mod tests {
         assert_eq!(
             expr("u8.MIN.count_ones()"),
             "(call (. (. u8 MIN) count_ones))"
+        );
+    }
+
+    #[test]
+    fn struct_update_v17() {
+        assert_eq!(expr("P { x: 1, ..p }"), "(struct-lit P (x 1) (.. p))");
+        assert_eq!(expr("P { x: 1, ..p, }"), "(struct-lit P (x 1) (.. p))");
+        assert_eq!(expr("P { ..make() }"), "(struct-lit P (.. (call make)))");
+        assert_eq!(
+            expr("m.P { y: 2, ..q.inner }"),
+            "(struct-lit m.P (y 2) (.. (. q inner)))"
+        );
+        assert_eq!(
+            errors("fun f() { let a = P { ..p, x: 1 }; }"),
+            [("E0201", "..")]
+        );
+        assert_eq!(
+            errors("fun f() { let a = P { ..p, ..q }; }"),
+            [("E0201", "..")]
         );
     }
 }

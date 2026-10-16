@@ -1,0 +1,8 @@
+1 ada ["a", "b"]
+0 ada [] / ["a", "b"]
+count
+base
+5
+["a", "b", "c"] ["a", "b"]
+2 one
+10 2 t

@@ -1,0 +1,9 @@
+error[E0440]: `..base` must be a `P`, but this is a `Q`
+  --> tests/programs/m93/e0440.la:6:27
+  |
+6 |     let p = P { x: 0.0, ..q };
+  |                           ^
+  |
+  = help: the fields not written are copied from `base`, so it must be the same struct
+
+For more about E0440, run `lughac explain E0440`.

@@ -39,6 +39,9 @@ impl Checker {
             for (_, value) in given {
                 self.value(value, None);
             }
+            if let Some(base) = &lit.base {
+                self.value(base, None);
+            }
             return Type::Error;
         };
         let (declared, generics) = (info.fields.clone(), info.generics.clone());
@@ -50,7 +53,21 @@ impl Checker {
         for (field, _) in given {
             self.hover.field_use(&key, field);
         }
-        let ty = Type::Struct(key, params(&generics));
+        let ty = Type::Struct(key.clone(), params(&generics));
+        // `..base` (v17): checked first — its type arguments then fix a
+        // generic struct's, so the fields need no inference. Evaluation
+        // order is unaffected: codegen runs `base` after the fields.
+        let base_args = lit.base.as_ref().and_then(|base| {
+            // No expected type: a mismatch is E0440, not the base's own error.
+            match self.value(base, None) {
+                Type::Struct(k, args) if k == key => Some(args),
+                Type::Error | Type::Never => None,
+                found => {
+                    self.report(errors::base_type(&ty, &found, base.span));
+                    None
+                }
+            }
+        });
         let mut inputs = Vec::new();
         for (i, (field, value)) in given.iter().enumerate() {
             if let Some((first, _)) = given[..i].iter().find(|(f, _)| f.name == field.name) {
@@ -62,9 +79,13 @@ impl Checker {
             }
             match declared.iter().find(|(f, _)| *f == field.name) {
                 Some((_, field_ty)) => {
+                    let field_ty = match &base_args {
+                        Some(args) => subst(field_ty, &generics, args),
+                        None => field_ty.clone(),
+                    };
                     let why = format!("`{}` is declared as {field_ty}", field.name);
-                    let want = Expect::because(field_ty.clone(), field.span, why);
-                    if generics.is_empty() {
+                    let want = Expect::because(field_ty, field.span, why);
+                    if generics.is_empty() || base_args.is_some() {
                         self.expect_type(value, &want);
                     } else {
                         inputs.push((value, want));
@@ -81,8 +102,28 @@ impl Checker {
             .map(|(f, _)| f.as_str())
             .filter(|f| !given.iter().any(|(g, _)| g.name == *f))
             .collect();
-        if !missing.is_empty() {
-            self.report(errors::missing_fields(&missing, &name.name, expr.span));
+        match &lit.base {
+            None if !missing.is_empty() => {
+                self.report(errors::missing_fields(&missing, &name.name, expr.span));
+            }
+            Some(base) if missing.is_empty() => self.report(errors::base_unused(base.span)),
+            _ => {}
+        }
+        // With a base, its type is the literal's: checked against what's expected here.
+        if let Some(args) = base_args {
+            let found = subst(&ty, &generics, &args);
+            return match expect {
+                Some(want) if !found.fits(&want.ty) => {
+                    self.report(errors::mismatch(
+                        want.ty.clone(),
+                        found,
+                        expr.span,
+                        want.reason.as_ref(),
+                    ));
+                    Type::Error
+                }
+                _ => found,
+            };
         }
         match self.infer(
             expr,
@@ -133,5 +174,87 @@ mod tests {
             errors("fun main() { let p = Q { x: 1 }; }"),
             [("E0305", "Q")]
         );
+    }
+
+    #[test]
+    fn base_supplies_the_fields_not_written_v17() {
+        use crate::check::test_util::ok;
+        ok(&format!(
+            "{POINT}fun origin(): P = P {{ x: 0.0, y: 0.0 }};\n\
+             fun main() {{ let p = P {{ x: 1.0, ..origin() }}; let q = P {{ ..p }}; println(q.y); }}"
+        ));
+        // Generic: the base fixes the type arguments.
+        ok("struct Pair<A, B> { a: A, b: B }\n\
+            fun main() { let p = Pair { a: 1, b: \"s\" }; let q = Pair { a: 2, ..p }; println(q.b); }");
+    }
+
+    #[test]
+    fn a_base_of_another_type_is_e0440_v17() {
+        let src = format!(
+            "{POINT}struct Q {{ x: f64, y: f64 }}\n\
+             fun main() {{ let q = Q {{ x: 1.0, y: 2.0 }}; let p = P {{ x: 1.0, ..q }}; }}"
+        );
+        assert_eq!(errors(&src), [("E0440", "q")]);
+        let d = diagnostics(&src);
+        assert!(
+            d[0].message.contains("`P`") && d[0].message.contains("`Q`"),
+            "{d:?}"
+        );
+        assert_eq!(
+            errors(&format!(
+                "{POINT}fun main() {{ let p = P {{ x: 1.0, ..5 }}; }}"
+            )),
+            [("E0440", "5")]
+        );
+        assert_eq!(
+            errors(
+                "struct Pair<A, B> { a: A, b: B }\n\
+                    fun main() { let p = Pair { a: 1, b: 2 }; let q: Pair<i64, string> = Pair { a: 2, ..p }; }"
+            ),
+            [("E0403", "Pair { a: 2, ..p }")]
+        );
+    }
+
+    #[test]
+    fn a_base_that_copies_nothing_is_w0104_v17() {
+        use crate::check::test_util::warnings;
+        let src = format!(
+            "{POINT}fun main() {{ let p = P {{ x: 0.0, y: 0.0 }}; let q = P {{ x: 1.0, y: 2.0, ..p }}; println(q.x); }}"
+        );
+        let w = warnings(&src);
+        assert_eq!(w, [("W0104", "p")]);
+    }
+
+    #[test]
+    fn written_fields_still_must_exist_and_differ_v17() {
+        assert_eq!(
+            errors(&format!(
+                "{POINT}fun main() {{ let p = P {{ x: 0.0, y: 0.0 }}; let q = P {{ z: 1.0, ..p }}; }}"
+            )),
+            [("E0410", "z")]
+        );
+        assert_eq!(
+            errors(&format!(
+                "{POINT}fun main() {{ let p = P {{ x: 0.0, y: 0.0 }}; let q = P {{ x: 1.0, x: 2.0, ..p }}; }}"
+            )),
+            [("E0414", "x")]
+        );
+    }
+
+    #[test]
+    fn unwritten_fields_must_be_visible_too_v17() {
+        use crate::check::modules::test_util::errors;
+        let lib = (
+            "m.la",
+            "public struct R { public lo: i64, private hi: i64 }\npublic fun make(): R = R { lo: 0, hi: 1 };\n",
+        );
+        let found = errors(&[
+            (
+                "main.la",
+                "import m;\nfun main() { let r = m.R { lo: 5, ..m.make() }; }\n",
+            ),
+            lib,
+        ]);
+        assert_eq!(found.iter().map(|(c, _)| *c).collect::<Vec<_>>(), ["E0313"]);
     }
 }

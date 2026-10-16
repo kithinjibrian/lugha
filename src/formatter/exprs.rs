@@ -99,10 +99,16 @@ impl Printer<'_> {
                 };
                 name.push_str(&self.ident(&lit.name));
                 let fields: Vec<Doc> = self.allowing(|p| {
-                    lit.fields
+                    let mut docs: Vec<Doc> = lit
+                        .fields
                         .iter()
                         .map(|(f, v)| concat(vec![text(format!("{}: ", p.ident(f))), p.expr(v)]))
-                        .collect()
+                        .collect();
+                    // `..base` last (v17).
+                    if let Some(b) = &lit.base {
+                        docs.push(concat(vec![text(".."), p.expr(b)]));
+                    }
+                    docs
                 });
                 let doc = match fields.is_empty() {
                     true => text(format!("{name} {{}}")),

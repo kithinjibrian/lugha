@@ -245,3 +245,11 @@ fn select_arms_print_one_per_line_v17() {
         "fun f() {\n    select {\n        m = inbox.recv() => m,\n        out.send(42) => {\n            done();\n        }\n        after(500) => 1,\n        default => 2,\n    }\n}\n",
     );
 }
+
+#[test]
+fn struct_update_v17() {
+    check(
+        "fun f(){let a=P{x:1,..p};}",
+        "fun f() {\n    let a = P { x: 1, ..p };\n}\n",
+    );
+}
