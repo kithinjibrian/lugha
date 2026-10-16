@@ -19,6 +19,10 @@ impl Checker {
         if self.functions.contains_key(&key) {
             return self.function_value(expr, &key, expect);
         }
+        // `Some`, `Ok`, `Err` as function values (v17).
+        if let Some(ty) = self.named_variant_value(expr, name, expect) {
+            return ty;
+        }
         if is_intrinsic(name) {
             let help = "intrinsics aren't values: call it inside a function, and use that function";
             self.report(errors::not_value(name, expr.span, help));

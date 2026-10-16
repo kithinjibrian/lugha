@@ -1,0 +1,14 @@
+[Circle(1.0), Circle(2.5)]
+Rect(2.0, 3.0)
+Empty
+[Some(1), Some(2)]
+[Some("a"), Some("b")]
+Named("ada")
+Named("bo")
+Named("cy")
+Tags(["x"]) ["x", "y"]
+Cons(1, Cons(2, Nil))
+Ok(5)
+Err("bad")
+Err("wrapped: not one: 2")
+Node(Leaf, 7, Leaf)

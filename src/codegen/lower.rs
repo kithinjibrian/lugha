@@ -63,6 +63,8 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) c_params: crate::check::CParams,
     /// C entries made so far, for `lugha_cfn_<n>` (v16).
     pub(super) c_entries: usize,
+    /// Variants used as function values (`Checked::variant_values`, v17).
+    pub(super) variant_values: HashMap<ExprId, (Type, String)>,
     /// Expressions converted to an interface value (`Checked::conversions`).
     pub(super) conversions: HashMap<ExprId, Type>,
     /// `?` operands whose error converts (`Checked::try_conversions`).
@@ -163,6 +165,7 @@ pub(super) fn lower<'ctx>(
         presets: HashMap::new(),
         c_params: checked.c_params.clone(),
         c_entries: 0,
+        variant_values: checked.variant_values.clone(),
         conversions: checked.conversions.clone(),
         interfaces: checked.interfaces.clone(),
         try_conversions: checked.try_conversions.clone(),

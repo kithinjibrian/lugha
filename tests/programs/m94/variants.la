@@ -1,0 +1,59 @@
+// Variants as function values (v17, milestone 94): a variant with
+// payloads, written without a call, is a function of its payloads.
+enum Shape { Circle(f64), Rect(f64, f64), Empty }
+
+enum Msg { Add, Named(string), Tags(string[]) }
+
+enum List { Nil, Cons(i64, List) }
+
+enum Tree<T> { Leaf, Node(Tree<T>, T, Tree<T>) }
+
+struct Handler { on_name: fun(string): Msg }
+
+fun apply(f: fun(string): Msg, s: string): Msg = f(s);
+
+fun parse(s: string): Result<i64, string> =
+    if s == "1" { Ok(1) } else { Err("not one: {s}") };
+
+fun wrap<T>(xs: T[]): Option<T>[] = xs.iter().map(Some).collect();
+
+fun main() {
+    let shapes: Shape[] = [1.0, 2.5].iter().map(Shape.Circle).collect();
+    println(shapes);
+    let rect = Shape.Rect;
+    println(rect(2.0, 3.0));
+    println(Shape.Empty);
+
+    let maybes: Option<i64>[] = [1, 2].iter().map(Some).collect();
+    println(maybes);
+    println(wrap(["a", "b"]));
+
+    // Stored in a struct and an array, called later.
+    let h = Handler { on_name: Msg.Named };
+    println(h.on_name("ada"));
+    let fs = [Msg.Named, Msg.Named];
+    println(fs[1]("bo"));
+    println(apply(Msg.Named, "cy"));
+
+    // Arrays inside payloads keep value semantics.
+    let mut tags = ["x"];
+    let make = Msg.Tags;
+    let m = make(tags);
+    tags.push("y");
+    println("{m} {tags}");
+
+    // A recursive enum's variant (an indirect slot).
+    let cons = List.Cons;
+    println(cons(1, cons(2, List.Nil)));
+
+    // Ok and Err where the type is known.
+    let ok: fun(i64): Result<i64, string> = Ok;
+    let err: fun(string): Result<i64, string> = Err;
+    println(ok(5));
+    println(err("bad"));
+    println(parse("2").map_err(fun(e) = "wrapped: {e}"));
+
+    // A generic user enum, typed by what's expected.
+    let node: fun(Tree<i64>, i64, Tree<i64>): Tree<i64> = Tree.Node;
+    println(node(Tree.Leaf, 7, Tree.Leaf));
+}

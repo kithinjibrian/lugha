@@ -48,6 +48,12 @@ impl<'ctx> Lowerer<'ctx> {
                 self.construct(&ty, "None", &[])?
             }
             // A function used as a value (v3): the checker recorded which.
+            // A variant used as a function value (v17).
+            ExprKind::Name(_) | ExprKind::Field(..)
+                if self.variant_values.contains_key(&expr.id) =>
+            {
+                self.variant_function_value(expr)
+            }
             ExprKind::Name(_) | ExprKind::Field(..) if self.callees.contains_key(&expr.id) => {
                 self.function_value(expr)
             }

@@ -1,0 +1,11 @@
+// A closure passed to a generic helper inside a generic function, where
+// both name a type parameter `T` (fixed in milestone 94: the hint the
+// closure got erased the caller's `T`).
+fun lengths<T>(xs: T[][]): i64[] = xs.iter().map(fun(x) = x.len).collect();
+
+fun pairs<T>(xs: T[]): (T, T)[] = xs.iter().map(fun(x) = (x, x)).collect();
+
+fun main() {
+    println(lengths([[1, 2], [3]]));
+    println(pairs(["a", "b"]));
+}
