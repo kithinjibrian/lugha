@@ -109,8 +109,23 @@ pub(super) fn result_line(r: &Result) -> String {
 }
 
 /// The `--json` summary line.
-pub(super) fn summary_line(passed: usize, failed: usize) -> String {
-    format!("{{\"summary\":{{\"passed\":{passed},\"failed\":{failed}}}}}\n")
+pub(super) fn summary_line(passed: usize, failed: usize, skipped: usize) -> String {
+    format!(
+        "{{\"summary\":{{\"passed\":{passed},\"failed\":{failed},\"skipped\":{skipped}}}}}\n"
+    )
+}
+
+/// The reason a test ended through `skip(reason)` (v17): exit code 77 *and*
+/// the runtime's `lugha-skip: ` line, so a plain `exit(77)` isn't a skip.
+pub(super) fn skipped(code: Option<i32>, stderr: &str) -> Option<String> {
+    if code != Some(77) {
+        return None;
+    }
+    stderr
+        .lines()
+        .rev()
+        .find_map(|l| l.strip_prefix("lugha-skip: "))
+        .map(str::to_string)
 }
 
 #[cfg(test)]
@@ -155,8 +170,11 @@ mod tests {
         );
         assert_eq!(list_line(false, "m.t", "m.la", 2, 5), "test m.t m.la:2:5\n");
         assert_eq!(
-            summary_line(1, 0),
-            "{\"summary\":{\"passed\":1,\"failed\":0}}\n"
+            summary_line(1, 0, 2),
+            "{\"summary\":{\"passed\":1,\"failed\":0,\"skipped\":2}}\n"
         );
+        assert_eq!(skipped(Some(77), "x\nlugha-skip: no display\n"), Some("no display".into()));
+        assert_eq!(skipped(Some(77), "x\n"), None);
+        assert_eq!(skipped(Some(1), "lugha-skip: no\n"), None);
     }
 }

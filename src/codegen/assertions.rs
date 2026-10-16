@@ -17,6 +17,29 @@ impl<'ctx> Lowerer<'ctx> {
         args: &[Expr],
     ) -> Result<Value<'ctx>, CodegenError> {
         let at = call.span.start;
+        // `skip(reason)` (v17): the runtime ends the test as skipped.
+        if name == "skip" {
+            let reason = self.get(&args[0], &Type::String)?;
+            let file = self.file_name(at);
+            let (line, col) = self.source.line_col(at);
+            let i64_type = self.context.i64_type();
+            let skip = self.runtime(
+                "lugha_rt_test_skip",
+                &[Type::String, Type::String, Type::I64, Type::I64],
+                None,
+            );
+            let args = [
+                reason.into(),
+                file.into(),
+                i64_type.const_int(line as u64, false).into(),
+                i64_type.const_int(col as u64, false).into(),
+            ];
+            self.builder.build_call(skip, &args, "").expect(POSITIONED);
+            self.builder.build_unreachable().expect(POSITIONED);
+            // The call never returns: what follows goes in a dead block, as after `panic`.
+            self.start_dead_block("after.skip");
+            return Ok(Value::Never);
+        }
         if name == "assert" {
             let cond = self.get(&args[0], &Type::Bool)?.into_int_value();
             let failed = self.builder.build_not(cond, "failed").expect(POSITIONED);

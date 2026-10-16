@@ -71,6 +71,8 @@ enum Outcome {
         stderr: String,
     },
     TimedOut,
+    /// Ended through `skip(reason)` (v17).
+    Skipped(String),
     /// Couldn't be started at all: lughac's own failure.
     NotStarted(String),
 }
@@ -141,7 +143,7 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
         }
     }
     jobs.retain(|j| request.wants(&j.name));
-    let (mut passed, mut failed) = (0, 0);
+    let (mut passed, mut failed, mut skipped) = (0, 0, 0);
     // `--json` reports each test as it finishes, for an editor's live view.
     let outcomes = run_all(&jobs, request.timeout, |job, outcome, took| {
         if request.json
@@ -154,6 +156,7 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
         if request.json {
             match outcome {
                 Outcome::Passed => passed += 1,
+                Outcome::Skipped(_) => skipped += 1,
                 Outcome::NotStarted(why) => {
                     out.error(&format!("cannot run test `{}`: {why}", job.name));
                     code = 2;
@@ -166,6 +169,10 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
             Outcome::Passed => {
                 passed += 1;
                 out.print(&format!("test {} ... ok\n", job.name));
+            }
+            Outcome::Skipped(reason) => {
+                skipped += 1;
+                out.print(&format!("test {} ... skipped ({reason})\n", job.name));
             }
             Outcome::NotStarted(why) => {
                 out.error(&format!("cannot run test `{}`: {why}", job.name));
@@ -189,12 +196,17 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
             }
         }
     }
-    let total = passed + failed;
+    let total = passed + failed + skipped;
+    // The skipped count only when there are skips, so earlier output is unchanged.
+    let skips = match skipped {
+        0 => String::new(),
+        s => format!(", {s} skipped"),
+    };
     let summary = match total {
-        _ if request.json => test_json::summary_line(passed, failed),
+        _ if request.json => test_json::summary_line(passed, failed, skipped),
         0 => "0 tests\n".to_string(),
-        1 => format!("\n1 test: {passed} passed, {failed} failed\n"),
-        n => format!("\n{n} tests: {passed} passed, {failed} failed\n"),
+        1 => format!("\n1 test: {passed} passed, {failed} failed{skips}\n"),
+        n => format!("\n{n} tests: {passed} passed, {failed} failed{skips}\n"),
     };
     out.print(&summary);
     if failed > 0 {
@@ -249,6 +261,7 @@ fn list(request: &Request, files: &[PathBuf], out: &mut Output) -> u8 {
 fn json_result(job: &Job, outcome: &Outcome, took: Duration, timeout: Duration) -> Option<String> {
     let (status, message, at, output) = match outcome {
         Outcome::Passed => ("passed", None, None, ""),
+        Outcome::Skipped(reason) => ("skipped", Some(reason.clone()), None, ""),
         Outcome::TimedOut => {
             let message = format!("timed out after {} s", timeout.as_secs());
             ("timed_out", Some(message), None, "")
@@ -379,6 +392,9 @@ fn run_one(job: &Job, timeout: Duration) -> Outcome {
     match status {
         None => Outcome::TimedOut,
         Some(Ok(status)) if status.success() => Outcome::Passed,
+        Some(Ok(status)) if let Some(reason) = test_json::skipped(status.code(), &stderr) => {
+            Outcome::Skipped(reason)
+        }
         Some(Ok(status)) => Outcome::Failed {
             code: status.code(),
             stdout,

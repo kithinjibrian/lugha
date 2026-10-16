@@ -17,3 +17,20 @@ int32_t lugha_rt_test_unknown(void) {
     fprintf(stderr, "error: no test named `%s`\n", wanted != NULL ? wanted : "");
     return 2;
 }
+
+/* `skip(reason)` (v17, milestone 97): end this test as skipped. The runner
+ * counts it skipped only with both the reason line and exit code 77 (the
+ * automake convention), so a plain `exit(77)` stays a failure. Outside a
+ * test it is a panic. */
+void lugha_rt_test_skip(const LughaString *reason, const char *file, int64_t line, int64_t col) {
+    if (getenv("LUGHA_TEST") == NULL) {
+        static const char text[] = "skip outside a test";
+        lugha_rt_panic(string_of(text, (int64_t)(sizeof text - 1)), file, line, col);
+    }
+    fflush(stdout);
+    fputs("lugha-skip: ", stderr);
+    fwrite(reason->bytes, 1, (size_t)reason->len, stderr);
+    fputc('\n', stderr);
+    fflush(stderr);
+    exit(77);
+}
