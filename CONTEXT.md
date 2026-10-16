@@ -7390,3 +7390,26 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - Nothing new (actors next).
+
+---
+
+## SESSION 207 — 2026-10-16 — Actors: first discussion — closed
+Branch: main
+
+### WHAT WAS DONE
+- The user wants to move to the actor model and discuss it in chat first (before discovery and a PRP). Gave a plain recommendation: an `actor` declaration whose methods run one at a time on the actor's own green thread; `spawn Counter { … }` starts one and gives a handle; a method call on the handle is a message (a value-returning call waits for the reply, a void one doesn't — Erlang's call/cast); state reachable only through messages; supervision later. Asked the first question: `actor` keyword vs a library of channels and enums.
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- None yet.
+
+### PENDING DECISIONS OPENED
+- None (the discussion continues).
+
+### STILL OPEN AT CLOSE
+- The actor discussion: language-level `actor` vs library.
