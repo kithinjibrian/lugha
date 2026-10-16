@@ -142,6 +142,7 @@ impl Checker {
             enums: HashMap::new(),
             handles: HashMap::new(),
             c_params: HashMap::new(),
+            c_structs: std::collections::HashSet::new(),
             methods: HashMap::new(),
             scopes: Vec::new(),
             ret: Type::Void,
@@ -225,6 +226,8 @@ pub(super) struct Checker {
     handles: HashMap<String, Span>,
     /// See `Checked::c_params`.
     c_params: callbacks::CParams,
+    /// Every `extern struct`, by key: C's layout, passed to C by value (v16, milestone 90).
+    c_structs: std::collections::HashSet<String>,
     methods: methods::Methods,
     scopes: Vec<HashMap<String, Local>>,
     /// The return type of the function being checked.

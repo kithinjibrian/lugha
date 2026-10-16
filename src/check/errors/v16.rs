@@ -1,4 +1,4 @@
-//! v16 codes: tests (E0434, milestone 84); callbacks (E0435, E0436, milestone 88).
+//! v16 codes: tests (E0434, milestone 84); callbacks (E0435, E0436, milestone 88); extern structs (E0437, milestone 90).
 
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
@@ -70,4 +70,23 @@ pub(in crate::check) fn bad_symbol(symbol: &str, span: Span) -> Diagnostic {
         span,
     )
     .with_help("use letters, digits and `_`, not starting with a digit; names starting with `lugha_` are reserved")
+}
+
+/// A field of an `extern struct` that C can't hold (v16, milestone 90).
+pub(in crate::check) fn c_struct_field(span: Span) -> Diagnostic {
+    Diagnostic::error("E0437", "an `extern struct` can't hold this", span).with_help(
+        "an `extern struct` holds numbers, `bool`, `char`, handles (`extern type`) and other extern structs, laid out as C lays them out",
+    )
+}
+
+/// An `extern struct` with type parameters.
+pub(in crate::check) fn c_struct_generic(span: Span) -> Diagnostic {
+    Diagnostic::error("E0437", "an `extern struct` can't be generic", span)
+        .with_help("C has no generics: declare one `extern struct` per layout")
+}
+
+/// An `extern struct` with no fields: C has no empty structs.
+pub(in crate::check) fn c_struct_empty(span: Span) -> Diagnostic {
+    Diagnostic::error("E0437", "an `extern struct` needs at least one field", span)
+        .with_help("C has no empty structs; pass nothing instead")
 }

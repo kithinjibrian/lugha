@@ -86,6 +86,13 @@ impl Parser<'_> {
                 span: Span::new(start, self.prev_end()),
             }));
         }
+        // `extern struct` (v16): a struct with C's layout.
+        if self.at(&TokenKind::Struct) {
+            let mut s = self.struct_decl()?;
+            s.c_layout = Some(Span::new(start, start + "extern".len()));
+            s.span = Span::new(start, s.span.end);
+            return Ok(Item::Struct(s));
+        }
         let symbol = match self.peek() {
             TokenKind::Str(text) => {
                 let name = text.clone();
@@ -141,6 +148,7 @@ impl Parser<'_> {
             type_params,
             fields,
             span: Span::new(start, self.prev_end()),
+            c_layout: None,
         })
     }
 
@@ -323,8 +331,22 @@ mod tests {
         assert_eq!(errors("extern type T { }"), [("E0201", "{")]);
         assert_eq!(errors("extern type T<U>;"), [("E0201", "<")]);
         assert_eq!(errors("extern \"puts\" type T;"), [("E0201", "type")]);
-        // Recovery then reads `struct S;` as a struct, which reports its own error.
-        assert_eq!(errors("extern struct S;")[0], ("E0201", "struct"));
+        // v16: `extern struct` declares a struct with C's layout, so a body is required.
+        assert_eq!(errors("extern struct S;")[0], ("E0201", ";"));
+        assert_eq!(errors("extern enum E {}")[0], ("E0201", "enum"));
+    }
+
+    #[test]
+    fn extern_structs_v16() {
+        assert_eq!(
+            program("extern struct Color { r: u8, g: u8, b: u8, a: u8 }"),
+            "(extern-struct Color (r u8) (g u8) (b u8) (a u8))"
+        );
+        assert_eq!(
+            program("public extern struct V { x: f32, y: f32 }"),
+            "(public extern-struct V (x f32) (y f32))"
+        );
+        assert_eq!(errors("extern \"s\" struct S {}")[0], ("E0201", "struct"));
     }
 
     #[test]

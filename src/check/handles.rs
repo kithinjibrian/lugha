@@ -140,3 +140,58 @@ mod tests {
         ));
     }
 }
+
+#[cfg(test)]
+mod extern_struct_tests {
+    use crate::check::test_util::{errors, ok};
+
+    #[test]
+    fn extern_structs_are_ordinary_structs_that_cross_to_c_v16() {
+        ok("extern type W;\n\
+            extern struct Color { r: u8, g: u8, b: u8, a: u8 }\n\
+            extern struct V2 { x: f32, y: f32 }\n\
+            extern struct Cam { at: V2, zoom: f32, ok: bool, c: char, w: W }\n\
+            extern fun draw(at: V2, c: Color): Cam;\n\
+            extern fun each(f: fun(V2, data): Color, u: data);\n\
+            impl Color { fun dim(self): Color = Color { r: self.r / 2, g: self.g / 2, b: self.b / 2, a: self.a }; }\n\
+            fun main() {\n\
+                let red = Color { r: 230, g: 41, b: 55, a: 255 };\n\
+                let cam = draw(V2 { x: 1.0, y: 2.0 }, red.dim());\n\
+                println(cam.at.x);\n\
+                println(red == red);\n\
+                each(fun(v: V2): Color = red);\n\
+            }");
+    }
+
+    #[test]
+    fn fields_c_cant_hold_are_e0437() {
+        for (decl, at) in [
+            ("extern struct S { s: string }", "string"),
+            ("extern struct S { xs: i64[] }", "i64[]"),
+            ("struct P { x: i64 }\nextern struct S { p: P }", "P"),
+            ("extern struct S { o: Option<i64> }", "Option<i64>"),
+            (
+                "extern type W;\nextern struct S { o: Option<W> }",
+                "Option<W>",
+            ),
+            ("extern struct S { f: fun(i64) }", "fun(i64)"),
+            ("extern struct S<T> { x: T }", "S"),
+            ("extern struct S {}", "S"),
+        ] {
+            let src = format!("{decl}\nfun main() {{}}");
+            let found = errors(&src);
+            assert_eq!(found.first(), Some(&("E0437", at)), "{decl}: {found:?}");
+        }
+    }
+
+    #[test]
+    fn a_plain_struct_still_cant_cross_to_c() {
+        let src = "struct P { x: i64 }\nextern fun f(p: P);\nfun main() {}";
+        assert_eq!(errors(src), [("E0409", "P")]);
+        let d = crate::check::test_util::diagnostics(src);
+        assert!(
+            d[0].help.as_deref().unwrap_or("").contains("extern struct"),
+            "{d:?}"
+        );
+    }
+}

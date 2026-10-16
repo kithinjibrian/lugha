@@ -2,11 +2,11 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–89 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–90 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestones 67–89):
+**Changes since v15** (milestones 67–90):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
 - `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
 - `lughac init [folder] [--lib] [--name N]` starts a program, or a library with an example, in a folder; it never overwrites a file (milestone 69; section 9).
@@ -25,6 +25,7 @@ Oct 15, 2026 · @kithinji
 - Linking C libraries: a `[link]` table in `lugha.toml` names libraries, library folders, header folders, C files to compile and `pkg-config` packages; the tables of every package a program uses apply (milestone 87; sections 6, 8, 9).
 - Callbacks and handles: `extern type Name;` declares an opaque C pointer type; a function type in an extern's parameters is a callback C can call, named functions anywhere and closures through user data (`data`, `release`); `extern "symbol" fun name(…)` gives a C function a Lugha name of its own (milestone 88; sections 3, 4, 7, 8, 9).
 - Strings from C: an extern may return `string` or `Option<string>` and take `Option<string>`, and a callback may receive them; C's text is copied, with invalid UTF-8 replaced by U+FFFD (milestone 89; section 8).
+- C structs by value: `extern struct Name { … }` has C's layout and goes to and from C (externs and callbacks) by value, exactly as C passes it on x86-64 (milestone 90; sections 3, 4, 8, 9).
 
 Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type (a module's own type `Ref` still means its own), or declares a function named `assert`, `assert_eq` or `assert_ne`, which are intrinsics since milestone 84 (E0302).
 
@@ -297,7 +298,7 @@ program      = { import } { item } EOF ;
 import       = [ "public" ] "import" IDENT { "." IDENT } [ "as" IDENT ]
                [ "{" import_item { "," import_item } [ "," ] "}" ] ";" ;   (* names and `public`: v11; `as`: v14 *)
 import_item  = IDENT [ "as" IDENT ] ;
-item         = { attribute } [ visibility ] ( fun_decl | extern_decl | extern_type | struct_decl | enum_decl | interface_decl ) | impl_decl ;
+item         = { attribute } [ visibility ] ( fun_decl | extern_decl | extern_type | [ "extern" ] struct_decl | enum_decl | interface_decl ) | impl_decl ;   (* `extern struct`, v16 *)
 attribute    = "@" IDENT ;                       (* v16: only `@test`, before a `fun` *)
 visibility   = "private" | "public" ;                (* `public`: v8, packages *)
 
@@ -493,6 +494,8 @@ There is no null. Every string and array variable holds a valid object.
 - **No `let mut` needed:** `set` and `update` change the box, not the handle, so they take a plain `self`. `let r = Ref.new(0); r.set(1);` is valid, and a closure may `set` or `update` a `Ref` it captured (assigning the captured name itself is still E0511). `let mut r` is needed only to point `r` at another box.
 - **No `==`:** `r == s` is E0404, with help: `r.is(s)` compares boxes, `r.get() == s.get()` contents. A struct, enum, tuple, array or `Option` holding a `Ref` has no `==` either, and isn't `Eq` (E0419).
 - **Recursion:** a type may hold itself through a `Ref`, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }`.
+
+**Extern structs** (v16, milestone 90). `extern struct Name { … }` declares a struct with C's layout: its fields in order, each at C's alignment, the whole padded to its largest. Its fields are numbers, `bool` (a C `bool`), `char` (a `uint32_t`), handles and other extern structs; nothing else, no type parameters and at least one field (E0437). In every other way it is an ordinary struct: literals, fields, `==`, methods, printing, copies. Only extern structs may cross to C by value (section 8).
 
 **Handles** (v16, milestone 88). `extern type Name;` declares a handle type: an opaque pointer to a C object (`GtkWidget *`), with the usual visibility (`public extern type GtkWidget;`). Each declaration is its own type, so a `GtkWidget` is never a `GtkApplication`.
 - **Only C makes them:** an extern's result, or a callback's argument. There is no literal and no constructor (`W {}` is E0305), so a handle always comes from C.
@@ -1204,13 +1207,31 @@ extern fun sqrt(x: f64): f64;
 | a handle `H` (v16) | `T *` | The pointer |
 | `Option<H>` of a handle (v16) | `T *` | The pointer; `NULL` for `None` |
 | `fun(…)` (parameter only, v16) | a function pointer | A callback; see below |
+| an `extern struct` (v16) | the C struct | By value, as C passes it; see "Passing structs" |
 | return type omitted | `void` | — |
 
 The compiler adjusts the string pointer at each call site. C code receives an ordinary NUL-terminated string.
 
 **Text from C** (v16, milestone 89). A `string` or `Option<string>` coming from C — an extern's result, or a callback's parameter — is copied into a new Lugha string: C's bytes up to the first NUL, each invalid UTF-8 sequence replaced by U+FFFD and the copy moving one byte on, exactly as `chars()` decodes. C keeps its memory and Lugha never frees it, so a C function returning text the caller must free leaks unless it is declared returning a handle and freed through another extern. For `Option<string>`, `NULL` is `None`; for a plain `string`, `NULL` panics: `panic: C gave NULL for a \`string\`; declare it \`Option<string>\`` (without a location: the runtime can't tell which call).
 
-**Callbacks** (v16, milestone 88). A parameter whose type is a function type, `cb: fun(T…): R`, is a C function pointer that C may call, during the extern call or later. Its parameter and result types are numbers, `bool`, handles and `Option` of a handle (`R` may be omitted), and its parameters may also be `string` or `Option<string>`, copied from C (v16, milestone 89). A callback never returns a string, since C would keep a pointer into Lugha's memory; no arrays, structs, enums or functions go into or out of a callback, and no extern returns one (E0409).
+**Passing structs** (v16, milestone 90). An extern struct goes to and from C — as an extern's parameter or result, or a callback's — the way the x86-64 System V ABI passes it, which is how a C compiler passes it:
+- **Over 16 bytes:** in memory. An argument is a copy C receives on the stack (LLVM `byval`); a result is written through a hidden pointer the caller passes first (`sret`).
+- **16 bytes or less:** split into eightbytes. One holding only `f32`/`f64` fields goes in an SSE register, any other in an integer register. A struct whose eightbytes don't all fit the registers still free at its argument goes in memory as a whole.
+- **What travels** (as clang lowers it): one LLVM value per eightbyte, `i<n>` for the bytes holding data, `float`, `<2 x float>` or `double`; with two eightbytes the low one fills its eight bytes.
+
+| Struct | Passed as |
+| --- | --- |
+| `{ r: u8, g: u8, b: u8, a: u8 }` | `i32` |
+| `{ x: f32, y: f32 }` | `<2 x float>` |
+| `{ x: f32, y: f32, w: f32, h: f32 }` | `<2 x float>`, `<2 x float>` |
+| `{ i: i64, d: f64 }` | `i64`, `double` |
+| `{ f: f32, n: i32 }` | `i64` |
+| `{ tag: u8, v: f64 }` | `i64`, `double` |
+| `{ offset: V2, target: V2, rotation: f32, zoom: f32 }` (24 bytes) | in memory |
+
+lughac targets only x86-64 Linux, so this is the only convention it implements. Pointers to structs, arrays of structs, packed structs, unions and bit-fields can't cross yet. A program passing no struct by value gives byte-identical IR.
+
+**Callbacks** (v16, milestone 88). A parameter whose type is a function type, `cb: fun(T…): R`, is a C function pointer that C may call, during the extern call or later. Its parameter and result types are numbers, `bool`, handles, `Option` of a handle and extern structs (`R` may be omitted), and its parameters may also be `string` or `Option<string>`, copied from C (v16, milestone 89). A callback never returns a string, since C would keep a pointer into Lugha's memory; no arrays, structs, enums or functions go into or out of a callback, and no extern returns one (E0409).
 - **`data`:** one of a callback's parameters may be written `data`: the `void *` user data C hands back to it. The extern then has one parameter written `data` too, where C takes that user data, and may have one written `release`, a `void (*)(void *)` that C calls when it drops the callback. An extern has a `data` parameter exactly when one of its callbacks takes `data`, at most one of each, and `release` only with `data` (E0435). Anywhere else, `data` and `release` are E0435.
 - **Calls:** callers write neither the `data` nor the `release` argument; lughac passes them. A callback's argument is a function value of the callback's type without `data`. Where the callback takes no `data`, C keeps nothing but a code pointer, so the argument must be a function's name (`f`, `m.f`) or a closure literal that captures nothing (E0436); where it takes `data`, any function value, closures with captures included.
 - **Renamed externs:** `extern "symbol" fun name(…)` declares the C function `symbol` under the Lugha name `name`, so one C function can be declared several times with different callback types. Several declarations may share a symbol; `symbol` is a C identifier and doesn't start with `lugha_` (E0306).
@@ -1524,12 +1545,13 @@ Name and type errors, reported by the checker:
 | E0434 | A misused test (v16) | `@test fun t(n: i64) {}`, `@test fun t(): i64 = 1;`, a generic test; calling a test or using it as a value |
 | E0435 | A malformed callback declaration (v16) | `extern fun f(cb: fun(i64), u: data);` (nothing takes `data`); `extern fun f(cb: fun(data));` (no `data` parameter); `release` without `data`; `fun f(x: data)` outside an extern |
 | E0436 | A function with captures passed to a callback without `data` (v16) | `sort(xs, fun(a, b) = a * k < b)` where `sort`'s comparator is `fun(i64, i64): i32` |
+| E0437 | A malformed `extern struct` (v16) | `extern struct S { s: string }`; a field of an array, a plain struct, an enum, `Option` or a function type; `extern struct S<T> { … }`; `extern struct S {}` |
 | E0433 | A pattern that must match every value but might not (v14) | `let (1, x) = t;`, `let Some(n) = o;` without `else`, `for (Some(a), b) of …` |
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
 | E0430 | A default method that two visible interfaces supply (v10) | `c.describe()` where `Named` and `Shown` both default `describe` and `Circle` satisfies both |
 | E0431 | A bad format specifier (v13) | `"{n:.2}"` with `n: i64`; `"{x:q}"`; `"{f:x}"` with `f: f64`; `"{n:#}"`; `"{s:05}"` with `s: string`; `"{n:2000}"` |
 | E0432 | A bad `format` template (v14) | `format(t, 1)` with `t` a variable; `format("{} and {}", 1)`; `format("{x}", 1)`; `format("a {")` |
-| E0409 | Type not allowed in an extern signature | `extern fun total(xs: i64[]): i64;` — no array, struct, enum, `Option` (but of a handle or `string`) or interface parameters or returns, and functions only as callback parameters (§8); a callback returning a string, `extern fun f(cb: fun(i64): string);` (v16) |
+| E0409 | Type not allowed in an extern signature | `extern fun total(xs: i64[]): i64;` — no array, plain struct (an `extern struct` is fine, v16), enum, `Option` (but of a handle or `string`) or interface parameters or returns, and functions only as callback parameters (§8); a callback returning a string, `extern fun f(cb: fun(i64): string);` (v16) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool`; `n as T` for a `T` without `Num` or `Float` (v15) |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut`; `for x of mut xs` where `xs` isn't (v13) |
 | E0502 | Assignment to something that isn't a place | `(a + b) = 3;`; `for x of mut [1, 2]` (v13) |
@@ -3355,6 +3377,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 87 | Linking C libraries (v16) | `[link]` in `lugha.toml`: `libs`, `paths`, `include`, `c`, `pkg-config`; every used package's table; E0329–E0331 | `tests/link_libs.rs` (done) |
 | 88 | Callbacks and handles (v16) | `extern type`; functions and closures passed to C (`data`, `release`); `extern "symbol" fun`; E0435, E0436 | `tests/callbacks.rs` (done) |
 | 89 | Strings from C (v16) | `string` and `Option<string>` extern results, `Option<string>` arguments, string callback parameters; copies, U+FFFD | `tests/c_strings.rs` (done) |
+| 90 | C structs by value (v16) | `extern struct`; passed by value to and from C as on x86-64 System V; E0437 | `tests/extern_structs.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

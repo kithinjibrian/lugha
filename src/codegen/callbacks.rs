@@ -18,6 +18,7 @@ use inkwell::values::{
 };
 
 use super::CodegenError;
+use super::c_calls::{CKind, CSig, has_struct};
 use super::declare::abi_attribute;
 use super::externs::{converts_from_c, is_nullable_handle};
 use super::lower::{Lowerer, POSITIONED};
@@ -78,7 +79,7 @@ impl<'ctx> Lowerer<'ctx> {
         args: &[Expr],
         params: &[Type],
         plan: &[CParam],
-    ) -> Result<Vec<BasicMetadataValueEnum<'ctx>>, CodegenError> {
+    ) -> Result<Vec<BasicValueEnum<'ctx>>, CodegenError> {
         let mut written = Vec::with_capacity(args.len());
         for (arg, ty) in args.iter().zip(params) {
             let value = self.get(arg, ty)?;
@@ -117,7 +118,7 @@ impl<'ctx> Lowerer<'ctx> {
                     release.as_global_value().as_pointer_value().into()
                 }
             };
-            values.push(value.into());
+            values.push(value);
         }
         if let (Some(at), Some(pinned)) = (data_at, pinned) {
             values[at] = pinned.into();
@@ -157,6 +158,9 @@ impl<'ctx> Lowerer<'ctx> {
         ret: &Type,
         data: Option<usize>,
     ) -> FunctionType<'ctx> {
+        if let Some(sig) = self.entry_sig(params, ret, data) {
+            return sig.fn_type;
+        }
         let mut types: Vec<BasicMetadataTypeEnum> =
             params.iter().map(|p| self.c_value_type(p)).collect();
         if let Some(at) = data {
@@ -190,7 +194,7 @@ impl<'ctx> Lowerer<'ctx> {
         let entry =
             self.module
                 .add_function(&format!("lugha_cfn_{n}"), fn_type, Some(Linkage::Internal));
-        self.c_body(entry, params, ret, None, |this| {
+        self.c_body(entry, params, ret, None, |this, _| {
             this.builder
                 .build_load(pair_type, slot, "pair")
                 .expect(POSITIONED)
@@ -210,12 +214,9 @@ impl<'ctx> Lowerer<'ctx> {
         let entry = self
             .module
             .add_function(&name, fn_type, Some(Linkage::Internal));
-        self.c_body(entry, params, ret, Some(data), |this| {
+        self.c_body(entry, params, ret, Some(data), |this, pinned| {
             let ptr = this.context.ptr_type(Default::default());
-            let pinned = entry
-                .get_nth_param(u32::try_from(data).expect("parameter count fits in u32"))
-                .expect("the data parameter")
-                .into_pointer_value();
+            let pinned = pinned.expect("a trampoline has its data parameter");
             // The pin holds the function value itself: `{ code, env }`.
             let pair_type = this.context.struct_type(&[ptr.into(), ptr.into()], false);
             this.builder
@@ -234,16 +235,26 @@ impl<'ctx> Lowerer<'ctx> {
         params: &[Type],
         ret: &Type,
         data: Option<usize>,
-        pair: impl FnOnce(&mut Self) -> StructValue<'ctx>,
+        pair: impl FnOnce(&mut Self, Option<PointerValue<'ctx>>) -> StructValue<'ctx>,
     ) {
-        self.c_abi_entry(entry, params, ret, data);
+        // Structs by value arrive as C passes them (v16, milestone 90).
+        let sig = self.entry_sig(params, ret, data);
+        match &sig {
+            Some(sig) => self.c_sig_attributes(sig, |at, a| entry.add_attribute(at, a)),
+            None => self.c_abi_entry(entry, params, ret, data),
+        }
         let (saved_block, saved_function) = (self.builder.get_insert_block(), self.function);
         self.function = Some(entry);
         self.builder
             .position_at_end(self.context.append_basic_block(entry, "entry"));
-        let pair = pair(self);
-        let incoming: Vec<BasicValueEnum> = entry
-            .get_param_iter()
+        let (all, sret): (Vec<BasicValueEnum>, _) = match &sig {
+            Some(sig) => self.c_sig_params(sig, entry),
+            None => (entry.get_param_iter().collect(), None),
+        };
+        let pinned = data.map(|at| all[at].into_pointer_value());
+        let pair = pair(self, pinned);
+        let incoming: Vec<BasicValueEnum> = all
+            .into_iter()
             .enumerate()
             .filter(|(i, _)| Some(*i) != data)
             .map(|(_, p)| p)
@@ -265,7 +276,23 @@ impl<'ctx> Lowerer<'ctx> {
             };
             values.push(value.into());
         }
-        match self.call_pair(pair, (params, ret), values) {
+        let result = self.call_pair(pair, (params, ret), values);
+        if let Some(sig) = &sig {
+            let result = match result {
+                Value::Val(result) if is_nullable_handle(ret) => {
+                    Some(self.nullable_to_c(result, ret))
+                }
+                Value::Val(result) => Some(result),
+                Value::Void | Value::Never => None,
+            };
+            self.c_sig_return(sig, sret, result);
+            self.function = saved_function;
+            if let Some(block) = saved_block {
+                self.builder.position_at_end(block);
+            }
+            return;
+        }
+        match result {
             Value::Val(result) if is_nullable_handle(ret) => {
                 let result = self.nullable_to_c(result, ret);
                 self.builder.build_return(Some(&result))
@@ -278,6 +305,16 @@ impl<'ctx> Lowerer<'ctx> {
         if let Some(block) = saved_block {
             self.builder.position_at_end(block);
         }
+    }
+
+    /// The lowered signature of a C entry taking `params` (with the `data`
+    /// pointer at `data`) and returning `ret`, when it passes structs.
+    fn entry_sig(&self, params: &[Type], ret: &Type, data: Option<usize>) -> Option<CSig<'ctx>> {
+        let mut kinds: Vec<CKind> = params.iter().cloned().map(CKind::Value).collect();
+        if let Some(at) = data {
+            kinds.insert(at, CKind::Pointer);
+        }
+        has_struct(&kinds, ret).then(|| self.c_sig(&kinds, ret))
     }
 
     /// C's extensions on an entry's `bool`, `u8`, `u16`, `i8` and `i16` (spec §8).

@@ -93,6 +93,8 @@ impl Checker {
                         {
                             continue;
                         }
+                        // An `extern struct` goes by value, as C passes it (v16, milestone 90).
+                        Type::Struct(key, _) if self.c_structs.contains(key) => continue,
                         Type::Array(_) => errors::extern_array(at),
                         Type::Struct(_, _) => errors::extern_struct(at),
                         Type::Fun(..) | Type::Interface(..) => errors::extern_value(ty, at),

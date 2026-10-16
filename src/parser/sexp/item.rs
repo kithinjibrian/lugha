@@ -119,7 +119,12 @@ fn item(item: &Item) -> String {
                 })
                 .collect();
             let (p, tp) = (visibility(s.visibility), type_params(&s.type_params));
-            format!("({p}struct {}{tp}{fields})", s.name.name)
+            let kind = if s.c_layout.is_some() {
+                "extern-struct"
+            } else {
+                "struct"
+            };
+            format!("({p}{kind} {}{tp}{fields})", s.name.name)
         }
         Item::Enum(e) => {
             let variants: String = e

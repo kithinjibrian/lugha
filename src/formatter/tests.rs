@@ -217,3 +217,11 @@ fn extern_types_renamed_externs_and_callbacks_v16() {
         "public extern type Win;\nextern \"g_connect\" fun on(w: Win, f: fun(Win, data), u: data, d: release): u64;\n",
     );
 }
+
+#[test]
+fn extern_structs_v16() {
+    check(
+        "public  extern   struct Color{r:u8,g:u8,b:u8,a:u8}",
+        "public extern struct Color {\n    r: u8,\n    g: u8,\n    b: u8,\n    a: u8,\n}\n",
+    );
+}
