@@ -176,3 +176,90 @@ fn no_tests_is_success_and_build_leaves_tests_out() {
     assert_eq!(out.status.code(), Some(0));
     assert_eq!(text(&out.stdout), "0 tests\n");
 }
+
+#[test]
+fn list_shows_every_test_and_where_without_building() {
+    // A type error doesn't stop listing: nothing is checked or built.
+    let broken = "@test\nfun wrong() { let x: i64 = \"no\"; }\n";
+    let t = Temp::with(&[("geo.la", GEO), ("broken.la", broken)]);
+    let out = lughac(&t.0, &["test", "--list"]);
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    assert_eq!(
+        text(&out.stdout),
+        "test broken.wrong broken.la:2:5\ntest geo.area_of_unit geo.la:5:5\ntest geo.doubles geo.la:11:5\n"
+    );
+    let out = lughac(&t.0, &["test", "--list", "--json", "geo.la"]);
+    assert_eq!(
+        text(&out.stdout),
+        "{\"test\":\"geo.area_of_unit\",\"file\":\"geo.la\",\"line\":5,\"col\":5}\n\
+         {\"test\":\"geo.doubles\",\"file\":\"geo.la\",\"line\":11,\"col\":5}\n"
+    );
+}
+
+#[test]
+fn json_results_carry_status_message_location_and_output() {
+    let looping = "@test fun loops() { while true {} }\n";
+    let t = Temp::with(&[("geo.la", GEO), ("looping.la", looping)]);
+    let out = lughac(&t.0, &["test", "--json", "geo.la"]);
+    assert_eq!(out.status.code(), Some(1));
+    let stdout = text(&out.stdout);
+    let lines: Vec<&str> = stdout.lines().collect();
+    assert_eq!(lines.len(), 3, "{stdout}");
+    let passed = lines
+        .iter()
+        .find(|l| l.contains("\"geo.area_of_unit\""))
+        .expect("a result");
+    assert!(
+        passed.starts_with(
+            "{\"test\":\"geo.area_of_unit\",\"file\":\"geo.la\",\"line\":5,\"status\":\"passed\""
+        ),
+        "{passed}"
+    );
+    let failed = lines
+        .iter()
+        .find(|l| l.contains("\"geo.doubles\""))
+        .expect("a result");
+    assert!(failed.contains("\"status\":\"failed\""), "{failed}");
+    assert!(
+        failed.contains("\"message\":\"assert_eq failed: left 4, right 5\""),
+        "{failed}"
+    );
+    assert!(
+        failed.contains("\"at\":{\"file\":\"geo.la\",\"line\":13,\"col\":5}"),
+        "{failed}"
+    );
+    assert!(failed.contains("\"output\":\"doubling 2\\n\""), "{failed}");
+    assert!(failed.contains("\"ms\":"), "{failed}");
+    assert_eq!(lines[2], "{\"summary\":{\"passed\":1,\"failed\":1}}");
+    let out = lughac(&t.0, &["test", "--json", "--timeout", "1", "looping.la"]);
+    assert!(
+        text(&out.stdout).contains("\"status\":\"timed_out\""),
+        "{}",
+        text(&out.stdout)
+    );
+}
+
+#[test]
+fn exact_filters_match_whole_names_and_filters_repeat() {
+    let src = "@test fun a() {}\n@test fun ab() {}\n@test fun b() {}\n";
+    let t = Temp::with(&[("m.la", src)]);
+    let names = |args: &[&str]| -> Vec<String> {
+        let mut all = vec!["test"];
+        all.extend_from_slice(args);
+        let out = lughac(&t.0, &all);
+        text(&out.stdout)
+            .lines()
+            .filter_map(|l| {
+                l.strip_prefix("test ")
+                    .and_then(|l| l.split(" ...").next())
+                    .map(str::to_string)
+            })
+            .collect()
+    };
+    assert_eq!(names(&["--filter", "m.a"]), ["m.a", "m.ab"]);
+    assert_eq!(names(&["--exact", "--filter", "m.a"]), ["m.a"]);
+    assert_eq!(
+        names(&["--exact", "--filter", "m.a", "--filter", "m.b"]),
+        ["m.a", "m.b"]
+    );
+}

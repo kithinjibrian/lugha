@@ -18,6 +18,7 @@ mod pipeline;
 mod render;
 mod source;
 mod test;
+mod test_json;
 mod update;
 
 use std::ffi::OsString;
@@ -109,12 +110,18 @@ where
         Command::Test {
             paths,
             filter,
+            exact,
             timeout,
+            list,
+            json,
         } => Ok(test::test(
             &test::Request {
                 paths,
-                filter: filter.as_deref(),
+                filters: filter,
+                exact: *exact,
                 timeout: std::time::Duration::from_secs(*timeout),
+                list: *list,
+                json: *json,
             },
             &mut out,
         )),
@@ -206,12 +213,21 @@ enum Command {
     Test {
         /// Files or folders (every .la file under them) [default: the current folder]
         paths: Vec<PathBuf>,
-        /// Run only the tests whose `module.name` contains TEXT
+        /// Run only the tests whose `module.name` contains TEXT (repeatable)
         #[arg(long, value_name = "TEXT")]
-        filter: Option<String>,
+        filter: Vec<String>,
+        /// Each --filter must equal a whole test name
+        #[arg(long)]
+        exact: bool,
         /// Fail a test that runs longer than SECS seconds
         #[arg(long, value_name = "SECS", default_value_t = 10, value_parser = clap::value_parser!(u64).range(1..))]
         timeout: u64,
+        /// List the tests and where they are; build and run nothing
+        #[arg(long)]
+        list: bool,
+        /// One JSON object per line, for tools such as editors
+        #[arg(long)]
+        json: bool,
     },
     /// Print the LLM-ready spec bundled with this compiler version
     Spec,

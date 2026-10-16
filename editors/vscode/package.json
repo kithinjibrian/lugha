@@ -1,8 +1,8 @@
 {
   "name": "lugha",
   "displayName": "Lugha",
-  "description": "Syntax highlighting, live lughac diagnostics and formatting for the Lugha language",
-  "version": "0.7.0",
+  "description": "Syntax highlighting, live lughac diagnostics, formatting and tests for the Lugha language",
+  "version": "0.8.0",
   "publisher": "kithinjibrian",
   "license": "GPL-3.0-only",
   "repository": {
@@ -19,12 +19,13 @@
   ],
   "main": "./out/src/extension.js",
   "activationEvents": [
-    "onLanguage:lugha"
+    "onLanguage:lugha",
+    "workspaceContains:**/*.la"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": true,
-      "description": "The language server `lughac lsp` only checks code, offline, and `lugha.path` can't be set by a workspace."
+      "description": "The language server `lughac lsp` only checks code, offline, and `lugha.path` can't be set by a workspace. Tests are neither listed nor run until the folder is trusted: running them runs its code."
     }
   },
   "contributes": {

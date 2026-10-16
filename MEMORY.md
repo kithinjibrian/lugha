@@ -1961,11 +1961,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. `@` is the token `At`; `parser/attributes.rs` keeps `@test` as `FunDecl.test: Option<Span>` (not a list: it is the only attribute), E0210 otherwise; inside an `impl` an `@` is a plain syntax error. Checker: `Signature.test`, `test_fns.rs` (E0434 for the shape and for any call or value use, through `call_key`/`function_value`; the assertions as intrinsics, `eq_ok` + printable), `check_tests` (no E0303, `Checked.tests` = the main file's tests). Codegen: tests skipped unless `Checked.tests` is `Some`; `assertions.rs` (branch + `lugha_rt_panic`, values through `part`), `test_main.rs` (a `main` asking `lugha_rt_test_is(name)` per test, else `lugha_rt_test_unknown` → 2), `runtime/test.c`. Driver: `pipeline::front_tests`, `driver/test.rs` (files via `fmt`'s walk, a lex scan for `@test`, one executable per file in a `TempDir`, `thread::scope` workers over an atomic index, reader threads for the pipes, `try_wait` polling and kill on timeout). The old `@` fixtures for E0101 now use a backtick. Defining a function named `assert`/`assert_eq`/`assert_ne` is now E0302 (noted in the spec's compatibility line). VS Code grammar highlights `@test`; extension 0.7.0.
 
+### 163. Tests in the editor planned (session 180, approved session 181)
+
+**Decision:** v16 draft decisions 87–92: VS Code's Testing view with gutter ▶ and inline failures (over "Run test" links); on click only (plus VS Code's continuous run when turned on); nothing at all in untrusted folders; `lughac test --list`/`--json`/`--exact` for the extension (the user's choices; the security note accepted with "build it").
+
+### 164. Tests in the editor — milestone 85 (PRP-115)
+
+**Decision:** built as planned. CLI: `driver/test_json.rs` (hand-written JSON — `serde_json` stays `lughac lsp`'s — via `json::string`; `panic_of` splitting `panic: <message> at <file>:<line>:<col>` from the right; `listed` by lexing and parsing only), `Request.wants` (repeatable `--filter`, `--exact`), `run_all` streaming results to the main thread over an `mpsc` channel so `--json` prints each as it finishes. Extension 0.8.0: `src/tests.ts` (pure: parse lines, build arguments, `outcome` to 0-based places, `\r\n` output), `src/testing.ts` (a `TestController`: items per file from `--list`, refreshed by a debounced `**/*.la` watcher; a default Run profile with continuous run; `spawn` without a shell from the folder; unreported tests `errored` as "doesn't compile"), registered only when the workspace is trusted (else on `onDidGrantWorkspaceTrust`); `workspaceContains:**/*.la` activation. `testing.ts` is the second file importing `vscode`.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 85 complete**: PRP-115 tests in the editor, VS Code extension 0.8.0
 - **Milestone 84 complete**: PRP-114 `lughac test`, VS Code extension 0.7.0
 - **Milestone 83 complete**: PRP-113 Find References and Rename, VS Code extension 0.6.0
 - **Milestone 82 complete**: PRP-112 more quick fixes, VS Code extension 0.5.0

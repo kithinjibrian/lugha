@@ -11,12 +11,14 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
 use super::Output;
 use super::fmt::{display, la_files};
 use super::pipeline::{self, Failure, TempDir};
+use super::test_json;
 use crate::codegen::OptLevel;
 use crate::lexer::{self, TokenKind};
 use crate::modules::fetch::Mode;
@@ -24,15 +26,39 @@ use crate::modules::fetch::Mode;
 /// What `lughac test` was asked to run.
 pub(super) struct Request<'a> {
     pub paths: &'a [PathBuf],
-    pub filter: Option<&'a str>,
+    /// `--filter`s: a test runs when any matches (all, when none is given).
+    pub filters: &'a [String],
+    /// `--exact`: a filter must equal the whole name (milestone 85).
+    pub exact: bool,
     pub timeout: Duration,
+    /// `--list`: name the tests, build nothing (milestone 85).
+    pub list: bool,
+    /// `--json`: one JSON object per line, for tools (milestone 85).
+    pub json: bool,
 }
 
-/// One test to run: its name as reported, and its file's executable.
+impl Request<'_> {
+    /// Whether the test `name` is one to run or list.
+    fn wants(&self, name: &str) -> bool {
+        self.filters.is_empty()
+            || self.filters.iter().any(|f| {
+                if self.exact {
+                    name == f
+                } else {
+                    name.contains(f.as_str())
+                }
+            })
+    }
+}
+
+/// One test to run: its name as reported, its file's executable, and
+/// where it is declared.
 struct Job {
     name: String,
     test: String,
     exe: PathBuf,
+    file: String,
+    line: usize,
 }
 
 /// How one test ended.
@@ -69,6 +95,9 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
             files.push(path.clone());
         }
     }
+    if request.list {
+        return code.max(list(request, &files, out));
+    }
     let temp = match TempDir::new() {
         Ok(temp) => temp,
         Err(error) => {
@@ -93,10 +122,12 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
         match build(file, &exe) {
             Ok(tests) => {
                 let module = module_name(file);
-                jobs.extend(tests.into_iter().map(|test| Job {
+                jobs.extend(tests.into_iter().map(|(test, line, _)| Job {
                     name: format!("{module}.{test}"),
                     test,
                     exe: exe.clone(),
+                    file: display(file),
+                    line,
                 }));
             }
             Err(Failure::Program(source, diagnostics)) => {
@@ -109,10 +140,28 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
             }
         }
     }
-    jobs.retain(|j| request.filter.is_none_or(|f| j.name.contains(f)));
-    let outcomes = run_all(&jobs, request.timeout);
+    jobs.retain(|j| request.wants(&j.name));
     let (mut passed, mut failed) = (0, 0);
+    // `--json` reports each test as it finishes, for an editor's live view.
+    let outcomes = run_all(&jobs, request.timeout, |job, outcome, took| {
+        if request.json
+            && let Some(line) = json_result(job, outcome, took, request.timeout)
+        {
+            out.print(&line);
+        }
+    });
     for (job, outcome) in jobs.iter().zip(&outcomes) {
+        if request.json {
+            match outcome {
+                Outcome::Passed => passed += 1,
+                Outcome::NotStarted(why) => {
+                    out.error(&format!("cannot run test `{}`: {why}", job.name));
+                    code = 2;
+                }
+                _ => failed += 1,
+            }
+            continue;
+        }
         match outcome {
             Outcome::Passed => {
                 passed += 1;
@@ -142,6 +191,7 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
     }
     let total = passed + failed;
     let summary = match total {
+        _ if request.json => test_json::summary_line(passed, failed),
         0 => "0 tests\n".to_string(),
         1 => format!("\n1 test: {passed} passed, {failed} failed\n"),
         n => format!("\n{n} tests: {passed} passed, {failed} failed\n"),
@@ -164,9 +214,73 @@ fn has_tests(text: &str) -> bool {
     }
 }
 
+/// `--list`: every test of `files` that `request` wants, by parsing alone;
+/// files that don't parse are skipped (their errors show elsewhere).
+fn list(request: &Request, files: &[PathBuf], out: &mut Output) -> u8 {
+    let mut code = 0;
+    for file in files {
+        let file = file.strip_prefix(".").unwrap_or(file);
+        let text = match std::fs::read_to_string(file) {
+            Ok(text) => text,
+            Err(error) => {
+                out.error(&format!("cannot read `{}`: {error}", display(file)));
+                code = 2;
+                continue;
+            }
+        };
+        let module = module_name(file);
+        for (test, line, col) in test_json::listed(&text).unwrap_or_default() {
+            let name = format!("{module}.{test}");
+            if request.wants(&name) {
+                out.print(&test_json::list_line(
+                    request.json,
+                    &name,
+                    &display(file),
+                    line,
+                    col,
+                ));
+            }
+        }
+    }
+    code
+}
+
+/// The `--json` line for a finished test; `None` for one that never started.
+fn json_result(job: &Job, outcome: &Outcome, took: Duration, timeout: Duration) -> Option<String> {
+    let (status, message, at, output) = match outcome {
+        Outcome::Passed => ("passed", None, None, ""),
+        Outcome::TimedOut => {
+            let message = format!("timed out after {} s", timeout.as_secs());
+            ("timed_out", Some(message), None, "")
+        }
+        Outcome::Failed {
+            code,
+            stdout,
+            stderr,
+        } => match test_json::panic_of(stderr) {
+            Some(panic) => ("failed", Some(panic.message), panic.at, stdout.as_str()),
+            None => {
+                let message = code.map_or("killed".to_string(), |c| format!("exit code {c}"));
+                ("failed", Some(message), None, stdout.as_str())
+            }
+        },
+        Outcome::NotStarted(_) => return None,
+    };
+    Some(test_json::result_line(&test_json::Result {
+        name: &job.name,
+        file: &job.file,
+        line: job.line,
+        status,
+        message,
+        at,
+        output,
+        ms: took.as_millis(),
+    }))
+}
+
 /// Checks `file` for tests and builds its test executable at `exe`; returns
-/// its tests in declaration order.
-fn build(file: &Path, exe: &Path) -> Result<Vec<String>, Failure> {
+/// its tests in declaration order, each with its name's line and column.
+fn build(file: &Path, exe: &Path) -> Result<Vec<(String, usize, usize)>, Failure> {
     let mode = Mode {
         offline: false,
         update: false,
@@ -180,7 +294,19 @@ fn build(file: &Path, exe: &Path) -> Result<Vec<String>, Failure> {
     if !tests.is_empty() {
         pipeline::build(&front, OptLevel::O0, exe)?;
     }
-    Ok(tests)
+    // Positions from the main file's own text (offset 0 in the source map).
+    let text = &front.source.main().text;
+    let positions = test_json::listed(text).unwrap_or_default();
+    Ok(tests
+        .into_iter()
+        .map(|t| {
+            let (line, col) = positions
+                .iter()
+                .find(|(n, _, _)| *n == t)
+                .map_or((1, 1), |(_, l, c)| (*l, *c));
+            (t, line, col)
+        })
+        .collect())
 }
 
 /// A test's module as reported: the file's path without `.la`, folders
@@ -190,29 +316,40 @@ fn module_name(file: &Path) -> String {
     shown.replace(['/', '\\'], ".")
 }
 
-/// Runs every job, up to one per CPU at a time; the outcomes in job order.
-fn run_all(jobs: &[Job], timeout: Duration) -> Vec<Outcome> {
+/// Runs every job, up to one per CPU at a time, telling `done` about each
+/// as it finishes (on this thread); the outcomes in job order.
+fn run_all(
+    jobs: &[Job],
+    timeout: Duration,
+    mut done: impl FnMut(&Job, &Outcome, Duration),
+) -> Vec<Outcome> {
     let workers = thread::available_parallelism()
         .map_or(1, |n| n.get())
         .min(jobs.len().max(1));
     let next = AtomicUsize::new(0);
     let mut outcomes: Vec<Option<Outcome>> = (0..jobs.len()).map(|_| None).collect();
-    let results = std::sync::Mutex::new(&mut outcomes);
+    let (send, receive) = mpsc::channel();
     thread::scope(|scope| {
         for _ in 0..workers {
-            scope.spawn(|| {
+            let send = send.clone();
+            let next = &next;
+            scope.spawn(move || {
                 loop {
                     let i = next.fetch_add(1, Ordering::Relaxed);
                     let Some(job) = jobs.get(i) else {
                         break;
                     };
+                    let started = Instant::now();
                     let outcome = run_one(job, timeout);
-                    // A worker that panicked holding the lock is a bug; the
-                    // results it left are still usable.
-                    let mut slots = results.lock().unwrap_or_else(|e| e.into_inner());
-                    slots[i] = Some(outcome);
+                    // The receiver lives until every result is in.
+                    let _ = send.send((i, outcome, started.elapsed()));
                 }
             });
+        }
+        drop(send);
+        for (i, outcome, took) in receive {
+            done(&jobs[i], &outcome, took);
+            outcomes[i] = Some(outcome);
         }
     });
     outcomes
