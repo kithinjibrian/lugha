@@ -4,3 +4,4 @@ error[E0410]: no field `size` on `string`
 3 |     let n = s.size;
   |               ^^^^
 
+For more about E0410, run `lughac explain E0410`.

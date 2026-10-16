@@ -4,3 +4,4 @@ error[E0304]: `main` must be `fun main()` or `fun main(): i32`
 1 | fun main(argc: i32): i32 {
   |     ^^^^
 
+For more about E0304, run `lughac explain E0304`.

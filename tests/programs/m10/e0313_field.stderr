@@ -6,3 +6,4 @@ error[E0313]: `lo` is private to module `range`
   |
   = help: only its own module can use it; remove `private` to share it
 
+For more about E0313, run `lughac explain E0313`.

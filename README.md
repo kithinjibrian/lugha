@@ -69,6 +69,7 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **The standard library (v15, milestone 53):** `import std.math;` then `math.sqrt(2.0)`, `math.pow`, `math.sin`, `math.round`, `math.abs(-3)`, `math.max(2, 7)`, `math.clamp`, `math.pi()`; the float functions work for any `T: Float` (`f32`, `f64`). Std modules ship inside `lughac` and cost nothing unless imported.
 - **Copy-on-write arrays (v15, milestone 55):** `let g = grads[i];` no longer copies the array; it is shared until either side writes, and the writer copies it first. Programs print exactly what they did before, and read-heavy code such as firefly's autograd trains 13–35% faster.
 - **Lazy std modules (v15, milestone 60):** of an imported std module, only the functions your program reaches are compiled, as with the prelude; everything is still type-checked.
+- **`lughac explain` (v16, milestone 86):** `lughac explain E0501` explains any error code with an example and its fix; errors end with a pointer to it, and VS Code links each code to its explanation.
 - **Tests in VS Code (v16, milestone 85):** the Testing view lists every `@test`, with a ▶ beside each in the editor; failures show at the failing line. Nothing runs in an untrusted folder.
 - **`lughac test` (v16, milestone 84):** write `@test fun area_of_unit() { assert_eq(area(0.0), 0.0); }` beside your code and run `lughac test`: each test runs in its own process, in parallel, with a time limit; failures show the values and what the test printed.
 - **Find References and Rename (v16, milestone 83):** Shift+F12 in VS Code lists every use of a name; F2 renames them all, after checking that the renamed program means the same.
@@ -136,6 +137,7 @@ It never overwrites a file; the package name is the folder's unless `--name` giv
 | Command | Effect |
 | --- | --- |
 | `lughac init [folder] [--lib] [--name N]` | Start a program, or a library with an example, in a folder |
+| `lughac explain [CODE]` | Explain an error or warning code (`E0501`), or list every code |
 | `lughac test [paths…] [--filter TEXT] [--timeout SECS]` | Run the `@test` functions in `.la` files, each in its own process; exit 1 if any fails |
 | `lughac fmt [paths…] [--check]` | Format `.la` files (folders: every `.la` under them) in the canonical style; `--check` lists the files that would change, exit 1 if any |
 | `lughac lsp` | Serve the Language Server Protocol on stdin/stdout: `check`'s diagnostics as you type, hover types, go-to-definition, completion and signature help, for editors |

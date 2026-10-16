@@ -4,3 +4,4 @@ error[E0415]: no variant `Circel` on `Shape`
 4 |     let s = Shape.Circel(1.0);
   |                   ^^^^^^
 
+For more about E0415, run `lughac explain E0415`.

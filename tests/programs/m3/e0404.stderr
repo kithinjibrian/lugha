@@ -4,3 +4,4 @@ error[E0404]: cannot apply `+` to bool and i64
 3 |     let n = flag + 1;
   |             ^^^^^^^^
 
+For more about E0404, run `lughac explain E0404`.

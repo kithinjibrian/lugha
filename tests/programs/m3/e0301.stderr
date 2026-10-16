@@ -4,3 +4,4 @@ error[E0301]: cannot find `count` in this scope
 2 |     let total = count + 1;
   |                 ^^^^^
 
+For more about E0301, run `lughac explain E0301`.

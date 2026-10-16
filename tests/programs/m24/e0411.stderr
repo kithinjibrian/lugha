@@ -6,3 +6,4 @@ error[E0411]: cannot iterate over `Stuck`
    |
    = help: `for … of` walks arrays and anything with `fun next(mut self): Option<T>`; for a string's bytes, use `for i in 0..s.len` with `s[i]`
 
+For more about E0411, run `lughac explain E0411`.

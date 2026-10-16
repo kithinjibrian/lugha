@@ -6,3 +6,4 @@ error[E0406]: `Circle.area` can't be used as a value
   |
   = help: a method isn't a value; call it on a value: `x.area()`
 
+For more about E0406, run `lughac explain E0406`.

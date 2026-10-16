@@ -9,3 +9,4 @@ error[E0501]: cannot assign to `n`: it is not mutable
   |
   = help: parameters are immutable; shadow it: `let mut n = n;`
 
+For more about E0501, run `lughac explain E0501`.

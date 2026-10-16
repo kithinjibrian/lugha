@@ -21,6 +21,10 @@ Never deleted. Older entries are never modified.
 - The language server published a `lugha.toml` error (E0325) to nothing once a program with loader errors was checked: the prelude's offsets overlapped the manifests'. The server now places the prelude after every loaded file (`modules::with_prelude_at`); the CLI never checked such programs and is unchanged
 
 ### Added
+- `lughac explain [CODE]`: a page for each of the 99 error and warning codes (`docs/errors/`, embedded as `lugha::explain`), each with an example that reports it and the fix, every single-file example checked by the tests; `lughac explain` lists them. `lughac lsp` links each diagnostic's code (`lugha-explain:<CODE>.md`), which VS Code extension 0.9.0 opens in a read-only tab; **Lugha: Explain Error Code** too (milestone 86, PRP-116)
+
+### Changed
+- Human diagnostics end with `For more about E0501, run \`lughac explain E0501\`.` (the codes reported, in order); every expected `.stderr` in `tests/programs/` and the spec's two examples gained the line; JSON output is unchanged (milestone 86)
 - Tests in the editor: `lughac test --list` (by parsing alone), `--json` (one result per line as each test finishes, then a summary), `--exact` and repeatable `--filter`; VS Code extension 0.8.0 shows every test in the Testing view with a ▶ beside each `@test`, failures at their line and output per test, runs only when asked and never in untrusted folders, starting `lugha.path` without a shell (milestone 85, PRP-115)
 - `lughac test [paths…] [--filter TEXT] [--timeout SECS]`: `@test` functions (`@` is a new token; E0210 for an unknown or misplaced attribute, E0434 for a test with parameters or a result, or one that is called), the intrinsics `assert`, `assert_eq` and `assert_ne` (failures show both values), and a runner building one executable per file and running each test in its own process, in parallel, with a time limit, output captured and shown on failure. `lughac build`/`run` leave tests out. VS Code extension 0.7.0 highlights `@test` (milestone 84, PRP-114)
 

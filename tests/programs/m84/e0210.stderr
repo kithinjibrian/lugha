@@ -6,3 +6,4 @@ error[E0210]: unknown attribute `@inline`
   |
   = help: the only attribute is `@test`, before a function
 
+For more about E0210, run `lughac explain E0210`.

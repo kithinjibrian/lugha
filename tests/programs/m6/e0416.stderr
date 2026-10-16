@@ -4,3 +4,4 @@ error[E0416]: `Shape.Rect` has 2 payloads, but 1 was given
 4 |     let s = Shape.Rect(1.0);
   |             ^^^^^^^^^^^^^^^
 
+For more about E0416, run `lughac explain E0416`.

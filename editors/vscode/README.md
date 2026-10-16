@@ -5,6 +5,7 @@ Syntax highlighting, live `lughac` diagnostics and formatting for [Lugha](../../
 - **Highlighting:** `@test` attributes (milestone 84), keywords, types, numbers, `//` and `/* … */` comments (nested ones too), strings with `{…}` interpolation and format specifiers (`{pi:.2}`), `format("{} {:>4}", …)` templates, `char` literals.
 - **Editing:** `Ctrl+/` toggles `//`, `Shift+Alt+A` toggles `/* … */`; brackets and quotes close themselves.
 - **Find References** (`Shift+F12`) lists every use of the name under the cursor — a variable, function, method, type, field, variant or module — and **Rename** (`F2`) renames them all at once. Both search the files the server has checked: open files, their imports, the main files in `lugha.entries` and main files it has seen. Rename checks the renamed program before answering and refuses (with the reason) a keyword, a name from std or the prelude, a module, a clash or a changed meaning, and a public item of a module no checked main file imports. Needs a `lughac` from milestone 83.
+- **Error explanations:** the code of each diagnostic (`E0501` in the Problems panel and the hover) is a link: it opens a read-only tab explaining the error, with an example and its fix, from your `lughac explain`. **Lugha: Explain Error Code** in the Command Palette opens one by code. Works offline and in untrusted folders. Needs a `lughac` from milestone 86.
 - **Tests:** every `@test` in the workspace's `.la` files appears in the **Testing** view, with a ▶ in the gutter beside it. Run one, a file's or all; a failure shows its message (`assert_eq failed: left 4, right 5`) at the failing line, and what the test printed is in the test's output. Tests run only when you ask (or under the Testing view's continuous run, if you turn it on), each in its own process through `lughac test`. In a folder VS Code doesn't trust (Restricted Mode), tests are neither listed nor run, since running them runs that folder's code. Needs a `lughac` from milestone 85.
 - **Formatting:** **Format Document** (`Shift+Alt+F`) formats the file exactly as `lughac fmt` would — the text in the editor, unsaved changes included — and one undo puts it back. To format on every save, add `"[lugha]": { "editor.formatOnSave": true }` to your user `settings.json`. A file with a syntax error is left as it is (its errors are already underlined). Needs a `lughac` from milestone 81.
 - **Quick fixes:** on a non-exhaustive `match` (E0417), the lightbulb offers **Add missing arms** (every missing case, in full) and **Add a `_` arm**; each new arm's body is `panic("not handled")` until you write it (milestone 79). Assigning to a `let` that isn't `mut` (E0501) offers **Make `x` mutable**; a misspelled variant in a pattern (W0103, `Some(Emtpy)`) offers **Change to `Empty`** when one variant is that close; `math.sqrt` without its import (E0301) offers **Add `import std.math;`** (milestone 82).
@@ -27,8 +28,8 @@ Needs Node 22.
 cd editors/vscode
 npm ci
 npm test                    # server-command and grammar tests
-npm run package             # lugha-0.8.0.vsix
-code --install-extension lugha-0.8.0.vsix
+npm run package             # lugha-0.9.0.vsix
+code --install-extension lugha-0.9.0.vsix
 ```
 
 **After any change in `editors/vscode/`**, bump the version in `package.json` (`npm version minor --no-git-tag-version`), rebuild the `.vsix` and reinstall it, then run **Developer: Reload Window**. VS Code skips a `.vsix` whose version is already installed, so an unbumped rebuild needs `code --install-extension … --force`. The language-server features come from `lughac` itself: reinstall it too (`cargo install --path .`) when they changed.
@@ -78,5 +79,6 @@ Also make sure the `lughac` VS Code starts is from milestone 73 or later (`cargo
 15. Write `let n = 0; n = 1;`, `Some(Emtpy) =>` in a match on an `Option` of an enum with `Empty`, and `math.sqrt(2.0)` with no import: the lightbulb offers **Make `n` mutable**, **Change to `Empty`** and **Add `import std.math;`**, and each clears its diagnostic.
 16. Write `@test` above a function: `@test` is coloured as an attribute; run `lughac test` in a terminal.
 17. Open the **Testing** view in a folder with `@test` functions: they are listed by file; ▶ beside a passing one turns it green, a failing one red with its message at the failing line; in Restricted Mode the view is empty.
-18. `Shift+F12` on a function used in two files lists both; `F2` on it renames it in both, and `F2` to a name already used is refused with the reason.
-19. Set `lugha.path` to `/nonexistent`: one notification.
+18. Make an E0501 (`let n = 0; n = 1;`) and click `E0501` in the Problems panel: a tab explains it; run **Lugha: Explain Error Code** with `W0103`: its page opens.
+19. `Shift+F12` on a function used in two files lists both; `F2` on it renames it in both, and `F2` to a name already used is refused with the reason.
+20. Set `lugha.path` to `/nonexistent`: one notification.

@@ -14,3 +14,4 @@ error[E0313]: `r` is not `public`: it is only visible inside package `geo`
   |
   = help: a `Circle` literal sets `r`: build it with one of `Circle`'s functions
 
+For more about E0313, run `lughac explain E0313`.

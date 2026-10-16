@@ -8,3 +8,4 @@ error[E0501]: cannot assign to `total`: it is not mutable
   |
   = help: make it mutable: `let mut total`
 
+For more about E0501, run `lughac explain E0501`.

@@ -22,3 +22,4 @@ error[E0112]: unknown escape `\q`
   |
   = help: write one character, or an escape: \n \t \r \0 \\ \' \u{1F600}
 
+For more about E0112, run `lughac explain E0112`.

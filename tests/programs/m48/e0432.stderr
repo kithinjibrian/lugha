@@ -30,3 +30,4 @@ error[E0431]: `q` isn't a format: use `x`, `X`, `b` or `o`
   |
   = help: a specifier is `[[fill]align][#][0][width][.precision][kind]`, e.g. `{x:>8.2}`
 
+For more about E0432 and E0431, run `lughac explain <code>`.

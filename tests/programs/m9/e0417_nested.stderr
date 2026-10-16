@@ -6,3 +6,4 @@ error[E0417]: non-exhaustive match: `None`, `Some(Rect(_, _))` not covered
   |
   = help: add the missing arms, or `_ => …`
 
+For more about E0417, run `lughac explain E0417`.

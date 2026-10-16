@@ -18,3 +18,4 @@ error[E0510]: cannot change `xs` while assigning to `xs[…]`
   |
   = help: make the change in its own statement, before or after this one
 
+For more about E0510, run `lughac explain E0510`.

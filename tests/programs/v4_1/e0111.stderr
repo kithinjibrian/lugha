@@ -6,3 +6,4 @@ error[E0111]: `{` in a string is never closed
   |
   = help: close it with `}`, or write `{{` for a literal brace
 
+For more about E0111, run `lughac explain E0111`.

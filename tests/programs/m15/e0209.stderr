@@ -6,3 +6,4 @@ error[E0209]: a closure parameter is a plain name
   |
   = help: write `x` or `x: T`; closures have no `self`, and parameters are never `mut`
 
+For more about E0209, run `lughac explain E0209`.

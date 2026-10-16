@@ -6,3 +6,4 @@ error[E0311]: `Shape` is the name of a type
   |
   = help: rename the variable
 
+For more about E0311, run `lughac explain E0311`.

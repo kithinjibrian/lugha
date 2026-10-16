@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use lsp_types::{
-    Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity, Location, NumberOrString,
-    Position, Range, Uri,
+    CodeDescription, Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity, Location,
+    NumberOrString, Position, Range, Uri,
 };
 
 use super::documents::{normalize, path_to_uri};
@@ -69,10 +69,19 @@ pub(super) fn top(report: &Report) -> Diagnostic {
             Severity::Warning => DiagnosticSeverity::WARNING,
         }),
         code: report.code.map(|c| NumberOrString::String(c.to_string())),
+        // The editor links the code to `lughac explain` (milestone 86).
+        code_description: report.code.and_then(explanation),
         source: Some(SOURCE.to_string()),
         message,
         ..Diagnostic::default()
     }
+}
+
+/// The link to `code`'s explanation, which the VS Code extension serves
+/// from `lughac explain`: `lugha-explain:E0501.md`.
+fn explanation(code: &str) -> Option<CodeDescription> {
+    let href = format!("lugha-explain:{code}.md").parse::<Uri>().ok()?;
+    Some(CodeDescription { href })
 }
 
 /// The URI of `path`; `None` only if the URI parser rejects what
@@ -213,6 +222,8 @@ mod tests {
             "expected i32, found string\nexpected i32\nhelp: return a number"
         );
         assert_eq!(d.code, Some(NumberOrString::String("E0403".to_string())));
+        let href = d.code_description.map(|c| c.href.as_str().to_string());
+        assert_eq!(href.as_deref(), Some("lugha-explain:E0403.md"));
         assert_eq!(d.source.as_deref(), Some("lughac"));
         let related = d.related_information.unwrap();
         assert_eq!(related[0].location.uri.as_str(), "file:///w/main.la");

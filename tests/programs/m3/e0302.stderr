@@ -7,3 +7,4 @@ error[E0302]: `area` is defined more than once
 3 | fun area(): i64 = 2;
   |     ^^^^ defined again here
 
+For more about E0302, run `lughac explain E0302`.

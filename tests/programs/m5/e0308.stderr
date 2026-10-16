@@ -6,3 +6,4 @@ error[E0308]: field `x` is declared twice in `P`
   |            |
   |            first declared here
 
+For more about E0308, run `lughac explain E0308`.

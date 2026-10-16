@@ -6,3 +6,4 @@ error[E0320]: `geo` is both a package and a local module
   |
   = help: rename the folder `geo/` (or `geo.la`) or the package in `lugha.toml`
 
+For more about E0320, run `lughac explain E0320`.

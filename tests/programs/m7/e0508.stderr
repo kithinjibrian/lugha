@@ -8,3 +8,4 @@ error[E0508]: cannot pass `v` to a `mut self` method called on `v`
    |
    = help: copy it first: `let w = v;` and pass `w`
 
+For more about E0508, run `lughac explain E0508`.

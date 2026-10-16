@@ -6,3 +6,4 @@ error[E0313]: `hidden` is not `public`, so `shapes.vec.hidden` can't reach it
   |
   = help: a module re-exported whole offers only its `public` items
 
+For more about E0313, run `lughac explain E0313`.

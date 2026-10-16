@@ -68,21 +68,28 @@ None.
 - `lughac explain` only prints embedded text. The extension starts `lugha.path explain <CODE>` (the code checked against `^[EW][0-9]{4}$` first) without a shell; this is a new way the extension starts `lughac`, for the user's review, but it runs no workspace code, so it is allowed in untrusted folders.
 
 ## TESTS TO WRITE
-- [ ] **`tests/explain.rs`:** every code in spec §9's table has an explanation and vice versa; each title equals the table's; each checked example reports its code (and the fixed ones check clean); the command (text, list, lower case, unknown → exit 2).
-- [ ] **The hint:** one code, several codes in first-appearance order, warnings only, none for JSON, none for an internal error (`tests/cli.rs`).
-- [ ] **`tests/programs/`:** every `.stderr` regenerated; the diff adds only hint lines.
-- [ ] **Language server:** a published diagnostic carries `codeDescription.href` (`tests/lsp.rs`).
-- [ ] **Extension:** URI ↔ code, rejecting anything but a code; `npm test`.
-- [ ] **Regression:** every existing test passes.
+- [x] **`tests/explain.rs`:** every code in spec §9's table has an explanation and vice versa; each title equals the table's; each checked example reports its code (and the fixed ones check clean); the command (text, list, lower case, unknown → exit 2).
+- [x] **The hint:** one code, several codes in first-appearance order, warnings only, none for JSON, none for an internal error (`tests/cli.rs`).
+- [x] **`tests/programs/`:** every `.stderr` regenerated; the diff adds only hint lines.
+- [x] **Language server:** a published diagnostic carries `codeDescription.href` (`tests/lsp.rs`).
+- [x] **Extension:** URI ↔ code, rejecting anything but a code; `npm test`.
+- [x] **Regression:** every existing test passes.
+
+## BUILT (session 183)
+- As designed: `src/explain.rs` (2 tests), `driver/explain.rs` (`run`, `hint`; 2 tests), the hint in `Output::diagnostics` (human only), `lughac explain [CODE]`; `tests/explain.rs` (4: every code paged with its title; every ```lugha block checked — `// error:`/`// warning:` must be reported, other errors only with `// also:`, unmarked blocks must check clean; the command; the hint), written before the pages, which started as stubs.
+- **The pages:** 99, written in four parallel batches by code range against a scratch checker that replicates `tests/explain.rs` with a built `lughac`; I wrote E0501 as the model. Text-only examples (multi-file, manifest, git, or not writable in Markdown): E0110, E0206, E0319–E0328 (E0328's layout and E0319/E0320's were reproduced on disk). E0317 (retired) is prose only. No `// also:` was needed.
+- **Fixtures:** 124 of the 158 expected `.stderr` files gained the hint line (the rest are panic-only); the diff adds only those lines; the spec's two rejected-program examples too.
+- **Editor:** `codeDescription` in `publish.rs` (unit test + `tests/lsp.rs`). Extension 0.9.0: `explain.ts` (3 tests; only `^[EW][0-9]{4}\.md$` reaches lughac), the `lugha-explain:` content provider (any trust), and the palette command **Lugha: Explain Error Code** added now rather than as a later fallback, since whether VS Code follows a custom-scheme code link from the Problems panel can only be seen in VS Code.
+- The manual check is left to the user (extension README step 18).
 
 ## ROLLBACK PLAN
 - Branch `prp-116-explain` from `main`; tag `m86`.
 - To abandon before merge: delete the branch. After: revert the merge.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test`, `npm test` (CI in the background).
-- [ ] Spec at milestone 86; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test`, `npm test` (CI in the background).
+- [x] Spec at milestone 86; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 - [ ] The manual check passes in VS Code (README step): clicking a code opens its explanation.
 
 ## VALIDATION

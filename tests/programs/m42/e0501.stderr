@@ -8,3 +8,4 @@ error[E0501]: cannot loop with `mut` over `xs`: it is not mutable
   |
   = help: declare it with `let mut xs`
 
+For more about E0501, run `lughac explain E0501`.

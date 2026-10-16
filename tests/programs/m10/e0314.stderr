@@ -7,3 +7,4 @@ error[E0314]: the import `geo` clashes with an item
 3 | fun geo(): i64 = 1;
   |     --- `geo` is also declared here
 
+For more about E0314, run `lughac explain E0314`.

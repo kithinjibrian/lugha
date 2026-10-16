@@ -6,3 +6,4 @@ error[E0430]: `describe` on `P` is a default method of both `Named` and `Shown`
    |
    = help: call it through a value or bound of the one you mean: `let x: Named = …;` or `T: Named`
 
+For more about E0430, run `lughac explain E0430`.

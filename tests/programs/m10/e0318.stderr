@@ -9,3 +9,4 @@ error[E0318]: `store.Entry` is private, but this signature is visible to other m
   |
   = help: make this declaration `private` too, or remove `private` from the type
 
+For more about E0318, run `lughac explain E0318`.

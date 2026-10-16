@@ -6,3 +6,4 @@ error[E0422]: `i64` doesn't satisfy `Shape`
    |
    = help: no method `area`
 
+For more about E0422, run `lughac explain E0422`.

@@ -6,3 +6,4 @@ error[E0426]: `Dot` doesn't satisfy `Shape`, so this arm can never match
   |
   = help: no method `area`
 
+For more about E0426, run `lughac explain E0426`.

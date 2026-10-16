@@ -4,3 +4,4 @@ error[E0407]: this expression has no value
 4 |     let x = log();
   |             ^^^^^ its type is void
 
+For more about E0407, run `lughac explain E0407`.

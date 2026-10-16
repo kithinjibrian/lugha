@@ -4,3 +4,4 @@ error[E0411]: cannot index into a value of type `i64`
 3 |     let d = n[0];
   |             ^
 
+For more about E0411, run `lughac explain E0411`.

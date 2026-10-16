@@ -8,3 +8,4 @@ error[E0510]: cannot change `g[…]` while swapping `g[…][…]`
   |
   = help: make the change in its own statement, before or after this one
 
+For more about E0510, run `lughac explain E0510`.

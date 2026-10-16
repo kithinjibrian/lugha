@@ -6,3 +6,4 @@ error[E0507]: cannot call `push` on `xs` while iterating over it
 4 |         xs.push(x);
   |         ^^
 
+For more about E0507, run `lughac explain E0507`.

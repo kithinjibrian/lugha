@@ -10,3 +10,4 @@ error[E0202]: unclosed `{`
 1 | fun area(r: f64): f64 {
   |                       ^
 
+For more about E0201 and E0202, run `lughac explain <code>`.

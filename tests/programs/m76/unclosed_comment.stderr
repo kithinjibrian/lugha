@@ -6,3 +6,4 @@ error[E0113]: unterminated block comment
   |
   = help: close it with `*/`
 
+For more about E0113, run `lughac explain E0113`.

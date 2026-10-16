@@ -4,3 +4,4 @@ error[E0413]: missing fields `y`, `z` in `P`
 4 |     let p = P { x: 1.0 };
   |             ^^^^^^^^^^^^
 
+For more about E0413, run `lughac explain E0413`.

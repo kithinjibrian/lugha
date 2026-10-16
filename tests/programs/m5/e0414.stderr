@@ -6,3 +6,4 @@ error[E0414]: field `x` is given twice
   |                 |
   |                 first given here
 
+For more about E0414, run `lughac explain E0414`.

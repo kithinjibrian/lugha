@@ -6,3 +6,4 @@ error[E0417]: non-exhaustive match: other values of `i64` are not covered
   |
   = help: add `_ => …` as the last arm
 
+For more about E0417, run `lughac explain E0417`.

@@ -14,3 +14,4 @@ error[E0433]: this pattern doesn't match every value
   |
   = help: use `let … else { … };`, or `match`, for a pattern that can fail
 
+For more about E0433, run `lughac explain E0433`.

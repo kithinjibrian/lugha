@@ -14,3 +14,4 @@ error[E0419]: `P` doesn't satisfy `Ord`
   |
   = help: give `P` a `fun cmp(self, other: P): Ordering` to order it
 
+For more about E0419, run `lughac explain E0419`.

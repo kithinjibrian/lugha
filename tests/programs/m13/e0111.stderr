@@ -6,3 +6,4 @@ error[E0111]: unmatched `}` in a string
   |
   = help: write `}}` for a literal brace
 
+For more about E0111, run `lughac explain E0111`.

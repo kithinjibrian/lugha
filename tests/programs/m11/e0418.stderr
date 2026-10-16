@@ -4,3 +4,4 @@ error[E0418]: `Pair` takes 2 type arguments but 1 was given
 3 | fun first(p: Pair<i64>): i64 = p.a;
   |              ^^^^^^^^^
 
+For more about E0418, run `lughac explain E0418`.

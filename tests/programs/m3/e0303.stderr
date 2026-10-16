@@ -6,3 +6,4 @@ error[E0303]: no `main` function
   |
   = help: add `fun main() { }`
 
+For more about E0303, run `lughac explain E0303`.

@@ -6,3 +6,4 @@ error[E0324]: package `geo` is version 2.0.0, which doesn't meet >= 1.2.0, < 2.0
   |
   = help: update the package's folder, or the requirement in `lugha.toml`
 
+For more about E0324, run `lughac explain E0324`.

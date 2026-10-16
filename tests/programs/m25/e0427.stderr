@@ -6,3 +6,4 @@ error[E0427]: `Ordered` can't be a type: `less` uses `Self`
   |
   = help: two `Ordered` values could hold different types; use it as a bound: `<T: Ordered>`
 
+For more about E0427, run `lughac explain E0427`.

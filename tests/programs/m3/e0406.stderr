@@ -4,3 +4,4 @@ error[E0406]: `step` is not a function
 3 |     step(1);
   |     ^^^^
 
+For more about E0406, run `lughac explain E0406`.
