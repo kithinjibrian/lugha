@@ -119,7 +119,7 @@ fn replace(file: &Path, text: &str) -> io::Result<()> {
 
 /// The `.la` files under `dir`, sorted, recursing into folders that are
 /// neither hidden nor `target`, never through a symbolic link.
-fn la_files(dir: &Path, out: &mut Vec<PathBuf>) -> io::Result<()> {
+pub(super) fn la_files(dir: &Path, out: &mut Vec<PathBuf>) -> io::Result<()> {
     let mut entries = std::fs::read_dir(dir)?
         .map(|e| e.map(|e| e.path()))
         .collect::<io::Result<Vec<_>>>()?;
@@ -140,6 +140,6 @@ fn la_files(dir: &Path, out: &mut Vec<PathBuf>) -> io::Result<()> {
 }
 
 /// A path as the user would write it: without a leading `./`.
-fn display(path: &Path) -> String {
+pub(super) fn display(path: &Path) -> String {
     path.strip_prefix(".").unwrap_or(path).display().to_string()
 }

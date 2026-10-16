@@ -1,0 +1,4 @@
+fun main() {
+    let words = ["hi", "hi"];
+    assert_ne(words[0], words[1]);
+}

@@ -7,6 +7,7 @@
 //!
 //! Depends on: ast, lexer (tokens), diagnostic, span.
 
+mod attributes;
 mod closure;
 mod conditional;
 mod decl;

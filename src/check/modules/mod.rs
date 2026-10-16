@@ -29,7 +29,21 @@ pub struct Unit<'a> {
 ///
 /// Every diagnostic found (errors and warnings) when there is at least one error.
 pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
-    let (checker, monos, layouts, used) = run(units);
+    check_with(units, false)
+}
+
+/// [`check_modules`] for `lughac test` (v16, milestone 84): the main file
+/// needs no `main`, and [`Checked::tests`] lists its tests.
+///
+/// # Errors
+///
+/// As [`check_modules`].
+pub fn check_tests(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
+    check_with(units, true)
+}
+
+fn check_with(units: &[Unit], tests: bool) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
+    let (checker, monos, layouts, used) = run_with(units, tests);
     if checker
         .diagnostics
         .iter()
@@ -66,6 +80,11 @@ pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<D
             monos,
             used,
             captures: checker.captures,
+            tests: tests.then(|| {
+                units
+                    .first()
+                    .map_or_else(Vec::new, |u| super::test_fns::tests_of(u.program))
+            }),
         },
         checker.diagnostics,
     ))
@@ -74,6 +93,10 @@ pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<D
 /// Every checking pass over `units`, before codegen's tables are built:
 /// shared by `check_modules` and the language server's `check_partial`.
 pub(in crate::check) fn run(units: &[Unit]) -> (Checker, Vec<Instance>, Vec<Type>, Vec<Type>) {
+    run_with(units, false)
+}
+
+fn run_with(units: &[Unit], tests: bool) -> (Checker, Vec<Instance>, Vec<Type>, Vec<Type>) {
     // Ids are shared across modules (PRP-034), so the last module's count covers all.
     let count = units
         .iter()
@@ -81,6 +104,7 @@ pub(in crate::check) fn run(units: &[Unit]) -> (Checker, Vec<Instance>, Vec<Type
         .max()
         .unwrap_or(0);
     let mut checker = Checker::new(count as usize);
+    checker.test_mode = tests;
     checker.modules(units);
     let monos = checker.monomorphize();
     checker.instance_literals(&monos);
@@ -134,10 +158,14 @@ impl Checker {
             self.enter(unit);
             self.visibility_rules(unit.program);
             self.check_named_imports(unit);
+            self.test_shapes(unit.program);
         }
         if let Some((main, others)) = units.split_first() {
             self.enter(main);
-            self.check_main(main.program);
+            // `lughac test` runs tests, never `main` (milestone 84).
+            if !self.test_mode {
+                self.check_main(main.program);
+            }
             for unit in others {
                 self.enter(unit);
                 self.main_belongs_in_the_main_file(unit.program);

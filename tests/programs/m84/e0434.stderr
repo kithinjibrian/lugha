@@ -1,0 +1,16 @@
+error[E0434]: a test takes no parameters and returns nothing
+  --> tests/programs/m84/e0434.la:6:5
+  |
+6 | fun takes(n: i64) {
+  |     ^^^^^
+  |
+  = help: write `@test fun name() { … }`, and check results with `assert` or `assert_eq`
+
+error[E0434]: `takes` is a test: only `lughac test` runs it
+  --> tests/programs/m84/e0434.la:2:5
+  |
+2 |     takes(1);
+  |     ^^^^^
+  |
+  = help: move the shared code into an ordinary function and call that
+

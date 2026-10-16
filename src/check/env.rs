@@ -11,7 +11,9 @@ pub(super) const INTRINSICS: [&str; 5] = ["print", "println", "panic", "to_strin
 
 /// True for every intrinsic name, the v3 input intrinsics (`input.rs`) included.
 pub(super) fn is_intrinsic(name: &str) -> bool {
-    INTRINSICS.contains(&name) || super::input::INPUT.contains(&name)
+    INTRINSICS.contains(&name)
+        || super::input::INPUT.contains(&name)
+        || super::test_fns::ASSERTIONS.contains(&name)
 }
 
 impl Checker {
@@ -100,6 +102,7 @@ impl Checker {
                     ret: ret_type,
                     span: name.span,
                     is_extern,
+                    test: matches!(item, Item::Fun(f) if f.test.is_some()),
                 };
                 self.functions.insert(key, signature);
                 self.hover.function(name.span, name.span, None);

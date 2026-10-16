@@ -32,6 +32,8 @@ impl<'ctx> Lowerer<'ctx> {
                 // The prelude's and std's functions are compiled only when
                 // reached (`monos`, PRP-043, v15).
                 Item::Fun(_) if is_lazy(unit) => continue,
+                // Tests are built only by `lughac test` (milestone 84).
+                Item::Fun(f) if f.test.is_some() && self.tests.is_none() => continue,
                 Item::Fun(f) => (&f.name.name, &f.params, f.ret.as_ref(), false),
                 Item::Extern(e) => (&e.name.name, &e.params, e.ret.as_ref(), true),
                 // Methods are declared by `declare_methods`.

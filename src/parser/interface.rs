@@ -56,6 +56,7 @@ impl Parser<'_> {
                 ret: ret.clone(),
                 body,
                 span,
+                test: None,
             })
         };
         Ok(InterfaceItem {

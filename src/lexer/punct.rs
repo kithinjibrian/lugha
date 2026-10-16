@@ -53,6 +53,7 @@ impl Lexer<'_> {
             (';', _) => (Semi, 1),
             (':', _) => (Colon, 1),
             ('?', _) => (Question, 1),
+            ('@', _) => (At, 1),
             _ => return self.unexpected(start, c),
         };
         self.pos += len;

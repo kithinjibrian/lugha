@@ -37,6 +37,9 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) functions: HashMap<String, Signature<'ctx>>,
     /// The checker's key for what each call calls (PRP-034).
     pub(super) callees: HashMap<ExprId, String>,
+    /// Under `lughac test`, the main file's tests to run (milestone 84);
+    /// `None` leaves every test out of the build.
+    pub(super) tests: Option<Vec<String>>,
     /// The checker's type for every written type, by span.
     pub(super) annotations: HashMap<Span, Type>,
     /// Every method and associated function, by `Type.name` (v1).
@@ -152,6 +155,7 @@ pub(super) fn lower<'ctx>(
         try_conversions: checked.try_conversions.clone(),
         default_args: checked.default_args.clone(),
         iterations: checked.iterations.clone(),
+        tests: checked.tests.clone(),
         upcasts: Default::default(),
         shows: Vec::new(),
         closure_counts: HashMap::new(),
@@ -187,6 +191,7 @@ pub(super) fn lower<'ctx>(
             if let Item::Fun(f) = item
                 && f.type_params.is_empty()
                 && !super::declare::is_lazy(unit)
+                && (f.test.is_none() || lowerer.tests.is_some())
             {
                 lowerer.define(unit.path, f)?;
             }
@@ -198,12 +203,17 @@ pub(super) fn lower<'ctx>(
     lowerer.define_instances(units, &checked.monos)?;
     lowerer.finish_upcasts();
     lowerer.finish_shows();
-    let user_main = lowerer
-        .functions
-        .get("main")
-        .expect("checked: E0303 requires `main`")
-        .function;
-    lowerer.c_main(user_main);
+    match lowerer.tests.clone() {
+        Some(tests) => lowerer.c_test_main(&tests),
+        None => {
+            let user_main = lowerer
+                .functions
+                .get("main")
+                .expect("checked: E0303 requires `main`")
+                .function;
+            lowerer.c_main(user_main);
+        }
+    }
     lowerer
         .module
         .verify()

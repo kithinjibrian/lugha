@@ -48,7 +48,7 @@ impl Parser<'_> {
         (imports, items)
     }
 
-    fn item(&mut self) -> PResult<Item> {
+    pub(super) fn item(&mut self) -> PResult<Item> {
         match self.peek() {
             TokenKind::Fun => self.fun_decl_with(false).map(Item::Fun),
             TokenKind::Extern => self.extern_decl().map(Item::Extern),
@@ -57,6 +57,7 @@ impl Parser<'_> {
             TokenKind::Impl => self.impl_decl().map(Item::Impl),
             TokenKind::Interface => self.interface_decl().map(Item::Interface),
             TokenKind::Private | TokenKind::Public => self.visible_item(),
+            TokenKind::At => self.attributed_item(),
             other => {
                 let is_statement = starts_statement(other);
                 let reported =

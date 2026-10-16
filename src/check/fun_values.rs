@@ -26,6 +26,7 @@ impl Checker {
             return Type::Error;
         }
         let (generics, params, ret) = (sig.generics.clone(), sig.params.clone(), sig.ret.clone());
+        self.not_a_test(key, at.span);
         self.callees.insert(at.id, key.to_string());
         let decl = self.functions[key].span;
         self.hover.function(at.span, decl, None);

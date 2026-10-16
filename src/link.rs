@@ -14,7 +14,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// The runtime's source files, in the order they are joined: the core first,
 /// since it holds every `#include`, then the fragments that rely on it.
-pub const RUNTIME_PARTS: [(&str, &str); 11] = [
+pub const RUNTIME_PARTS: [(&str, &str); 12] = [
     ("lugha_rt.c", include_str!("../runtime/lugha_rt.c")),
     ("stack.c", include_str!("../runtime/stack.c")),
     ("print.c", include_str!("../runtime/print.c")),
@@ -26,10 +26,11 @@ pub const RUNTIME_PARTS: [(&str, &str); 11] = [
     ("env.c", include_str!("../runtime/env.c")),
     ("fs.c", include_str!("../runtime/fs.c")),
     ("process.c", include_str!("../runtime/process.c")),
+    ("test.c", include_str!("../runtime/test.c")),
 ];
 
 /// Every runtime function codegen may call; `lugha_rt.c` defines them all.
-pub const RUNTIME_SYMBOLS: [&str; 56] = [
+pub const RUNTIME_SYMBOLS: [&str; 58] = [
     "lugha_rt_init",
     "lugha_rt_read_line",
     "lugha_rt_read_file",
@@ -86,6 +87,8 @@ pub const RUNTIME_SYMBOLS: [&str; 56] = [
     "lugha_rt_to_string_f32",
     "lugha_rt_to_string_bool",
     "lugha_rt_os_seed",
+    "lugha_rt_test_is",
+    "lugha_rt_test_unknown",
 ];
 
 /// The C runtime linked into every program: [`RUNTIME_PARTS`] joined in order,
@@ -102,6 +105,7 @@ pub const RUNTIME_SOURCE: &str = concat!(
     include_str!("../runtime/env.c"),
     include_str!("../runtime/fs.c"),
     include_str!("../runtime/process.c"),
+    include_str!("../runtime/test.c"),
 );
 
 /// Why linking failed.

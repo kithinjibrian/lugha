@@ -175,6 +175,18 @@ fn a_comment_inside_an_expression_keeps_its_statement_verbatim() {
 }
 
 #[test]
+fn a_test_attribute_goes_on_its_own_line() {
+    check(
+        "@test   fun adds(){assert(1+1==2);}",
+        "@test\nfun adds() {\n    assert(1 + 1 == 2);\n}\n",
+    );
+    check(
+        "// t\n@test private fun f() {}",
+        "// t\n@test\nprivate fun f() {}\n",
+    );
+}
+
+#[test]
 fn syntax_errors_are_reported_not_formatted() {
     assert!(matches!(format("fun f( {"), Err(FormatError::Syntax(_))));
 }

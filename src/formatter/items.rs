@@ -29,7 +29,12 @@ impl Printer<'_> {
     fn top_span(&self, top: &Top) -> Span {
         let (start, span) = match top {
             Top::Import(i) => (i.public.map(|p| p.start), i.span),
-            Top::Item(Item::Fun(f)) => (f.visibility.map(|v| v.span.start), f.span),
+            Top::Item(Item::Fun(f)) => (
+                f.test
+                    .map(|t| t.start)
+                    .or(f.visibility.map(|v| v.span.start)),
+                f.span,
+            ),
             Top::Item(Item::Extern(e)) => (e.visibility.map(|v| v.span.start), e.span),
             Top::Item(Item::Struct(s)) => (s.visibility.map(|v| v.span.start), s.span),
             Top::Item(Item::Enum(e)) => (e.visibility.map(|v| v.span.start), e.span),
@@ -151,6 +156,11 @@ impl Printer<'_> {
         let mut parts = vec![head, body];
         if expression {
             parts.push(text(";"));
+        }
+        // `@test` on its own line above (v16, milestone 84).
+        if f.test.is_some() {
+            parts.insert(0, Doc::Hard);
+            parts.insert(0, text("@test"));
         }
         concat(parts)
     }

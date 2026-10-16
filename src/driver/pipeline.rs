@@ -104,7 +104,13 @@ fn parse_loaded((source, loaded): (Source, Loaded)) -> Result<Front, Failure> {
 
 /// Reads, lexes, parses and type-checks `path` (spec §9 stages 1–3).
 pub(super) fn front(path: &Path, mode: Mode) -> Result<Front, Failure> {
-    check_parsed(parsed(path, mode)?)
+    check_parsed(parsed(path, mode)?, false)
+}
+
+/// [`front`] for `lughac test` (milestone 84): no `main` needed, and the
+/// checker lists the file's tests.
+pub(super) fn front_tests(path: &Path, mode: Mode) -> Result<Front, Failure> {
+    check_parsed(parsed(path, mode)?, true)
 }
 
 /// A program checked for the language server: what the checker found,
@@ -173,14 +179,20 @@ pub(super) fn front_partial(
     })
 }
 
-fn check_parsed(mut front: Front) -> Result<Front, Failure> {
+fn check_parsed(mut front: Front, tests: bool) -> Result<Front, Failure> {
     // The prelude's array helpers (v3) are checked and compiled with every program.
     let mut prelude_errors = Vec::new();
     modules::with_prelude(&mut front.modules, &mut prelude_errors);
     let prelude = front.modules.last().expect("the prelude was just added");
     front.source.add("<prelude>", prelude.base, &prelude.text);
     let start = prelude.base;
-    match check::check_modules(&units(&front.modules)) {
+    let units = units(&front.modules);
+    let result = if tests {
+        check::check_tests(&units)
+    } else {
+        check::check_modules(&units)
+    };
+    match result {
         Ok((checked, warnings)) if prelude_errors.is_empty() => {
             front.warnings.extend(warnings);
             front.checked = Some(checked);
@@ -310,12 +322,12 @@ fn temp_error(error: io::Error) -> String {
 }
 
 /// A private temporary directory, removed on drop.
-struct TempDir {
-    path: PathBuf,
+pub(super) struct TempDir {
+    pub(super) path: PathBuf,
 }
 
 impl TempDir {
-    fn new() -> io::Result<Self> {
+    pub(super) fn new() -> io::Result<Self> {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
         let path = std::env::temp_dir().join(format!("lughac-{}-{n}", std::process::id()));

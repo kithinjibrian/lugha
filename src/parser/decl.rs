@@ -102,6 +102,7 @@ impl Parser<'_> {
             ret,
             body,
             span: Span::new(start, self.prev_end()),
+            test: None,
         })
     }
 

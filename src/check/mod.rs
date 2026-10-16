@@ -75,6 +75,7 @@ mod struct_literal;
 mod structs;
 mod swap;
 mod templates;
+mod test_fns;
 mod tuples;
 mod type_patterns;
 mod types;
@@ -92,7 +93,7 @@ pub use input::prelude_helper;
 pub use instances::Instance;
 pub use iterators::Iteration;
 pub use members::{Detail, Member, MemberKind, TypeMembers, type_members, value_members};
-pub use modules::{Unit, check_modules, qualify, symbol};
+pub use modules::{Unit, check_modules, check_tests, qualify, symbol};
 pub use ordering::ORDERING;
 pub use partial::{Name, Partial, Target, check_partial};
 pub use refs::REF_NEW;
@@ -167,6 +168,7 @@ impl Checker {
             uses: Vec::new(),
             body_types: HashMap::new(),
             hover: partial::Recorder::new(count),
+            test_mode: false,
         }
     }
 }
@@ -180,6 +182,8 @@ pub(super) struct Signature {
     pub span: Span,
     /// An `extern fun`: never a value (v3).
     pub is_extern: bool,
+    /// A `@test` function: nothing may call it (v16, milestone 84).
+    pub test: bool,
 }
 
 /// A local variable or parameter.
@@ -274,6 +278,8 @@ pub(super) struct Checker {
     body_types: HashMap<String, Vec<Type>>,
     /// Names and expression spans for the language server's hover (v16).
     hover: partial::Recorder,
+    /// Checking for `lughac test` (milestone 84): no `main` needed.
+    test_mode: bool,
 }
 
 impl Checker {

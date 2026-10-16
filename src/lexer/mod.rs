@@ -362,15 +362,17 @@ mod tests {
     #[test]
     fn unexpected_characters_are_e0101() {
         // `&` and `|` are operators since v7.
-        for src in ["@", "#", "é", "$", "\u{0}"] {
+        for src in ["`", "#", "é", "$", "\u{0}"] {
             assert_eq!(errors(src), [("E0101", src)], "{src:?}");
         }
-        assert_eq!(errors("a @ b"), [("E0101", "@")]);
+        assert_eq!(errors("a ` b"), [("E0101", "`")]);
+        // `@` starts an attribute (v16, milestone 84).
+        assert_eq!(kinds("@test"), [At, Ident("test".into())]);
     }
 
     #[test]
     fn every_error_is_reported_in_source_order() {
-        let src = "let a = @;\nlet s = \"\\q\";\nlet n = 1__0;";
+        let src = "let a = `;\nlet s = \"\\q\";\nlet n = 1__0;";
         let codes: Vec<_> = errors(src).into_iter().map(|(code, _)| code).collect();
         assert_eq!(codes, ["E0101", "E0103", "E0105"]);
     }

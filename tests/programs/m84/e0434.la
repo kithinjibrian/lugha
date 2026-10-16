@@ -1,0 +1,8 @@
+fun main() {
+    takes(1);
+}
+
+@test
+fun takes(n: i64) {
+    assert(n > 0);
+}

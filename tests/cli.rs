@@ -95,7 +95,7 @@ fn run_passes_the_exit_code_through() {
 
 #[test]
 fn check_reports_errors_with_exit_1() {
-    let dir = TempDir::with(&[("ok.la", ARITH.as_bytes()), ("bad.la", b"fun main() { @ }")]);
+    let dir = TempDir::with(&[("ok.la", ARITH.as_bytes()), ("bad.la", b"fun main() { ` }")]);
     let ok = lughac(&dir.0, &["check", "ok.la"]);
     assert_eq!(
         (ok.status.code(), ok.stdout.len(), ok.stderr.len()),
@@ -104,7 +104,7 @@ fn check_reports_errors_with_exit_1() {
     let bad = lughac(&dir.0, &["check", "bad.la"]);
     assert_eq!(bad.status.code(), Some(1));
     assert!(
-        text(&bad.stderr).starts_with("error[E0101]: unexpected character '@'\n"),
+        text(&bad.stderr).starts_with("error[E0101]: unexpected character '`'\n"),
         "{}",
         text(&bad.stderr)
     );
@@ -128,7 +128,7 @@ fn emit_prints_a_stage_and_writes_nothing() {
 
 #[test]
 fn json_diagnostics_are_one_line_each_and_nothing_else() {
-    let dir = TempDir::with(&[("bad.la", b"fun main() { @ # }")]);
+    let dir = TempDir::with(&[("bad.la", b"fun main() { ` # }")]);
     let out = lughac(&dir.0, &["check", "--diagnostics=json", "bad.la"]);
     assert_eq!(out.status.code(), Some(1));
     let stderr = text(&out.stderr);

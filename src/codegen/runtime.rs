@@ -141,6 +141,9 @@ impl<'ctx> Lowerer<'ctx> {
         if name == "swap" {
             return self.swap(args);
         }
+        if matches!(name, "assert" | "assert_eq" | "assert_ne") {
+            return self.assertion(call, name, args);
+        }
         let arg = match args.first() {
             Some(arg) => {
                 let ty = self.ty(arg);

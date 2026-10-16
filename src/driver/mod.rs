@@ -17,6 +17,7 @@ mod lsp;
 mod pipeline;
 mod render;
 mod source;
+mod test;
 mod update;
 
 use std::ffi::OsString;
@@ -105,6 +106,18 @@ where
             0
         }),
         Command::Fmt { paths, check } => Ok(fmt::fmt(paths, *check, &mut out)),
+        Command::Test {
+            paths,
+            filter,
+            timeout,
+        } => Ok(test::test(
+            &test::Request {
+                paths,
+                filter: filter.as_deref(),
+                timeout: std::time::Duration::from_secs(*timeout),
+            },
+            &mut out,
+        )),
         Command::Spec => Ok(spec(out.stdout, out.stderr)),
         Command::Lsp => Ok(lsp::serve(out.stderr)),
         Command::Init { folder, lib, name } => Ok(init::init(
@@ -189,6 +202,17 @@ enum Command {
         #[arg(long)]
         check: bool,
     },
+    /// Run the `@test` functions in .la files, each in its own process (v16)
+    Test {
+        /// Files or folders (every .la file under them) [default: the current folder]
+        paths: Vec<PathBuf>,
+        /// Run only the tests whose `module.name` contains TEXT
+        #[arg(long, value_name = "TEXT")]
+        filter: Option<String>,
+        /// Fail a test that runs longer than SECS seconds
+        #[arg(long, value_name = "SECS", default_value_t = 10, value_parser = clap::value_parser!(u64).range(1..))]
+        timeout: u64,
+    },
     /// Print the LLM-ready spec bundled with this compiler version
     Spec,
     /// Serve the Language Server Protocol on stdin/stdout, for editors (v16)
@@ -230,9 +254,11 @@ impl Command {
             Command::Check { diagnostics, .. } | Command::Update { diagnostics, .. } => {
                 *diagnostics
             }
-            Command::Spec | Command::Init { .. } | Command::Lsp | Command::Fmt { .. } => {
-                Format::Human
-            }
+            Command::Spec
+            | Command::Init { .. }
+            | Command::Lsp
+            | Command::Fmt { .. }
+            | Command::Test { .. } => Format::Human,
         }
     }
 
@@ -243,7 +269,11 @@ impl Command {
             | Command::Run { file, .. }
             | Command::Check { file, .. }
             | Command::Update { file, .. } => Some(file.display().to_string()),
-            Command::Spec | Command::Init { .. } | Command::Lsp | Command::Fmt { .. } => None,
+            Command::Spec
+            | Command::Init { .. }
+            | Command::Lsp
+            | Command::Fmt { .. }
+            | Command::Test { .. } => None,
         }
     }
 }

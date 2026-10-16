@@ -1953,11 +1953,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned: `driver/lsp/references.rs` (`Key` — a declaration by file and bytes, bundled files by their `<…>` name, or a module path — so places compare across checks' offset spaces; `at`, `find` over every snapshot, deduplicated in a `BTreeSet`); `driver/lsp/rename.rs` (`target` with the refusals, `reachable`: a local by `Name::Local`, `private` on the declaration's line, a main file, or another main's check loaded the file; the renamed texts in a cloned `Documents`; `verify` checks every main that loaded a renamed file before and after, comparing error counts per file and `find` of the moved declaration against the moved places). `Server.alone` remembers which mains were checked alone. Intrinsics (`println`) have no declaration: References `null`, Rename "nothing to rename". Extension 0.6.0 (README only).
 
+### 161. `lughac test` planned (sessions 177–178, approved session 179)
+
+**Decision:** v16 draft decisions 81–86: `@test` (the user chose it over `test fun` and a naming convention, and over Rust's `#[test]`, keeping `@` for Python-style decorators later); tests anywhere, paths like `fmt`; `assert`/`assert_eq`/`assert_ne` in any code; each test in its own process, in parallel, 10 s default limit; `--filter`, `--timeout`, output captured and shown on failure.
+
+### 162. `lughac test` — milestone 84 (PRP-114)
+
+**Decision:** built as planned. `@` is the token `At`; `parser/attributes.rs` keeps `@test` as `FunDecl.test: Option<Span>` (not a list: it is the only attribute), E0210 otherwise; inside an `impl` an `@` is a plain syntax error. Checker: `Signature.test`, `test_fns.rs` (E0434 for the shape and for any call or value use, through `call_key`/`function_value`; the assertions as intrinsics, `eq_ok` + printable), `check_tests` (no E0303, `Checked.tests` = the main file's tests). Codegen: tests skipped unless `Checked.tests` is `Some`; `assertions.rs` (branch + `lugha_rt_panic`, values through `part`), `test_main.rs` (a `main` asking `lugha_rt_test_is(name)` per test, else `lugha_rt_test_unknown` → 2), `runtime/test.c`. Driver: `pipeline::front_tests`, `driver/test.rs` (files via `fmt`'s walk, a lex scan for `@test`, one executable per file in a `TempDir`, `thread::scope` workers over an atomic index, reader threads for the pipes, `try_wait` polling and kill on timeout). The old `@` fixtures for E0101 now use a backtick. Defining a function named `assert`/`assert_eq`/`assert_ne` is now E0302 (noted in the spec's compatibility line). VS Code grammar highlights `@test`; extension 0.7.0.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 84 complete**: PRP-114 `lughac test`, VS Code extension 0.7.0
 - **Milestone 83 complete**: PRP-113 Find References and Rename, VS Code extension 0.6.0
 - **Milestone 82 complete**: PRP-112 more quick fixes, VS Code extension 0.5.0
 - **Milestone 81 complete**: PRP-111 formatting in the editor, VS Code extension 0.4.0

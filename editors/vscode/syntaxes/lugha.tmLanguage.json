@@ -12,6 +12,7 @@
         { "include": "#format-template" },
         { "include": "#string" },
         { "include": "#char" },
+        { "include": "#attribute" },
         { "include": "#number" },
         { "include": "#declaration" },
         { "include": "#keyword" },
@@ -149,6 +150,14 @@
         { "name": "constant.character.escape.lugha", "match": "\\{\\{|\\}\\}" },
         { "name": "constant.other.placeholder.lugha", "match": "\\{(?::[^{}\"]*)?\\}" }
       ]
+    },
+    "attribute": {
+      "comment": "`@test` before a function (v16, milestone 84).",
+      "match": "(@)([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": { "name": "punctuation.definition.decorator.lugha" },
+        "2": { "name": "entity.name.function.decorator.lugha" }
+      }
     },
     "char": {
       "name": "string.quoted.single.lugha",
