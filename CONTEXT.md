@@ -7319,3 +7319,26 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - Nothing new.
+
+---
+
+## SESSION 204 — 2026-10-16 — Unjoined spawn: Lugha beside Go — closed
+Branch: main
+
+### WHAT WAS DONE
+- Showed the user's program and its fix in Lugha beside the equivalent Go (WaitGroup / channel). No code change.
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- None.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing new.
