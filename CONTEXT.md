@@ -7845,3 +7845,8 @@ Branch: prp-130-module_docs
 
 ### STILL OPEN AT CLOSE
 - Nothing. Reinstall `lughac` for the editor to pick it up.
+
+---
+
+## SESSION 226 — 2026-10-17 — kivuli's second report: nested inference, check from the root, C files twice — open
+Branch: fix-kivuli-round-2
