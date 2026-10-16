@@ -1,6 +1,6 @@
 ## FEATURE: Variants as function values — a variant with payloads used without a call is a function of its payloads (`Msg.Named`, `Shape.Rect`, `Some`, `Ok`, `Err`); milestone 94 (v17).
 
-**Status:** proposed 2026-10-17 (session 215), with PRP-124.
+**Status:** approved 2026-10-17 ("approved", session 216); proposed in session 215, with PRP-124.
 **Milestone:** 94 (tag `m94` at merge).
 **Spec:** `Language v17 Draft.md` decisions 30–34; v17 spec §4 ("Functions as values"), §9 (symbols), §11 (row 94).
 

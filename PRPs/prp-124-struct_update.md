@@ -1,6 +1,6 @@
 ## FEATURE: Struct update syntax — `S { f: e, ..base }` builds a struct from some fields written and the rest copied from `base`; milestone 93 (v17).
 
-**Status:** proposed 2026-10-17 (session 215), with PRP-125.
+**Status:** approved 2026-10-17 ("approved", session 216); proposed in session 215, with PRP-125.
 **Milestone:** 93 (tag `m93` at merge).
 **Spec:** `Language v17 Draft.md` decisions 24–29; v17 spec §3 (grammar), §4 (struct literals), §5 (evaluation order), §9 (diagnostics), §11 (row 93).
 
