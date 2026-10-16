@@ -439,6 +439,9 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 ### Milestone 93 — Struct update syntax ✅
 - [x] (PRP-124) `S { f: e, ..base }`, Rust's rules; E0440, W0104; for kivuli
 
+### Milestone 95 — Formatter hugging ✅
+- [x] (PRP-126) trailing arrays and struct literals hug; headers kept; tagged `m95`
+
 ### Milestone 94 — Variants as functions ✅
 - [x] (PRP-125) `Msg.Named`, `Some`, `Ok`, `Err` as function values; tagged `m94`. kivuli's prerequisites are done.
 - [ ] `None` in a closure's result inside a generic function, with nothing fixing its type, is still E0412 (found while testing milestone 94)

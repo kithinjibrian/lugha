@@ -19,6 +19,15 @@ pub(super) enum Doc {
     /// Flat if it fits on the line, else broken.
     Group(Box<Doc>),
     Concat(Vec<Doc>),
+    /// A group's contents, always printed broken (the hugged argument).
+    Broken(Box<Doc>),
+    /// A value that may hug a call's parentheses when it is the last
+    /// argument: an array or a struct literal (v17). Prints as its inside.
+    Huggable(Box<Doc>),
+    /// A call's arguments (v17, milestone 95): the first, a group, flat if
+    /// it fits; else the second — the hugged form, `f(a, [` … `])` — if its
+    /// first line fits; else the first, broken.
+    Hug(Box<Doc>, Box<Doc>),
 }
 
 /// The width a line may reach (decision 61).
@@ -45,6 +54,52 @@ pub(super) fn nest(doc: Doc) -> Doc {
 /// fits, else one per line with a trailing comma — then `close`.
 pub(super) fn list(open: &str, items: Vec<Doc>, close: &str) -> Doc {
     separated(open, items, close, Doc::SoftLine)
+}
+
+/// Marks `doc` (an array or struct literal) as able to hug a call.
+pub(super) fn huggable(doc: Doc) -> Doc {
+    Doc::Huggable(Box::new(doc))
+}
+
+/// A call's `(args)` (v17, milestone 95): as [`list`], except that a last
+/// argument marked [`huggable`] may keep the parentheses on its lines —
+/// `column([` … `])` — when the call doesn't fit and the arguments before
+/// it do, as rustfmt and Prettier lay out a trailing collection.
+pub(super) fn call_args(items: Vec<Doc>) -> Doc {
+    let hugs =
+        items.last().is_some_and(|d| matches!(d, Doc::Huggable(_))) && !items.iter().any(has_hard);
+    if !hugs {
+        return list("(", items, ")");
+    }
+    let count = items.len();
+    let mut hugged = vec![text("(")];
+    for (i, item) in items.iter().enumerate() {
+        if i > 0 {
+            hugged.push(text(", "));
+        }
+        hugged.push(if i + 1 == count {
+            force_broken(item.clone())
+        } else {
+            item.clone()
+        });
+    }
+    hugged.push(text(")"));
+    Doc::Hug(Box::new(list("(", items, ")")), Box::new(concat(hugged)))
+}
+
+/// `doc` with its outermost group printed broken: the hugged argument.
+fn force_broken(doc: Doc) -> Doc {
+    match doc {
+        Doc::Huggable(inner) => force_broken(*inner),
+        Doc::Group(inner) => Doc::Broken(inner),
+        Doc::Concat(mut parts) => {
+            if let Some(last) = parts.pop() {
+                parts.push(force_broken(last));
+            }
+            Doc::Concat(parts)
+        }
+        other => other,
+    }
 }
 
 /// [`list`] with a space inside the delimiters when flat: `{ a, b }`.
@@ -92,7 +147,8 @@ fn separated(open: &str, items: Vec<Doc>, close: &str, edge: Doc) -> Doc {
 fn has_hard(doc: &Doc) -> bool {
     match doc {
         Doc::Hard => true,
-        Doc::Nest(d) | Doc::Group(d) => has_hard(d),
+        Doc::Nest(d) | Doc::Group(d) | Doc::Broken(d) | Doc::Huggable(d) => has_hard(d),
+        Doc::Hug(normal, _) => has_hard(normal),
         Doc::Concat(ds) => ds.iter().any(has_hard),
         _ => false,
     }
@@ -139,19 +195,40 @@ pub(super) fn print(doc: &Doc, indent: usize) -> String {
                     stack.push((ind, broken, part));
                 }
             }
+            Doc::Broken(inner) => stack.push((ind, true, inner)),
+            Doc::Huggable(inner) => stack.push((ind, broken, inner)),
+            Doc::Hug(normal, hugged) => {
+                let left = WIDTH.saturating_sub(column);
+                let flat = match &**normal {
+                    Doc::Group(inner) => !has_hard(inner) && fits(inner, left, &stack),
+                    _ => false,
+                };
+                if !flat && fits(hugged, left, &stack) {
+                    stack.push((ind, broken, hugged));
+                } else {
+                    stack.push((ind, broken, normal));
+                }
+            }
         }
     }
     out
 }
 
 /// Whether `doc`, flat, and then what follows it up to the next line
-/// break, fit in `left` columns.
+/// break, fit in `left` columns. What follows measures its own groups as
+/// broken: a later group that can break ends the measurement at its first
+/// break, so a header stays whole when the body after it can break
+/// (Prettier's rule, v17).
 fn fits(doc: &Doc, left: usize, rest: &[(usize, bool, &Doc)]) -> bool {
     let mut left = left as isize;
-    let mut todo: Vec<(bool, &Doc)> = vec![(false, doc)];
+    // (broken, after this doc, the doc)
+    let mut todo: Vec<(bool, bool, &Doc)> = vec![(false, false, doc)];
     let mut rest = rest.iter().rev();
     loop {
-        let Some((broken, d)) = todo.pop().or_else(|| rest.next().map(|(_, b, d)| (*b, *d))) else {
+        let Some((broken, after, d)) = todo
+            .pop()
+            .or_else(|| rest.next().map(|(_, b, d)| (*b, true, *d)))
+        else {
             return left >= 0;
         };
         if left < 0 {
@@ -164,10 +241,14 @@ fn fits(doc: &Doc, left: usize, rest: &[(usize, bool, &Doc)]) -> bool {
             Doc::Line => left -= 1,
             Doc::SoftLine => {}
             Doc::IfBreak(b, f) => left -= if broken { b.len() } else { f.len() } as isize,
-            Doc::Nest(inner) => todo.push((broken, inner)),
-            // What follows decides on its own; measure it flat.
-            Doc::Group(inner) => todo.push((false, inner)),
-            Doc::Concat(ds) => ds.iter().rev().for_each(|part| todo.push((broken, part))),
+            Doc::Nest(inner) | Doc::Huggable(inner) => todo.push((broken, after, inner)),
+            Doc::Group(inner) => todo.push((after, after, inner)),
+            Doc::Broken(inner) => todo.push((true, after, inner)),
+            Doc::Hug(normal, _) => todo.push((after, after, normal)),
+            Doc::Concat(ds) => ds
+                .iter()
+                .rev()
+                .for_each(|part| todo.push((broken, after, part))),
         }
     }
 }
