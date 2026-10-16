@@ -1993,11 +1993,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned, test-first. `Type::Handle(key)` with a `collect_handles` pass before structs; `named_type`/`type_span`/`type_decl`/`is_type_name` know handles, so imports, visibility and the language server follow. Handles may have `impl` methods (the PRP said "no methods"; built-in methods remain none) — codegen picks `Type::Handle` for an `impl` target with no layout. `CParam` plans per extern (`Checked::c_params`); callers' signatures leave out `data`/`release` and show callbacks as `fun(…)` without `data`, so arity and inference are unchanged. E0436: an argument is static when the checker recorded a callee for it, or it is a closure with no captures. Codegen: per-site `lugha_cfn_<n>` + global `lugha_cbv_<n>` (no `data`); `lugha_cb_<signature>` trampolines load the `{ code, env }` pair straight from the pin (no GEP, so no `unsafe`); renamed externs sharing a symbol call through their own `FunctionType` (`Signature::c_type`) with call-site extensions. Byte-identical IR checked for all 185 compiling `tests/programs`. GTK 4 counter built against the installed `.so.N` files through `vendor/lib` symlinks; running it is the user's.
 
+### 171. Strings from C — milestone 89 (PRP-119)
+
+**Decision:** discovery for milestones 89–90 and lugha-gtk together (session 189), one approval (session 190), built in order. Strings: C's text copied by `lugha_rt_str_from_c(text, nullable)` (a new fragment `cstr.c` whose `utf8_length` mirrors the prelude's `utf8_decode`; a test checks overlong, surrogate, >U+10FFFF, truncated and 4-byte cases against `chars()`); `NULL` → `None`, or a location-less panic for a plain `string`; `Option<string>` arguments via `c_string` on the payload. Callbacks take strings but never return them (E0409, help says why). `tests/programs/m3/e0409` rewritten to a callback returning a string. Byte-identical IR (185 programs) against a fresh build of `main`.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 89 complete**: PRP-119 strings from C
 - **Milestone 88 complete**: PRP-118 callbacks and handles (`extern type`, `data`/`release`, E0435/E0436)
 - **Milestone 87 complete**: PRP-117 linking C libraries (`[link]`, E0329–E0331)
 - **Milestone 86 complete**: PRP-116 `lughac explain`, VS Code extension 0.9.0

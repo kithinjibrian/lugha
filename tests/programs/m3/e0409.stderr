@@ -1,9 +1,9 @@
-error[E0409]: an extern function can't return `string`
-  --> tests/programs/m3/e0409.la:1:33
+error[E0409]: this type can't cross into a callback
+  --> tests/programs/m3/e0409.la:1:30
   |
-1 | extern fun getenv(key: string): string;
-  |                                 ^^^^^^
+1 | extern fun ask(cb: fun(i64): string);
+  |                              ^^^^^^
   |
-  = help: C strings have no length header; return a number and use it from Lugha
+  = help: a callback's parameters and result are numbers, `bool`, handles (`extern type`) or `Option` of a handle; its parameters may also be `string` or `Option<string>`, copied from C, but it can't return one: C would keep a pointer into Lugha's memory
 
 For more about E0409, run `lughac explain E0409`.

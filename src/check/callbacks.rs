@@ -46,11 +46,20 @@ fn param_span(p: &Param) -> Span {
     Span::new(p.name.span.start, p.ty.span.end)
 }
 
-/// True for the types a callback may take or give back.
+/// True for the types a callback may give back to C.
 fn crosses_into_callback(ty: &Type) -> bool {
     ty.is_numeric()
         || matches!(ty, Type::Bool | Type::Handle(_) | Type::Error)
         || matches!(ty, Type::Option(inner) if matches!(**inner, Type::Handle(_)))
+}
+
+/// True for the types a callback may take from C: those, and C's text,
+/// copied (v16, milestone 89). A string never goes back: C would keep a
+/// pointer into Lugha's memory.
+fn crosses_from_c(ty: &Type) -> bool {
+    crosses_into_callback(ty)
+        || matches!(ty, Type::String)
+        || matches!(ty, Type::Option(inner) if **inner == Type::String)
 }
 
 impl Checker {
@@ -151,7 +160,7 @@ impl Checker {
                 }
                 None => {
                     let ty = self.resolve(p);
-                    if !crosses_into_callback(&ty) {
+                    if !crosses_from_c(&ty) {
                         self.report(errors::callback_type(p.span));
                     }
                     types.push(ty);
@@ -302,7 +311,6 @@ mod tests {
                 "E0435",
                 "fun(data)",
             ),
-            ("extern fun f(cb: fun(string));", "E0409", "string"),
             ("extern fun f(cb: fun(i64[]));", "E0409", "i64[]"),
             ("extern fun f(cb: fun(fun(i64)));", "E0409", "fun(i64)"),
             ("extern fun f(cb: fun(i64): string);", "E0409", "string"),
@@ -322,6 +330,24 @@ mod tests {
             );
             assert_eq!(found[0].1, at, "{decl}: {found:?}");
         }
+    }
+
+    #[test]
+    fn strings_come_from_c_but_never_go_back_v16() {
+        ok(
+            "extern fun lines(f: fun(string, Option<string>, data), u: data);\n\
+            extern fun title(): string;\nextern fun find(k: string): Option<string>;\n\
+            extern fun label(s: Option<string>);\n\
+            fun main() { lines(fun(a, b) { println(a); }); println(title()); label(find(\"k\")); }",
+        );
+        assert_eq!(
+            errors("extern fun f(cb: fun(i64): string);\nfun main() {}"),
+            [("E0409", "string")]
+        );
+        assert_eq!(
+            errors("extern fun f(cb: fun(i64): Option<string>);\nfun main() {}"),
+            [("E0409", "Option<string>")]
+        );
     }
 
     #[test]

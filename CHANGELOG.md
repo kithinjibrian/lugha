@@ -18,6 +18,7 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Changed
+- E0409 no longer rejects an extern returning `string`; `tests/programs/m3/e0409` now shows a callback returning a string, which stays E0409 (milestone 89)
 - An extern parameter with a function type is now a callback instead of E0409; E0409's message for a function an extern would return says so (milestone 88)
 
 ### Fixed
@@ -26,6 +27,7 @@ Never deleted. Older entries are never modified.
 - The language server published a `lugha.toml` error (E0325) to nothing once a program with loader errors was checked: the prelude's offsets overlapped the manifests'. The server now places the prelude after every loaded file (`modules::with_prelude_at`); the CLI never checked such programs and is unchanged
 
 ### Added
+- Strings from C: an extern may return `string` or `Option<string>` and take `Option<string>`, and callbacks may receive them; C's text is copied (`lugha_rt_str_from_c`, a new runtime fragment `cstr.c`), invalid UTF-8 becomes U+FFFD by the prelude's decoding rules, `NULL` is `None` (a panic for a plain `string`); C keeps its memory (milestone 89, PRP-119)
 - Callbacks and handles: `extern type Name;` declares an opaque C pointer type (`==`, printed `<Name>`, methods from `impl`, `Option<H>` as a nullable pointer); a function type in an extern's parameters is a callback — named functions and capture-free closures anywhere (`lugha_cfn_<n>`), any closure where the callback takes `data` (`lugha_cb_<signature>` trampolines, closures pinned with `GC_MALLOC_UNCOLLECTABLE` until C calls the `release` lughac passes); callers write neither `data` nor `release`; `extern "symbol" fun name(…)` declares one C function under several Lugha names and types; E0435, E0436; E0306 and E0409 widened (milestone 88, PRP-118)
 - Linking C libraries: a `[link]` table in `lugha.toml` with `libs`, `paths`, `include`, `c` and `pkg-config`; the tables of the program and every package it uses apply, program first; C files are compiled on their own with their package's flags; only `-l`/`-L`/`-pthread` (`--libs`) and `-I`/`-D`/`-pthread` (`--cflags`) are taken from `pkg-config` (`$PKG_CONFIG` if set); E0329 (pkg-config), E0330 (a C file that doesn't compile), E0331 (a failed link with `[link]` input, exit 1 instead of an internal error); `lughac check` and the language server check the table but run nothing; `link.rs` became `src/link/` (milestone 87, PRP-117)
 - `lughac explain [CODE]`: a page for each of the 99 error and warning codes (`docs/errors/`, embedded as `lugha::explain`), each with an example that reports it and the fix, every single-file example checked by the tests; `lughac explain` lists them. `lughac lsp` links each diagnostic's code (`lugha-explain:<CODE>.md`), which VS Code extension 0.9.0 opens in a read-only tab; **Lugha: Explain Error Code** too (milestone 86, PRP-116)

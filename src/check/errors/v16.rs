@@ -56,7 +56,9 @@ pub(in crate::check) fn callback_captures(span: Span) -> Diagnostic {
 /// A type that can't go into or out of a callback.
 pub(in crate::check) fn callback_type(span: Span) -> Diagnostic {
     Diagnostic::error("E0409", "this type can't cross into a callback", span).with_help(
-        "a callback's parameters and result are numbers, `bool`, handles (`extern type`) or `Option` of a handle",
+        "a callback's parameters and result are numbers, `bool`, handles (`extern type`) or `Option` of a handle; \
+         its parameters may also be `string` or `Option<string>`, copied from C, but it can't return one: \
+         C would keep a pointer into Lugha's memory",
     )
 }
 

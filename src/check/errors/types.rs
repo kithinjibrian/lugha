@@ -5,11 +5,6 @@ use crate::check::Type;
 use crate::diagnostic::{Diagnostic, Label};
 use crate::span::Span;
 
-pub(in crate::check) fn extern_string_return(span: Span) -> Diagnostic {
-    Diagnostic::error("E0409", "an extern function can't return `string`", span)
-        .with_help("C strings have no length header; return a number and use it from Lugha")
-}
-
 pub(in crate::check) fn wrong_literal(
     is_float: bool,
     expected: Type,
