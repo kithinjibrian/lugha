@@ -7195,5 +7195,23 @@ Branch: main
 
 ---
 
-## SESSION 199 — 2026-10-16 — Green threads: select arms explained — open
+## SESSION 199 — 2026-10-16 — Green threads: select arms explained — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user asked how the three `select` options for question 8 differ. Explained with examples (closed channels, send arms, timeouts); question 8 is still unanswered.
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- None.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The green-threads discovery, at question 8 (select arms).
