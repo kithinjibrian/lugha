@@ -7655,3 +7655,11 @@ Branch: prp-125-variant_functions
 
 ### STILL OPEN AT CLOSE
 - kivuli's prerequisites (milestones 93–94) are done; kivuli itself is the kivuli repository's work (its DECISION-001 can close). `None` in generic closure results: TODO.
+
+---
+
+## SESSION 218 — 2026-10-17 — Fix: `lughac fmt` drops the comma before a `(` arm — open
+Branch: fix-fmt-arm-comma
+
+### WHAT WAS DONE
+- In progress: kivuli's quirk 1 (the user: "fix bug 1"). `match (x, y) { (0, _) => { 1 }, (a, _) => a, }` formats to output that doesn't parse (exit 2).
