@@ -259,19 +259,38 @@ impl Printer<'_> {
     }
 
     /// `match s { arms }`, one arm per line; a comma after each arm but
-    /// one whose body is a block.
+    /// one whose body is a block — unless the next arm starts with `(` or
+    /// `-`, which would continue the block as a call or a subtraction
+    /// (`{ 1 } (a, _)`), so the output wouldn't parse back.
     fn matching(&mut self, whole: &Expr, scrutinee: &Expr, arms: &[Arm]) -> Doc {
         let head = concat(vec![text("match "), self.cond(scrutinee), text(" ")]);
         let open = self.after_brace(scrutinee.span.end, whole.span.end);
         let inner = crate::span::Span::new(open, whole.span.end - 1);
+        let seps: Vec<&'static str> = arms
+            .iter()
+            .enumerate()
+            .map(|(i, a)| {
+                let continues = arms
+                    .get(i + 1)
+                    .map(|next| self.pattern(&next.pattern))
+                    .is_some_and(|p| p.starts_with(['(', '-']));
+                match a.body.kind {
+                    ExprKind::Block(_) if !continues => "",
+                    _ => ",",
+                }
+            })
+            .collect();
         let arms = self.allowing(|p| {
             p.sequence(
                 inner,
                 arms,
                 |_, a| a.span,
-                |a| match a.body.kind {
-                    ExprKind::Block(_) => "",
-                    _ => ",",
+                |a| {
+                    let i = arms
+                        .iter()
+                        .position(|x| std::ptr::eq(x, a))
+                        .expect("an arm of this match");
+                    seps[i]
                 },
                 |p, a| p.arm(a),
             )

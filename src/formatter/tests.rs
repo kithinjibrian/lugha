@@ -265,3 +265,17 @@ fn actors_keep_fields_and_methods_in_order_v17() {
         "fun main() {\n    let c = spawn Counter { count: 0 };\n}\n",
     );
 }
+
+#[test]
+fn a_block_arm_keeps_its_comma_before_a_tuple_or_negative_pattern() {
+    // Without the comma, `{ 1 } (a, _)` would read as a call and `{ 1 } -1`
+    // as a subtraction (kivuli's quirk 1).
+    check(
+        "fun f(x:i64,y:i64):i64=match (x,y){(0,_)=>{1},(a,_)=>a,};",
+        "fun f(x: i64, y: i64): i64 = match (x, y) {\n    (0, _) => {\n        1\n    },\n    (a, _) => a,\n};\n",
+    );
+    check(
+        "fun f(x:i64):i64=match x{0=>{1},-1=>2,_=>{3}};",
+        "fun f(x: i64): i64 = match x {\n    0 => {\n        1\n    },\n    -1 => 2,\n    _ => {\n        3\n    }\n};\n",
+    );
+}
