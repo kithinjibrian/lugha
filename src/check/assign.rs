@@ -14,7 +14,10 @@ impl Checker {
         let mark = self.changes_mark();
         // Typing the place reports E0301/E0406/E0410/E0411 as for any expression.
         let target = self.expr(place, None);
-        if !self.check_place(place) {
+        // `c.count = 1` on an actor's handle is E0439 already (v17).
+        let through_handle = matches!(&place.kind, crate::ast::ExprKind::Field(base, _)
+            if matches!(self.types[base.id.0 as usize], Some(Type::Actor(_))));
+        if through_handle || !self.check_place(place) {
             self.expr(value, None);
             return;
         }

@@ -1,9 +1,9 @@
-error[E0211]: `spawn` needs a call
+error[E0211]: `spawn` needs a call, or an actor to start
   --> tests/programs/m91/e0211_spawn.la:4:19
   |
 4 |     let t = spawn work;
   |                   ^^^^
   |
-  = help: write the call the new thread runs, `spawn work(x)`, or call a closure on the spot: `spawn fun() { … }()`
+  = help: write the call the new thread runs, `spawn work(x)`, call a closure on the spot, `spawn fun() { … }()`, or start an actor: `spawn Counter { count: 0 }`
 
 For more about E0211, run `lughac explain E0211`.

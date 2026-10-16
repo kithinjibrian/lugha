@@ -26,8 +26,12 @@ impl<'ctx> Lowerer<'ctx> {
         expr: &Expr,
         closure: &Expr,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
+        // `spawn Counter { … }` starts an actor (milestone 92).
+        if let Type::Actor(key) = self.ty(expr) {
+            return self.spawn_actor(&key, spawned_call(closure));
+        }
         let Type::Task(result) = self.ty(expr) else {
-            unreachable!("checked: `spawn` makes a `Task`")
+            unreachable!("checked: `spawn` makes a `Task` or an actor")
         };
         let ExprKind::Closure(c) = &closure.kind else {
             unreachable!("the parser wraps a spawned call in a closure")

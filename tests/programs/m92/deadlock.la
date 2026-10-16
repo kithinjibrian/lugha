@@ -1,0 +1,19 @@
+// Two actors waiting on each other's replies: a deadlock, reported.
+actor A {
+    other: Chan<B>,
+    fun ask(self): i64 {
+        let b = self.other.recv().unwrap();
+        b.ask()
+    }
+}
+
+actor B {
+    fun ask(self): i64 = 1;
+}
+
+fun main() {
+    let c: Chan<B> = Chan.new();
+    let a = spawn A { other: c };
+    println("asking");
+    println(a.ask());
+}

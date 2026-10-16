@@ -134,7 +134,7 @@ impl Checker {
     /// Every pass of spec §6 over every module in turn, then every body.
     fn modules(&mut self, units: &[Unit]) {
         type Pass = fn(&mut Checker, &Program);
-        let passes: [Pass; 10] = [
+        let passes: [Pass; 11] = [
             Checker::collect_handles,
             Checker::collect_interfaces,
             Checker::collect_structs,
@@ -145,6 +145,7 @@ impl Checker {
             Checker::resolve_interfaces,
             Checker::collect,
             Checker::collect_methods,
+            Checker::check_actors,
         ];
         // Named imports first, so every pass resolves through them (v11).
         for unit in units {

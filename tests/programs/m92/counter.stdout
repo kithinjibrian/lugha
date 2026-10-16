@@ -1,0 +1,4 @@
+15
+Some("division by zero at tests/programs/m92/counter.la:8:61")
+None
+<actor Counter>

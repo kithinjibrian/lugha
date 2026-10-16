@@ -245,3 +245,15 @@ fn select_arms_print_one_per_line_v17() {
         "fun f() {\n    select {\n        m = inbox.recv() => m,\n        out.send(42) => {\n            done();\n        }\n        after(500) => 1,\n        default => 2,\n    }\n}\n",
     );
 }
+
+#[test]
+fn actors_keep_fields_and_methods_in_order_v17() {
+    check(
+        "public actor Counter{count:i64,fun add(mut self,n:i64){self.count+=n;}label:string,fun get(self):i64=self.count;}",
+        "public actor Counter {\n    count: i64,\n    fun add(mut self, n: i64) {\n        self.count += n;\n    }\n    label: string,\n    fun get(self): i64 = self.count;\n}\n",
+    );
+    check(
+        "fun main(){let c=spawn Counter{count:0};}",
+        "fun main() {\n    let c = spawn Counter { count: 0 };\n}\n",
+    );
+}

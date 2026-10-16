@@ -76,7 +76,7 @@ impl Checker {
                 self.reach(inner, seen, found)
             }
             // `<task>` and `<chan>` print nothing inside (v17).
-            Type::Task(_) | Type::Chan(_) => {}
+            Type::Task(_) | Type::Chan(_) | Type::Actor(_) => {}
             Type::Struct(key, args) | Type::Enum(key, args) => {
                 if let Some(m) = self.own_show(key) {
                     if !args.is_empty() {

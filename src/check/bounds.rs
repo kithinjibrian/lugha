@@ -69,9 +69,12 @@ impl Checker {
             }
             // Neither do interface values (v5 draft §4), nor boxes (v16).
             // Nor tasks and channels (v17).
-            Type::Fun(..) | Type::Interface(..) | Type::Ref(_) | Type::Task(_) | Type::Chan(_) => {
-                false
-            }
+            Type::Fun(..)
+            | Type::Interface(..)
+            | Type::Ref(_)
+            | Type::Task(_)
+            | Type::Chan(_)
+            | Type::Actor(_) => false,
             _ => true,
         }
     }
@@ -115,9 +118,12 @@ impl Checker {
     fn holds_fun_in(&self, ty: &Type, seen: &mut Vec<Type>) -> bool {
         let inner: Vec<Type> = match ty {
             // A box makes its holder lose `==` too (v16, milestone 67).
-            Type::Fun(..) | Type::Interface(..) | Type::Ref(_) | Type::Task(_) | Type::Chan(_) => {
-                return true;
-            }
+            Type::Fun(..)
+            | Type::Interface(..)
+            | Type::Ref(_)
+            | Type::Task(_)
+            | Type::Chan(_)
+            | Type::Actor(_) => return true,
             Type::Array(inner) | Type::Option(inner) => return self.holds_fun_in(inner, seen),
             // Recursive types meet themselves again: one look is enough.
             Type::Struct(..) | Type::Enum(..) if seen.contains(ty) => return false,

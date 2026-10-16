@@ -21,3 +21,7 @@ fun main() {
 fun drain(c: Chan<i64>, t: Task<i64>) {}
 //           ^^^^ support.type.lugha
 //                         ^^^^ support.type.lugha
+
+actor Counter { count: i64 }
+// <----- keyword.other.actor.lugha
+//    ^^^^^^^ entity.name.type.lugha

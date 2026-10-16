@@ -1,0 +1,9 @@
+error[E0439]: `Ref<i64>` is a shared box, which actor `Cache` would share: actors share nothing
+  --> tests/programs/m92/e0439_ref.la:2:11
+  |
+2 |     hits: Ref<i64>,
+  |           ^^^^^^^^
+  |
+  = help: an actor is started with `spawn` and reached only through its methods; what crosses its boundary is copied and may hold no `Ref`
+
+For more about E0439, run `lughac explain E0439`.

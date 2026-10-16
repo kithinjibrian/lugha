@@ -1,0 +1,27 @@
+// One account actor, many green threads depositing: the actor handles
+// one message at a time, so no deposit is lost.
+actor Account {
+    balance: i64,
+    fun deposit(mut self, amount: i64) { self.balance += amount; }
+    fun total(self): i64 = self.balance;
+}
+
+fun customer(account: Account, times: i64) {
+    for i in 0..times {
+        account.deposit(1);
+    }
+}
+
+fun main() {
+    let account = spawn Account { balance: 0 };
+    let mut tasks: Task[] = [];
+    for c in 0..10 {
+        tasks.push(spawn customer(account, 100));
+    }
+    for t of tasks {
+        t.join();
+    }
+    println(account.total());
+    account.stop();
+    println(account.join());
+}

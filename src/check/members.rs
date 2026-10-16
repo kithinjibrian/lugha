@@ -247,6 +247,9 @@ impl Checker {
 /// methods, the built-in methods and the prelude helpers that apply, and
 /// for an iterator the iterator helpers.
 pub fn value_members(partial: &Partial, ty: &Type) -> Vec<Member> {
+    if let Type::Actor(key) = ty {
+        return super::actors::handle_members(partial, key);
+    }
     let mut out = Vec::new();
     let own = match ty {
         Type::Struct(key, args) | Type::Enum(key, args) | Type::Interface(key, args) => {
@@ -348,7 +351,7 @@ fn variant_text(name: &str, payloads: &[Type]) -> String {
 }
 
 /// `fun name(self, T1, T2): R` from types alone, for members without source.
-fn signature(name: &str, receiver: Option<bool>, params: &[Type], ret: &Type) -> String {
+pub(super) fn signature(name: &str, receiver: Option<bool>, params: &[Type], ret: &Type) -> String {
     let mut parts: Vec<String> = match receiver {
         Some(true) => vec!["mut self".into()],
         Some(false) => vec!["self".into()],

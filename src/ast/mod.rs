@@ -139,6 +139,10 @@ pub struct StructDecl {
     /// The `extern` of `extern struct`: C's layout, passed to C by value
     /// (v16, milestone 90).
     pub c_layout: Option<Span>,
+    /// The `actor` keyword when this is an actor's state (v17, milestone 92);
+    /// its methods follow as an `impl` with `actor` set. `span` is the
+    /// whole actor.
+    pub actor: Option<Span>,
 }
 
 /// A method's `self` or `mut self` parameter (v1).
@@ -188,8 +192,10 @@ pub struct ImplDecl {
     pub params: Vec<TypeParam>,
     /// Methods and associated functions in order.
     pub methods: Vec<FunDecl>,
-    /// From `impl` to the closing brace.
+    /// From `impl` to the closing brace; for an actor's methods, the whole actor.
     pub span: Span,
+    /// The methods of an actor (v17, milestone 92), declared in its body.
+    pub actor: bool,
 }
 
 /// A typed name: a function parameter.

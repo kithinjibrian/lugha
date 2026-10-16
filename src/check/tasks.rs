@@ -56,8 +56,16 @@ impl Checker {
             _ => None,
         };
         let before = self.diagnostics.len();
-        let ty = self.expr(closure, wanted.as_ref());
         let call = spawned_call(closure);
+        let outer = self.spawn_operand.replace(call.id);
+        let ty = self.expr(closure, wanted.as_ref());
+        self.spawn_operand = outer;
+        // `spawn Counter { … }` and `spawn Counter.new(…)` start an actor (v17).
+        if let Type::Fun(_, ret) = &ty
+            && let Some(handle) = self.spawned_actor(call, ret)
+        {
+            return handle;
+        }
         if let Some(span) = self.changes_receiver(call) {
             // The closure's own complaint (a captured variable changed, or
             // a temporary) is about the wrapper the user never wrote.

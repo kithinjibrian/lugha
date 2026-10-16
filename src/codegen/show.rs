@@ -132,6 +132,10 @@ impl<'ctx> Lowerer<'ctx> {
             // Tasks and channels show what they are (v17).
             (None, Type::Task(_)) => self.string_literal("<task>").into(),
             (None, Type::Chan(_)) => self.string_literal("<chan>").into(),
+            (None, Type::Actor(key)) => {
+                let name = key.rsplit('.').next().unwrap_or(key);
+                self.string_literal(&format!("<actor {name}>")).into()
+            }
             (None, _) => self.show_variants(value, ty),
         };
         self.builder.build_return(Some(&text)).expect(POSITIONED);

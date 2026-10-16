@@ -2009,6 +2009,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision (v17 draft decisions 1–13, sessions 195–201):** concurrency without async/await or function colouring, actors to follow. One OS thread (M:1); `spawn call` only (closures cover blocks, Go's `go func(){}()` is `spawn fun(){}()`), arguments evaluated by the spawner; `Task<T>`/plain `Task`, `join` copies the result; like Go, a panic ends the program and `main` returning ends it; channels like Go with `recv(): Option<T>`; deadlock panics; `select` with recv/send/`after`/`default` in this milestone (the user's choice); `Task`/`Chan` predeclared, `sleep`/`yield_now` in `std.task`; 1 MiB stacks with guards. Mine, approved: countdown preemption at function entries and loop heads (no signals, deterministic), blocking I/O blocks all, C on green stacks, E0438 for spawning a change to a copy. v16 frozen; `lughac spec` prints v17. `std.process`'s private `spawn`/`$os.spawn` renamed `start`/`$os.start`. Deviations in PRP-122's BUILT notes (no `probe-stack`, 64 KiB guards; fixed-seed `select` pick).
 
+### 175. Actors — milestone 92 (PRP-123)
+
+**Decision (v17 draft decisions 14–23, sessions 207–214):** an `actor` keyword; value methods wait (call), void ones are queued (cast); built-in `stop()`/`join(): Option<string>`/`is`; a panic ends only its actor (callers panic in turn; `join` reports); share nothing (no `Ref`, function or interface values across the boundary); start only with `spawn`; the name is the handle type outside, the state inside; private fields; unbounded mailbox; no generic actors. Built: the parser splits an actor into a struct and an `impl` marked `actor`; `Type::Actor`; handlers `lugha_actor_<Type>.<method>`; `runtime/actors.c`; all runtime panics through `panic_with`/`panic_end`. A stack overflow in an actor still ends the program (signal handler).
+
 ---
 
 ## CURRENT PROJECT STATE

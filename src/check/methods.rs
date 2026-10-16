@@ -51,6 +51,7 @@ impl Checker {
                 continue;
             }
             let outer = self.impl_generics(&declared, &i.params);
+            self.in_actor = i.actor.then(|| owner.clone());
             for f in &i.methods {
                 let name = &f.name.name;
                 let own = self.generics_with(&f.type_params, &outer);
@@ -94,6 +95,7 @@ impl Checker {
             }
         }
         self.type_params.clear();
+        self.in_actor = None;
     }
 
     /// Checks every method body whose signature was accepted.
@@ -104,6 +106,7 @@ impl Checker {
             let Some(ty) = self.named_type(&owner) else {
                 continue;
             };
+            self.in_actor = i.actor.then(|| owner.clone());
             for f in &i.methods {
                 let Some(m) = self.methods.get(&owner).and_then(|m| m.get(&f.name.name)) else {
                     continue;
@@ -119,6 +122,7 @@ impl Checker {
                 self.body(f, params, ret, Some(receiver));
             }
         }
+        self.in_actor = None;
         self.default_bodies(program);
         self.type_params.clear();
         self.owner.clear();

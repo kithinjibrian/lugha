@@ -32,6 +32,21 @@ typedef struct { void *chan; int64_t kind; void *data; int32_t ok; } Case;
 int64_t lugha_rt_task_select(Case *cases, int64_t n, int64_t timeout_ms, int32_t has_default,
                              const char *file, int64_t line, int64_t col);
 
+typedef void (*Handler)(void *, void *, void *);
+void *lugha_rt_actor_spawn(void *state, const char *name);
+void *lugha_rt_actor_call(void *a, Handler h, void *args, int64_t size, const char *file, int64_t line, int64_t col);
+void lugha_rt_actor_cast(void *a, Handler h, void *args, const char *file, int64_t line, int64_t col);
+void lugha_rt_actor_stop(void *a, const char *file, int64_t line, int64_t col);
+typedef struct { int64_t len; char bytes[]; } Str;
+Str *lugha_rt_actor_join(void *a);
+void lugha_rt_panic_bounds(int64_t len, int64_t index, const char *file, int64_t line, int64_t col);
+
+static void add(void *state, void *args, void *result) { (void)result; *(int64_t *)state += *(int64_t *)args; }
+static void get(void *state, void *args, void *result) { (void)args; *(int64_t *)result = *(int64_t *)state; }
+static void boom(void *state, void *args, void *result) { (void)state; (void)args; (void)result; lugha_rt_panic_bounds(3, 7, "a.la", 1, 2); }
+static void *new_counter(void) { int64_t *state = lugha_rt_alloc(8); return lugha_rt_actor_spawn(state, "Counter"); }
+static void *num(int64_t n) { int64_t *p = lugha_rt_alloc(8); *p = n; return p; }
+
 typedef int64_t (*Fn)(void *env);
 static void entry(void *code, void *env, void *result) {
     *(int64_t *)result = ((Fn)code)(env);
@@ -159,6 +174,29 @@ int main(int argc, char **argv) {
         void *s = spawn(spin, &flag);
         spawn(setter, &flag);
         printf("%ld\n", (long)join(s));
+    } else if (!strcmp(test, "actor")) {
+        void *c = new_counter();
+        lugha_rt_actor_cast(c, add, num(5), "m", 1, 1);
+        lugha_rt_actor_cast(c, add, num(10), "m", 1, 1);
+        printf("%ld\n", (long)*(int64_t *)lugha_rt_actor_call(c, get, NULL, 8, "m", 1, 1));
+        lugha_rt_actor_stop(c, "m", 1, 1);
+        printf("%s\n", lugha_rt_actor_join(c) == NULL ? "stopped" : "panicked");
+    } else if (!strcmp(test, "actor_panic")) {
+        void *c = new_counter();
+        lugha_rt_actor_cast(c, boom, NULL, "m", 1, 1);
+        Str *why = lugha_rt_actor_join(c);
+        printf("joined: %s\n", why->bytes);
+        lugha_rt_actor_call(c, get, NULL, 8, "m.la", 3, 4);
+    } else if (!strcmp(test, "actor_waiter")) {
+        void *c = new_counter();
+        lugha_rt_actor_call(c, boom, NULL, 8, "m.la", 5, 6);
+    } else if (!strcmp(test, "actor_stopped")) {
+        void *c = new_counter();
+        lugha_rt_actor_stop(c, "m", 1, 1);
+        lugha_rt_actor_cast(c, add, num(1), "m", 1, 1);
+        lugha_rt_actor_join(c);
+        printf("joined\n");
+        lugha_rt_actor_call(c, get, NULL, 8, "m.la", 9, 2);
     } else if (!strcmp(test, "many")) {
         enum { N = 10000 };
         static void *ts[N];
@@ -359,5 +397,43 @@ fn a_green_threads_stack_overflow_panics() {
         "panic: stack overflow
 "
     );
+    assert_eq!(code, Some(101));
+}
+
+#[test]
+fn an_actor_handles_casts_and_calls_in_order_then_stops() {
+    prints("actor", "15\nstopped\n");
+}
+
+#[test]
+fn an_actors_panic_ends_only_the_actor() {
+    let (out, err, code) = run("actor_panic");
+    assert_eq!(
+        out,
+        "joined: index out of bounds: the length is 3 but the index is 7 at a.la:1:2\n"
+    );
+    assert_eq!(
+        err,
+        "panic: index out of bounds: the length is 3 but the index is 7 at a.la:1:2\n\
+         panic: actor `Counter` panicked at m.la:3:4\n"
+    );
+    assert_eq!(code, Some(101));
+}
+
+#[test]
+fn a_caller_waiting_on_a_panicking_actor_panics() {
+    let (_, err, code) = run("actor_waiter");
+    assert!(
+        err.ends_with("panic: actor `Counter` panicked at m.la:5:6\n"),
+        "{err}"
+    );
+    assert_eq!(code, Some(101));
+}
+
+#[test]
+fn a_call_to_a_stopped_actor_panics() {
+    let (out, err, code) = run("actor_stopped");
+    assert_eq!(out, "joined\n");
+    assert_eq!(err, "panic: actor `Counter` has stopped at m.la:9:2\n");
     assert_eq!(code, Some(101));
 }

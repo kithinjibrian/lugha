@@ -68,6 +68,12 @@ impl Checker {
             return Some(self.call_value(call, &name.name, &field, args));
         }
         self.record(callee, Type::Void);
+        // A message to an actor (v17): its methods, through the handle.
+        if let Type::Actor(key) = &receiver
+            && let Some(ty) = self.actor_call(call, key, name, args, expect)
+        {
+            return Some(ty);
+        }
         Some(self.on_value(call, (base, &receiver), name, args, (mark, expect)))
     }
 

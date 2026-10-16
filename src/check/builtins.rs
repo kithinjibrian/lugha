@@ -34,6 +34,10 @@ pub(super) fn builtin(receiver: &Type, name: &str) -> Option<Method> {
         }
         (Type::Chan(_), "close") => (Vec::new(), Type::Void, false),
         (Type::Chan(_), "is") => (vec![receiver.clone()], Type::Bool, false),
+        // v17, milestone 92: every actor handle's own messages.
+        (Type::Actor(_), "stop") => (Vec::new(), Type::Void, false),
+        (Type::Actor(_), "join") => (Vec::new(), Type::Option(Box::new(Type::String)), false),
+        (Type::Actor(_), "is") => (vec![receiver.clone()], Type::Bool, false),
         (Type::String, "to_bytes") => (Vec::new(), Type::Array(Box::new(Type::U8)), false),
         // v9: the success payload, or a panic at the call.
         (Type::Option(inner), "unwrap") => (Vec::new(), (**inner).clone(), false),

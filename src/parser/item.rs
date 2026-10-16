@@ -37,6 +37,22 @@ impl Parser<'_> {
                 continue;
             }
             first_item.get_or_insert(self.span());
+            // An actor is two items: its state and its methods (v17).
+            if self.at_actor() {
+                match self.actor_decl() {
+                    Ok((state, methods)) => {
+                        items.push(Item::Struct(state));
+                        items.push(Item::Impl(methods));
+                    }
+                    Err(_) => {
+                        self.sync_item();
+                        if self.pos == before {
+                            self.bump();
+                        }
+                    }
+                }
+                continue;
+            }
             match self.item() {
                 Ok(item) => items.push(item),
                 Err(_) => {
@@ -149,6 +165,7 @@ impl Parser<'_> {
             fields,
             span: Span::new(start, self.prev_end()),
             c_layout: None,
+            actor: None,
         })
     }
 
