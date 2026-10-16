@@ -15,6 +15,7 @@
         { "include": "#attribute" },
         { "include": "#number" },
         { "include": "#declaration" },
+        { "include": "#c-marker" },
         { "include": "#keyword" },
         { "include": "#builtin" },
         { "include": "#call" },
@@ -41,6 +42,15 @@
     "declaration": {
       "patterns": [
         {
+          "comment": "`extern type Name;`: a handle (v16, milestone 88); `type` is a keyword only here.",
+          "match": "\\b(extern)\\s+(type)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.other.extern.lugha" },
+            "2": { "name": "keyword.other.type.lugha" },
+            "3": { "name": "entity.name.type.lugha" }
+          }
+        },
+        {
           "match": "\\b(fun)\\s+([A-Za-z_][A-Za-z0-9_]*)",
           "captures": {
             "1": { "name": "keyword.other.fun.lugha" },
@@ -55,6 +65,14 @@
           }
         }
       ]
+    },
+    "c-marker": {
+      "comment": "`data` and `release` as an extern parameter's type (v16, milestone 88): `user: data`. Only after a `:`, so a variable named `data` stays plain.",
+      "match": "(:)\\s*(data|release)\\b(?!\\s*[.(\\[<])",
+      "captures": {
+        "1": { "name": "punctuation.separator.lugha" },
+        "2": { "name": "storage.type.c-marker.lugha" }
+      }
     },
     "keyword": {
       "patterns": [

@@ -7023,11 +7023,28 @@ Branch: main (the package is its own repository, `../lugha-gtk`); the compiler f
 
 ---
 
-## SESSION 193 — 2026-10-16 — VS Code extension: milestones 87–90 syntax — open
+## SESSION 193 — 2026-10-16 — VS Code extension: milestones 87–90 syntax — closed
 Branch: vscode-extern-syntax
 
 ### WHAT WAS DONE
-- In progress: the user asked to update the VS Code extension; highlighting and snippets for `extern type`, `data`/`release`, `extern struct`, renamed externs.
+- The user asked to update the VS Code extension. The language server already covers milestones 87–90 (it is `lughac`); the extension's own files gained: a grammar rule for `extern type Name;` and one for `data`/`release` after a `:` (not a variable named `data`); snippets `extern`, `externtype`, `externstruct`, `externcb`; README (features, snippets, manual step 20). `extern struct` and `extern "symbol" fun` already highlighted correctly.
+- Version 0.10.0, packaged and installed (`kithinjibrian.lugha@0.10.0`). Treated as upkeep of approved syntax, no PRP.
+
+### FILES CREATED OR MODIFIED
+- New: `editors/vscode/test/grammar/externs.la`.
+- Modified: `editors/vscode/{syntaxes/lugha.tmLanguage.json,snippets/lugha.json,README.md,package.json,package-lock.json}`, `tests/snippets.rs`, CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- `test/grammar/externs.la` (grammar scopes, including that a variable named `data` stays plain); `tests/snippets.rs` requires the four prefixes. `npm test` (15 + 5 grammar files), cargo suite, fmt, clippy pass.
+
+### DECISIONS MADE
+- `data`/`release` are coloured only in a type position (`u: data`), never inside `fun(…, data)`, so `send(data)` calls stay plain.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual check (extension README step 20); lugha-gtk's GitHub repository waits for the user's go.
 
 ---
 

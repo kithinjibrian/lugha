@@ -63,6 +63,36 @@
     ],
     "description": "Import a module"
   },
+  "Extern": {
+    "prefix": "extern",
+    "body": [
+      "extern fun ${1:name}(${2:x}: ${3:i64}): ${4:i64};"
+    ],
+    "description": "A C function (spec §8)"
+  },
+  "Extern type": {
+    "prefix": "externtype",
+    "body": [
+      "extern type ${1:Name};"
+    ],
+    "description": "A handle: an opaque C pointer type (v16)"
+  },
+  "Extern struct": {
+    "prefix": "externstruct",
+    "body": [
+      "extern struct ${1:Name} {",
+      "\t${2:x}: ${3:f32},",
+      "}"
+    ],
+    "description": "A struct with C's layout, passed to C by value (v16)"
+  },
+  "Extern with callback": {
+    "prefix": "externcb",
+    "body": [
+      "extern fun ${1:connect}(${2:callback}: fun(${3:i64}, data), user: data, destroy: release);"
+    ],
+    "description": "A C function taking a callback; callers write neither `user` nor `destroy` (v16)"
+  },
   "Doc comment": {
     "prefix": "doc",
     "body": [
