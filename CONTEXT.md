@@ -7273,3 +7273,26 @@ Branch: prp-122-green_threads
 
 ### STILL OPEN AT CLOSE
 - VS Code highlighting/snippets for `spawn`/`select` (TODO). Actors are the user's next goal (needs discovery).
+
+---
+
+## SESSION 202 — 2026-10-16 — Why an unjoined spawn doesn't print — closed
+Branch: main
+
+### WHAT WAS DONE
+- The user saw `spawn fun() { println("anon"); }();` print nothing at the end of `main`. Explained: as decided (v17 draft decision 4, like Go), `main` returning ends the program, and a spawned thread only runs once the spawner waits or yields; `t.join()` (or a channel) fixes it. Verified the joined version prints `anon`. No code change.
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- None.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing new (actors and the VS Code grammar remain next).
