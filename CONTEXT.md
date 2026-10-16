@@ -7164,3 +7164,8 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - The green-threads discovery, at question 4. Answers so far: M:1; scope = spawn, join, yield_now, sleep, Chan<T>; `spawn <call>` only, Go-style `spawn fun() { … }();`.
+
+---
+
+## SESSION 198 — 2026-10-16 — Green threads: discovery, continued — open
+Branch: main
