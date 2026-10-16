@@ -6424,6 +6424,11 @@ Branch: prp-110-formatter
 
 ---
 
+## SESSION 170 — 2026-10-16 — Discovery: formatting in the editor — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–80 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`).
