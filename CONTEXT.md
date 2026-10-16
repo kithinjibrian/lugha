@@ -7629,3 +7629,11 @@ Branch: prp-124-struct_update
 
 ### STILL OPEN AT CLOSE
 - PRP-125 (variants as functions, milestone 94) next.
+
+---
+
+## SESSION 217 — 2026-10-17 — Variants as functions (milestone 94) — open
+Branch: prp-125-variant_functions
+
+### WHAT WAS DONE
+- In progress: building PRP-125 (approved in session 216) in worktree `../lugha-prp-125`.
