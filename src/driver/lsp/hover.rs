@@ -50,6 +50,8 @@ enum Found<'a> {
     Expr(usize, &'a Type),
     /// A struct, enum, interface or variant name: its declaration and line (v16).
     Type(Span, String),
+    /// A module's name, in an import or before `.` (v17, milestone 98).
+    Module(&'a [String]),
 }
 
 /// The hover at `at` in `file`, or `None` when nothing there has one.
@@ -74,15 +76,18 @@ pub(super) fn answer(snapshot: &Snapshot, file: &Path, at: Position) -> Option<H
         consider(&mut best, *span, Found::Name(name));
     }
     // Type and variant names (milestone 77): through their definitions.
-    let mut types: Vec<(Span, Span)> = partial
-        .definitions
-        .iter()
-        .filter(|(s, _)| contains(s))
-        .filter_map(|(s, t)| match t {
-            check::Target::Decl(d) => Some((*s, *d)),
-            check::Target::Module(_) => None,
-        })
-        .collect();
+    let mut types: Vec<(Span, Span)> = Vec::new();
+    let mut modules: Vec<(Span, &[String])> = Vec::new();
+    for (s, t) in partial.definitions.iter().filter(|(s, _)| contains(s)) {
+        match t {
+            check::Target::Decl(d) => types.push((*s, *d)),
+            check::Target::Module(path) => modules.push((*s, path)),
+        }
+    }
+    modules.sort_by_key(|(s, _)| (s.end - s.start, s.start));
+    for (span, path) in modules {
+        consider(&mut best, span, Found::Module(path));
+    }
     types.sort_by_key(|(s, _)| (s.end - s.start, s.start));
     for (span, decl) in types {
         if let Some(line) = type_line(snapshot, decl) {
@@ -110,7 +115,16 @@ pub(super) fn answer(snapshot: &Snapshot, file: &Path, at: Position) -> Option<H
         Found::Name(Name::Field { .. }) => Some(span),
         _ => None,
     };
-    if let Some(doc) = documented.and_then(|d| docs::doc_for(snapshot, d)) {
+    let doc = match &found {
+        // A module's doc is at the top of its file (v17, milestone 98).
+        Found::Module(path) => snapshot
+            .modules
+            .iter()
+            .find(|m| m.path == *path)
+            .and_then(|m| docs::module_doc_at(snapshot, m.base)),
+        _ => documented.and_then(|d| docs::doc_for(snapshot, d)),
+    };
+    if let Some(doc) = doc {
         let doc = doc.markdown();
         if !doc.is_empty() {
             value.push_str("\n\n");
@@ -182,6 +196,7 @@ fn render(snapshot: &Snapshot, found: &Found) -> Option<(String, Vec<String>)> {
     let partial = &snapshot.partial;
     Some(match found {
         Found::Type(_, line) => (line.clone(), Vec::new()),
+        Found::Module(path) => (format!("module {}", path.join(".")), Vec::new()),
         Found::Name(Name::Local { name, ty, mutable }) => {
             let mutable = if *mutable { "mut " } else { "" };
             (format!("let {mutable}{name}: {ty}"), Vec::new())

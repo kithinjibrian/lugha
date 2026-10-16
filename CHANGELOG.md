@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Changed
+- A panic inside a std module reports a line two later than before (`<std>/math.la:62:9` instead of `60:9`): the std headers became module doc comments (milestone 98)
 - `lughac check` no longer reports E0303 (only `build` and `run` do); `tests/programs/m3/e0303` moved to `tests/cli.rs`; `skip` is an intrinsic, so a function named `skip` is E0302; `--json`'s summary always carries `"skipped"` (v17, milestone 97)
 - `actor` is a keyword (v17, milestone 92); E0211's message reads "`spawn` needs a call, or an actor to start"
 - `spawn` and `select` are keywords (v17): a program using either as a name no longer compiles; `std.process`'s internal `spawn` and `$os.spawn` are now `start` and `$os.start` (its public API is unchanged); `import std.maths;`'s E0312 help lists `std.task`
@@ -33,6 +34,7 @@ Never deleted. Older entries are never modified.
 - The language server published a `lugha.toml` error (E0325) to nothing once a program with loader errors was checked: the prelude's offsets overlapped the manifests'. The server now places the prelude after every loaded file (`modules::with_prelude_at`); the CLI never checked such programs and is unchanged
 
 ### Added
+- Module doc comments, milestone 98 (PRP-130): a file's first `/** … */`, followed by a blank line or an `import`, documents its module; hovering a module's name (in an `import` or `m.f`) shows `module a.b` and that doc; the std modules' headers are now module docs
 - `pkg-config --cflags` may give `-mfpmath=sse`, `-msse` and `-msse2` (exactly; PRP-129, approved by the user as a security decision): a package listing C files with `pkg-config = ["gtk4"]` no longer fails with E0329; every other `-m…` flag stays refused
 - Packages and tests, milestone 97 (PRP-128): `lughac test`/`check` on a file in its package's `source` folder build it as the package's module (`glow.diff`; modules importing each other no longer E0319, tests named `glow.diff.name`); programs in a package's `test/`, `tests/`, `examples/` see its package-level items; `lughac check` takes a file without `main` as a library; `lugha.lock` sits beside the governing `lugha.toml` (an old lock beside the main file is read once, then written there); `skip(reason)` reports a test skipped (`... skipped (reason)`, `, S skipped`, `"skipped"` in `--json`, the VS Code Testing view; extension 0.13.0)
 - Inference from siblings, milestone 96 (PRP-127): a call of a generic function whose type parameters appear only in its result (`text<M>(s): View<M>`) waits for its siblings — the other arguments of a generic call, the other operand of `==`/`!=`, the other side of `assert_eq`/`assert_ne` — and takes the type they fix; `assert_eq` now types a literal first argument from the second too (`assert_eq(3, x)` with `x: u8`), and `assert_eq(1, "a")` reports E0401 at `1` as `1 == "a"` does (found by kivuli)

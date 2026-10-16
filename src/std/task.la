@@ -1,5 +1,7 @@
-// std.task (v17, milestone 91): pausing the running green thread. Green
-// threads start with `spawn`; `Task` and `Chan` are predeclared.
+/**
+ * std.task: pausing the running green thread. Green
+ * threads start with `spawn`; `Task` and `Chan` are predeclared.
+ */
 
 /**
  * Pauses this green thread for at least `ms` milliseconds; the others run meanwhile.

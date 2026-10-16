@@ -1,8 +1,10 @@
-// std.math (v15, milestone 53): `import std.math;`, then `math.sqrt(2.0)`.
-// The float functions take any `T: Float` (`f32` or `f64`) and compile to
-// LLVM's own operation at that width; their results follow IEEE 754, so
-// `sqrt(-1.0)` is `NaN` and `ln(0.0)` is `-inf`. `abs`, `min`, `max` and
-// `clamp` work on any number (`abs`) or ordered value.
+/**
+ * std.math: `import std.math;`, then `math.sqrt(2.0)`.
+ * The float functions take any `T: Float` (`f32` or `f64`) and compile to
+ * LLVM's own operation at that width; their results follow IEEE 754, so
+ * `sqrt(-1.0)` is `NaN` and `ln(0.0)` is `-inf`. `abs`, `min`, `max` and
+ * `clamp` work on any number (`abs`) or ordered value.
+ */
 
 /** π, as `f64`. */
 public fun pi(): f64 = 3.141592653589793;

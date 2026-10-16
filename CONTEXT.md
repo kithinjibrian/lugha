@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**v17: milestones 91–97 done** (tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**v17: milestones 91–98 done** (`m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -7799,3 +7799,49 @@ Branch: prp-129-pkg_config_sse
 
 ### STILL OPEN AT CLOSE
 - Nothing. The kivuli/lugha-gtk session needs a reinstalled `lughac`.
+
+---
+
+## SESSION 224 — 2026-10-17 — Module doc comments proposed (PRP-130) — closed
+Branch: prp-130-module_docs
+
+### WHAT WAS DONE
+- The user found that hovering a module shows no doc. Two questions answered (top `/** */` followed by a blank line or `import`; std modules too); PRP-130 written (milestone 98).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-130-module_docs.md`.
+
+### TESTS WRITTEN
+- None (proposal).
+
+### DECISIONS MADE
+- PRP-130 decisions 1–2 (the user).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-130 awaits approval; build on branch `prp-130-module_docs`.
+
+---
+
+## SESSION 225 — 2026-10-17 — Module doc comments (milestone 98) — closed
+Branch: prp-130-module_docs
+
+### WHAT WAS DONE
+- Built PRP-130: a file's top `/** */` (before a blank line or `import`) documents its module; hovering a module name shows `module a.b` and its doc; std headers became module docs. Spec v17 §2, §9, row 98; draft row 98.
+
+### FILES CREATED OR MODIFIED
+- Modified: `src/driver/lsp/{docs,hover}.rs`, `src/std/*.la`, `tests/lsp_docs.rs`, `tests/programs/m53/clamp_panic.stderr`, `tests/programs/m54/below_panic.stderr`, spec, draft, PRP-130, CLAUDE.md, TODO, CHANGELOG, MEMORY (182), CONTEXT.
+
+### TESTS WRITTEN
+- `docs.rs` units (2), `lsp_docs` (1). Targeted runs listed in PRP-130's BUILT notes.
+
+### DECISIONS MADE
+- As PRP-130 (MEMORY 182).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing. Reinstall `lughac` for the editor to pick it up.

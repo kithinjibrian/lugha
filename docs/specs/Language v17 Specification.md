@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–97 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–98 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–97):
+**Changes since v16** (milestones 91–98):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- Module doc comments: a `/** … */` at the top of a file, followed by a blank line or an `import`, documents its module; hovering the module's name shows it, and the std modules are documented (milestone 98; sections 2, 9).
 - `pkg-config --cflags` may give `-mfpmath=sse`, `-msse` and `-msse2`, so a package can list C files alongside GTK (section 8).
 - `lughac fmt` hugs a call's trailing array or struct literal (`column([` … `])`) and keeps a function's header whole while its body breaks (milestone 95; section 9).
 - A generic call only its result can type takes its type from its siblings: `assert_eq(text("hi"), expected)`, `text("hi") == expected` (milestone 96; section 4).
@@ -228,6 +229,7 @@ Source files are UTF-8. The lexer produces a flat list of tokens, each carrying 
 - Inside a string, `/*` is text. Inside an interpolation, a block comment ends with its line, as the string does: a line break there ends the string (E0102).
 - A `/*` never closed is E0113, at the outermost one still open; the rest of the file is the comment. A `*/` outside a comment is the operators `*` and `/`.
 - **Doc comments** (milestone 77): a block comment starting `/**` (not `/**/`) followed, apart from whitespace, a `public` or `private` and an `@test` (v16, milestone 84), by a function, method, extern, struct, field, enum, variant, interface or interface method documents it. Its text is Markdown, each line's leading `*` dropped; a line `@param name text` documents a parameter and `@returns text` the result; other `@tags` stay as written. To the compiler it is a comment like any other; editors show it (section 9).
+  - **Module docs** (v17, milestone 98): a file's first doc comment, with only whitespace and plain comments before it, documents the file's module when what follows it, apart from whitespace and plain comments, is a blank line, an `import` (or `public import`) or the end of the file. It then documents no item; directly above an item, with no blank line, it documents that item as before.
 
 **Identifiers.** `[A-Za-z_][A-Za-z0-9_]*`, excluding keywords. Identifiers are case-sensitive. `type` right after `extern`, and `data` and `release` as an extern's parameter types, are ordinary identifiers with a meaning there only (v16, section 8); so are `after` and `default` at the start of a `select` arm (v17, section 3). In the sources bundled with `lughac` (the prelude and `std`), an identifier may also start with `$`, naming a compiler built-in such as `$float.sqrt` (v15); in a program `$` is E0101, so programs can never name one.
 
@@ -1519,6 +1521,7 @@ It prints `created <path>` for each file and then how to run the result.
   - a `let`, parameter, `for` or `match` binding: `let total: i64` (`let mut n: i64`);
   - a function or method, at its declaration or a use: its header as written, a method's with its type, `fun Circle.area(self): f64`;
   - a struct field at its declaration: `x: f64`;
+  - a module's name, in an `import` or before `.` (v17, milestone 98): `module geo.shapes`, followed by its module doc (section 2);
   - an expression: its type, printed as diagnostics print types.
 
   Notes follow the block: `instance: max<f64>` for a generic call, `converted to Shape` for a value converted to an interface. Hover uses what the checker found even when the program has errors; an expression the checker couldn't type, whitespace, comments and keywords have none (`null`). In a file with a syntax error, the program the parser recovered is checked (section 3), so everything but the broken statements has a hover; only while a module doesn't lex (an unclosed string) is there none. A hover first runs a check still waiting for typing to pause.
@@ -3595,6 +3598,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 95 | Formatter hugging (v17) | a call's trailing array or struct literal hugs; headers kept whole | `src/formatter/tests.rs` (done) |
 | 96 | Inference from siblings (v17) | result-only generic calls typed by their siblings; `assert_eq`/`assert_ne`, `==`/`!=` | `tests/programs/m96` (done) |
 | 97 | Packages and tests (v17) | package files as modules under `test`/`check`, `test/` inside the package, `check` without `main`, one lock per package, `skip(reason)` | `tests/test_runner.rs`, `tests/package_layout.rs`, `tests/git_packages.rs`, `tests/cli.rs` (done) |
+| 98 | Module doc comments (v17) | a file's top `/** */` documents its module; hover on module names; std documented | `tests/lsp_docs.rs`, `lsp/docs.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
