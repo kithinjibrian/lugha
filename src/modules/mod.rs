@@ -206,6 +206,8 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
             module.package = Some(name.clone());
             package = Some(name.clone());
             seen[0].1 = path.clone();
+            // Its imports resolve as the package's: the names its manifest lists.
+            packages.read_manifest(&package, read, &mut base, &mut loaded)?;
         }
         if let Some(program) = &module.program {
             next_id = program.expr_count;

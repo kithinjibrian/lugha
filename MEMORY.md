@@ -2047,6 +2047,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** a file's first `/** */`, with only whitespace and plain comments before it, is the module's doc when a blank line, `import`/`public import` or the end of the file follows (the user, session 224). `lsp/docs.rs`: `module_doc` (its own small scanner over comments, so partial text works), `item_doc` (= `attached` minus the module doc: a top doc + blank line + item now documents the module, not the item), `module_doc_at`. `lsp/hover.rs`: `Found::Module` from `Target::Module`. std headers converted (version/milestone notes dropped), shifting std panic lines by 2.
 
+### 183. kivuli's second report — fixes (session 226)
+
+**Decision:** bug fixes within milestones 96, 97 and 87, no PRP. (1) `Checker::waits` recurses: a generic call waits when every argument for a parameter mentioning a result type parameter waits; lists and `Some` of waiting things wait; `array_literal` with no expected type lets the first non-waiting element lead when the first element is a waiting call (literal-first lists unchanged). (2) `load` reads the package's manifest under its own name after rewriting the main module, so its listed packages resolve; `layout::module_path` compares absolute paths (`env.cwd`). (3) `read_manifest` adds a `[link]` table once per folder; E0331's advice follows the linker text (`multiple definition` / `cannot find -l` / `undefined reference`).
+
 ---
 
 ## CURRENT PROJECT STATE

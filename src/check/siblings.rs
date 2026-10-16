@@ -12,16 +12,29 @@ use crate::ast::{Expr, ExprKind};
 impl Checker {
     /// True if `e` can't be typed without an expected type, so it waits for
     /// its siblings: what `defers` says (literals, `None`, `[]`, untyped
-    /// closures), and a call of a generic function some of whose type
-    /// parameters appear only in its result.
+    /// closures); a call of a generic function with a type parameter in its
+    /// result that only waiting arguments could fix (`text("a")`, and since
+    /// kivuli's second report `column([text("a")])`); and a list or `Some`
+    /// of such calls.
     pub(super) fn waits(&self, e: &Expr) -> bool {
-        defers(e) || self.result_only_call(e)
+        match &e.kind {
+            _ if defers(e) => true,
+            ExprKind::Array(elements) => elements.iter().all(|x| self.waits(x)),
+            ExprKind::Call(callee, args)
+                if matches!(&callee.kind, ExprKind::Name(n) if n == "Some") && args.len() == 1 =>
+            {
+                self.waits(&args[0])
+            }
+            _ => self.waiting_call(e),
+        }
     }
 
     /// A call `f(…)` or `m.f(…)` of a generic function whose result has a
-    /// type parameter none of its parameters mention.
-    fn result_only_call(&self, e: &Expr) -> bool {
-        let ExprKind::Call(callee, _) = &e.kind else {
+    /// type parameter that every argument able to fix it leaves open: none
+    /// of the parameters mentions it, or each argument for one that does
+    /// waits itself.
+    fn waiting_call(&self, e: &Expr) -> bool {
+        let ExprKind::Call(callee, args) = &e.kind else {
             return false;
         };
         let key = match &callee.kind {
@@ -38,8 +51,16 @@ impl Checker {
         let Some(sig) = self.functions.get(&key) else {
             return false;
         };
+        if args.len() != sig.params.len() {
+            return false;
+        }
         sig.generics.iter().any(|g| {
-            !sig.params.iter().any(|p| mentions(p, &g.name)) && mentions(&sig.ret, &g.name)
+            mentions(&sig.ret, &g.name)
+                && sig
+                    .params
+                    .iter()
+                    .zip(args)
+                    .all(|(p, a)| !mentions(p, &g.name) || self.waits(a))
         })
     }
 }
@@ -100,6 +121,38 @@ mod tests {
                  let other = pair(expected, text(\"b\"));\n\
              }}"
         ));
+    }
+
+    #[test]
+    fn a_call_whose_arguments_all_wait_waits_too_v17() {
+        let src = format!(
+            "{VIEW}fun column<M>(kids: View<M>[]): View<M> = kids[0];\n\
+             fun wrap<M>(v: View<M>): View<M> = v;\n\
+             @test fun t() {{\n\
+                 let expected: View<Msg> = View.Text(\"a\");\n\
+                 assert_eq(column([text(\"a\")]), expected);\n\
+                 assert_eq(expected, column([text(\"a\"), text(\"b\")]));\n\
+                 assert_eq(wrap(column([wrap(text(\"a\"))])), expected);\n\
+                 assert_eq(Some(text(\"a\")), Some(expected));\n\
+                 println(column([text(\"a\")]) == expected);\n\
+             }}"
+        );
+        assert_eq!(test_mode(&src).err(), None);
+        // A sibling that fixes the type stops the waiting.
+        ok(&format!(
+            "{VIEW}fun column<M>(kids: View<M>[]): View<M> = kids[0];\n\
+             fun main() {{\n\
+                 let e: View<Msg> = View.Text(\"a\");\n\
+                 let v = column([text(\"a\"), e]);\n\
+                 let w = column([text(\"a\"), View.Button(\"+\", Msg.Go)]);\n\
+             }}"
+        ));
+        let src = format!(
+            "{VIEW}fun column<M>(kids: View<M>[]): View<M> = kids[0];\n\
+             fun main() {{ println(column([text(\"a\")]) == column([])); }}"
+        );
+        let found = errors(&src);
+        assert_eq!(found.first().map(|(c, _)| *c), Some("E0412"), "{found:?}");
     }
 
     #[test]

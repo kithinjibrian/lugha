@@ -130,7 +130,10 @@ impl Packages {
             base: start,
             text,
         });
-        if !manifest.link.is_empty() {
+        // The root's manifest is read again as its implicit package: its
+        // table is the build's once (kivuli's second report, v17).
+        let seen = loaded.links.iter().any(|l| l.folder == folder);
+        if !manifest.link.is_empty() && !seen {
             missing_link_files(read, &folder, &manifest.link, loaded);
             loaded.links.push(PackageLink {
                 package: package.clone(),

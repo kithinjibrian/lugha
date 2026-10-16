@@ -190,13 +190,22 @@ impl LinkError {
                 )
                 .with_help(format!("the C compiler said:\n{}", stderr.trim_end())),
             ),
-            LinkError::Libraries { span, stderr } => Some(
-                Diagnostic::error("E0331", "linking failed", *span).with_help(format!(
-                    "the linker said:\n{}\ninstall the missing library, or add the folder \
-                     holding it to `paths`",
-                    stderr.trim_end()
-                )),
-            ),
+            LinkError::Libraries { span, stderr } => {
+                // The advice follows what the linker said, not a guess.
+                let advice = if stderr.contains("multiple definition") {
+                    "\na symbol is defined twice: keep it in one C file or library"
+                } else if stderr.contains("cannot find -l") {
+                    "\ninstall the missing library, or add the folder holding it to `paths`"
+                } else if stderr.contains("undefined reference") {
+                    "\nadd the library or C file that defines it to `libs` or `c`"
+                } else {
+                    ""
+                };
+                Some(
+                    Diagnostic::error("E0331", "linking failed", *span)
+                        .with_help(format!("the linker said:\n{}{advice}", stderr.trim_end())),
+                )
+            }
             LinkError::CcNotFound | LinkError::Io(_) | LinkError::Failed { .. } => None,
         }
     }
@@ -404,7 +413,19 @@ mod tests {
         };
         let d = libs.diagnostic().unwrap();
         assert_eq!((d.code, d.span), ("E0331", at));
-        assert!(d.help.unwrap().contains("cannot find -lnosuch"));
+        let help = d.help.unwrap();
+        assert!(
+            help.contains("cannot find -lnosuch") && help.contains("install the missing library")
+        );
+        let twice = LinkError::Libraries {
+            span: at,
+            stderr: "/usr/bin/ld: a.o: multiple definition of `f'; b.o: first defined here".into(),
+        };
+        let help = twice.diagnostic().unwrap().help.unwrap();
+        assert!(
+            help.contains("defined twice") && !help.contains("install"),
+            "{help}"
+        );
         let ours = LinkError::Failed {
             status: Some(1),
             stderr: String::new(),
