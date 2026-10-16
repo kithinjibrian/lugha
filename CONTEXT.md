@@ -7072,6 +7072,14 @@ Branch: main
 
 ---
 
+## SESSION 195 — 2026-10-17 — Discovery: struct update syntax and variants as functions — open
+Branch: main
+
+### WHAT WAS DONE
+- In progress: discovery for milestones 91 (struct update `S { f: e, ..base }`) and 92 (variants as function values), the prerequisites of kivuli (`../kivuli/KICKOFF.md`).
+
+---
+
 ## NEXT SESSION START POINT
 
 **v17 (concurrency): milestone 91 done** (tag `m91`, PRP-122): green threads — `spawn`, `Task<T>`, `Chan<T>`, `select`, `std.task`, one OS thread. v16 is frozen; `lughac spec` prints `Language v17 Specification.md`. Next: **actors** (the user's stated goal after green threads; needs discovery and a PRP), and the VS Code grammar/snippets for `spawn`/`select`.
