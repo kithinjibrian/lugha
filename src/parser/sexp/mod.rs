@@ -142,7 +142,14 @@ pub fn expr(expr: &Expr) -> String {
                 .iter()
                 .map(|(f, v)| format!(" ({} {})", f.name, self::expr(v)))
                 .collect();
-            format!("(struct-lit {}{fields})", qualified(&lit.module, &lit.name))
+            let base = lit
+                .base
+                .as_ref()
+                .map_or(String::new(), |b| format!(" (.. {})", self::expr(b)));
+            format!(
+                "(struct-lit {}{fields}{base})",
+                qualified(&lit.module, &lit.name)
+            )
         }
         ExprKind::Array(elements) => list("array", &elements.iter().collect::<Vec<_>>()),
         ExprKind::Tuple(elements) => list("tuple", &elements.iter().collect::<Vec<_>>()),

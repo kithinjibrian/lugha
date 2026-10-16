@@ -436,6 +436,12 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 ### Milestone 92 — Actors ✅
 - [x] (PRP-123) `actor` declarations, handles, call/cast, `stop`/`join`/`is`, panics ended in their actor, share-nothing; E0439; VS Code 0.12.0.
 
+### Milestone 93 — Struct update syntax ✅
+- [x] (PRP-124) `S { f: e, ..base }`, Rust's rules; E0440, W0104; for kivuli
+
+### Milestone 94 — Variants as functions
+- [ ] (PRP-125, approved) `Msg.Named`, `Some`, `Ok`, `Err` as function values
+
 ### Later
 - [ ] Built-in supervisors (restart policies), links/monitors; generic actors; actors as interface values; bounded mailboxes; actors on several OS threads; a stack overflow inside an actor ending only that actor.
 - [x] **VS Code:** highlighting for `spawn`/`select` (and `after`/`default` in arms), snippets `spawn`, `chan`, `select`; extension 0.11.0 (session 205).

@@ -2,15 +2,16 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–92 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–93 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–92):
+**Changes since v16** (milestones 91–93):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
+- Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 
 Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select` or `actor` as a name (keywords now). A module's own `Task` or `Chan` still means its own, as for `Ref`.
 
@@ -390,7 +391,8 @@ primary      = INT | FLOAT | CHAR | STRING | interpolated | closure | "true" | "
 interpolated = STRING_START expr [ FMT_SPEC ] { STRING_MID expr [ FMT_SPEC ] } STRING_END ;   (* "a {x} b {y:>5} c" *)
 closure      = "fun" "(" [ cparam { "," cparam } [ "," ] ] ")" [ ":" type ] ( block | "=" expr ) ;   (* v3 *)
 cparam       = IDENT [ ":" type ] ;
-struct_init  = "{" [ IDENT ":" expr { "," IDENT ":" expr } [ "," ] ] "}" ;
+struct_init  = "{" [ init { "," init } [ "," ] ] "}" ;   (* `..expr` only last, once: v17 *)
+init         = IDENT ":" expr | ".." expr ;
 infix        = binop expr | "as" type ;
 ```
 
@@ -487,7 +489,7 @@ There is no null. Every string and array variable holds a valid object.
 
 **void is not a value.** `void` can't be written as a type, and no variable, parameter, field or array element can hold one. `let x = println(1);` is a type error. A `void` expression can only be used as a statement, as the tail of a `void` block or function, or as a branch of an `if` whose type is `void`.
 
-**Structs.** Declared at top level with named, typed fields. A struct literal must initialize every field exactly once, in any order. Structs may contain other structs and arrays, but a struct may not contain itself directly or through other structs (it would have infinite size). Containing itself through an array is fine, because an array is a pointer: `struct Node { value: i64, kids: Node[] }` builds trees. Other recursive data, such as linked lists, uses an enum or `Option`: a struct may contain itself through either, as in `struct Item { value: i64, next: Option<Item> }`. Only a cycle through structs alone is an error (E0307).
+**Structs.** Declared at top level with named, typed fields. A struct literal must initialize every field exactly once, in any order — or end with `..base` (v17, milestone 93): `Point { x: 1.0, ..p }` takes every field not written from `base`, an expression of exactly the literal's struct type (type arguments included; another type is E0440). `..base` comes last, once (E0201); the written fields are evaluated first, left to right, then `base` once, and its fields are stored like any value (copied from a place, moved on its last use). Every unwritten field must be visible too (E0313). Writing every field as well as `..base` is warning W0104. Structs may contain other structs and arrays, but a struct may not contain itself directly or through other structs (it would have infinite size). Containing itself through an array is fine, because an array is a pointer: `struct Node { value: i64, kids: Node[] }` builds trees. Other recursive data, such as linked lists, uses an enum or `Option`: a struct may contain itself through either, as in `struct Item { value: i64, next: Option<Item> }`. Only a cycle through structs alone is an error (E0307).
 
 **Enums.** Declared at top level, in any order, as a list of variants that each carry zero or more positional payloads: `enum Shape { Circle(f64), Rect(f64, f64), Empty }`. A variant name is unique within its enum (E0309). A value is built through the enum's name with `.`: `Shape.Circle(2.0)`, or `Shape.Empty` for a variant without payloads. Each payload expects its declared type, and the count must match (E0416); an unknown variant is E0415. `==` compares two enum values by variant and then payload by payload; there is no other operator on enums (E0404). A payload can never be changed in place — there is no syntax for it, and `match` bindings are immutable — so copying an enum shares its payloads, and the copies that matter happen when a payload is stored: building a variant from a place copies it (`Job.Batch(xs)`), and storing a `match` binding copies it (section 4, Array copies). 
 
@@ -1633,6 +1635,7 @@ Name and type errors, reported by the checker:
 | E0436 | A function with captures passed to a callback without `data` (v16) | `sort(xs, fun(a, b) = a * k < b)` where `sort`'s comparator is `fun(i64, i64): i32` |
 | E0439 | An actor used against its rules (v17) | `c.count` through a handle; `Counter { count: 0 }` outside `spawn`; `actor A<T>`; `fun stop(self)` in an actor; a `Ref`, function or interface type in an actor's field, parameter or result |
 | E0438 | A `spawn` that changes a copy, or a malformed `select` (v17) | `spawn xs.push(1)`, `spawn p.bump()` with `mut self`; `select { default => 1 }`; two `default`s or `after`s; `after` with `default`; `m = s.recv()` with `s` not a `Chan` |
+| E0440 | `..base` of another type (v17) | `P { x: 1.0, ..q }` where `q` is a `Q` |
 | E0437 | A malformed `extern struct` (v16) | `extern struct S { s: string }`; a field of an array, a plain struct, an enum, `Option` or a function type; `extern struct S<T> { … }`; `extern struct S {}` |
 | E0433 | A pattern that must match every value but might not (v14) | `let (1, x) = t;`, `let Some(n) = o;` without `else`, `for (Some(a), b) of …` |
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
@@ -1655,6 +1658,7 @@ Name and type errors, reported by the checker:
 | W0101 | Unreachable code (warning) | statements after `return`, `break` or `continue`; reported once per block |
 | W0102 | Unreachable `match` arm (warning) | an arm after `_`, or a variant already covered |
 | W0103 | Unused `match` binding (warning) | `Some(Emtpy) => 0`, a misspelled variant that became a binding |
+| W0104 | `..base` that copies nothing (warning, v17) | `P { x: 1.0, y: 2.0, ..p }` |
 
 **JSON diagnostics.** With `--diagnostics=json`, the compiler writes one JSON object per line to stderr, one per diagnostic, and nothing else. Lines and columns are 1-based; columns and offsets count UTF-8 bytes. `label` is the text shown under the primary span, or `null`. `labels` holds secondary spans, and `help` is an optional suggestion. Internal errors have `"code":null`, and `"span":null` when they have no location. `"file"` is the file of the primary span: the main file as given on the command line, or a module's path relative to the main file's directory (`shapes/circle.la`); lines, columns and offsets are within that file. A label in a different file carries its own `"file"` key, which appears only then.
 
@@ -3575,6 +3579,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 90 | C structs by value (v16) | `extern struct`; passed by value to and from C as on x86-64 System V; E0437 | `tests/extern_structs.rs` (done) |
 | 91 | Green threads (v17) | `spawn`, `Task`, `Chan`, `select`, `std.task`; preemption; deadlock; E0211, E0438 | The §10 green-threads programs pass; `tests/programs/m91/` (done) |
 | 92 | Actors (v17) | `actor` declarations, `spawn` of an actor, call and cast, `stop`, `join`, `is`, panics ended in their actor, sharing nothing; E0439 | The §10 actors program passes; `tests/programs/m92/` (done) |
+| 93 | Struct update syntax (v17) | `S { f: e, ..base }`: Rust's rules; E0440, W0104 | `tests/programs/m93` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

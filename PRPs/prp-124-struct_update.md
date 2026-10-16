@@ -1,6 +1,6 @@
 ## FEATURE: Struct update syntax — `S { f: e, ..base }` builds a struct from some fields written and the rest copied from `base`; milestone 93 (v17).
 
-**Status:** approved 2026-10-17 ("approved", session 216); proposed in session 215, with PRP-125.
+**Status:** built in session 216; approved 2026-10-17 ("approved", session 216); proposed in session 215, with PRP-125.
 **Milestone:** 93 (tag `m93` at merge).
 **Spec:** `Language v17 Draft.md` decisions 24–29; v17 spec §3 (grammar), §4 (struct literals), §5 (evaluation order), §9 (diagnostics), §11 (row 93).
 
@@ -76,3 +76,10 @@ let r = Point { x: 1.0, y: 2.0, ..p };   // W0104: every field is written
 
 ## VALIDATION
 - `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`
+
+## BUILT (session 216)
+- As planned, test-first. E0440 and W0104 confirmed unused (actors took E0439 only).
+- `base` is checked first and **without** an expected type, so `..5` is E0440 rather than the literal's own E0401; its type arguments then fix a generic struct's, so the fields need no inference.
+- A trailing comma after `..base` is accepted (`P { x: 1, ..p, }`), since the formatter breaks long literals with one.
+- Actor states (milestone 92) can't be a base outside their actor: E0439 already rejects the state there.
+- Tests: checker (6), parser (1), formatter (1), `tests/programs/m93` (`update.la`: Elm-style `update`, evaluation order, copies, generics, nesting; `e0440.la`); the two explain pages through `tests/explain.rs`. Byte-identical IR for 204 compiling programs.

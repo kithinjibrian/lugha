@@ -86,6 +86,7 @@ impl<'ctx> Lowerer<'ctx> {
         &mut self,
         expr: &Expr,
         given: &[(Ident, Expr)],
+        base: Option<&Expr>,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         let ty = self.ty(expr);
         let mut values = Vec::with_capacity(given.len());
@@ -94,6 +95,13 @@ impl<'ctx> Lowerer<'ctx> {
             let value = self.value_for_store(value, &field_ty)?;
             values.push((index, self.stored_form(value, &field_ty)));
         }
+        // `..base` (v17): evaluated once, after the written fields, and stored
+        // like any value (copied from a place, moved on its last use); the
+        // written fields then replace its own.
+        let start = match base {
+            Some(base) => Some(self.value_for_store(base, &ty)?.into_struct_value()),
+            None => None,
+        };
         let Type::Struct(..) = &ty else {
             unreachable!("checked: a literal has its struct type")
         };
@@ -101,7 +109,7 @@ impl<'ctx> Lowerer<'ctx> {
             .context
             .get_struct_type(&ty.to_string())
             .expect("declared before lowering");
-        let mut aggregate = struct_type.get_undef();
+        let mut aggregate = start.unwrap_or_else(|| struct_type.get_undef());
         for (index, value) in values {
             aggregate = self
                 .builder

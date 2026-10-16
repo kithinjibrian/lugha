@@ -1,5 +1,6 @@
-//! v17 codes: green threads (E0438, milestone 91); actors (E0439, milestone 92).
+//! v17 codes: green threads (E0438, milestone 91); actors (E0439, milestone 92); struct update (E0440, W0104, milestone 93).
 
+use crate::check::Type;
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
 
@@ -35,4 +36,24 @@ pub(in crate::check) fn actor_misuse(message: impl Into<String>, span: Span) -> 
         "an actor is started with `spawn` and reached only through its methods; \
          what crosses its boundary is copied and may hold no `Ref`",
     )
+}
+
+/// `..base` of another type than the literal's struct (milestone 93).
+pub(in crate::check) fn base_type(literal: &Type, found: &Type, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0440",
+        format!("`..base` must be a `{literal}`, but this is a `{found}`"),
+        span,
+    )
+    .with_help("the fields not written are copied from `base`, so it must be the same struct")
+}
+
+/// `..base` when every field is written: nothing is copied from it.
+pub(in crate::check) fn base_unused(span: Span) -> Diagnostic {
+    Diagnostic::warning(
+        "W0104",
+        "every field is written, so `..base` copies nothing",
+        span,
+    )
+    .with_help("remove `..base`, or leave out the fields it should supply")
 }

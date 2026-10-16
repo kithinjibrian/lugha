@@ -2013,11 +2013,17 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision (v17 draft decisions 14–23, sessions 207–214):** an `actor` keyword; value methods wait (call), void ones are queued (cast); built-in `stop()`/`join(): Option<string>`/`is`; a panic ends only its actor (callers panic in turn; `join` reports); share nothing (no `Ref`, function or interface values across the boundary); start only with `spawn`; the name is the handle type outside, the state inside; private fields; unbounded mailbox; no generic actors. Built: the parser splits an actor into a struct and an `impl` marked `actor`; `Type::Actor`; handlers `lugha_actor_<Type>.<method>`; `runtime/actors.c`; all runtime panics through `panic_with`/`panic_end`. A stack overflow in an actor still ends the program (signal handler).
 
+
+### 176. Struct update syntax — milestone 93 (PRP-124)
+
+**Decision:** built as planned; the first of kivuli's two prerequisites (`../KICKOFF.md`; the kivuli repo's DECISION-001). `StructLiteral.base`; the parser takes `..e` as a `comma_list` entry and reports E0201 unless it is the last, once (a trailing comma after it is accepted). The checker checks `base` first with **no** expected type (a hint made `..5` report E0401 instead of E0440); a matching base's type arguments fix a generic struct's directly, so the fields need no inference; E0413 skipped with a base, W0104 when nothing is left to copy; `literal_visible` already required every field visible. Codegen evaluates the written fields, then `base` with `value_for_store`, and inserts the written fields over it. Liveness treats `base` as a stored value (moved on last use). Actor states can't be a base outside their actor (E0439 already). Byte-identical IR (204 programs). Built alongside the actors session (214); merged `main` (actors) into the branch: conflicts only in lists both sides appended to.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 93 complete**: PRP-124 struct update syntax
 - **lugha-gtk 0.1.0** (PRP-121), published on GitHub: GTK 4 windows and widgets in Lugha
 - **Milestone 90 complete**: PRP-120 C structs by value
 - **Milestone 89 complete**: PRP-119 strings from C

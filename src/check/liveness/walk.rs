@@ -87,7 +87,11 @@ impl Walk<'_> {
             ExprKind::Array(elements) | ExprKind::Tuple(elements) => {
                 elements.iter().for_each(|e| self.store(e))
             }
-            ExprKind::StructLit(lit) => lit.fields.iter().for_each(|(_, e)| self.store(e)),
+            ExprKind::StructLit(lit) => {
+                lit.fields.iter().for_each(|(_, e)| self.store(e));
+                // Its unwritten fields are stored too: copied from a place, moved on its last use (v17).
+                lit.base.iter().for_each(|e| self.store(e));
+            }
             ExprKind::Unary(_, e) | ExprKind::Cast(e, _) | ExprKind::Field(e, _) => self.expr(e),
             ExprKind::Binary(_, _, a, b) | ExprKind::Index(a, _, b) | ExprKind::Repeat(a, b) => {
                 self.expr(a);

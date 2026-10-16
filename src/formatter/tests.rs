@@ -247,6 +247,14 @@ fn select_arms_print_one_per_line_v17() {
 }
 
 #[test]
+fn struct_update_v17() {
+    check(
+        "fun f(){let a=P{x:1,..p};}",
+        "fun f() {\n    let a = P { x: 1, ..p };\n}\n",
+    );
+}
+
+#[test]
 fn actors_keep_fields_and_methods_in_order_v17() {
     check(
         "public actor Counter{count:i64,fun add(mut self,n:i64){self.count+=n;}label:string,fun get(self):i64=self.count;}",

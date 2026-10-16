@@ -130,7 +130,10 @@ mod tests {
             f(e);
             match &e.kind {
                 Array(es) => es.iter().for_each(|x| expr(x, f)),
-                StructLit(lit) => lit.fields.iter().for_each(|(_, x)| expr(x, f)),
+                StructLit(lit) => {
+                    lit.fields.iter().for_each(|(_, x)| expr(x, f));
+                    lit.base.iter().for_each(|x| expr(x, f));
+                }
                 Index(a, _, b) => {
                     expr(a, f);
                     expr(b, f);

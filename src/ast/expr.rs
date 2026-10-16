@@ -196,6 +196,9 @@ pub struct StructLiteral {
     pub name: Ident,
     /// `field: value` pairs in source order.
     pub fields: Vec<(Ident, Expr)>,
+    /// `..base` after the fields: where every field not written comes
+    /// from (v17, milestone 93).
+    pub base: Option<Box<Expr>>,
 }
 
 /// One piece of an interpolated string (v3 draft §2).

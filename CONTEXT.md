@@ -7607,8 +7607,25 @@ Branch: main
 
 ---
 
-## SESSION 216 — 2026-10-17 — Struct update syntax (milestone 93) — open
+## SESSION 216 — 2026-10-17 — Struct update syntax (milestone 93) — closed
 Branch: prp-124-struct_update
 
 ### WHAT WAS DONE
-- In progress: the user approved PRP-124 and PRP-125 ("approved"); building PRP-124 in worktree `../lugha-prp-124`. Session 214 (actors, another session) is still open on `prp-123-actors`.
+- The user approved PRP-124 and PRP-125 ("approved"); built PRP-124 in worktree `../lugha-prp-124`, test-first: parser (`..base` last, once), checker (base first, E0440, W0104), liveness, codegen (base under the written fields), formatter, printer; spec v17 (grammar, §4 structs, E0440, W0104, row 93); `docs/errors/E0440.md`, `W0104.md`.
+- Session 214 (actors) merged into `main` meanwhile; merged `main` into the branch (conflicts only in appended lists: explain table, formatter tests, v17 errors, spec header/rows).
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m93/{update.la,update.stdout,update.exit,e0440.la,e0440.stderr}`, `docs/errors/{E0440,W0104}.md`.
+- Modified: `src/ast/expr.rs`, `src/parser/{primary,sexp/mod}.rs`, `src/check/{struct_literal,liveness/mod,liveness/walk}.rs`, `src/check/errors/v17.rs`, `src/codegen/{structs,expr,hoist_scan}.rs`, `src/formatter/{exprs,tests}.rs`, `src/explain.rs`, spec, draft, PRP-124, CLAUDE.md, TODO, CHANGELOG, MEMORY (176), CONTEXT.
+
+### TESTS WRITTEN
+- Checker (6), parser (1), formatter (1), programs `m93`. Full suite, fmt, clippy pass; IR unchanged (204 programs).
+
+### DECISIONS MADE
+- As PRP-124 planned (BUILT notes, MEMORY 176).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-125 (variants as functions, milestone 94) next.

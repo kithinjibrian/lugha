@@ -227,7 +227,8 @@ impl<'ctx> Lowerer<'ctx> {
                 items.iter().for_each(|e| self.scan_read(scan, e))
             }
             ExprKind::StructLit(lit) => {
-                lit.fields.iter().for_each(|(_, e)| self.scan_read(scan, e))
+                lit.fields.iter().for_each(|(_, e)| self.scan_read(scan, e));
+                lit.base.iter().for_each(|e| self.scan_read(scan, e));
             }
             ExprKind::Unary(_, e) | ExprKind::Cast(e, _) | ExprKind::Try(e) => {
                 self.scan_read(scan, e)
