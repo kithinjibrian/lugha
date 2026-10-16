@@ -439,6 +439,9 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 ### Milestone 93 — Struct update syntax ✅
 - [x] (PRP-124) `S { f: e, ..base }`, Rust's rules; E0440, W0104; for kivuli
 
+### Milestone 96 — Inference from siblings ✅
+- [x] (PRP-127) result-only generic calls typed by their siblings; tagged `m96`
+
 ### Milestone 95 — Formatter hugging ✅
 - [x] (PRP-126) trailing arrays and struct literals hug; headers kept; tagged `m95`
 

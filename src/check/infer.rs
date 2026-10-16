@@ -6,7 +6,6 @@ use std::collections::HashMap;
 
 use super::expr::Expect;
 use super::generics::{Generic, replace};
-use super::ops::defers;
 use super::{Checker, Type, errors};
 use crate::ast::{Expr, ExprKind};
 
@@ -43,7 +42,8 @@ impl Checker {
             unify(declared, &expect.ty, &names, &mut bound);
         }
         // What can be typed alone goes first, so `max(x, 3)` makes `3` a `u8`.
-        let (now, later): (Vec<_>, Vec<_>) = inputs.iter().partition(|(e, _)| !defers(e));
+        // A call only its result can type waits too (v17): `pair(text("a"), v)`.
+        let (now, later): (Vec<_>, Vec<_>) = inputs.iter().partition(|(e, _)| !self.waits(e));
         // Closures last: their parameter types need what literals decide (v3).
         let is_closure = |(e, _): &&(&Expr, Expect)| matches!(e.kind, ExprKind::Closure(_));
         let (closures, later): (Vec<_>, Vec<_>) = later.into_iter().partition(is_closure);

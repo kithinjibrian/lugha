@@ -7730,8 +7730,24 @@ Branch: prp-126-fmt_hugging
 
 ---
 
-## SESSION 221 — 2026-10-17 — Inference from siblings (milestone 96) — open
+## SESSION 221 — 2026-10-17 — Inference from siblings (milestone 96) — closed
 Branch: prp-127-sibling_inference
 
 ### WHAT WAS DONE
-- In progress: building PRP-127 (approved in session 220) in worktree `../lugha-prp-127`; targeted tests only.
+- Built PRP-127 in worktree `../lugha-prp-127`: `check/siblings.rs` (`waits`), used in inference, `==`/`!=` and `assert_eq`/`assert_ne`; spec v17 §4 (operand types, inference), row 96; docs.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/siblings.rs`, `tests/programs/m96/siblings.{la,stdout,exit}`.
+- Modified: `src/check/{mod,infer,ops,test_fns}.rs`, spec, draft, PRP-127, CLAUDE.md, TODO, CHANGELOG, MEMORY (179), CONTEXT.
+
+### TESTS WRITTEN
+- `check/siblings.rs` (5), programs `m96`. Targeted: `--lib`, `programs`, `test_runner`, fmt, clippy.
+
+### DECISIONS MADE
+- As PRP-127 planned (BUILT notes, MEMORY 179).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-128 next.

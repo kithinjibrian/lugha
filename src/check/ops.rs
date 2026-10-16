@@ -111,7 +111,8 @@ impl Checker {
         outer: Option<&Expect>,
         any: bool,
     ) -> (Type, Type) {
-        let swap = defers(lhs) && !defers(rhs);
+        // A literal, `None` or a call only its result types goes second (v17: the call).
+        let swap = self.waits(lhs) && !self.waits(rhs);
         let (first, second) = if swap { (rhs, lhs) } else { (lhs, rhs) };
         let a = self.value(first, outer);
         let b = self.second_operand(&a, first, second, outer, any);
