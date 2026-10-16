@@ -7091,3 +7091,8 @@ See `TODO.md`.
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 195 — 2026-10-16 — Green threads: discovery — open
+Branch: main
