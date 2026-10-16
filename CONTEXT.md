@@ -7775,3 +7775,11 @@ Branch: prp-128-packages_and_tests
 
 ### STILL OPEN AT CLOSE
 - Nothing. kivuli's own updates belong to its session.
+
+---
+
+## SESSION 223 — 2026-10-17 — pkg-config's SSE flags (PRP-129) — open
+Branch: prp-129-pkg_config_sse
+
+### WHAT WAS DONE
+- In progress: PRP-129 (approved by the user as a security decision): accept `-msse`, `-msse2`, `-mfpmath=sse` from `pkg-config --cflags`.
