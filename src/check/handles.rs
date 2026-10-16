@@ -195,3 +195,34 @@ mod extern_struct_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod module_tests {
+    use crate::check::Type;
+    use crate::check::modules::test_util::ok;
+
+    #[test]
+    fn handles_named_through_their_module_keep_their_type() {
+        let lib = (
+            "m.la",
+            "public extern type H;\npublic extern fun make(): H;\n\
+             public fun take(f: fun(H)) {}\npublic struct Holder { h: H }\n",
+        );
+        let checked = ok(&[
+            (
+                "main.la",
+                "import m;\n\
+                 struct Mine { h: m.H }\n\
+                 fun keep(h: m.H): m.H = h;\n\
+                 fun main() {\n\
+                     m.take(fun(h: m.H) {});\n\
+                     let mine = Mine { h: keep(m.make()) };\n\
+                     let held = m.Holder { h: mine.h };\n\
+                 }\n",
+            ),
+            lib,
+        ]);
+        let fields = &checked.structs["Mine"];
+        assert_eq!(fields[0].1, Type::Handle("m.H".into()));
+    }
+}

@@ -214,6 +214,8 @@ impl Checker {
         match self.named_type(&key) {
             Some(Type::Struct(k, _)) => Type::Struct(k, args),
             Some(Type::Enum(k, _)) => Type::Enum(k, args),
+            // `m.H` for an `extern type` (v16): a handle has no arguments.
+            Some(handle @ Type::Handle(_)) => handle,
             _ => Type::Error,
         }
     }
