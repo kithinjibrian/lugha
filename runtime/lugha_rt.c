@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <math.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -98,6 +99,10 @@ static void install_stack_overflow_handler(void);
  * which comes earlier in the joined file (v15). */
 static int utf8_encode(uint32_t code, char *out);
 
+/* Ends the program after a panic, or only the running actor (v17,
+ * actors.c); `text` is what followed "panic: ". */
+static void panic_end(const char *text, size_t len);
+
 /* The C `main`'s arguments, for `args()` (v3). */
 static int32_t program_argc;
 static char **program_argv;
@@ -114,6 +119,29 @@ static void die(const char *message) {
     fflush(stdout);
     fputs(message, stderr);
     exit(101);
+}
+
+/* Prints `panic: <text>` (program data, so never a format string), then
+ * ends the program or the running actor. */
+static void panic_with(const char *text, size_t len) {
+    fflush(stdout);
+    fputs("panic: ", stderr);
+    fwrite(text, 1, len, stderr);
+    fputc('\n', stderr);
+    panic_end(text, len);
+}
+
+/* `panic_with` for a message built from a format. */
+__attribute__((format(printf, 1, 2))) static void panic_format(const char *format, ...) {
+    char *text = NULL;
+    va_list args;
+    va_start(args, format);
+    int len = vasprintf(&text, format, args);
+    va_end(args);
+    if (len < 0) {
+        die("panic: out of memory\n");
+    }
+    panic_with(text, (size_t)len);
 }
 
 void *lugha_rt_alloc(int64_t size) {
@@ -144,23 +172,23 @@ LughaArray *lugha_rt_array_grow(const LughaArray *array, int64_t elem_size) {
 }
 
 void lugha_rt_panic(const LughaString *msg, const char *file, int64_t line, int64_t col) {
-    // Flush first so everything the program printed appears before the panic.
-    fflush(stdout);
-    fputs("panic: ", stderr);
-    // fwrite, never printf: the message is program data, not a format string.
-    fwrite(msg->bytes, 1, (size_t)msg->len, stderr);
-    fprintf(stderr, " at %s:%" PRId64 ":%" PRId64 "\n", file, line, col);
-    exit(101);
+    char *where = NULL;
+    int tail = asprintf(&where, " at %s:%" PRId64 ":%" PRId64, file, line, col);
+    char *text = tail < 0 ? NULL : malloc((size_t)msg->len + (size_t)tail);
+    if (text == NULL) {
+        die("panic: out of memory\n");
+    }
+    // memcpy, never printf: the message is program data, not a format string.
+    memcpy(text, msg->bytes, (size_t)msg->len);
+    memcpy(text + msg->len, where, (size_t)tail);
+    panic_with(text, (size_t)msg->len + (size_t)tail);
 }
 
 /* Out-of-range indexing (spec §5, §9); `index` may be negative. */
 void lugha_rt_panic_bounds(int64_t len, int64_t index, const char *file, int64_t line, int64_t col) {
-    fflush(stdout);
-    fprintf(stderr,
-            "panic: index out of bounds: the length is %" PRId64 " but the index is %" PRId64
-            " at %s:%" PRId64 ":%" PRId64 "\n",
-            len, index, file, line, col);
-    exit(101);
+    panic_format("index out of bounds: the length is %" PRId64 " but the index is %" PRId64
+                 " at %s:%" PRId64 ":%" PRId64,
+                 len, index, file, line, col);
 }
 
 /* `a + b` for strings: a new string holding both (spec §4). */
@@ -180,12 +208,9 @@ LughaString *lugha_rt_str_concat(const LughaString *a, const LughaString *b) {
 LughaString *lugha_rt_str_slice(const LughaString *s, int64_t from, int64_t to, const char *file,
                                 int64_t line, int64_t col) {
     if (from < 0 || from > to || to > s->len) {
-        fflush(stdout);
-        fprintf(stderr,
-                "panic: slice out of bounds: from %" PRId64 " to %" PRId64
-                " of a string of length %" PRId64 " at %s:%" PRId64 ":%" PRId64 "\n",
-                from, to, s->len, file, line, col);
-        exit(101);
+        panic_format("slice out of bounds: from %" PRId64 " to %" PRId64
+                     " of a string of length %" PRId64 " at %s:%" PRId64 ":%" PRId64,
+                     from, to, s->len, file, line, col);
     }
     int64_t len = to - from;
     LughaString *out = lugha_rt_alloc((int64_t)sizeof(LughaString) + len + 1);

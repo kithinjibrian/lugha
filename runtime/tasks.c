@@ -63,6 +63,8 @@ struct Fiber {
     int64_t wake_at;
     /* Which wait woke it: a `select` case, or TIMED_OUT; WAITING before. */
     int64_t fired;
+    /* The actor this fiber runs (v17, actors.c), or NULL. */
+    void *actor;
 };
 
 enum { WAITING = -1, TIMED_OUT = -2, DEFAULT_ARM = -1 };

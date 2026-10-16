@@ -1,6 +1,6 @@
 ## FEATURE: Actors — `actor Name { fields, methods }`, started with `spawn`, called through a handle (value methods wait for the reply, void methods are queued), stopped with `stop()`, a panic isolated to its actor, sharing nothing; milestone 92 of v17.
 
-**Status:** proposed in session 213, after discussion in sessions 207–212. Not approved.
+**Status:** approved 2026-10-17 ("yes", session 214); built in session 214. Proposed in session 213, after discussion in sessions 207–212.
 **Milestone:** 92 (tag `m92` at merge).
 **Spec:** `Language v17 Draft.md` decisions 14–23 (14–18 the user's choices; 19–23 mine, approved in session 212).
 

@@ -50,9 +50,7 @@ typedef struct {
 static uint64_t pick_state = 0x9e3779b97f4a7c15u;
 
 static void chan_panic(const char *what, const char *file, int64_t line, int64_t col) {
-    fflush(stdout);
-    fprintf(stderr, "panic: %s at %s:%" PRId64 ":%" PRId64 "\n", what, file, line, col);
-    exit(101);
+    panic_format("%s at %s:%" PRId64 ":%" PRId64, what, file, line, col);
 }
 
 /* `Chan.new()` and `Chan.buffered(n)`. */

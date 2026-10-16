@@ -24,9 +24,20 @@ static char *new_stack(void) {
 
 /* Where a new fiber starts: runs its call, stores the result, wakes its
  * joiners, and never comes back. */
+static void fiber_exit(Fiber *self);
+
+/* The fiber `lugha_rt_task_spawn` made last, for actors.c to mark. */
+static Fiber *last_spawned;
+
 __attribute__((used, visibility("hidden"))) void lugha_rt_task_fiber_main(Fiber *self) {
     reap();
     self->entry(self->code, self->env, self->task->result);
+    fiber_exit(self);
+}
+
+/* Finishes the running fiber: its task is done, its joiners wake, and the
+ * next fiber runs; never returns. An actor's panic ends its fiber here too. */
+static void fiber_exit(Fiber *self) {
     LughaTask *task = self->task;
     task->done = 1;
     for (Fiber *j = task->joiners; j != NULL;) {
@@ -85,6 +96,7 @@ LughaTask *lugha_rt_task_spawn(void (*entry)(void *, void *, void *), void *code
     live = f;
     live_count++;
     make_ready(f);
+    last_spawned = f;
     return task;
 }
 
