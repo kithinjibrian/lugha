@@ -118,6 +118,18 @@ Fixes for what building kivuli (a package with tests and nested views) turned up
 49. **The mechanism:** the test process exits with code 77 after reporting the reason to the runner on its captured output; the runner accepts a skip only with both.
 50. **Success:** milestone 97, tag `m97`. Tests through `lughac` for each part; kivuli's own layout simplified.
 
+## Decisions behind milestone 99 (proposed, session 227)
+
+A package's front door (the user asked whether libraries should have an entry like `lib.la` or one declared in the manifest; PRP-131).
+
+51. **The entry is `lib.la`** at the package's module root (its `source` folder, or its folder without one). No manifest key.
+52. **`import N;`** binds the entry as `N` (also `as`, `{ X, y }`, `public import N;`); module path `N`, symbols `lugha_fn_N/f`. Without a `lib.la`, `import N;` stays E0312, its help pointing to `lib.la` or `import N.<module>;`.
+53. **One name:** `import N.lib;` is E0312 ("the entry is imported as `import N;`"); a `lib/` folder's modules (`N.lib.x`) are unaffected.
+54. **Unchanged:** `import N.module;` and visibility; the entry is an ordinary module.
+55. **Everywhere a package is:** the implicit package (`examples/`, `test/`) can `import N;`; `lughac test`/`check` take `src/lib.la` as the module `N`; no entry for `std`.
+56. **`lughac init --lib`** writes `src/lib.la` and an example with `import N;`; libraries from older `init` (`src/N.la`) keep working as `N.N`.
+57. **Success:** milestone 99, tag `m99`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
@@ -145,3 +157,4 @@ For milestone 92: **§2** keyword `actor`; **§3** `actor_decl = [ visibility ] 
 | 96 | Inference from siblings (v17) | result-only generic calls typed by their siblings; `assert_eq`, `==` |
 | 97 | Packages and tests (v17) | package files as modules in `test`/`check`, `test/` inside the package, one lock per package, `skip(reason)` |
 | 98 | Module doc comments (v17) | a file's top `/** */` (before a blank line or an `import`) documents its module; hover on module names; std modules documented (PRP-130, approved in session 225) |
+| 99 | Package entry modules (v17) | `import N;` imports the package's `lib.la`; `init --lib` writes one (PRP-131, proposed in session 227) |

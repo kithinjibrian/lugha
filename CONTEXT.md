@@ -7871,5 +7871,23 @@ Branch: fix-kivuli-round-2
 
 ---
 
-## SESSION 227 — 2026-10-17 — Package entry module proposed (PRP-131) — open
+## SESSION 227 — 2026-10-17 — Package entry module proposed (PRP-131) — closed
 Branch: prp-131-package_entry
+
+### WHAT WAS DONE
+- Discussed library entries (the user asked: `lib.la` or a manifest key?); recommended a fixed `lib.la`; the user asked for a write-up. PRP-131 written (milestone 99), draft decisions 51–57 and row 99 added (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-131-package_entry.md`. Modified: `docs/specs/Language v17 Draft.md`, CONTEXT.
+
+### TESTS WRITTEN
+- None (proposal).
+
+### DECISIONS MADE
+- None final: decisions 51–57 await approval.
+
+### PENDING DECISIONS OPENED
+- PRP-131 approval.
+
+### STILL OPEN AT CLOSE
+- PRP-131 awaits approval; build on branch `prp-131-package_entry`.
