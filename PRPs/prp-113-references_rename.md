@@ -54,20 +54,29 @@ None.
 - Unchanged: reads only the editor's texts and the files checks already load; the extra checks are the same offline checks (no `git`); returns edits, writes nothing.
 
 ## TESTS TO WRITE
-- [ ] **Unit tests (`references.rs`, `rename.rs`):** identifier validation (keywords, digits first, `_`, non-ASCII); dedup across two snapshots; the visibility rule (private, main file, module imported or not).
-- [ ] **`tests/lsp_references.rs`** over real stdio: a local (declaration and uses, `includeDeclaration` both ways); a function used in two files; a method; a struct field (declaration, `p.x`, `P { x: … }`); a variant (construction and pattern); a type in annotations; a module (`geo` in `import geo;` and `geo.f`); a prelude function's uses; nothing under the cursor → `null`.
-- [ ] **`tests/lsp_rename.rs`:** a local renamed everywhere (the edit applied and checked clean); a function across two files; a field; refusals: a keyword, `1abc`, a prelude name, a module, a clash (`let a`, `let b`; rename `b` → `a` used after) — refused by the self-check, a shadowing capture refused, a public function in a module no checked main imports; `prepareRename` returns the name's range or the refusal; no file written.
-- [ ] **Extension:** `npm test` passes.
-- [ ] **Regression:** every existing test passes.
+- [x] **Unit tests (`references.rs`, `rename.rs`):** identifier validation (keywords, digits first, `_`, non-ASCII); dedup across two snapshots; the visibility rule (private, main file, module imported or not).
+- [x] **`tests/lsp_references.rs`** over real stdio: a local (declaration and uses, `includeDeclaration` both ways); a function used in two files; a method; a struct field (declaration, `p.x`, `P { x: … }`); a variant (construction and pattern); a type in annotations; a module (`geo` in `import geo;` and `geo.f`); a prelude function's uses; nothing under the cursor → `null`.
+- [x] **`tests/lsp_rename.rs`:** a local renamed everywhere (the edit applied and checked clean); a function across two files; a field; refusals: a keyword, `1abc`, a prelude name, a module, a clash (`let a`, `let b`; rename `b` → `a` used after) — refused by the self-check, a shadowing capture refused, a public function in a module no checked main imports; `prepareRename` returns the name's range or the refusal; no file written.
+- [x] **Extension:** `npm test` passes.
+- [x] **Regression:** every existing test passes.
+
+## BUILT (session 175)
+- As designed: `references.rs` (`Key`, `Place`, `at`, `find`, `location`; 2 unit tests), `rename.rs` (`Context`, `prepare`, `rename`, `verify`, `target`, `reachable`, `valid`; 1 unit test covering keywords, digits first, `_`, non-ASCII, empty), `Server::references` and `Server::rename` (prepare when no new name), `Server.alone`, `Documents: Clone`, `definition::innermost` shared. `mod.rs` answers the three requests (refusals as `RequestFailed`), declares `referencesProvider` and `renameProvider { prepareProvider }`, and gained an `invalid` reply helper.
+- `tests/lsp_references.rs` (5) and `tests/lsp_rename.rs` (7), written first. The self-check tests assert the exact reasons: "would make a use point elsewhere" (a capture by shadowing) and "would add an error in geo.la" (a duplicate function).
+- No checker change was needed: the definitions table already records every kind of use tested (fields in literals, variants in patterns, methods, modules).
+- Intrinsics such as `println` have no declaration: References answers `null` and Rename "nothing to rename here"; the tests use `math.sqrt` for the std case.
+- The dedup in unit tests of two snapshots is covered end to end instead (a module loaded by one main and found once); building `Snapshot`s by hand would test internals.
+- Extension 0.6.0 (README and manual step 16 only).
+- The manual check in VS Code is left to the user.
 
 ## ROLLBACK PLAN
 - Branch `prp-113-references_rename` from `main`; tag `m83`.
 - To abandon before merge: delete the branch. After: revert the merge.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test`, `npm test` (CI in the background).
-- [ ] Spec at milestone 83; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test`, `npm test` (CI in the background).
+- [x] Spec at milestone 83; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 - [ ] The manual check passes in VS Code (README steps).
 
 ## VALIDATION

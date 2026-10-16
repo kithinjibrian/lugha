@@ -1945,11 +1945,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned: `Partial.variants` (by an unused binding's span, from `variants_of` the binding's type, `$tuple` constructors dropped) recorded in `matching.rs::unused`; `driver/lsp/fixes.rs` (`fix` by code; the place's root through `partial.definitions`, `after_let` on the text before the binding; Levenshtein `distance`, `closest`; `after_imports` scanning top-level `import` lines to the next `;`); `code_actions.rs` dispatches and shares an `action` builder. Found while testing: at the top of an enum `match` a bare name is a variant (E0415), so W0103 only arises in payload slots (`Some(Emtpy)`). Extension 0.5.0 (README only).
 
+### 159. Find References and Rename planned (session 174, approved session 175)
+
+**Decision:** v16 draft decisions 76–80: References + Rename together; the checked files only, Rename refusing a non-`private` module-level item of a module no checked main imports; Rename self-checked in memory (the user's choices). Go to Implementations later.
+
+### 160. Find References and Rename — milestone 83 (PRP-113)
+
+**Decision:** built as planned: `driver/lsp/references.rs` (`Key` — a declaration by file and bytes, bundled files by their `<…>` name, or a module path — so places compare across checks' offset spaces; `at`, `find` over every snapshot, deduplicated in a `BTreeSet`); `driver/lsp/rename.rs` (`target` with the refusals, `reachable`: a local by `Name::Local`, `private` on the declaration's line, a main file, or another main's check loaded the file; the renamed texts in a cloned `Documents`; `verify` checks every main that loaded a renamed file before and after, comparing error counts per file and `find` of the moved declaration against the moved places). `Server.alone` remembers which mains were checked alone. Intrinsics (`println`) have no declaration: References `null`, Rename "nothing to rename". Extension 0.6.0 (README only).
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 83 complete**: PRP-113 Find References and Rename, VS Code extension 0.6.0
 - **Milestone 82 complete**: PRP-112 more quick fixes, VS Code extension 0.5.0
 - **Milestone 81 complete**: PRP-111 formatting in the editor, VS Code extension 0.4.0
 - **Milestone 80 complete**: PRP-110 `lughac fmt`

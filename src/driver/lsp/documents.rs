@@ -6,7 +6,7 @@ use std::io;
 use std::path::{Component, Path, PathBuf};
 
 /// The documents the editor has open, by normalized path.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(super) struct Documents {
     open: HashMap<PathBuf, String>,
 }
