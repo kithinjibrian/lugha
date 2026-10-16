@@ -80,20 +80,29 @@ None.
 - Reads and writes only the paths given (and `.la` files under given folders); never follows symbolic links out of a folder it expands; writes through a temporary file and a rename in the same folder, so a crash can't leave half a file.
 
 ## TESTS TO WRITE
-- [ ] **Unit tests, one per rule:** spacing (operators, `,`, `:`, `=>`); indentation; brace placement; group breaking at 100 columns with trailing commas (calls, arrays, struct literals, parameters, imports); minimal parentheses (each precedence pair, associativity); literals as written (`0xFF`, `1_000`, `"a\n{b}"`, `'\u{1F600}'`, a `format` template); blank-line collapsing; match arms; closures; `if`/`else` chains; `impl`, `interface`, `enum` with payloads; leading, trailing and doc comments; a comment inside an expression → verbatim statement.
-- [ ] **Verification tests:** a forced printer fault (a test-only hook) is caught as `Unsafe`; comment loss is caught.
-- [ ] **Corpus test:** every parsing `.la` in `tests/programs/`, every spec §10 program, the std and prelude sources: format → verified → format again → identical.
-- [ ] **`tests/fmt.rs`:** a file in place; a folder; `--check` lists and exits 1, writes nothing; an already formatted file is untouched (timestamp); a syntax error → diagnostics, exit 1, untouched; exit 0 otherwise.
-- [ ] **Regression:** every existing test passes.
+- [x] **Unit tests, one per rule:** spacing (operators, `,`, `:`, `=>`); indentation; brace placement; group breaking at 100 columns with trailing commas (calls, arrays, struct literals, parameters, imports); minimal parentheses (each precedence pair, associativity); literals as written (`0xFF`, `1_000`, `"a\n{b}"`, `'\u{1F600}'`, a `format` template); blank-line collapsing; match arms; closures; `if`/`else` chains; `impl`, `interface`, `enum` with payloads; leading, trailing and doc comments; a comment inside an expression → verbatim statement.
+- [x] **Verification tests:** a forced printer fault (a test-only hook) is caught as `Unsafe`; comment loss is caught.
+- [x] **Corpus test:** every parsing `.la` in `tests/programs/`, every spec §10 program, the std and prelude sources: format → verified → format again → identical.
+- [x] **`tests/fmt.rs`:** a file in place; a folder; `--check` lists and exits 1, writes nothing; an already formatted file is untouched (timestamp); a syntax error → diagnostics, exit 1, untouched; exit 0 otherwise.
+- [x] **Regression:** every existing test passes.
+
+## BUILT (session 169)
+- As designed, with `leaves.rs` (types, patterns, parameter lists) beside the planned files and `src/formatter/tests.rs` for the style rules (22 unit tests with `doc.rs`'s). `lexer::comments` is tested in `tests/lexer.rs` (`lexer/mod.rs` is at 496 lines). The corpus test is `tests/fmt_corpus.rs` (3 tests: 346 parsing programs in `tests/programs/`, the spec's programs, std and the prelude); the CLI tests are `tests/fmt.rs` (6).
+- **`FormatError`** is `Syntax` and `Unsafe(reason)`; I/O belongs to the driver (`driver/fmt.rs`'s own error), since `format` takes text.
+- **Parentheses** beyond precedence, each found by the corpus or the parser's rules: `(fun(): T)[]` in types, `(x as T) < y`, a struct literal inside a condition (as the parser's E0205 flag), `-(-x)`, a nested or-pattern, and a block-like expression or struct literal the user parenthesised as an operand.
+- **Hugging:** a list whose last element spans lines (a closure or block) keeps it on the opening line, `println(xs.any(fun(x) = if … {` … `}))`, instead of breaking every enclosing call.
+- **Verification** ignores the `$item<offset>` names of destructuring loops, which move with the text.
+- Known limits, noted in TODO: binary and method chains never break; blocks are always multi-line.
+- Comparisons are printed without parentheses where precedence allows (`a < b == c`), per decision 61.
 
 ## ROLLBACK PLAN
 - Branch `prp-110-formatter` from `main`; tag `m80`.
 - To abandon before merge: delete the branch. After: revert the merge; nothing depends on it until milestone 81.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test` (CI in the background).
-- [ ] Spec at milestone 80; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test` (CI in the background).
+- [x] Spec at milestone 80; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 
 ## VALIDATION
 ```bash

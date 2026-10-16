@@ -59,6 +59,29 @@ pub fn doc_comments(source: &str) -> Vec<Span> {
     lexer.docs
 }
 
+/// Whether a comment is `// …` or `/* … */`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CommentKind {
+    Line,
+    Block,
+}
+
+/// A comment in the source: where it is, from `//` or `/*` to the end of
+/// its line (the line break excluded) or its `*/`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Comment {
+    pub span: Span,
+    pub kind: CommentKind,
+}
+
+/// Every comment of `source` in order, outermost only (v16, milestone 80,
+/// for the formatter). Found by the lexer's own scan, as [`doc_comments`].
+pub fn comments(source: &str) -> Vec<Comment> {
+    let mut lexer = Lexer::new(source, true);
+    lexer.run();
+    lexer.comments
+}
+
 fn lex_with(source: &str, bundled: bool) -> Result<(Vec<Token>, Vec<Diagnostic>), Vec<Diagnostic>> {
     let mut lexer = Lexer::new(source, bundled);
     lexer.run();
@@ -86,6 +109,8 @@ struct Lexer<'a> {
     bundled: bool,
     /// Doc comments seen, outermost only (v16).
     docs: Vec<Span>,
+    /// Every comment seen, outermost only (v16).
+    comments: Vec<Comment>,
 }
 
 impl<'a> Lexer<'a> {
@@ -98,6 +123,7 @@ impl<'a> Lexer<'a> {
             interp: Vec::new(),
             bundled,
             docs: Vec::new(),
+            comments: Vec::new(),
         }
     }
 }
@@ -164,10 +190,21 @@ impl Lexer<'_> {
     }
 
     fn skip_comment(&mut self) {
+        let start = self.pos;
         // `\n` is ASCII, so the byte search can't land inside a multi-byte char.
         self.pos = self.src[self.pos..]
             .find('\n')
             .map_or(self.src.len(), |i| self.pos + i);
+        // A `\r\n` line's `\r` isn't part of the comment.
+        let end = if self.src[..self.pos].ends_with('\r') {
+            self.pos - 1
+        } else {
+            self.pos
+        };
+        self.comments.push(Comment {
+            span: Span::new(start, end.max(start)),
+            kind: CommentKind::Line,
+        });
     }
 
     /// Skips a `/* … */` comment starting at `start`, counting nested ones
@@ -198,6 +235,10 @@ impl Lexer<'_> {
                     i += 2;
                     if depth == 0 {
                         self.pos = i;
+                        self.comments.push(Comment {
+                            span: Span::new(start, i),
+                            kind: CommentKind::Block,
+                        });
                         // `/**…*/` but not `/**/` documents what follows (v16).
                         if bytes.get(start + 2) == Some(&b'*') && i - start > 4 {
                             self.docs.push(Span::new(start, i));

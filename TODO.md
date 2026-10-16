@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 80 — `lughac fmt` ✅
+- [x] PRP-110: the tree-based formatter, comments kept, verified output, `--check`; tagged `m80`
+
 ### Milestone 79 — Add missing arms ✅
 - [x] PRP-109: quick fixes on E0417 (every missing arm, or `_`); tagged `m79`
 
@@ -399,6 +402,9 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [x] **Signature help** — milestone 74, PRP-104.
 - [x] **Snippets** — milestone 78, PRP-108.
 - [x] **Quick fix: add missing match arms** — milestone 79, PRP-109.
+- [x] **`lughac fmt`** — milestone 80, PRP-110.
+- [ ] **Format Document and format on save** in `lughac lsp` and the extension — milestone 81 (its own discovery and PRP).
+- [ ] Formatter: break long binary chains and method chains; `fmt --check` in CI once the repo's own `.la` files are formatted (moves panic lines).
 - [ ] More quick fixes: remove an unused binding (W0103), add a missing import (E0312), `let mut` for E0405-style mutability errors.
 - [ ] **Find References** and **Go to Implementations** — the definitions table read backwards; implementations of interface methods.
 - [ ] **A read-only view of bundled sources** (`std`, the prelude) for hover and definitions that land there.

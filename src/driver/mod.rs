@@ -9,6 +9,7 @@
 //! Depends on: lexer, parser, codegen, link, diagnostic.
 
 mod build;
+mod fmt;
 mod guard;
 mod init;
 mod json;
@@ -103,6 +104,7 @@ where
             out.diagnostics(&source, &warnings);
             0
         }),
+        Command::Fmt { paths, check } => Ok(fmt::fmt(paths, *check, &mut out)),
         Command::Spec => Ok(spec(out.stdout, out.stderr)),
         Command::Lsp => Ok(lsp::serve(out.stderr)),
         Command::Init { folder, lib, name } => Ok(init::init(
@@ -179,6 +181,14 @@ enum Command {
         #[arg(long, value_enum, default_value = "human")]
         diagnostics: Format,
     },
+    /// Format .la files in place in the one canonical style (v16)
+    Fmt {
+        /// Files or folders (every .la file under them) [default: the current folder]
+        paths: Vec<PathBuf>,
+        /// Write nothing; list the files that would change and exit 1 if any
+        #[arg(long)]
+        check: bool,
+    },
     /// Print the LLM-ready spec bundled with this compiler version
     Spec,
     /// Serve the Language Server Protocol on stdin/stdout, for editors (v16)
@@ -220,7 +230,9 @@ impl Command {
             Command::Check { diagnostics, .. } | Command::Update { diagnostics, .. } => {
                 *diagnostics
             }
-            Command::Spec | Command::Init { .. } | Command::Lsp => Format::Human,
+            Command::Spec | Command::Init { .. } | Command::Lsp | Command::Fmt { .. } => {
+                Format::Human
+            }
         }
     }
 
@@ -231,7 +243,7 @@ impl Command {
             | Command::Run { file, .. }
             | Command::Check { file, .. }
             | Command::Update { file, .. } => Some(file.display().to_string()),
-            Command::Spec | Command::Init { .. } | Command::Lsp => None,
+            Command::Spec | Command::Init { .. } | Command::Lsp | Command::Fmt { .. } => None,
         }
     }
 }
@@ -295,6 +307,11 @@ struct Output<'a> {
 impl Output<'_> {
     fn print(&mut self, text: &str) {
         let _ = self.stdout.write_all(text.as_bytes());
+    }
+
+    /// One of lughac's own errors, not tied to a source.
+    fn error(&mut self, message: &str) {
+        let _ = writeln!(self.stderr, "error: {message}");
     }
 
     fn diagnostics(&mut self, source: &Source, diagnostics: &[Diagnostic]) {

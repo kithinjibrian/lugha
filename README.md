@@ -69,6 +69,7 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **The standard library (v15, milestone 53):** `import std.math;` then `math.sqrt(2.0)`, `math.pow`, `math.sin`, `math.round`, `math.abs(-3)`, `math.max(2, 7)`, `math.clamp`, `math.pi()`; the float functions work for any `T: Float` (`f32`, `f64`). Std modules ship inside `lughac` and cost nothing unless imported.
 - **Copy-on-write arrays (v15, milestone 55):** `let g = grads[i];` no longer copies the array; it is shared until either side writes, and the writer copies it first. Programs print exactly what they did before, and read-heavy code such as firefly's autograd trains 13–35% faster.
 - **Lazy std modules (v15, milestone 60):** of an imported std module, only the functions your program reaches are compiled, as with the prelude; everything is still type-checked.
+- **`lughac fmt` (v16, milestone 80):** `lughac fmt src/` rewrites every `.la` file in one style, keeping every comment; `--check` only lists what would change. It re-parses its output first and writes nothing if the meaning would differ.
 - **Quick fixes (v16, milestone 79):** a non-exhaustive `match` gets a lightbulb in VS Code: add every missing arm, or a `_` arm.
 - **Snippets (v16, milestone 78):** `fun`, `struct`, `forof`, `match`… in VS Code; completing a call fills in its parameters as tab stops; `value.match` writes out every variant.
 - **Doc comments (v16, milestone 77):** `/** … */` above a declaration, with `@param` and `@returns`, shows in VS Code's hover, completion and signature help; std and the prelude are documented the same way.
@@ -130,6 +131,7 @@ It never overwrites a file; the package name is the folder's unless `--name` giv
 | Command | Effect |
 | --- | --- |
 | `lughac init [folder] [--lib] [--name N]` | Start a program, or a library with an example, in a folder |
+| `lughac fmt [paths…] [--check]` | Format `.la` files (folders: every `.la` under them) in the canonical style; `--check` lists the files that would change, exit 1 if any |
 | `lughac lsp` | Serve the Language Server Protocol on stdin/stdout: `check`'s diagnostics as you type, hover types, go-to-definition, completion and signature help, for editors |
 | `lughac build prog.la [-o prog]` | Compile and link an executable |
 | `lughac run prog.la [-- args…]` | Build to a temporary file and run it, passing `args` to it; the exit code is the program's |

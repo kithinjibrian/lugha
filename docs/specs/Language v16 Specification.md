@@ -2,11 +2,11 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–79 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–80 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestones 67–79):
+**Changes since v15** (milestones 67–80):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
 - `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
 - `lughac init [folder] [--lib] [--name N]` starts a program, or a library with an example, in a folder; it never overwrites a file (milestone 69; section 9).
@@ -15,6 +15,7 @@ Oct 15, 2026 · @kithinji
 - Doc comments: a `/** … */` right before a declaration documents it, in Markdown with `@param` and `@returns`; the compiler ignores it, the language server shows it, and std and the prelude are documented (milestone 77; sections 2, 9).
 - Snippets in the editor: completion inserts calls with a placeholder per parameter, and `value.match` writes out every variant (milestone 78; section 9).
 - Quick fixes in the editor: a non-exhaustive `match` (E0417) offers to add every missing arm, or a `_` arm (milestone 79; section 9).
+- `lughac fmt [paths…] [--check]` rewrites `.la` files in one canonical style, keeping every comment, and checks its own output before writing (milestone 80; section 9).
 
 Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type; a module's own type `Ref` still means its own.
 
@@ -1303,6 +1304,7 @@ The C `main(argc, argv)` emitted by the compiler calls `lugha_rt_init(argc, argv
 | `lughac update prog.la` | Re-resolve every git package to its newest matching tag and rewrite `lugha.lock` (v14) |
 | `lughac init [folder] [--lib] [--name N]` | Start a program, or with `--lib` a library, in `folder` (default: the current one); see below (v16) |
 | `lughac lsp` | Serve the Language Server Protocol on stdin and stdout, for editors; see below (v16) |
+| `lughac fmt [paths…] [--check]` | Rewrite `.la` files in the canonical style; `--check` only lists the files that would change; see below (v16) |
 | `--offline` | On `build`, `run` and `check`: run no `git`; every git package must be locked and cached (v14) |
 | `lughac build --emit=tokens\|ast\|ir prog.la` | Print an intermediate stage and stop; with several modules, `tokens` and `ast` print each after a `; module <name>` line (`main` for the main file) |
 | `--diagnostics=human\|json` | Diagnostic format for `build`, `run` and `check`; `human` is the default |
@@ -1344,6 +1346,12 @@ It prints `created <path>` for each file and then how to run the result.
 - **Quick fixes** (milestone 79): `textDocument/codeAction` answers each E0417 among the request's diagnostics with **Add missing arms** — one arm per missing pattern, every one the checker found, each written in full (`Rect(_, _)`, `Some(Dot)`), preferred — and **Add a `_` arm**; a match on integers, strings or interface values gets only the second. Each new arm's body is `panic("not handled")`; the arms go before the match's closing `}` at its arms' indentation, with a comma added after the last existing arm if needed. Only a current check of text that parses answers.
 - **Syntax errors** (milestone 75): while a module has one, the server publishes only the syntax errors (and the loader's other errors); what the checker finds in the recovered program is used by the features above, not shown, since a dropped statement makes later names look undefined.
 - **Exit codes:** 0 after `shutdown` and `exit`; 1 after `exit` without `shutdown`; 2 when the connection breaks (a malformed message, a closed stream). Requests other than `initialize`, `shutdown`, `textDocument/hover`, `textDocument/definition`, `textDocument/completion`, `textDocument/signatureHelp` and `textDocument/codeAction` get `MethodNotFound`.
+
+**`lughac fmt`** (v16, milestone 80) formats each path given (default: the current folder); a folder means every `.la` file under it, in name order, skipping hidden folders, `target/` and symbolic links. A file is rewritten only when its text changes, through a temporary file and a rename. With `--check` nothing is written and each file that would change prints as `would reformat <path>`.
+- **The style:** 4-space indents; `{` on the line of what opens it; one statement, field, variant, method or `match` arm per line, and a block's contents on their own lines (`{}` when empty); one space around binary operators, `=` and `=>`, after `,` and `:`; a call, array, tuple, struct literal, parameter list or `import { … }` stays on one line when it fits in 100 characters, else breaks one element per line with a trailing comma, except that a last element spanning lines (a closure, a block) stays on the line of the opening `(`; a function's `= expr;` body stays an expression body; a comma after each arm but one whose body is a block; parentheses only where precedence needs them (and around a struct literal in a condition); at most one blank line between items or statements, kept where written, none at a block's start or end; literals and names exactly as written (`0xFF`, `1_000`, escapes, `Self`). It has no options.
+- **Comments:** a comment on its own line prints above the item, statement, field, variant, method or arm after it, at its indentation; a comment after one on its line stays at the end of that line. A comment anywhere else — inside an expression, a parameter list, a header — leaves that whole statement or item as written (only re-indented).
+- **Safety:** before writing, the output is parsed again; its syntax tree (positions ignored) and its comments' texts must equal the original's. Otherwise nothing is written and it is an internal error, exit 2. Formatting formatted code changes nothing.
+- **Exit codes:** 0; 1 when `--check` found a file to change or a file has syntax errors (printed as diagnostics; the file is left alone and the others are still formatted); 2 when a path can't be read or written or a file fails the safety check.
 
 **Diagnostics.** Errors print the file, line and column, the offending source line, a caret under the span with its label, and any secondary labels, in a rustc-like layout rendered by the `codespan-reporting` crate. Each diagnostic is followed by a blank line, and lines carry no trailing whitespace. The checker reports as many errors as it can find instead of stopping at the first one.
 
@@ -3235,6 +3243,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 77 | Doc comments (v16) | `/** … */` before declarations, Markdown with `@param`/`@returns`; hover, completion and signature help show them; hover on type and variant names; std and the prelude documented | `tests/lsp_docs.rs` (done) |
 | 78 | Snippets (v16) | call placeholders and a postfix `.match` from the language server; declaration and control-flow snippets in the VS Code extension, each checked by `lughac check` | `tests/lsp_snippets.rs`, `tests/snippets.rs` (done) |
 | 79 | Add missing arms (v16) | quick fixes on E0417: every missing arm in full, or a `_` arm; bodies `panic("not handled")` | `tests/lsp_code_actions.rs` (done) |
+| 80 | `lughac fmt` (v16) | the tree-based formatter: the canonical style, comments kept, the output verified, `--check` | Every program in the repository formats, verifies and is idempotent (`tests/fmt_corpus.rs`); `tests/fmt.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

@@ -53,3 +53,22 @@ fn lexing_never_panics_on_any_prefix() {
         let _ = lex(&sample[..i]);
     }
 }
+
+#[test]
+fn comments_lists_every_comment_outermost_only_and_skips_strings() {
+    use lugha::lexer::{CommentKind, comments};
+    let src = "let a = \"// no\"; // one\r\n/* two /* inner */ */ x /** doc */";
+    let found: Vec<(&str, CommentKind)> = comments(src)
+        .iter()
+        .map(|c| (&src[c.span.start..c.span.end], c.kind))
+        .collect();
+    assert_eq!(
+        found,
+        [
+            ("// one", CommentKind::Line),
+            ("/* two /* inner */ */", CommentKind::Block),
+            ("/** doc */", CommentKind::Block),
+        ]
+    );
+    assert!(comments("fun main() {}").is_empty());
+}

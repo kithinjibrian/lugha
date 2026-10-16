@@ -1921,11 +1921,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned: `Partial.missing_arms` recorded beside E0417 in `matching.rs` (`show(_, false)`); `driver/lsp/code_actions.rs` places the edit from the source text (a bracket scanner from the scrutinee's end to the closing `}`, skipping strings and nested comments, since the AST has no general walker); answers only from a current, unbroken check. An interface match's only missing case `_` gives just the `_` fix.
 
+### 153. `lughac fmt` planned (session 168, approved session 169)
+
+**Decision:** v16 draft decisions 60–65: a tree-based formatter (like rustfmt); comments attached above or at the end of items, statements, fields, variants and arms, anything else keeps its statement or item verbatim; 4 spaces, 100 columns, no options; the output re-parsed and compared (tree and comments) before anything is written; the editor integration is a separate milestone 81 (the user's choices).
+
+### 154. `lughac fmt` — milestone 80 (PRP-110)
+
+**Decision:** built as planned in `src/formatter/`: `doc.rs` (a hand-written Wadler-style document printer: groups flat when they fit in 100 columns, else broken; a hard line breaks every enclosing group; a list whose last element spans lines hugs its delimiters, `f(a, fun(x) {` … `})`), `items.rs`, `stmts.rs`, `exprs.rs`, `leaves.rs` (types, patterns, parameters), `comments.rs` (sequences: leading, trailing and dangling comments; an element with a comment no sequence placed falls back to its source text, re-indented), `verify.rs`. Literals, names and interpolated strings are copied from their spans (so `0xFF`, `Self` and escapes survive); parentheses come from precedence, plus `(fun(): T)[]`, `(x as T) < y`, struct literals in conditions, and block-likes the user parenthesised as operands. `for (i, w) of` is recognised from the parser's hidden `$item<offset>` binding, and verification ignores those offsets. Blocks, structs and enums are always multi-line; binary chains never break (a known limit). `lexer::comments` is the lexer's own scan. `lughac fmt [paths…] [--check]` (`driver/fmt.rs`): folders sorted, hidden ones and `target/` skipped, symlinks never followed, unchanged files not rewritten, temp file + rename keeping permissions. The repo's own `.la` files are not reformatted (it would move panic lines).
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 80 complete**: PRP-110 `lughac fmt`
 - **Milestone 79 complete**: PRP-109 the add-missing-arms quick fix
 - **Milestone 78 complete**: PRP-108 snippets
 - **Milestone 77 complete**: PRP-107 doc comments
