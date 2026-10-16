@@ -1,6 +1,6 @@
 ## FEATURE: Strings from C — an extern may return `string` or `Option<string>`, take `Option<string>`, and callbacks may receive them; C's text is copied into a Lugha string; milestone 89.
 
-**Status:** proposed 2026-10-16 (session 189), approved with PRP-120 and PRP-121 as one batch.
+**Status:** approved 2026-10-16 ("yes build all three", session 190); proposed in session 189 with PRP-120 and PRP-121 as one batch.
 **Milestone:** 89 (tag `m89` at merge).
 **Spec:** `Language v16 Draft.md` decisions 115–119; spec §8 (allowed types, the string rule, callbacks), §9 (runtime list, diagnostics), §11 (row 89).
 

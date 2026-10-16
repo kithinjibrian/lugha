@@ -1,6 +1,6 @@
 ## FEATURE: C structs by value — `extern struct Name { … }` has C's layout and is passed to and from C (externs and callbacks) the way C does on x86-64 Linux; milestone 90.
 
-**Status:** proposed 2026-10-16 (session 189), approved with PRP-119 and PRP-121 as one batch.
+**Status:** approved 2026-10-16 ("yes build all three", session 190); proposed in session 189 with PRP-119 and PRP-121 as one batch.
 **Milestone:** 90 (tag `m90` at merge).
 **Spec:** `Language v16 Draft.md` decisions 120–125; spec §3 (grammar), §4 (structs), §8 (allowed types, the calling convention), §9 (lowering, diagnostics), §11 (row 90).
 

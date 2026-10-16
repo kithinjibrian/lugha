@@ -6945,6 +6945,14 @@ Branch: main
 
 ---
 
+## SESSION 190 — 2026-10-16 — Strings from C (milestone 89) — open
+Branch: prp-119-strings_from_c
+
+### WHAT WAS DONE
+- In progress: the user approved PRP-119, PRP-120 and PRP-121 ("yes build all three") and installed GTK's development files; building PRP-119 in worktree `../lugha-prp-119`.
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–88 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles).

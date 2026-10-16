@@ -1,6 +1,6 @@
 ## FEATURE: `lugha-gtk` — a GTK 4 binding package in its own repository, with Lugha-style wrappers (widgets as handle types with methods, closures for signals).
 
-**Status:** proposed 2026-10-16 (session 189), approved with PRP-119 and PRP-120 as one batch.
+**Status:** approved 2026-10-16 ("yes build all three", session 190); proposed in session 189 with PRP-119 and PRP-120 as one batch.
 **Milestone:** none in lughac (it changes no compiler code); the package is tagged `v0.1.0` in its own repository.
 **Spec:** none changed. Uses spec §6 (packages, `[link]`), §8 (handles, callbacks, strings from C — milestones 87–89).
 
