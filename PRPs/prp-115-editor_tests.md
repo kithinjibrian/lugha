@@ -1,6 +1,6 @@
 ## FEATURE: tests in the editor — `lughac test --list`/`--json`/`--exact`, and VS Code's Testing view with a ▶ beside each `@test`; milestone 85.
 
-**Status:** proposed 2026-10-16 — session 180 (discovery the same session); waits for approval and the user's security review (the extension starts a second `lughac` command, which runs the user's code).
+**Status:** approved 2026-10-16 ("build it", the security note included) — built in session 181; proposed in session 180.
 **Milestone:** 85 (one PRP; tag `m85` at merge).
 **Spec:** `Language v16 Draft.md` decisions 87–92; spec §9 (the `lughac test` section's new flags and JSON), §11 (row 85).
 

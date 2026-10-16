@@ -6705,6 +6705,11 @@ Branch: main
 
 ---
 
+## SESSION 181 — 2026-10-16 — Tests in the editor (milestone 85) — open
+Branch: prp-115-editor_tests
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–84 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`).
