@@ -6628,6 +6628,11 @@ Branch: main
 
 ---
 
+## SESSION 178 — 2026-10-16 — Discovery: lughac test (continued) — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–83 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename).
