@@ -7551,3 +7551,8 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - Approval of PRP-123. Known limitation to flag: a stack overflow inside an actor still ends the program.
+
+---
+
+## SESSION 214 — 2026-10-17 — Build actors (PRP-123, milestone 92) — open
+Branch: prp-123-actors
