@@ -6680,8 +6680,28 @@ Branch: prp-114-test_runner
 
 ---
 
-## SESSION 180 — 2026-10-16 — Discovery: Run test from the editor — open
+## SESSION 180 — 2026-10-16 — Discovery: Run test from the editor — closed
 Branch: main
+
+### WHAT WAS DONE
+- Discovery for milestone 85 (the user's choices): VS Code's Testing view with gutter ▶ and inline failures (over "Run test" links in a terminal); tests run only when asked, never in untrusted folders.
+- Added v16 draft decisions 87–92 and row 85 (`lughac test --list`/`--json`/`--exact`, repeatable `--filter`; the extension's test controller); wrote PRP-115 (proposed) with a security note.
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-115-editor_tests.md`.
+- Modified: `docs/specs/Language v16 Draft.md`, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: PRP-115 waits for approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-115 and their security review (the extension would also start `lughac test`).
 
 ---
 
@@ -6689,7 +6709,7 @@ Branch: main
 
 **v16: milestones 67–84 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`).
 
-**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. **Milestone 83 done** (tag `m83`): Find References and Rename (PRP-113), extension 0.6.0; its manual check (README step 16) is the user's. **Milestone 84 done** (tag `m84`): `lughac test` (PRP-114), extension 0.7.0. Next candidates: `lughac explain`, the editor's "Run test" link, Go to Implementations, decorators (TODO ideas). Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. **Milestone 83 done** (tag `m83`): Find References and Rename (PRP-113), extension 0.6.0; its manual check (README step 16) is the user's. **Milestone 84 done** (tag `m84`): `lughac test` (PRP-114), extension 0.7.0. **Proposed: milestone 85, tests in the editor** — v16 draft decisions 87–92 and PRP-115; it waits for the user's approval and security review. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 
