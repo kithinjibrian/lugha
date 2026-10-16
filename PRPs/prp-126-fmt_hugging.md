@@ -1,6 +1,6 @@
 ## FEATURE: Formatter hugging — a call whose last argument is an array, closure or struct literal keeps that argument "hugged" (`column([` … `])`), and a function's header isn't broken just because its body is long; milestone 95 (v17).
 
-**Status:** proposed 2026-10-17 (session 219), with PRP-127 and PRP-128.
+**Status:** approved 2026-10-17 ("approved all and build in one go", session 220); proposed in session 219, with PRP-127 and PRP-128.
 **Milestone:** 95 (tag `m95` at merge).
 **Spec:** `Language v17 Draft.md` decisions 35–38; v17 spec §9 (`lughac fmt`'s style), §11 (row 95).
 

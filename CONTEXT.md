@@ -7704,3 +7704,11 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - Approval of PRP-126–128.
+
+---
+
+## SESSION 220 — 2026-10-17 — Formatter hugging (milestone 95) — open
+Branch: prp-126-fmt_hugging
+
+### WHAT WAS DONE
+- In progress: the user approved PRP-126, PRP-127 and PRP-128 ("approved all and build in one go. no full tests"); building PRP-126 in worktree `../lugha-prp-126`. Targeted tests only (CLAUDE.md TESTING RULE).

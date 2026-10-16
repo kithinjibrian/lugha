@@ -1,6 +1,6 @@
 ## FEATURE: Inference from sibling arguments — a generic call whose type arguments only its result decides (`text<M>("hi"): View<M>`) takes them from what the other arguments fix (`assert_eq(text("hi"), expected)`); milestone 96 (v17).
 
-**Status:** proposed 2026-10-17 (session 219), with PRP-126 and PRP-128.
+**Status:** approved 2026-10-17 ("approved all and build in one go", session 220); proposed in session 219, with PRP-126 and PRP-128.
 **Milestone:** 96 (tag `m96` at merge).
 **Spec:** `Language v17 Draft.md` decisions 39–42; v17 spec §4 (type inference), §11 (row 96).
 

@@ -1,6 +1,6 @@
 ## FEATURE: Packages and tests — a package's modules tested as modules, `test/` inside its package, one `lugha.lock` per package, `lughac check` on a library file, and `skip(reason)` in tests; milestone 97 (v17).
 
-**Status:** proposed 2026-10-17 (session 219), with PRP-126 and PRP-127.
+**Status:** approved 2026-10-17 ("approved all and build in one go", session 220); proposed in session 219, with PRP-126 and PRP-127.
 **Milestone:** 97 (tag `m97` at merge).
 **Spec:** `Language v17 Draft.md` decisions 43–50; v17 spec §6 (packages: the implicit package, `lugha.lock`), §9 (`lughac check`, `lughac test`, E0303), §11 (row 97).
 
