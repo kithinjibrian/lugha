@@ -7094,5 +7094,25 @@ See `TODO.md`.
 
 ---
 
-## SESSION 195 — 2026-10-16 — Green threads: discovery — open
+## SESSION 195 — 2026-10-16 — Green threads: discovery — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user asked for green threads started with a `spawn` keyword (no async/await, no function colouring), with an actor model to follow.
+- Discovery started (no PRP yet). Answers so far: (1) scheduler: one OS thread, M:1, with no parallelism yet; (2) scope of the first PRP: `spawn`, `Task<T>.join()`, `yield_now()`, `sleep(ms)` and channels `Chan<T>` (send/recv/close). Non-blocking I/O comes later.
+- Question 3 (what may follow `spawn` and how it captures: recommended `spawn f(args)` or `spawn { … }` with closure capture rules) was paused: the user wants to clarify something first.
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- None recorded yet (discovery answers above go into the PRP).
+
+### PENDING DECISIONS OPENED
+- None. Still to ask: whether this starts a Language v17 Draft.
+
+### STILL OPEN AT CLOSE
+- The green-threads discovery, at question 3. Note: `lugha_rt_spawn` already exists (std.process); green-thread runtime symbols should use `lugha_rt_task_`.
