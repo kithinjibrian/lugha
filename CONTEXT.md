@@ -7868,3 +7868,8 @@ Branch: fix-kivuli-round-2
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 227 — 2026-10-17 — Package entry module proposed (PRP-131) — open
+Branch: prp-131-package_entry
