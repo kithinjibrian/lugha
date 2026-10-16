@@ -36,6 +36,8 @@ pub struct Checked {
     pub used: Vec<Type>,
     /// The names each closure literal captures, in order of first mention (v3).
     pub captures: HashMap<ExprId, Vec<String>>,
+    /// How each extern with callbacks passes its parameters to C, by key (v16, milestone 88).
+    pub c_params: super::CParams,
     /// Expressions converted to an interface value, with the interface type
     /// (v5); the expression's own type stays in `types`.
     pub conversions: HashMap<ExprId, Type>,

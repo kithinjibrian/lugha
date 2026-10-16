@@ -18,6 +18,7 @@ mod bound_infer;
 mod bounds;
 mod builtins;
 mod call;
+mod callbacks;
 mod checked;
 mod closures;
 mod concrete_defaults;
@@ -86,6 +87,7 @@ mod visibility;
 
 use std::collections::HashMap;
 
+pub use callbacks::{CParam, CParams};
 pub use checked::Checked;
 pub use defaults::SELF;
 pub use float_ops::{float_op, os_op, string_op};
@@ -139,6 +141,7 @@ impl Checker {
             structs: HashMap::new(),
             enums: HashMap::new(),
             handles: HashMap::new(),
+            c_params: HashMap::new(),
             methods: HashMap::new(),
             scopes: Vec::new(),
             ret: Type::Void,
@@ -220,6 +223,8 @@ pub(super) struct Checker {
     enums: HashMap<String, enums::EnumInfo>,
     /// Every `extern type`, by key: where it is declared (v16, milestone 88).
     handles: HashMap<String, Span>,
+    /// See `Checked::c_params`.
+    c_params: callbacks::CParams,
     methods: methods::Methods,
     scopes: Vec<HashMap<String, Local>>,
     /// The return type of the function being checked.

@@ -12,6 +12,7 @@ use super::function::Signature;
 use super::lower::Lowerer;
 use super::value::{is_aggregate, llvm_type};
 use crate::ast::Item;
+use crate::check::CParam;
 use crate::check::{Type, Unit, qualify, symbol};
 
 /// True for the modules compiled only as far as they are reached: the
@@ -21,12 +22,24 @@ pub(super) fn is_lazy(unit: &Unit) -> bool {
         || unit.path.first().is_some_and(|p| p == "std")
 }
 
+/// How C passes a value of type `ty`: zero-extended for `bool`, `u8` and
+/// `u16`, sign-extended for `i8` and `i16` (spec §8, v10), as a C compiler would.
+pub(super) fn abi_attribute(context: &inkwell::context::Context, ty: &Type) -> Option<Attribute> {
+    let name = match ty {
+        Type::Bool | Type::U8 | Type::U16 => "zeroext",
+        Type::I8 | Type::I16 => "signext",
+        _ => return None,
+    };
+    let kind = Attribute::get_named_enum_kind_id(name);
+    Some(context.create_enum_attribute(kind, 0))
+}
+
 impl<'ctx> Lowerer<'ctx> {
     /// Declares every function of `unit` as `lugha_fn_<symbol>` (spec §8;
     /// `lugha_fn_geometry/origin` in a module, PRP-034), in source order.
     pub(super) fn declare_functions(&mut self, unit: &Unit) -> Result<(), CodegenError> {
         for item in &unit.program.items {
-            let (name, params, ret, is_extern) = match item {
+            let (name, params, ret, is_extern, c_symbol) = match item {
                 // Generic functions are declared per instance (`instances.rs`).
                 Item::Fun(f) if !f.type_params.is_empty() => continue,
                 // The prelude's and std's functions are compiled only when
@@ -34,8 +47,14 @@ impl<'ctx> Lowerer<'ctx> {
                 Item::Fun(_) if is_lazy(unit) => continue,
                 // Tests are built only by `lughac test` (milestone 84).
                 Item::Fun(f) if f.test.is_some() && self.tests.is_none() => continue,
-                Item::Fun(f) => (&f.name.name, &f.params, f.ret.as_ref(), false),
-                Item::Extern(e) => (&e.name.name, &e.params, e.ret.as_ref(), true),
+                Item::Fun(f) => (&f.name.name, &f.params, f.ret.as_ref(), false, None),
+                Item::Extern(e) => (
+                    &e.name.name,
+                    &e.params,
+                    e.ret.as_ref(),
+                    true,
+                    Some(e.c_symbol()),
+                ),
                 // Methods are declared by `declare_methods`; a handle is only a pointer.
                 Item::Struct(_)
                 | Item::Enum(_)
@@ -43,38 +62,69 @@ impl<'ctx> Lowerer<'ctx> {
                 | Item::Interface(_)
                 | Item::ExternType(_) => continue,
             };
-            let params: Vec<Type> = params.iter().map(|p| self.annotation_type(&p.ty)).collect();
+            let key = qualify(unit.path, name);
+            // An extern's `data` and `release` aren't written by callers (v16):
+            // its written parameters are the plan's values and callbacks.
+            let plan = self.c_params.get(&key).cloned();
+            let params: Vec<Type> = match &plan {
+                // The plan has an entry per declared parameter, in order.
+                Some(plan) => params
+                    .iter()
+                    .zip(plan)
+                    .filter(|(_, c)| matches!(c, CParam::Value | CParam::Callback { .. }))
+                    .map(|(p, _)| self.annotation_type(&p.ty))
+                    .collect(),
+                None => params.iter().map(|p| self.annotation_type(&p.ty)).collect(),
+            };
             let ret = ret.map(|t| self.annotation_type(t));
+            let c_params: Vec<(BasicMetadataTypeEnum, Option<Type>)> = match &plan {
+                Some(plan) => self.c_param_types(plan, &params),
+                None => params
+                    .iter()
+                    .map(|ty| (self.param_type(ty), Some(ty.clone())))
+                    .collect(),
+            };
             let param_types: Vec<BasicMetadataTypeEnum> =
-                params.iter().map(|ty| self.param_type(ty)).collect();
+                c_params.iter().map(|(t, _)| *t).collect();
             let fn_type = match &ret {
                 // C returns `Option` of a handle as a nullable pointer (v16).
                 Some(ty) if is_extern => self.c_result_type(ty).fn_type(&param_types, false),
                 Some(ty) => llvm_type(self.context, ty).fn_type(&param_types, false),
                 None => self.context.void_type().fn_type(&param_types, false),
             };
-            let key = qualify(unit.path, name);
             // Externs keep their C name (spec §8), declared once however many
-            // modules declare them (checked: E0306 makes them agree).
-            let symbol = if is_extern {
-                name.clone()
-            } else {
-                format!("lugha_fn_{}", symbol(&key))
+            // modules declare them (checked: E0306 makes plain ones agree).
+            let symbol = match c_symbol {
+                Some(c) => c.to_string(),
+                None => format!("lugha_fn_{}", symbol(&key)),
             };
-            let function = match self.module.get_function(&symbol) {
-                Some(existing) if is_extern => existing,
-                _ => self
-                    .module
-                    .add_function(&symbol, fn_type, Some(Linkage::External)),
+            let abi: Vec<Option<Type>> = c_params.into_iter().map(|(_, t)| t).collect();
+            let (function, c_type) = match self.module.get_function(&symbol) {
+                // A renamed extern may give one C function another type (v16):
+                // its calls then go through their own declaration's type.
+                Some(existing) if is_extern => {
+                    let other = existing.get_type() != fn_type;
+                    (
+                        existing,
+                        other.then_some((fn_type, abi.clone(), ret.clone())),
+                    )
+                }
+                _ => {
+                    let f = self
+                        .module
+                        .add_function(&symbol, fn_type, Some(Linkage::External));
+                    if is_extern {
+                        self.c_abi(f, &abi, ret.as_ref());
+                    }
+                    (f, None)
+                }
             };
-            if is_extern {
-                self.c_abi(function, &params, ret.as_ref());
-            }
             let signature = Signature {
                 function,
                 params,
                 ret,
                 is_extern,
+                c_type,
             };
             self.functions.insert(key, signature);
         }
@@ -89,26 +139,16 @@ impl<'ctx> Lowerer<'ctx> {
         }
     }
 
-    /// C passes `bool`, `u8` and `u16` zero-extended and `i8`/`i16`
-    /// sign-extended (spec §8, v10): mark them so LLVM lowers the call the
-    /// way a C compiler would.
-    fn c_abi(&self, function: FunctionValue<'ctx>, params: &[Type], ret: Option<&Type>) {
-        let extension = |ty: &Type| {
-            let name = match ty {
-                Type::Bool | Type::U8 | Type::U16 => "zeroext",
-                Type::I8 | Type::I16 => "signext",
-                _ => return None,
-            };
-            let kind = Attribute::get_named_enum_kind_id(name);
-            Some(self.context.create_enum_attribute(kind, 0))
-        };
+    /// Marks C's extensions (`abi_attribute`) on an extern's parameters and
+    /// result, so LLVM lowers calls the way a C compiler would. `None` for a parameter C gets as a plain pointer (v16: callbacks, `data`, `release`).
+    fn c_abi(&self, function: FunctionValue<'ctx>, params: &[Option<Type>], ret: Option<&Type>) {
         for (index, ty) in params.iter().enumerate() {
-            if let Some(attribute) = extension(ty) {
+            if let Some(attribute) = ty.as_ref().and_then(|ty| abi_attribute(self.context, ty)) {
                 let index = u32::try_from(index).expect("parameter count fits in u32");
                 function.add_attribute(AttributeLoc::Param(index), attribute);
             }
         }
-        if let Some(attribute) = ret.and_then(extension) {
+        if let Some(attribute) = ret.and_then(|ty| abi_attribute(self.context, ty)) {
             function.add_attribute(AttributeLoc::Return, attribute);
         }
     }

@@ -168,6 +168,11 @@ impl Checker {
             };
             return self.no_type_args(ty, &applied, span);
         }
+        // Markers of extern signatures (v16), unless a module names a type so.
+        if matches!(name, "data" | "release") && self.named_type(&self.key(name)).is_none() {
+            self.report(errors::marker_outside(name, span));
+            return Type::Error;
+        }
         let Some(key) = self.type_key(None, &ident, span) else {
             return Type::Error;
         };

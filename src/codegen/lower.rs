@@ -54,6 +54,10 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) subst: HashMap<String, Type>,
     /// What each closure literal captures (`Checked::captures`).
     pub(super) captures: HashMap<ExprId, Vec<String>>,
+    /// How externs with callbacks pass their parameters (`Checked::c_params`, v16).
+    pub(super) c_params: crate::check::CParams,
+    /// C entries made so far, for `lugha_cfn_<n>` (v16).
+    pub(super) c_entries: usize,
     /// Expressions converted to an interface value (`Checked::conversions`).
     pub(super) conversions: HashMap<ExprId, Type>,
     /// `?` operands whose error converts (`Checked::try_conversions`).
@@ -150,6 +154,8 @@ pub(super) fn lower<'ctx>(
         monos: HashMap::new(),
         subst: HashMap::new(),
         captures: checked.captures.clone(),
+        c_params: checked.c_params.clone(),
+        c_entries: 0,
         conversions: checked.conversions.clone(),
         interfaces: checked.interfaces.clone(),
         try_conversions: checked.try_conversions.clone(),

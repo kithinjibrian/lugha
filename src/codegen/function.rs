@@ -22,7 +22,18 @@ pub(super) struct Signature<'ctx> {
     pub ret: Option<Type>,
     /// A C function declared with `extern fun`.
     pub is_extern: bool,
+    /// A renamed extern whose C function was first declared with another
+    /// type (v16): calls use this type, these C parameter types and result.
+    pub c_type: Option<CType<'ctx>>,
 }
+
+/// An extern's own C function type, its parameters' Lugha types (`None`
+/// for pointers lughac fills in) and result.
+pub(super) type CType<'ctx> = (
+    inkwell::types::FunctionType<'ctx>,
+    Vec<Option<Type>>,
+    Option<Type>,
+);
 
 impl<'ctx> Lowerer<'ctx> {
     /// Lowers one function body of module `path`. Parameters become locals (spec §6).
@@ -121,7 +132,7 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// The pointer C receives for a Lugha string: its first data byte, 8 bytes
     /// past the length header, NUL-terminated (spec §7, §8).
-    fn c_string(&self, string: BasicValueEnum<'ctx>) -> BasicValueEnum<'ctx> {
+    pub(super) fn c_string(&self, string: BasicValueEnum<'ctx>) -> BasicValueEnum<'ctx> {
         // The header layout `{ i64 len, [0 x i8] bytes }`; field 1 is the data, 8 bytes in.
         let i64_type = self.context.i64_type().into();
         let bytes = self.context.i8_type().array_type(0).into();
@@ -140,6 +151,8 @@ impl<'ctx> Lowerer<'ctx> {
         // The checker resolved the callee (PRP-034): `f` here or `m.f`.
         // A generic callee calls its instance at this call's arguments (PRP-036).
         let key = self.callees.get(&call.id).cloned();
+        // An extern taking callbacks passes its arguments by its plan (v16).
+        let plan = key.as_ref().and_then(|k| self.c_params.get(k).cloned());
         let signature = key.and_then(|key| match self.prelude_target(call, &key) {
             Some(instance) => Some(instance.signature),
             None => self.functions.get(&key).cloned(),
@@ -175,11 +188,26 @@ impl<'ctx> Lowerer<'ctx> {
             }
             return self.intrinsic(call, name, args);
         };
-        let values = self.arguments(args, &signature.params, signature.is_extern)?;
-        let site = self
-            .builder
-            .build_call(signature.function, &values, "call")
-            .expect(POSITIONED);
+        let values = match &plan {
+            Some(plan) => self.callback_arguments(args, &signature.params, plan)?,
+            None => self.arguments(args, &signature.params, signature.is_extern)?,
+        };
+        let site = match &signature.c_type {
+            // A renamed extern with its own type for a shared C function (v16).
+            Some((fn_type, abi, ret)) => {
+                let code = signature.function.as_global_value().as_pointer_value();
+                let site = self
+                    .builder
+                    .build_indirect_call(*fn_type, code, &values, "call")
+                    .expect(POSITIONED);
+                self.call_site_abi(site, abi, ret.as_ref());
+                site
+            }
+            None => self
+                .builder
+                .build_call(signature.function, &values, "call")
+                .expect(POSITIONED),
+        };
         Ok(match (site.try_as_basic_value(), &signature.ret) {
             (ValueKind::Basic(result), Some(ret))
                 if signature.is_extern && is_nullable_handle(ret) =>
@@ -189,6 +217,27 @@ impl<'ctx> Lowerer<'ctx> {
             (ValueKind::Basic(result), _) => Value::Val(result),
             (ValueKind::Instruction(_), _) => Value::Void,
         })
+    }
+
+    /// C's extensions on a call's arguments and result, for a call that
+    /// doesn't go through a declaration carrying them (v16).
+    fn call_site_abi(
+        &self,
+        site: inkwell::values::CallSiteValue<'ctx>,
+        params: &[Option<Type>],
+        ret: Option<&Type>,
+    ) {
+        use super::declare::abi_attribute;
+        use inkwell::attributes::AttributeLoc;
+        for (index, ty) in params.iter().enumerate() {
+            if let Some(attribute) = ty.as_ref().and_then(|ty| abi_attribute(self.context, ty)) {
+                let index = u32::try_from(index).expect("parameter count fits in u32");
+                site.add_attribute(AttributeLoc::Param(index), attribute);
+            }
+        }
+        if let Some(attribute) = ret.and_then(|ty| abi_attribute(self.context, ty)) {
+            site.add_attribute(AttributeLoc::Return, attribute);
+        }
     }
 
     /// Lowers call arguments left to right (spec §5): aggregates are passed as

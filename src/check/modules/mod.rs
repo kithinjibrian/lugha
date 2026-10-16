@@ -80,6 +80,7 @@ fn check_with(units: &[Unit], tests: bool) -> Result<(Checked, Vec<Diagnostic>),
             monos,
             used,
             captures: checker.captures,
+            c_params: checker.c_params,
             tests: tests.then(|| {
                 units
                     .first()

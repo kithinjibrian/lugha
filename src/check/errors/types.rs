@@ -288,8 +288,9 @@ pub(in crate::check) fn not_interpolable(ty: &Type, span: Span) -> Diagnostic {
 
 /// E0409: a function type in an extern signature (v3): C can't call Lugha functions.
 pub(in crate::check) fn extern_fun(span: Span) -> Diagnostic {
-    Diagnostic::error("E0409", "function values can't cross the C boundary", span)
-        .with_help("C can't call a Lugha function; pass the data it needs instead")
+    Diagnostic::error("E0409", "a function can't come back from C", span).with_help(
+        "an extern may take a callback, `cb: fun(i64)`, but can't return one or take one inside another (v16)",
+    )
 }
 
 /// E0412: a closure parameter whose type nothing gives (v3).
