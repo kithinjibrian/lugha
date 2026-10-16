@@ -329,3 +329,29 @@ fn lughac_test_links_the_same_libraries() {
         text(&out.stdout)
     );
 }
+
+#[test]
+fn a_packages_own_example_links_its_c_files_once_v17() {
+    let t = Temp::with(&[
+        (
+            "shimlib/lugha.toml",
+            "[package]\nname = \"shimlib\"\nsource = \"src\"\n\n[link]\nc = [\"c/shim.c\"]\n",
+        ),
+        (
+            "shimlib/c/shim.c",
+            "long shim_twice(long x) { return 2 * x; }\n",
+        ),
+        (
+            "shimlib/src/api.la",
+            "extern fun shim_twice(x: i64): i64;\npublic fun twice(x: i64): i64 = shim_twice(x);\n",
+        ),
+        (
+            "shimlib/examples/demo.la",
+            "import shimlib.api;\nfun main() { println(api.twice(21)); }\n",
+        ),
+    ]);
+    ran(
+        &t.lughac(&["run", "shimlib/examples/demo.la"], None),
+        "42\n",
+    );
+}

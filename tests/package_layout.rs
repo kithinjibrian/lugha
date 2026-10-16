@@ -191,3 +191,36 @@ fn a_programs_in_test_sees_its_packages_package_level_items_v17() {
     let app = lughac(&outside.0.join("app"), &outside.0, &["check", "main.la"]);
     assert!(text(&app.stderr).contains("E0313"), "{}", text(&app.stderr));
 }
+
+#[test]
+fn a_package_file_imports_its_dependencies_from_any_folder_v17() {
+    let live = "import dep.raw;\nfun show(): i64 = raw.one();\n@test fun shows() { assert_eq(show(), 1); }\n";
+    let t = Temp::with(&[
+        (
+            "kiv/lugha.toml",
+            "[package]\nname = \"kiv\"\nsource = \"src\"\n\n[packages]\ndep = \"../dep\"\n",
+        ),
+        ("kiv/src/live.la", live),
+        ("dep/lugha.toml", "[package]\nname = \"dep\"\n"),
+        ("dep/raw.la", "public fun one(): i64 = 1;\n"),
+    ]);
+    let kiv = t.0.join("kiv");
+    for (cwd, file) in [(kiv.clone(), "src/live.la"), (kiv.join("src"), "live.la")] {
+        for command in ["check", "test"] {
+            let out = lughac(&cwd, &t.0, &[command, file]);
+            assert_eq!(
+                out.status.code(),
+                Some(0),
+                "{command} {file}: {}",
+                text(&out.stderr)
+            );
+        }
+        // From either folder the file is the package's module.
+        let out = lughac(&cwd, &t.0, &["test", file]);
+        assert!(
+            text(&out.stdout).contains("test kiv.live.shows ... ok"),
+            "{}",
+            text(&out.stdout)
+        );
+    }
+}

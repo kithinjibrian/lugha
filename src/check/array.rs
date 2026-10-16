@@ -62,7 +62,8 @@ impl Path {
 }
 
 impl Checker {
-    /// `[a, b, c]`: the expected element type, or the first element's (spec §4).
+    /// `[a, b, c]`: the expected element type, or the first element's (spec
+    /// §4); or, when the first waits for its siblings, the first that doesn't.
     pub(super) fn array_literal(
         &mut self,
         expr: &Expr,
@@ -92,13 +93,24 @@ impl Checker {
                 element
             }
             None => {
-                let ty = match self.value(first, None) {
+                // A first element that only its siblings can type, such as
+                // `text("a")` in `[text("a"), button("+", Msg.Inc)]` (v17),
+                // gives the lead to the first element that types alone.
+                let lead = match !super::ops::defers(first) && self.waits(first) {
+                    true => elements.iter().position(|e| !self.waits(e)).unwrap_or(0),
+                    false => 0,
+                };
+                let leader = &elements[lead];
+                let ty = match self.value(leader, None) {
                     Type::Never => Type::Error,
                     ty => ty,
                 };
-                let why = format!("the first element is {ty}");
-                for e in &elements[1..] {
-                    self.expect_type(e, &Expect::because(ty.clone(), first.span, why.clone()));
+                let why = match lead {
+                    0 => format!("the first element is {ty}"),
+                    _ => format!("this element is {ty}"),
+                };
+                for (_, e) in elements.iter().enumerate().filter(|(i, _)| *i != lead) {
+                    self.expect_type(e, &Expect::because(ty.clone(), leader.span, why.clone()));
                 }
                 ty
             }

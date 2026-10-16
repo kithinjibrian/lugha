@@ -7845,3 +7845,26 @@ Branch: prp-130-module_docs
 
 ### STILL OPEN AT CLOSE
 - Nothing. Reinstall `lughac` for the editor to pick it up.
+
+---
+
+## SESSION 226 — 2026-10-17 — kivuli's second report: nested inference, check from the root, C files twice — closed
+Branch: fix-kivuli-round-2
+
+### WHAT WAS DONE
+- Fixed three bugs from kivuli's second report: nested sibling inference (`column([text("a")])`, lists led by a typable element), package files checked/tested from any folder with their dependencies, `[link]` C files compiled twice inside a package's own folder; E0331's advice follows the linker.
+
+### FILES CREATED OR MODIFIED
+- Modified: `src/check/{siblings,array}.rs`, `src/modules/{mod,layout,packages}.rs`, `src/link/mod.rs`, `tests/{package_layout,link_libs}.rs`, `docs/errors/E0331.md`, spec §4 (inference), CHANGELOG, MEMORY (183), CONTEXT.
+
+### TESTS WRITTEN
+- `siblings.rs` (1), `package_layout` (1), `link_libs` (1), `link/mod.rs` hint assertions. Targeted: `--lib`, `programs`, `spec`, `test_runner`, `git_packages`, `cli`, `modules`, `explain`, `package_layout`, `link_libs`, `lsp_hover`, `lsp_completion`, fmt, clippy.
+
+### DECISIONS MADE
+- Treated as bug fixes (MEMORY 183); the list-literal lead rule is recorded in spec §4.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.

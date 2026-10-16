@@ -58,8 +58,9 @@ pub fn module_path(
     let text = read(&folder.join(MANIFEST)).ok()?;
     let (manifest, _) = manifest::parse(&String::from_utf8_lossy(&text), 0);
     let name = manifest.package.name?;
-    let source = normalized(&folder.join(manifest.package.source?));
-    let inside = normalized(main)
+    // Compared as absolute paths: `live.la` run from `src/` is inside `../src`.
+    let source = normalized(&env.cwd.join(&folder).join(manifest.package.source?));
+    let inside = normalized(&env.cwd.join(main))
         .strip_prefix(&source)
         .ok()?
         .with_extension("");
