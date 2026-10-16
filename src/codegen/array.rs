@@ -199,6 +199,8 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(cond);
 
         self.builder.position_at_end(cond);
+        // A green thread's loop gives the others a turn now and then (v17).
+        self.preempt_point();
         let i = self
             .builder
             .build_load(i64_type, counter, "i")

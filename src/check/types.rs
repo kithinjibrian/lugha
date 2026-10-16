@@ -43,6 +43,11 @@ pub enum Type {
     Option(Box<Type>),
     /// A shared box, `Ref<T>` (v16, milestone 67): copies share one box.
     Ref(Box<Type>),
+    /// A green thread's handle, `Task<T>`, or a plain `Task` when `T` is
+    /// `Void` (v17, milestone 91): copies share one task.
+    Task(Box<Type>),
+    /// A channel, `Chan<T>` (v17, milestone 91): copies share one channel.
+    Chan(Box<Type>),
     /// A handle, by its `extern type`'s key: an opaque C pointer (v16, milestone 88).
     Handle(String),
     /// A function value, `fun(A, B): R`; `R` is `Void` for no result (v3).
@@ -92,6 +97,8 @@ impl Type {
             Type::Array(inner) => Type::Array(Box::new(inner.substitute(map))),
             Type::Option(inner) => Type::Option(Box::new(inner.substitute(map))),
             Type::Ref(inner) => Type::Ref(Box::new(inner.substitute(map))),
+            Type::Task(inner) => Type::Task(Box::new(inner.substitute(map))),
+            Type::Chan(inner) => Type::Chan(Box::new(inner.substitute(map))),
             Type::Struct(key, args) => Type::Struct(key.clone(), all(args)),
             Type::Fun(params, ret) => Type::Fun(all(params), Box::new(ret.substitute(map))),
             Type::Enum(key, args) => Type::Enum(key.clone(), all(args)),
@@ -136,9 +143,11 @@ impl Type {
     pub fn mentions_interface(&self) -> bool {
         match self {
             Type::Interface(..) => true,
-            Type::Array(inner) | Type::Option(inner) | Type::Ref(inner) => {
-                inner.mentions_interface()
-            }
+            Type::Array(inner)
+            | Type::Option(inner)
+            | Type::Ref(inner)
+            | Type::Task(inner)
+            | Type::Chan(inner) => inner.mentions_interface(),
             Type::Struct(_, args) | Type::Enum(_, args) => {
                 args.iter().any(Type::mentions_interface)
             }
@@ -221,6 +230,9 @@ impl fmt::Display for Type {
             Type::Param(name) | Type::Interface(name, _) => name,
             Type::Option(inner) => return write!(f, "Option<{inner}>"),
             Type::Ref(inner) => return write!(f, "Ref<{inner}>"),
+            Type::Task(inner) if **inner == Type::Void => "Task",
+            Type::Task(inner) => return write!(f, "Task<{inner}>"),
+            Type::Chan(inner) => return write!(f, "Chan<{inner}>"),
             Type::Void => "void",
             Type::Never => "never",
             Type::Error => "{error}",

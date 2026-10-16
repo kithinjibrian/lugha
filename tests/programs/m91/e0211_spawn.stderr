@@ -1,0 +1,9 @@
+error[E0211]: `spawn` needs a call
+  --> tests/programs/m91/e0211_spawn.la:4:19
+  |
+4 |     let t = spawn work;
+  |                   ^^^^
+  |
+  = help: write the call the new thread runs, `spawn work(x)`, or call a closure on the spot: `spawn fun() { … }()`
+
+For more about E0211, run `lughac explain E0211`.

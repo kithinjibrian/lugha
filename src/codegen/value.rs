@@ -42,9 +42,13 @@ pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnu
         Type::Bool => context.bool_type().into(),
         // Strings, arrays and boxes (v16) are pointers to heap objects (spec §7).
         // Handles (v16, milestone 88) are C pointers.
-        Type::String | Type::Array(_) | Type::Ref(_) | Type::Handle(_) => {
-            context.ptr_type(AddressSpace::default()).into()
-        }
+        // Tasks and channels (v17) are pointers to runtime objects.
+        Type::String
+        | Type::Array(_)
+        | Type::Ref(_)
+        | Type::Handle(_)
+        | Type::Task(_)
+        | Type::Chan(_) => context.ptr_type(AddressSpace::default()).into(),
         // Declared by `declare_enums` before anything is lowered.
         Type::Enum(_, _) | Type::Option(_) => context
             .get_struct_type(&ty.to_string())

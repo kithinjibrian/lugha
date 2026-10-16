@@ -78,6 +78,8 @@ pub(super) fn symbol(kind: &TokenKind) -> &'static str {
         True => "true",
         False => "false",
         As => "as",
+        Spawn => "spawn",
+        Select => "select",
         TyI32 => "i32",
         TyI64 => "i64",
         TyU8 => "u8",

@@ -25,6 +25,15 @@ pub(super) fn builtin(receiver: &Type, name: &str) -> Option<Method> {
             (vec![f], Type::Void, false)
         }
         (Type::Ref(_), "is") => (vec![receiver.clone()], Type::Bool, false),
+        // v17: a task's result, and a channel's API besides `Chan.new` and
+        // `Chan.buffered`; plain `self`, as for boxes.
+        (Type::Task(inner), "join") => (Vec::new(), (**inner).clone(), false),
+        (Type::Chan(inner), "send") => (vec![(**inner).clone()], Type::Void, false),
+        (Type::Chan(inner), "recv" | "try_recv") => {
+            (Vec::new(), Type::Option(inner.clone()), false)
+        }
+        (Type::Chan(_), "close") => (Vec::new(), Type::Void, false),
+        (Type::Chan(_), "is") => (vec![receiver.clone()], Type::Bool, false),
         (Type::String, "to_bytes") => (Vec::new(), Type::Array(Box::new(Type::U8)), false),
         // v9: the success payload, or a panic at the call.
         (Type::Option(inner), "unwrap") => (Vec::new(), (**inner).clone(), false),

@@ -21,6 +21,7 @@ pub(super) fn layout(ty: &Type, structs: &Structs, enums: &Enums) -> (u64, u64) 
         Type::I16 | Type::U16 => (2, 2),
         Type::I32 | Type::U32 | Type::F32 | Type::Char => (4, 4),
         Type::I64 | Type::U64 | Type::F64 | Type::String | Type::Array(_) | Type::Ref(_) => (8, 8),
+        Type::Task(_) | Type::Chan(_) => (8, 8),
         // A handle is a C pointer (v16).
         Type::Handle(_) => (8, 8),
         // `{ code, env }` (v3 draft §7), `{ table, box }` (v5 draft §7).

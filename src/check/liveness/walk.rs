@@ -4,7 +4,7 @@
 use std::collections::{HashMap, HashSet};
 
 use super::Mention;
-use crate::ast::{Block, Expr, ExprId, ExprKind, ForIter, Part, Stmt, StmtKind};
+use crate::ast::{Block, Expr, ExprId, ExprKind, ForIter, Part, SelectKind, Stmt, StmtKind};
 use crate::span::Span;
 
 pub(super) struct Walk<'a> {
@@ -118,6 +118,25 @@ impl Walk<'_> {
             ExprKind::Match(scrutinee, arms) => {
                 self.expr(scrutinee);
                 arms.iter().for_each(|arm| self.expr(&arm.body));
+            }
+            // What a green thread runs is a closure (v17).
+            ExprKind::Spawn(closure) => self.expr(closure),
+            ExprKind::Select(arms) => {
+                for arm in arms {
+                    match &arm.kind {
+                        SelectKind::Recv { call, .. } => self.expr(call),
+                        // A sent value is stored in the channel.
+                        SelectKind::Send(call) => {
+                            if let ExprKind::Call(callee, args) = &call.kind {
+                                self.expr(callee);
+                                args.iter().for_each(|a| self.store(a));
+                            }
+                        }
+                        SelectKind::After(ms) => self.expr(ms),
+                        SelectKind::Default(_) => {}
+                    }
+                    self.expr(&arm.body);
+                }
             }
             // Interpolated values are read, like any other mention (v3).
             ExprKind::Interp(parts) => parts

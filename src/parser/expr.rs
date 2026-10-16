@@ -76,6 +76,8 @@ impl Parser<'_> {
             TokenKind::Minus => UnOp::Neg,
             TokenKind::Bang => UnOp::Not,
             TokenKind::Tilde => UnOp::BitNot,
+            // `spawn` binds like a prefix operator (v17).
+            TokenKind::Spawn => return self.spawn_expr(),
             _ => return self.postfix(),
         };
         let start = self.bump().start;
@@ -83,7 +85,7 @@ impl Parser<'_> {
         Ok(self.mk(start, ExprKind::Unary(op, Box::new(operand))))
     }
 
-    fn postfix(&mut self) -> PResult<Expr> {
+    pub(super) fn postfix(&mut self) -> PResult<Expr> {
         let start = self.span().start;
         let mut expr = self.primary()?;
         loop {

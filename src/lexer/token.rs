@@ -64,6 +64,10 @@ pub enum TokenKind {
     True,
     False,
     As,
+    /// `spawn`, starting a green thread (v17).
+    Spawn,
+    /// `select`, waiting on several channels (v17).
+    Select,
     // Built-in type names are keywords too, so structs can't shadow them.
     TyI32,
     TyI64,
@@ -168,6 +172,8 @@ pub fn keyword(word: &str) -> Option<TokenKind> {
         "true" => True,
         "false" => False,
         "as" => As,
+        "spawn" => Spawn,
+        "select" => Select,
         "i32" => TyI32,
         "i64" => TyI64,
         "u8" => TyU8,

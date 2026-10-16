@@ -1,6 +1,6 @@
 ## FEATURE: Green threads — `spawn f(args)` runs a call concurrently on one OS thread, with `Task<T>.join()`, channels `Chan<T>`, `select`, and `std.task` (`sleep`, `yield_now`); milestone 91, the first of v17.
 
-**Status:** proposed in session 200, after discovery in sessions 195–200. Not approved.
+**Status:** approved 2026-10-16 ("yes approved, build it", session 201); built in session 201. Proposed in session 200, after discovery in sessions 195–200.
 **Milestone:** 91 (tag `m91` at merge).
 **Spec:** `Language v17 Draft.md` decisions 1–13 (the user's choices are 1–9; 10–13 are mine, for review); v17 spec §2–§11 as listed in the draft.
 
@@ -120,3 +120,15 @@ Ordinary functions stay ordinary: `square` knows nothing about threads.
 - `cargo clippy --all-targets -- -D warnings`
 - `cargo test`
 - `cargo run -q -- run tests/programs/m91/fan_out.la` and the OBJECTIVE program, by hand, at `-O2`
+
+## BUILT (session 201)
+- As planned, on branch `prp-122-green_threads` in a worktree. Runtime first (`runtime/tasks.c` fibers and scheduler, `spawn.c`, `chans.c`; each fragment under 300 lines), with `tests/tasks_runtime.rs`, a C harness against `lugha_rt.c` (13 cases).
+- **`spawn` lowering:** the parser wraps the call in a closure with no parameters (`ExprKind::Spawn`), so the checker's capture rules and codegen's closures do the work. Arguments that compute something, a receiver that is a call and a callee that isn't a name, member or closure literal are evaluated first by the spawning thread and handed to the closure as hidden captures (`Lowerer::presets`). A receiver like `xs[f()].m()` (an index, not a call) is evaluated in the new thread.
+- **E0438 for a `mut self` call** replaces the closure's own E0511/E0501/E0502/E0508 at the call, which would talk about a wrapper the user never wrote.
+- **Not done from the plan:** `"probe-stack"="inline-asm"` on functions. The guard area is 64 KiB instead (the main stack's overflow window), so only a single frame larger than 64 KiB could skip it.
+- **`select`'s pick** is pseudo-random with a fixed seed (xorshift), the same on every run, which keeps test output exact.
+- **`std.process`:** its private `spawn` and the `$os.spawn` built-in are renamed `start`/`$os.start`, since `spawn` is a keyword; `runtime/process.c` is unchanged.
+- **Language server:** `spawn`/`select` in keyword completion; `join`, `send`, `recv`, `try_recv`, `close` in member completion. Hover over a spawned call shows the call's type (the call's id comes before its closure's).
+- **Tests:** runtime harness (13), lexer (1, `tests/lexer.rs`), parser (7), formatter (2), checker (16: tasks, channels, select), codegen (3), members (1), e2e `tests/programs/m91/` (20 runs, 5 rejections), the two §10 programs, `tests/explain.rs` (E0211, E0438 pages). All 20 runs agree at `-O0` and `-O2`.
+- **VS Code:** highlighting and snippets for `spawn`/`select` are a separate extension change (TODO).
+

@@ -10,7 +10,8 @@ pub use item::program;
 use item::{qualified, ty};
 
 use crate::ast::{
-    Block, Expr, ExprKind, ForIter, Part, Pattern, PatternKind, Stmt, StmtKind, UnOp,
+    Block, Expr, ExprKind, ForIter, Part, Pattern, PatternKind, SelectArm, SelectKind, Stmt,
+    StmtKind, UnOp, spawned_call,
 };
 
 /// Prints one block: `(block stmt… tail)`.
@@ -185,6 +186,27 @@ pub fn expr(expr: &Expr) -> String {
                 .collect();
             format!("(match {}{arms})", self::expr(scrutinee))
         }
+        ExprKind::Spawn(closure) => format!("(spawn {})", self::expr(spawned_call(closure))),
+        ExprKind::Select(arms) => {
+            let arms: String = arms.iter().map(|a| format!(" {}", select_arm(a))).collect();
+            format!("(select{arms})")
+        }
+    }
+}
+
+/// `(recv m inbox body)`, `(send out 42 body)`, `(after 500 body)`, `(default body)`.
+fn select_arm(arm: &SelectArm) -> String {
+    let body = self::expr(&arm.body);
+    let args = |call: &Expr| match &call.kind {
+        ExprKind::Call(_, args) => args.iter().map(|a| format!(" {}", self::expr(a))).collect(),
+        _ => String::new(),
+    };
+    let chan = arm.kind.channel().map(self::expr).unwrap_or_default();
+    match &arm.kind {
+        SelectKind::Recv { binding, .. } => format!("(recv {} {chan} {body})", binding.name),
+        SelectKind::Send(call) => format!("(send {chan}{} {body})", args(call)),
+        SelectKind::After(ms) => format!("(after {} {body})", self::expr(ms)),
+        SelectKind::Default(_) => format!("(default {body})"),
     }
 }
 

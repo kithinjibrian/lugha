@@ -42,6 +42,15 @@ impl Checker {
             self.record(callee, Type::Void);
             return Some(self.ref_new(call, name, args, expect));
         }
+        // `Chan.new()` and `Chan.buffered(n)` (v17), unless the module has a `Chan`.
+        if let ExprKind::Name(t) = &base.kind
+            && t == "Chan"
+            && self.predeclared_task(t)
+        {
+            self.record(base, Type::Void);
+            self.record(callee, Type::Void);
+            return Some(self.chan_new(call, name, args, expect));
+        }
         if let Some(ty) = self.type_named_by(base) {
             let method = self.method(&ty, &name.name);
             if method.is_none() && matches!(ty, Type::Enum(_, _)) {

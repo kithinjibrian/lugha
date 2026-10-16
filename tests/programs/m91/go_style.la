@@ -1,0 +1,15 @@
+// Go's `go func() { … }()`: a closure literal called on the spot.
+fun main() {
+    let k = 2;
+    let counter = Ref.new(0);
+    let t = spawn fun(): i64 {
+        counter.update(fun(n: i64): i64 = n + 1);
+        k * 10
+    }();
+    let u = spawn fun() {
+        counter.update(fun(n: i64): i64 = n + 1);
+    }();
+    println(t.join());
+    u.join();
+    println(counter.get());
+}

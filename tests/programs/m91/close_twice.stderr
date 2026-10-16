@@ -1,0 +1,1 @@
+panic: close of a closed channel at tests/programs/m91/close_twice.la:4:5

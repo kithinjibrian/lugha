@@ -1,0 +1,7 @@
+error[E0211]: a `select` arm waits for `name = c.recv()`, `c.send(value)`, `after(ms)` or `default`
+  --> tests/programs/m91/e0211_arm.la:4:9
+  |
+4 |         c.recv() => println("received"),
+  |         ^^^^^^^^
+
+For more about E0211, run `lughac explain E0211`.

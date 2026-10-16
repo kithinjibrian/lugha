@@ -53,7 +53,11 @@ impl Checker {
     /// payloads'. False after E0420.
     fn visit(&mut self, ty: &Type, found: &mut Vec<Type>, seen: &mut HashSet<Type>) -> bool {
         let (key, args) = match ty {
-            Type::Array(inner) | Type::Option(inner) | Type::Ref(inner) => {
+            Type::Array(inner)
+            | Type::Option(inner)
+            | Type::Ref(inner)
+            | Type::Task(inner)
+            | Type::Chan(inner) => {
                 return self.visit(inner, found, seen);
             }
             Type::Fun(params, ret) => {
@@ -138,7 +142,11 @@ impl Checker {
 /// How deeply type constructors nest in `ty`: `i64` is 0, `S<i64[]>` is 2.
 fn depth(ty: &Type) -> usize {
     match ty {
-        Type::Array(inner) | Type::Option(inner) | Type::Ref(inner) => 1 + depth(inner),
+        Type::Array(inner)
+        | Type::Option(inner)
+        | Type::Ref(inner)
+        | Type::Task(inner)
+        | Type::Chan(inner) => 1 + depth(inner),
         Type::Fun(params, ret) => 1 + params.iter().chain([&**ret]).map(depth).max().unwrap_or(0),
         Type::Struct(_, args) | Type::Enum(_, args) | Type::Interface(_, args) => {
             args.iter().map(depth).max().map_or(0, |d| d + 1)

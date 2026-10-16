@@ -53,7 +53,7 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         "stat_kind" => (vec![Type::String], Type::I64),
         // `std.process` (milestone 66): the result's tuple is built by
         // `os_call`, which can register it; `Void` stands in here.
-        "spawn" => (
+        "start" => (
             vec![
                 Type::String,
                 Type::Array(Box::new(Type::String)),
@@ -62,6 +62,9 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
             ],
             Type::Void,
         ),
+        // `std.task` (v17, milestone 91).
+        "sleep" => (vec![Type::I64], Type::Void),
+        "yield" => (Vec::new(), Type::Void),
         _ => return None,
     })
 }
@@ -159,7 +162,7 @@ impl Checker {
                 for (arg, ty) in args.iter().zip(params) {
                     self.expect_type(arg, &Expect::of(ty));
                 }
-                if op == "spawn" {
+                if op == "start" {
                     // `(code, stdout bytes, stderr bytes)`, or the reason it didn't start.
                     let bytes = Type::Array(Box::new(Type::U8));
                     let outcome = self.tuple_type(vec![Type::I32, bytes.clone(), bytes]);

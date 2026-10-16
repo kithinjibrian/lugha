@@ -48,7 +48,9 @@ impl Parser<'_> {
                 let open = self.bump();
                 return self.with_struct_literals(true, |p| p.array(start, open));
             }
-            TokenKind::If | TokenKind::LBrace | TokenKind::Match => return self.block_like(),
+            TokenKind::If | TokenKind::LBrace | TokenKind::Match | TokenKind::Select => {
+                return self.block_like();
+            }
             // `i16.MAX`: an integer type keyword before `.` is a name (v10).
             TokenKind::TyI8
             | TokenKind::TyI16
@@ -151,13 +153,16 @@ impl Parser<'_> {
         Ok(self.mk(start, ExprKind::Array(elements)))
     }
 
-    /// An `if`, `match` or block expression.
+    /// An `if`, `match`, `select` or block expression.
     pub(super) fn block_like(&mut self) -> PResult<Expr> {
         if self.at(&TokenKind::If) {
             return self.if_expr();
         }
         if self.at(&TokenKind::Match) {
             return self.match_expr();
+        }
+        if self.at(&TokenKind::Select) {
+            return self.select_expr();
         }
         let start = self.span().start;
         let block = self.block()?;

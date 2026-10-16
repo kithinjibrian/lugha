@@ -72,6 +72,11 @@ pub enum ExprKind {
     Block(Block),
     /// `match scrutinee { arms }` (v1).
     Match(Box<Expr>, Vec<Arm>),
+    /// `spawn call` (v17): the call, wrapped by the parser in a closure
+    /// with no parameters, which the new green thread runs. Boxed: rare.
+    Spawn(Box<Expr>),
+    /// `select { arms }` (v17).
+    Select(Vec<SelectArm>),
 }
 
 /// Prefix operators.
@@ -218,6 +223,59 @@ impl Part {
             Part::Expr(e, _) => Some(e),
             Part::Text(_) => None,
         }
+    }
+}
+
+/// One arm of a `select` (v17): what it waits for, then `=>` and its value.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SelectArm {
+    /// What the arm waits for.
+    pub kind: SelectKind,
+    /// The arm's value.
+    pub body: Expr,
+    /// From the arm's first token to the end of its body.
+    pub span: Span,
+}
+
+/// What a `select` arm waits for (v17).
+#[derive(Debug, Clone, PartialEq)]
+pub enum SelectKind {
+    /// `name = chan.recv()`, or `_ = chan.recv()`: `name` is the
+    /// `Option<T>` received. `call` is the whole `chan.recv()`.
+    Recv { binding: super::Ident, call: Expr },
+    /// `chan.send(value)`: `call` is the whole call.
+    Send(Expr),
+    /// `after(ms)`: the most to wait, in milliseconds.
+    After(Expr),
+    /// `default`: when nothing is ready, so the `select` never waits.
+    Default(Span),
+}
+
+impl SelectKind {
+    /// The channel of a `recv` or `send` arm.
+    pub fn channel(&self) -> Option<&Expr> {
+        match self {
+            SelectKind::Recv { call, .. } | SelectKind::Send(call) => match &call.kind {
+                ExprKind::Call(callee, _) => match &callee.kind {
+                    ExprKind::Field(chan, _) => Some(chan),
+                    _ => None,
+                },
+                _ => None,
+            },
+            SelectKind::After(_) | SelectKind::Default(_) => None,
+        }
+    }
+}
+
+/// The call a `spawn`'s closure runs (v17): the tail of its body.
+pub fn spawned_call(closure: &Expr) -> &Expr {
+    match &closure.kind {
+        ExprKind::Closure(c) => c
+            .body
+            .tail
+            .as_deref()
+            .expect("the parser gives a spawn's closure the call as its tail"),
+        _ => unreachable!("the parser wraps a spawn's call in a closure"),
     }
 }
 

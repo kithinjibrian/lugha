@@ -1,0 +1,43 @@
+// `select` picks a ready arm, sends, times out, or takes `default`.
+import std.task;
+
+fun later(c: Chan<string>, ms: i64, text: string) {
+    task.sleep(ms);
+    c.send(text);
+}
+
+fun main() {
+    let a: Chan<string> = Chan.new();
+    let b: Chan<i64> = Chan.buffered(1);
+    // Nothing is ready: `default`.
+    let first = select {
+        m = a.recv() => "a",
+        default => "nothing ready",
+    };
+    println(first);
+    // `b` has room: the send arm runs.
+    select {
+        b.send(7) => println("sent 7"),
+        m = a.recv() => println("unexpected"),
+    }
+    println(b.try_recv());
+    // Nobody sends in time: `after`.
+    select {
+        m = a.recv() => println("unexpected"),
+        after(20) => println("timed out"),
+    }
+    // A sender arrives while waiting.
+    spawn later(a, 5, "late hello");
+    select {
+        m = a.recv() => match m {
+            Some(text) => println(text),
+            None => println("closed"),
+        },
+        after(2000) => println("too slow"),
+    }
+    // A closed channel's arm fires with `None`.
+    a.close();
+    select {
+        m = a.recv() => println("closed gives {m}"),
+    }
+}

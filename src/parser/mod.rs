@@ -25,6 +25,7 @@ mod recover;
 mod self_type;
 pub mod sexp;
 mod stmt;
+mod tasks;
 #[cfg(test)]
 mod test_util;
 mod tuples;

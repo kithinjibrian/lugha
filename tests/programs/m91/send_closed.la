@@ -1,0 +1,5 @@
+fun main() {
+    let c: Chan<i64> = Chan.buffered(1);
+    c.close();
+    c.send(1);
+}

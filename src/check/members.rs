@@ -109,7 +109,7 @@ const CANDIDATES: [&str; 47] = [
 ];
 
 /// More helper names, kept apart so each list stays readable.
-const MORE_CANDIDATES: [&str; 12] = [
+const MORE_CANDIDATES: [&str; 17] = [
     "is_none",
     "ok",
     "map_err",
@@ -122,6 +122,12 @@ const MORE_CANDIDATES: [&str; 12] = [
     "is_lower",
     "to_upper",
     "to_lower",
+    // A task's and a channel's (v17).
+    "join",
+    "send",
+    "recv",
+    "try_recv",
+    "close",
 ];
 
 impl Checker {
@@ -451,6 +457,17 @@ fun main() { }
     }
 
     #[test]
+    fn tasks_and_channels_have_their_methods_v17() {
+        let partial = test_util::partial(SRC);
+        let chan = names(&value_members(&partial, &Type::Chan(Box::new(Type::I64))));
+        for name in ["send", "recv", "try_recv", "close", "is"] {
+            assert!(chan.contains(&name.to_string()), "{name} in {chan:?}");
+        }
+        let task = names(&value_members(&partial, &Type::Task(Box::new(Type::I64))));
+        assert_eq!(task, ["join"]);
+    }
+
+    #[test]
     fn every_candidate_name_belongs_to_some_receiver() {
         let receivers = [
             Type::Array(Box::new(Type::I64)),
@@ -464,6 +481,8 @@ fun main() { }
                 vec![Type::I64, Type::String],
             ),
             Type::Ref(Box::new(Type::I64)),
+            Type::Task(Box::new(Type::I64)),
+            Type::Chan(Box::new(Type::I64)),
         ];
         for name in CANDIDATES.iter().chain(&MORE_CANDIDATES) {
             let resolves = receivers.iter().any(|r| {

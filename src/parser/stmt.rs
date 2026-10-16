@@ -100,7 +100,7 @@ impl Parser<'_> {
                 self.error(diagnostic.with_help("remove this `;`"));
                 return Ok(Element::Nothing);
             }
-            TokenKind::If | TokenKind::LBrace | TokenKind::Match => {
+            TokenKind::If | TokenKind::LBrace | TokenKind::Match | TokenKind::Select => {
                 let expr = self.block_like()?;
                 if self.at(&TokenKind::RBrace) {
                     return Ok(Element::Tail(expr));

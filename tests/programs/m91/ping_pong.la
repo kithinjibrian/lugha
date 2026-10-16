@@ -1,0 +1,23 @@
+// An unbuffered channel hands each value over: `send` waits for `recv`.
+fun ponger(pings: Chan<i64>, pongs: Chan<i64>) {
+    while let Some(n) = pings.recv() {
+        println("pong {n}");
+        pongs.send(n + 1);
+    }
+    println("ponger done");
+}
+
+fun main() {
+    let pings: Chan<i64> = Chan.new();
+    let pongs: Chan<i64> = Chan.new();
+    let t = spawn ponger(pings, pongs);
+    let mut n = 0;
+    for i in 0..3 {
+        println("ping {n}");
+        pings.send(n);
+        n = pongs.recv().unwrap();
+    }
+    pings.close();
+    t.join();
+    println(n);
+}

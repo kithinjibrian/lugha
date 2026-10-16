@@ -49,7 +49,7 @@ impl Checker {
             if let Some(guard) = &arm.guard {
                 self.expect_type(guard, &Expect::of(Type::Bool));
             }
-            let ty = self.arm_body(arm, &result, expect);
+            let ty = self.arm_body(&arm.body, &result, expect);
             self.unused(&bindings);
             self.pop();
             if result.is_none() && ty != Type::Never {
@@ -66,32 +66,28 @@ impl Checker {
         }
     }
 
-    /// An arm's body, agreeing with the first arm that has a value.
-    fn arm_body(
+    /// An arm's body, agreeing with the first arm that has a value; also
+    /// a `select` arm's (v17).
+    pub(super) fn arm_body(
         &mut self,
-        arm: &Arm,
+        body: &Expr,
         result: &Option<(Type, Span)>,
         expect: Option<&Expect>,
     ) -> Type {
         match result {
             // Arms without a value: the others must have none either.
             Some((Type::Void, _)) => {
-                let ty = self.expr(&arm.body, None);
+                let ty = self.expr(body, None);
                 if !matches!(ty, Type::Void | Type::Never | Type::Error) {
-                    self.report(errors::mismatch(
-                        Type::Void,
-                        ty.clone(),
-                        arm.body.span,
-                        None,
-                    ));
+                    self.report(errors::mismatch(Type::Void, ty.clone(), body.span, None));
                 }
                 ty
             }
             Some((first, span)) => {
                 let why = format!("the first arm is {first}");
-                self.expect_type(&arm.body, &Expect::because(first.clone(), *span, why))
+                self.expect_type(body, &Expect::because(first.clone(), *span, why))
             }
-            None => self.expr(&arm.body, expect),
+            None => self.expr(body, expect),
         }
     }
 

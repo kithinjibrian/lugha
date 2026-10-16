@@ -191,14 +191,21 @@ fn harness() -> &'static PathBuf {
             .arg(&exe)
             .output()
             .expect("cc runs");
-        assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+        assert!(
+            out.status.success(),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
         exe
     })
 }
 
 /// Runs one case: its stdout, stderr and exit code.
 fn run(case: &str) -> (String, String, Option<i32>) {
-    let out = Command::new(harness()).arg(case).output().expect("harness runs");
+    let out = Command::new(harness())
+        .arg(case)
+        .output()
+        .expect("harness runs");
     (
         String::from_utf8_lossy(&out.stdout).into_owned(),
         String::from_utf8_lossy(&out.stderr).into_owned(),
@@ -213,106 +220,144 @@ fn prints(case: &str, expected: &str) {
 
 #[test]
 fn join_waits_and_gives_the_result_again() {
-    prints("join", "25
+    prints(
+        "join", "25
 9
-");
+",
+    );
 }
 
 #[test]
 fn ready_threads_run_in_order() {
-    prints("fifo", "a0
+    prints(
+        "fifo",
+        "a0
 b0
 a1
 b1
 a2
 b2
-");
+",
+    );
 }
 
 #[test]
 fn a_switch_keeps_each_threads_rounding_mode() {
-    prints("fpu", "main 1
+    prints(
+        "fpu",
+        "main 1
 task 1
-");
+",
+    );
 }
 
 #[test]
 fn sleepers_wake_by_deadline() {
-    prints("sleep", "slept 10
+    prints(
+        "sleep",
+        "slept 10
 slept 20
 slept 30
-");
+",
+    );
 }
 
 #[test]
 fn buffered_channels_drain_after_close() {
-    prints("buffered", "0
+    prints(
+        "buffered",
+        "0
 1
 2
 3
 4
 closed
-");
+",
+    );
 }
 
 #[test]
 fn unbuffered_channels_hand_over() {
-    prints("unbuffered", "3
-");
+    prints(
+        "unbuffered",
+        "3
+",
+    );
 }
 
 #[test]
 fn select_picks_ready_arms_times_out_and_defaults() {
-    prints("select", "1
+    prints(
+        "select",
+        "1
 -2
 -1
 0 0
 try 1
 got 7
 try 0
-");
+",
+    );
 }
 
 #[test]
 fn suspended_stacks_keep_their_objects_alive() {
-    prints("gc", "2016
-");
+    prints(
+        "gc", "2016
+",
+    );
 }
 
 #[test]
 fn the_countdown_preempts_a_busy_thread() {
-    prints("preempt", "1
-");
+    prints(
+        "preempt", "1
+",
+    );
 }
 
 #[test]
 fn ten_thousand_threads() {
-    prints("many", "10000
-");
+    prints(
+        "many", "10000
+",
+    );
 }
 
 #[test]
 fn a_deadlock_panics() {
     let (out, err, code) = run("deadlock");
-    assert_eq!(out, "before
-");
-    assert_eq!(err, "panic: deadlock: every green thread is waiting
-");
+    assert_eq!(
+        out,
+        "before
+"
+    );
+    assert_eq!(
+        err,
+        "panic: deadlock: every green thread is waiting
+"
+    );
     assert_eq!(code, Some(101));
 }
 
 #[test]
 fn sending_on_a_closed_channel_panics_at_the_send() {
     let (_, err, code) = run("closed");
-    assert_eq!(err, "panic: send on a closed channel at file.la:3:9
-");
+    assert_eq!(
+        err,
+        "panic: send on a closed channel at file.la:3:9
+"
+    );
     assert_eq!(code, Some(101));
 }
 
 #[test]
 fn a_green_threads_stack_overflow_panics() {
     let (_, err, code) = run("overflow");
-    assert_eq!(err, "panic: stack overflow
-");
+    assert_eq!(
+        err,
+        "panic: stack overflow
+"
+    );
     assert_eq!(code, Some(101));
 }

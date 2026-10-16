@@ -13,6 +13,10 @@ impl<'ctx> Lowerer<'ctx> {
     /// Lowers an expression, converting it to an interface value where the
     /// checker recorded a conversion (v5).
     pub(super) fn expr(&mut self, expr: &Expr) -> Result<Value<'ctx>, CodegenError> {
+        // A spawned call's argument, evaluated by the spawning thread (v17).
+        if let Some(value) = self.preset(expr) {
+            return Ok(Value::Val(value));
+        }
         match self.conversions.get(&expr.id).cloned() {
             Some(to) => self.converted(expr, &to),
             None => self.unconverted(expr),
@@ -101,6 +105,12 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Call(callee, args) if let Some(op) = crate::check::float_op(callee) => {
                 self.float_call(expr, op, args)?
             }
+            // `$os.sleep(ms)` and `$os.yield()` in `std.task` (v17).
+            ExprKind::Call(callee, args)
+                if let Some(op @ ("sleep" | "yield")) = crate::check::os_op(callee) =>
+            {
+                return self.task_os_call(op, args);
+            }
             // `$os.seed()` in `std.random`, `$os.env(name)` in `std.env`, … (v15).
             ExprKind::Call(callee, args) if let Some(op) = crate::check::os_op(callee) => {
                 self.os_call(expr, op, args)?
@@ -166,6 +176,8 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Array(elements) => self.array_literal(expr, elements)?,
             ExprKind::Tuple(elements) => self.tuple_literal(expr, elements)?,
             ExprKind::Repeat(value, count) => self.repeat(expr, value, count)?,
+            ExprKind::Spawn(closure) => self.spawn(expr, closure)?,
+            ExprKind::Select(arms) => return self.select(expr, arms),
         };
         Ok(Value::Val(value))
     }

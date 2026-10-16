@@ -4,7 +4,7 @@
 
 use super::Printer;
 use super::doc::{Doc, concat, list, spaced, text};
-use crate::ast::{Arm, BinOp, Block, Expr, ExprKind, UnOp};
+use crate::ast::{Arm, BinOp, Block, Expr, ExprKind, SelectArm, SelectKind, UnOp, spawned_call};
 
 /// Binding strength: a closure's `= body` takes everything after it.
 const CLOSURE: u8 = 0;
@@ -19,7 +19,8 @@ fn strength(e: &Expr) -> u8 {
         ExprKind::Closure(_) => CLOSURE,
         ExprKind::Binary(op, ..) => op.level(),
         ExprKind::Cast(..) => CAST,
-        ExprKind::Unary(..) => PREFIX,
+        // `spawn` binds like a prefix operator (v17).
+        ExprKind::Unary(..) | ExprKind::Spawn(_) => PREFIX,
         ExprKind::Call(..) | ExprKind::Index(..) | ExprKind::Field(..) | ExprKind::Try(_) => {
             POSTFIX
         }
@@ -143,6 +144,10 @@ impl Printer<'_> {
             }
             ExprKind::Block(b) => self.block(b, 0),
             ExprKind::Match(scrutinee, arms) => self.matching(e, scrutinee, arms),
+            ExprKind::Spawn(closure) => {
+                concat(vec![text("spawn "), self.expr(spawned_call(closure))])
+            }
+            ExprKind::Select(arms) => self.selecting(e, arms),
         }
     }
 
@@ -171,7 +176,13 @@ impl Printer<'_> {
 
     /// `e` where an operand binding at least `min` is needed.
     fn operand(&mut self, e: &Expr, min: u8) -> Doc {
-        if strength(e) < min || self.keeps_parentheses(e) {
+        // A closure with a block body ends at its `}`, so it is called
+        // without parentheses: `spawn fun() { … }()` (v17).
+        let ends_itself = match &e.kind {
+            ExprKind::Closure(c) => !self.src[..c.body.span.start].trim_end().ends_with('='),
+            _ => false,
+        };
+        if (strength(e) < min && !ends_itself) || self.keeps_parentheses(e) {
             self.parenthesized(e)
         } else {
             self.expr(e)
@@ -193,6 +204,7 @@ impl Printer<'_> {
                 | ExprKind::IfLet(_)
                 | ExprKind::Block(_)
                 | ExprKind::Match(..)
+                | ExprKind::Select(_)
                 | ExprKind::StructLit(_)
         );
         let before = self.src[..e.span.start].trim_end();
@@ -270,5 +282,37 @@ impl Printer<'_> {
         parts.push(text(" => "));
         parts.push(self.expr(&a.body));
         concat(parts)
+    }
+
+    /// `select { arms }` (v17), one arm per line, commas as in `match`.
+    fn selecting(&mut self, whole: &Expr, arms: &[SelectArm]) -> Doc {
+        let open = self.after_brace(whole.span.start, whole.span.end);
+        let inner = crate::span::Span::new(open, whole.span.end - 1);
+        let arms = self.allowing(|p| {
+            p.sequence(
+                inner,
+                arms,
+                |_, a| a.span,
+                |a| match a.body.kind {
+                    ExprKind::Block(_) => "",
+                    _ => ",",
+                },
+                |p, a| p.select_arm(a),
+            )
+        });
+        concat(vec![text("select "), self.braced(arms)])
+    }
+
+    fn select_arm(&mut self, a: &SelectArm) -> Doc {
+        let head = match &a.kind {
+            SelectKind::Recv { binding, call } => concat(vec![
+                text(format!("{} = ", self.ident(binding))),
+                self.expr(call),
+            ]),
+            SelectKind::Send(call) => self.expr(call),
+            SelectKind::After(ms) => concat(vec![text("after("), self.expr(ms), text(")")]),
+            SelectKind::Default(_) => text("default"),
+        };
+        concat(vec![head, text(" => "), self.expr(&a.body)])
     }
 }

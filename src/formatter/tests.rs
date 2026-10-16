@@ -225,3 +225,23 @@ fn extern_structs_v16() {
         "public extern struct Color {\n    r: u8,\n    g: u8,\n    b: u8,\n    a: u8,\n}\n",
     );
 }
+
+#[test]
+fn spawn_prints_its_call_v17() {
+    check(
+        "fun f(){let t=spawn  work(1,2);spawn fun(){g();}();}",
+        "fun f() {\n    let t = spawn work(1, 2);\n    spawn fun() {\n        g();\n    }();\n}\n",
+    );
+    check(
+        "fun f(){let n=(spawn g()).join();}",
+        "fun f() {\n    let n = (spawn g()).join();\n}\n",
+    );
+}
+
+#[test]
+fn select_arms_print_one_per_line_v17() {
+    check(
+        "fun f(){select{m=inbox.recv()=>m,out.send(42)=>{done();}after(500)=>1,default=>2}}",
+        "fun f() {\n    select {\n        m = inbox.recv() => m,\n        out.send(42) => {\n            done();\n        }\n        after(500) => 1,\n        default => 2,\n    }\n}\n",
+    );
+}

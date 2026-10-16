@@ -59,6 +59,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.loops.clear();
         self.builder
             .position_at_end(self.context.append_basic_block(signature.function, "entry"));
+        self.preempt_point();
 
         self.scopes.push();
         let first = u32::from(receiver.is_some());

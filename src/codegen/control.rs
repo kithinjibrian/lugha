@@ -126,6 +126,8 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(cond_block);
 
         self.builder.position_at_end(cond_block);
+        // A green thread's loop gives the others a turn now and then (v17).
+        self.preempt_point();
         let condition = self.get(cond, &Type::Bool)?.into_int_value();
         self.builder
             .build_conditional_branch(condition, body_block, exit)
@@ -186,6 +188,8 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(cond_block);
 
         self.builder.position_at_end(cond_block);
+        // A green thread's loop gives the others a turn now and then (v17).
+        self.preempt_point();
         let i = self.load(&counter, "i").into_int_value();
         let bound = self.load(&end_slot, "end").into_int_value();
         let less = if is_signed(&ty) {

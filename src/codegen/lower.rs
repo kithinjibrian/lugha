@@ -54,6 +54,11 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) subst: HashMap<String, Type>,
     /// What each closure literal captures (`Checked::captures`).
     pub(super) captures: HashMap<ExprId, Vec<String>>,
+    /// Whether loops and functions count down to preemption (`Checked::uses_tasks`, v17).
+    pub(super) uses_tasks: bool,
+    /// A spawned call's arguments already evaluated by the spawning thread
+    /// (v17): each lowers as a load of the hidden capture named here.
+    pub(super) presets: HashMap<ExprId, String>,
     /// How externs with callbacks pass their parameters (`Checked::c_params`, v16).
     pub(super) c_params: crate::check::CParams,
     /// C entries made so far, for `lugha_cfn_<n>` (v16).
@@ -154,6 +159,8 @@ pub(super) fn lower<'ctx>(
         monos: HashMap::new(),
         subst: HashMap::new(),
         captures: checked.captures.clone(),
+        uses_tasks: checked.uses_tasks,
+        presets: HashMap::new(),
         c_params: checked.c_params.clone(),
         c_entries: 0,
         conversions: checked.conversions.clone(),

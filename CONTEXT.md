@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**Pending approval: green threads (PRP-122, `Language v17 Draft.md`, milestone 91)**, proposed in session 200 after discovery in sessions 195–200. The user wants green threads (`spawn`, no async/await or function colouring) and then actors. Nothing is built until they approve. On approval: v16 freezes, `Language v17 Specification.md` starts, build on branch `prp-122-green_threads` in a worktree.
+**v17 (concurrency): milestone 91 done** (tag `m91`, PRP-122): green threads — `spawn`, `Task<T>`, `Chan<T>`, `select`, `std.task`, one OS thread. v16 is frozen; `lughac spec` prints `Language v17 Specification.md`. Next: **actors** (the user's stated goal after green threads; needs discovery and a PRP), and the VS Code grammar/snippets for `spawn`/`select`.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -7249,5 +7249,27 @@ Branch: main
 
 ---
 
-## SESSION 201 — 2026-10-16 — Build green threads (PRP-122, milestone 91) — open
+## SESSION 201 — 2026-10-16 — Build green threads (PRP-122, milestone 91) — closed
 Branch: prp-122-green_threads
+
+### WHAT WAS DONE
+- The user approved PRP-122 and the v17 draft ("yes approved, build it"). Built milestone 91 in the worktree `../lugha-m91`: v16 frozen, `Language v17 Specification.md` started (`lughac spec` prints it).
+- Runtime (`runtime/tasks.c`, `spawn.c`, `chans.c`): fibers on `mmap`'d 1 MiB stacks with 64 KiB guards, an x86-64 switch (callee-saved registers, MXCSR, x87 control word), FIFO scheduler, sleepers, deadlock panic, channels, `select`; Boehm told about every stack (`GC_set_stackbottom`, `GC_set_push_other_roots`).
+- Front end: `spawn`/`select` keywords, `ExprKind::Spawn` (the call wrapped in a closure) and `ExprKind::Select`, E0211; formatter; checker `Task`/`Chan` types, `spawn`, `join`, the channel API, `select`, E0438, E0412 for an untyped `Chan.new()`; codegen `lugha_task_` entries, early arguments, channels, `select`'s case table, preemption countdown; `std.task`; completion members.
+- `std.process`'s private `spawn` and `$os.spawn` renamed `start`/`$os.start` (keyword clash; `process.c` untouched).
+
+### FILES CREATED OR MODIFIED
+- Created: runtime/tasks.c, spawn.c, chans.c; src/parser/tasks.rs; src/check/tasks.rs, channels.rs, select.rs, errors/v17.rs; src/codegen/tasks.rs, channels.rs; src/std/task.la; tests/tasks_runtime.rs; tests/programs/m91/ (25 cases); docs/errors/E0211.md, E0438.md; docs/specs/Language v17 Specification.md.
+- Modified: lexer, AST, parser (expr, primary, stmt, pattern, sexp), formatter, checker (types, generics, bounds, layouts, levels, infer, printing, builtins, method_calls, matching, ops, float_ops, members, liveness, mod, checked, modules), codegen (expr, methods, closures, function, control, array, conditional, iterators, hoist_scan, lower, value, structs, enums, show, os), link (fragments, symbols), LSP completion, explain, lib.rs, std/process.la, tests/cli.rs, tests/lexer.rs, tests/programs/m53/e0312.stderr, v16 spec status, v17 draft, PRP-122, CHANGELOG, CLAUDE, README, TODO, MEMORY, CONTEXT.
+
+### TESTS WRITTEN
+- Runtime harness 13; lexer 1; parser 7; formatter 2; checker 16; codegen 3; members 1; e2e m91 20 runs + 5 rejections (all agree at -O0/-O2); §10 programs 2; explain pages 2. `cargo fmt --check`, clippy and the full `cargo test` pass.
+
+### DECISIONS MADE
+- MEMORY 174; PRP-122 BUILT notes (no `probe-stack`; fixed-seed `select` pick; receivers evaluated early only when they are calls).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- VS Code highlighting/snippets for `spawn`/`select` (TODO). Actors are the user's next goal (needs discovery).

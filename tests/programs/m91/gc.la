@@ -1,0 +1,30 @@
+// Many threads allocate; arrays kept only on suspended stacks survive.
+import std.task;
+
+fun build(seed: i64): i64 {
+    let mut kept: i64[] = [];
+    for i in 0..1000 {
+        kept.push(seed + i);
+        if i % 100 == 0 {
+            task.yield_now();
+        }
+        let junk = [i; 64];
+    }
+    let mut sum = 0;
+    for v of kept {
+        sum += v;
+    }
+    sum
+}
+
+fun main() {
+    let mut tasks: Task<i64>[] = [];
+    for s in 0..50 {
+        tasks.push(spawn build(s));
+    }
+    let mut total = 0;
+    for t of tasks {
+        total += t.join();
+    }
+    println(total);
+}

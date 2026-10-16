@@ -1,0 +1,9 @@
+error[E0412]: cannot infer what this channel carries
+  --> tests/programs/m91/e0412_chan.la:2:13
+  |
+2 |     let c = Chan.new();
+  |             ^^^^^^^^^^
+  |
+  = help: annotate it: `let c: Chan<i64> = Chan.new();`
+
+For more about E0412, run `lughac explain E0412`.

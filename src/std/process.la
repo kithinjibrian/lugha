@@ -14,7 +14,7 @@ public struct Output { public code: i32, public stdout: string, public stderr: s
  * @param args its arguments
  * @returns its `Output` (any exit code is `Ok`), or `Err` when it couldn't start or its output isn't UTF-8
  */
-public fun run(cmd: string, args: string[]): Result<Output, string> = spawn(cmd, args, "", 1);
+public fun run(cmd: string, args: string[]): Result<Output, string> = start(cmd, args, "", 1);
 
 /**
  * `run`, with `input` written to the program's stdin.
@@ -24,7 +24,7 @@ public fun run(cmd: string, args: string[]): Result<Output, string> = spawn(cmd,
  * @returns its `Output`, or `Err` when it couldn't start or its output isn't UTF-8
  */
 public fun run_with(cmd: string, args: string[], input: string): Result<Output, string> =
-    spawn(cmd, args, input, 2);
+    start(cmd, args, input, 2);
 
 /**
  * Runs a program sharing this one's stdin, stdout and stderr, and waits for it.
@@ -33,14 +33,14 @@ public fun run_with(cmd: string, args: string[], input: string): Result<Output, 
  * @returns its exit code, or `Err` when it couldn't start
  */
 public fun call(cmd: string, args: string[]): Result<i32, string> {
-    let (code, _, _) = $os.spawn(cmd, args, "", 0)?;
+    let (code, _, _) = $os.start(cmd, args, "", 0)?;
     Ok(code)
 }
 
-// `$os.spawn` in `mode` 1 (capture, stdin empty) or 2 (capture, stdin
+// `$os.start` in `mode` 1 (capture, stdin empty) or 2 (capture, stdin
 // `input`), with the output checked as UTF-8.
-fun spawn(cmd: string, args: string[], input: string, mode: i32): Result<Output, string> {
-    let (code, out, err) = $os.spawn(cmd, args, input, mode)?;
+fun start(cmd: string, args: string[], input: string, mode: i32): Result<Output, string> {
+    let (code, out, err) = $os.start(cmd, args, input, mode)?;
     let stdout = match string_from_utf8(out) {
         Ok(text) => text,
         Err(_) => {

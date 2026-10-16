@@ -1,0 +1,9 @@
+error[E0438]: `after` and `default` together: with `default` the `select` never waits, so the timeout could never fire
+  --> tests/programs/m91/e0438_select.la:6:9
+  |
+6 |         default => println("never waits"),
+  |         ^^^^^^^
+  |
+  = help: a `select` waits on `name = c.recv()` and `c.send(v)` arms, with at most one `after(ms)` or one `default`
+
+For more about E0438, run `lughac explain E0438`.

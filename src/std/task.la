@@ -1,0 +1,17 @@
+// std.task (v17, milestone 91): pausing the running green thread. Green
+// threads start with `spawn`; `Task` and `Chan` are predeclared.
+
+/**
+ * Pauses this green thread for at least `ms` milliseconds; the others run meanwhile.
+ * @param ms how long, in milliseconds; `0` or less just lets the others run first
+ */
+public fun sleep(ms: i64) {
+    $os.sleep(ms);
+}
+
+/**
+ * Lets every other ready green thread run before this one goes on.
+ */
+public fun yield_now() {
+    $os.yield();
+}

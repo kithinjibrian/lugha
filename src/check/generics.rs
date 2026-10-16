@@ -32,7 +32,11 @@ pub(super) fn subst(ty: &Type, generics: &[Generic], args: &[Type]) -> Type {
 pub(super) fn has_param(ty: &Type) -> bool {
     match ty {
         Type::Param(_) => true,
-        Type::Array(inner) | Type::Option(inner) | Type::Ref(inner) => has_param(inner),
+        Type::Array(inner)
+        | Type::Option(inner)
+        | Type::Ref(inner)
+        | Type::Task(inner)
+        | Type::Chan(inner) => has_param(inner),
         Type::Struct(_, args) | Type::Enum(_, args) | Type::Interface(_, args) => {
             args.iter().any(has_param)
         }
@@ -90,6 +94,8 @@ pub(super) fn replace(ty: &Type, map: &HashMap<&str, &Type>) -> Type {
         Type::Array(inner) => Type::Array(Box::new(replace(inner, map))),
         Type::Option(inner) => Type::Option(Box::new(replace(inner, map))),
         Type::Ref(inner) => Type::Ref(Box::new(replace(inner, map))),
+        Type::Task(inner) => Type::Task(Box::new(replace(inner, map))),
+        Type::Chan(inner) => Type::Chan(Box::new(replace(inner, map))),
         Type::Fun(params, ret) => Type::Fun(
             params.iter().map(|p| replace(p, map)).collect(),
             Box::new(replace(ret, map)),
@@ -168,6 +174,10 @@ impl Checker {
             };
             return self.no_type_args(ty, &applied, span);
         }
+        // The predeclared `Task` (v17), or E0418 for a bare `Chan`.
+        if let Some(ty) = self.resolve_task_type(name, &[], span) {
+            return ty;
+        }
         // Markers of extern signatures (v16), unless a module names a type so.
         if matches!(name, "data" | "release") && self.named_type(&self.key(name)).is_none() {
             self.report(errors::marker_outside(name, span));
@@ -194,6 +204,12 @@ impl Checker {
             && self.named_type(&self.key("Ref")).is_none()
         {
             return Type::Ref(Box::new(self.resolve(&applied.args[0])));
+        }
+        // The predeclared `Task<T>` and `Chan<T>` (v17).
+        if applied.module.is_none()
+            && let Some(ty) = self.resolve_task_type(&applied.name.name, &applied.args, span)
+        {
+            return ty;
         }
         if let Some(ty) = self.interface_type(applied.module.as_ref(), &applied.name, span) {
             return self.no_type_args(ty, applied, span);
