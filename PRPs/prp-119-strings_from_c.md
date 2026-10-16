@@ -1,6 +1,6 @@
 ## FEATURE: Strings from C — an extern may return `string` or `Option<string>`, take `Option<string>`, and callbacks may receive them; C's text is copied into a Lugha string; milestone 89.
 
-**Status:** approved 2026-10-16 ("yes build all three", session 190); proposed in session 189 with PRP-120 and PRP-121 as one batch.
+**Status:** built in session 190; approved 2026-10-16 ("yes build all three", session 190); proposed in session 189 with PRP-120 and PRP-121 as one batch.
 **Milestone:** 89 (tag `m89` at merge).
 **Spec:** `Language v16 Draft.md` decisions 115–119; spec §8 (allowed types, the string rule, callbacks), §9 (runtime list, diagnostics), §11 (row 89).
 
@@ -69,3 +69,9 @@ fun main() {
 
 ## VALIDATION
 - `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`
+
+## BUILT (session 190)
+- As planned, test-first. The runtime copy is a new fragment `runtime/cstr.c` (`lugha_rt_str_from_c(text, nullable)`); its `utf8_length` is the prelude's `utf8_decode` in C, checked by a test of the tricky sequences against `chars()`.
+- `NULL` for a plain `string` panics without a location, as the PRP said.
+- E0409's help for a callback's string result explains why; `tests/programs/m3/e0409` (an `extern` returning `string`, now valid) was rewritten to that case, and the E0409 page's examples updated.
+- Tests: `tests/c_strings.rs` (6), checker (2 updated, 1 new). Byte-identical IR for the 185 compiling `tests/programs` against a fresh build of `main`.

@@ -19,7 +19,7 @@ use inkwell::values::{
 
 use super::CodegenError;
 use super::declare::abi_attribute;
-use super::externs::is_nullable_handle;
+use super::externs::{converts_from_c, is_nullable_handle};
 use super::lower::{Lowerer, POSITIONED};
 use super::value::{Value, is_aggregate};
 use crate::ast::Expr;
@@ -250,8 +250,8 @@ impl<'ctx> Lowerer<'ctx> {
             .collect();
         let mut values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(params.len());
         for (value, ty) in incoming.into_iter().zip(params) {
-            let value = if is_nullable_handle(ty) {
-                self.nullable_from_c(value, ty)
+            let value = if converts_from_c(ty) {
+                self.value_from_c(value, ty)
             } else {
                 value
             };

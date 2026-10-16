@@ -2,11 +2,11 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–88 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–89 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestones 67–88):
+**Changes since v15** (milestones 67–89):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
 - `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
 - `lughac init [folder] [--lib] [--name N]` starts a program, or a library with an example, in a folder; it never overwrites a file (milestone 69; section 9).
@@ -24,6 +24,7 @@ Oct 15, 2026 · @kithinji
 - `lughac explain CODE` explains every error and warning code, diagnostics end with a line pointing to it, and the editor links each code to its explanation (milestone 86; section 9).
 - Linking C libraries: a `[link]` table in `lugha.toml` names libraries, library folders, header folders, C files to compile and `pkg-config` packages; the tables of every package a program uses apply (milestone 87; sections 6, 8, 9).
 - Callbacks and handles: `extern type Name;` declares an opaque C pointer type; a function type in an extern's parameters is a callback C can call, named functions anywhere and closures through user data (`data`, `release`); `extern "symbol" fun name(…)` gives a C function a Lugha name of its own (milestone 88; sections 3, 4, 7, 8, 9).
+- Strings from C: an extern may return `string` or `Option<string>` and take `Option<string>`, and a callback may receive them; C's text is copied, with invalid UTF-8 replaced by U+FFFD (milestone 89; section 8).
 
 Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type (a module's own type `Ref` still means its own), or declares a function named `assert`, `assert_eq` or `assert_ne`, which are intrinsics since milestone 84 (E0302).
 
@@ -1198,15 +1199,18 @@ extern fun sqrt(x: f64): f64;
 | `i8`, `i16` | `int8_t`, `int16_t` | Value, sign-extended (v10) |
 | `u16` | `uint16_t` | Value, zero-extended (v10) |
 | `bool` | `bool` (C99) | Value, `i1` zero-extended |
-| `string` (parameter only) | `const char *` | Pointer to the first data byte, 8 bytes past the header |
+| `string` | `const char *` | To C: a pointer to the first data byte, 8 bytes past the header. From C (a result, v16): a copy |
+| `Option<string>` (v16) | `const char *` | As `string`; `NULL` for `None` |
 | a handle `H` (v16) | `T *` | The pointer |
 | `Option<H>` of a handle (v16) | `T *` | The pointer; `NULL` for `None` |
 | `fun(…)` (parameter only, v16) | a function pointer | A callback; see below |
 | return type omitted | `void` | — |
 
-The compiler adjusts the string pointer at each call site. C code receives an ordinary NUL-terminated string. A `string` may not be an extern return type, because C strings aren't allocated by the GC and have no length header.
+The compiler adjusts the string pointer at each call site. C code receives an ordinary NUL-terminated string.
 
-**Callbacks** (v16, milestone 88). A parameter whose type is a function type, `cb: fun(T…): R`, is a C function pointer that C may call, during the extern call or later. Its parameter and result types are extern types other than `string` (numbers, `bool`, handles, `Option` of a handle; `R` may be omitted); no strings, arrays, structs, enums or functions go into or out of a callback, and no extern returns one (E0409).
+**Text from C** (v16, milestone 89). A `string` or `Option<string>` coming from C — an extern's result, or a callback's parameter — is copied into a new Lugha string: C's bytes up to the first NUL, each invalid UTF-8 sequence replaced by U+FFFD and the copy moving one byte on, exactly as `chars()` decodes. C keeps its memory and Lugha never frees it, so a C function returning text the caller must free leaks unless it is declared returning a handle and freed through another extern. For `Option<string>`, `NULL` is `None`; for a plain `string`, `NULL` panics: `panic: C gave NULL for a \`string\`; declare it \`Option<string>\`` (without a location: the runtime can't tell which call).
+
+**Callbacks** (v16, milestone 88). A parameter whose type is a function type, `cb: fun(T…): R`, is a C function pointer that C may call, during the extern call or later. Its parameter and result types are numbers, `bool`, handles and `Option` of a handle (`R` may be omitted), and its parameters may also be `string` or `Option<string>`, copied from C (v16, milestone 89). A callback never returns a string, since C would keep a pointer into Lugha's memory; no arrays, structs, enums or functions go into or out of a callback, and no extern returns one (E0409).
 - **`data`:** one of a callback's parameters may be written `data`: the `void *` user data C hands back to it. The extern then has one parameter written `data` too, where C takes that user data, and may have one written `release`, a `void (*)(void *)` that C calls when it drops the callback. An extern has a `data` parameter exactly when one of its callbacks takes `data`, at most one of each, and `release` only with `data` (E0435). Anywhere else, `data` and `release` are E0435.
 - **Calls:** callers write neither the `data` nor the `release` argument; lughac passes them. A callback's argument is a function value of the callback's type without `data`. Where the callback takes no `data`, C keeps nothing but a code pointer, so the argument must be a function's name (`f`, `m.f`) or a closure literal that captures nothing (E0436); where it takes `data`, any function value, closures with captures included.
 - **Renamed externs:** `extern "symbol" fun name(…)` declares the C function `symbol` under the Lugha name `name`, so one C function can be declared several times with different callback types. Several declarations may share a symbol; `symbol` is a C identifier and doesn't start with `lugha_` (E0306).
@@ -1323,6 +1327,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | --- | --- |
 | `lugha_rt_init(argc, argv)` | Keeps `argc`/`argv` for `args()`, runs `GC_INIT()`, then installs the stack-overflow handler (an alternate signal stack and a `SIGSEGV` handler that panics only for faults at the stack's end); the C `main` calls it first, since a C macro can't be called from IR |
 | `lugha_rt_alloc(size)` | Allocate zeroed GC memory |
+| `lugha_rt_str_from_c(text, nullable)` (v16) | A copy of C's NUL-terminated text as a string, invalid UTF-8 replaced; `NULL` stays `NULL` when `nullable`, else panics |
 | `lugha_rt_cb_pin(code, env)` / `lugha_rt_cb_release(pinned)` (v16) | A copy of a function value C can keep as a callback's user data, scanned but never collected; freeing it when C releases the callback |
 | `lugha_rt_panic(msg, file, line, col)` | Print the panic message and `exit(101)` |
 | `lugha_rt_str_concat(a, b)` | Implement string `+` |
@@ -1524,7 +1529,7 @@ Name and type errors, reported by the checker:
 | E0430 | A default method that two visible interfaces supply (v10) | `c.describe()` where `Named` and `Shown` both default `describe` and `Circle` satisfies both |
 | E0431 | A bad format specifier (v13) | `"{n:.2}"` with `n: i64`; `"{x:q}"`; `"{f:x}"` with `f: f64`; `"{n:#}"`; `"{s:05}"` with `s: string`; `"{n:2000}"` |
 | E0432 | A bad `format` template (v14) | `format(t, 1)` with `t` a variable; `format("{} and {}", 1)`; `format("{x}", 1)`; `format("a {")` |
-| E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum, `Option` (but of a handle) or interface parameters or returns, and functions only as callback parameters (§8); `extern fun f(cb: fun(string));` (v16) |
+| E0409 | Type not allowed in an extern signature | `extern fun total(xs: i64[]): i64;` — no array, struct, enum, `Option` (but of a handle or `string`) or interface parameters or returns, and functions only as callback parameters (§8); a callback returning a string, `extern fun f(cb: fun(i64): string);` (v16) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool`; `n as T` for a `T` without `Num` or `Float` (v15) |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut`; `for x of mut xs` where `xs` isn't (v13) |
 | E0502 | Assignment to something that isn't a place | `(a + b) = 3;`; `for x of mut [1, 2]` (v13) |
@@ -3349,6 +3354,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 86 | `lughac explain` (v16) | an explanation for every code, its examples checked; the hint after human diagnostics; code links in the editor | `tests/explain.rs` (done) |
 | 87 | Linking C libraries (v16) | `[link]` in `lugha.toml`: `libs`, `paths`, `include`, `c`, `pkg-config`; every used package's table; E0329–E0331 | `tests/link_libs.rs` (done) |
 | 88 | Callbacks and handles (v16) | `extern type`; functions and closures passed to C (`data`, `release`); `extern "symbol" fun`; E0435, E0436 | `tests/callbacks.rs` (done) |
+| 89 | Strings from C (v16) | `string` and `Option<string>` extern results, `Option<string>` arguments, string callback parameters; copies, U+FFFD | `tests/c_strings.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

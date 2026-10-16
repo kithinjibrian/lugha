@@ -6,7 +6,7 @@
 use inkwell::values::{BasicMetadataValueEnum, BasicValueEnum, FunctionValue, ValueKind};
 
 use super::CodegenError;
-use super::externs::is_nullable_handle;
+use super::externs::{converts_from_c, is_nullable_handle};
 use super::lower::{Lowerer, POSITIONED};
 use super::scope::{Local, Scopes};
 use super::value::{Value, is_aggregate};
@@ -210,9 +210,9 @@ impl<'ctx> Lowerer<'ctx> {
         };
         Ok(match (site.try_as_basic_value(), &signature.ret) {
             (ValueKind::Basic(result), Some(ret))
-                if signature.is_extern && is_nullable_handle(ret) =>
+                if signature.is_extern && converts_from_c(ret) =>
             {
-                Value::Val(self.nullable_from_c(result, ret))
+                Value::Val(self.value_from_c(result, ret))
             }
             (ValueKind::Basic(result), _) => Value::Val(result),
             (ValueKind::Instruction(_), _) => Value::Void,

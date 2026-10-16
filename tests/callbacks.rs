@@ -275,7 +275,7 @@ fn a_panic_in_a_callback_ends_the_program() {
 #[test]
 fn bad_callback_programs_are_rejected_with_their_codes() {
     let c = "long f(void) { return 0; }\n";
-    Case::new("extern fun f(cb: fun(string));\nfun main() {}\n", c).rejects(&["E0409"]);
+    Case::new("extern fun f(cb: fun(i64): string);\nfun main() {}\n", c).rejects(&["E0409"]);
     Case::new("extern fun f(cb: fun(i64), u: data);\nfun main() {}\n", c).rejects(&["E0435"]);
     let stderr = Case::new(
         "extern fun f(cb: fun(i64));\nfun main() { let k = 1; f(fun(x: i64) { println(x + k); }); }\n",

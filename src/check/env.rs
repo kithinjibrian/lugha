@@ -67,16 +67,11 @@ impl Checker {
                 }
             };
             let declared = &declared;
-            let mut ret_type = match ret {
+            // A `string` result is C's text, copied (v16, milestone 89).
+            let ret_type = match ret {
                 Some(ty) => self.resolve(ty),
                 None => Type::Void,
             };
-            if is_extern && ret_type == Type::String {
-                let span = ret.map_or(name.span, |ty| ty.span);
-                self.report(errors::extern_string_return(span));
-                // Keep the function callable so its calls don't cascade.
-                ret_type = Type::Error;
-            }
             if is_extern {
                 // Only numbers and strings cross the C boundary (spec §8);
                 // handles and callbacks too (v16).
@@ -92,7 +87,12 @@ impl Checker {
                         Type::Fun(..) if i < count => continue,
                         // A handle, or `Option` of one (`NULL` is `None`), is a C pointer (v16).
                         Type::Handle(_) => continue,
-                        Type::Option(inner) if matches!(**inner, Type::Handle(_)) => continue,
+                        // `Option<string>` too: `NULL` is `None` (v16, milestone 89).
+                        Type::Option(inner)
+                            if matches!(**inner, Type::Handle(_) | Type::String) =>
+                        {
+                            continue;
+                        }
                         Type::Array(_) => errors::extern_array(at),
                         Type::Struct(_, _) => errors::extern_struct(at),
                         Type::Fun(..) | Type::Interface(..) => errors::extern_value(ty, at),
@@ -298,9 +298,13 @@ mod tests {
             errors("extern fun lugha_rt_alloc(n: i64): i64;\nfun main() {}"),
             [("E0306", "lugha_rt_alloc")]
         );
+        // v16: C's text comes back as a copy.
+        ok(
+            "extern fun getenv(k: string): Option<string>;\nfun main() { println(getenv(\"HOME\")); }",
+        );
         assert_eq!(
-            errors("extern fun getenv(k: string): string;\nfun main() {}"),
-            [("E0409", "string")]
+            errors("extern fun f(): i64[];\nfun main() {}"),
+            [("E0409", "i64[]")]
         );
         assert_eq!(
             errors("extern fun print(x: i32);\nfun main() {}"),

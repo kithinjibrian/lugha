@@ -6945,19 +6945,37 @@ Branch: main
 
 ---
 
-## SESSION 190 — 2026-10-16 — Strings from C (milestone 89) — open
+## SESSION 190 — 2026-10-16 — Strings from C (milestone 89) — closed
 Branch: prp-119-strings_from_c
 
 ### WHAT WAS DONE
-- In progress: the user approved PRP-119, PRP-120 and PRP-121 ("yes build all three") and installed GTK's development files; building PRP-119 in worktree `../lugha-prp-119`.
+- The user approved PRP-119, PRP-120 and PRP-121 ("yes build all three") and installed GTK's development files (gtk4 4.22.4 through pkg-config); built PRP-119 in worktree `../lugha-prp-119`.
+- Checker: `string`/`Option<string>` extern results, `Option<string>` parameters, string callback parameters; callbacks returning strings still E0409. Runtime `cstr.c` (`lugha_rt_str_from_c`); codegen `from_c`, nullable strings in `externs.rs`.
+- Spec v16 §8 (table, text from C, callbacks), §9 runtime list, E0409 row, §11 row 89; docs.
+
+### FILES CREATED OR MODIFIED
+- New: `runtime/cstr.c`, `tests/c_strings.rs`.
+- Modified: `src/check/{env,callbacks}.rs`, `src/check/errors/{types,v16}.rs`, `src/codegen/{externs,function,callbacks}.rs`, `src/link/mod.rs`, `tests/callbacks.rs`, `tests/programs/m3/e0409.{la,stderr}`, `docs/errors/E0409.md`, spec, draft, PRP-119, CLAUDE.md, TODO, CHANGELOG, MEMORY, CONTEXT.
+
+### TESTS WRITTEN
+- `tests/c_strings.rs` (6), checker unit tests. Full suite, fmt, clippy pass; IR unchanged (185 programs).
+
+### DECISIONS MADE
+- As PRP-119 planned (BUILT notes, MEMORY 171).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-120 next (session 191), then PRP-121.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**v16: milestones 67–88 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles).
+**v16: milestones 67–89 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C).
 
-**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. **Milestone 83 done** (tag `m83`): Find References and Rename (PRP-113), extension 0.6.0; its manual check (README step 16) is the user's. **Milestone 84 done** (tag `m84`): `lughac test` (PRP-114). **Milestone 85 done** (tag `m85`): tests in the editor (PRP-115), extension 0.8.0; its manual check (README step 17) is the user's. **Milestone 86 done** (tag `m86`): `lughac explain` (PRP-116), extension 0.9.0; its manual check (README step 18) is the user's. **Milestone 87 done** (tag `m87`): linking C libraries, `[link]` in `lugha.toml` (PRP-117). **Milestone 88 done** (tag `m88`): callbacks and handles (PRP-118); a GTK 4 counter works in plain Lugha. **Proposed, one approval for all three:** PRP-119 strings from C (milestone 89), PRP-120 C structs by value (milestone 90), PRP-121 the `lugha-gtk` package (session 189); build in order in worktrees, merging each once local checks pass. Next candidates: Go to Implementations, the Outline, inlay hints, decorators, `lughac doc`. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. **Milestone 83 done** (tag `m83`): Find References and Rename (PRP-113), extension 0.6.0; its manual check (README step 16) is the user's. **Milestone 84 done** (tag `m84`): `lughac test` (PRP-114). **Milestone 85 done** (tag `m85`): tests in the editor (PRP-115), extension 0.8.0; its manual check (README step 17) is the user's. **Milestone 86 done** (tag `m86`): `lughac explain` (PRP-116), extension 0.9.0; its manual check (README step 18) is the user's. **Milestone 87 done** (tag `m87`): linking C libraries, `[link]` in `lugha.toml` (PRP-117). **Milestone 88 done** (tag `m88`): callbacks and handles (PRP-118); a GTK 4 counter works in plain Lugha. **Milestone 89 done** (tag `m89`): strings from C (PRP-119). **Approved, to build in order:** PRP-120 C structs by value (milestone 90), PRP-121 the `lugha-gtk` package; worktrees, merging each once local checks pass. Next candidates: Go to Implementations, the Outline, inlay hints, decorators, `lughac doc`. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 
