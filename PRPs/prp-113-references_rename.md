@@ -1,6 +1,6 @@
 ## FEATURE: Find References and Rename — every use of a name across the checked files, and renaming them safely; milestone 83.
 
-**Status:** proposed 2026-10-16 — session 174 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-16 ("build it") — built in session 175; proposed in session 174.
 **Milestone:** 83 (one PRP; tag `m83` at merge). Go to Implementations is a later milestone.
 **Spec:** `Language v16 Draft.md` decisions 76–80; spec §9 (the `lughac lsp` section gains **References** and **Rename**), §11 (row 83).
 

@@ -6554,6 +6554,11 @@ Branch: main
 
 ---
 
+## SESSION 175 — 2026-10-16 — Find References and Rename (milestone 83) — open
+Branch: prp-113-references_rename
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–82 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes).
