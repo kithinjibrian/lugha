@@ -7682,8 +7682,25 @@ Branch: fix-fmt-arm-comma
 
 ---
 
-## SESSION 219 — 2026-10-17 — Discovery: kivuli's lughac quirks 2–8 — open
+## SESSION 219 — 2026-10-17 — Discovery: kivuli's lughac quirks 2–8 — closed
 Branch: main
 
 ### WHAT WAS DONE
-- In progress: the user ("let's fix the rest") — discovery for formatter hugging (2), inference from sibling arguments (3), and packages/testing (4–8), as three PRPs.
+- The user ("let's fix the rest"): discovery for kivuli's quirks 2–8. The user's choice: `skip(reason)` as an intrinsic for skipping tests. The rest mine, for review.
+- Wrote PRP-126 (formatter hugging, milestone 95), PRP-127 (inference from sibling arguments, milestone 96), PRP-128 (packages and tests: package files as modules under `test`/`check`, `test/` inside the package, one lock per package, `check` without `main`, `skip`; milestone 97); v17 draft decisions 35–50, rows 95–97.
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-126-fmt_hugging.md`, `PRPs/prp-127-sibling_inference.md`, `PRPs/prp-128-packages_and_tests.md`.
+- Modified: `docs/specs/Language v17 Draft.md`, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: the three PRPs wait for one approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Approval of PRP-126–128.

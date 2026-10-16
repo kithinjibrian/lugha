@@ -1,6 +1,6 @@
 # Lugha v17 — Draft (delta against v16)
 
-**Status:** milestone 91 (green threads) approved in session 201 (proposed in session 200, after discovery in sessions 195–200), and built. Milestone 92 (actors) approved in session 214 (proposed in session 213, after discussion in sessions 207–212), and built. Milestones 93 (struct update syntax) and 94 (variants as functions) approved in session 216 (proposed in session 215); 93 built in session 216, 94 in session 217.
+**Status:** milestone 91 (green threads) approved in session 201 (proposed in session 200, after discovery in sessions 195–200), and built. Milestone 92 (actors) approved in session 214 (proposed in session 213, after discussion in sessions 207–212), and built. Milestones 93 (struct update syntax) and 94 (variants as functions) approved in session 216 (proposed in session 215); 93 built in session 216, 94 in session 217. Milestones 95–97 (formatter hugging, inference from siblings, packages and tests) proposed in session 219. Not approved.
 **Base:** `Language v16 Specification.md` (milestones 67–90), frozen when milestone 91 started. `Language v17 Specification.md` starts from it and grows milestone by milestone; it is what `lughac spec` prints.
 
 **Theme:** concurrency without async/await. Every function stays an ordinary function: a green thread pauses only where it waits (`join`, a channel, `select`, `sleep`), and the scheduler preempts long loops on its own, so nothing is marked `async` and nothing is awaited: no function colouring. Milestone 91 brings green threads and channels. Actors, which build on them (a green thread owning a channel as its mailbox), follow in a later v17 milestone.
@@ -97,6 +97,27 @@ The two language prerequisites of the kivuli UI framework (`../kivuli/KICKOFF.md
 33. **Lowering:** the value is `{ lugha_ref_<Enum>.<Variant>, null }`; the wrapper takes the environment first and builds the variant (indirect slots included), emitted once. It can't collide with a method's wrapper: a method may not share a variant's name (E0310).
 34. **Success:** milestone 94, tag `m94`. Tests: checker, `tests/programs` (`map(Shape.Circle)`, `map(Some)`, stored and called later, recursive enums, `Ok`/`Err`), one wrapper per variant; byte-identical IR without variant values.
 
+## Decisions behind milestones 95–97 (discovery, session 219)
+
+Fixes for what building kivuli (a package with tests and nested views) turned up in lughac (the user: "fix the rest"; the user's choice: `skip(reason)`; the rest mine, for review).
+
+35. **Hugging:** a call that doesn't fit on its line, whose last argument is an array literal, a closure or a struct literal and whose other arguments fit on the first line, prints as `f(a, [` / one element per line / `])` (the closure's body, the struct's fields likewise); nested calls hug the same way.
+36. **The header first:** an expression body breaks inside the expression before the function's parameter list breaks; the parameters break only when the header alone doesn't fit.
+37. **Unchanged:** what fits on one line; the formatter's self-check (a failed hug falls back to today's layout).
+38. **Success:** milestone 95, tag `m95`. kivuli's views format as nested hugged calls; `fmt_corpus` idempotent.
+39. **Inference from siblings:** a call to a generic function whose type parameters appear only in its result is checked after the other arguments of the call it is passed to, expecting what they fixed — as literals and `None` already are.
+40. **The same** for the operands of `assert_eq`/`assert_ne` and of `==`/`!=`: the operand that can't be typed alone is checked second, expecting the other's type.
+41. **Unchanged:** programs that already checked keep their types; no inference across statements.
+42. **Success:** milestone 96, tag `m96`. `assert_eq(text("hi"), expected)` checks.
+43. **A package's file is its module:** a file given to `lughac test` or `lughac check` inside a package's `source` folder is built as that package's module (`N.path`) from a hidden entry, not as a main file: cycles through it are allowed, its tests are named `N.path.name`, and no `main` is needed.
+44. **`check` without `main`:** `lughac check` reports E0303 only for a file that has no `main` and must be run (never under `check` for a file without `main`, which is checked as a library); `build` and `run` still need `main`.
+45. **`test/`, `tests/`, `examples/` belong to their package:** a program whose manifest is its package's own and whose file is under that manifest's folder sees the package's package-level items, as its modules do; `private` items stay private.
+46. **One lock per package:** `lugha.lock` lives beside the `lugha.toml` governing the build (beside the main file only when there is none); a lock beside a main file is read once if the manifest's folder has none, then written beside the manifest.
+47. **`skip(reason)`:** an intrinsic for tests; the test stops and is reported `skipped (reason)`, counted apart (`N tests: P passed, F failed, S skipped`), `"skipped"` in `--json`, skipped in VS Code's Testing view; exit 0 unless something failed. Outside a test it panics.
+48. **Skips never hide failures:** a test that failed before calling `skip` failed; an `exit` with the skip code but no `skip` call failed.
+49. **The mechanism:** the test process exits with code 77 after reporting the reason to the runner on its captured output; the runner accepts a skip only with both.
+50. **Success:** milestone 97, tag `m97`. Tests through `lughac` for each part; kivuli's own layout simplified.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
@@ -120,3 +141,6 @@ For milestone 92: **§2** keyword `actor`; **§3** `actor_decl = [ visibility ] 
 | 92 | Actors (v17) | `actor` declarations, `spawn` of an actor, call and cast, `stop`, `join`, panics isolated to the actor, share-nothing; E0439 | The §10 actors programs pass; `tests/programs/m92/` |
 | 93 | Struct update syntax (v17) | `S { f: e, ..base }`, Rust's rules; E0440, W0104 |
 | 94 | Variants as functions (v17) | `Msg.Named`, `Some`, `Ok`, `Err` as function values |
+| 95 | Formatter hugging (v17) | trailing array/closure/struct-literal arguments hugged; headers kept |
+| 96 | Inference from siblings (v17) | result-only generic calls typed by their siblings; `assert_eq`, `==` |
+| 97 | Packages and tests (v17) | package files as modules in `test`/`check`, `test/` inside the package, one lock per package, `skip(reason)` |
