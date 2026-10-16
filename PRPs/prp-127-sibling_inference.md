@@ -19,7 +19,7 @@ fun buttons_send_their_message() {
     let expected: View<Msg> = View.Button(ButtonNode { … });
     assert_eq(button("Add", Msg.Add), expected);
     assert_eq(text("hi"), testing.text_of(view(model)));   // M fixed by the other side
-    assert(text("hi") == text_with::<Msg>("hi"));
+    assert(text("hi") == expected_text);                     // `==` the same way
 }
 ```
 
