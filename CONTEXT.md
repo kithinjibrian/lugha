@@ -7528,3 +7528,8 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - The user's confirmation of the proposed defaults; then PRP-123 and the v17 draft's milestone 92.
+
+---
+
+## SESSION 213 — 2026-10-16 — Actors: PRP-123 and the v17 draft's milestone 92 — open
+Branch: main
