@@ -97,12 +97,11 @@ where
             out.diagnostics(&front.source, &front.warnings);
             pipeline::run(&front, options.opt, args)
         }),
-        Command::Check { file, offline, .. } => {
-            pipeline::front(file, offline_mode(*offline)).map(|front| {
+        Command::Check { file, offline, .. } => pipeline::front_check(file, offline_mode(*offline))
+            .map(|front| {
                 out.diagnostics(&front.source, &front.warnings);
                 0
-            })
-        }
+            }),
         Command::Update { file, .. } => update::update(file).map(|(source, warnings)| {
             out.diagnostics(&source, &warnings);
             0

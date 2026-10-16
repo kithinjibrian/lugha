@@ -110,9 +110,7 @@ pub(super) fn result_line(r: &Result) -> String {
 
 /// The `--json` summary line.
 pub(super) fn summary_line(passed: usize, failed: usize, skipped: usize) -> String {
-    format!(
-        "{{\"summary\":{{\"passed\":{passed},\"failed\":{failed},\"skipped\":{skipped}}}}}\n"
-    )
+    format!("{{\"summary\":{{\"passed\":{passed},\"failed\":{failed},\"skipped\":{skipped}}}}}\n")
 }
 
 /// The reason a test ended through `skip(reason)` (v17): exit code 77 *and*
@@ -173,7 +171,10 @@ mod tests {
             summary_line(1, 0, 2),
             "{\"summary\":{\"passed\":1,\"failed\":0,\"skipped\":2}}\n"
         );
-        assert_eq!(skipped(Some(77), "x\nlugha-skip: no display\n"), Some("no display".into()));
+        assert_eq!(
+            skipped(Some(77), "x\nlugha-skip: no display\n"),
+            Some("no display".into())
+        );
         assert_eq!(skipped(Some(77), "x\n"), None);
         assert_eq!(skipped(Some(1), "lugha-skip: no\n"), None);
     }

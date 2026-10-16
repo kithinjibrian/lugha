@@ -13,6 +13,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use super::render::Report;
 use super::source::Source;
 use super::update;
+use crate::ast;
 use crate::check::{self, Checked};
 use crate::codegen::{self, CodegenError, OptLevel};
 use crate::diagnostic::{Diagnostic, Severity};
@@ -115,6 +116,23 @@ pub(super) fn front(path: &Path, mode: Mode) -> Result<Front, Failure> {
 /// checker lists the file's tests.
 pub(super) fn front_tests(path: &Path, mode: Mode) -> Result<Front, Failure> {
     check_parsed(parsed(path, mode)?, true)
+}
+
+/// [`front`] for `lughac check` (v17, milestone 97): a file that declares
+/// no `fun main` is checked as a library, the way `lughac test` checks it;
+/// only `build` and `run` need `main`.
+pub(super) fn front_check(path: &Path, mode: Mode) -> Result<Front, Failure> {
+    let front = parsed(path, mode)?;
+    let library = front
+        .modules
+        .first()
+        .and_then(|m| m.program.as_ref())
+        .is_some_and(|p| {
+            !p.items
+                .iter()
+                .any(|i| matches!(i, ast::Item::Fun(f) if f.name.name == "main"))
+        });
+    check_parsed(front, library)
 }
 
 /// A program checked for the language server: what the checker found,

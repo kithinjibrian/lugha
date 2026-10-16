@@ -50,7 +50,11 @@ impl Checker {
     /// `assert(cond)`, `assert_eq(a, b)` or `assert_ne(a, b)`: `a` and `b`
     /// of one type with `==` that prints, so a failure can show both.
     pub(super) fn assertion(&mut self, call: &Expr, name: &str, args: &[Expr]) -> Type {
-        let wanted = if matches!(name, "assert" | "skip") { 1 } else { 2 };
+        let wanted = if matches!(name, "assert" | "skip") {
+            1
+        } else {
+            2
+        };
         if args.len() != wanted {
             self.report(errors::arity(name, wanted, args.len(), call.span));
             self.unchecked_args(args);
