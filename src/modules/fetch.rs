@@ -30,6 +30,9 @@ pub struct Fetcher {
     /// The lock file's entries and text, when there is one.
     lock: Vec<Locked>,
     lock_text: Option<String>,
+    /// The lock was read from beside the main file, not the manifest: it
+    /// is written beside the manifest even unchanged (v17, milestone 97).
+    pub(super) moved: bool,
     /// What this build used, and whether any entry failed.
     used: Vec<Locked>,
     failed: bool,
@@ -60,6 +63,7 @@ impl Fetcher {
             mode,
             lock: Vec::new(),
             lock_text: None,
+            moved: false,
             used: Vec::new(),
             failed: false,
         }
@@ -81,24 +85,26 @@ impl Fetcher {
         if self.failed || (self.used.is_empty() && self.lock_text.is_none()) {
             return None;
         }
-        let same = self.lock_text.is_some()
+        let same = !self.moved
+            && self.lock_text.is_some()
             && self.used.len() == self.lock.len()
             && self.used.iter().all(|u| self.lock.contains(u));
         (!same).then(|| lock::write(&self.used))
     }
 
-    /// Reads `lugha.lock` from `root` into the offset space at `*base`.
+    /// Reads `lugha.lock` from `root` into the offset space at `*base`;
+    /// `false` when `root` has none.
     pub(super) fn read_lock(
         &mut self,
         root: &Path,
         read: &mut Read<'_>,
         base: &mut usize,
         loaded: &mut Loaded,
-    ) -> Result<(), LoadError> {
+    ) -> Result<bool, LoadError> {
         let file = root.join(LOCK);
         let text = match read(&file) {
             Ok(bytes) => String::from_utf8_lossy(&bytes).into_owned(),
-            Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
+            Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(false),
             Err(source) => return Err(LoadError::Io { path: file, source }),
         };
         let (entries, errors) = lock::parse(&text, *base);
@@ -114,7 +120,7 @@ impl Fetcher {
         });
         self.lock = entries;
         self.lock_text = Some(text);
-        Ok(())
+        Ok(true)
     }
 
     /// The folder of git `entry` at `url`, or `None` with its E0325 or

@@ -31,10 +31,9 @@ pub(super) fn env(mode: Mode) -> LoadEnv {
     }
 }
 
-/// Writes `text` as the lock next to `main`: a temporary file, then a
+/// Writes `text` as the lock in `folder`: a temporary file, then a
 /// rename, so a reader never sees half a lock.
-pub(super) fn write_lock(main: &Path, text: &str, source: &Source) -> Result<(), Failure> {
-    let folder = main.parent().unwrap_or(Path::new(""));
+pub(super) fn write_lock(folder: &Path, text: &str, source: &Source) -> Result<(), Failure> {
     let (file, temp) = (folder.join(LOCK), folder.join(format!("{LOCK}.tmp")));
     let written: io::Result<()> =
         std::fs::write(&temp, text).and_then(|()| std::fs::rename(&temp, &file));

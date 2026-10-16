@@ -74,7 +74,7 @@ pub(super) fn loaded_with(
             let root = path.parent().unwrap_or(Path::new(""));
             let source = Source::of(&name, root, &loaded);
             if let (Some(text), true) = (&loaded.lock, write_lock) {
-                update::write_lock(path, text, &source)?;
+                update::write_lock(&loaded.lock_folder, text, &source)?;
             }
             Ok((source, loaded))
         }

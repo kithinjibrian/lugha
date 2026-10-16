@@ -173,3 +173,35 @@ fn unfetchable_packages_are_e0325() {
         text(&offline.stderr)
     );
 }
+
+/// `lughac <args> <file>` with the test's cache.
+fn lughac_on(t: &Temp, file: &Path, args: &[&str]) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_lughac"))
+        .args(args)
+        .arg(file)
+        .env("LUGHA_CACHE", t.0.join("cache"))
+        .output()
+        .expect("lughac runs")
+}
+
+#[test]
+fn one_lock_per_package_beside_its_manifest_v17() {
+    let t = Temp::new();
+    let (_, app, newest) = setup(&t, "1");
+    let main = "import geo.shapes;\nfun main() { println(shapes.area()); }\n";
+    std::fs::create_dir_all(app.join("examples")).unwrap();
+    std::fs::write(app.join("examples/demo.la"), main).unwrap();
+    let demo = app.join("examples/demo.la");
+    let run = lughac_on(&t, &demo, &["run"]);
+    assert_eq!(text(&run.stdout), "11\n", "{}", text(&run.stderr));
+    let lock = std::fs::read_to_string(app.join("lugha.lock")).expect("beside the manifest");
+    assert!(lock.contains(&newest), "{lock}");
+    assert!(!app.join("examples/lugha.lock").exists());
+    // An old lock beside the main file is read once, then written beside the manifest.
+    std::fs::rename(app.join("lugha.lock"), app.join("examples/lugha.lock")).unwrap();
+    let offline = lughac_on(&t, &demo, &["run", "--offline"]);
+    assert_eq!(text(&offline.stdout), "11\n", "{}", text(&offline.stderr));
+    let moved =
+        std::fs::read_to_string(app.join("lugha.lock")).expect("written beside the manifest");
+    assert!(moved.contains(&newest), "{moved}");
+}

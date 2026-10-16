@@ -88,6 +88,9 @@ pub struct Loaded {
     pub manifests: Vec<ManifestFile>,
     /// New text for `lugha.lock`, when the build changed it (v14).
     pub lock: Option<String>,
+    /// Where `lugha.lock` belongs: beside the manifest governing the
+    /// build, or the main file's folder when there is none (v17).
+    pub lock_folder: PathBuf,
     /// The `[link]` tables of the packages with a module in the program,
     /// the program's first, in the order their manifests were read; only
     /// tables that list something (v16, milestone 87).
@@ -149,6 +152,7 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
         manifests: Vec::new(),
         lock: None,
         links: Vec::new(),
+        lock_folder: manifest_folder.clone(),
     };
     let (mut base, mut next_id) = (0usize, 0u32);
     let mut packages = packages::Packages::new(root, manifest_folder, env.fetcher);
