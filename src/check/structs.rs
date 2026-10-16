@@ -43,6 +43,14 @@ impl Checker {
                     span: s.name.span,
                     generics: self.generics(&s.type_params),
                 };
+                // C has no generics: an `extern struct` has none (v16).
+                if s.c_layout.is_some() {
+                    if s.type_params.is_empty() {
+                        self.c_structs.insert(key.clone());
+                    } else {
+                        self.report(errors::c_struct_generic(s.name.span));
+                    }
+                }
                 self.structs.insert(key, info);
             }
         }
@@ -81,8 +89,14 @@ impl Checker {
                     ));
                     continue;
                 }
+                if s.c_layout.is_some() && !self.c_field(&ty) {
+                    self.report(errors::c_struct_field(field.ty.span));
+                }
                 self.hover.field(&key, &field.name, &ty);
                 fields.push((field.name.name.clone(), ty));
+            }
+            if self.c_structs.contains(&key) && s.fields.is_empty() {
+                self.report(errors::c_struct_empty(s.name.span));
             }
             self.structs
                 .get_mut(&key)
@@ -145,6 +159,16 @@ impl Checker {
             .iter()
             .find(|(f, _)| f == name)
             .map(|(_, ty)| ty.clone())
+    }
+}
+
+impl Checker {
+    /// True if an `extern struct` may hold a field of type `ty`: numbers,
+    /// `bool`, `char`, handles and other extern structs (v16, milestone 90).
+    pub(super) fn c_field(&self, ty: &Type) -> bool {
+        ty.is_numeric()
+            || matches!(ty, Type::Bool | Type::Char | Type::Handle(_) | Type::Error)
+            || matches!(ty, Type::Struct(key, args) if args.is_empty() && self.c_structs.contains(key))
     }
 }
 

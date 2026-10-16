@@ -11,7 +11,7 @@ use super::lower::{Lowerer, POSITIONED};
 use super::scope::{Local, Scopes};
 use super::value::{Value, is_aggregate};
 use crate::ast::{Expr, ExprKind, FunDecl};
-use crate::check::{Type, qualify};
+use crate::check::{CParam, Type, qualify};
 
 /// A declared function.
 #[derive(Debug, Clone)]
@@ -25,6 +25,8 @@ pub(super) struct Signature<'ctx> {
     /// A renamed extern whose C function was first declared with another
     /// type (v16): calls use this type, these C parameter types and result.
     pub c_type: Option<CType<'ctx>>,
+    /// An extern passing structs by value: its lowered C signature (v16, milestone 90).
+    pub c_sig: Option<super::c_calls::CSig<'ctx>>,
 }
 
 /// An extern's own C function type, its parameters' Lugha types (`None`
@@ -188,8 +190,25 @@ impl<'ctx> Lowerer<'ctx> {
             }
             return self.intrinsic(call, name, args);
         };
+        // Structs by value go as C passes them (v16, milestone 90).
+        if let Some(sig) = signature.c_sig.clone() {
+            let plan = plan.unwrap_or_else(|| vec![CParam::Value; args.len()]);
+            let raw = self.callback_arguments(args, &signature.params, &plan)?;
+            let code = signature.function.as_global_value().as_pointer_value();
+            return Ok(match (self.c_sig_call(&sig, code, raw), &signature.ret) {
+                (Some(result), Some(ret)) if converts_from_c(ret) => {
+                    Value::Val(self.value_from_c(result, ret))
+                }
+                (Some(result), _) => Value::Val(result),
+                (None, _) => Value::Void,
+            });
+        }
         let values = match &plan {
-            Some(plan) => self.callback_arguments(args, &signature.params, plan)?,
+            Some(plan) => self
+                .callback_arguments(args, &signature.params, plan)?
+                .into_iter()
+                .map(Into::into)
+                .collect(),
             None => self.arguments(args, &signature.params, signature.is_extern)?,
         };
         let site = match &signature.c_type {

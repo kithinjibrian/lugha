@@ -8,6 +8,7 @@ use inkwell::types::{BasicMetadataTypeEnum, BasicType};
 use inkwell::values::FunctionValue;
 
 use super::CodegenError;
+use super::c_calls::{CKind, has_struct};
 use super::function::Signature;
 use super::lower::Lowerer;
 use super::value::{is_aggregate, llvm_type};
@@ -86,7 +87,13 @@ impl<'ctx> Lowerer<'ctx> {
             };
             let param_types: Vec<BasicMetadataTypeEnum> =
                 c_params.iter().map(|(t, _)| *t).collect();
+            // An extern passing structs by value gets clang's lowering (v16, milestone 90).
+            let kinds = self.c_kinds(plan.as_deref(), &params);
+            let void = Type::Void;
+            let c_sig = (is_extern && has_struct(&kinds, ret.as_ref().unwrap_or(&void)))
+                .then(|| self.c_sig(&kinds, ret.as_ref().unwrap_or(&void)));
             let fn_type = match &ret {
+                _ if c_sig.is_some() => c_sig.as_ref().expect("checked just above").fn_type,
                 // C returns `Option` of a handle as a nullable pointer (v16).
                 Some(ty) if is_extern => self.c_result_type(ty).fn_type(&param_types, false),
                 Some(ty) => llvm_type(self.context, ty).fn_type(&param_types, false),
@@ -113,8 +120,10 @@ impl<'ctx> Lowerer<'ctx> {
                     let f = self
                         .module
                         .add_function(&symbol, fn_type, Some(Linkage::External));
-                    if is_extern {
-                        self.c_abi(f, &abi, ret.as_ref());
+                    match &c_sig {
+                        Some(sig) => self.c_sig_attributes(sig, |at, a| f.add_attribute(at, a)),
+                        None if is_extern => self.c_abi(f, &abi, ret.as_ref()),
+                        None => {}
                     }
                     (f, None)
                 }
@@ -124,7 +133,9 @@ impl<'ctx> Lowerer<'ctx> {
                 params,
                 ret,
                 is_extern,
-                c_type,
+                // A struct-passing extern's calls go through `c_sig` alone.
+                c_type: c_type.filter(|_| c_sig.is_none()),
+                c_sig,
             };
             self.functions.insert(key, signature);
         }
@@ -151,6 +162,27 @@ impl<'ctx> Lowerer<'ctx> {
         if let Some(attribute) = ret.and_then(|ty| abi_attribute(self.context, ty)) {
             function.add_attribute(AttributeLoc::Return, attribute);
         }
+    }
+}
+
+impl<'ctx> Lowerer<'ctx> {
+    /// The C parameters of an extern with plan `plan` (or none) and written
+    /// parameters `params`: values, and pointers for callbacks, `data` and `release`.
+    pub(super) fn c_kinds(&self, plan: Option<&[CParam]>, params: &[Type]) -> Vec<CKind> {
+        let Some(plan) = plan else {
+            return params.iter().cloned().map(CKind::Value).collect();
+        };
+        let mut written = params.iter();
+        plan.iter()
+            .map(|c| match c {
+                CParam::Value => CKind::Value(written.next().expect("checked arity").clone()),
+                CParam::Callback { .. } => {
+                    written.next();
+                    CKind::Pointer
+                }
+                CParam::Data | CParam::Release => CKind::Pointer,
+            })
+            .collect()
     }
 }
 

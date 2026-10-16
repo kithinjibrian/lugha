@@ -168,8 +168,9 @@ pub(in crate::check) fn bad_cast(from: Type, to: Type, span: Span) -> Diagnostic
 }
 
 pub(in crate::check) fn extern_struct(span: Span) -> Diagnostic {
-    Diagnostic::error("E0409", "structs can't cross the C boundary", span)
-        .with_help("pass the fields one by one instead")
+    Diagnostic::error("E0409", "this struct can't cross the C boundary", span).with_help(
+        "declare it `extern struct` to give it C's layout (numbers, `bool`, handles and other extern structs), or pass the fields one by one",
+    )
 }
 
 pub(in crate::check) fn missing_fields(missing: &[&str], name: &str, span: Span) -> Diagnostic {

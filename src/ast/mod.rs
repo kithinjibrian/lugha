@@ -134,8 +134,11 @@ pub struct StructDecl {
     pub type_params: Vec<TypeParam>,
     /// Fields in declaration order.
     pub fields: Vec<Field>,
-    /// From `struct` to the closing brace.
+    /// From `struct` (or `extern`) to the closing brace.
     pub span: Span,
+    /// The `extern` of `extern struct`: C's layout, passed to C by value
+    /// (v16, milestone 90).
+    pub c_layout: Option<Span>,
 }
 
 /// A method's `self` or `mut self` parameter (v1).

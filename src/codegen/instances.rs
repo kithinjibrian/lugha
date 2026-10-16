@@ -105,6 +105,7 @@ impl<'ctx> Lowerer<'ctx> {
                 ret,
                 is_extern: false,
                 c_type: None,
+                c_sig: None,
             };
             let receiver = f.receiver.map(|r| r.mutable);
             let method = Method {

@@ -123,6 +123,10 @@ impl Parser<'_> {
                     t.visibility = visibility;
                     Item::ExternType(t)
                 }
+                Item::Struct(mut s) => {
+                    s.visibility = visibility;
+                    Item::Struct(s)
+                }
                 _ => unreachable!("`extern_item` makes only externs and extern types"),
             },
             TokenKind::Struct => {

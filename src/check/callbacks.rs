@@ -46,18 +46,19 @@ fn param_span(p: &Param) -> Span {
     Span::new(p.name.span.start, p.ty.span.end)
 }
 
-/// True for the types a callback may give back to C.
-fn crosses_into_callback(ty: &Type) -> bool {
+/// True for the types a callback may give back to C: extern structs too (v16).
+fn crosses_into_callback(ty: &Type, c_structs: &std::collections::HashSet<String>) -> bool {
     ty.is_numeric()
         || matches!(ty, Type::Bool | Type::Handle(_) | Type::Error)
         || matches!(ty, Type::Option(inner) if matches!(**inner, Type::Handle(_)))
+        || matches!(ty, Type::Struct(key, _) if c_structs.contains(key))
 }
 
 /// True for the types a callback may take from C: those, and C's text,
 /// copied (v16, milestone 89). A string never goes back: C would keep a
 /// pointer into Lugha's memory.
-fn crosses_from_c(ty: &Type) -> bool {
-    crosses_into_callback(ty)
+fn crosses_from_c(ty: &Type, c_structs: &std::collections::HashSet<String>) -> bool {
+    crosses_into_callback(ty, c_structs)
         || matches!(ty, Type::String)
         || matches!(ty, Type::Option(inner) if **inner == Type::String)
 }
@@ -160,7 +161,7 @@ impl Checker {
                 }
                 None => {
                     let ty = self.resolve(p);
-                    if !crosses_from_c(&ty) {
+                    if !crosses_from_c(&ty, &self.c_structs) {
                         self.report(errors::callback_type(p.span));
                     }
                     types.push(ty);
@@ -178,7 +179,7 @@ impl Checker {
             }
             Some(r) => {
                 let ty = self.resolve(r);
-                if !crosses_into_callback(&ty) {
+                if !crosses_into_callback(&ty, &self.c_structs) {
                     self.report(errors::callback_type(r.span));
                 }
                 ty

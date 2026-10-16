@@ -10,6 +10,8 @@ mod arith;
 mod array;
 mod assertions;
 mod bits;
+mod c_abi;
+mod c_calls;
 mod callbacks;
 mod cast;
 mod closures;

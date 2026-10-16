@@ -1997,11 +1997,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** discovery for milestones 89–90 and lugha-gtk together (session 189), one approval (session 190), built in order. Strings: C's text copied by `lugha_rt_str_from_c(text, nullable)` (a new fragment `cstr.c` whose `utf8_length` mirrors the prelude's `utf8_decode`; a test checks overlong, surrogate, >U+10FFFF, truncated and 4-byte cases against `chars()`); `NULL` → `None`, or a location-less panic for a plain `string`; `Option<string>` arguments via `c_string` on the payload. Callbacks take strings but never return them (E0409, help says why). `tests/programs/m3/e0409` rewritten to a callback returning a string. Byte-identical IR (185 programs) against a fresh build of `main`.
 
+### 172. C structs by value — milestone 90 (PRP-120)
+
+**Decision:** built as planned. `StructDecl.c_layout`; the checker's `c_structs` set, `c_field` (numbers, `bool`, `char`, handles, extern structs — `Option` of a handle was dropped from the PRP's list: Lugha lays an `Option` out as a tagged enum, not a nullable pointer), E0437 for fields, generics, empty structs. Codegen: `c_abi.rs` classifies like clang (pieces sized by their data; with two pieces the low one widened to 8 bytes; >16 bytes or not enough free registers → memory), `c_calls.rs` builds `CSig` (separate LLVM params per piece, `byval`/`sret` with align 8) and moves values piece by piece through struct GEPs (never past the struct's bytes). Used only when a signature carries a struct, so other IR is byte-identical (185 programs). Callback entries lift every C parameter first, then hand the `data` pointer to the trampoline (an `sret` or split piece shifts its LLVM index).
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 90 complete**: PRP-120 C structs by value
 - **Milestone 89 complete**: PRP-119 strings from C
 - **Milestone 88 complete**: PRP-118 callbacks and handles (`extern type`, `data`/`release`, E0435/E0436)
 - **Milestone 87 complete**: PRP-117 linking C libraries (`[link]`, E0329–E0331)

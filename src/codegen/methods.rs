@@ -76,6 +76,7 @@ impl<'ctx> Lowerer<'ctx> {
                     ret,
                     is_extern: false,
                     c_type: None,
+                    c_sig: None,
                 };
                 self.methods.insert(
                     key,

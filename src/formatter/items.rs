@@ -69,8 +69,9 @@ impl Printer<'_> {
             ]),
             Top::Item(Item::Struct(s)) => {
                 let head = format!(
-                    "{}struct {}{} ",
+                    "{}{}struct {}{} ",
                     visibility(s.visibility),
+                    if s.c_layout.is_some() { "extern " } else { "" },
                     self.ident(&s.name),
                     self.type_params(&s.type_params)
                 );

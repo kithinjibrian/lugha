@@ -148,7 +148,8 @@ fn type_line(snapshot: &Snapshot, decl: Span) -> Option<String> {
         for item in &program.items {
             match item {
                 Item::Struct(s) if s.name.span == decl => {
-                    return Some(format!("struct {}", s.name.name));
+                    let c = if s.c_layout.is_some() { "extern " } else { "" };
+                    return Some(format!("{c}struct {}", s.name.name));
                 }
                 Item::Interface(i) if i.name.span == decl => {
                     return Some(format!("interface {}", i.name.name));

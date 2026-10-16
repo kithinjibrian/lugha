@@ -348,12 +348,16 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 90 — C structs by value ✅
+- [x] PRP-120: `extern struct`, by value to and from C as on x86-64 System V, E0437; tagged `m90`
+- [ ] Later: pointers to structs (out-parameters), arrays of structs to C, unions, other ABIs (AArch64)
+
 ### Milestone 89 — Strings from C ✅
 - [x] PRP-119: `string`/`Option<string>` extern results and callback parameters, `Option<string>` arguments, U+FFFD; tagged `m89`
 
 ### Milestone 88 — Callbacks and handles ✅
 - [x] PRP-118: `extern type`, callbacks with `data`/`release`, pinned closures, `extern "symbol" fun`, E0435/E0436; tagged `m88`
-- [ ] Later: C structs by value (PRP-120) (raylib's `Color`), callbacks without user data for closures (run-time thunks, deliberately not done), a GTK binding package
+- [x] C structs by value (milestone 90) (raylib's `Color`), callbacks without user data for closures (run-time thunks, deliberately not done), a GTK binding package
 
 ### Milestone 87 — Linking C libraries ✅
 - [x] PRP-117: `[link]` in `lugha.toml` (`libs`, `paths`, `include`, `c`, `pkg-config`), every used package's table, E0329–E0331; tagged `m87`
