@@ -1,6 +1,6 @@
 ## FEATURE: `lughac fmt` — a tree-based formatter that rewrites `.la` files in one canonical style, keeps every comment, and verifies its own output; milestone 80.
 
-**Status:** proposed 2026-10-16 — session 168 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-16 ("build it") — built in session 169; proposed in session 168.
 **Milestone:** 80 (one PRP; tag `m80` at merge). The first of two: Format Document and format-on-save in the language server follow as milestone 81 (its own PRP).
 **Spec:** `Language v16 Draft.md` decisions 60–65; spec §9 (the CLI table and a `lughac fmt` section with the style), §11 (row 80).
 
