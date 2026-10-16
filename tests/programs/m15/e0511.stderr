@@ -6,3 +6,4 @@ error[E0511]: can't change `total`: closures capture by copy
   |
   = help: the closure has its own copy; return a new value instead
 
+For more about E0511, run `lughac explain E0511`.

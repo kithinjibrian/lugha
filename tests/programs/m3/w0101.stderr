@@ -6,3 +6,4 @@ warning[W0101]: unreachable code
 4 |     let ignored = 1;
   |     ^^^^^^^^^^^^^^^^
 
+For more about W0101, run `lughac explain W0101`.

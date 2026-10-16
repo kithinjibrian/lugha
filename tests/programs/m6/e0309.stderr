@@ -6,3 +6,4 @@ error[E0309]: variant `A` is declared twice in `E`
   |          |
   |          first declared here
 
+For more about E0309, run `lughac explain E0309`.

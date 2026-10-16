@@ -6,3 +6,4 @@ error[E0506]: cannot assign into a string: strings are immutable
   |
   = help: build a new string instead, e.g. with `+`
 
+For more about E0506, run `lughac explain E0506`.

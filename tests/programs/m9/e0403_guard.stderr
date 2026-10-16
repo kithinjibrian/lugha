@@ -4,3 +4,4 @@ error[E0403]: expected bool, found i64
 4 |         _ if n => 1,
   |              ^ expected bool
 
+For more about E0403, run `lughac explain E0403`.

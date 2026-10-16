@@ -4,3 +4,4 @@ error[E0404]: cannot apply `==` to fun(i64): i64
 5 |     println(f == double);
   |             ^^^^^^^^^^^
 
+For more about E0404, run `lughac explain E0404`.

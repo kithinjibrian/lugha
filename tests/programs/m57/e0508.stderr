@@ -18,3 +18,4 @@ error[E0508]: cannot pass `g` to a `mut self` method called on `g`
    |
    = help: copy it first: `let w = g;` and pass `w`
 
+For more about E0508, run `lughac explain E0508`.

@@ -20,3 +20,4 @@ error[E0403]: expected i32, found bool
   |            |
   |            expected because of this annotation
 
+For more about E0401, E0301 and E0403, run `lughac explain <code>`.

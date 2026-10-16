@@ -2,11 +2,11 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–85 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–86 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestones 67–85):
+**Changes since v15** (milestones 67–86):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
 - `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
 - `lughac init [folder] [--lib] [--name N]` starts a program, or a library with an example, in a folder; it never overwrites a file (milestone 69; section 9).
@@ -21,6 +21,7 @@ Oct 15, 2026 · @kithinji
 - Find References and Rename in the editor, across the checked files; a rename is checked before it is offered (milestone 83; section 9).
 - `lughac test`: `@test` functions (`@` starts an attribute), `assert`, `assert_eq` and `assert_ne`, each test run in its own process, in parallel, with a time limit (milestone 84; sections 2, 3, 5, 9).
 - Tests in the editor: `lughac test --list`, `--json` and `--exact` for tools, and VS Code's Testing view with a ▶ beside each test, never in untrusted folders (milestone 85; section 9).
+- `lughac explain CODE` explains every error and warning code, diagnostics end with a line pointing to it, and the editor links each code to its explanation (milestone 86; section 9).
 
 Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type (a module's own type `Ref` still means its own), or declares a function named `assert`, `assert_eq` or `assert_ne`, which are intrinsics since milestone 84 (E0302).
 
@@ -1315,6 +1316,7 @@ The C `main(argc, argv)` emitted by the compiler calls `lugha_rt_init(argc, argv
 | `lughac update prog.la` | Re-resolve every git package to its newest matching tag and rewrite `lugha.lock` (v14) |
 | `lughac init [folder] [--lib] [--name N]` | Start a program, or with `--lib` a library, in `folder` (default: the current one); see below (v16) |
 | `lughac lsp` | Serve the Language Server Protocol on stdin and stdout, for editors; see below (v16) |
+| `lughac explain [CODE]` | Explain an error or warning code, or list every code; see below (v16) |
 | `lughac fmt [paths…] [--check]` | Rewrite `.la` files in the canonical style; `--check` only lists the files that would change; see below (v16) |
 | `lughac test [paths…] [--filter TEXT]… [--exact] [--timeout SECS] [--list] [--json]` | Run (or list) the `@test` functions of `.la` files, each in its own process; see below (v16) |
 | `--offline` | On `build`, `run` and `check`: run no `git`; every git package must be locked and cached (v14) |
@@ -1360,8 +1362,11 @@ It prints `created <path>` for each file and then how to run the result.
 - **References** (milestone 83): `textDocument/references` answers every place written that resolves to the same declaration as the name under the cursor (at a use or the declaration) — locals, parameters, functions, methods, types, fields, variants, interface methods, modules — in every file the server has checked (open files, their imports, the mains in `lugha.entries` and mains already checked), with the declaration when the request includes it. A `std` or prelude name lists its uses; an intrinsic (`println`) has no declaration and answers `null`.
 - **Rename** (milestone 83): `textDocument/prepareRename` answers the name's range, and `textDocument/rename` one edit per place References finds, after applying them in memory and checking every affected main again: each renamed place must resolve to the renamed declaration, nothing else may, and no file may gain an error. Refused, with the reason as the error message: no name under the cursor; a module (it would rename a file); a name from `std` or the prelude; a new name that isn't an identifier or is a keyword; a module-level item that isn't `private`, declared outside a main file, that no checked main imports; and anything the self-check rejects ("renaming `b` to `a` would make a use point elsewhere").
 - **Formatting** (milestone 81): `textDocument/formatting` (Format Document) formats the whole document from the editor's text, unsaved changes included, exactly as `lughac fmt` would format the file; the answer is one edit replacing the document, or none when it is already formatted. The request's tab and space options are ignored: the style has none. A document with syntax errors gets no edits and no message (its diagnostics show the errors); one that fails the formatter's own check gets no edits and one error message (`window/showMessage`). There is no range or on-type formatting, and the server still writes no file: the editor applies the edit. Format on save is the editor's setting; the VS Code extension makes itself Lugha's default formatter.
+- **Explanations** (milestone 86): each diagnostic with a code carries `codeDescription.href` `lugha-explain:<CODE>.md`; the VS Code extension shows that document, from `lughac explain`, in a read-only tab, also in untrusted folders since it runs no program code (and **Lugha: Explain Error Code** opens one by hand).
 - **Syntax errors** (milestone 75): while a module has one, the server publishes only the syntax errors (and the loader's other errors); what the checker finds in the recovered program is used by the features above, not shown, since a dropped statement makes later names look undefined.
 - **Exit codes:** 0 after `shutdown` and `exit`; 1 after `exit` without `shutdown`; 2 when the connection breaks (a malformed message, a closed stream). Requests other than `initialize`, `shutdown`, `textDocument/hover`, `textDocument/definition`, `textDocument/completion`, `textDocument/signatureHelp` and `textDocument/codeAction` get `MethodNotFound`.
+
+**`lughac explain`** (v16, milestone 86) prints the explanation of a code — `lughac explain E0501` (any case) — in Markdown: its title, what it means and why, an example that reports it and the example fixed. With no code it lists every code with its title, one per line (`E0501  Assignment to an immutable binding`). An unknown code is exit 2 (`error: no code E9999; run \`lughac explain\` for the list`). Every code of the table below has an explanation, and every example in them that a single file can show is checked against the compiler by the tests. After the diagnostics of any command in the human format, one line names their codes in order of first appearance: `For more about E0501, run \`lughac explain E0501\`.`, or for several `For more about E0403 and E0501, run \`lughac explain <code>\`.`; the JSON format has no such line.
 
 **`lughac fmt`** (v16, milestone 80) formats each path given (default: the current folder); a folder means every `.la` file under it, in name order, skipping hidden folders, `target/` and symbolic links. A file is rewritten only when its text changes, through a temporary file and a rename. With `--check` nothing is written and each file that would change prints as `would reformat <path>`.
 - **The style:** 4-space indents; `{` on the line of what opens it; one statement, field, variant, method or `match` arm per line, and a block's contents on their own lines (`{}` when empty); one space around binary operators, `=` and `=>`, after `,` and `:`; a call, array, tuple, struct literal, parameter list or `import { … }` stays on one line when it fits in 100 characters, else breaks one element per line with a trailing comma, except that a last element spanning lines (a closure, a block) stays on the line of the opening `(`; a function's `= expr;` body stays an expression body; a comma after each arm but one whose body is a block; parentheses only where precedence needs them (and around a struct literal in a condition); at most one blank line between items or statements, kept where written, none at a block's start or end; literals and names exactly as written (`0xFF`, `1_000`, escapes, `Self`). It has no options.
@@ -1686,6 +1691,8 @@ error[E0417]: non-exhaustive match: `Empty` not covered
   |                           ^^^^^^^
   |
   = help: add the missing arms, or `_ => …`
+
+For more about E0417, run `lughac explain E0417`.
 ```
 
 **A rejected program** (milestone 3). The checker must report this error with its location, and `lughac` exits with 1:
@@ -1705,6 +1712,8 @@ error[E0401]: float literal where i32 expected
   |             -   ^^^ expected i32
   |             |
   |             this operand is i32
+
+For more about E0401, run `lughac explain E0401`.
 ```
 
 With `--diagnostics=json`, the same error is the JSON line shown in section 9.
@@ -3286,6 +3295,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 83 | Find References and Rename (v16) | every use of a name across the checked files; rename refused unless safe, self-checked in memory | `tests/lsp_references.rs`, `tests/lsp_rename.rs` (done) |
 | 84 | `lughac test` (v16) | `@test` functions (E0210, E0434), `assert`/`assert_eq`/`assert_ne`, each test in its own process, in parallel, `--filter`, `--timeout` | `tests/test_runner.rs`, `tests/programs/m84/` (done) |
 | 85 | Tests in the editor (v16) | `lughac test --list`/`--json`/`--exact`, repeatable `--filter`; the VS Code Testing view; nothing in untrusted folders | `tests/test_runner.rs`, the extension's `tests.test.ts` (done) |
+| 86 | `lughac explain` (v16) | an explanation for every code, its examples checked; the hint after human diagnostics; code links in the editor | `tests/explain.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

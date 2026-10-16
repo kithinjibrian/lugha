@@ -8,3 +8,4 @@ error[E0509]: cannot swap `n` with a part of itself
   |
   = help: a value can't be stored inside itself; copy the part into a new variable first
 
+For more about E0509, run `lughac explain E0509`.

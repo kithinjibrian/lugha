@@ -6,3 +6,4 @@ error[E0505]: this `if` has a value of type i64 that is discarded
   |
   = help: add `;` to discard it, or make it the block's last expression
 
+For more about E0505, run `lughac explain E0505`.

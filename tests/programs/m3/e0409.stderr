@@ -6,3 +6,4 @@ error[E0409]: an extern function can't return `string`
   |
   = help: C strings have no length header; return a number and use it from Lugha
 
+For more about E0409, run `lughac explain E0409`.

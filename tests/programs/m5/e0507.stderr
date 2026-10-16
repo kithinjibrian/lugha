@@ -6,3 +6,4 @@ error[E0507]: cannot assign to `xs` while iterating over it
 4 |         xs[0] = x;
   |         ^^^^^
 
+For more about E0507, run `lughac explain E0507`.

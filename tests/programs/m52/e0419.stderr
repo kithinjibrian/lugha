@@ -14,3 +14,4 @@ error[E0419]: `string` doesn't satisfy `Num`
    |
    = help: only the number types are `Num` (v15)
 
+For more about E0419, run `lughac explain E0419`.

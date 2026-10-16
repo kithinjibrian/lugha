@@ -6,3 +6,4 @@ error[E0404]: cannot apply `==` to T
   |
   = help: declare `T: Eq`
 
+For more about E0404, run `lughac explain E0404`.

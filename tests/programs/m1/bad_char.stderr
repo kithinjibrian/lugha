@@ -4,3 +4,4 @@ error[E0101]: unexpected character '`'
 1 | fun main(): i32 { 2 ` 3 }
   |                     ^
 
+For more about E0101, run `lughac explain E0101`.

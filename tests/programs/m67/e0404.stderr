@@ -6,3 +6,4 @@ error[E0404]: cannot apply `==` to Ref<i64>
   |
   = help: compare boxes with `a.is(b)` (the same box) or `a.get() == b.get()` (the same contents)
 
+For more about E0404, run `lughac explain E0404`.

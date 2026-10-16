@@ -1,8 +1,8 @@
 {
   "name": "lugha",
   "displayName": "Lugha",
-  "description": "Syntax highlighting, live lughac diagnostics, formatting and tests for the Lugha language",
-  "version": "0.8.0",
+  "description": "Syntax highlighting, live lughac diagnostics, error explanations, formatting and tests for the Lugha language",
+  "version": "0.9.0",
   "publisher": "kithinjibrian",
   "license": "GPL-3.0-only",
   "repository": {
@@ -78,6 +78,10 @@
       {
         "command": "lugha.showOutput",
         "title": "Lugha: Show Output"
+      },
+      {
+        "command": "lugha.explain",
+        "title": "Lugha: Explain Error Code"
       }
     ],
     "snippets": [

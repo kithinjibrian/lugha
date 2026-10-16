@@ -6,3 +6,4 @@ error[E0307]: struct `A` contains itself
   |
   = help: a struct can't hold itself inline; an array can, e.g. a field of type `A[]`
 
+For more about E0307, run `lughac explain E0307`.

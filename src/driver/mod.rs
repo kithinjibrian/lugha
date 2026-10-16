@@ -9,6 +9,7 @@
 //! Depends on: lexer, parser, codegen, link, diagnostic.
 
 mod build;
+mod explain;
 mod fmt;
 mod guard;
 mod init;
@@ -125,6 +126,7 @@ where
             },
             &mut out,
         )),
+        Command::Explain { code } => Ok(explain::run(code.as_deref(), out.stdout, out.stderr)),
         Command::Spec => Ok(spec(out.stdout, out.stderr)),
         Command::Lsp => Ok(lsp::serve(out.stderr)),
         Command::Init { folder, lib, name } => Ok(init::init(
@@ -229,6 +231,11 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Explain an error or warning code, or list every code (v16)
+    Explain {
+        /// The code, such as E0501 [default: list every code]
+        code: Option<String>,
+    },
     /// Print the LLM-ready spec bundled with this compiler version
     Spec,
     /// Serve the Language Server Protocol on stdin/stdout, for editors (v16)
@@ -274,7 +281,8 @@ impl Command {
             | Command::Init { .. }
             | Command::Lsp
             | Command::Fmt { .. }
-            | Command::Test { .. } => Format::Human,
+            | Command::Test { .. }
+            | Command::Explain { .. } => Format::Human,
         }
     }
 
@@ -289,7 +297,8 @@ impl Command {
             | Command::Init { .. }
             | Command::Lsp
             | Command::Fmt { .. }
-            | Command::Test { .. } => None,
+            | Command::Test { .. }
+            | Command::Explain { .. } => None,
         }
     }
 }
@@ -363,6 +372,12 @@ impl Output<'_> {
     fn diagnostics(&mut self, source: &Source, diagnostics: &[Diagnostic]) {
         for diagnostic in diagnostics {
             self.report(source, &Report::from(diagnostic));
+        }
+        // People read the human format; tools read JSON, which has the codes.
+        if matches!(self.format, Format::Human)
+            && let Some(hint) = explain::hint(diagnostics)
+        {
+            let _ = self.stderr.write_all(hint.as_bytes());
         }
     }
 

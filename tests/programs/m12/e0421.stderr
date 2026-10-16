@@ -6,3 +6,4 @@ error[E0421]: no bound of `T` declares `perimeter`
   |
   = help: add an interface that declares `perimeter` to `T`'s bounds
 
+For more about E0421, run `lughac explain E0421`.

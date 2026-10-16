@@ -8,3 +8,4 @@ error[E0501]: cannot assign to `xs`: it is not mutable
   |
   = help: make it mutable: `let mut xs`
 
+For more about E0501, run `lughac explain E0501`.

@@ -4,3 +4,4 @@ error[E0418]: `Source` takes 1 type argument but 0 were given
 7 | fun first(s: Source): i64 = 0;
   |              ^^^^^^
 
+For more about E0418, run `lughac explain E0418`.

@@ -6,3 +6,4 @@ error[E0420]: generic instantiation too deep
   |
   = help: nest<i64> -> nest<i64[]> -> nest<i64[][]> -> …: each call needs a deeper instance
 
+For more about E0420, run `lughac explain E0420`.

@@ -14,3 +14,4 @@ warning[W0102]: unreachable match arm
 5 |     Some(Circle(_)) => "circle",
   |     ^^^^^^^^^^^^^^^
 
+For more about W0103 and W0102, run `lughac explain <code>`.

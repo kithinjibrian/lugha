@@ -6,3 +6,4 @@ error[E0502]: cannot assign to this expression
   |
   = help: only variables, fields and elements can be assigned
 
+For more about E0502, run `lughac explain E0502`.

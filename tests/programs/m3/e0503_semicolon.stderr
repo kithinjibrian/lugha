@@ -8,3 +8,4 @@ error[E0503]: `square` may end without returning a value of type i32
   |
   = help: remove this semicolon to make it the result
 
+For more about E0503, run `lughac explain E0503`.

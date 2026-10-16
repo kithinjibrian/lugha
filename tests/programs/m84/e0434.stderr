@@ -14,3 +14,4 @@ error[E0434]: `takes` is a test: only `lughac test` runs it
   |
   = help: move the shared code into an ordinary function and call that
 
+For more about E0434, run `lughac explain E0434`.

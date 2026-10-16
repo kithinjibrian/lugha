@@ -9,3 +9,4 @@ error[E0429]: the `else` of a `let … else` must not finish
   |
   = help: end it with `return`, `break`, `continue`, `panic(…)` or `exit(…)`
 
+For more about E0429, run `lughac explain E0429`.

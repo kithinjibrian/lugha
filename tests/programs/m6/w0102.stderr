@@ -6,3 +6,4 @@ warning[W0102]: unreachable match arm
 5 |         1 => "one",
   |         ^
 
+For more about W0102, run `lughac explain W0102`.

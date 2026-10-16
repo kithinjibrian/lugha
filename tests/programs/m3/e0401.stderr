@@ -6,3 +6,4 @@ error[E0401]: float literal where i32 expected
   |             |
   |             this operand is i32
 
+For more about E0401, run `lughac explain E0401`.

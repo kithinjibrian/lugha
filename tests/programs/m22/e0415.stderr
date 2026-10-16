@@ -6,3 +6,4 @@ error[E0415]: no method `describe` on `Sq`
    |
    = help: `describe` is a default method of `Shape`: call it through a `Shape` value or a bound `T: Shape`
 
+For more about E0415, run `lughac explain E0415`.

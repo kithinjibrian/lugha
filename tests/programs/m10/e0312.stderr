@@ -6,3 +6,4 @@ error[E0312]: module `shapes.cirlce` not found
   |
   = help: there is no file `tests/programs/m10/shapes/cirlce.la`
 
+For more about E0312, run `lughac explain E0312`.

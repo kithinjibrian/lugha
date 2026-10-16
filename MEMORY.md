@@ -1969,11 +1969,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. CLI: `driver/test_json.rs` (hand-written JSON — `serde_json` stays `lughac lsp`'s — via `json::string`; `panic_of` splitting `panic: <message> at <file>:<line>:<col>` from the right; `listed` by lexing and parsing only), `Request.wants` (repeatable `--filter`, `--exact`), `run_all` streaming results to the main thread over an `mpsc` channel so `--json` prints each as it finishes. Extension 0.8.0: `src/tests.ts` (pure: parse lines, build arguments, `outcome` to 0-based places, `\r\n` output), `src/testing.ts` (a `TestController`: items per file from `--list`, refreshed by a debounced `**/*.la` watcher; a default Run profile with continuous run; `spawn` without a shell from the folder; unreported tests `errored` as "doesn't compile"), registered only when the workspace is trusted (else on `onDidGrantWorkspaceTrust`); `workspaceContains:**/*.la` activation. `testing.ts` is the second file importing `vscode`.
 
+### 165. `lughac explain` planned (session 182, approved session 183)
+
+**Decision:** v16 draft decisions 93–97: every code explained with checked examples; a hint line after human diagnostics (the user chose it, knowing every expected `.stderr` changes); code links in the editor opening a read-only tab from the installed `lughac` (the user's choices).
+
+### 166. `lughac explain` — milestone 86 (PRP-116)
+
+**Decision:** built as planned: `docs/errors/<CODE>.md` (99 pages, written in four parallel batches against a fast checker script, then verified by `tests/explain.rs`), `src/explain.rs` (`EXPLANATIONS`, `explain`, `title`), `driver/explain.rs` (`run`, `hint`), the hint in `Output::diagnostics` (human only); `.stderr` fixtures rewritten by inserting the line after the last diagnostic (the diff only adds lines); `codeDescription` `lugha-explain:<CODE>.md` in `publish.rs`; extension 0.9.0 (`explain.ts`: only `^[EW][0-9]{4}\.md$` reaches lughac's arguments; a content provider, registered whatever the trust; the palette command `lugha.explain` as a fallback in case VS Code won't follow a custom-scheme link). Page examples: ```lugha blocks are compiled (`// error: CODE`, `// warning: CODE`, `// also: CODE` markers), ```text blocks are not (multi-file and package codes). **Rule:** a new diagnostic code needs its page, or `tests/explain.rs` fails.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 86 complete**: PRP-116 `lughac explain`, VS Code extension 0.9.0
 - **Milestone 85 complete**: PRP-115 tests in the editor, VS Code extension 0.8.0
 - **Milestone 84 complete**: PRP-114 `lughac test`, VS Code extension 0.7.0
 - **Milestone 83 complete**: PRP-113 Find References and Rename, VS Code extension 0.6.0

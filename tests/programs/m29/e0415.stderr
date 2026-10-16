@@ -10,3 +10,4 @@ error[E0415]: no method `count_ones` on `f64`
 7 |     let n = f.count_ones();
   |               ^^^^^^^^^^
 
+For more about E0415, run `lughac explain E0415`.

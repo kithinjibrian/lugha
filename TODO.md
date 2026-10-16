@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 86 — `lughac explain` ✅
+- [x] PRP-116: a page per code with checked examples, the hint after diagnostics, editor links; tagged `m86`
+
 ### Milestone 85 — Tests in the editor ✅
 - [x] PRP-115: `lughac test --list`/`--json`/`--exact`; the VS Code Testing view; tagged `m85`
 

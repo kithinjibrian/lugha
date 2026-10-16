@@ -4,3 +4,4 @@ error[E0415]: no method `push` on `string`
 3 |     s.push(1);
   |       ^^^^
 
+For more about E0415, run `lughac explain E0415`.

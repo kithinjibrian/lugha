@@ -6,3 +6,4 @@ error[E0423]: `Sized` and `Measured` both declare `size` with different signatur
   |
   = help: a call through these bounds couldn't tell which one is meant
 
+For more about E0423, run `lughac explain E0423`.

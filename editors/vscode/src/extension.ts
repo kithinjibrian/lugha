@@ -9,6 +9,8 @@
  */
 import * as vscode from "vscode";
 import { LanguageClient, type LanguageClientOptions, type ServerOptions } from "vscode-languageclient/node";
+import { execFile } from "node:child_process";
+import { codeOf, explainArgs, explainFailure } from "./explain";
 import { serverCommand, startFailure } from "./server";
 import { registerTests } from "./testing";
 
@@ -28,8 +30,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         }),
     );
-    // Tests run the folder's code: only once VS Code trusts it (decision 90).
     const lughac = () => serverCommand(vscode.workspace.getConfiguration("lugha").get<string>("path")).command;
+    // Diagnostics link their code here (milestone 86). Explaining runs no
+    // workspace code, so it works in untrusted folders too.
+    context.subscriptions.push(
+        vscode.workspace.registerTextDocumentContentProvider("lugha-explain", {
+            provideTextDocumentContent: (uri) => explanation(lughac(), uri.path),
+        }),
+        vscode.commands.registerCommand("lugha.explain", async (given?: string) => {
+            const code = given ?? (await vscode.window.showInputBox({ prompt: "Error or warning code", placeHolder: "E0501" }));
+            const named = code ? codeOf(`${code.trim().toUpperCase()}.md`) : undefined;
+            if (!named) return;
+            const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(`lugha-explain:${named}.md`));
+            await vscode.window.showTextDocument(doc, { preview: true });
+        }),
+    );
+    // Tests run the folder's code: only once VS Code trusts it (decision 90).
     if (vscode.workspace.isTrusted) {
         context.subscriptions.push(registerTests(output, lughac));
     } else {
@@ -75,4 +91,15 @@ async function stop(): Promise<void> {
     client = undefined;
     // A client that never started can't be stopped; nothing is left to clean up.
     await running?.stop().catch(() => undefined);
+}
+
+/** The text of `lughac explain` for the code a `lugha-explain:` path names. */
+function explanation(command: string, path: string): Promise<string> {
+    const code = codeOf(path);
+    if (!code) return Promise.resolve(`# ${path}\n\nNot a Lugha error code.\n`);
+    return new Promise((resolve) => {
+        execFile(command, explainArgs(code), (error, stdout) => {
+            resolve(error ? explainFailure(command, code) : stdout);
+        });
+    });
 }

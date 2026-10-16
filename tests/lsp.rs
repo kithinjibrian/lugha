@@ -249,3 +249,20 @@ fn documents_that_arent_files_are_ignored() {
     assert_eq!(first["params"]["uri"], uri, "{first}");
     assert_eq!(server.finish(), Some(0));
 }
+
+#[test]
+fn each_diagnostic_links_its_code_to_its_explanation() {
+    let t = Temp::with(&[]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(
+        &uri,
+        "fun main() {\n    let total = 0;\n    total = 5;\n}\n",
+    );
+    let published = s.expect(&uri, &["E0501"]);
+    assert_eq!(
+        published[0]["codeDescription"]["href"], "lugha-explain:E0501.md",
+        "{published:?}"
+    );
+    assert_eq!(s.finish(), Some(0));
+}

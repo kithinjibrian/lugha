@@ -6,3 +6,4 @@ error[E0424]: `?` can't return here
   |
   = help: `main` can't return an error: handle it with `match`
 
+For more about E0424, run `lughac explain E0424`.

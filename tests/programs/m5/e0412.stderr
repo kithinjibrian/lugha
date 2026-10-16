@@ -6,3 +6,4 @@ error[E0412]: cannot infer the element type of `[]`
   |
   = help: annotate it: `let xs: i64[] = [];`
 
+For more about E0412, run `lughac explain E0412`.

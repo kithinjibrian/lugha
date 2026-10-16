@@ -6,3 +6,4 @@ error[E0422]: `Named` doesn't declare everything `Pet` needs
    |
    = help: no `sound`
 
+For more about E0422, run `lughac explain E0422`.

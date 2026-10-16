@@ -4,3 +4,4 @@ error[E0415]: no method `sum` on `$prelude.ArrayIter<string>`
 2 |     let total = ["a", "b"].iter().sum();
   |                                   ^^^
 
+For more about E0415, run `lughac explain E0415`.

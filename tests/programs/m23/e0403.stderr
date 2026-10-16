@@ -6,3 +6,4 @@ error[E0403]: expected Source<string>, found Source<i64>
    |
    = help: a value of one interface type doesn't convert to another interface
 
+For more about E0403, run `lughac explain E0403`.

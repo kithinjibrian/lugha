@@ -6,3 +6,4 @@ error[E0318]: `helper` is not `public`, so it can't be re-exported
   |
   = help: make it `public` where it is declared, or drop `public` from this import
 
+For more about E0318, run `lughac explain E0318`.

@@ -4,3 +4,4 @@ error[E0415]: no method `join` on `i64[]`
 2 |     let joined = [1, 2].join("-");
   |                         ^^^^
 
+For more about E0415, run `lughac explain E0415`.

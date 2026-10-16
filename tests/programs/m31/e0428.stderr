@@ -22,3 +22,4 @@ error[E0428]: `mut` needs a binding, but `None` is a variant
    |
    = help: every alternative of `p | q` must bind the same names, each at one type
 
+For more about E0428, run `lughac explain E0428`.

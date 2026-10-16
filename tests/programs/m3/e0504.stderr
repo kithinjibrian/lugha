@@ -4,3 +4,4 @@ error[E0504]: `break` outside of a loop
 4 |         break;
   |         ^^^^^^
 
+For more about E0504, run `lughac explain E0504`.

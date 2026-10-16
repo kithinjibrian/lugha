@@ -6,3 +6,4 @@ error[E0422]: `Dot` doesn't satisfy `Shape`
    |
    = help: no method `name`
 
+For more about E0422, run `lughac explain E0422`.

@@ -6,3 +6,4 @@ error[E0503]: `sign` may end without returning a value of type i64
   |
   = help: end the body with a value, or `return` on every path
 
+For more about E0503, run `lughac explain E0503`.

@@ -6,3 +6,4 @@ error[E0425]: `Factory` can't be a type: it declares the associated function `ma
   |
   = help: `make` has no `self`, so a `Factory` value couldn't call it; use it as a bound: `<T: Factory>`
 
+For more about E0425, run `lughac explain E0425`.

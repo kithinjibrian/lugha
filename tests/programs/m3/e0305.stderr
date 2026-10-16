@@ -4,3 +4,4 @@ error[E0305]: cannot find type `Point`
 2 |     let p: Point = 1;
   |            ^^^^^
 
+For more about E0305, run `lughac explain E0305`.

@@ -4,3 +4,4 @@ error[E0101]: unexpected character '$'
 3 |     let s = $string.from_bytes([104, 105]);
   |             ^
 
+For more about E0101, run `lughac explain E0101`.

@@ -8,3 +8,4 @@ error[E0501]: cannot call `mut self` method `bump` on `p`: it is not mutable
    |
    = help: make it mutable: `let mut p`
 
+For more about E0501, run `lughac explain E0501`.

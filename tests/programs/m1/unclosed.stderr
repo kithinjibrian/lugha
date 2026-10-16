@@ -6,3 +6,4 @@ error[E0201]: expected `)`, found `}`
   |                   |
   |                   to match this `(`
 
+For more about E0201, run `lughac explain E0201`.

@@ -138,6 +138,7 @@ cargo run -q -- run prog.la                   # exit code = the program's
 cargo run -q -- check prog.la [--offline]     # lex, parse, type-check
 cargo run -q -- update prog.la                # re-resolve git packages, rewrite lugha.lock
 cargo run -q -- spec                          # print the bundled language spec
+cargo run -q -- explain [CODE]                # explain an error code (v16); docs/errors/<CODE>.md
 cargo run -q -- init [dir] [--lib] [--name N] # start a program or library (v16); never overwrites
 cargo run -q -- fmt [paths…] [--check]        # format .la files in place (v16); --check lists, writes nothing
 cargo run -q -- test [paths…] [--filter T] [--timeout S]  # run @test functions, each in its own process (v16)
@@ -165,7 +166,7 @@ Run fmt, clippy and tests after every non-trivial change. A task is not done unt
 - License: GPL-3.0 — every dependency must be GPL-3.0-compatible.
 - `editors/vscode/` — the VS Code extension (PRP-099, PRP-100): TypeScript on Node 22, one runtime dependency (`vscode-languageclient`, MIT) and dev dependencies (`typescript`, `@types/vscode`, `@types/node`, `vscode-tmgrammar-test`, `@vscode/vsce`), tests with `node:test`. It starts `lughac lsp`, which never runs `git` or writes a file, and, only when asked in a trusted workspace, `lughac test` (PRP-115), which runs the workspace's tests; changes to how it starts `lughac`, or to what the server may do, need the user's security review.
 
-The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestones 67–85 done: tests in the editor, `lughac test`, Find References and Rename, more quick fixes, formatting in the editor, `lughac fmt`, the add-missing-arms quick fix, snippets, doc comments `/** … */` shown by the language server (std and the prelude documented), block comments `/* … */` (nested), partial syntax trees for the language server, signature help, completion, go-to-definition, hover and `lughac lsp`; `lughac init`; `env.set_current_dir`; shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
+The language itself is defined by `docs/specs/Language v16 Specification.md` (`lughac spec` prints it): Lugha v16, in progress (milestones 67–86 done: `lughac explain`, tests in the editor, `lughac test`, Find References and Rename, more quick fixes, formatting in the editor, `lughac fmt`, the add-missing-arms quick fix, snippets, doc comments `/** … */` shown by the language server (std and the prelude documented), block comments `/* … */` (nested), partial syntax trees for the language server, signature help, completion, go-to-definition, hover and `lughac lsp`; `lughac init`; `env.set_current_dir`; shared boxes, `Ref<T>` — `Ref.new`, `get`, `set`, `update`, `is`; not `Eq`; cyclic printing). `Language v16 Draft.md` is the approved plan. v15 is complete (milestones 51–66: package layout, operator overloading, the std library `std.math`/`random`/`env`/`fs`/`process`, copy-on-write arrays and loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, widths in characters, C → Lugha parsers and UTF-8) and frozen, like v0–v14. `Result`, `Iter`, `Display`, `Ordering`, the iterator types and the array helpers are written in Lugha in `src/prelude/` (`core.la`, `iter.la`, `more.la`, `text.la`, `ops.la`), loaded with every program. Git packages need the system `git` at build time (PRP-079); it runs only through `modules/git.rs`.
 
 ---
 
@@ -175,7 +176,7 @@ The language itself is defined by `docs/specs/Language v16 Specification.md` (`l
 2. **Stages only depend backwards.** lexer → parser → modules → check → codegen → driver. A stage never imports a later one. *Why:* `lughac check` and `--emit=tokens|ast|ir` must run the pipeline partway.
 3. **Every token and AST node carries a byte-offset `Span`.** *Why:* every diagnostic needs a location, and spans can't be recovered later.
 4. **Codegen never infers types.** It reads the checker's expression → type side table. *Why:* opaque pointers need the element type on every load/store/GEP (spec §9), and two type computations will disagree.
-5. **User-program errors are `Diagnostic` records, never panics or strings.** Each has a stable code from its stage's range (E01xx lex … E05xx, W01xx). New codes take the next unused number; a code is never reused or renumbered. Human and JSON output render from the same record. *Why:* spec §9; codes are a public contract.
+5. **User-program errors are `Diagnostic` records, never panics or strings.** Each has a stable code from its stage's range (E01xx lex … E05xx, W01xx). New codes take the next unused number and get a page in `docs/errors/` (`tests/explain.rs` checks it); a code is never reused or renumbered. Human and JSON output render from the same record. *Why:* spec §9; codes are a public contract.
 6. **Exit codes are 0 / 1 / 2.** 1 = the user's program has errors; 2 = bad CLI usage or internal compiler error. A `module.verify()` failure or a Rust panic inside lughac is exit 2, never 1. *Why:* spec §9; tools tell "your bug" from "our bug" by it.
 7. **Symbol prefixes are fixed.** Lugha functions → `lugha_fn_<name>`, methods → `lugha_fn_<Type>.<name>`, items of a module other than the main file → the module path joined with `/` first (`lugha_fn_shapes/circle/area`, `lugha_fn_shapes/circle/Circle.area`), generic instances → the type arguments as they print, module paths with `/` (`lugha_fn_max<i64>`, `lugha_fn_Stack<string>.push`, `lugha_fn_a/b/max<a/b/Point>`), functions used as values → wrappers `lugha_ref_<symbol>` (v3), closure bodies → `lugha_closure_<enclosing>.<n>` (v3), interface dispatch tables → `lugha_vt_<Type>.<Interface>` (a generic interface with its arguments, `lugha_vt_Count.Source<i64>`, v6) with identities `lugha_type_<Type>` and box copies `lugha_copy_<type>_box` (v5), conversions between interfaces → `lugha_up_<J>.<I>` and derived tables `lugha_vt_<Type>.<J>.<I>` (v6), default methods → `lugha_fn_<Interface>.<method><Type>` (v5; a generic interface's arguments go on the interface, `lugha_fn_Source<i64>.skip<Count>`, v6), runtime → `lugha_rt_<name>`, copy helpers → `lugha_copy_<type>`, equality helpers → `lugha_eq_<type>`, externs verbatim. *Why:* disjoint prefixes are what prevents symbol collisions (spec §8).
 8. **Generated code allocates only through `lugha_rt_alloc`.** Never emit calls to `malloc`. *Why:* Boehm can't see `malloc` memory and will free live objects.
@@ -240,6 +241,7 @@ pub fn parse_number(src: &str) -> i64 {
 ├── rust-toolchain.toml — pinned Rust 1.99.0
 ├── src/
 │   ├── lib.rs       — compiler library; SPEC (the embedded spec `lughac spec` prints), PRELUDE, STD (v15)
+│   ├── explain.rs   — `EXPLANATIONS`: every code's page from docs/errors/, embedded; `explain`, `title` (v16)
 │   ├── std/         — the standard library in Lugha (v15), embedded as `lugha::STD` and loaded only when imported:
 │   │                  math.la (`std.math`: float functions over `T: Float` via `$float.*` built-ins, abs/min/max/clamp, pi/e),
 │   │                  random.la (`std.random`: xoshiro256** `Rng`, `seeded`/`from_os` via `$os.seed`),
@@ -337,7 +339,7 @@ pub fn parse_number(src: &str) -> i64 {
 │                      (panics → internal error, exit 2), pipeline.rs (load all modules + the prelude, check, codegen),
 │                      source.rs (source map of all files, line_col),
 │                      render.rs (codespan, Report), json.rs (JSON lines), update.rs (v14: the fetcher, writing
-│                      `lugha.lock`, `lughac update`), init.rs (v16: `lughac init`, the program and library layouts), test.rs (v16: `lughac test`: files, one executable per file, parallel isolated runs, timeouts, the report), test_json.rs (v16: `--list`, `--json` lines, panic locations), fmt.rs (v16: `lughac fmt`: paths, `--check`, temp file + rename),
+│                      `lugha.lock`, `lughac update`), init.rs (v16: `lughac init`, the program and library layouts), test.rs (v16: `lughac test`: files, one executable per file, parallel isolated runs, timeouts, the report), test_json.rs (v16: `--list`, `--json` lines, panic locations), explain.rs (v16: `lughac explain`, the hint after diagnostics), fmt.rs (v16: `lughac fmt`: paths, `--check`, temp file + rename),
 │                      lsp/ (v16: `lughac lsp`: mod.rs the stdio loop and capabilities, server.rs state and debounced
 │                      scheduling, documents.rs open text and `file:` URIs, targets.rs which mains to check, check.rs one
 │                      guarded offline check via `pipeline::front_partial`, publish.rs reports → UTF-16 LSP diagnostics, per-check store, hover.rs `Snapshot` and the hover under a position, definition.rs the declaration of the name under a position, completion.rs members and names from the last check that parsed (`Here`, `Receiver`, shared with signature help), signature.rs the call around the cursor and its signature, docs.rs doc comments: parsing, `@param`/`@returns`, attachment, a per-snapshot cache, snippets.rs call placeholders and the postfix `.match`, code_actions.rs quick fixes for E0417 (and dispatch), fixes.rs `let mut`, a misspelled variant and a std import (v16, milestone 82), references.rs every place resolving to one declaration across checks (`Key`, `find`), rename.rs prepare/rename with the refusals and the in-memory re-check (v16, milestone 83), formatting.rs Format Document through the formatter (v16, milestone 81))
@@ -355,6 +357,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── ordering.rs  — user-defined order through lughac: `<` and tuple helpers call `cmp` (v15)
 │   ├── fmt.rs       — `lughac fmt` through lughac: in place, folders, `--check`, untouched files, syntax errors (v16)
 │   ├── fmt_corpus.rs — every program in tests/programs, the spec and std/prelude formats, verifies, is idempotent (v16)
+│   ├── explain.rs   — every code explained, every page example checked, `lughac explain`, the hint (v16)
 │   ├── test_runner.rs — `lughac test` through lughac: pass/fail, isolation (overflow, bounds, stack overflow), timeouts, `--filter`, compile errors (v16)
 │   ├── init.rs      — `lughac init` through lughac: both layouts created, checked and run; refusals; kept files (v16)
 │   ├── lsp.rs       — `lughac lsp` over real stdio: live diagnostics, unsaved text, modules through seen mains, entries, offline (v16)
@@ -381,10 +384,10 @@ pub fn parse_number(src: &str) -> i64 {
 │                      and `lugha.entries`), language-configuration.json, syntaxes/lugha.tmLanguage.json, snippets/lugha.json (declarations and control flow, v16); src/ extension.ts
 │                      (imports `vscode`: a `LanguageClient` running `lugha.path lsp`), server.ts (the server
 │                      command, start-failure text), testing.ts (imports `vscode`: the Testing view's controller, `lughac test`
-│                      in trusted workspaces, v16), tests.ts (pure: `--list`/`--json` lines, arguments, outcomes); test/
+│                      in trusted workspaces, v16), tests.ts (pure: `--list`/`--json` lines, arguments, outcomes), explain.ts (pure: `lugha-explain:` documents); test/
 │                      (`node:test`, spec keywords, tests.ts, grammar/ scope tests); not in the crate
 ├── PRPs/            — feature briefs prp-{NNN}-{feature_name}.md (+ TEMPLATE.md, DISCOVERY.md)
-├── docs/            — CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
+├── docs/            — errors/ (one page per diagnostic code, `lughac explain`; a new code needs one), CODE_STYLE.md, setup.md (the context-system guide), source/, decisions/, incidents/, status/
 │   └── specs/       — Language v16 Specification.md (the language definition, in progress, printed by `lughac spec`);
 │                      Language v16 Draft.md (approved v16 plan, milestone 67); Language v15 Draft.md (approved v15 plan, milestones 51–66);
 │                      Language v14 Draft.md (approved v14 plan, milestones 45–50);

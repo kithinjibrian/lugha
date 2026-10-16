@@ -6,3 +6,4 @@ error[E0419]: `i64[]` doesn't satisfy `Ord`
   |
   = help: only numbers, strings and parameters with `Ord` are ordered
 
+For more about E0419, run `lughac explain E0419`.
