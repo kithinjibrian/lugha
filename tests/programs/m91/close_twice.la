@@ -1,0 +1,5 @@
+fun main() {
+    let c: Chan<i64> = Chan.new();
+    c.close();
+    c.close();
+}

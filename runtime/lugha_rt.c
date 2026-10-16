@@ -24,10 +24,12 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <gc.h>
+#include <gc/gc_mark.h>
 #include <poll.h>
 #include <pthread.h>
 #include <signal.h>
 #include <spawn.h>
+#include <sys/mman.h>
 #include <sys/random.h>
 #include <sys/stat.h>
 #include <sys/wait.h>

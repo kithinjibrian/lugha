@@ -75,11 +75,14 @@ impl Checker {
                 .filter(|_| l == r && !arithmetic);
             let help = super::ordering::cmp_help(&l).filter(|_| ord && l == r && wanted.is_none());
             // Boxes have no `==` (v16): say which comparison was meant.
-            let help = help.or_else(|| {
-                matches!(l, Type::Ref(_)).then(|| {
+            let help = help.or_else(|| match l {
+                Type::Ref(_) => Some(
                     "compare boxes with `a.is(b)` (the same box) or `a.get() == b.get()` (the same contents)"
-                        .to_string()
-                })
+                        .to_string(),
+                ),
+                // v17.
+                Type::Chan(_) => Some("`a.is(b)` tells whether both are the same channel".to_string()),
+                _ => None,
             });
             let types = if l == r { vec![l] } else { vec![l, r] };
             let d = errors::bad_operands_on(op.symbol(), &types, expr.span);

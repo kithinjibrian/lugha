@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 
 use super::hoist::Head;
 use super::lower::Lowerer;
-use crate::ast::{Block, Expr, ExprKind, ForIter, Pattern, PatternKind, StmtKind};
+use crate::ast::{Block, Expr, ExprKind, ForIter, Pattern, PatternKind, SelectKind, StmtKind};
 use crate::check::Type;
 
 /// What a loop's code does with each name.
@@ -191,6 +191,22 @@ impl<'ctx> Lowerer<'ctx> {
                     scan.bind_pattern(&arm.pattern);
                     if let Some(guard) = &arm.guard {
                         self.scan_read(scan, guard);
+                    }
+                    self.scan_read(scan, &arm.body);
+                }
+            }
+            ExprKind::Spawn(closure) => self.scan_read(scan, closure),
+            ExprKind::Select(arms) => {
+                for arm in arms {
+                    match &arm.kind {
+                        SelectKind::Recv { binding, call } => {
+                            scan.bind(&binding.name);
+                            self.scan_read(scan, call);
+                        }
+                        SelectKind::Send(call) | SelectKind::After(call) => {
+                            self.scan_read(scan, call)
+                        }
+                        SelectKind::Default(_) => {}
                     }
                     self.scan_read(scan, &arm.body);
                 }

@@ -129,6 +129,9 @@ impl<'ctx> Lowerer<'ctx> {
             (None, Type::Ref(inner)) => self.show_box(value.into_pointer_value(), inner),
             // A handle shows its type, never its address (v16).
             (None, Type::Handle(_)) => self.string_literal(&format!("<{}>", bare(ty))).into(),
+            // Tasks and channels show what they are (v17).
+            (None, Type::Task(_)) => self.string_literal("<task>").into(),
+            (None, Type::Chan(_)) => self.string_literal("<chan>").into(),
             (None, _) => self.show_variants(value, ty),
         };
         self.builder.build_return(Some(&text)).expect(POSITIONED);

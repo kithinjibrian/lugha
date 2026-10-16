@@ -1,0 +1,1 @@
+panic: send on a closed channel at tests/programs/m91/send_closed.la:4:5

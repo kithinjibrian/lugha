@@ -27,7 +27,7 @@ use crate::span::Span;
 
 /// The runtime's source files, in the order they are joined: the core first,
 /// since it holds every `#include`, then the fragments that rely on it.
-pub const RUNTIME_PARTS: [(&str, &str); 14] = [
+pub const RUNTIME_PARTS: [(&str, &str); 17] = [
     ("lugha_rt.c", include_str!("../../runtime/lugha_rt.c")),
     ("stack.c", include_str!("../../runtime/stack.c")),
     ("print.c", include_str!("../../runtime/print.c")),
@@ -42,10 +42,13 @@ pub const RUNTIME_PARTS: [(&str, &str); 14] = [
     ("test.c", include_str!("../../runtime/test.c")),
     ("callbacks.c", include_str!("../../runtime/callbacks.c")),
     ("cstr.c", include_str!("../../runtime/cstr.c")),
+    ("tasks.c", include_str!("../../runtime/tasks.c")),
+    ("spawn.c", include_str!("../../runtime/spawn.c")),
+    ("chans.c", include_str!("../../runtime/chans.c")),
 ];
 
 /// Every runtime function codegen may call; `lugha_rt.c` defines them all.
-pub const RUNTIME_SYMBOLS: [&str; 61] = [
+pub const RUNTIME_SYMBOLS: [&str; 72] = [
     "lugha_rt_init",
     "lugha_rt_read_line",
     "lugha_rt_read_file",
@@ -107,6 +110,17 @@ pub const RUNTIME_SYMBOLS: [&str; 61] = [
     "lugha_rt_cb_pin",
     "lugha_rt_cb_release",
     "lugha_rt_str_from_c",
+    "lugha_rt_task_spawn",
+    "lugha_rt_task_join",
+    "lugha_rt_task_yield",
+    "lugha_rt_task_sleep",
+    "lugha_rt_task_preempt",
+    "lugha_rt_task_select",
+    "lugha_rt_chan_new",
+    "lugha_rt_chan_send",
+    "lugha_rt_chan_recv",
+    "lugha_rt_chan_try_recv",
+    "lugha_rt_chan_close",
 ];
 
 /// The C runtime linked into every program: [`RUNTIME_PARTS`] joined in order,
@@ -126,6 +140,9 @@ pub const RUNTIME_SOURCE: &str = concat!(
     include_str!("../../runtime/test.c"),
     include_str!("../../runtime/callbacks.c"),
     include_str!("../../runtime/cstr.c"),
+    include_str!("../../runtime/tasks.c"),
+    include_str!("../../runtime/spawn.c"),
+    include_str!("../../runtime/chans.c"),
 );
 
 /// Why linking failed.

@@ -46,7 +46,7 @@ impl Parser<'_> {
 
     /// Skips past the next `,` at this nesting level, or up to the `}` that
     /// closes the `match`.
-    fn sync_arm(&mut self) {
+    pub(super) fn sync_arm(&mut self) {
         let mut depth = 0usize;
         loop {
             match self.peek() {

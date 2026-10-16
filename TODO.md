@@ -427,6 +427,17 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer. Found with oyster: ~~changing the working directory (`cd`)~~ done in milestone 68 (PRP-097), streaming pipes and timeouts for `std.process`, and a package entry module (`import glowworm;`).
 
 
+## v17 (draft approved, session 201 — `docs/specs/Language v17 Draft.md`): concurrency
+
+### Milestone 91 — Green threads ✅
+- [x] (PRP-122) `spawn call` → `Task<T>`/`Task`, `join`; `Chan<T>` (`new`, `buffered`, `send`, `recv`, `try_recv`, `close`, `is`); `select` with `recv`/`send`/`after`/`default`; `std.task` (`sleep`, `yield_now`); one OS thread, preemption by countdown, deadlock panic; E0211, E0438.
+
+### Next
+- [ ] **Actors** (the user's next goal): a green thread owning a channel as its mailbox; supervision and catching a thread's panic. Needs discovery and a PRP.
+- [ ] **VS Code:** highlighting for `spawn`/`select` (and `after`/`default` in arms), snippets `spawn`, `select`; bump the extension version.
+- [ ] Non-blocking input and output (a waiting read pauses only its green thread); green threads on several OS threads.
+- [ ] `probe-stack` on functions of programs that spawn, so a frame over 64 KiB can't skip a green stack's guard (PRP-122 BUILT notes).
+
 ## Editor support
 
 - [x] **VS Code extension** — highlighting and `lughac check` diagnostics on open/save (PRP-099, `editors/vscode/`).

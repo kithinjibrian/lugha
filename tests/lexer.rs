@@ -72,3 +72,20 @@ fn comments_lists_every_comment_outermost_only_and_skips_strings() {
     );
     assert!(comments("fun main() {}").is_empty());
 }
+
+#[test]
+fn spawn_and_select_are_keywords_v17() {
+    use TokenKind::*;
+    let (tokens, _) = lex("spawn select spawned after default").unwrap();
+    let kinds: Vec<_> = tokens.into_iter().map(|t| t.kind).collect();
+    // `after` and `default` mean something only in a `select` arm.
+    let expected = [
+        Spawn,
+        Select,
+        Ident("spawned".into()),
+        Ident("after".into()),
+        Ident("default".into()),
+        Eof,
+    ];
+    assert_eq!(kinds, expected);
+}

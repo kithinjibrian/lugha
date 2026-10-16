@@ -1,0 +1,9 @@
+error[E0438]: `spawn` of a call that changes its receiver: the new thread would change its own copy
+  --> tests/programs/m91/e0438_push.la:3:11
+  |
+3 |     spawn xs.push(3);
+  |           ^^^^^^^^^^
+  |
+  = help: nobody would see the change; send the new value back through a channel, or keep it in a `Ref`
+
+For more about E0438, run `lughac explain E0438`.

@@ -2,7 +2,7 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–90 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** complete (milestones 67–90), frozen in session 201. `Language v17 Specification.md` describes the current language and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 

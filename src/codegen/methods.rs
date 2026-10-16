@@ -132,6 +132,14 @@ impl<'ctx> Lowerer<'ctx> {
         {
             return self.ref_new(call, args).map(|v| Some(Value::Val(v)));
         }
+        // `Chan.new()` and `Chan.buffered(n)` (v17).
+        if self
+            .callees
+            .get(&call.id)
+            .is_some_and(|k| k == crate::check::CHAN_NEW || k == crate::check::CHAN_BUFFERED)
+        {
+            return self.chan_new(call, args).map(|v| Some(Value::Val(v)));
+        }
         let base_type = self.ty(base);
         // `xs.map(f)`, `s.trim()`, `o.unwrap_or(d)`: helpers call the prelude
         // with the receiver first (v3 PRP-041, v4 PRP-043).
@@ -176,6 +184,13 @@ impl<'ctx> Lowerer<'ctx> {
         // `r.get()` and the rest of a box's methods (v16).
         if let Type::Ref(_) = base_type {
             return self.ref_method(base, &name.name, args).map(Some);
+        }
+        // `t.join()` and a channel's methods (v17).
+        if let Type::Task(_) = base_type {
+            return self.task_method(base).map(Some);
+        }
+        if let Type::Chan(_) = base_type {
+            return self.chan_method(call, base, &name.name, args).map(Some);
         }
         // `s.area()` on an interface value: through its table (v5).
         if let Type::Interface(..) = &base_type {

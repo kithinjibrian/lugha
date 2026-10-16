@@ -1,0 +1,6 @@
+fun main() {
+    let c: Chan<i64> = Chan.new();
+    select {
+        c.recv() => println("received"),
+    }
+}

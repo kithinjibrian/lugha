@@ -22,11 +22,23 @@ impl<'ctx> Lowerer<'ctx> {
         expr: &Expr,
         c: &Closure,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
+        self.closure_value_with(expr, c, &[])
+    }
+
+    /// A closure value that also captures the locals named in `extra`: a
+    /// spawned call's arguments, already evaluated (v17).
+    pub(super) fn closure_value_with(
+        &mut self,
+        expr: &Expr,
+        c: &Closure,
+        extra: &[String],
+    ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         let ty = self.ty(expr);
         let Type::Fun(params, ret) = &ty else {
             unreachable!("checked: a closure has a function type")
         };
-        let names = self.captures.get(&expr.id).cloned().unwrap_or_default();
+        let mut names = self.captures.get(&expr.id).cloned().unwrap_or_default();
+        names.extend(extra.iter().cloned());
         let captured: Vec<Local<'ctx>> = names.iter().map(|n| self.scopes.lookup(n)).collect();
         let layout = self.env_layout(&captured);
         let ptr = self.context.ptr_type(Default::default());
@@ -137,6 +149,7 @@ impl<'ctx> Lowerer<'ctx> {
         let saved_loops = std::mem::take(&mut self.loops);
         self.builder
             .position_at_end(self.context.append_basic_block(function, "entry"));
+        self.preempt_point();
         self.scopes.push();
         let env = function
             .get_nth_param(0)

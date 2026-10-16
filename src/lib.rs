@@ -2,9 +2,9 @@
 //!
 //! Compiles one `.la` source file to a native executable through the stages
 //! defined in spec §9: lex, parse, check, lower to LLVM IR, emit, link.
-//! The language itself is defined in `docs/specs/Language v16 Specification.md`
-//! (v15 plus the v16 features implemented so far; `Language v16 Draft.md`
-//! is the plan, and v15's file is frozen).
+//! The language itself is defined in `docs/specs/Language v17 Specification.md`
+//! (v16 plus the v17 features implemented so far; `Language v17 Draft.md`
+//! is the plan, and v16's file is frozen).
 
 pub mod ast;
 pub mod check;
@@ -29,6 +29,7 @@ pub const STD: &[(&str, &str)] = &[
     ("env", include_str!("std/env.la")),
     ("fs", include_str!("std/fs.la")),
     ("process", include_str!("std/process.la")),
+    ("task", include_str!("std/task.la")),
 ];
 
 /// The prelude: the array helpers, written in Lugha and loaded with every
@@ -44,4 +45,4 @@ pub const PRELUDE: &str = concat!(
 
 /// The language specification this compiler implements, embedded verbatim;
 /// `lughac spec` prints it (spec §9, "LLM-ready spec").
-pub const SPEC: &str = include_str!("../docs/specs/Language v16 Specification.md");
+pub const SPEC: &str = include_str!("../docs/specs/Language v17 Specification.md");

@@ -159,6 +159,8 @@ impl Checker {
             ExprKind::Array(elements) => self.array_literal(expr, elements, expect),
             ExprKind::Tuple(elements) => self.tuple_literal(elements, expect),
             ExprKind::Repeat(value, count) => self.repeat(value, count, expect),
+            ExprKind::Spawn(closure) => self.spawn(closure, expect),
+            ExprKind::Select(arms) => self.select(expr, arms, expect),
             ExprKind::Int(_) | ExprKind::Float(_) => unreachable!("literals are matched first"),
         }
     }

@@ -19,6 +19,7 @@ mod bounds;
 mod builtins;
 mod call;
 mod callbacks;
+mod channels;
 mod checked;
 mod closures;
 mod concrete_defaults;
@@ -69,6 +70,7 @@ mod reexports;
 mod refs;
 mod results;
 mod satisfy;
+mod select;
 mod self_type;
 mod signatures;
 mod slots;
@@ -76,6 +78,7 @@ mod stmt;
 mod struct_literal;
 mod structs;
 mod swap;
+mod tasks;
 mod templates;
 mod test_fns;
 mod tuples;
@@ -88,6 +91,7 @@ mod visibility;
 use std::collections::HashMap;
 
 pub use callbacks::{CParam, CParams};
+pub use channels::{CHAN_BUFFERED, CHAN_NEW};
 pub use checked::Checked;
 pub use defaults::SELF;
 pub use float_ops::{float_op, os_op, string_op};
@@ -165,6 +169,7 @@ impl Checker {
             interfaces: HashMap::new(),
             closures: Vec::new(),
             captures: HashMap::new(),
+            uses_tasks: false,
             conversions: HashMap::new(),
             try_conversions: HashMap::new(),
             default_args: HashMap::new(),
@@ -271,6 +276,8 @@ pub(super) struct Checker {
     closures: Vec<closures::Frame>,
     /// See `Checked::captures`.
     captures: HashMap<ExprId, Vec<String>>,
+    /// See `Checked::uses_tasks`.
+    uses_tasks: bool,
     /// See `Checked::conversions`.
     conversions: HashMap<ExprId, Type>,
     /// See `Checked::try_conversions`.

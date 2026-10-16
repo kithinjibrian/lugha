@@ -1,0 +1,14 @@
+// When `main` returns the program ends, as in Go: unfinished threads stop.
+import std.task;
+
+fun forever() {
+    while true {
+        task.yield_now();
+    }
+}
+
+fun main() {
+    spawn forever();
+    task.yield_now();
+    println("main done");
+}

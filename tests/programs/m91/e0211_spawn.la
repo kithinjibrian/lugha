@@ -1,0 +1,5 @@
+fun work(): i64 = 1;
+
+fun main() {
+    let t = spawn work;
+}

@@ -1,0 +1,8 @@
+fun main() {
+    let c: Chan<i64> = Chan.new();
+    select {
+        m = c.recv() => println(m),
+        after(10) => println("late"),
+        default => println("never waits"),
+    }
+}

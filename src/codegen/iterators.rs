@@ -67,6 +67,8 @@ impl<'ctx> Lowerer<'ctx> {
         self.branch(next);
 
         self.builder.position_at_end(next);
+        // A green thread's loop gives the others a turn now and then (v17).
+        self.preempt_point();
         let slot = match (&plan, hidden) {
             (Some(plan), _) => self.place_commit(iter, plan).0,
             (None, Some(slot)) => slot,

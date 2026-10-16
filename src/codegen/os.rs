@@ -82,7 +82,7 @@ impl<'ctx> Lowerer<'ctx> {
                 }
             }
             // `std.process` (milestone 66): `Ok((code, stdout, stderr))` or `Err(reason)`.
-            "spawn" => {
+            "start" => {
                 let cmd = self.get(&args[0], &Type::String)?;
                 let list = self.get(&args[1], &Type::Array(Box::new(Type::String)))?;
                 let input = self.get(&args[2], &Type::String)?;

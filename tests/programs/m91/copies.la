@@ -1,0 +1,22 @@
+// Values cross a channel as copies: changing the original later changes
+// nothing the receiver got. Tasks and channels print as what they are.
+struct Point { x: i64, y: i64 }
+
+fun main() {
+    let c: Chan<i64[]> = Chan.buffered(1);
+    let mut xs = [1, 2, 3];
+    c.send(xs);
+    xs[0] = 100;
+    println(c.recv().unwrap());
+    println(xs);
+    let p: Chan<Point> = Chan.buffered(1);
+    p.send(Point { x: 1, y: 2 });
+    let got = p.recv().unwrap();
+    println("{got.x} {got.y}");
+    let t = spawn fun(): Point { Point { x: 3, y: 4 } }();
+    let q = t.join();
+    println("{q.x} {q.y}");
+    println(t);
+    println(c);
+    println(c.is(c));
+}
