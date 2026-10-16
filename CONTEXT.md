@@ -7413,3 +7413,26 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - The actor discussion: language-level `actor` vs library.
+
+---
+
+## SESSION 208 — 2026-10-16 — Actors: discussion, continued — closed
+Branch: main
+
+### WHAT WAS DONE
+- The user chose the `actor` keyword (over a library of channels and enums). Asked the next question: how calls work (recommended: value-returning methods wait for the reply, void ones are queued without waiting, messages handled in arrival order).
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- Actors: a language-level `actor` declaration (the user's choice).
+
+### PENDING DECISIONS OPENED
+- None (the discussion continues).
+
+### STILL OPEN AT CLOSE
+- Actor discussion: calls, stopping, panics/supervision.
