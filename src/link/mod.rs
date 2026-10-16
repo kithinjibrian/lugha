@@ -15,18 +15,18 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 /// The runtime's source files, in the order they are joined: the core first,
 /// since it holds every `#include`, then the fragments that rely on it.
 pub const RUNTIME_PARTS: [(&str, &str); 12] = [
-    ("lugha_rt.c", include_str!("../runtime/lugha_rt.c")),
-    ("stack.c", include_str!("../runtime/stack.c")),
-    ("print.c", include_str!("../runtime/print.c")),
-    ("input.c", include_str!("../runtime/input.c")),
-    ("format.c", include_str!("../runtime/format.c")),
-    ("bytes.c", include_str!("../runtime/bytes.c")),
-    ("chars.c", include_str!("../runtime/chars.c")),
-    ("random.c", include_str!("../runtime/random.c")),
-    ("env.c", include_str!("../runtime/env.c")),
-    ("fs.c", include_str!("../runtime/fs.c")),
-    ("process.c", include_str!("../runtime/process.c")),
-    ("test.c", include_str!("../runtime/test.c")),
+    ("lugha_rt.c", include_str!("../../runtime/lugha_rt.c")),
+    ("stack.c", include_str!("../../runtime/stack.c")),
+    ("print.c", include_str!("../../runtime/print.c")),
+    ("input.c", include_str!("../../runtime/input.c")),
+    ("format.c", include_str!("../../runtime/format.c")),
+    ("bytes.c", include_str!("../../runtime/bytes.c")),
+    ("chars.c", include_str!("../../runtime/chars.c")),
+    ("random.c", include_str!("../../runtime/random.c")),
+    ("env.c", include_str!("../../runtime/env.c")),
+    ("fs.c", include_str!("../../runtime/fs.c")),
+    ("process.c", include_str!("../../runtime/process.c")),
+    ("test.c", include_str!("../../runtime/test.c")),
 ];
 
 /// Every runtime function codegen may call; `lugha_rt.c` defines them all.
@@ -94,18 +94,18 @@ pub const RUNTIME_SYMBOLS: [&str; 58] = [
 /// The C runtime linked into every program: [`RUNTIME_PARTS`] joined in order,
 /// compiled as one `lugha_rt.c`.
 pub const RUNTIME_SOURCE: &str = concat!(
-    include_str!("../runtime/lugha_rt.c"),
-    include_str!("../runtime/stack.c"),
-    include_str!("../runtime/print.c"),
-    include_str!("../runtime/input.c"),
-    include_str!("../runtime/format.c"),
-    include_str!("../runtime/bytes.c"),
-    include_str!("../runtime/chars.c"),
-    include_str!("../runtime/random.c"),
-    include_str!("../runtime/env.c"),
-    include_str!("../runtime/fs.c"),
-    include_str!("../runtime/process.c"),
-    include_str!("../runtime/test.c"),
+    include_str!("../../runtime/lugha_rt.c"),
+    include_str!("../../runtime/stack.c"),
+    include_str!("../../runtime/print.c"),
+    include_str!("../../runtime/input.c"),
+    include_str!("../../runtime/format.c"),
+    include_str!("../../runtime/bytes.c"),
+    include_str!("../../runtime/chars.c"),
+    include_str!("../../runtime/random.c"),
+    include_str!("../../runtime/env.c"),
+    include_str!("../../runtime/fs.c"),
+    include_str!("../../runtime/process.c"),
+    include_str!("../../runtime/test.c"),
 );
 
 /// Why linking failed.
