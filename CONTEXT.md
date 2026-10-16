@@ -7119,5 +7119,24 @@ Branch: main
 
 ---
 
-## SESSION 196 — 2026-10-16 — Green threads: discovery, continued — open
+## SESSION 196 — 2026-10-16 — Green threads: discovery, continued — closed
 Branch: main
+
+### WHAT WAS DONE
+- Discovery answer 3: `spawn` takes only a call expression (`spawn f(args)`, including a call of a closure value, `spawn job()`). No `spawn { … }` block form, because closures already cover it. Arguments are evaluated at once in the spawning thread.
+- Question 4 (panics in a green thread, and `main` returning while threads still run: recommended that a panic ends the program and `main` returning ends all threads) was paused: the user wants to clarify something first.
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- None recorded yet (discovery answers go into the PRP).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The green-threads discovery, at question 4. Answers so far: M:1 scheduler; scope = spawn, join, yield_now, sleep, Chan<T>; `spawn <call>` only.
