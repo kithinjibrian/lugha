@@ -7296,3 +7296,26 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - Nothing new (actors and the VS Code grammar remain next).
+
+---
+
+## SESSION 203 — 2026-10-16 — Unjoined spawn, explained step by step — closed
+Branch: main
+
+### WHAT WAS DONE
+- The user didn't follow session 202's explanation; re-explained with a step-by-step timeline of the program. No code change.
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- None.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing new.
