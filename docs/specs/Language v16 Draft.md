@@ -227,6 +227,18 @@ Longer explanations of diagnostic codes (the user's choices: every code, example
 96. **In the editor,** each diagnostic's code links (LSP `codeDescription`) to `lugha-explain:<CODE>.md`; the VS Code extension shows that document read-only in a tab, from the installed `lughac explain`, offline. Explaining runs no program code, so it works in untrusted folders too.
 97. **Success:** milestone 86, tag `m86`. Tests: `tests/explain.rs` (every code explained, every example checked, the command, the hint), the updated expected stderr of `tests/programs/`, the extension's unit tests.
 
+## Decisions behind milestone 87 (discovery, session 184)
+
+Linking C libraries, the first step toward GUI programs (the user's choices: declared in `lugha.toml`; pkg-config included; every used package's table applies; packages may ship C files; fixable link problems are diagnostics, exit 1).
+
+98. **`[link]`** is a third manifest table, at most once, in any order with the others. Its lines are `key = ["…", …]`, a one-line array of double-quoted strings, each key at most once: `libs` (library names, linked as `-l<name>`), `paths` (folders searched for libraries, `-L`), `include` (folders searched for headers by this package's C files, `-I`), `c` (C files compiled into the program) and `pkg-config` (package names for the system `pkg-config`). A name is `[A-Za-z0-9_+.-]+`, not starting with `-`; a path is relative, with `/`, inside the package's folder (no absolute path, no `..` leaving it); a `c` file ends in `.c`. Anything else is E0321; a missing folder or file is E0322.
+99. **Which tables apply:** the program's own and those of every package with at least one module in the build, in load order, the program first. Libraries are linked once each, in order of first appearance, after every `-L` folder.
+100. **pkg-config:** at build time (`build`, `run`, `test`), each package's names go to `pkg-config --libs`, and to `pkg-config --cflags` when that package has C files, run without a shell. Only `-l…`, `-L…` and `-pthread` may come from `--libs`, and only `-I…`, `-D…` and `-pthread` from `--cflags`; any other flag, a missing `pkg-config` or a failing one is E0329 at the `pkg-config` line.
+101. **C files** are each compiled on their own (`cc -c`, with that package's `include` folders and `--cflags`), never in the runtime's compile, and linked with the program. One that doesn't compile is E0330 at the `c` line, with the compiler's message. They can't call Lugha functions, and §8's rules for extern calls hold unchanged.
+102. **Link failures:** when a build with any `[link]` input fails to link, that is E0331 with the linker's message, exit 1; without `[link]` input it stays an internal error, exit 2, and the command is unchanged.
+103. **Nothing runs while checking:** `lughac check` and the language server read and check `[link]` (E0321, E0322) but never start `pkg-config` or the C compiler.
+104. **Success:** milestone 87, tag `m87`. Tests: `tests/link_libs.rs` (a static library built by the test, a path package carrying `[link]`, a C file, a fake `pkg-config`, E0321/E0322/E0329–E0331, `check` starting nothing), unit tests for the table, the order and the flag filter; manually, the system zlib.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -274,6 +286,7 @@ Longer explanations of diagnostic codes (the user's choices: every code, example
 | 84 | `lughac test` | `@test` functions, `assert`/`assert_eq`/`assert_ne`, each test in its own process, in parallel, with a time limit |
 | 85 | Tests in the editor | `lughac test --list`/`--json`/`--exact`; VS Code's Testing view and gutter; never in untrusted folders |
 | 86 | `lughac explain` | an explanation for every code, examples checked; the hint after diagnostics; code links in the editor |
+| 87 | Linking C libraries | `[link]` in `lugha.toml`: `libs`, `paths`, `include`, `c`, `pkg-config`; every used package's table; E0329–E0331 |
 
 ## §12 Open questions — additions
 
