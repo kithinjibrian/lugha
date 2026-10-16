@@ -23,6 +23,9 @@ pub struct LoadEnv {
     /// Keep a module's recovered program when it has syntax errors, and
     /// follow its imports: for the language server only (v16, milestone 75).
     pub partial: bool,
+    /// Load a main file inside its package's `source` folder as that
+    /// package's module, for `lughac test` and `lughac check` (v17, milestone 97).
+    pub as_module: bool,
 }
 
 impl LoadEnv {
@@ -34,8 +37,40 @@ impl LoadEnv {
             home: None,
             cwd: PathBuf::from("/"),
             partial: false,
+            as_module: false,
         }
     }
+}
+
+/// The package name and module path of `main` when it lies inside the
+/// `source` folder its manifest names (`glow/src/diff.la` → `glow`,
+/// `[glow, diff]`): the module a hidden entry would import (v17 draft
+/// decision 43). `None` for a file outside one, or a path that can't be
+/// a module's.
+pub fn module_path(
+    main: &Path,
+    read: &mut Read<'_>,
+    env: &LoadEnv,
+) -> Option<(String, Vec<String>)> {
+    let root = main.parent().unwrap_or(Path::new(""));
+    let folder = manifest_folder(root, read, env);
+    // An unreadable manifest is reported when the program loads.
+    let text = read(&folder.join(MANIFEST)).ok()?;
+    let (manifest, _) = manifest::parse(&String::from_utf8_lossy(&text), 0);
+    let name = manifest.package.name?;
+    let source = normalized(&folder.join(manifest.package.source?));
+    let inside = normalized(main)
+        .strip_prefix(&source)
+        .ok()?
+        .with_extension("");
+    let mut path = vec![name.clone()];
+    for part in inside.components() {
+        match part {
+            std::path::Component::Normal(p) => path.push(p.to_str()?.to_string()),
+            _ => return None,
+        }
+    }
+    (path.len() > 1).then_some((name, path))
 }
 
 /// The folder whose `lugha.toml` is the program's: `root` (the main file's

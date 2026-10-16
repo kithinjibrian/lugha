@@ -48,22 +48,25 @@ pub(super) struct Front {
 /// can't be read is internal; mistakes in the program come back as diagnostics.
 pub(super) fn loaded(path: &Path, mode: Mode) -> Result<(Source, Loaded), Failure> {
     let mut read = |file: &Path| std::fs::read(file);
-    loaded_with(path, mode, &mut read, (true, false))
+    loaded_with(path, mode, &mut read, (true, false, false))
 }
 
 /// `loaded` reading files through `read`, writing `lugha.lock` only if
 /// `write_lock`, and keeping modules' recovered programs if `partial`: the
 /// language server reads open documents' unsaved text, never writes (v16
 /// draft decision 13) and checks text with syntax errors (decision 38).
+/// With `as_module`, a file in its package's `source` folder is loaded as
+/// that package's module (v17 draft decision 43).
 pub(super) fn loaded_with(
     path: &Path,
     mode: Mode,
     read: &mut modules::Read<'_>,
-    (write_lock, partial): (bool, bool),
+    (write_lock, partial, as_module): (bool, bool, bool),
 ) -> Result<(Source, Loaded), Failure> {
     let name = path.display().to_string();
     let env = modules::layout::LoadEnv {
         partial,
+        as_module,
         ..update::env(mode)
     };
     match modules::load(path, read, env) {
@@ -112,17 +115,24 @@ pub(super) fn front(path: &Path, mode: Mode) -> Result<Front, Failure> {
     check_parsed(parsed(path, mode)?, false)
 }
 
+/// [`parsed`] for `lughac test` and `lughac check`: a file in its package's
+/// `source` folder is that package's module (v17, milestone 97).
+fn parsed_module(path: &Path, mode: Mode) -> Result<Front, Failure> {
+    let mut read = |file: &Path| std::fs::read(file);
+    parse_loaded(loaded_with(path, mode, &mut read, (true, false, true))?)
+}
+
 /// [`front`] for `lughac test` (milestone 84): no `main` needed, and the
 /// checker lists the file's tests.
 pub(super) fn front_tests(path: &Path, mode: Mode) -> Result<Front, Failure> {
-    check_parsed(parsed(path, mode)?, true)
+    check_parsed(parsed_module(path, mode)?, true)
 }
 
 /// [`front`] for `lughac check` (v17, milestone 97): a file that declares
 /// no `fun main` is checked as a library, the way `lughac test` checks it;
 /// only `build` and `run` need `main`.
 pub(super) fn front_check(path: &Path, mode: Mode) -> Result<Front, Failure> {
-    let front = parsed(path, mode)?;
+    let front = parsed_module(path, mode)?;
     let library = front
         .modules
         .first()
@@ -155,7 +165,7 @@ pub(super) fn front_partial(
     mode: Mode,
     read: &mut modules::Read<'_>,
 ) -> Result<PartialFront, Failure> {
-    let (source, loaded) = loaded_with(path, mode, read, (false, true))?;
+    let (source, loaded) = loaded_with(path, mode, read, (false, true, false))?;
     // A module that didn't lex has no program: nothing to check.
     if loaded.modules.iter().any(|m| m.program.is_none()) {
         return Err(Failure::Program(source, loaded.diagnostics));

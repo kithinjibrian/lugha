@@ -84,9 +84,11 @@ fn check_with(units: &[Unit], tests: bool) -> Result<(Checked, Vec<Diagnostic>),
             c_params: checker.c_params,
             variant_values: checker.variant_values,
             tests: tests.then(|| {
-                units
-                    .first()
-                    .map_or_else(Vec::new, |u| super::test_fns::tests_of(u.program))
+                // Qualified, so a package's module keeps its tests' keys (v17).
+                units.first().map_or_else(Vec::new, |u| {
+                    let tests = super::test_fns::tests_of(u.program);
+                    tests.iter().map(|t| qualify(u.path, t)).collect()
+                })
             }),
         },
         checker.diagnostics,

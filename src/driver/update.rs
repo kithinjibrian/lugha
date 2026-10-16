@@ -27,6 +27,7 @@ pub(super) fn env(mode: Mode) -> LoadEnv {
         home,
         cwd,
         partial: false,
+        as_module: false,
     }
 }
 

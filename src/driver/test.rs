@@ -123,9 +123,9 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
         let exe = temp.path.join(format!("test{i}"));
         match build(file, &exe) {
             Ok(tests) => {
-                let module = module_name(file);
+                let module = test_json::module_name(file);
                 jobs.extend(tests.into_iter().map(|(test, line, _)| Job {
-                    name: format!("{module}.{test}"),
+                    name: format!("{module}.{}", test_json::bare(&test)),
                     test,
                     exe: exe.clone(),
                     file: display(file),
@@ -240,7 +240,7 @@ fn list(request: &Request, files: &[PathBuf], out: &mut Output) -> u8 {
                 continue;
             }
         };
-        let module = module_name(file);
+        let module = test_json::module_name(file);
         for (test, line, col) in test_json::listed(&text).unwrap_or_default() {
             let name = format!("{module}.{test}");
             if request.wants(&name) {
@@ -315,18 +315,11 @@ fn build(file: &Path, exe: &Path) -> Result<Vec<(String, usize, usize)>, Failure
         .map(|t| {
             let (line, col) = positions
                 .iter()
-                .find(|(n, _, _)| *n == t)
+                .find(|(n, _, _)| n == test_json::bare(&t))
                 .map_or((1, 1), |(_, l, c)| (*l, *c));
             (t, line, col)
         })
         .collect())
-}
-
-/// A test's module as reported: the file's path without `.la`, folders
-/// joined with `.` (`src/geo.la` → `src.geo`).
-fn module_name(file: &Path) -> String {
-    let shown = display(&file.with_extension(""));
-    shown.replace(['/', '\\'], ".")
 }
 
 /// Runs every job, up to one per CPU at a time, telling `done` about each
@@ -462,12 +455,6 @@ mod tests {
         assert!(!has_tests("fun main() { println(\"@test\"); }"));
         // Doesn't lex, mentions it: built, so the error is reported.
         assert!(has_tests("@test fun t() { ` }"));
-    }
-
-    #[test]
-    fn module_names_follow_the_path() {
-        assert_eq!(module_name(Path::new("geo.la")), "geo");
-        assert_eq!(module_name(Path::new("./src/geo.la")), "src.geo");
     }
 
     #[test]

@@ -145,7 +145,7 @@ fn one_file_imported_twice_is_e0328() {
         ),
         ("tool/src/cli.la", ""),
     ]);
-    let check = lughac(&t.0, &t.0, &["check", "tool/src/main.la"]);
+    let check = lughac(&t.0, &t.0, &["build", "tool/src/main.la"]);
     assert_eq!(check.status.code(), Some(1));
     assert!(
         text(&check.stderr).contains("E0328"),

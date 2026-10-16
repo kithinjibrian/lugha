@@ -340,3 +340,48 @@ fn skip_outside_a_test_panics_v17() {
         text(&out.stderr)
     );
 }
+
+/// A package whose `diff` and `vdom` modules import each other.
+fn cyclic_package() -> Temp {
+    let diff = "import vdom;\nfun patch(n: i64): i64 = vdom.size(n) + 1;\n\
+                @test\nfun patches() { assert_eq(patch(1), 3); }\n";
+    let vdom = "import diff;\nfun size(n: i64): i64 = n * 2;\n\
+                fun both(n: i64): i64 = diff.patch(n);\n";
+    Temp::with(&[
+        (
+            "lugha.toml",
+            "[package]\nname = \"glow\"\nsource = \"src\"\n",
+        ),
+        ("src/diff.la", diff),
+        ("src/vdom.la", vdom),
+    ])
+}
+
+#[test]
+fn a_package_file_is_tested_as_its_module_v17() {
+    let t = cyclic_package();
+    let out = lughac(&t.0, &["test", "src/diff.la"]);
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    assert!(
+        text(&out.stdout).contains("test glow.diff.patches ... ok"),
+        "{}",
+        text(&out.stdout)
+    );
+    // The same name in a listing, and found by an exact filter.
+    let listed = lughac(&t.0, &["test", "--list", "src/diff.la"]);
+    assert_eq!(
+        text(&listed.stdout),
+        "test glow.diff.patches src/diff.la:4:5\n"
+    );
+    let exact = lughac(
+        &t.0,
+        &["test", "--exact", "--filter", "glow.diff.patches", "src"],
+    );
+    assert!(
+        text(&exact.stdout).contains("1 test: 1 passed"),
+        "{}",
+        text(&exact.stdout)
+    );
+    let checked = lughac(&t.0, &["check", "src/vdom.la"]);
+    assert_eq!(checked.status.code(), Some(0), "{}", text(&checked.stderr));
+}
