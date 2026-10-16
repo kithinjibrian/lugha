@@ -1,6 +1,8 @@
-// std.fs (v15, milestone 65): folders and what exists. File contents stay
-// with the intrinsics (`read_file`, `write_file`, …). Nothing here deletes
-// recursively: `remove_dir` takes only an empty folder.
+/**
+ * std.fs: folders and what exists. File contents stay
+ * with the intrinsics (`read_file`, `write_file`, …). Nothing here deletes
+ * recursively: `remove_dir` takes only an empty folder.
+ */
 
 /**
  * The names in a folder, sorted by their bytes, without `.` and `..`.

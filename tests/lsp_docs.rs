@@ -248,3 +248,56 @@ fn the_library_is_documented() {
     }
     assert_eq!(s.finish(), Some(0));
 }
+
+const MODULES: &str = "import geo.shapes;
+import geo.plain;
+import std.math;
+
+fun main() {
+    println(shapes.area() + plain.one());
+    println(math.sqrt(4.0));
+}
+";
+
+const SHAPES: &str = "/**
+ * Shapes and their areas.
+ */
+
+/** The unit area. */
+public fun area(): i64 = 1;
+";
+
+#[test]
+fn hover_on_a_module_shows_its_module_doc_v17() {
+    let t = Temp::with(&[
+        ("main.la", MODULES),
+        ("geo/shapes.la", SHAPES),
+        ("geo/plain.la", "public fun one(): i64 = 1;\n"),
+    ]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, MODULES);
+    s.expect(&uri, &[]);
+    let mut at = |context: &str, word: &str| {
+        let (line, col) = pos(MODULES, context, word);
+        s.hover(&uri, line, col)["contents"]["value"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string()
+    };
+    let shapes = format!("{}\n\nShapes and their areas.", code("module geo.shapes"));
+    assert_eq!(at("import geo.shapes", "shapes"), shapes);
+    assert_eq!(at("shapes.area()", "shapes"), shapes);
+    // A module without a doc, and the first item keeping its own.
+    assert_eq!(at("import geo.plain", "plain"), code("module geo.plain"));
+    assert_eq!(
+        at("shapes.area()", "area"),
+        format!("{}\n\nThe unit area.", code("fun area(): i64"))
+    );
+    let math = at("import std.math", "math");
+    assert!(
+        math.starts_with(&format!("{}\n\n", code("module std.math"))) && math.len() > 40,
+        "{math:?}"
+    );
+    assert_eq!(s.finish(), Some(0));
+}

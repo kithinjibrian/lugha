@@ -439,6 +439,9 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 ### Milestone 93 — Struct update syntax ✅
 - [x] (PRP-124) `S { f: e, ..base }`, Rust's rules; E0440, W0104; for kivuli
 
+### Milestone 98 — Module doc comments ✅
+- [x] (PRP-130) a file's top `/** */` documents its module; hover on module names; std documented; tagged `m98`
+
 ### Milestone 97 — Packages and tests ✅
 - [x] (PRP-128) package files as modules under `test`/`check`, `test/` inside the package, `check` without `main`, one lock per package, `skip(reason)`; tagged `m97`
 

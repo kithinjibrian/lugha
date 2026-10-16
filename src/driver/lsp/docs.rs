@@ -1,6 +1,6 @@
 //! Doc comments (v16 draft decisions 47–49): the `/** … */` right before a
 //! declaration, its Markdown text and `@param`/`@returns` tags, for hover,
-//! completion and signature help.
+//! completion and signature help; and a file's module doc (v17, PRP-130).
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -179,6 +179,88 @@ pub(super) fn attached(text: &str, docs: &[Span], name: usize) -> Option<Span> {
     docs.iter().find(|d| d.end == at).copied()
 }
 
+/// The module doc of a file (v17, milestone 98): its first doc comment,
+/// when only whitespace and plain comments come before it, and a blank
+/// line, an `import` (or `public import`) or the end of the file after it,
+/// apart from whitespace and plain comments. Directly above an item, it is
+/// the item's instead.
+pub(super) fn module_doc(text: &str, docs: &[Span]) -> Option<Span> {
+    let first = *docs.first()?;
+    let (start, _) = skip_comments(text, 0, docs);
+    if start != first.start {
+        return None;
+    }
+    let (next, blank) = skip_comments(text, first.end, docs);
+    let rest = &text[next..];
+    let word = |w: &str| {
+        rest.strip_prefix(w).is_some_and(|after| {
+            !after.starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_')
+        })
+    };
+    let public_import = rest.strip_prefix("public").is_some_and(|after| {
+        after.starts_with(char::is_whitespace) && after.trim_start().starts_with("import")
+    });
+    (blank || rest.is_empty() || word("import") || public_import).then_some(first)
+}
+
+/// From `at`, past whitespace and plain comments (`//`, nested `/* */`,
+/// not the doc comments in `docs`): where the next thing starts, and
+/// whether a blank line was passed.
+fn skip_comments(text: &str, mut at: usize, docs: &[Span]) -> (usize, bool) {
+    let bytes = text.as_bytes();
+    let (mut blank, mut line_empty) = (false, false);
+    while at < bytes.len() {
+        match bytes[at] {
+            b'\n' => {
+                blank |= line_empty;
+                line_empty = true;
+                at += 1;
+            }
+            b' ' | b'\t' | b'\r' => at += 1,
+            b'/' if bytes.get(at + 1) == Some(&b'/') => {
+                line_empty = false;
+                at = text[at..].find('\n').map_or(bytes.len(), |n| at + n);
+            }
+            b'/' if bytes.get(at + 1) == Some(&b'*') && !docs.iter().any(|d| d.start == at) => {
+                line_empty = false;
+                at = block_end(text, at);
+            }
+            _ => break,
+        }
+    }
+    (at, blank)
+}
+
+/// The end of the (nested) block comment starting at `at`; the text's end
+/// when it isn't closed.
+fn block_end(text: &str, mut at: usize) -> usize {
+    let bytes = text.as_bytes();
+    let mut depth = 0;
+    while at + 1 < bytes.len() {
+        match (bytes[at], bytes[at + 1]) {
+            (b'/', b'*') => {
+                depth += 1;
+                at += 2;
+            }
+            (b'*', b'/') => {
+                depth -= 1;
+                at += 2;
+                if depth == 0 {
+                    return at;
+                }
+            }
+            _ => at += 1,
+        }
+    }
+    bytes.len()
+}
+
+/// [`attached`], unless that comment is the file's module doc (v17).
+pub(super) fn item_doc(text: &str, docs: &[Span], name: usize) -> Option<Span> {
+    let span = attached(text, docs, name)?;
+    (module_doc(text, docs) != Some(span)).then_some(span)
+}
+
 /// Each file's doc comments in a snapshot, by the file's base, found once.
 #[derive(Default)]
 pub(super) struct DocCache {
@@ -193,7 +275,18 @@ pub(super) fn doc_for(snapshot: &Snapshot, decl: Span) -> Option<Doc> {
     let docs = files
         .entry(file.base)
         .or_insert_with(|| crate::lexer::doc_comments(&file.text));
-    let span = attached(&file.text, docs, decl.start.checked_sub(file.base)?)?;
+    let span = item_doc(&file.text, docs, decl.start.checked_sub(file.base)?)?;
+    Some(parse(&file.text[span.start..span.end]))
+}
+
+/// The module doc of the file starting at `base` in a snapshot (v17).
+pub(super) fn module_doc_at(snapshot: &Snapshot, base: usize) -> Option<Doc> {
+    let file = snapshot.source.file_at(base);
+    let mut files = snapshot.docs.files.borrow_mut();
+    let docs = files
+        .entry(file.base)
+        .or_insert_with(|| crate::lexer::doc_comments(&file.text));
+    let span = module_doc(&file.text, docs)?;
     Some(parse(&file.text[span.start..span.end]))
 }
 
@@ -237,6 +330,38 @@ mod tests {
             "Max.\n@since v16\n\n*returns* — the larger one"
         );
         assert_eq!(parse("/** @return it */").returns.as_deref(), Some("it"));
+    }
+
+    #[test]
+    fn a_module_doc_is_the_top_comment_before_a_blank_line_or_an_import_v17() {
+        fn found(t: &str) -> Option<&str> {
+            let docs = crate::lexer::doc_comments(t);
+            module_doc(t, &docs).map(|s| &t[s.start..s.end])
+        }
+        assert_eq!(found("/** M. */\n\nfun f() {}"), Some("/** M. */"));
+        assert_eq!(found("/** M. */\nimport a;"), Some("/** M. */"));
+        assert_eq!(found("/** M. */\npublic import a;"), Some("/** M. */"));
+        assert_eq!(found("// licence\n/* c */\n/** M. */\n"), Some("/** M. */"));
+        assert_eq!(found("/** M. */\n// note\n\nfun f() {}"), Some("/** M. */"));
+        assert_eq!(found("/** M. */"), Some("/** M. */"));
+        // Directly above an item it is the item's.
+        assert_eq!(found("/** F. */\nfun f() {}"), None);
+        assert_eq!(found("/** F. */\n// note\nfun f() {}"), None);
+        // Only the first thing in the file.
+        assert_eq!(found("import a;\n/** X. */\n\nfun f() {}"), None);
+        assert_eq!(found("fun g() {}\n/** X. */\n\nfun f() {}"), None);
+        assert_eq!(found("fun f() {}"), None);
+    }
+
+    #[test]
+    fn a_module_doc_is_never_an_items_v17() {
+        let text = "/** M. */\n\n/** F. */\nfun f() {}\n";
+        let docs = crate::lexer::doc_comments(text);
+        let item = item_doc(text, &docs, text.find("f()").unwrap());
+        assert_eq!(item.map(|s| &text[s.start..s.end]), Some("/** F. */"));
+        let text = "/** M. */\n\nfun f() {}\n";
+        let docs = crate::lexer::doc_comments(text);
+        assert_eq!(item_doc(text, &docs, text.find("f()").unwrap()), None);
     }
 
     #[test]

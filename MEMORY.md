@@ -2043,11 +2043,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** the user approved (security decision, session 223) accepting exactly `-mfpmath=sse`, `-msse`, `-msse2` from `pkg-config --cflags` (`X86_64_DEFAULTS`, `Flag::X86_64`), rather than dropping unrecognised `-m…` flags. They restate x86-64 System V defaults; every other `-m…` flag, and these from `--libs`, stay refused (E0329). Found by the kivuli/lugha-gtk session: C shims plus GTK failed.
 
+### 182. Module doc comments — milestone 98 (PRP-130)
+
+**Decision:** a file's first `/** */`, with only whitespace and plain comments before it, is the module's doc when a blank line, `import`/`public import` or the end of the file follows (the user, session 224). `lsp/docs.rs`: `module_doc` (its own small scanner over comments, so partial text works), `item_doc` (= `attached` minus the module doc: a top doc + blank line + item now documents the module, not the item), `module_doc_at`. `lsp/hover.rs`: `Found::Module` from `Target::Module`. std headers converted (version/milestone notes dropped), shifting std panic lines by 2.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 98 complete**: PRP-130 module doc comments
 - **Milestone 97 complete**: PRP-128 packages and tests
 - **Milestone 96 complete**: PRP-127 inference from siblings
 - **Milestone 95 complete**: PRP-126 formatter hugging

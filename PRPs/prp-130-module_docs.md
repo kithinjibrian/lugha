@@ -1,6 +1,6 @@
 ## FEATURE: Module doc comments — a `/** … */` at the top of a file documents its module, shown when hovering the module's name; the std modules documented; milestone 98 (v17).
 
-**Status:** approved 2026-10-17 ("build", session 225); proposed in session 224, after two questions answered by the user (the rule, std included).
+**Status:** built in session 225; approved 2026-10-17 ("build", session 225); proposed in session 224, after two questions answered by the user (the rule, std included).
 
 ## OBJECTIVE
 Hovering `diff` in `import kivuli.diff;` or in `diff.patch(x)` shows `module kivuli.diff` and the doc comment at the top of `diff.la`, the way hovering a function shows its doc. Files written like kivuli's (a `/** … */`, a blank line, then the imports) need no change. `import std.math;` shows `std.math`'s description.
@@ -44,6 +44,12 @@ Hovering `diff` in `import kivuli.diff;` or in `diff.patch(x)` shows `module kiv
 
 ## ROLLBACK PLAN
 - Branch to return to: `main`; revert the merge.
+
+## BUILT (session 225)
+- `lsp/docs.rs`: `module_doc` (a small scanner over whitespace and plain comments, stopping at doc comments, tracking blank lines), `item_doc` (`attached` minus the module doc, used by `doc_for`), `module_doc_at`. `lsp/hover.rs`: `Found::Module` from `Target::Module`, header `module a.b`, doc from the module's file.
+- Consequence: a file's top doc followed by a blank line and then an item now documents the module, not the item (before, `attached` skipped the blank line). No std or prelude item relied on it (`the_library_is_documented` passes).
+- std headers converted with the version/milestone notes dropped; std panic lines moved by 2 (`m53/clamp_panic`, `m54/below_panic` expectations updated).
+- Tests: `docs.rs` (2 new), `lsp_docs::hover_on_a_module_shows_its_module_doc_v17`. Targeted: `--lib`, `lsp_docs`, `lsp_hover`, `lsp_definition`, `lsp_completion`, `lsp_signature`, `lsp_references`, `lsp_partial`, `fmt_corpus`, `lazy_std`, `programs`, `spec`, fmt, clippy.
 
 ## ACCEPTANCE CRITERIA
 - [ ] Hovering `diff` in kivuli's `import kivuli.diff;` shows its top comment, with no change to kivuli.

@@ -1,9 +1,11 @@
-// std.process (v15, milestone 66): runs another program with an argument
-// list and waits for it. There is never a shell: `cmd` and each argument
-// reach the program exactly as given, so `;`, `|`, `$( )` and globs mean
-// nothing. A `cmd` without `/` is looked up on `PATH`, one with `/` is a
-// path. The program gets this one's environment, and only stdin, stdout
-// and stderr: every other descriptor is closed on exec.
+/**
+ * std.process: runs another program with an argument
+ * list and waits for it. There is never a shell: `cmd` and each argument
+ * reach the program exactly as given, so `;`, `|`, `$( )` and globs mean
+ * nothing. A `cmd` without `/` is looked up on `PATH`, one with `/` is a
+ * path. The program gets this one's environment, and only stdin, stdout
+ * and stderr: every other descriptor is closed on exec.
+ */
 
 /** What a finished program left: its exit code (`128 + n` when signal `n` ended it), and everything it wrote to stdout and stderr. */
 public struct Output { public code: i32, public stdout: string, public stderr: string }

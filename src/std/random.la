@@ -1,12 +1,14 @@
-// std.random (v15, milestone 54): `import std.random;`, then
-//
-//     let mut rng = random.seeded(42);    // the same numbers on every run
-//     let mut rng = random.from_os();     // seeded from the operating system
-//     rng.uniform()  rng.below(6)  rng.normal(0.0, 1.0)  rng.shuffle(xs)
-//
-// The generator is xoshiro256** (Blackman and Vigna), seeded through
-// splitmix64. It is fast and statistically strong, but NOT
-// cryptographically secure: never use it for keys, tokens or passwords.
+/**
+ * std.random: `import std.random;`, then
+ *
+ *     let mut rng = random.seeded(42);    // the same numbers on every run
+ *     let mut rng = random.from_os();     // seeded from the operating system
+ *     rng.uniform()  rng.below(6)  rng.normal(0.0, 1.0)  rng.shuffle(xs)
+ *
+ * The generator is xoshiro256** (Blackman and Vigna), seeded through
+ * splitmix64. It is fast and statistically strong, but NOT
+ * cryptographically secure: never use it for keys, tokens or passwords.
+ */
 import std.math;
 
 /** A random number generator (xoshiro256**): fast and statistically strong, but not cryptographically secure — never use it for keys, tokens or passwords. */
