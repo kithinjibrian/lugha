@@ -18,6 +18,7 @@ use crate::codegen::{self, CodegenError, OptLevel};
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::link;
 use crate::modules::fetch::Mode;
+use crate::modules::link_table::PackageLink;
 use crate::modules::{self, Loaded, Module};
 
 /// Why a command stopped.
@@ -37,6 +38,8 @@ pub(super) struct Front {
     pub warnings: Vec<Diagnostic>,
     /// The checker's output; `None` for the parse-only front end (`--emit=ast`).
     pub checked: Option<Checked>,
+    /// The `[link]` tables of the program's packages (v16, milestone 87).
+    pub links: Vec<PackageLink>,
 }
 
 /// Loads `path` and every module it imports, fetching git packages as
@@ -99,6 +102,7 @@ fn parse_loaded((source, loaded): (Source, Loaded)) -> Result<Front, Failure> {
         modules: loaded.modules,
         warnings: loaded.diagnostics,
         checked: None,
+        links: loaded.links,
     })
 }
 
@@ -153,6 +157,7 @@ pub(super) fn front_partial(
         modules: loaded.modules,
         warnings: loaded.diagnostics,
         checked: None,
+        links: loaded.links,
     };
     let mut prelude_errors = Vec::new();
     modules::with_prelude_at(&mut front.modules, &mut prelude_errors, end);
@@ -182,7 +187,16 @@ pub(super) fn front_partial(
 fn check_parsed(mut front: Front, tests: bool) -> Result<Front, Failure> {
     // The prelude's array helpers (v3) are checked and compiled with every program.
     let mut prelude_errors = Vec::new();
-    modules::with_prelude(&mut front.modules, &mut prelude_errors);
+    // Past every file loaded, manifests too: a link diagnostic (v16) points
+    // into a `lugha.toml` after the checker ran, and must not land in the prelude.
+    let end = front
+        .source
+        .files
+        .iter()
+        .map(|f| f.base + f.text.len() + 1)
+        .max()
+        .unwrap_or(0);
+    modules::with_prelude_at(&mut front.modules, &mut prelude_errors, end);
     let prelude = front.modules.last().expect("the prelude was just added");
     front.source.add("<prelude>", prelude.base, &prelude.text);
     let start = prelude.base;
@@ -220,8 +234,12 @@ pub(super) fn ir(front: &Front) -> Result<String, Failure> {
         .map_err(|e| codegen_failure(&front.source, e))
 }
 
-/// Compiles and links `front` into the executable `exe`.
+/// Compiles and links `front` into the executable `exe`, with what its
+/// `[link]` tables add (v16): `pkg-config` runs first, so its failures
+/// come before codegen's work.
 pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Failure> {
+    let plan = link::Plan::new(&front.links, &mut link::pkg_config::run)
+        .map_err(|e| Failure::Program(front.source.clone(), vec![e.diagnostic()]))?;
     let temp = TempDir::new().map_err(|e| internal(&front.source, temp_error(e)))?;
     let object = temp.path.join("prog.o");
     codegen::emit_object_modules(
@@ -232,7 +250,10 @@ pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Fail
         &object,
     )
     .map_err(|e| codegen_failure(&front.source, e))?;
-    link::link(&[&object], exe).map_err(|e| internal(&front.source, e.to_string()))
+    link::link_with(&[&object], &plan, &temp.path, exe).map_err(|e| match e.diagnostic() {
+        Some(d) => Failure::Program(front.source.clone(), vec![d]),
+        None => internal(&front.source, e.to_string()),
+    })
 }
 
 /// Builds `front` into a temp dir and runs it with inherited standard

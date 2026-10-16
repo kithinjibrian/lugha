@@ -18,9 +18,11 @@ Never deleted. Older entries are never modified.
 - The C runtime's source is split into three files under `runtime/` (core, stack overflow handler, printing) and joined into the same single `lugha_rt.c` at build time; compiled programs are unchanged
 
 ### Fixed
+- `lughac build`/`run`/`test` place the prelude after every loaded file, `lugha.toml` included, as the language server does: a diagnostic in a manifest found after checking (the new link codes) was otherwise shown in `<prelude>` (milestone 87)
 - The language server published a `lugha.toml` error (E0325) to nothing once a program with loader errors was checked: the prelude's offsets overlapped the manifests'. The server now places the prelude after every loaded file (`modules::with_prelude_at`); the CLI never checked such programs and is unchanged
 
 ### Added
+- Linking C libraries: a `[link]` table in `lugha.toml` with `libs`, `paths`, `include`, `c` and `pkg-config`; the tables of the program and every package it uses apply, program first; C files are compiled on their own with their package's flags; only `-l`/`-L`/`-pthread` (`--libs`) and `-I`/`-D`/`-pthread` (`--cflags`) are taken from `pkg-config` (`$PKG_CONFIG` if set); E0329 (pkg-config), E0330 (a C file that doesn't compile), E0331 (a failed link with `[link]` input, exit 1 instead of an internal error); `lughac check` and the language server check the table but run nothing; `link.rs` became `src/link/` (milestone 87, PRP-117)
 - `lughac explain [CODE]`: a page for each of the 99 error and warning codes (`docs/errors/`, embedded as `lugha::explain`), each with an example that reports it and the fix, every single-file example checked by the tests; `lughac explain` lists them. `lughac lsp` links each diagnostic's code (`lugha-explain:<CODE>.md`), which VS Code extension 0.9.0 opens in a read-only tab; **Lugha: Explain Error Code** too (milestone 86, PRP-116)
 
 ### Changed

@@ -2,11 +2,11 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–86 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–87 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestones 67–86):
+**Changes since v15** (milestones 67–87):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
 - `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
 - `lughac init [folder] [--lib] [--name N]` starts a program, or a library with an example, in a folder; it never overwrites a file (milestone 69; section 9).
@@ -22,6 +22,7 @@ Oct 15, 2026 · @kithinji
 - `lughac test`: `@test` functions (`@` starts an attribute), `assert`, `assert_eq` and `assert_ne`, each test run in its own process, in parallel, with a time limit (milestone 84; sections 2, 3, 5, 9).
 - Tests in the editor: `lughac test --list`, `--json` and `--exact` for tools, and VS Code's Testing view with a ▶ beside each test, never in untrusted folders (milestone 85; section 9).
 - `lughac explain CODE` explains every error and warning code, diagnostics end with a line pointing to it, and the editor links each code to its explanation (milestone 86; section 9).
+- Linking C libraries: a `[link]` table in `lugha.toml` names libraries, library folders, header folders, C files to compile and `pkg-config` packages; the tables of every package a program uses apply (milestone 87; sections 6, 8, 9).
 
 Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type (a module's own type `Ref` still means its own), or declares a function named `assert`, `assert_eq` or `assert_ne`, which are intrinsics since milestone 84 (E0302).
 
@@ -951,6 +952,7 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 - **The manifest** is `lugha.toml`, in the main file's folder for the program and in a package's folder for that package; both are optional. lughac reads a small subset of TOML: blank lines, comments from `#` to the end of a line, a `[packages]` table and (v11) a `[package]` table, each at most once and in either order, and their lines:
   - under `[packages]`, `name = "path"` or (v11) `name = { path = "path", version = "R" }`, where `name` is a Lugha identifier, `path` a double-quoted string without `"` or `\`, relative to the manifest's folder with `/`, and the inline table's keys come in either order, `path` required and `version` optional;
   - under `[package]` (v11), `version = "MAJOR.MINOR.PATCH"`, and (v15) `name = "ident"` and `source = "path"`, each at most once. A `name` is a Lugha identifier; a `source` is a relative path with `/`, not empty, with no `..`, so a package's modules never come from outside it.
+  - under `[link]` (v16, milestone 87), lists of double-quoted strings on one line, `key = ["…", …]` (a trailing comma allowed), each key at most once: `libs` (C libraries, linked as `-l<name>`), `paths` (folders searched for libraries), `include` (folders searched for the headers of this package's C files), `c` (C files compiled into the program, ending in `.c`) and `pkg-config` (names given to the system `pkg-config`). A library or `pkg-config` name uses letters, digits and `_+.-` and doesn't start with `-`; a path is relative, with `/`, not empty, with no `..`. Section 8 says what they do.
 
   Anything else, a table twice, a name listed twice, an empty path, or a malformed version or requirement is E0321, at its line of `lugha.toml`; a path whose folder doesn't exist is E0322.
   ```
@@ -1235,6 +1237,20 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - Extern names starting with `lugha_` are reserved and rejected with an E03xx error, so an extern declaration can't collide with either.
 - Extern C code must not keep a Lugha string after the call returns, and must not write through the pointer (section 7).
 - C's `libc` and `libm` are always linked, so their functions can be declared directly.
+- **Other C libraries** (v16, milestone 87) are named in a `[link]` table of `lugha.toml` (section 6). The tables of the program and of every package with a module in the program apply, program first, then packages in the order they are loaded; a package listed but never imported adds nothing. Each `paths` folder becomes `-L`, each library `-l<name>`, each once in order of first appearance, after `-lgc -lm` and every object, so a library comes before the ones it uses.
+  - **`pkg-config`:** when `build`, `run` or `test` links, a table's names go to `pkg-config --libs`, and to `pkg-config --cflags` when that table lists C files. The program is `$PKG_CONFIG` if set, else `pkg-config`, started without a shell. Only `-l…`, `-L…` and `-pthread` are taken from `--libs`, and only `-I…`, `-D…` and `-pthread` from `--cflags`, after the table's own lists; any other flag, a missing `pkg-config`, or one that fails is E0329 at the `pkg-config` line.
+  - **C files** are each compiled by `cc -c` with their own package's `include` folders and `--cflags` only, never with the runtime, and linked into the program. One that doesn't compile is E0330 at its `c` line, with the compiler's message. They follow the rules above: C can't call Lugha functions, and a C file must not keep a Lugha string.
+  - **Failures:** when a program with `[link]` input fails to link, that is E0331 with the linker's message (exit 1). Without `[link]` input a failing link is an internal error (exit 2), and the command is exactly the one in section 9.
+  - **Checking runs nothing:** `lughac check` and the language server check a `[link]` table (E0321, and E0322 for a `paths` or `include` folder or `c` file that doesn't exist) but never start `pkg-config` or the C compiler.
+  ```
+  # lugha.toml
+  [link]
+  libs = ["raylib"]
+  paths = ["vendor/lib"]
+  c = ["shim/colors.c"]
+  include = ["vendor/include"]
+  pkg-config = ["gl"]
+  ```
 
 ## 9. Compilation model
 
@@ -1245,7 +1261,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 3. **Check.** Resolve names, compute a type for every expression, check every rule in sections 4–6. Output: the AST plus a side table mapping each expression to its type.
 4. **Lower.** Typed AST → LLVM IR via inkwell, one LLVM function per Lugha function. Run `module.verify()` afterwards; a verifier failure is a compiler bug, not a user error.
 5. **Optimize and emit.** Run LLVM's pass pipeline (`default<O0>` or `default<O2>`), then write an object file with `TargetMachine`.
-6. **Link.** Invoke the system C compiler, which also compiles the runtime: `cc prog.o lugha_rt.c -lgc -lm -o prog`. The runtime source is embedded in `lughac` and written to a private temporary file for each build.
+6. **Link.** Invoke the system C compiler, which also compiles the runtime: `cc prog.o lugha_rt.c -lgc -lm -o prog`. The runtime source is embedded in `lughac` and written to a private temporary file for each build. With `[link]` tables (v16, section 8), their C files are compiled first, each on its own, and their objects follow `prog.o`; their `-L` folders, libraries and `-pthread` follow `-lm`.
 
 **Lowering notes.** These are the places where Lugha semantics need specific IR:
 
@@ -1433,13 +1449,16 @@ Name and type errors, reported by the checker:
 | E0318 | A declaration exposing a less visible type | `private struct S {}` then `fun make(): S` (v2); `public fun a(): Inner` where `Inner` isn't `public` (v8); `public import util { helper };` where `helper` isn't `public` (v11) |
 | E0319 | The main file imported | a module writing `import main;` (v2) |
 | E0320 | A package name that is also a local folder or file (v8) | `geo` in `lugha.toml` while `geo/` sits next to `main.la`; `import std.math;` beside a `std.la` (v15) |
-| E0321 | A malformed `lugha.toml` (v8, v11; `name`/`source`, v15) or `lugha.lock` (v14) | `geo = libs/geo` (no quotes); `[deps]`; `geo` listed twice; `std = "lib"` or `name = "std"` (v15); `{ git = "ssh://h/g", version = "1" }`; `{ git = "https://me:pw@h/g", version = "1" }`; `git` without `version`; a lock commit that isn't 40 hex digits |
-| E0322 | A manifest path that doesn't exist (v8) | `geo = "libs/goe"` with no such folder |
+| E0321 | A malformed `lugha.toml` (v8, v11; `name`/`source`, v15) or `lugha.lock` (v14) | `geo = libs/geo` (no quotes); `[deps]`; `geo` listed twice; `std = "lib"` or `name = "std"` (v15); `{ git = "ssh://h/g", version = "1" }`; `{ git = "https://me:pw@h/g", version = "1" }`; `git` without `version`; a lock commit that isn't 40 hex digits; under `[link]`, `flags = ["-Wl,-x"]`, `libs = ["-lx"]`, `paths = ["/usr/lib"]` (v16) |
+| E0322 | A manifest path that doesn't exist (v8) | `geo = "libs/goe"` with no such folder; a `[link]` `paths`/`include` folder or `c` file that isn't there (v16) |
 | E0323 | One package name for two folders (v8) | two manifests list `mathx` with different folders |
 | E0325 | A git package that can't be fetched (v14) | no `git`; a URL that fails; no tag meeting `version`; `--offline` with the package not locked and cached |
 | E0326 | A git package that doesn't match `lugha.lock` (v14) | the locked tag now gives another commit |
 | E0327 | A package listed under another name than it declares (v15) | `gw = { path = "../glowworm" }` when glowworm's `[package]` says `name = "glowworm"` |
 | E0328 | One file imported as two modules (v15) | `src/main.la` importing `cli` and `tool.cli` when `tool`'s `source` is `src` |
+| E0329 | `pkg-config` failed for a `[link]` table (v16) | `pkg-config = ["gtk4"]` without `pkg-config` installed, or without gtk4; `pkg-config` giving `-Wl,-rpath,/x` |
+| E0330 | A `[link]` C file that doesn't compile (v16) | `c = ["shim.c"]` with a syntax error in `shim.c` |
+| E0331 | Linking failed with `[link]` input (v16) | `libs = ["raylib"]` with no raylib installed |
 | E0324 | A package version that doesn't meet a requirement, or a requirement on a package without a version (v11) | `geo = { path = "libs/geo", version = "1.2" }` when geo's `lugha.toml` says `version = "2.0.0"`, or nothing |
 | E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
 | E0402 | Integer literal out of range for its type | `let b: u8 = 256;`; `x + 300` in a `fun big<T: Num>` called at `u8` (v15) |
@@ -3296,6 +3315,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 84 | `lughac test` (v16) | `@test` functions (E0210, E0434), `assert`/`assert_eq`/`assert_ne`, each test in its own process, in parallel, `--filter`, `--timeout` | `tests/test_runner.rs`, `tests/programs/m84/` (done) |
 | 85 | Tests in the editor (v16) | `lughac test --list`/`--json`/`--exact`, repeatable `--filter`; the VS Code Testing view; nothing in untrusted folders | `tests/test_runner.rs`, the extension's `tests.test.ts` (done) |
 | 86 | `lughac explain` (v16) | an explanation for every code, its examples checked; the hint after human diagnostics; code links in the editor | `tests/explain.rs` (done) |
+| 87 | Linking C libraries (v16) | `[link]` in `lugha.toml`: `libs`, `paths`, `include`, `c`, `pkg-config`; every used package's table; E0329–E0331 | `tests/link_libs.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

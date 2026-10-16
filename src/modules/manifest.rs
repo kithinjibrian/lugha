@@ -3,8 +3,10 @@
 //! `[packages]` table, and `name = "path"` lines; anything else is E0321.
 //! v11 adds a `[package]` table with the package's `version`, and inline
 //! entries `name = { path = "…", version = "…" }` with a requirement.
+//! v16 adds a `[link]` table: C libraries and files for the link (PRP-117).
 
 use super::inline::{self, Place};
+use super::link_table::LinkTable;
 use super::package_table::PackageTable;
 use super::version::Requirement;
 use crate::diagnostic::Diagnostic;
@@ -36,6 +38,8 @@ pub struct Manifest {
     pub entries: Vec<Entry>,
     /// The `[package]` table: version (v11), name and source (v15).
     pub package: PackageTable,
+    /// The `[link]` table (v16, milestone 87).
+    pub link: LinkTable,
 }
 
 /// Which table the lines belong to.
@@ -44,6 +48,7 @@ enum Table {
     None,
     Packages,
     Package,
+    Link,
 }
 
 /// The manifest `text`, which starts at offset `base`, and an E0321 for
@@ -51,6 +56,7 @@ enum Table {
 pub fn parse(text: &str, base: usize) -> (Manifest, Vec<Diagnostic>) {
     let (mut entries, mut errors): (Vec<Entry>, Vec<Diagnostic>) = (Vec::new(), Vec::new());
     let mut package = PackageTable::default();
+    let mut link = LinkTable::default();
     let (mut table, mut seen) = (Table::None, Vec::new());
     let mut start = 0;
     for raw in text.split_inclusive('\n') {
@@ -66,6 +72,7 @@ pub fn parse(text: &str, base: usize) -> (Manifest, Vec<Diagnostic>) {
         let header = match code {
             "[packages]" => Some(Table::Packages),
             "[package]" => Some(Table::Package),
+            "[link]" => Some(Table::Link),
             _ => None,
         };
         if let Some(next) = header {
@@ -80,6 +87,12 @@ pub fn parse(text: &str, base: usize) -> (Manifest, Vec<Diagnostic>) {
         if table == Table::Package {
             if let Err(why) = package.line(code) {
                 errors.push(malformed(why, span));
+            }
+            continue;
+        }
+        if table == Table::Link {
+            if let Err(why) = link.line(code, span) {
+                errors.push(malformed_link(why, span));
             }
             continue;
         }
@@ -109,7 +122,12 @@ pub fn parse(text: &str, base: usize) -> (Manifest, Vec<Diagnostic>) {
             Err(why) => errors.push(malformed(why, span)),
         }
     }
-    (Manifest { entries, package }, errors)
+    let manifest = Manifest {
+        entries,
+        package,
+        link,
+    };
+    (manifest, errors)
 }
 
 /// `line` without its comment.
@@ -160,6 +178,14 @@ fn malformed(why: String, span: Span) -> Diagnostic {
             "a manifest holds `[packages]` with lines like `geo = \"libs/geo\"` or \
              `geo = { path = \"libs/geo\", version = \"1.2\" }`, and `[package]` with `version = \"1.4.0\"`",
         )
+}
+
+/// E0321 for a `[link]` line, with help about that table (v16).
+fn malformed_link(why: String, span: Span) -> Diagnostic {
+    Diagnostic::error("E0321", format!("bad `{MANIFEST}` line: {why}"), span).with_help(
+        "a `[link]` table holds lists such as `libs = [\"raylib\"]`, `paths = [\"vendor/lib\"]`, \
+         `include = [\"vendor/include\"]`, `c = [\"shim.c\"]` and `pkg-config = [\"gtk4\"]`",
+    )
 }
 
 #[cfg(test)]
@@ -247,5 +273,23 @@ mod tests {
         );
         let bad = "geo = { path = \"g\", version = \"x\" }";
         assert_eq!(errors(&format!("[packages]\n{bad}")), [bad]);
+    }
+
+    #[test]
+    fn link_table_in_any_order_v16() {
+        use crate::modules::link_table::LinkKey;
+        let text = "[link]\nlibs = [\"raylib\"] # gui\n[packages]\ngeo = \"g\"\n[package]\nversion = \"0.1.0\"\n";
+        let (manifest, found) = parse(text, 0);
+        assert!(found.is_empty(), "{found:?}");
+        assert_eq!(manifest.link.values(LinkKey::Libs), ["raylib"]);
+        let line = manifest.link.line_of(LinkKey::Libs).unwrap().span;
+        assert_eq!(&text[line.start..line.end], "libs = [\"raylib\"] # gui");
+        assert_eq!(manifest.entries.len(), 1);
+        assert_eq!(errors("[link]\n[link]"), ["[link]"]);
+        let bad = "flags = [\"-Wl,-x\"]";
+        assert_eq!(errors(&format!("[link]\n{bad}")), [bad]);
+        let (_, found) = parse(&format!("[link]\n{bad}"), 0);
+        assert_eq!(found[0].code, "E0321");
+        assert!(found[0].help.as_deref().unwrap_or("").contains("[link]"));
     }
 }

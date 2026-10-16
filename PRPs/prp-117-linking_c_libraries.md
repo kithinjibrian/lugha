@@ -1,6 +1,6 @@
 ## FEATURE: Linking C libraries — a `[link]` table in `lugha.toml` naming libraries, search folders, pkg-config packages and C files to compile into the program; milestone 87.
 
-**Status:** approved 2026-10-16 ("yes build", security review included) — building in session 185; proposed in session 184.
+**Status:** approved 2026-10-16 ("yes build", security review included) — built in session 185; proposed in session 184.
 **Milestone:** 87 (one PRP; tag `m87` at merge).
 **Spec:** `Language v16 Draft.md` decisions 98–104; spec §6 (Packages: the manifest), §8 (C interop: what is linked), §9 (stage 6, the diagnostics table), §11 (row 87).
 
@@ -139,3 +139,12 @@ A program with no `[link]` table anywhere builds exactly as today, byte for byte
 - `cargo clippy --all-targets -- -D warnings`
 - `cargo test`
 - `cargo run -q -- run <zlib example>` (manual check above)
+
+## BUILT (session 185)
+- As planned, test-first, with `link.rs` → `src/link/mod.rs` moved alone first (`ece0599`).
+- **Stricter than planned:** `paths`/`include`/`c` may hold no `..` at all (as `source`), rather than "no `..` leaving the package".
+- **`$PKG_CONFIG`** names the `pkg-config` program when set (the usual convention); the tests use it for their fake, so they don't need `pkg-config` installed.
+- **Messages:** `Diagnostic` has no notes, so cc's and pkg-config's output goes in `help` ("the linker said: …", then the advice).
+- **E0331's location:** the first `[link]` line that lists something, program first.
+- **Found and fixed:** the CLI placed the prelude right after the last module, overlapping the manifests' offsets, so a manifest diagnostic made after checking showed in `<prelude>`. `check_parsed` now places it past every loaded file, as the language server already did.
+- **Tests:** `tests/link_libs.rs` (10), unit tests in `link_table.rs` (5), `manifest.rs` (1), `link_tests.rs` (5), `inputs.rs` (5), `pkg_config.rs` (4), `link/mod.rs` (3); the three new pages through `tests/explain.rs`. Manually: `libs = ["z"]` with `zlibCompileFlags()` prints `zlib flags: 169`; `libs = ["raylib"]` without raylib is E0331 at the line, exit 1.
