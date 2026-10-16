@@ -7658,8 +7658,24 @@ Branch: prp-125-variant_functions
 
 ---
 
-## SESSION 218 — 2026-10-17 — Fix: `lughac fmt` drops the comma before a `(` arm — open
+## SESSION 218 — 2026-10-17 — Fix: `lughac fmt` drops the comma before a `(` arm — closed
 Branch: fix-fmt-arm-comma
 
 ### WHAT WAS DONE
-- In progress: kivuli's quirk 1 (the user: "fix bug 1"). `match (x, y) { (0, _) => { 1 }, (a, _) => a, }` formats to output that doesn't parse (exit 2).
+- Kivuli's quirk 1 (the user: "fix bug 1"): `match (x, y) { (0, _) => { 1 }, (a, _) => a, }` formatted to output that didn't parse (exit 2). The grammar lets the comma go after a block arm, but the parser reads `{ 1 } (a, _)` as a call (and `{ 1 } -1` as a subtraction). Fixed in the formatter, not the parser (which would change what existing code means): the comma stays after a block arm when the next arm starts with `(` or `-`.
+- The user pasted kivuli's eight lughac quirks; triaged: 1 a bug (this fix); 2 formatter hugging, 3 inference from sibling arguments, 4–8 packages and testing — proposed as three PRPs after one discovery, waiting for the user.
+
+### FILES CREATED OR MODIFIED
+- Modified: `src/formatter/{exprs,tests}.rs`, the v17 spec (§9 fmt style), CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- `a_block_arm_keeps_its_comma_before_a_tuple_or_negative_pattern`. Targeted checks (the new rule): formatter lib tests, `--test fmt`, `--test fmt_corpus`, `--lib`, fmt, clippy.
+
+### DECISIONS MADE
+- Formatter-side fix; the parser's reading unchanged.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's go on discovery for kivuli quirks 2–8.

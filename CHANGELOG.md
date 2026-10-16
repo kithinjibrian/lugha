@@ -24,6 +24,7 @@ Never deleted. Older entries are never modified.
 - An extern parameter with a function type is now a callback instead of E0409; E0409's message for a function an extern would return says so (milestone 88)
 
 ### Fixed
+- `lughac fmt` dropped the comma after a block arm even when the next arm started with `(` or `-`, so `{ 1 } (a, _)` re-parsed as a call and formatting failed its own check (exit 2); the comma now stays there (found by kivuli, session 218)
 - A closure (or now a variant value) passed to a generic helper inside a generic function lost its parameter types when both named a type parameter alike (`fun lengths<T>(xs: T[][]): i64[] = xs.iter().map(fun(x) = x.len).collect();` was E0403 `fun({error}[])`): inference's hint replaced the caller's `T` as if it were the helper's. The hint is now built in one substitution (milestone 94)
 - A handle named through its module (`m.H`, an `extern type` of another module) resolved to an error type without a diagnostic, so `fun(h: m.H)` closures failed with E0403 and `m.H` fields went unchecked; found while writing lugha-gtk (milestone 88's handles, session 192)
 - `[link]` list mistakes say exactly what's wrong: `` `"z` in `libs` is missing its closing `"`: write `"z"` ``, a missing `]`, an unquoted item (`` write `"raylib"` ``), a `\` in a path; before, all four were one generic message (session 186)
