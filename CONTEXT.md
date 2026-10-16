@@ -6476,6 +6476,11 @@ Branch: prp-111-editor_formatting
 
 ---
 
+## SESSION 172 — 2026-10-16 — Discovery: more quick fixes — open
+Branch: main
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–81 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor).
