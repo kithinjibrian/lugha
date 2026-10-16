@@ -1,0 +1,12 @@
+actor Counter {
+    count: i64,
+    fun get(self): i64 = self.count;
+}
+
+fun main() {
+    let c = spawn Counter { count: 1 };
+    println(c.get());
+    c.stop();
+    println(c.join());
+    println(c.get());
+}

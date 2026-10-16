@@ -68,6 +68,8 @@ pub enum TokenKind {
     Spawn,
     /// `select`, waiting on several channels (v17).
     Select,
+    /// `actor`, declaring an actor (v17, milestone 92).
+    Actor,
     // Built-in type names are keywords too, so structs can't shadow them.
     TyI32,
     TyI64,
@@ -174,6 +176,7 @@ pub fn keyword(word: &str) -> Option<TokenKind> {
         "as" => As,
         "spawn" => Spawn,
         "select" => Select,
+        "actor" => Actor,
         "i32" => TyI32,
         "i64" => TyI64,
         "u8" => TyU8,

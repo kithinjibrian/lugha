@@ -6,6 +6,7 @@
 //!
 //! Depends on: ast, check (types), span, inkwell (LLVM 21).
 
+mod actors;
 mod arith;
 mod array;
 mod assertions;

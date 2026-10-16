@@ -5,7 +5,8 @@ use super::Printer;
 use super::doc::{Doc, concat, spaced, text};
 use super::leaves::visibility;
 use crate::ast::{
-    EnumDecl, Field, FunDecl, Import, InterfaceDecl, InterfaceItem, Item, Program, Variant,
+    EnumDecl, Field, FunDecl, ImplDecl, Import, InterfaceDecl, InterfaceItem, Item, Program,
+    StructDecl, Variant,
 };
 use crate::span::Span;
 
@@ -13,13 +14,30 @@ use crate::span::Span;
 enum Top<'p> {
     Import(&'p Import),
     Item(&'p Item),
+    /// An actor's state and methods, which the parser gave as two items (v17).
+    Actor(&'p StructDecl, &'p ImplDecl),
+}
+
+/// A member of an actor's body, in source order (v17).
+enum Member<'p> {
+    Field(&'p Field),
+    Method(&'p FunDecl),
 }
 
 impl Printer<'_> {
     /// The whole file.
     pub(super) fn program(&mut self, program: &Program) -> Doc {
         let mut tops: Vec<Top> = program.imports.iter().map(Top::Import).collect();
-        tops.extend(program.items.iter().map(Top::Item));
+        let mut items = program.items.iter().peekable();
+        while let Some(item) = items.next() {
+            match (item, items.peek()) {
+                (Item::Struct(s), Some(Item::Impl(i))) if s.actor.is_some() && i.actor => {
+                    tops.push(Top::Actor(s, i));
+                    items.next();
+                }
+                _ => tops.push(Top::Item(item)),
+            }
+        }
         let whole = Span::new(0, self.src.len());
         let body = self.sequence(whole, &tops, |p, t| p.top_span(t), |_| "", |p, t| p.top(t));
         body.unwrap_or_else(|| text(""))
@@ -41,6 +59,7 @@ impl Printer<'_> {
             Top::Item(Item::Enum(e)) => (e.visibility.map(|v| v.span.start), e.span),
             Top::Item(Item::Impl(i)) => (None, i.span),
             Top::Item(Item::Interface(i)) => (i.visibility.map(|v| v.span.start), i.span),
+            Top::Actor(s, _) => (s.visibility.map(|v| v.span.start), s.span),
         };
         Span::new(start.unwrap_or(span.start).min(span.start), span.end)
     }
@@ -114,7 +133,45 @@ impl Printer<'_> {
                 concat(vec![text(head), self.braced(body)])
             }
             Top::Item(Item::Interface(i)) => self.interface(i),
+            Top::Actor(s, i) => self.actor(s, i),
         }
+    }
+
+    /// `actor Name { fields and methods }` in source order (v17).
+    fn actor(&mut self, s: &StructDecl, i: &ImplDecl) -> Doc {
+        let head = format!(
+            "{}actor {}{} ",
+            visibility(s.visibility),
+            self.ident(&s.name),
+            self.type_params(&s.type_params)
+        );
+        let mut members: Vec<Member> = s.fields.iter().map(Member::Field).collect();
+        members.extend(i.methods.iter().map(Member::Method));
+        let span_of = |m: &Member| match m {
+            Member::Field(f) => field_span(f),
+            Member::Method(f) => fun_span(f),
+        };
+        members.sort_by_key(|m| span_of(m).start);
+        let inner = self.inner(s.name.span.end, s.span);
+        let body = self.sequence(
+            inner,
+            &members,
+            |_, m| span_of(m),
+            |m| match m {
+                Member::Field(_) => ",",
+                Member::Method(_) => "",
+            },
+            |p, m| match m {
+                Member::Field(f) => text(format!(
+                    "{}{}: {}",
+                    visibility(f.visibility),
+                    p.ident(&f.name),
+                    p.ty(&f.ty)
+                )),
+                Member::Method(f) => p.fun(f),
+            },
+        );
+        concat(vec![text(head), self.braced(body)])
     }
 
     /// The text between the `{` after `from` and the `}` ending `span`.

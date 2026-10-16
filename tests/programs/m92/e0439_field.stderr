@@ -1,0 +1,9 @@
+error[E0439]: `count` is a field of actor `Counter`: only its methods can reach it
+  --> tests/programs/m92/e0439_field.la:7:15
+  |
+7 |     println(c.count);
+  |               ^^^^^
+  |
+  = help: an actor is started with `spawn` and reached only through its methods; what crosses its boundary is copied and may hold no `Ref`
+
+For more about E0439, run `lughac explain E0439`.

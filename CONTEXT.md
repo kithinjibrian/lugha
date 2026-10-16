@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**v17 (concurrency): milestone 91 done** (tag `m91`, PRP-122): green threads — `spawn`, `Task<T>`, `Chan<T>`, `select`, `std.task`, one OS thread. v16 is frozen; `lughac spec` prints `Language v17 Specification.md`. Next: **actors** (the user's stated goal after green threads; needs discovery and a PRP), and the VS Code grammar/snippets for `spawn`/`select`.
+**v17 (concurrency): milestones 91–92 done** (tags `m91` green threads, `m92` actors; PRP-122, PRP-123). VS Code extension 0.12.0. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -7554,8 +7554,27 @@ Branch: main
 
 ---
 
-## SESSION 214 — 2026-10-17 — Build actors (PRP-123, milestone 92) — open
+## SESSION 214 — 2026-10-17 — Build actors (PRP-123, milestone 92) — closed
 Branch: prp-123-actors
+
+### WHAT WAS DONE
+- The user approved PRP-123 ("yes"). Built milestone 92 in `../lugha-m92`: `runtime/actors.c` (mailboxes, call/cast/stop/join, a panic ending only its actor) and one panic path for the runtime; `actor` keyword and declarations (state struct + methods impl, both marked); `spawn` of an actor; `Type::Actor` handles, messages, built-ins, E0439 rules; `lugha_actor_` handlers; completion of handles; spec §2–§11, §10 actors program; E0439 page; VS Code 0.12.0 (`actor` highlighting and snippet).
+
+### FILES CREATED OR MODIFIED
+- Created: runtime/actors.c; src/parser/actors.rs; src/check/actors.rs; src/codegen/actors.rs; tests/programs/m92/ (12 cases); docs/errors/E0439.md.
+- Modified: runtime (lugha_rt, chans, cstr, tasks, spawn), link, lexer, AST, parser (item, tasks, sexp), formatter, checker (types, mod, structs, methods, generics, expr, tasks, method_calls, builtins, access, assign, bounds, printing, members, modules, errors/v17), codegen (mod, tasks, methods, show, value, structs), explain, LSP completion, tests (tasks_runtime, lexer, snippets, programs/m91/e0211_spawn.stderr), editors/vscode (grammar, snippets, README, package), v17 spec and draft, PRP-123, CHANGELOG, CLAUDE, README, TODO, MEMORY, CONTEXT.
+
+### TESTS WRITTEN
+- Runtime harness 4; parser 2; formatter 1; checker 7; codegen 2; e2e m92 9 runs + 3 rejections (-O0/-O2 agree); §10 actors; E0439 page; grammar and snippet. fmt, clippy, full `cargo test`, `npm test` pass.
+
+### DECISIONS MADE
+- MEMORY 175; PRP-123 BUILT notes (an actor's own name means its state inside its body; one runtime panic path).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual check (extension README step 22). Later: built-in supervisors, generic actors, several OS threads (TODO).
 
 ---
 
@@ -7588,8 +7607,25 @@ Branch: main
 
 ---
 
-## SESSION 216 — 2026-10-17 — Struct update syntax (milestone 93) — open
+## SESSION 216 — 2026-10-17 — Struct update syntax (milestone 93) — closed
 Branch: prp-124-struct_update
 
 ### WHAT WAS DONE
-- In progress: the user approved PRP-124 and PRP-125 ("approved"); building PRP-124 in worktree `../lugha-prp-124`. Session 214 (actors, another session) is still open on `prp-123-actors`.
+- The user approved PRP-124 and PRP-125 ("approved"); built PRP-124 in worktree `../lugha-prp-124`, test-first: parser (`..base` last, once), checker (base first, E0440, W0104), liveness, codegen (base under the written fields), formatter, printer; spec v17 (grammar, §4 structs, E0440, W0104, row 93); `docs/errors/E0440.md`, `W0104.md`.
+- Session 214 (actors) merged into `main` meanwhile; merged `main` into the branch (conflicts only in appended lists: explain table, formatter tests, v17 errors, spec header/rows).
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m93/{update.la,update.stdout,update.exit,e0440.la,e0440.stderr}`, `docs/errors/{E0440,W0104}.md`.
+- Modified: `src/ast/expr.rs`, `src/parser/{primary,sexp/mod}.rs`, `src/check/{struct_literal,liveness/mod,liveness/walk}.rs`, `src/check/errors/v17.rs`, `src/codegen/{structs,expr,hoist_scan}.rs`, `src/formatter/{exprs,tests}.rs`, `src/explain.rs`, spec, draft, PRP-124, CLAUDE.md, TODO, CHANGELOG, MEMORY (176), CONTEXT.
+
+### TESTS WRITTEN
+- Checker (6), parser (1), formatter (1), programs `m93`. Full suite, fmt, clippy pass; IR unchanged (204 programs).
+
+### DECISIONS MADE
+- As PRP-124 planned (BUILT notes, MEMORY 176).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-125 (variants as functions, milestone 94) next.

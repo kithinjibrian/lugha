@@ -191,7 +191,9 @@ impl Checker {
             self.report(errors::type_args(name, generics.len(), 0, span));
             return Type::Error;
         }
-        self.named_type(&key).unwrap_or(Type::Error)
+        // An actor's name outside its body is its handle (v17).
+        let ty = self.named_type(&key).unwrap_or(Type::Error);
+        self.as_handle(ty)
     }
 
     /// `m.T`, `T<args>` or `m.T<args>` (E0418 for the wrong count, E0419
@@ -228,7 +230,7 @@ impl Checker {
             return Type::Error;
         }
         match self.named_type(&key) {
-            Some(Type::Struct(k, _)) => Type::Struct(k, args),
+            Some(Type::Struct(k, _)) => self.as_handle(Type::Struct(k, args)),
             Some(Type::Enum(k, _)) => Type::Enum(k, args),
             // `m.H` for an `extern type` (v16): a handle has no arguments.
             Some(handle @ Type::Handle(_)) => handle,

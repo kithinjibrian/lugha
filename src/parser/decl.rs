@@ -62,6 +62,7 @@ impl Parser<'_> {
             params,
             methods,
             span: Span::new(start, self.prev_end()),
+            actor: false,
         })
     }
 

@@ -1,4 +1,4 @@
-//! v17 codes: green threads (E0438, milestone 91); struct update (E0440, W0104, milestone 93).
+//! v17 codes: green threads (E0438, milestone 91); actors (E0439, milestone 92); struct update (E0440, W0104, milestone 93).
 
 use crate::check::Type;
 use crate::diagnostic::Diagnostic;
@@ -28,6 +28,14 @@ pub(in crate::check) fn bad_select(message: impl Into<String>, span: Span) -> Di
 pub(in crate::check) fn chan_unknown(span: Span) -> Diagnostic {
     Diagnostic::error("E0412", "cannot infer what this channel carries", span)
         .with_help("annotate it: `let c: Chan<i64> = Chan.new();`")
+}
+
+/// An actor used against its rules (milestone 92).
+pub(in crate::check) fn actor_misuse(message: impl Into<String>, span: Span) -> Diagnostic {
+    Diagnostic::error("E0439", message, span).with_help(
+        "an actor is started with `spawn` and reached only through its methods; \
+         what crosses its boundary is copied and may hold no `Ref`",
+    )
 }
 
 /// `..base` of another type than the literal's struct (milestone 93).

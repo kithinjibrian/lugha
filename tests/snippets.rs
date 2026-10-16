@@ -10,7 +10,7 @@ use serde_json::Value;
 
 /// The prefixes the extension's snippet file must have, and where each
 /// expands: at the top level of a file, or as a statement in `main`.
-const DECLARATIONS: [&str; 12] = [
+const DECLARATIONS: [&str; 13] = [
     "fun",
     "main",
     "struct",
@@ -23,6 +23,7 @@ const DECLARATIONS: [&str; 12] = [
     "externtype",
     "externstruct",
     "externcb",
+    "actor",
 ];
 const STATEMENTS: [&str; 11] = [
     "if", "ifelse", "while", "forof", "forin", "iflet", "letelse", "match", "spawn", "chan",

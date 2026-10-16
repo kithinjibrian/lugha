@@ -204,5 +204,15 @@
       "}"
     ],
     "description": "Wait on channels, with a timeout (v17)"
+  },
+  "Actor": {
+    "prefix": "actor",
+    "body": [
+      "actor ${1:Name} {",
+      "\t${2:count}: ${3:i64},",
+      "\tfun ${4:get}(self): ${3:i64} = self.${2:count};",
+      "}"
+    ],
+    "description": "An actor: state one green thread owns, reached through messages (v17)"
   }
 }

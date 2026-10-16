@@ -18,7 +18,7 @@ use crate::span::Span;
 
 /// The keywords a program may write (spec §2), less the type names, which
 /// come with the types.
-const KEYWORDS: [&str; 27] = [
+const KEYWORDS: [&str; 28] = [
     "fun",
     "extern",
     "struct",
@@ -46,6 +46,7 @@ const KEYWORDS: [&str; 27] = [
     "self",
     "spawn",
     "select",
+    "actor",
 ];
 
 /// What is being typed at the cursor.

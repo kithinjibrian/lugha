@@ -1,0 +1,26 @@
+// Actors hold other actors' handles and message them.
+actor Logger {
+    lines: string[],
+    fun log(mut self, line: string) { self.lines.push(line); }
+    fun dump(self): string[] = self.lines;
+}
+
+actor Worker {
+    log: Logger,
+    done: i64,
+    fun work(mut self, job: string): i64 {
+        self.log.log("working on {job}");
+        self.done += 1;
+        self.done
+    }
+}
+
+fun main() {
+    let log = spawn Logger { lines: [] };
+    let w = spawn Worker { log: log, done: 0 };
+    println(w.work("a"));
+    println(w.work("b"));
+    for line of log.dump() {
+        println(line);
+    }
+}

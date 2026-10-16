@@ -43,6 +43,10 @@ impl Checker {
                     span: s.name.span,
                     generics: self.generics(&s.type_params),
                 };
+                if s.actor.is_some() {
+                    self.actors.insert(key.clone());
+                    self.uses_tasks = true;
+                }
                 // C has no generics: an `extern struct` has none (v16).
                 if s.c_layout.is_some() {
                     if s.type_params.is_empty() {
@@ -74,6 +78,8 @@ impl Checker {
             self.structs.get_mut(&key).expect("collected").generics = generics.clone();
             self.type_params = generics;
             self.check_params(&s.type_params, &[]);
+            // Inside an actor its own name is its state (v17).
+            self.in_actor = s.actor.map(|_| key.clone());
             let mut fields: Vec<(String, Type)> = Vec::new();
             for (i, field) in s.fields.iter().enumerate() {
                 let ty = self.resolve(&field.ty);
@@ -127,6 +133,7 @@ impl Checker {
                 reported.extend(path);
             }
         }
+        self.in_actor = None;
     }
 
     /// Extends `path` until it returns to `path[0]` through fields held inline

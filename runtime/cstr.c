@@ -52,7 +52,8 @@ LughaString *lugha_rt_str_from_c(const char *text, int32_t nullable) {
         if (nullable) {
             return NULL;
         }
-        die("panic: C gave NULL for a `string`; declare it `Option<string>`\n");
+        const char text[] = "C gave NULL for a `string`; declare it `Option<string>`";
+        panic_with(text, sizeof text - 1);
     }
     const unsigned char *p = (const unsigned char *)text;
     int64_t len = (int64_t)strlen(text);

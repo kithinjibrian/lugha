@@ -58,7 +58,7 @@
           }
         },
         {
-          "match": "\\b(struct|enum|interface)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "match": "\\b(struct|enum|interface|actor)\\s+([A-Za-z_][A-Za-z0-9_]*)",
           "captures": {
             "1": { "name": "keyword.other.$1.lugha" },
             "2": { "name": "entity.name.type.lugha" }
@@ -78,7 +78,7 @@
       "patterns": [
         { "name": "keyword.control.lugha", "match": "\\b(if|else|while|for|in|of|match|return|break|continue|spawn|select)\\b" },
         { "comment": "`after(ms) =>` and `default =>` open a `select` arm (v17); elsewhere they are names.", "name": "keyword.control.lugha", "match": "\\b(?:after(?=\\s*\\([^()]*\\)\\s*=>)|default(?=\\s*=>))" },
-        { "name": "keyword.other.$1.lugha", "match": "\\b(fun|extern|struct|enum|impl|interface|let|import)\\b" },
+        { "name": "keyword.other.$1.lugha", "match": "\\b(fun|extern|struct|enum|impl|interface|let|import|actor)\\b" },
         { "name": "storage.modifier.lugha", "match": "\\b(mut|private|public)\\b" },
         { "name": "keyword.operator.as.lugha", "match": "\\bas\\b" },
         { "name": "constant.language.boolean.lugha", "match": "\\b(true|false)\\b" },

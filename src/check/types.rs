@@ -48,6 +48,9 @@ pub enum Type {
     Task(Box<Type>),
     /// A channel, `Chan<T>` (v17, milestone 91): copies share one channel.
     Chan(Box<Type>),
+    /// An actor's handle, by the actor's key (v17, milestone 92): copies
+    /// reach the same actor. Inside the actor its state is `Struct`.
+    Actor(String),
     /// A handle, by its `extern type`'s key: an opaque C pointer (v16, milestone 88).
     Handle(String),
     /// A function value, `fun(A, B): R`; `R` is `Void` for no result (v3).
@@ -226,7 +229,10 @@ impl fmt::Display for Type {
             // A non-generic enum prints as its key, like a struct: the
             // prelude's `Ordering` (v15) is `$prelude.Ordering`, so it can't
             // be confused with a module's own `Ordering` in the layout tables.
-            Type::Struct(name, _) | Type::Enum(name, _) | Type::Handle(name) => name,
+            Type::Struct(name, _)
+            | Type::Enum(name, _)
+            | Type::Handle(name)
+            | Type::Actor(name) => name,
             Type::Param(name) | Type::Interface(name, _) => name,
             Type::Option(inner) => return write!(f, "Option<{inner}>"),
             Type::Ref(inner) => return write!(f, "Ref<{inner}>"),

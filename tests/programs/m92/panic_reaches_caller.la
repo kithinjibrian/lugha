@@ -1,0 +1,11 @@
+// A caller waiting on an actor that panics panics in turn.
+actor Parser {
+    fun parse(self, text: string): i64 = parse_i64(text).unwrap();
+}
+
+fun main() {
+    let p = spawn Parser {};
+    println(p.parse("42"));
+    println(p.parse("forty-two"));
+    println("never printed");
+}
