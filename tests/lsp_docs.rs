@@ -301,3 +301,34 @@ fn hover_on_a_module_shows_its_module_doc_v17() {
     );
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn a_packages_entry_hovers_and_opens_as_its_module_v17() {
+    let main = "import geo;\nfun main() { println(geo.one()); }\n";
+    let t = Temp::with(&[
+        ("main.la", main),
+        ("lugha.toml", "[packages]\ngeo = \"geo\"\n"),
+        (
+            "geo/lib.la",
+            "/**\n * Geometry.\n */\n\npublic fun one(): i64 = 1;\n",
+        ),
+    ]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, main);
+    s.expect(&uri, &[]);
+    let shown = s.hover(&uri, 0, 8)["contents"]["value"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
+    assert_eq!(shown, format!("{}\n\nGeometry.", code("module geo")));
+    let found = s.definition(&uri, 1, 22);
+    assert!(
+        found["uri"]
+            .as_str()
+            .unwrap_or_default()
+            .ends_with("geo/lib.la"),
+        "{found}"
+    );
+    assert_eq!(s.finish(), Some(0));
+}

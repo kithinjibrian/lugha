@@ -1,6 +1,6 @@
 ## FEATURE: Package entry modules — `import kivuli;` imports a package's `lib.la`; milestone 99 (v17).
 
-**Status:** approved 2026-10-17 ("approved", session 228); proposed in session 227 (the user: "should libraries have an entry like lib.la or even declared in manifest" → recommended a fixed `lib.la`, no manifest key; "yes write it up").
+**Status:** built in session 228; approved 2026-10-17 ("approved", session 228); proposed in session 227 (the user: "should libraries have an entry like lib.la or even declared in manifest" → recommended a fixed `lib.la`, no manifest key; "yes write it up").
 
 ## OBJECTIVE
 A library exposes one front door. `import kivuli;` binds the module in `src/lib.la` (the package's `source` folder, or its folder without one) as `kivuli`, so an app writes `kivuli.column([...])` or `import kivuli { text, column };` instead of choosing among the package's modules. `lughac init --lib` starts libraries this way. Packages without a `lib.la` work exactly as today.
@@ -52,6 +52,10 @@ A library exposes one front door. `import kivuli;` binds the module in `src/lib.
 
 ## ROLLBACK PLAN
 - Branch to return to: `main`; revert the merge.
+
+## BUILT (session 228)
+- As planned: `Packages::resolve` (entry, E0312 helps, `ENTRY`), `layout::module_path` (`src/lib.la` → `[N]`), `init --lib` (`src/lib.la` with a module doc, `import N;`). The language server needed no change.
+- Tests: `src/modules/entry_tests.rs` (5), `package_layout::import_n_reaches_the_packages_lib_la_v17` (dependent program with `{ X }`, the package's own example, test names, `--list`), `tests/init.rs` (layout, `import N;`, `check src/lib.la`), `lsp_docs` (hover with the module doc, Go to Definition to `lib.la`). Targeted: `--lib`, `package_layout`, `modules`, `init`, `lsp_hover`, `lsp_definition`, `lsp_docs`, `explain`, `spec`, `programs`, `test_runner`, `git_packages`, `cli`, fmt, clippy.
 
 ## ACCEPTANCE CRITERIA
 - [ ] `import N;` works from a dependent program, the package's own examples and tests.

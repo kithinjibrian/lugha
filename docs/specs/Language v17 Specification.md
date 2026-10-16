@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–98 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–99 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–98):
+**Changes since v16** (milestones 91–99):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- Package entry modules: `import kivuli;` imports the package's `lib.la` (in its `source` folder) as the module `kivuli`; `lughac init --lib` writes one (milestone 99; sections 6, 9).
 - Module doc comments: a `/** … */` at the top of a file, followed by a blank line or an `import`, documents its module; hovering the module's name shows it, and the std modules are documented (milestone 98; sections 2, 9).
 - `pkg-config --cflags` may give `-mfpmath=sse`, `-msse` and `-msse2`, so a package can list C files alongside GTK (section 8).
 - `lughac fmt` hugs a call's trailing array or struct literal (`column([` … `])`) and keeps a function's header whole while its body breaks (milestone 95; section 9).
@@ -1058,6 +1059,7 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
   - **The implicit package:** when the program's manifest declares `name = N`, the program may import that package as `N` (`import N.array;`), with its `source`, as if listed. So a library's `examples/` and `tests/` programs need no manifest of their own. `N` may not also be a folder or `.la` file beside the main file (E0320).
   - **Programs inside the package** (v17, milestone 97): a program whose manifest is its package's own, such as one in `test/`, `tests/` or `examples/`, belongs to that package for visibility: it sees the package's items without `public`, as the package's modules do. `private` items stay private to their module.
   - **A package's file as its module** (v17, milestone 97): `lughac test` and `lughac check` build a file inside its package's `source` folder as that package's module (`glow/src/diff.la` → `glow.diff`), imported by a hidden entry rather than being a main file: modules of the package may import it (no E0319), even in a cycle, and it needs no `main`. `build` and `run` still take it as a main file.
+  - **The entry** (v17, milestone 99): a package's `lib.la` at its module root (its `source` folder, or its folder without one) is its entry. `import N;` binds it as `N` (`import N as k;`, `import N { X, y };` and `public import N;` too); its module path is `N`, its symbols `lugha_fn_N/f`, and a test in it is named `N.name`. It is an ordinary module: `import N.module;` still reaches the others, with the same visibility. `import N;` for a package without `lib.la` is E0312, its help naming both remedies; the entry has one name, so `import N.lib;` is E0312 too (a `lib/` folder's modules, `N.lib.x`, are unaffected). `std` has no entry. There is no manifest key for it: renaming a package moves no file.
   - **One file, one module:** a file reached under two module paths, such as `src/cli.la` as `cli` from `src/main.la` and as `tool.cli` through the implicit package, is E0328 at the second import.
   - **Run:** `lughac run glowworm/examples/basics.la` works from any folder; the file argument is required.
 - **The standard library** (v15, milestone 53). `import std.<module>;` loads a module bundled with `lughac`, written in Lugha, the same in every build of a given compiler version. It is read and checked only when a file imports it, so a program that imports nothing from `std` is unchanged, and of an imported module only the functions and methods the program reaches (by calls, bounds, interface values or as function values) are compiled (milestone 60); there is no way to opt out, and none is needed. Std modules follow the normal rules: their `public` items, `import std.math as m;`, `import std.math { sqrt };`. `std` is reserved: a manifest entry or `[package] name` called `std` is E0321, a folder `std/` or file `std.la` beside an importing module is E0320, and an unknown module (`import std.maths;`) is E0312, with help listing the std modules. Diagnostics inside a std module name its file `<std>/math.la`. The modules are listed under "The standard library" below.
@@ -1504,8 +1506,8 @@ Exit codes: 0 on success, 1 when the program has errors, 2 for bad command-line 
 | --- | --- | --- |
 | `lugha.toml` | `[package]` with `name = "N"`, `version = "0.1.0"`, `source = "src"` | the same |
 | `src/main.la` | `fun main()` printing `Hello from N!` | — |
-| `src/N.la` | — | `public fun greet(who: string): string`, giving `Hello, <who>, from N!` |
-| `examples/hello.la` | — | `import N.N;` and a `main` printing `N.greet("world")`, runnable at once through the implicit package (section 6) |
+| `src/lib.la` | — | the entry (v17; `src/N.la` before), with a module doc and `public fun greet(who: string): string`, giving `Hello, <who>, from N!` |
+| `examples/hello.la` | — | `import N;` (v17; `import N.N;` before) and a `main` printing `N.greet("world")`, runnable at once through the implicit package (section 6) |
 | `.gitignore` | `/main`, the executable `lughac build src/main.la` writes | `/hello` |
 
 It prints `created <path>` for each file and then how to run the result.
@@ -1598,7 +1600,7 @@ Name and type errors, reported by the checker:
 | E0309 | Variant declared twice | `enum E { A, B, A }` |
 | E0310 | Method declared twice, or named like a field or variant | `impl P { fun x(self) {} }` where `P` has a field `x` |
 | E0311 | A local named like a type or an imported module | `let Shape = 3;`, `fun f(Point: i64)` |
-| E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` (v2); `import std.maths;` (v15) |
+| E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` (v2); `import std.maths;` (v15); `import geo;` when package `geo` has no `lib.la`, and `import geo.lib;` when it has (v17) |
 | E0313 | An item, method or field not visible here | another module's `private` item: `range.helper()`, `r.lo`, `range.Range { lo: 1, hi: 5 }` (v2); another package's item without `public` (v8); `shapes.Vec2` when `shapes` imported `Vec2` without `public` (v11); `shapes.vec.helper()` through a re-exported module when `helper` isn't `public` (v14) |
 | E0314 | Import clash | `import a.util;` and `import b.util;` in one file; an import named like an item (v2); `import vec { add, add };` (v11); `import a as u; import b as u;` (v14) |
 | E0315 | Unknown bound | `fun f<T: Hash>(x: T)`; a struct as a bound (v2) |
@@ -3599,6 +3601,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 96 | Inference from siblings (v17) | result-only generic calls typed by their siblings; `assert_eq`/`assert_ne`, `==`/`!=` | `tests/programs/m96` (done) |
 | 97 | Packages and tests (v17) | package files as modules under `test`/`check`, `test/` inside the package, `check` without `main`, one lock per package, `skip(reason)` | `tests/test_runner.rs`, `tests/package_layout.rs`, `tests/git_packages.rs`, `tests/cli.rs` (done) |
 | 98 | Module doc comments (v17) | a file's top `/** */` documents its module; hover on module names; std documented | `tests/lsp_docs.rs`, `lsp/docs.rs` (done) |
+| 99 | Package entry modules (v17) | `import N;` imports the package's `lib.la`; `lughac init --lib` writes one | `src/modules/entry_tests.rs`, `tests/package_layout.rs`, `tests/init.rs`, `tests/lsp_docs.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

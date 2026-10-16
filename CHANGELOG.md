@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Changed
+- `lughac init --lib` writes the library as `src/lib.la` (its entry, with a module doc) and its example imports it as `import N;` (was `src/N.la` and `import N.N;`); E0312's help for `import N;` mentions the entry (milestone 99)
 - A panic inside a std module reports a line two later than before (`<std>/math.la:62:9` instead of `60:9`): the std headers became module doc comments (milestone 98)
 - `lughac check` no longer reports E0303 (only `build` and `run` do); `tests/programs/m3/e0303` moved to `tests/cli.rs`; `skip` is an intrinsic, so a function named `skip` is E0302; `--json`'s summary always carries `"skipped"` (v17, milestone 97)
 - `actor` is a keyword (v17, milestone 92); E0211's message reads "`spawn` needs a call, or an actor to start"
@@ -37,6 +38,7 @@ Never deleted. Older entries are never modified.
 - The language server published a `lugha.toml` error (E0325) to nothing once a program with loader errors was checked: the prelude's offsets overlapped the manifests'. The server now places the prelude after every loaded file (`modules::with_prelude_at`); the CLI never checked such programs and is unchanged
 
 ### Added
+- Package entry modules, milestone 99 (PRP-131): `import kivuli;` imports the package's `lib.la` (at its module root) as the module `kivuli`, also as `import kivuli { X };` and `public import kivuli;`; `lughac test src/lib.la` names tests `kivuli.name`; `import N.lib;` is E0312
 - Module doc comments, milestone 98 (PRP-130): a file's first `/** … */`, followed by a blank line or an `import`, documents its module; hovering a module's name (in an `import` or `m.f`) shows `module a.b` and that doc; the std modules' headers are now module docs
 - `pkg-config --cflags` may give `-mfpmath=sse`, `-msse` and `-msse2` (exactly; PRP-129, approved by the user as a security decision): a package listing C files with `pkg-config = ["gtk4"]` no longer fails with E0329; every other `-m…` flag stays refused
 - Packages and tests, milestone 97 (PRP-128): `lughac test`/`check` on a file in its package's `source` folder build it as the package's module (`glow.diff`; modules importing each other no longer E0319, tests named `glow.diff.name`); programs in a package's `test/`, `tests/`, `examples/` see its package-level items; `lughac check` takes a file without `main` as a library; `lugha.lock` sits beside the governing `lugha.toml` (an old lock beside the main file is read once, then written there); `skip(reason)` reports a test skipped (`... skipped (reason)`, `, S skipped`, `"skipped"` in `--json`, the VS Code Testing view; extension 0.13.0)

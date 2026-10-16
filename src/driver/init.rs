@@ -71,8 +71,9 @@ fn create(request: &Request, stdout: &mut dyn Write) -> Result<(), InitError> {
             None => "this folder".to_string(),
         }));
     }
+    // A library's entry (v17, milestone 99): `import {name};` reaches it.
     let main = if request.lib {
-        format!("src/{name}.la")
+        "src/lib.la".to_string()
     } else {
         "src/main.la".to_string()
     };
@@ -202,8 +203,10 @@ fn program(name: &str) -> String {
 
 fn library(name: &str) -> String {
     format!(
-        "// {name}: a Lugha library. Its modules live in `src/`, and a program\n\
-         // imports this one as `import {name}.{name};`.\n\
+        "/**\n\
+         \x20* {name}: a Lugha library. This is its entry, `import {name};`;\n\
+         \x20* its other modules live beside it in `src/`.\n\
+         \x20*/\n\
          \n\
          // Returns a greeting from this library.\n\
          public fun greet(who: string): string = \"Hello, {{who}}, from {name}!\";\n"
@@ -213,7 +216,7 @@ fn library(name: &str) -> String {
 fn example(name: &str) -> String {
     format!(
         "// An example using {name}. Run it with `lughac run examples/hello.la`.\n\
-         import {name}.{name};\n\
+         import {name};\n\
          \n\
          fun main() {{\n    println({name}.greet(\"world\"));\n}}\n"
     )

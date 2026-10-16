@@ -102,7 +102,7 @@ fn a_library_is_created_and_its_example_runs() {
     assert_eq!(
         text(&out.stdout),
         "created shapes/lugha.toml\n\
-         created shapes/src/shapes.la\n\
+         created shapes/src/lib.la\n\
          created shapes/examples/hello.la\n\
          created shapes/.gitignore\n\
          run the example with: lughac run shapes/examples/hello.la\n"
@@ -113,7 +113,7 @@ fn a_library_is_created_and_its_example_runs() {
             ".gitignore",
             "examples/hello.la",
             "lugha.toml",
-            "src/shapes.la"
+            "src/lib.la"
         ]
     );
     let run = lughac(&t.0, &t.0, &["run", "shapes/examples/hello.la"]);
@@ -131,9 +131,13 @@ fn a_library_is_created_and_its_example_runs() {
         "{}",
         text(&inside.stderr)
     );
-    // The library module is checked through its example.
+    // The library module is checked through its example, and alone (v17).
     let check = lughac(&t.0, &t.0, &["check", "shapes/examples/hello.la"]);
     assert_eq!(text(&check.stderr), "");
+    let example = std::fs::read_to_string(t.0.join("shapes/examples/hello.la")).unwrap();
+    assert!(example.contains("import shapes;\n"), "{example}");
+    let alone = lughac(&t.0.join("shapes"), &t.0, &["check", "src/lib.la"]);
+    assert_eq!(text(&alone.stderr), "");
 }
 
 #[test]
