@@ -423,7 +423,10 @@ fn an_actors_panic_ends_only_the_actor() {
 #[test]
 fn a_caller_waiting_on_a_panicking_actor_panics() {
     let (_, err, code) = run("actor_waiter");
-    assert!(err.ends_with("panic: actor `Counter` panicked at m.la:5:6\n"), "{err}");
+    assert!(
+        err.ends_with("panic: actor `Counter` panicked at m.la:5:6\n"),
+        "{err}"
+    );
     assert_eq!(code, Some(101));
 }
 
@@ -434,4 +437,3 @@ fn a_call_to_a_stopped_actor_panics() {
     assert_eq!(err, "panic: actor `Counter` has stopped at m.la:9:2\n");
     assert_eq!(code, Some(101));
 }
-

@@ -14,10 +14,13 @@ impl Parser<'_> {
     pub(super) fn spawn_expr(&mut self) -> PResult<Expr> {
         let start = self.bump().start;
         let call = self.nested(|p| p.postfix())?;
-        if !matches!(call.kind, ExprKind::Call(..)) {
-            let message = "`spawn` needs a call";
-            let help = "write the call the new thread runs, `spawn work(x)`, or call a \
-                        closure on the spot: `spawn fun() { … }()`";
+        // A call runs in a new green thread; an actor's literal starts the
+        // actor (v17, milestone 92).
+        if !matches!(call.kind, ExprKind::Call(..) | ExprKind::StructLit(_)) {
+            let message = "`spawn` needs a call, or an actor to start";
+            let help = "write the call the new thread runs, `spawn work(x)`, call a \
+                        closure on the spot, `spawn fun() { … }()`, or start an actor: \
+                        `spawn Counter { count: 0 }`";
             let d = Diagnostic::error("E0211", message, call.span).with_help(help);
             return Err(self.error(d));
         }
@@ -145,6 +148,11 @@ mod tests {
         );
         // The operand is the whole postfix chain: this spawns `f().g()`.
         assert_eq!(expr("spawn f().g()"), "(spawn (call (. (call f) g)))");
+        // An actor's state (v17, milestone 92).
+        assert_eq!(
+            expr("spawn Counter { count: 0 }"),
+            "(spawn (struct-lit Counter (count 0)))"
+        );
         assert_eq!(
             expr("(spawn f()).join()"),
             "(call (. (spawn (call f)) join))"

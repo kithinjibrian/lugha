@@ -1,0 +1,18 @@
+// A channel may cross into an actor: it is messaging too.
+actor Echo {
+    out: Chan<string>,
+    fun say(self, text: string) { self.out.send("echo: {text}"); }
+}
+
+fun main() {
+    let out: Chan<string> = Chan.buffered(4);
+    let e = spawn Echo { out: out };
+    e.say("hi");
+    e.say("there");
+    e.stop();
+    e.join();
+    out.close();
+    while let Some(line) = out.recv() {
+        println(line);
+    }
+}

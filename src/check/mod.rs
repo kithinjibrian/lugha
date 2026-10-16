@@ -8,6 +8,7 @@
 //! Depends on: ast, diagnostic, span.
 
 mod access;
+mod actors;
 mod applied;
 mod arguments;
 mod array;
@@ -170,6 +171,9 @@ impl Checker {
             closures: Vec::new(),
             captures: HashMap::new(),
             uses_tasks: false,
+            actors: std::collections::HashSet::new(),
+            in_actor: None,
+            spawn_operand: None,
             conversions: HashMap::new(),
             try_conversions: HashMap::new(),
             default_args: HashMap::new(),
@@ -278,6 +282,12 @@ pub(super) struct Checker {
     captures: HashMap<ExprId, Vec<String>>,
     /// See `Checked::uses_tasks`.
     uses_tasks: bool,
+    /// Every actor, by key (v17, milestone 92).
+    actors: std::collections::HashSet<String>,
+    /// The actor whose body is being read: there its name is its state.
+    in_actor: Option<String>,
+    /// The operand of the `spawn` being checked: an actor's state may be made there.
+    spawn_operand: Option<ExprId>,
     /// See `Checked::conversions`.
     conversions: HashMap<ExprId, Type>,
     /// See `Checked::try_conversions`.

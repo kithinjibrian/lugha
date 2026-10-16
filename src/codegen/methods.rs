@@ -192,6 +192,10 @@ impl<'ctx> Lowerer<'ctx> {
         if let Type::Chan(_) = base_type {
             return self.chan_method(call, base, &name.name, args).map(Some);
         }
+        // A message to an actor (milestone 92).
+        if let Type::Actor(_) = base_type {
+            return self.actor_method(call, base, &name.name, args).map(Some);
+        }
         // `s.area()` on an interface value: through its table (v5).
         if let Type::Interface(..) = &base_type {
             return self

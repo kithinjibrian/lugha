@@ -1,0 +1,9 @@
+error[E0439]: an actor's state exists only inside the actor: start `Counter` with `spawn`
+  --> tests/programs/m92/e0439_state.la:6:17
+  |
+6 |     let state = Counter { count: 0 };
+  |                 ^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: an actor is started with `spawn` and reached only through its methods; what crosses its boundary is copied and may hold no `Ref`
+
+For more about E0439, run `lughac explain E0439`.

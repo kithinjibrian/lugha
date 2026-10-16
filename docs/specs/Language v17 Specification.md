@@ -2,16 +2,17 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestone 91 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–92 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestone 91):
+**Changes since v16** (milestones 91–92):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
+- Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 
-Every valid v16 program is a valid v17 one, unless it uses `spawn` or `select` as a name (keywords now). A module's own `Task` or `Chan` still means its own, as for `Ref`.
+Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select` or `actor` as a name (keywords now). A module's own `Task` or `Chan` still means its own, as for `Ref`.
 
 **Changes in v16 since v15** (milestones 67–90):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
@@ -229,7 +230,7 @@ Source files are UTF-8. The lexer produces a flat list of tokens, each carrying 
 ```
 fun  extern  struct  enum  impl  let  mut  if  else  while  for  in  of  match
 import  private  public  interface
-return  break  continue  true  false  as  self  spawn  select
+return  break  continue  true  false  as  self  spawn  select  actor
 i32  i64  u8  f64  bool  string  u32  u64  f32  i8  i16  u16  char
 ```
 
@@ -421,7 +422,9 @@ The bit operators sit between comparisons and `+ -`, as in Rust, so `flags & MAS
 
 **Generic headers.** Type parameters follow the name, like Rust and TypeScript: `fun max<T: Ord>(a: T, b: T): T`. An `impl` names its type's parameters without bounds, `impl Stack<T> { … }`; the bounds come from the type's declaration. Type arguments are never written at a use (section 4), so `<` after a name in an expression is always a comparison; `Stack::<i64>` is E0207.
 
-**`spawn` and `select`** (v17). `spawn` takes the whole postfix expression after it, which must end in a call: `spawn work(x)`, `spawn m.f(x)`, `spawn p.area()`, `spawn fun() { … }()`. So `spawn f().g()` spawns `f().g()`; `(spawn f()).join()` joins at once. Anything else after `spawn` (`spawn f`, `spawn 1 + f()`, `spawn f()?`) is E0211. A `select` arm is one of `name = c.recv()` (or `_ = c.recv()`), `c.send(v)`, `after(ms)` or `default`, then `=>` and its value, separated as `match` arms are; any other arm is E0211, and the `select` keeps reading at the next arm. `after` and `default` are names everywhere else.
+**Actors** (v17, milestone 92). `actor_decl = [ visibility ] "actor" IDENT "{" { [ visibility ] IDENT ":" type "," | fun_decl } "}"` declares an actor at the top level: its fields (each followed by `,` unless last) and methods, in any order. Inside the body `Self`, and the actor's own name, mean its state. Anything else in the body is E0201.
+
+**`spawn` and `select`** (v17). `spawn` takes the whole postfix expression after it, which must end in a call or be a struct literal (an actor's state, milestone 92): `spawn work(x)`, `spawn m.f(x)`, `spawn p.area()`, `spawn fun() { … }()`. So `spawn f().g()` spawns `f().g()`; `(spawn f()).join()` joins at once. Anything else after `spawn` (`spawn f`, `spawn 1 + f()`, `spawn f()?`) is E0211. A `select` arm is one of `name = c.recv()` (or `_ = c.recv()`), `c.send(v)`, `after(ms)` or `default`, then `=>` and its value, separated as `match` arms are; any other arm is E0211, and the `select` keeps reading at the next arm. `after` and `default` are names everywhere else.
 
 **Block-like statements.** A statement that starts with `if`, `match`, `select` or `{` is parsed as `block_like` and needs no trailing `;`. It ends at its closing brace, so `if c { a } - 1` is a statement followed by the expression `-1`, not a subtraction. If a block's final element is an expression with no `;` after it, including a block-like one, that expression is the block's tail value (section 5). A `;` directly after a block-like statement is allowed and makes it an ordinary statement: `if c { f(); };`. A `;` on its own, where a statement should start, is an error.
 
@@ -527,6 +530,25 @@ There is no null. Every string and array variable holds a valid object.
 - **No `==`:** tasks and channels are not `Eq` (E0404, E0419); `c.is(d)` compares channels. They print as `<task>` and `<chan>`.
 - **`spawn` of a call that changes its receiver** — `push`, `pop` or `clear` on an array, a `mut self` method, `swap` — is E0438: the new thread gets its own copy (as a closure does), so nobody would see the change.
 - **`select`** is an expression: each arm's value agrees with the first arm that has one, as in `match`. A `recv` arm's name is the `Option<T>` received, in scope in that arm only. A `select` needs at least one `recv` or `send` arm, has at most one `after` and at most one `default`, and never both (E0438); the value of a `recv` or `send` arm must be a `Chan` (E0438); `after` takes an `i64` of milliseconds.
+
+**Actors** (v17, milestone 92). An actor is state that one green thread owns, and the methods that run there:
+
+```
+actor Counter {
+    count: i64,
+    fun new(start: i64): Self = Self { count: start };
+    fun add(mut self, n: i64) { self.count += n; }
+    fun get(self): i64 = self.count;
+}
+```
+
+- **The state** is a struct of the fields; inside the methods `self` is the state and `self.helper()` an ordinary call. The state exists only there and right after `spawn`: a literal of it, or a call returning it, anywhere else is E0439.
+- **The handle:** outside the actor's body, the actor's name (`Counter`, or `m.Counter` from another module) is the type of a handle. `spawn Counter { count: 0 }` and `spawn Counter.new(10)` start an actor and give one. Copies of a handle reach the same actor; handles aren't `Eq` (E0404, E0419; `a.is(b)` compares them) and print as `<actor Counter>`.
+- **Messages:** a call of a method with a receiver on a handle is a message. A method with a result makes the caller wait for it (a copy); one without is queued, and the caller goes on. A `mut self` method needs no `let mut` handle. Associated functions aren't messages (E0415). The method's visibility applies as for any method.
+- **Built-in:** every handle has `stop()` (a message like the others: what is queued before it still runs, then the actor ends), `join(): Option<string>` (waits until the actor has ended: `None` if it stopped, `Some(message)` if it panicked) and `is(other)`. An actor may not declare methods with these names (E0439).
+- **Private fields:** reading or assigning an actor's field through a handle is E0439.
+- **Sharing nothing:** an actor's fields, and its methods' parameters and results, may not hold a `Ref`: a `Ref`, a function value (a closure may have captured one), an interface value (the value inside may hold one), or a type containing any of these is E0439. Channels, tasks and other handles may cross. Values crossing are copied as arguments are.
+- **No type parameters** on an actor or its methods (E0439).
 
 **Extern structs** (v16, milestone 90). `extern struct Name { … }` declares a struct with C's layout: its fields in order, each at C's alignment, the whole padded to its largest. Its fields are numbers, `bool` (a C `bool`), `char` (a `uint32_t`), handles and other extern structs; nothing else, no type parameters and at least one field (E0437). In every other way it is an ordinary struct: literals, fields, `==`, methods, printing, copies. Only extern structs may cross to C by value (section 8).
 
@@ -1038,6 +1060,7 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 - **Blocking calls:** reading input, files, `std.process` and `extern` calls run to completion on the one OS thread, so every green thread waits for them.
 - **The end:** when `main` returns, the program exits with `main`'s code; green threads still running are dropped. A panic in any green thread ends the whole program with its message and exit code 101.
 - **Deadlock:** when no green thread can run, none is sleeping and one waits, the program panics with `panic: deadlock: every green thread is waiting` (no location), exit 101.
+- **Actors** (milestone 92) are green threads that take messages from an unbounded mailbox one at a time: messages from one caller in the order sent, from several in the order they arrive. A panic inside an actor's method prints its message, as any panic does, but ends only that actor: the caller waiting for that message's result, and every later caller, panics with ``actor `Counter` panicked`` at its call; a call to a stopped actor panics with ``actor `Counter` has stopped``. A stack overflow inside an actor still ends the program. Plain `spawn f()` threads keep the rule above. Actors waiting on each other are a deadlock.
 
 **The standard library** (v15). Version 15 has `std.math`, `std.random`, `std.env`, `std.fs` and `std.process`; version 17 adds `std.task`.
 
@@ -1333,6 +1356,7 @@ on_clicked(button, "clicked", fun(b: GtkWidget) { clicks.update(fun(n) = n + 1);
 - `unwrap` and `expect` (v9) are built in, not prelude functions, so their panic points at the caller: the value's tag is compared with `Some` or `Ok`, and a mismatch calls `lugha_rt_panic` with the message and the method name's location.
 - An or-pattern (v9) lowers in the arm chain: each alternative that fails tries the next, and every alternative stores a name's value into the arm's one local for it; a `match` with an or-pattern or a `mut` binding never uses the flat `switch`. A `mut` binding is a local of its own, deep-copied when its type is.
 - An iterator loop (v6) stores the iterator in a hidden local and calls its `next` with that local's address: directly for a struct or enum (its own method, or a bound default's instance in a generic instance), and through the table for an interface value.
+- An actor's message handler (v17, milestone 92) is `lugha_actor_<Type>.<method>(state, args, result)`: it reads the arguments from a GC block, one field each in element layout, calls `lugha_fn_<Type>.<method>` on the state and stores the result.
 - A `spawn` site (v17) starts `lugha_task_<enclosing>.<n>(code, env, result)`, numbered per enclosing function from 0 like closures: it calls the closure the call was wrapped in and stores its result, in element layout, at `result`.
 - A closure's body (v3) is `lugha_closure_<enclosing>.<n>`: the enclosing function's symbol without its prefix, then the closure's number in that function from 0 (`lugha_closure_main.0`, `lugha_closure_main.0.0` for a closure inside it, `lugha_closure_max<i64>.0` in an instance). Its environment comes first, as for every function value's code.
 - The array helpers (v3) are generic functions of a prelude written in Lugha, bundled with the compiler and checked with every program, under the module path `$prelude`, which no program can name: `lugha_fn_$prelude/map<Person, string>`. Each is compiled only at the types a program uses.
@@ -1408,6 +1432,9 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_task_select(cases, n, timeout, has_default, file, line, col)` (v17) | `select` over `n` cases `{ chan, kind, data, ok }` (kind 0 receive, 1 send); the case that ran, −1 for `default`, −2 for `after` |
 | `lugha_rt_chan_new(cap, elem, file, line, col)` (v17) | A channel of `elem`-byte values, buffering `cap` |
 | `lugha_rt_chan_send(c, value, file, line, col)` / `lugha_rt_chan_recv(c, out)` / `lugha_rt_chan_try_recv(c, out)` / `lugha_rt_chan_close(c, file, line, col)` (v17) | A channel's operations on values in element layout; receives return 1 for a value, 0 for closed (or, for `try_recv`, nothing ready) |
+| `lugha_rt_actor_spawn(state, name)` (v17) | A new actor holding `state` (GC memory) on its own green thread; returns its handle |
+| `lugha_rt_actor_call(a, handler, args, size, file, line, col)` / `lugha_rt_actor_cast(a, handler, args, file, line, col)` (v17) | Queue a message; a call waits and returns its result's address, and panics in the caller if the actor stopped or panicked |
+| `lugha_rt_actor_stop(a, file, line, col)` / `lugha_rt_actor_join(a)` (v17) | `stop()`; `join()`, which returns the panic's text or `NULL` |
 | `lugha_rt_cb_pin(code, env)` / `lugha_rt_cb_release(pinned)` (v16) | A copy of a function value C can keep as a callback's user data, scanned but never collected; freeing it when C releases the callback |
 | `lugha_rt_panic(msg, file, line, col)` | Print the panic message and `exit(101)` |
 | `lugha_rt_str_concat(a, b)` | Implement string `+` |
@@ -1604,6 +1631,7 @@ Name and type errors, reported by the checker:
 | E0434 | A misused test (v16) | `@test fun t(n: i64) {}`, `@test fun t(): i64 = 1;`, a generic test; calling a test or using it as a value |
 | E0435 | A malformed callback declaration (v16) | `extern fun f(cb: fun(i64), u: data);` (nothing takes `data`); `extern fun f(cb: fun(data));` (no `data` parameter); `release` without `data`; `fun f(x: data)` outside an extern |
 | E0436 | A function with captures passed to a callback without `data` (v16) | `sort(xs, fun(a, b) = a * k < b)` where `sort`'s comparator is `fun(i64, i64): i32` |
+| E0439 | An actor used against its rules (v17) | `c.count` through a handle; `Counter { count: 0 }` outside `spawn`; `actor A<T>`; `fun stop(self)` in an actor; a `Ref`, function or interface type in an actor's field, parameter or result |
 | E0438 | A `spawn` that changes a copy, or a malformed `select` (v17) | `spawn xs.push(1)`, `spawn p.bump()` with `mut self`; `select { default => 1 }`; two `default`s or `after`s; `after` with `default`; `m = s.recv()` with `s` not a `Chan` |
 | E0437 | A malformed `extern struct` (v16) | `extern struct S { s: string }`; a field of an array, a plain struct, an enum, `Option` or a function type; `extern struct S<T> { … }`; `extern struct S {}` |
 | E0433 | A pattern that must match every value but might not (v14) | `let (1, x) = t;`, `let Some(n) = o;` without `else`, `for (Some(a), b) of …` |
@@ -3410,6 +3438,45 @@ fun main() {
 }
 ```
 
+**Actors** (milestone 92). Prints `100`, `true`, `true` on three lines, exits with 0, after `panic: insufficient funds` on stderr from the account actor only.
+
+```
+// Actors (v17): state that one green thread owns, reached only through
+// messages. A void method is queued; a method with a result waits for it.
+// A panic ends only its actor, and `join` says how an actor ended.
+actor Account {
+    balance: i64,
+    fun deposit(mut self, amount: i64) { self.balance += amount; }
+    fun withdraw(mut self, amount: i64) {
+        if amount > self.balance {
+            panic("insufficient funds");
+        }
+        self.balance -= amount;
+    }
+    fun total(self): i64 = self.balance;
+}
+
+fun customer(account: Account) {
+    for i in 0..10 {
+        account.deposit(5);
+    }
+}
+
+fun main() {
+    let account = spawn Account { balance: 0 };
+    let first = spawn customer(account);
+    let second = spawn customer(account);
+    first.join();
+    second.join();
+    println(account.total());
+    account.withdraw(500);
+    println(account.join().is_some());
+    let other = spawn Account { balance: 7 };
+    other.stop();
+    println(other.join().is_none());
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -3507,6 +3574,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 89 | Strings from C (v16) | `string` and `Option<string>` extern results, `Option<string>` arguments, string callback parameters; copies, U+FFFD | `tests/c_strings.rs` (done) |
 | 90 | C structs by value (v16) | `extern struct`; passed by value to and from C as on x86-64 System V; E0437 | `tests/extern_structs.rs` (done) |
 | 91 | Green threads (v17) | `spawn`, `Task`, `Chan`, `select`, `std.task`; preemption; deadlock; E0211, E0438 | The §10 green-threads programs pass; `tests/programs/m91/` (done) |
+| 92 | Actors (v17) | `actor` declarations, `spawn` of an actor, call and cast, `stop`, `join`, `is`, panics ended in their actor, sharing nothing; E0439 | The §10 actors program passes; `tests/programs/m92/` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -3533,7 +3601,7 @@ fun main(): i32 {
 - directories, streams and processes;
 - shared references and closures that change their captures;
 - explicit type arguments and `.len()`;
-- green threads on several OS threads, actors and supervision, catching a green thread's panic, and non-blocking input and output (v17 plans actors next).
+- green threads and actors on several OS threads, built-in supervisors, generic actors, actors as interface values, bounded mailboxes, catching a plain green thread's panic, and non-blocking input and output.
 
 ## 12. Open questions
 

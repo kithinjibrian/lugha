@@ -1,0 +1,4 @@
+restarting after: attempt 1 failed at tests/programs/m92/supervisor.la:7:13
+restarting after: attempt 2 failed at tests/programs/m92/supervisor.la:7:13
+attempt 3 succeeded
+done after 3 attempts

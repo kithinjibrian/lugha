@@ -22,6 +22,11 @@ impl Checker {
         match (ty, field.name.as_str()) {
             (Type::Error | Type::Never, _) => Type::Error,
             (Type::String | Type::Array(_), "len") => Type::I64,
+            // An actor's fields are private to it (v17).
+            (Type::Actor(key), _) => {
+                self.handle_field(&key, field);
+                Type::Error
+            }
             (Type::Struct(s, args), name) if self.struct_field(&s, name).is_some() => {
                 self.field_visible(&s, name, field.span);
                 self.hover.field_use(&s, field);

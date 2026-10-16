@@ -121,6 +121,8 @@ fn item(item: &Item) -> String {
             let (p, tp) = (visibility(s.visibility), type_params(&s.type_params));
             let kind = if s.c_layout.is_some() {
                 "extern-struct"
+            } else if s.actor.is_some() {
+                "actor"
             } else {
                 "struct"
             };
@@ -144,7 +146,8 @@ fn item(item: &Item) -> String {
         Item::Impl(i) => {
             let methods: String = i.methods.iter().map(|m| format!(" {}", fun(m))).collect();
             let params = type_params(&i.params);
-            format!("(impl {}{params}{methods})", qualified(&i.module, &i.ty))
+            let kind = if i.actor { "actor-methods" } else { "impl" };
+            format!("({kind} {}{params}{methods})", qualified(&i.module, &i.ty))
         }
         Item::Interface(i) => {
             let items: String = i

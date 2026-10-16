@@ -92,3 +92,12 @@ fun main() {
 - `cargo clippy --all-targets -- -D warnings`
 - `cargo test`
 - `cd editors/vscode && npm test`
+
+## BUILT (session 214)
+- As planned, on branch `prp-123-actors` in a worktree; runtime first (`runtime/actors.c`, harness cases in `tests/tasks_runtime.rs`).
+- **Parsing:** an actor becomes two items, `Item::Struct` with `actor: Some(span)` and `Item::Impl` with `actor: true` (both spanning the actor), so struct, method, visibility, hover and docs handling apply unchanged; the formatter and s-expressions join them back. Inside the body the parser already turns `Self` into the actor's name, so **the actor's own name means its state inside its body** (fields and methods), its handle everywhere else.
+- **Panics:** `lugha_rt_panic`, bounds, slices, channel and C-string panics now print through `panic_with` and end through `panic_end`, which ends only the running actor (abandoning its green thread) or calls `exit(101)`; every existing panic's output is unchanged (full corpus). `die` (out of memory, deadlock, internal) still exits.
+- **`spawn`** accepts a struct literal; the checker makes `spawn` of an actor's state a handle (`spawned_actor`) and E0439 for a plain struct; the state is evaluated by the spawning thread.
+- **Completion:** `handle_members` in `check/actors.rs` (methods with a receiver, `stop`, `join`, `is`, never fields); `check/members.rs` got a 3-line hook and is at 500 lines.
+- **Tests:** runtime harness 4 new (17 total); parser 2; formatter 1; checker 7; codegen 2; e2e `tests/programs/m92/` (9 runs + 3 rejections, agreeing at -O0/-O2); §10 actors program; E0439 page; VS Code grammar (`actor`) and snippet. fmt, clippy and the full suite pass.
+

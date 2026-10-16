@@ -1,0 +1,7 @@
+actor Counter {
+    count: i64,
+}
+
+fun main() {
+    let state = Counter { count: 0 };
+}

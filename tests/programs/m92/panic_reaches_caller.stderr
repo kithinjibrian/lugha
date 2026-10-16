@@ -1,0 +1,2 @@
+panic: unwrap on None at tests/programs/m92/panic_reaches_caller.la:3:58
+panic: actor `Parser` panicked at tests/programs/m92/panic_reaches_caller.la:9:13
