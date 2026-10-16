@@ -7727,3 +7727,11 @@ Branch: prp-126-fmt_hugging
 
 ### STILL OPEN AT CLOSE
 - PRP-127 next, then PRP-128.
+
+---
+
+## SESSION 221 — 2026-10-17 — Inference from siblings (milestone 96) — open
+Branch: prp-127-sibling_inference
+
+### WHAT WAS DONE
+- In progress: building PRP-127 (approved in session 220) in worktree `../lugha-prp-127`; targeted tests only.
