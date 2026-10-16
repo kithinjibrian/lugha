@@ -7367,3 +7367,26 @@ Branch: vscode-green-threads
 
 ### STILL OPEN AT CLOSE
 - The user's manual check (extension README step 21). Actors next (needs discovery).
+
+---
+
+## SESSION 206 — 2026-10-16 — Green-thread teaching examples — closed
+Branch: main
+
+### WHAT WAS DONE
+- The user asked for small examples to understand green threads. Wrote ten commented programs and a README in `../green-threads-examples/` (outside this repo): spawn/join, a forgotten join, taking turns, channel hand-off, buffering and close, fan-in, select, preemption, copies vs `Ref`, deadlock; each ends with its real output. No change to lughac.
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT (the examples live outside the repo).
+
+### TESTS WRITTEN
+- None (each example was run with `lughac run`).
+
+### DECISIONS MADE
+- None.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing new (actors next).
