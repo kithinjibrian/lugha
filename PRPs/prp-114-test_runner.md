@@ -1,6 +1,6 @@
 ## FEATURE: `lughac test` — `@test` functions, `assert`/`assert_eq`/`assert_ne`, and a runner that runs each test in its own process, in parallel, with a time limit; milestone 84.
 
-**Status:** proposed 2026-10-16 — session 178 (discovery in sessions 177–178); waits for approval.
+**Status:** approved 2026-10-16 ("build it", which also accepted the security note) — built in session 179; proposed in session 178.
 **Milestone:** 84 (one PRP; tag `m84` at merge). The editor's "▶ Run test" link and general decorators are later milestones.
 **Spec:** `Language v16 Draft.md` decisions 81–86; spec §2 (`@`), §3 (attributes), §5/§6 (the assertions, tests and `main`), §9 (the CLI table, a `lughac test` section, E0210 and E0434), §11 (row 84).
 
