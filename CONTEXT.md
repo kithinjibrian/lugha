@@ -7505,3 +7505,26 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - Actor discussion: sharing (`Ref` across actors), then the remaining details for a PRP.
+
+---
+
+## SESSION 212 — 2026-10-16 — Actors: discussion, remaining details — closed
+Branch: main
+
+### WHAT WAS DONE
+- The user chose sharing option A: actors share nothing — no `Ref` (or a type holding one) in an actor's fields, method parameters or results; channels and actor handles may cross. Proposed the remaining details as defaults for the user to confirm: construction only through `spawn`, the actor's name as the handle type outside, private fields, built-in `stop`/`join`/`is`, an unbounded mailbox, no generic actors yet, milestone 92 of v17.
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- Actors share nothing across their boundary (the user's choice).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's confirmation of the proposed defaults; then PRP-123 and the v17 draft's milestone 92.
