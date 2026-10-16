@@ -7072,11 +7072,30 @@ Branch: main
 
 ---
 
-## SESSION 195 — 2026-10-17 — Discovery: struct update syntax and variants as functions — open
+## SESSION 215 — 2026-10-17 — Discovery: struct update syntax and variants as functions — closed
 Branch: main
 
 ### WHAT WAS DONE
-- In progress: discovery for milestones 91 (struct update `S { f: e, ..base }`) and 92 (variants as function values), the prerequisites of kivuli (`../kivuli/KICKOFF.md`).
+- Discovery for the two prerequisites of kivuli (`../kivuli/KICKOFF.md`). Runs alongside session 214 (another session, building actors on `prp-123-actors`); first opened by mistake as "session 195" (`2dbda30`), a number that session had already used — renumbered here. These are v17 milestones 93–94: 91 (green threads) and 92 (actors) were taken.
+- The user's choices: Rust's rules for `S { f: e, ..base }` (last, same type, written fields first then `base` once, visibility of every field); every payload variant as a function value, `Some`/`Ok`/`Err` included, generic ones needing an expected type.
+- Mine, for review: E0440 (another type; confirm the number at build time — the actors branch may take codes), W0104 (nothing copied), E0201 for `..` not last; wrapper symbol `lugha_ref_<Enum>.<Variant>`.
+- Wrote PRP-124 (struct update, milestone 93) and PRP-125 (variants as functions, milestone 94); v17 draft decisions 24–34, rows 93–94.
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-124-struct_update.md`, `PRPs/prp-125-variant_functions.md`.
+- Modified: `docs/specs/Language v17 Draft.md`, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: PRP-124 and PRP-125 wait for approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Approval of PRP-124/125. Build after the actors work (session 214) merges, or in parallel worktrees, rebasing on main and re-checking E0440/W0104 against whatever actors added.
 
 ---
 
