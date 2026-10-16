@@ -1,6 +1,6 @@
 # Lugha v17 — Draft (delta against v16)
 
-**Status:** milestone 91 (green threads) approved in session 201 (proposed in session 200, after discovery in sessions 195–200), and built. Milestone 92 (actors) approved in session 214 (proposed in session 213, after discussion in sessions 207–212), and built.
+**Status:** milestone 91 (green threads) approved in session 201 (proposed in session 200, after discovery in sessions 195–200), and built. Milestone 92 (actors) approved in session 214 (proposed in session 213, after discussion in sessions 207–212), and built. Milestones 93 (struct update syntax) and 94 (variants as functions) proposed in session 215. Not approved.
 **Base:** `Language v16 Specification.md` (milestones 67–90), frozen when milestone 91 started. `Language v17 Specification.md` starts from it and grows milestone by milestone; it is what `lughac spec` prints.
 
 **Theme:** concurrency without async/await. Every function stays an ordinary function: a green thread pauses only where it waits (`join`, a channel, `select`, `sleep`), and the scheduler preempts long loops on its own, so nothing is marked `async` and nothing is awaited: no function colouring. Milestone 91 brings green threads and channels. Actors, which build on them (a green thread owning a channel as its mailbox), follow in a later v17 milestone.
@@ -81,6 +81,22 @@ Mine, approved by the user (session 212):
 22. **An unbounded mailbox:** void calls never wait, so the queue grows as needed. A bounded mailbox with waiting senders is later work.
 23. **Not in this milestone:** generic actors (`actor Cache<T>` is E0439), actors satisfying interfaces, built-in supervisors, several OS threads.
 
+## Decisions behind milestones 93 and 94 (discovery, session 215)
+
+The two language prerequisites of the kivuli UI framework (`../kivuli/KICKOFF.md`, Elm architecture): struct update syntax and variants as function values (the user's choices: Rust's rules for `..base`; every variant with payloads is a function value, `Some`/`Ok`/`Err` included).
+
+24. **`S { f: e, …, ..base }`:** a struct literal may end with `..base`, an expression of exactly the literal's struct type (type arguments included). Every field not written is taken from `base`.
+25. **Evaluation order:** the written fields first, left to right, then `base`, once. Fields taken from `base` follow the normal copy rules (a place's array is shared until written; a local `base` is moved on its last use).
+26. **Errors:** a `base` of another type is E0440 (the next unused code when built); `..` anywhere but last, or twice, is E0201; every field written as well as `..base` is a warning, W0104.
+27. **Visibility** as for any literal: outside the struct's module every field must be visible, written or not (E0313).
+28. **Not:** structural updates from another type; `..` in patterns; tuples (they have no literal syntax).
+29. **Success:** milestone 93, tag `m93`. Tests: parser, checker (E0440, W0104, E0313, generic inference), `tests/programs` (order, copies, moves, nesting, generics); byte-identical IR without `..`.
+30. **Variants as values:** a variant with payloads, written without a call, is a value of type `fun(P1, …): E` — `Msg.Named` is `fun(string): Msg` — and so are `Some`, `Ok` and `Err`. A variant without payloads stays a value of its enum.
+31. **Generic enums:** a variant of a generic enum needs an expected function type to fix its type arguments, as a generic function does (E0412 otherwise); a mismatch with the expected type is E0403.
+32. **Names:** variant values resolve as variants do today — `E.V`, `m.E.V`, `m.v.E.V`, through named imports of the enum — with the enum's visibility.
+33. **Lowering:** the value is `{ lugha_ref_<Enum>.<Variant>, null }`; the wrapper takes the environment first and builds the variant (indirect slots included), emitted once. It can't collide with a method's wrapper: a method may not share a variant's name (E0310).
+34. **Success:** milestone 94, tag `m94`. Tests: checker, `tests/programs` (`map(Shape.Circle)`, `map(Some)`, stored and called later, recursive enums, `Ok`/`Err`), one wrapper per variant; byte-identical IR without variant values.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
@@ -102,3 +118,5 @@ For milestone 92: **§2** keyword `actor`; **§3** `actor_decl = [ visibility ] 
 | --- | --- | --- | --- |
 | 91 | Green threads (v17) | `spawn`, `Task`, `Chan`, `select`, `std.task`; preemption; deadlock; E0211, E0438 | The §10 green-threads programs pass; `tests/programs/m91/` |
 | 92 | Actors (v17) | `actor` declarations, `spawn` of an actor, call and cast, `stop`, `join`, panics isolated to the actor, share-nothing; E0439 | The §10 actors programs pass; `tests/programs/m92/` |
+| 93 | Struct update syntax (v17) | `S { f: e, ..base }`, Rust's rules; E0440, W0104 |
+| 94 | Variants as functions (v17) | `Msg.Named`, `Some`, `Ok`, `Err` as function values |
