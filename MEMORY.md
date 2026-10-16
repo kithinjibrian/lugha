@@ -2023,11 +2023,17 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned; kivuli's second prerequisite. `check/variant_values.rs`: `E.V` with payloads (from `variant_value`) and `Some`/`Ok`/`Err` (from `name`, after locals and functions) give `fun(payloads): E`; a generic enum's arguments come from the expected `fun` type's result *or* parameters (`bind`), so `map(Some)` works; E0412 otherwise. `Checked::variant_values` → codegen `variant_function_value`, wrapper `lugha_ref_<Enum>.<Variant>` (deep payloads copied, as a function stores a parameter). Inference gives variant-shaped arguments the closure hint (`may_be_variant_value`). **Found and fixed:** the hint was built in two substitutions, so a caller's own `T` was erased when the helper also had a `T` — closures inside generic functions failed on `main` (`tests/programs/m94/generic_closures.la`). **Process change (the user, session 217):** the full `cargo test` is optional; the default gate is fmt, clippy, `--lib` and the touched areas' tests (CLAUDE.md TESTING RULE).
 
+
+### 178. Formatter hugging — milestone 95 (PRP-126)
+
+**Decision:** built as planned (the user: "approved all and build in one go. no full tests"). `doc.rs` gained `Hug(normal, hugged)` (Prettier's conditional group: flat if it fits, else the hugged form if its first line fits, else broken), `Broken` (a group forced broken) and `Huggable` (marks arrays and struct literals); `call_args` builds the two forms for a call whose last argument is huggable. **`fits` now measures what follows a doc with its groups as broken** (Prettier's rule), so a header stays whole while its body breaks — this changed nothing in the corpus beyond hugging. Closures already hugged (a last element with a hard break). kivuli's `view` formats as `column([` … `])`.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 95 complete**: PRP-126 formatter hugging
 - **Milestone 94 complete**: PRP-125 variants as function values
 - **Milestone 93 complete**: PRP-124 struct update syntax
 - **lugha-gtk 0.1.0** (PRP-121), published on GitHub: GTK 4 windows and widgets in Lugha

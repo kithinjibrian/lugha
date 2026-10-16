@@ -279,3 +279,44 @@ fn a_block_arm_keeps_its_comma_before_a_tuple_or_negative_pattern() {
         "fun f(x: i64): i64 = match x {\n    0 => {\n        1\n    },\n    -1 => 2,\n    _ => {\n        3\n    }\n};\n",
     );
 }
+
+#[test]
+fn a_trailing_array_hugs_the_call_v17() {
+    check(
+        "fun view(m:Model):View<Msg> = column([text(\"Clicked {m.count} times\"), button(\"Add\", Msg.Add), button(\"Reset\", Msg.Reset)]);",
+        "fun view(m: Model): View<Msg> = column([\n    text(\"Clicked {m.count} times\"),\n    button(\"Add\", Msg.Add),\n    button(\"Reset\", Msg.Reset),\n]);\n",
+    );
+}
+
+#[test]
+fn hugging_nests_and_keeps_a_method_chain_v17() {
+    check(
+        "fun view(m:Model):View<Msg> = column([text(\"Clicked {m.count} times\"), row([button(\"Add\", Msg.Add), button(\"Reset\", Msg.Reset).disabled(m.count == 0)])]).padding(24);",
+        "fun view(m: Model): View<Msg> = column([\n    text(\"Clicked {m.count} times\"),\n    row([button(\"Add\", Msg.Add), button(\"Reset\", Msg.Reset).disabled(m.count == 0)]),\n]).padding(24);\n",
+    );
+}
+
+#[test]
+fn a_trailing_struct_literal_hugs_the_call_v17() {
+    check(
+        "fun f(){draw_rectangle_with_a_long_name(Rectangle{x:100.0,y:200.0,width:300.0,height:400.0,label:\"a box\"});}",
+        "fun f() {\n    draw_rectangle_with_a_long_name(Rectangle {\n        x: 100.0,\n        y: 200.0,\n        width: 300.0,\n        height: 400.0,\n        label: \"a box\",\n    });\n}\n",
+    );
+}
+
+#[test]
+fn no_hugging_when_the_earlier_arguments_dont_fit_v17() {
+    let long = "a_very_long_argument_name_that_takes_up_most_of_the_line_on_its_own_and_then_some_more_xyzzy";
+    check(
+        &format!("fun f(){{g({long},[1,2]);}}"),
+        &format!("fun f() {{\n    g(\n        {long},\n        [1, 2],\n    );\n}}\n"),
+    );
+}
+
+#[test]
+fn a_header_stays_whole_while_its_body_can_break_v17() {
+    check(
+        "fun total(xs:i64[]):i64 = xs.iter().fold(0, fun(a, b) = a + b) + another_long_function(xs, 1, 2, 3);",
+        "fun total(xs: i64[]): i64 = xs.iter().fold(0, fun(a, b) = a + b) + another_long_function(\n    xs,\n    1,\n    2,\n    3,\n);\n",
+    );
+}

@@ -7707,8 +7707,23 @@ Branch: main
 
 ---
 
-## SESSION 220 — 2026-10-17 — Formatter hugging (milestone 95) — open
+## SESSION 220 — 2026-10-17 — Formatter hugging (milestone 95) — closed
 Branch: prp-126-fmt_hugging
 
 ### WHAT WAS DONE
-- In progress: the user approved PRP-126, PRP-127 and PRP-128 ("approved all and build in one go. no full tests"); building PRP-126 in worktree `../lugha-prp-126`. Targeted tests only (CLAUDE.md TESTING RULE).
+- The user approved PRP-126, PRP-127 and PRP-128 ("approved all and build in one go. no full tests"); built PRP-126 in worktree `../lugha-prp-126`: hugging in the document printer (`Hug`, `Broken`, `Huggable`, `call_args`), Prettier's measuring rule; spec v17 §9 style, row 95; docs.
+
+### FILES CREATED OR MODIFIED
+- Modified: `src/formatter/{doc,exprs,tests}.rs`, spec, draft, PRP-126, CLAUDE.md, TODO, CHANGELOG, MEMORY (178), CONTEXT.
+
+### TESTS WRITTEN
+- 5 formatter cases. Targeted: formatter lib tests, `--test fmt`, `fmt_corpus`, `lsp_formatting`, `--lib`, fmt, clippy. Full suite not run (the user).
+
+### DECISIONS MADE
+- As PRP-126 planned (BUILT notes, MEMORY 178).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-127 next, then PRP-128.

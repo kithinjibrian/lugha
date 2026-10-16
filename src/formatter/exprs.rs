@@ -3,7 +3,7 @@
 //! that break when too long, literals copied from the source.
 
 use super::Printer;
-use super::doc::{Doc, concat, list, spaced, text};
+use super::doc::{Doc, call_args, concat, huggable, list, spaced, text};
 use crate::ast::{Arm, BinOp, Block, Expr, ExprKind, SelectArm, SelectKind, UnOp, spawned_call};
 
 /// Binding strength: a closure's `= body` takes everything after it.
@@ -50,7 +50,7 @@ impl Printer<'_> {
             }
             ExprKind::Array(elements) => {
                 let items = self.exprs(elements);
-                list("[", items, "]")
+                huggable(list("[", items, "]"))
             }
             ExprKind::Repeat(value, count) => {
                 let (v, n) = self.allowing(|p| (p.expr(value), p.expr(count)));
@@ -81,7 +81,7 @@ impl Printer<'_> {
             ExprKind::Call(callee, args) => {
                 let callee = self.operand(callee, POSTFIX);
                 let args = self.exprs(args);
-                concat(vec![callee, list("(", args, ")")])
+                concat(vec![callee, call_args(args)])
             }
             ExprKind::Index(base, _, index) => {
                 let base = self.operand(base, POSTFIX);
@@ -112,7 +112,10 @@ impl Printer<'_> {
                 });
                 let doc = match fields.is_empty() {
                     true => text(format!("{name} {{}}")),
-                    false => concat(vec![text(format!("{name} ")), spaced("{", fields, "}")]),
+                    false => huggable(concat(vec![
+                        text(format!("{name} ")),
+                        spaced("{", fields, "}"),
+                    ])),
                 };
                 // In a condition a literal needs parentheses (E0205).
                 match self.no_struct {
