@@ -1,0 +1,217 @@
+//! A file's imports and items: functions, externs, structs, enums, `impl`
+//! blocks and interfaces, one field, variant or method per line.
+
+use super::Printer;
+use super::doc::{Doc, concat, spaced, text};
+use super::leaves::visibility;
+use crate::ast::{
+    EnumDecl, Field, FunDecl, Import, InterfaceDecl, InterfaceItem, Item, Program, Variant,
+};
+use crate::span::Span;
+
+/// A top-level element.
+enum Top<'p> {
+    Import(&'p Import),
+    Item(&'p Item),
+}
+
+impl Printer<'_> {
+    /// The whole file.
+    pub(super) fn program(&mut self, program: &Program) -> Doc {
+        let mut tops: Vec<Top> = program.imports.iter().map(Top::Import).collect();
+        tops.extend(program.items.iter().map(Top::Item));
+        let whole = Span::new(0, self.src.len());
+        let body = self.sequence(whole, &tops, |p, t| p.top_span(t), |_| "", |p, t| p.top(t));
+        body.unwrap_or_else(|| text(""))
+    }
+
+    /// Where a top-level element starts (its visibility included) and ends.
+    fn top_span(&self, top: &Top) -> Span {
+        let (start, span) = match top {
+            Top::Import(i) => (i.public.map(|p| p.start), i.span),
+            Top::Item(Item::Fun(f)) => (f.visibility.map(|v| v.span.start), f.span),
+            Top::Item(Item::Extern(e)) => (e.visibility.map(|v| v.span.start), e.span),
+            Top::Item(Item::Struct(s)) => (s.visibility.map(|v| v.span.start), s.span),
+            Top::Item(Item::Enum(e)) => (e.visibility.map(|v| v.span.start), e.span),
+            Top::Item(Item::Impl(i)) => (None, i.span),
+            Top::Item(Item::Interface(i)) => (i.visibility.map(|v| v.span.start), i.span),
+        };
+        Span::new(start.unwrap_or(span.start).min(span.start), span.end)
+    }
+
+    fn top(&mut self, top: &Top) -> Doc {
+        match top {
+            Top::Import(i) => self.import(i),
+            Top::Item(Item::Fun(f)) => self.fun(f),
+            Top::Item(Item::Extern(e)) => concat(vec![
+                text(format!(
+                    "{}extern fun {}",
+                    visibility(e.visibility),
+                    self.ident(&e.name)
+                )),
+                self.params(None, &e.params),
+                text(format!("{};", self.ret(&e.ret))),
+            ]),
+            Top::Item(Item::Struct(s)) => {
+                let head = format!(
+                    "{}struct {}{} ",
+                    visibility(s.visibility),
+                    self.ident(&s.name),
+                    self.type_params(&s.type_params)
+                );
+                let inner = self.inner(s.name.span.end, s.span);
+                let body = self.sequence(
+                    inner,
+                    &s.fields,
+                    |_, f| field_span(f),
+                    |_| ",",
+                    |p, f| {
+                        text(format!(
+                            "{}{}: {}",
+                            visibility(f.visibility),
+                            p.ident(&f.name),
+                            p.ty(&f.ty)
+                        ))
+                    },
+                );
+                concat(vec![text(head), self.braced(body)])
+            }
+            Top::Item(Item::Enum(e)) => self.enumeration(e),
+            Top::Item(Item::Impl(i)) => {
+                let mut head = "impl ".to_string();
+                if let Some(m) = &i.module {
+                    head.push_str(&format!("{}.", self.ident(m)));
+                }
+                head.push_str(&format!(
+                    "{}{} ",
+                    self.ident(&i.ty),
+                    self.type_params(&i.params)
+                ));
+                let inner = self.inner(i.ty.span.end, i.span);
+                let body = self.sequence(
+                    inner,
+                    &i.methods,
+                    |_, f| fun_span(f),
+                    |_| "",
+                    |p, f| p.fun(f),
+                );
+                concat(vec![text(head), self.braced(body)])
+            }
+            Top::Item(Item::Interface(i)) => self.interface(i),
+        }
+    }
+
+    /// The text between the `{` after `from` and the `}` ending `span`.
+    fn inner(&self, from: usize, span: Span) -> Span {
+        let end = span.end.saturating_sub(1);
+        Span::new(self.after_brace(from, end).min(end), end)
+    }
+
+    fn import(&mut self, i: &Import) -> Doc {
+        let path: Vec<String> = i.path.iter().map(|s| self.ident(s)).collect();
+        let mut head = format!(
+            "{}import {}",
+            if i.public.is_some() { "public " } else { "" },
+            path.join(".")
+        );
+        if let Some(alias) = &i.alias {
+            head.push_str(&format!(" as {}", self.ident(alias)));
+        }
+        let mut parts = vec![text(head)];
+        if !i.items.is_empty() {
+            let items: Vec<Doc> = i
+                .items
+                .iter()
+                .map(|item| match &item.alias {
+                    Some(a) => text(format!("{} as {}", self.ident(&item.name), self.ident(a))),
+                    None => text(self.ident(&item.name)),
+                })
+                .collect();
+            parts.push(text(" "));
+            parts.push(spaced("{", items, "}"));
+        }
+        parts.push(text(";"));
+        concat(parts)
+    }
+
+    /// A function or method: `fun f(…): T { … }` or `fun f(…): T = e;`.
+    fn fun(&mut self, f: &FunDecl) -> Doc {
+        let head = concat(vec![
+            text(format!(
+                "{}fun {}{}",
+                visibility(f.visibility),
+                self.ident(&f.name),
+                self.type_params(&f.type_params)
+            )),
+            self.params(f.receiver, &f.params),
+            text(self.ret(&f.ret)),
+        ]);
+        let body = self.body(&f.body);
+        let expression = self.src[..f.body.span.start].trim_end().ends_with('=');
+        let mut parts = vec![head, body];
+        if expression {
+            parts.push(text(";"));
+        }
+        concat(parts)
+    }
+
+    fn enumeration(&mut self, e: &EnumDecl) -> Doc {
+        let head = format!(
+            "{}enum {}{} ",
+            visibility(e.visibility),
+            self.ident(&e.name),
+            self.type_params(&e.type_params)
+        );
+        let inner = self.inner(e.name.span.end, e.span);
+        let body = self.sequence(
+            inner,
+            &e.variants,
+            |_, v| v.span,
+            |_| ",",
+            |p, v| p.variant(v),
+        );
+        concat(vec![text(head), self.braced(body)])
+    }
+
+    fn variant(&self, v: &Variant) -> Doc {
+        if v.payloads.is_empty() {
+            return text(self.ident(&v.name));
+        }
+        let types: Vec<String> = v.payloads.iter().map(|t| self.ty(t)).collect();
+        text(format!("{}({})", self.ident(&v.name), types.join(", ")))
+    }
+
+    fn interface(&mut self, i: &InterfaceDecl) -> Doc {
+        let head = format!(
+            "{}interface {}{} ",
+            visibility(i.visibility),
+            self.ident(&i.name),
+            self.type_params(&i.type_params)
+        );
+        let inner = self.inner(i.name.span.end, i.span);
+        let body = self.sequence(inner, &i.items, |_, m| m.span, |_| "", |p, m| p.required(m));
+        concat(vec![text(head), self.braced(body)])
+    }
+
+    /// An interface's method: a signature, or one with a default body.
+    fn required(&mut self, m: &InterfaceItem) -> Doc {
+        if let Some(default) = &m.default {
+            return self.fun(default);
+        }
+        concat(vec![
+            text(format!("fun {}", self.ident(&m.name))),
+            self.params(m.receiver, &m.params),
+            text(format!("{};", self.ret(&m.ret))),
+        ])
+    }
+}
+
+fn field_span(f: &Field) -> Span {
+    let start = f.visibility.map_or(f.name.span.start, |v| v.span.start);
+    Span::new(start, f.ty.span.end)
+}
+
+fn fun_span(f: &FunDecl) -> Span {
+    let start = f.visibility.map_or(f.span.start, |v| v.span.start);
+    Span::new(start.min(f.span.start), f.span.end)
+}

@@ -6396,11 +6396,39 @@ Branch: main
 
 ---
 
+## SESSION 169 — 2026-10-16 — `lughac fmt` (milestone 80) — closed
+Branch: prp-110-formatter
+
+### WHAT WAS DONE
+- The user approved PRP-110 ("build it"); built it in the worktree `../lugha-prp-110`.
+- `src/formatter/`: a document printer (groups, 100 columns, last-element hugging), printers for items, statements, expressions (precedence) and leaves, comment attachment with a verbatim fallback, verification (re-parse; trees and comments compared).
+- `lexer::comments`; `lughac fmt [paths…] [--check]` (`driver/fmt.rs`).
+- Every program in `tests/programs/` that parses (346), the spec's programs, std and the prelude format, verify and are idempotent. The repo's own `.la` files were not reformatted (PRP must-not).
+- Spec v16 §9 (CLI row, a `lughac fmt` section), §11 row 80, the changes list; draft status; docs.
+
+### FILES CREATED OR MODIFIED
+- New: `src/formatter/{mod,doc,items,stmts,exprs,leaves,comments,verify,tests}.rs`, `src/driver/fmt.rs`, `tests/fmt.rs`, `tests/fmt_corpus.rs`.
+- Modified: `src/lexer/mod.rs`, `src/lib.rs`, `src/driver/mod.rs`, `tests/lexer.rs`, the v16 spec and draft, PRP-110, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (153–154), CONTEXT.
+
+### TESTS WRITTEN
+- 17 style/verification unit tests (`src/formatter/tests.rs`) and 5 in `doc.rs`, written before the printer; `tests/fmt.rs` (6), `tests/fmt_corpus.rs` (3), `tests/lexer.rs` (1). Full suite, fmt and clippy pass.
+
+### DECISIONS MADE
+- Built as PRP-110 planned; details in its BUILT notes and MEMORY 154 (hugging, the extra parenthesis cases, `$item` offsets ignored by verification).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Milestone 81 (Format Document / format on save in `lughac lsp` and the extension) needs its own discovery and PRP.
+
+---
+
 ## NEXT SESSION START POINT
 
-**v16: milestones 67–69 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`).
+**v16: milestones 67–80 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`).
 
-**Focus: the VS Code extension** (the user, session 144). **Milestone 70 done** (tag `m70`): `lughac lsp` with live diagnostics, extension 0.2.0. **Milestone 71 done** (tag `m71`): hover. **Milestone 72 done** (tag `m72`): go-to-definition. **Milestone 73 done** (tag `m73`): completion; the user's manual checks of milestones 70–73 all passed (session 153). **Milestone 74 done** (tag `m74`): signature help. **Milestone 75 done** (tag `m75`): partial syntax trees. **Milestone 76 done** (tag `m76`): block comments. **Milestone 77 done** (tag `m77`): doc comments. **Milestone 78 done** (tag `m78`): snippets. Extension 0.3.1 (sessions 164–165: version bumps, clean builds). **Milestone 79 done** (tag `m79`): the add-missing-arms quick fix; extension 0.3.2. **Proposed: milestone 80, `lughac fmt`** (tree-based formatter) — v16 draft decisions 60–65 and PRP-110; it waits for the user's approval. Then milestone 81, formatting in the editor. Later: a `lughac doc` tool, more quick fixes, expression error nodes, lexer recovery, bundling the extension. Later for the extension: expression error nodes, lexer recovery, snippets, bundling. Later for the extension (each a discovery + PRP): partial syntax trees, signature help and snippets, Find References, Go to Implementations, a read-only view of bundled sources, bundling; the user's manual checks of live errors and hover. Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Next: milestone 81, formatting in the editor** (Format Document, format on save through `lughac lsp`) — start with its discovery and PRP. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

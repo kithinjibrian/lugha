@@ -12,6 +12,7 @@ pub mod codegen;
 pub mod diagnostic;
 pub mod driver;
 pub mod format;
+pub mod formatter;
 pub mod lexer;
 pub mod link;
 pub mod modules;
