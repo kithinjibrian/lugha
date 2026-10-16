@@ -7215,3 +7215,8 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - The green-threads discovery, at question 8 (select arms).
+
+---
+
+## SESSION 200 — 2026-10-16 — Green threads: discovery, continued — open
+Branch: main
