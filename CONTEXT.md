@@ -7914,3 +7914,8 @@ Branch: prp-131-package_entry
 
 ### STILL OPEN AT CLOSE
 - Nothing. kivuli may rename `ui.la` to `lib.la` (its session's call).
+
+---
+
+## SESSION 229 — 2026-10-17 — Names inside import braces in the editor — open
+Branch: fix-import-names
