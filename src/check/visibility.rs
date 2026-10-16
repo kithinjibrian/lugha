@@ -135,6 +135,8 @@ impl Checker {
         for item in &program.items {
             match item {
                 Item::Fun(f) => self.signature(f),
+                // A handle holds nothing that could be less visible (v16).
+                Item::ExternType(_) => {}
                 Item::Extern(e) => {
                     let at = level(e.visibility);
                     e.params.iter().for_each(|p| self.leak(&p.ty, at));

@@ -95,12 +95,16 @@ fn item(item: &Item) -> String {
     match item {
         Item::Fun(f) => fun(f),
         Item::Extern(e) => format!(
-            "({}extern {} {} {})",
+            "({}extern {}{} {} {})",
             visibility(e.visibility),
             e.name.name,
+            e.symbol
+                .as_ref()
+                .map_or(String::new(), |s| format!(" {:?}", s.name)),
             params(&e.params),
             ret(&e.ret)
         ),
+        Item::ExternType(t) => format!("({}extern-type {})", visibility(t.visibility), t.name.name),
         Item::Struct(s) => {
             let fields: String = s
                 .fields

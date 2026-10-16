@@ -6,6 +6,7 @@
 use inkwell::values::{BasicMetadataValueEnum, BasicValueEnum, FunctionValue, ValueKind};
 
 use super::CodegenError;
+use super::externs::is_nullable_handle;
 use super::lower::{Lowerer, POSITIONED};
 use super::scope::{Local, Scopes};
 use super::value::{Value, is_aggregate};
@@ -179,9 +180,14 @@ impl<'ctx> Lowerer<'ctx> {
             .builder
             .build_call(signature.function, &values, "call")
             .expect(POSITIONED);
-        Ok(match site.try_as_basic_value() {
-            ValueKind::Basic(result) => Value::Val(result),
-            ValueKind::Instruction(_) => Value::Void,
+        Ok(match (site.try_as_basic_value(), &signature.ret) {
+            (ValueKind::Basic(result), Some(ret))
+                if signature.is_extern && is_nullable_handle(ret) =>
+            {
+                Value::Val(self.nullable_from_c(result, ret))
+            }
+            (ValueKind::Basic(result), _) => Value::Val(result),
+            (ValueKind::Instruction(_), _) => Value::Void,
         })
     }
 
@@ -198,6 +204,8 @@ impl<'ctx> Lowerer<'ctx> {
             let value = self.get(arg, ty)?;
             let value = if is_extern && *ty == Type::String {
                 self.c_string(value)
+            } else if is_extern && is_nullable_handle(ty) {
+                self.nullable_to_c(value, ty)
             } else if is_aggregate(ty) {
                 // Passed as a pointer to caller storage, never copied (spec §4, §9).
                 let slot = self.entry_alloca(ty, "arg");

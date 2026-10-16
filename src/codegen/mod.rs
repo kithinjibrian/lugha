@@ -23,6 +23,7 @@ mod dispatch;
 mod enums;
 mod equality;
 mod expr;
+mod externs;
 mod float_ops;
 mod format;
 mod fun_values;

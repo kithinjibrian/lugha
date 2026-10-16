@@ -34,6 +34,7 @@ mod flow;
 mod for_mut;
 mod fun_values;
 mod generics;
+mod handles;
 mod helpers;
 mod iface_calls;
 mod iface_tables;
@@ -137,6 +138,7 @@ impl Checker {
             functions: HashMap::new(),
             structs: HashMap::new(),
             enums: HashMap::new(),
+            handles: HashMap::new(),
             methods: HashMap::new(),
             scopes: Vec::new(),
             ret: Type::Void,
@@ -216,6 +218,8 @@ pub(super) struct Checker {
     functions: HashMap<String, Signature>,
     structs: HashMap<String, structs::StructInfo>,
     enums: HashMap<String, enums::EnumInfo>,
+    /// Every `extern type`, by key: where it is declared (v16, milestone 88).
+    handles: HashMap<String, Span>,
     methods: methods::Methods,
     scopes: Vec<HashMap<String, Local>>,
     /// The return type of the function being checked.

@@ -36,14 +36,20 @@ impl<'ctx> Lowerer<'ctx> {
                 Item::Fun(f) if f.test.is_some() && self.tests.is_none() => continue,
                 Item::Fun(f) => (&f.name.name, &f.params, f.ret.as_ref(), false),
                 Item::Extern(e) => (&e.name.name, &e.params, e.ret.as_ref(), true),
-                // Methods are declared by `declare_methods`.
-                Item::Struct(_) | Item::Enum(_) | Item::Impl(_) | Item::Interface(_) => continue,
+                // Methods are declared by `declare_methods`; a handle is only a pointer.
+                Item::Struct(_)
+                | Item::Enum(_)
+                | Item::Impl(_)
+                | Item::Interface(_)
+                | Item::ExternType(_) => continue,
             };
             let params: Vec<Type> = params.iter().map(|p| self.annotation_type(&p.ty)).collect();
             let ret = ret.map(|t| self.annotation_type(t));
             let param_types: Vec<BasicMetadataTypeEnum> =
                 params.iter().map(|ty| self.param_type(ty)).collect();
             let fn_type = match &ret {
+                // C returns `Option` of a handle as a nullable pointer (v16).
+                Some(ty) if is_extern => self.c_result_type(ty).fn_type(&param_types, false),
                 Some(ty) => llvm_type(self.context, ty).fn_type(&param_types, false),
                 None => self.context.void_type().fn_type(&param_types, false),
             };

@@ -40,7 +40,11 @@ impl Checker {
             let (name, params, ret, is_extern, visibility) = match item {
                 Item::Fun(f) => (&f.name, &f.params, f.ret.as_ref(), false, f.visibility),
                 Item::Extern(e) => (&e.name, &e.params, e.ret.as_ref(), true, e.visibility),
-                Item::Struct(_) | Item::Enum(_) | Item::Impl(_) | Item::Interface(_) => continue,
+                Item::Struct(_)
+                | Item::Enum(_)
+                | Item::Impl(_)
+                | Item::Interface(_)
+                | Item::ExternType(_) => continue,
             };
             let generics = self.enter_params(item);
             let declared = params;
@@ -64,6 +68,9 @@ impl Checker {
                 for (annotation, ty) in annotations.zip(params.iter().chain([&ret_type])) {
                     let at = annotation.span;
                     let d = match ty {
+                        // A handle, or `Option` of one (`NULL` is `None`), is a C pointer (v16).
+                        Type::Handle(_) => continue,
+                        Type::Option(inner) if matches!(**inner, Type::Handle(_)) => continue,
                         Type::Array(_) => errors::extern_array(at),
                         Type::Struct(_, _) => errors::extern_struct(at),
                         Type::Fun(..) | Type::Interface(..) => errors::extern_value(ty, at),
@@ -187,6 +194,7 @@ impl Checker {
         as_struct
             .or_else(as_enum)
             .or_else(|| self.interfaces.get(name).map(|i| i.span))
+            .or_else(|| self.handles.get(name).copied())
     }
 
     /// True if `name` names a type here, or an imported module, so no local
@@ -197,6 +205,7 @@ impl Checker {
             || self.structs.contains_key(&key)
             || self.enums.contains_key(&key)
             || self.interfaces.contains_key(&key)
+            || self.handles.contains_key(&key)
             || self.imports.contains_key(name)
     }
 

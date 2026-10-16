@@ -52,6 +52,8 @@ pub enum Item {
     Fun(FunDecl),
     /// `extern fun name(params): ret;`.
     Extern(ExternDecl),
+    /// `extern type Name;`: an opaque C pointer type (v16, milestone 88).
+    ExternType(ExternTypeDecl),
     /// `struct Name { fields }`.
     Struct(StructDecl),
     /// `enum Name { variants }` (v1).
@@ -85,19 +87,40 @@ pub struct FunDecl {
     pub test: Option<Span>,
 }
 
+/// `extern type Name;`: a handle, an opaque C pointer (v16, milestone 88).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ExternTypeDecl {
+    /// `private` or `public`, if written.
+    pub visibility: Option<Visibility>,
+    /// The type's name.
+    pub name: Ident,
+    /// From `extern` to the `;`.
+    pub span: Span,
+}
+
 /// A C function declaration (spec §8).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ExternDecl {
     /// `private` or `public`, if written (v2 draft §6).
     pub visibility: Option<Visibility>,
-    /// The C symbol name.
+    /// The name Lugha calls it by: the C symbol too, unless `symbol` is given.
     pub name: Ident,
+    /// `extern "symbol" fun name(…)`: the C function's own name, the
+    /// string's text and span (v16, milestone 88).
+    pub symbol: Option<Ident>,
     /// Parameters in order.
     pub params: Vec<Param>,
     /// Declared return type; `None` means `void`.
     pub ret: Option<Type>,
     /// From `extern` to the `;`.
     pub span: Span,
+}
+
+impl ExternDecl {
+    /// The C symbol this declaration calls: `symbol` when renamed, else its name.
+    pub fn c_symbol(&self) -> &str {
+        self.symbol.as_ref().unwrap_or(&self.name).name.as_str()
+    }
 }
 
 /// A struct declaration.

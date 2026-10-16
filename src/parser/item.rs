@@ -1,7 +1,9 @@
 //! Top-level items and types (spec §3, §6, §8; v2 draft §3).
 
 use super::{PResult, Parser};
-use crate::ast::{ExternDecl, Field, Ident, Import, Item, Param, StructDecl, Type, TypeKind};
+use crate::ast::{
+    ExternDecl, ExternTypeDecl, Field, Ident, Import, Item, Param, StructDecl, Type, TypeKind,
+};
 use crate::diagnostic::Diagnostic;
 use crate::lexer::TokenKind;
 use crate::span::Span;
@@ -51,7 +53,7 @@ impl Parser<'_> {
     pub(super) fn item(&mut self) -> PResult<Item> {
         match self.peek() {
             TokenKind::Fun => self.fun_decl_with(false).map(Item::Fun),
-            TokenKind::Extern => self.extern_decl().map(Item::Extern),
+            TokenKind::Extern => self.extern_item(),
             TokenKind::Struct => self.struct_decl().map(Item::Struct),
             TokenKind::Enum => self.enum_decl().map(Item::Enum),
             TokenKind::Impl => self.impl_decl().map(Item::Impl),
@@ -70,20 +72,49 @@ impl Parser<'_> {
         }
     }
 
-    pub(super) fn extern_decl(&mut self) -> PResult<ExternDecl> {
+    /// `extern fun …;`, `extern "symbol" fun …;` or `extern type Name;` (v16).
+    pub(super) fn extern_item(&mut self) -> PResult<Item> {
         let start = self.bump().start;
-        self.expect(&TokenKind::Fun)?;
+        // `type` isn't a keyword: only right after `extern` does it start a handle type.
+        if matches!(self.peek(), TokenKind::Ident(word) if word == "type") {
+            self.bump();
+            let name = self.ident("type name")?;
+            self.expect(&TokenKind::Semi)?;
+            return Ok(Item::ExternType(ExternTypeDecl {
+                visibility: None,
+                name,
+                span: Span::new(start, self.prev_end()),
+            }));
+        }
+        let symbol = match self.peek() {
+            TokenKind::Str(text) => {
+                let name = text.clone();
+                let span = self.bump();
+                Some(Ident { name, span })
+            }
+            _ => None,
+        };
+        if !self.at(&TokenKind::Fun) {
+            let what = if symbol.is_some() {
+                "`fun`"
+            } else {
+                "`fun` or `type`"
+            };
+            return Err(self.expected(what));
+        }
+        self.bump();
         let name = self.ident("function name")?;
         let params = self.params()?;
         let ret = self.return_type()?;
         self.expect(&TokenKind::Semi)?;
-        Ok(ExternDecl {
+        Ok(Item::Extern(ExternDecl {
             visibility: None,
             name,
+            symbol,
             params,
             ret,
             span: Span::new(start, self.prev_end()),
-        })
+        }))
     }
 
     pub(super) fn struct_decl(&mut self) -> PResult<StructDecl> {
@@ -270,6 +301,30 @@ mod tests {
             program("struct B { ok: bool, n: u8, s: string, xs: Point[] }"),
             "(struct B (ok bool) (n u8) (s string) (xs Point[]))"
         );
+    }
+
+    #[test]
+    fn extern_types_and_renamed_externs_v16() {
+        assert_eq!(program("extern type GtkWidget;"), "(extern-type GtkWidget)");
+        assert_eq!(
+            program("public extern type GtkWidget;"),
+            "(public extern-type GtkWidget)"
+        );
+        assert_eq!(
+            program(
+                "extern \"g_signal_connect_data\" fun on_clicked(w: GtkWidget, f: fun(GtkWidget, data), u: data, d: release): u64;"
+            ),
+            "(extern on_clicked \"g_signal_connect_data\" ((w GtkWidget) (f (fun-type (GtkWidget data) void)) (u data) (d release)) u64)"
+        );
+        assert_eq!(
+            program("private extern \"puts\" fun say(s: string): i32;"),
+            "(private extern say \"puts\" ((s string)) i32)"
+        );
+        assert_eq!(errors("extern type T { }"), [("E0201", "{")]);
+        assert_eq!(errors("extern type T<U>;"), [("E0201", "<")]);
+        assert_eq!(errors("extern \"puts\" type T;"), [("E0201", "type")]);
+        // Recovery then reads `struct S;` as a struct, which reports its own error.
+        assert_eq!(errors("extern struct S;")[0], ("E0201", "struct"));
     }
 
     #[test]
