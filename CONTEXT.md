@@ -7074,6 +7074,8 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
+**Pending approval: green threads (PRP-122, `Language v17 Draft.md`, milestone 91)**, proposed in session 200 after discovery in sessions 195–200. The user wants green threads (`spawn`, no async/await or function colouring) and then actors. Nothing is built until they approve. On approval: v16 freezes, `Language v17 Specification.md` starts, build on branch `prp-122-green_threads` in a worktree.
+
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
 **Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. **Milestone 83 done** (tag `m83`): Find References and Rename (PRP-113), extension 0.6.0; its manual check (README step 16) is the user's. **Milestone 84 done** (tag `m84`): `lughac test` (PRP-114). **Milestone 85 done** (tag `m85`): tests in the editor (PRP-115), extension 0.8.0; its manual check (README step 17) is the user's. **Milestone 86 done** (tag `m86`): `lughac explain` (PRP-116), extension 0.9.0; its manual check (README step 18) is the user's. **Milestone 87 done** (tag `m87`): linking C libraries, `[link]` in `lugha.toml` (PRP-117). **Milestone 88 done** (tag `m88`): callbacks and handles (PRP-118); a GTK 4 counter works in plain Lugha. **Milestones 89–90 done** (tags `m89`, `m90`): strings from C (PRP-119), C structs by value (PRP-120). **lugha-gtk 0.1.0 published** (PRP-121): https://github.com/kithinjibrian/lugha-gtk, tag `v0.1.0`. VS Code extension 0.10.0 (session 193). Next candidates: Go to Implementations, the Outline, inlay hints, decorators, `lughac doc`. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
@@ -7218,5 +7220,29 @@ Branch: main
 
 ---
 
-## SESSION 200 — 2026-10-16 — Green threads: discovery, continued — open
+## SESSION 200 — 2026-10-16 — Green threads: PRP-122 and the v17 draft proposed — closed
 Branch: main
+
+### WHAT WAS DONE
+- Discovery answers 8–12:
+  - (8) `select` arms: Go's set plus a timeout (recv binding `Option<T>`, send, `after(ms)`, `default`, a random pick).
+  - (9) v16 is frozen; v17 (concurrency) opens with milestone 91.
+  - (10) `Task`/`Chan` are predeclared; `sleep`/`yield_now` go in `std.task`.
+  - (11) 1 MiB reserved stacks with a guard page.
+  - (12) A void call gives a plain `Task`.
+- Wrote `PRPs/prp-122-green_threads.md` and `docs/specs/Language v17 Draft.md` (decisions 1–9 are the user's; 10–13 are mine, for review: counter-based preemption at back edges and function entries, blocking I/O blocks all, C on green stacks, E0438 for spawning `mut self` calls). Checked that the OBJECTIVE's v16 parts compile and run.
+
+### FILES CREATED OR MODIFIED
+- Created: PRPs/prp-122-green_threads.md, docs/specs/Language v17 Draft.md. Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None (proposal only).
+
+### DECISIONS MADE
+- The discovery answers above, recorded in the draft.
+
+### PENDING DECISIONS OPENED
+- None in DECISIONS.md; the draft's decisions 10–13 await the user's review with the PRP.
+
+### STILL OPEN AT CLOSE
+- Approval of PRP-122 and the v17 draft.
