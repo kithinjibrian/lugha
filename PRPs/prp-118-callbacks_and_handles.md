@@ -1,6 +1,6 @@
 ## FEATURE: Callbacks and handles — Lugha functions and closures passed to C as callbacks, and opaque handle types for C pointers (`extern type`); milestone 88.
 
-**Status:** approved 2026-10-16 ("yes build") — building in session 188; proposed in session 187.
+**Status:** approved 2026-10-16 ("yes build") — built in session 188; proposed in session 187.
 **Milestone:** 88 (one PRP; tag `m88` at merge).
 **Spec:** `Language v16 Draft.md` decisions 105–114; spec §2/§3 (`extern type`, the grammar), §4 (handle types), §7 (pinned closures), §8 (C interop: handles, callbacks, `data`, `release`), §9 (symbols, trampolines, the runtime, diagnostics), §11 (row 88).
 
@@ -145,3 +145,12 @@ qsort_ints(buf, 10, descending);
 - `cargo clippy --all-targets -- -D warnings`
 - `cargo test`
 - the GTK counter (manual)
+
+## BUILT (session 188)
+- As planned, test-first: handles (part 1), then callbacks and renamed externs (part 2), then the language server, spec and docs.
+- **Handles may have methods** from an `impl` block (wrapping externs); built-in methods remain none. The PRP said "no methods" — a user `impl` turned out to be the natural place for `w.show()`.
+- **E0436's rule** is "a function the checker resolved by name, or a closure that captures nothing", so generic instances and associated functions by name are allowed too: their value is fixed at the site.
+- **Static callbacks** are per call site (`lugha_cfn_<n>`, value in `lugha_cbv_<n>`) rather than per function, so named functions and capture-free closures share one path.
+- **No `unsafe`:** trampolines load the pinned `{ code, env }` pair as one struct instead of computing an address.
+- **Tests:** `tests/callbacks.rs` (8, at -O0 and -O2), `check/handles.rs` (8), `check/callbacks.rs` (7), parser (1), formatter (1), language server hover and definition (1 each), the E0435/E0436 pages through `tests/explain.rs`; one old test now expects `extern fun g(): fun(i64)` (a returned function) as the E0409 case. Byte-identical IR for the 185 compiling `tests/programs`.
+- **Manual:** the GTK 4 counter of the objective builds and links against the installed `libgtk-4.so.1`, `libgio-2.0.so.0` and `libgobject-2.0.so.0` (through `vendor/lib` symlinks). Running it is the user's.

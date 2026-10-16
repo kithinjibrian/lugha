@@ -2,11 +2,11 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–87 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–88 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestones 67–87):
+**Changes since v15** (milestones 67–88):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
 - `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
 - `lughac init [folder] [--lib] [--name N]` starts a program, or a library with an example, in a folder; it never overwrites a file (milestone 69; section 9).
@@ -23,6 +23,7 @@ Oct 15, 2026 · @kithinji
 - Tests in the editor: `lughac test --list`, `--json` and `--exact` for tools, and VS Code's Testing view with a ▶ beside each test, never in untrusted folders (milestone 85; section 9).
 - `lughac explain CODE` explains every error and warning code, diagnostics end with a line pointing to it, and the editor links each code to its explanation (milestone 86; section 9).
 - Linking C libraries: a `[link]` table in `lugha.toml` names libraries, library folders, header folders, C files to compile and `pkg-config` packages; the tables of every package a program uses apply (milestone 87; sections 6, 8, 9).
+- Callbacks and handles: `extern type Name;` declares an opaque C pointer type; a function type in an extern's parameters is a callback C can call, named functions anywhere and closures through user data (`data`, `release`); `extern "symbol" fun name(…)` gives a C function a Lugha name of its own (milestone 88; sections 3, 4, 7, 8, 9).
 
 Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type (a module's own type `Ref` still means its own), or declares a function named `assert`, `assert_eq` or `assert_ne`, which are intrinsics since milestone 84 (E0302).
 
@@ -212,7 +213,7 @@ Source files are UTF-8. The lexer produces a flat list of tokens, each carrying 
 - A `/*` never closed is E0113, at the outermost one still open; the rest of the file is the comment. A `*/` outside a comment is the operators `*` and `/`.
 - **Doc comments** (milestone 77): a block comment starting `/**` (not `/**/`) followed, apart from whitespace, a `public` or `private` and an `@test` (v16, milestone 84), by a function, method, extern, struct, field, enum, variant, interface or interface method documents it. Its text is Markdown, each line's leading `*` dropped; a line `@param name text` documents a parameter and `@returns text` the result; other `@tags` stay as written. To the compiler it is a comment like any other; editors show it (section 9).
 
-**Identifiers.** `[A-Za-z_][A-Za-z0-9_]*`, excluding keywords. Identifiers are case-sensitive. In the sources bundled with `lughac` (the prelude and `std`), an identifier may also start with `$`, naming a compiler built-in such as `$float.sqrt` (v15); in a program `$` is E0101, so programs can never name one.
+**Identifiers.** `[A-Za-z_][A-Za-z0-9_]*`, excluding keywords. Identifiers are case-sensitive. `type` right after `extern`, and `data` and `release` as an extern's parameter types, are ordinary identifiers with a meaning there only (v16, section 8). In the sources bundled with `lughac` (the prelude and `std`), an identifier may also start with `$`, naming a compiler built-in such as `$float.sqrt` (v15); in a program `$` is E0101, so programs can never name one.
 
 **Keywords.**
 
@@ -295,13 +296,14 @@ program      = { import } { item } EOF ;
 import       = [ "public" ] "import" IDENT { "." IDENT } [ "as" IDENT ]
                [ "{" import_item { "," import_item } [ "," ] "}" ] ";" ;   (* names and `public`: v11; `as`: v14 *)
 import_item  = IDENT [ "as" IDENT ] ;
-item         = { attribute } [ visibility ] ( fun_decl | extern_decl | struct_decl | enum_decl | interface_decl ) | impl_decl ;
+item         = { attribute } [ visibility ] ( fun_decl | extern_decl | extern_type | struct_decl | enum_decl | interface_decl ) | impl_decl ;
 attribute    = "@" IDENT ;                       (* v16: only `@test`, before a `fun` *)
 visibility   = "private" | "public" ;                (* `public`: v8, packages *)
 
 fun_decl     = "fun" IDENT [ type_params ] "(" [ params ] ")" [ ":" type ] fun_body ;
 fun_body     = block | "=" expr ";" ;          (* "= e;" means "{ e }" *)
-extern_decl  = "extern" "fun" IDENT "(" [ params ] ")" [ ":" type ] ";" ;
+extern_decl  = "extern" [ STRING ] "fun" IDENT "(" [ params ] ")" [ ":" type ] ";" ;   (* the string: the C symbol, v16 *)
+extern_type  = "extern" "type" IDENT ";" ;                                         (* v16; `type` isn't a keyword *)
 struct_decl  = "struct" IDENT [ type_params ] "{" [ field { "," field } [ "," ] ] "}" ;
 field        = [ visibility ] IDENT ":" type ;
 enum_decl    = "enum" IDENT [ type_params ] "{" [ variant { "," variant } [ "," ] ] "}" ;
@@ -490,6 +492,13 @@ There is no null. Every string and array variable holds a valid object.
 - **No `let mut` needed:** `set` and `update` change the box, not the handle, so they take a plain `self`. `let r = Ref.new(0); r.set(1);` is valid, and a closure may `set` or `update` a `Ref` it captured (assigning the captured name itself is still E0511). `let mut r` is needed only to point `r` at another box.
 - **No `==`:** `r == s` is E0404, with help: `r.is(s)` compares boxes, `r.get() == s.get()` contents. A struct, enum, tuple, array or `Option` holding a `Ref` has no `==` either, and isn't `Eq` (E0419).
 - **Recursion:** a type may hold itself through a `Ref`, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }`.
+
+**Handles** (v16, milestone 88). `extern type Name;` declares a handle type: an opaque pointer to a C object (`GtkWidget *`), with the usual visibility (`public extern type GtkWidget;`). Each declaration is its own type, so a `GtkWidget` is never a `GtkApplication`.
+- **Only C makes them:** an extern's result, or a callback's argument. There is no literal and no constructor (`W {}` is E0305), so a handle always comes from C.
+- **Anywhere a type goes:** locals, parameters, fields, arrays, `Option`, type arguments. Copying one copies the pointer.
+- **Equality only:** `==` and `!=` compare addresses, so handles are `Eq`. No order, arithmetic, casts, fields or built-in methods (E0404, E0408, E0410, E0415); an `impl` block may give a handle methods of its own, which usually wrap externs.
+- **Printing** shows the type, never the address: `<GtkWidget>`, unless its `impl` has a `show`.
+- **`NULL`:** an extern or callback using `Option<H>` receives `None` for C's `NULL` and passes `NULL` for `None`. A plain `H` from C is assumed not to be `NULL`.
 - **Printing:** `Ref(<contents>)`. A box already being printed further out prints as `Ref(…)`, so a cycle (a node whose `next` leads back to it) still prints in finite space.
 
 **`match`.** `match e { pattern => value, … }` is an expression. A pattern is `_`, an integer, `bool` or string literal, or a variant written without the enum's name. A variant's payload slots are patterns too, so they nest: `Circle(r)`, `Rect(w, _)`, `Empty`, `Some(Circle(r))`, `Pair(1, Some("a"))`. Variant patterns need an enum or `Option` value and literal patterns a value of their type, at any depth (E0403); a variant needs one slot per payload (E0416). An arm may have a guard, `pattern if cond => value`: the guard runs after the pattern matches, with its bindings in scope, and must be `bool` (E0403); if it is false, matching continues with the next arm. The arms' values follow the rules of `if`/`else`: they must agree (E0403), and an arm that never finishes fits any type.
@@ -1159,6 +1168,7 @@ So, as far as programs can tell, every array is owned by exactly one variable, f
 
 - **No compiler support is needed.** The compiler doesn't emit stack maps or GC metadata. It only has to route every allocation through `lugha_rt_alloc`.
 - **Pointers must stay visible.** Boehm can't see memory allocated by C's `malloc`. If an extern C function stores a Lugha string or array somewhere Boehm doesn't scan, the object may be freed while still in use. In v0, extern functions must not keep references to Lugha objects after they return.
+- **Closures handed to C** (v16, milestone 88) are the one exception, made safe by lughac: a closure passed as a callback's user data is copied into memory Boehm scans but never collects (`GC_MALLOC_UNCOLLECTABLE`), so it and everything it captured stay alive while C may call it — until the program exits, or until C calls the `release` function lughac gave it, which frees the copy. C calling a callback after releasing it, or releasing it twice, is undefined. A callback must be called on the thread that registered it.
 
 Boehm is conservative, so an integer that happens to look like a heap address keeps that object alive. This can waste some memory but never causes incorrect behavior.
 
@@ -1174,7 +1184,7 @@ extern fun abs(x: i32): i32;
 extern fun sqrt(x: f64): f64;
 ```
 
-**Allowed types.** Extern signatures may use only the types below. Structs, arrays, enums, `Option`, function values and interface values (v5), generic or not, cannot cross the boundary: C can't call a Lugha function. So C never sees an array, and copy-on-write (v15) needs nothing at the boundary; strings are immutable.
+**Allowed types.** Extern signatures may use only the types below. Structs, arrays, enums, `Option` (except of a handle, v16) and interface values (v5), generic or not, cannot cross the boundary, and a function type only as a callback parameter (v16, below). So C never sees an array, and copy-on-write (v15) needs nothing at the boundary; strings are immutable.
 
 | Lugha type | C type | Passed as |
 | --- | --- | --- |
@@ -1189,15 +1199,33 @@ extern fun sqrt(x: f64): f64;
 | `u16` | `uint16_t` | Value, zero-extended (v10) |
 | `bool` | `bool` (C99) | Value, `i1` zero-extended |
 | `string` (parameter only) | `const char *` | Pointer to the first data byte, 8 bytes past the header |
+| a handle `H` (v16) | `T *` | The pointer |
+| `Option<H>` of a handle (v16) | `T *` | The pointer; `NULL` for `None` |
+| `fun(…)` (parameter only, v16) | a function pointer | A callback; see below |
 | return type omitted | `void` | — |
 
 The compiler adjusts the string pointer at each call site. C code receives an ordinary NUL-terminated string. A `string` may not be an extern return type, because C strings aren't allocated by the GC and have no length header.
+
+**Callbacks** (v16, milestone 88). A parameter whose type is a function type, `cb: fun(T…): R`, is a C function pointer that C may call, during the extern call or later. Its parameter and result types are extern types other than `string` (numbers, `bool`, handles, `Option` of a handle; `R` may be omitted); no strings, arrays, structs, enums or functions go into or out of a callback, and no extern returns one (E0409).
+- **`data`:** one of a callback's parameters may be written `data`: the `void *` user data C hands back to it. The extern then has one parameter written `data` too, where C takes that user data, and may have one written `release`, a `void (*)(void *)` that C calls when it drops the callback. An extern has a `data` parameter exactly when one of its callbacks takes `data`, at most one of each, and `release` only with `data` (E0435). Anywhere else, `data` and `release` are E0435.
+- **Calls:** callers write neither the `data` nor the `release` argument; lughac passes them. A callback's argument is a function value of the callback's type without `data`. Where the callback takes no `data`, C keeps nothing but a code pointer, so the argument must be a function's name (`f`, `m.f`) or a closure literal that captures nothing (E0436); where it takes `data`, any function value, closures with captures included.
+- **Renamed externs:** `extern "symbol" fun name(…)` declares the C function `symbol` under the Lugha name `name`, so one C function can be declared several times with different callback types. Several declarations may share a symbol; `symbol` is a C identifier and doesn't start with `lugha_` (E0306).
+- **No `unsafe`:** as for any extern, a declaration that doesn't match the C function — a callback of the wrong type, `data` in the wrong place — is undefined behavior; the declaration is the one place a program vouches for C.
+
+```
+extern type GtkWidget;
+extern "g_signal_connect_data" fun on_clicked(button: GtkWidget, signal: string,
+    handler: fun(GtkWidget, data), user: data, destroy: release, flags: i32): u64;
+
+let clicks = Ref.new(0);
+on_clicked(button, "clicked", fun(b: GtkWidget) { clicks.update(fun(n) = n + 1); }, 0);
+```
 
 **Rules**
 
 - Extern functions are called exactly like Lugha functions.
 - Variadic C functions such as `printf` cannot be declared in v0. Use the `print` and `println` intrinsics instead.
-- The extern name is used as the C symbol name unchanged. Lugha functions themselves are emitted with a `lugha_fn_` prefix, so they never collide with C symbols. Methods and associated functions are `lugha_fn_<Type>.<name>` (for example `lugha_fn_Point.dist`); `.` can't appear in a Lugha name, so these can't collide either.
+- The extern name is used as the C symbol name unchanged, or the string after `extern` when there is one (v16). Lugha functions themselves are emitted with a `lugha_fn_` prefix, so they never collide with C symbols. Methods and associated functions are `lugha_fn_<Type>.<name>` (for example `lugha_fn_Point.dist`); `.` can't appear in a Lugha name, so these can't collide either.
 - A package's modules are named by paths that start with the package name (v8), so their symbols do too: function `area` of `geo`'s module `shapes` is `lugha_fn_geo/shapes/area`. Diagnostics in a `lugha.toml` name that file relative to the main file's folder (`lugha.toml`, `libs/geo/lugha.toml`).
 - Named imports and re-exports (v11) are resolved by the checker to the declaring module's items, so they add no symbols: `shapes.add` calls `lugha_fn_mathx/vec/add`.
 - Items of a module other than the main file put the module's path before their name, joined with `/`: function `area` of module `shapes.circle` is `lugha_fn_shapes/circle/area`, and its method `Circle.area` is `lugha_fn_shapes/circle/Circle.area`. A name contains neither `/` nor `.`, so a module function (`lugha_fn_a/b/c`) can't collide with a method (`lugha_fn_a/b.c`, method `c` of type `b` in module `a`).
@@ -1232,7 +1260,8 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 - A closure's body (v3) is `lugha_closure_<enclosing>.<n>`: the enclosing function's symbol without its prefix, then the closure's number in that function from 0 (`lugha_closure_main.0`, `lugha_closure_main.0.0` for a closure inside it, `lugha_closure_max<i64>.0` in an instance). Its environment comes first, as for every function value's code.
 - The array helpers (v3) are generic functions of a prelude written in Lugha, bundled with the compiler and checked with every program, under the module path `$prelude`, which no program can name: `lugha_fn_$prelude/map<Person, string>`. Each is compiled only at the types a program uses.
 - The iterator helpers and sources (v10) are Lugha in the prelude too: `it.map(f)` calls the prelude's `iter_map` with `it` converted to `Iter<T>` (its type's table, as for any conversion), `xs.iter()` calls `array_iter`, and `it.sum()` calls the `iter_sum_<T>` of its element type. Like every prelude item, each function, instance and method (`lugha_fn_$prelude/Range.next`) is compiled only when the program reaches it. `for b of s` is the array loop over the string's bytes, 8 bytes past the string pointer.
-- An extern follows the visibility rules of section 6, and the same C function may be declared in several modules only with identical signatures (E0306); it is one symbol.
+- An extern follows the visibility rules of section 6, and the same C function may be declared in several modules only with identical signatures (E0306); it is one symbol. A renamed extern (v16) may give it another signature: LLVM declares the symbol once, and each call uses its own declaration's function type and C extensions.
+- A callback (v16) is a C-ABI function lughac emits. Without `data`, each call site gets `lugha_cfn_<n>`, which calls the function value the site stores in the global `lugha_cbv_<n>` before the call (the value at a site never changes, E0436). With `data`, each callback C signature gets one trampoline, `lugha_cb_<signature>` (`lugha_cb_fun(GtkWidget, data)`), which reads `{ code, env }` from its `data` argument; the `data` argument is `lugha_rt_cb_pin(code, env)` and a `release` argument `lugha_rt_cb_release`. Both convert `Option` of a handle and C's extensions as an extern call does. Programs without handles or callbacks give byte-identical IR.
 - Runtime library functions use the `lugha_rt_` prefix. Neither prefix is a prefix of the other, so a Lugha function can never collide with a runtime function, whatever its name.
 - Extern names starting with `lugha_` are reserved and rejected with an E03xx error, so an extern declaration can't collide with either.
 - Extern C code must not keep a Lugha string after the call returns, and must not write through the pointer (section 7).
@@ -1294,6 +1323,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | --- | --- |
 | `lugha_rt_init(argc, argv)` | Keeps `argc`/`argv` for `args()`, runs `GC_INIT()`, then installs the stack-overflow handler (an alternate signal stack and a `SIGSEGV` handler that panics only for faults at the stack's end); the C `main` calls it first, since a C macro can't be called from IR |
 | `lugha_rt_alloc(size)` | Allocate zeroed GC memory |
+| `lugha_rt_cb_pin(code, env)` / `lugha_rt_cb_release(pinned)` (v16) | A copy of a function value C can keep as a callback's user data, scanned but never collected; freeing it when C releases the callback |
 | `lugha_rt_panic(msg, file, line, col)` | Print the panic message and `exit(101)` |
 | `lugha_rt_str_concat(a, b)` | Implement string `+` |
 | `lugha_rt_panic_bounds(len, index, file, line, col)` | The out-of-bounds panic, with the length and index |
@@ -1434,7 +1464,7 @@ Name and type errors, reported by the checker:
 | E0303 | No `main` function | (not under `lughac test`, v16) |
 | E0304 | `main` with the wrong signature, generic, or outside the main file | `fun main(argc: i32): i32`; `fun main<T>()`; a `main` in a module (v2) |
 | E0305 | Unknown type name | `let p: Point = 1;` with no `Point` |
-| E0306 | Reserved extern name, or one C function declared with two signatures | `extern fun lugha_rt_alloc(size: i64): i64;` (§8) |
+| E0306 | Reserved extern name, or one C function declared with two signatures | `extern fun lugha_rt_alloc(size: i64): i64;` (§8); `extern "not a name" fun f();` (v16) |
 | E0307 | Struct contains itself | `struct A { b: B }` with `struct B { a: A }` — hold it in an array instead (`A[]`) |
 | E0308 | Field declared twice | `struct P { x: i64, x: f64 }` |
 | E0309 | Variant declared twice | `enum E { A, B, A }` |
@@ -1487,12 +1517,14 @@ Name and type errors, reported by the checker:
 | E0427 | An interface that uses `Self` used as a type | `let xs: Ordered[] = …;` where `Ordered` declares `fun less(self, other: Self): bool;` (v6) |
 | E0429 | A `let … else` whose `else` block can finish (v9) | `let Some(n) = o else { println("no"); };` |
 | E0434 | A misused test (v16) | `@test fun t(n: i64) {}`, `@test fun t(): i64 = 1;`, a generic test; calling a test or using it as a value |
+| E0435 | A malformed callback declaration (v16) | `extern fun f(cb: fun(i64), u: data);` (nothing takes `data`); `extern fun f(cb: fun(data));` (no `data` parameter); `release` without `data`; `fun f(x: data)` outside an extern |
+| E0436 | A function with captures passed to a callback without `data` (v16) | `sort(xs, fun(a, b) = a * k < b)` where `sort`'s comparator is `fun(i64, i64): i32` |
 | E0433 | A pattern that must match every value but might not (v14) | `let (1, x) = t;`, `let Some(n) = o;` without `else`, `for (Some(a), b) of …` |
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
 | E0430 | A default method that two visible interfaces supply (v10) | `c.describe()` where `Named` and `Shown` both default `describe` and `Circle` satisfies both |
 | E0431 | A bad format specifier (v13) | `"{n:.2}"` with `n: i64`; `"{x:q}"`; `"{f:x}"` with `f: f64`; `"{n:#}"`; `"{s:05}"` with `s: string`; `"{n:2000}"` |
 | E0432 | A bad `format` template (v14) | `format(t, 1)` with `t` a variable; `format("{} and {}", 1)`; `format("{x}", 1)`; `format("a {")` |
-| E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum, `Option`, function or interface parameters or returns (§8) |
+| E0409 | Type not allowed in an extern signature | `extern fun getenv(key: string): string;` — no `string` returns; no array, struct, enum, `Option` (but of a handle) or interface parameters or returns, and functions only as callback parameters (§8); `extern fun f(cb: fun(string));` (v16) |
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool`; `n as T` for a `T` without `Num` or `Float` (v15) |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut`; `for x of mut xs` where `xs` isn't (v13) |
 | E0502 | Assignment to something that isn't a place | `(a + b) = 3;`; `for x of mut [1, 2]` (v13) |
@@ -3316,6 +3348,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 85 | Tests in the editor (v16) | `lughac test --list`/`--json`/`--exact`, repeatable `--filter`; the VS Code Testing view; nothing in untrusted folders | `tests/test_runner.rs`, the extension's `tests.test.ts` (done) |
 | 86 | `lughac explain` (v16) | an explanation for every code, its examples checked; the hint after human diagnostics; code links in the editor | `tests/explain.rs` (done) |
 | 87 | Linking C libraries (v16) | `[link]` in `lugha.toml`: `libs`, `paths`, `include`, `c`, `pkg-config`; every used package's table; E0329–E0331 | `tests/link_libs.rs` (done) |
+| 88 | Callbacks and handles (v16) | `extern type`; functions and closures passed to C (`data`, `release`); `extern "symbol" fun`; E0435, E0436 | `tests/callbacks.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

@@ -348,9 +348,13 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 88 — Callbacks and handles ✅
+- [x] PRP-118: `extern type`, callbacks with `data`/`release`, pinned closures, `extern "symbol" fun`, E0435/E0436; tagged `m88`
+- [ ] Later: strings into callbacks (a copy of C's text), C structs by value (raylib's `Color`), callbacks without user data for closures (run-time thunks, deliberately not done), a GTK binding package
+
 ### Milestone 87 — Linking C libraries ✅
 - [x] PRP-117: `[link]` in `lugha.toml` (`libs`, `paths`, `include`, `c`, `pkg-config`), every used package's table, E0329–E0331; tagged `m87`
-- [ ] Toward GUI programs: structs or opaque handles across the C boundary, then callbacks from C into Lugha (GTK needs both; raylib works today through a C shim)
+- [x] Toward GUI programs: opaque handles and callbacks (milestone 88)
 
 ### Milestone 86 — `lughac explain` ✅
 - [x] PRP-116: a page per code with checked examples, the hint after diagnostics, editor links; tagged `m86`

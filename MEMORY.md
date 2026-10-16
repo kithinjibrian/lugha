@@ -1985,11 +1985,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned: `modules/link_table.rs` (`LinkTable`, `LinkLine`, `LinkKey`, `PackageLink`; one-line string arrays; names `[A-Za-z0-9_+.-]`, never `-` first; paths relative without any `..`, stricter than "not leaving the package"), `Loaded.links` (pushed in `read_manifest` when a table lists something, E0322 for missing folders/files; truncated after `check_versions`, whose packages have no module), `src/link/` (`mod.rs` `link_with`, `args`, `LinkError::{CFile, Libraries}` → `diagnostic()`; `inputs.rs` `Plan`; `pkg_config.rs` `run`, `flags`; `c_files.rs` `compile` to `c<n>.o`), `pipeline::build` runs the plan before codegen. `$PKG_CONFIG` names the program (the usual convention; the tests' fake). Diagnostics carry the tool's output in `help` (`Diagnostic` has no notes). **Fix found on the way:** the CLI placed the prelude right after the last module, overlapping manifests' offsets, so a manifest diagnostic made after checking rendered in `<prelude>`; `check_parsed` now uses `with_prelude_at` past every file, like the language server.
 
+### 169. Callbacks and handles planned (session 187, approved session 188)
+
+**Decision:** v16 draft decisions 105–114. The user's choices: named functions and closures, through `user_data` (option 1, as Rust/Swift/Zig/Go; never run-time thunks); a `data` marker callers don't write; closures pinned until exit unless an extern's `release` frees them; opaque handles in the same milestone ("just do it now"). Decided by me and approved with the PRP: no strings into callbacks; capture-free functions only without `data`; the registering thread only; no `unsafe` keyword (the `extern` declaration is the trust point). Renamed externs added because every GTK signal goes through `g_signal_connect_data`.
+
+### 170. Callbacks and handles — milestone 88 (PRP-118)
+
+**Decision:** built as planned, test-first. `Type::Handle(key)` with a `collect_handles` pass before structs; `named_type`/`type_span`/`type_decl`/`is_type_name` know handles, so imports, visibility and the language server follow. Handles may have `impl` methods (the PRP said "no methods"; built-in methods remain none) — codegen picks `Type::Handle` for an `impl` target with no layout. `CParam` plans per extern (`Checked::c_params`); callers' signatures leave out `data`/`release` and show callbacks as `fun(…)` without `data`, so arity and inference are unchanged. E0436: an argument is static when the checker recorded a callee for it, or it is a closure with no captures. Codegen: per-site `lugha_cfn_<n>` + global `lugha_cbv_<n>` (no `data`); `lugha_cb_<signature>` trampolines load the `{ code, env }` pair straight from the pin (no GEP, so no `unsafe`); renamed externs sharing a symbol call through their own `FunctionType` (`Signature::c_type`) with call-site extensions. Byte-identical IR checked for all 185 compiling `tests/programs`. GTK 4 counter built against the installed `.so.N` files through `vendor/lib` symlinks; running it is the user's.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 88 complete**: PRP-118 callbacks and handles (`extern type`, `data`/`release`, E0435/E0436)
 - **Milestone 87 complete**: PRP-117 linking C libraries (`[link]`, E0329–E0331)
 - **Milestone 86 complete**: PRP-116 `lughac explain`, VS Code extension 0.9.0
 - **Milestone 85 complete**: PRP-115 tests in the editor, VS Code extension 0.8.0
