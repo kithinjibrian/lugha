@@ -12,6 +12,7 @@ mod completion;
 mod definition;
 mod docs;
 mod documents;
+mod fixes;
 mod formatting;
 mod hover;
 mod publish;
