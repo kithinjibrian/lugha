@@ -7799,3 +7799,8 @@ Branch: prp-129-pkg_config_sse
 
 ### STILL OPEN AT CLOSE
 - Nothing. The kivuli/lugha-gtk session needs a reinstalled `lughac`.
+
+---
+
+## SESSION 224 — 2026-10-17 — Module doc comments proposed (PRP-130) — open
+Branch: prp-130-module_docs
