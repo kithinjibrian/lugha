@@ -87,6 +87,7 @@ mod type_patterns;
 mod types;
 mod upcast;
 mod usefulness;
+mod variant_values;
 mod visibility;
 
 use std::collections::HashMap;
@@ -147,6 +148,7 @@ impl Checker {
             enums: HashMap::new(),
             handles: HashMap::new(),
             c_params: HashMap::new(),
+            variant_values: HashMap::new(),
             c_structs: std::collections::HashSet::new(),
             methods: HashMap::new(),
             scopes: Vec::new(),
@@ -235,6 +237,8 @@ pub(super) struct Checker {
     handles: HashMap<String, Span>,
     /// See `Checked::c_params`.
     c_params: callbacks::CParams,
+    /// See `Checked::variant_values`.
+    variant_values: HashMap<ExprId, (Type, String)>,
     /// Every `extern struct`, by key: C's layout, passed to C by value (v16, milestone 90).
     c_structs: std::collections::HashSet<String>,
     methods: methods::Methods,

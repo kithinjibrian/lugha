@@ -10,9 +10,9 @@ use inkwell::values::{BasicMetadataValueEnum, BasicValueEnum, FunctionValue, Val
 use super::CodegenError;
 use super::instances::instance_name;
 use super::lower::{Lowerer, POSITIONED};
-use super::value::{Value, llvm_type};
+use super::value::{Value, is_aggregate, llvm_type};
 use crate::ast::Expr;
-use crate::check::Type;
+use crate::check::{Type, symbol};
 
 impl<'ctx> Lowerer<'ctx> {
     /// A function or associated function used as a value: `{ wrapper, null }`.
@@ -24,6 +24,67 @@ impl<'ctx> Lowerer<'ctx> {
         let code = wrapper.as_global_value().as_pointer_value();
         pair.const_named_struct(&[code.into(), ptr.const_null().into()])
             .into()
+    }
+
+    /// A variant used as a function value (v17, milestone 94):
+    /// `{ lugha_ref_<Enum>.<Variant>, null }`.
+    pub(super) fn variant_function_value(&mut self, expr: &Expr) -> BasicValueEnum<'ctx> {
+        let (ty, variant) = self.variant_values[&expr.id].clone();
+        let ty = self.concrete(&ty);
+        let wrapper = self.variant_wrapper(&ty, &variant);
+        let ptr = self.context.ptr_type(Default::default());
+        let pair = self.context.struct_type(&[ptr.into(), ptr.into()], false);
+        let code = wrapper.as_global_value().as_pointer_value();
+        pair.const_named_struct(&[code.into(), ptr.const_null().into()])
+            .into()
+    }
+
+    /// `lugha_ref_<Enum>.<Variant>`: takes an environment, then the payloads,
+    /// and builds the variant as a construction does. Emitted once.
+    fn variant_wrapper(&mut self, ty: &Type, variant: &str) -> FunctionValue<'ctx> {
+        let name = format!("lugha_ref_{}.{variant}", symbol(&ty.to_string()));
+        if let Some(existing) = self.module.get_function(&name) {
+            return existing;
+        }
+        let (_, payloads) = self.variant(ty, variant);
+        let ptr = self.context.ptr_type(Default::default());
+        let mut params: Vec<BasicMetadataTypeEnum> = vec![ptr.into()];
+        params.extend(payloads.iter().map(|p| self.param_type(p)));
+        let fn_type = llvm_type(self.context, ty).fn_type(&params, false);
+        let wrapper = self
+            .module
+            .add_function(&name, fn_type, Some(Linkage::Internal));
+        // Build the body elsewhere, then come back to where lowering was.
+        let (saved_block, saved_function) = (self.builder.get_insert_block(), self.function);
+        self.function = Some(wrapper);
+        self.builder
+            .position_at_end(self.context.append_basic_block(wrapper, "entry"));
+        let mut values = Vec::with_capacity(payloads.len());
+        for (param, payload) in wrapper.get_param_iter().skip(1).zip(&payloads) {
+            // Aggregates arrive as a pointer to the caller's copy, as for any call.
+            let value = if is_aggregate(payload) {
+                let llvm = llvm_type(self.context, payload);
+                self.builder
+                    .build_load(llvm, param.into_pointer_value(), "payload")
+                    .expect(POSITIONED)
+            } else {
+                param
+            };
+            // Stored as a function body stores a parameter: deep values copied.
+            let value = if payload.is_deep(&self.structs) {
+                self.deep_copy(value, payload)
+            } else {
+                value
+            };
+            values.push(value);
+        }
+        let built = self.construct_values(ty, variant, values);
+        self.builder.build_return(Some(&built)).expect(POSITIONED);
+        self.function = saved_function;
+        if let Some(block) = saved_block {
+            self.builder.position_at_end(block);
+        }
+        wrapper
     }
 
     /// The function `expr` names, as the checker recorded it: an instance,
@@ -153,5 +214,12 @@ mod tests {
         );
         assert!(ir.contains("{ ptr @lugha_ref_double, ptr null }"), "{ir}");
         assert!(ir.contains("@\"lugha_ref_max<i64>\""), "{ir}");
+    }
+
+    #[test]
+    fn a_variant_value_has_one_wrapper_v17() {
+        let ir = ir("enum Shape { Circle(f64), Empty }\n\
+                     fun main() { let a = Shape.Circle; let b = Shape.Circle; let c = [Shape.Circle]; }");
+        assert_eq!(ir.matches("@lugha_ref_Shape.Circle(ptr").count(), 1, "{ir}");
     }
 }

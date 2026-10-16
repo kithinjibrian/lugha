@@ -1,4 +1,4 @@
-//! v17 codes: green threads (E0438, milestone 91); actors (E0439, milestone 92); struct update (E0440, W0104, milestone 93).
+//! v17 codes: green threads (E0438, milestone 91); actors (E0439, milestone 92); struct update (E0440, W0104, milestone 93); variant values (E0412, milestone 94).
 
 use crate::check::Type;
 use crate::diagnostic::Diagnostic;
@@ -56,4 +56,14 @@ pub(in crate::check) fn base_unused(span: Span) -> Diagnostic {
         span,
     )
     .with_help("remove `..base`, or leave out the fields it should supply")
+}
+
+/// A generic variant used as a value with nothing fixing its type arguments (milestone 94).
+pub(in crate::check) fn variant_value_infer(variant: &str, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0412",
+        format!("cannot infer the type arguments of `{variant}` used as a function"),
+        span,
+    )
+    .with_help("say what it should be: `let f: fun(i64): Option<i64> = Some;`, or pass it where the type is known")
 }

@@ -41,6 +41,9 @@ pub struct Checked {
     pub uses_tasks: bool,
     /// How each extern with callbacks passes its parameters to C, by key (v16, milestone 88).
     pub c_params: super::CParams,
+    /// Variants used as function values (v17, milestone 94): the enum type they
+    /// build, type arguments filled in, and the variant's name.
+    pub variant_values: HashMap<ExprId, (Type, String)>,
     /// Expressions converted to an interface value, with the interface type
     /// (v5); the expression's own type stays in `types`.
     pub conversions: HashMap<ExprId, Type>,

@@ -82,6 +82,7 @@ fn check_with(units: &[Unit], tests: bool) -> Result<(Checked, Vec<Diagnostic>),
             captures: checker.captures,
             uses_tasks: checker.uses_tasks,
             c_params: checker.c_params,
+            variant_values: checker.variant_values,
             tests: tests.then(|| {
                 units
                     .first()

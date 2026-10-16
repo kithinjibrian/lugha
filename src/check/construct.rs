@@ -39,6 +39,11 @@ impl Checker {
     ) -> Option<Type> {
         let name = self.enum_named(base)?;
         self.record(base, Type::Void);
+        // A variant with payloads, not called, is a function value (v17).
+        if let Some(ty) = self.enum_variant_function(expr, &name, &variant.name, expect) {
+            self.hover.variant_use(&name, variant);
+            return Some(ty);
+        }
         Some(self.construct((expr, variant.span), &name, variant, &[], expect))
     }
 
@@ -176,9 +181,12 @@ mod tests {
             errors(&format!("{SHAPE}fun main() {{ let s = Shape.Rect(1.0); }}")),
             [("E0416", "Shape.Rect(1.0)")]
         );
+        // v17: a variant with payloads, not called, is a function value.
         assert_eq!(
-            errors(&format!("{SHAPE}fun main() {{ let s = Shape.Circle; }}")),
-            [("E0416", "Circle")]
+            errors(&format!(
+                "{SHAPE}fun main() {{ let s: Shape = Shape.Circle; }}"
+            )),
+            [("E0403", "Shape.Circle")]
         );
         assert_eq!(
             errors(&format!("{SHAPE}fun main() {{ let s = Shape.Circle(1); }}")),

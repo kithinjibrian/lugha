@@ -2018,11 +2018,17 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned; the first of kivuli's two prerequisites (`../KICKOFF.md`; the kivuli repo's DECISION-001). `StructLiteral.base`; the parser takes `..e` as a `comma_list` entry and reports E0201 unless it is the last, once (a trailing comma after it is accepted). The checker checks `base` first with **no** expected type (a hint made `..5` report E0401 instead of E0440); a matching base's type arguments fix a generic struct's directly, so the fields need no inference; E0413 skipped with a base, W0104 when nothing is left to copy; `literal_visible` already required every field visible. Codegen evaluates the written fields, then `base` with `value_for_store`, and inserts the written fields over it. Liveness treats `base` as a stored value (moved on last use). Actor states can't be a base outside their actor (E0439 already). Byte-identical IR (204 programs). Built alongside the actors session (214); merged `main` (actors) into the branch: conflicts only in lists both sides appended to.
 
+
+### 177. Variants as functions — milestone 94 (PRP-125)
+
+**Decision:** built as planned; kivuli's second prerequisite. `check/variant_values.rs`: `E.V` with payloads (from `variant_value`) and `Some`/`Ok`/`Err` (from `name`, after locals and functions) give `fun(payloads): E`; a generic enum's arguments come from the expected `fun` type's result *or* parameters (`bind`), so `map(Some)` works; E0412 otherwise. `Checked::variant_values` → codegen `variant_function_value`, wrapper `lugha_ref_<Enum>.<Variant>` (deep payloads copied, as a function stores a parameter). Inference gives variant-shaped arguments the closure hint (`may_be_variant_value`). **Found and fixed:** the hint was built in two substitutions, so a caller's own `T` was erased when the helper also had a `T` — closures inside generic functions failed on `main` (`tests/programs/m94/generic_closures.la`). **Process change (the user, session 217):** the full `cargo test` is optional; the default gate is fmt, clippy, `--lib` and the touched areas' tests (CLAUDE.md TESTING RULE).
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 94 complete**: PRP-125 variants as function values
 - **Milestone 93 complete**: PRP-124 struct update syntax
 - **lugha-gtk 0.1.0** (PRP-121), published on GitHub: GTK 4 windows and widgets in Lugha
 - **Milestone 90 complete**: PRP-120 C structs by value

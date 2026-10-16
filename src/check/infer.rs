@@ -86,8 +86,10 @@ impl Checker {
         }
         // A closure gets what is known of its type (v3): `fun(T): U` with
         // `T` bound gives its parameter, and its body decides `U`.
-        let hint = matches!(e.kind, ExprKind::Closure(_))
-            .then(|| Expect::of(unknown(&substitute(&want.ty, bound), names)));
+        // A variant used as a function value takes the same hint (v17): its
+        // known parameter types fix the enum's type arguments (`map(Some)`).
+        let hint = (matches!(e.kind, ExprKind::Closure(_)) || self.may_be_variant_value(e))
+            .then(|| Expect::of(known(&want.ty, names, bound)));
         let found = self.value(e, hint.as_ref());
         unify(&want.ty, &found, names, bound);
         if let Some(failed) = self.interface_input(e, want, &found, names, bound) {
@@ -111,11 +113,17 @@ pub(super) fn bind(declared: &Type, actual: &Type, generics: &[Generic]) -> Boun
     bound
 }
 
-/// `ty` with every parameter among `names` that is still unbound replaced by
-/// `Error`, which a closure reads as "not known".
-fn unknown(ty: &Type, names: &[&str]) -> Type {
-    let map: Vec<(String, Type)> = names.iter().map(|n| (n.to_string(), Type::Error)).collect();
-    ty.substitute(&map.into_iter().collect())
+/// `ty` with the bound parameters replaced and the unbound ones `Error`
+/// (which a closure reads as "not known"), in
+/// one substitution: replacing in two steps would take a bound parameter's
+/// type for one of `names` when they share a name (`map`'s `T` bound to a
+/// caller's own `T`).
+fn known(ty: &Type, names: &[&str], bound: &Bound) -> Type {
+    let map: HashMap<String, Type> = names
+        .iter()
+        .map(|n| (n.to_string(), bound.get(*n).cloned().unwrap_or(Type::Error)))
+        .collect();
+    ty.substitute(&map)
 }
 
 /// `ty` with the bound parameters replaced.

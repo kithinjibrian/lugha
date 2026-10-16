@@ -1,6 +1,6 @@
 ## FEATURE: Variants as function values — a variant with payloads used without a call is a function of its payloads (`Msg.Named`, `Shape.Rect`, `Some`, `Ok`, `Err`); milestone 94 (v17).
 
-**Status:** approved 2026-10-17 ("approved", session 216); proposed in session 215, with PRP-124.
+**Status:** built in session 217; approved 2026-10-17 ("approved", session 216); proposed in session 215, with PRP-124.
 **Milestone:** 94 (tag `m94` at merge).
 **Spec:** `Language v17 Draft.md` decisions 30–34; v17 spec §4 ("Functions as values"), §9 (symbols), §11 (row 94).
 
@@ -66,3 +66,10 @@ let s = Some;                      // E0412: needs an expected type
 
 ## VALIDATION
 - `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`
+
+## BUILT (session 217)
+- As planned, test-first. No new code; E0412's message names the variant.
+- **Type arguments from parameters too:** besides the expected result, the expected parameter types fix a generic variant's arguments — needed for `xs.iter().map(Some)`, where the result is still unknown. Inference hands variant-shaped arguments the same hint as closures.
+- **A bug fixed on the way:** inference's hint for closures replaced bound parameters, then erased the callee's names, which also erased a caller's own `T` of the same name; closures inside generic functions failed. Now one substitution (`known` in `infer.rs`), with `tests/programs/m94/generic_closures.la`.
+- **Not fixed (TODO):** `None` in a closure's result inside a generic function with nothing fixing it is still E0412.
+- Tests: checker (6 + one updated), codegen (one wrapper per variant), `tests/programs/m94` (`variants.la`, `generic_closures.la`). Byte-identical IR for 213 compiling programs.
