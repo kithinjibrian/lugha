@@ -6864,6 +6864,14 @@ Branch: link-messages
 
 ---
 
+## SESSION 187 — 2026-10-16 — Discovery: callbacks from C — open
+Branch: main
+
+### WHAT WAS DONE
+- In progress: discovery interview for passing Lugha functions to C as callbacks (toward GUI programs).
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–87 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries).
