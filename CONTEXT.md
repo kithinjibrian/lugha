@@ -7914,3 +7914,26 @@ Branch: prp-131-package_entry
 
 ### STILL OPEN AT CLOSE
 - Nothing. kivuli may rename `ui.la` to `lib.la` (its session's call).
+
+---
+
+## SESSION 229 — 2026-10-17 — Names inside import braces in the editor — closed
+Branch: fix-import-names
+
+### WHAT WAS DONE
+- Fixed: the checker now records each name (and alias) in `import m { X, y as z }` against its declaration, so hover, Go to Definition, references and rename work there.
+
+### FILES CREATED OR MODIFIED
+- Modified: `src/check/named_imports.rs`, `tests/{lsp_definition,lsp_rename}.rs`, CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- `lsp_definition` (hover and definition from braces and an alias), `lsp_rename` (rename edits the braces). Targeted: `--lib`, the LSP suites, `modules`, fmt, clippy.
+
+### DECISIONS MADE
+- A bug fix (milestones 71–72, 83), no PRP.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.

@@ -27,6 +27,7 @@ Never deleted. Older entries are never modified.
 - An extern parameter with a function type is now a callback instead of E0409; E0409's message for a function an extern would return says so (milestone 88)
 
 ### Fixed
+- The names inside an import's braces (`import kivuli { text, column };`, and an `as` alias) were invisible to the editor: hover, Go to Definition, Find References and Rename now reach them as they reach any use, so renaming `text` also edits `{ text }` (the user, session 229)
 - Inference from siblings reached only a waiting call itself: `assert_eq(column([text("a")]), expected)` was E0412. A generic call whose result's type parameter only waiting arguments could fix now waits too, as does a list or `Some` of waiting calls, and a list literal whose first element waits takes its type from the first element that doesn't (`[text("a"), button("+", Msg.Inc)]`) (kivuli's second report; milestone 96)
 - `lughac check`/`test` of a package's `source` file from the package root resolved its imports of listed packages as its own modules (`kivuli.gtk.raw` not found), and from inside `source` it wasn't taken as the package's module at all; both now work from any folder (milestone 97)
 - A package run from its own folder (its `examples/`) compiled and linked its `[link]` C files twice (`multiple definition`): the root manifest, read again as the implicit package, added its table twice. E0331's advice now follows the linker's message instead of always saying "install the missing library" (milestone 87)
