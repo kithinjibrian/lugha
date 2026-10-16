@@ -1,6 +1,6 @@
 ## FEATURE: `lughac explain` — an explanation for every diagnostic code, with checked examples, a hint after diagnostics, and code links in the editor; milestone 86.
 
-**Status:** proposed 2026-10-16 — session 182 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-16 ("build it") — built in session 183; proposed in session 182.
 **Milestone:** 86 (one PRP; tag `m86` at merge).
 **Spec:** `Language v16 Draft.md` decisions 93–97; spec §9 (the CLI table, the diagnostics section and its examples, a `lughac explain` paragraph, the language server's diagnostics), §11 (row 86).
 
