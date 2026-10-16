@@ -7751,3 +7751,11 @@ Branch: prp-127-sibling_inference
 
 ### STILL OPEN AT CLOSE
 - PRP-128 next.
+
+---
+
+## SESSION 222 — 2026-10-17 — Packages and tests (milestone 97) — open
+Branch: prp-128-packages_and_tests
+
+### WHAT WAS DONE
+- In progress: building PRP-128 (approved in session 220) in worktree `../lugha-prp-128`; targeted tests only.
