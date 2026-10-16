@@ -7891,3 +7891,8 @@ Branch: prp-131-package_entry
 
 ### STILL OPEN AT CLOSE
 - PRP-131 awaits approval; build on branch `prp-131-package_entry`.
+
+---
+
+## SESSION 228 — 2026-10-17 — Package entry modules (milestone 99) — open
+Branch: prp-131-package_entry

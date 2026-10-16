@@ -118,7 +118,7 @@ Fixes for what building kivuli (a package with tests and nested views) turned up
 49. **The mechanism:** the test process exits with code 77 after reporting the reason to the runner on its captured output; the runner accepts a skip only with both.
 50. **Success:** milestone 97, tag `m97`. Tests through `lughac` for each part; kivuli's own layout simplified.
 
-## Decisions behind milestone 99 (proposed, session 227)
+## Decisions behind milestone 99 (session 227, approved in session 228)
 
 A package's front door (the user asked whether libraries should have an entry like `lib.la` or one declared in the manifest; PRP-131).
 
@@ -157,4 +157,4 @@ For milestone 92: **§2** keyword `actor`; **§3** `actor_decl = [ visibility ] 
 | 96 | Inference from siblings (v17) | result-only generic calls typed by their siblings; `assert_eq`, `==` |
 | 97 | Packages and tests (v17) | package files as modules in `test`/`check`, `test/` inside the package, one lock per package, `skip(reason)` |
 | 98 | Module doc comments (v17) | a file's top `/** */` (before a blank line or an `import`) documents its module; hover on module names; std modules documented (PRP-130, approved in session 225) |
-| 99 | Package entry modules (v17) | `import N;` imports the package's `lib.la`; `init --lib` writes one (PRP-131, proposed in session 227) |
+| 99 | Package entry modules (v17) | `import N;` imports the package's `lib.la`; `init --lib` writes one (PRP-131, approved in session 228) |

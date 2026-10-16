@@ -1,6 +1,6 @@
 ## FEATURE: Package entry modules — `import kivuli;` imports a package's `lib.la`; milestone 99 (v17).
 
-**Status:** proposed in session 227 (the user: "should libraries have an entry like lib.la or even declared in manifest" → recommended a fixed `lib.la`, no manifest key; "yes write it up").
+**Status:** approved 2026-10-17 ("approved", session 228); proposed in session 227 (the user: "should libraries have an entry like lib.la or even declared in manifest" → recommended a fixed `lib.la`, no manifest key; "yes write it up").
 
 ## OBJECTIVE
 A library exposes one front door. `import kivuli;` binds the module in `src/lib.la` (the package's `source` folder, or its folder without one) as `kivuli`, so an app writes `kivuli.column([...])` or `import kivuli { text, column };` instead of choosing among the package's modules. `lughac init --lib` starts libraries this way. Packages without a `lib.la` work exactly as today.
