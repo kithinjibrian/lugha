@@ -239,3 +239,18 @@ fn a_jump_right_after_typing_sees_the_new_text() {
     );
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn handle_types_jump_to_their_extern_type_v16() {
+    const HANDLES: &str = "extern type Win;\nextern fun open_win(): Win;\nfun keep(w: Win): Win = w;\nfun main() { let w = keep(open_win()); println(w); }\n";
+    let t = Temp::with(&[("main.la", HANDLES)]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, HANDLES);
+    s.expect(&uri, &[]);
+    assert_eq!(
+        jump(&mut s, &uri, pos(HANDLES, "(w: Win)", "Win")),
+        location(&uri, range(HANDLES, "extern type Win", "Win"))
+    );
+    assert_eq!(s.finish(), Some(0));
+}

@@ -27,7 +27,7 @@ use crate::span::Span;
 
 /// The runtime's source files, in the order they are joined: the core first,
 /// since it holds every `#include`, then the fragments that rely on it.
-pub const RUNTIME_PARTS: [(&str, &str); 12] = [
+pub const RUNTIME_PARTS: [(&str, &str); 13] = [
     ("lugha_rt.c", include_str!("../../runtime/lugha_rt.c")),
     ("stack.c", include_str!("../../runtime/stack.c")),
     ("print.c", include_str!("../../runtime/print.c")),
@@ -40,10 +40,11 @@ pub const RUNTIME_PARTS: [(&str, &str); 12] = [
     ("fs.c", include_str!("../../runtime/fs.c")),
     ("process.c", include_str!("../../runtime/process.c")),
     ("test.c", include_str!("../../runtime/test.c")),
+    ("callbacks.c", include_str!("../../runtime/callbacks.c")),
 ];
 
 /// Every runtime function codegen may call; `lugha_rt.c` defines them all.
-pub const RUNTIME_SYMBOLS: [&str; 58] = [
+pub const RUNTIME_SYMBOLS: [&str; 60] = [
     "lugha_rt_init",
     "lugha_rt_read_line",
     "lugha_rt_read_file",
@@ -102,6 +103,8 @@ pub const RUNTIME_SYMBOLS: [&str; 58] = [
     "lugha_rt_os_seed",
     "lugha_rt_test_is",
     "lugha_rt_test_unknown",
+    "lugha_rt_cb_pin",
+    "lugha_rt_cb_release",
 ];
 
 /// The C runtime linked into every program: [`RUNTIME_PARTS`] joined in order,
@@ -119,6 +122,7 @@ pub const RUNTIME_SOURCE: &str = concat!(
     include_str!("../../runtime/fs.c"),
     include_str!("../../runtime/process.c"),
     include_str!("../../runtime/test.c"),
+    include_str!("../../runtime/callbacks.c"),
 );
 
 /// Why linking failed.

@@ -255,3 +255,22 @@ fn positions_count_utf16_units() {
     );
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn handles_show_their_extern_type_v16() {
+    const HANDLES: &str = "extern type Win;\nextern fun open_win(): Win;\nfun keep(w: Win): Win = w;\nfun main() { let w = keep(open_win()); println(w); }\n";
+    let t = Temp::with(&[("main.la", HANDLES)]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, HANDLES);
+    s.expect(&uri, &[]);
+    assert_eq!(
+        hover_at(&mut s, &uri, pos(HANDLES, "(w: Win)", "Win")),
+        code("extern type Win", &[])
+    );
+    assert_eq!(
+        hover_at(&mut s, &uri, pos(HANDLES, "let w", "w")),
+        code("let w: Win", &[])
+    );
+    assert_eq!(s.finish(), Some(0));
+}

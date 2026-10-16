@@ -257,7 +257,8 @@ mod tests {
         assert_eq!(errors(&src)[0].0, "E0419");
         // v12: function values print as `<fun>` (`check/printing.rs`).
         assert_eq!(e("let n = double as i64;")[0].0, "E0408");
-        let src = format!("{LIB}extern fun g(f: fun(i64));\nfun main() {{}}");
+        // v16: a function type in an extern's parameters is a callback; none comes back.
+        let src = format!("{LIB}extern fun g(): fun(i64);\nfun main() {{}}");
         assert_eq!(errors(&src)[0].0, "E0409");
     }
 

@@ -209,3 +209,11 @@ fn verification_catches_a_printer_fault_and_lost_comments() {
         super::verify::verify(original, "fun f() {\n    a - (b - c);\n} // c\n", false).is_ok()
     );
 }
+
+#[test]
+fn extern_types_renamed_externs_and_callbacks_v16() {
+    check(
+        "public   extern type  Win ;\nextern \"g_connect\"  fun on(w:Win,f:fun(Win,data),u:data,d:release):u64;",
+        "public extern type Win;\nextern \"g_connect\" fun on(w: Win, f: fun(Win, data), u: data, d: release): u64;\n",
+    );
+}

@@ -109,6 +109,7 @@ impl Checker {
         ) {
             Some(targs) => {
                 self.used(call, key, &targs);
+                self.static_callbacks(key, args);
                 subst(&ret, &generics, &targs)
             }
             None => Type::Error,

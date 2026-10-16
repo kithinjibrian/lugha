@@ -355,6 +355,11 @@ impl<'a> Here<'a> {
                     Kind::INTERFACE,
                     format!("interface {}", i.name.name),
                 ),
+                Item::ExternType(t) if shown(&t.visibility) => (
+                    &t.name,
+                    Kind::STRUCT,
+                    format!("extern type {}", t.name.name),
+                ),
                 _ => continue,
             };
             out.push(self.documented(item(&name.name, kind, detail), Some(name.span)));

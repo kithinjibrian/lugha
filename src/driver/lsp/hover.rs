@@ -153,6 +153,9 @@ fn type_line(snapshot: &Snapshot, decl: Span) -> Option<String> {
                 Item::Interface(i) if i.name.span == decl => {
                     return Some(format!("interface {}", i.name.name));
                 }
+                Item::ExternType(t) if t.name.span == decl => {
+                    return Some(format!("extern type {}", t.name.name));
+                }
                 Item::Enum(e) if e.name.span == decl => {
                     return Some(format!("enum {}", e.name.name));
                 }

@@ -80,6 +80,7 @@ fn check_with(units: &[Unit], tests: bool) -> Result<(Checked, Vec<Diagnostic>),
             monos,
             used,
             captures: checker.captures,
+            c_params: checker.c_params,
             tests: tests.then(|| {
                 units
                     .first()
@@ -132,7 +133,8 @@ impl Checker {
     /// Every pass of spec §6 over every module in turn, then every body.
     fn modules(&mut self, units: &[Unit]) {
         type Pass = fn(&mut Checker, &Program);
-        let passes: [Pass; 9] = [
+        let passes: [Pass; 10] = [
+            Checker::collect_handles,
             Checker::collect_interfaces,
             Checker::collect_structs,
             Checker::collect_enums,

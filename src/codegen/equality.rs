@@ -24,6 +24,16 @@ impl<'ctx> Lowerer<'ctx> {
     ) -> IntValue<'ctx> {
         match ty {
             Type::String => self.string_binary(BinOp::Eq, a, b).into_int_value(),
+            // Handles are equal when they are the same C object (v16).
+            Type::Handle(_) => self
+                .builder
+                .build_int_compare(
+                    inkwell::IntPredicate::EQ,
+                    a.into_pointer_value(),
+                    b.into_pointer_value(),
+                    "eq",
+                )
+                .expect(POSITIONED),
             Type::Struct(_, _) | Type::Enum(_, _) | Type::Option(_) | Type::Array(_) => {
                 let helper = self.eq_function(ty);
                 let call = self

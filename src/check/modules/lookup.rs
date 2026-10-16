@@ -87,6 +87,7 @@ impl Checker {
         (self.structs.get(key).map(|s| s.span))
             .or_else(|| self.enums.get(key).map(|e| e.span))
             .or_else(|| self.interfaces.get(key).map(|i| i.span))
+            .or_else(|| self.handles.get(key).copied())
     }
 
     /// Records `name` written at `at` as the module it is imported as.

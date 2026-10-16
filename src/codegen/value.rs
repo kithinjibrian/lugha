@@ -41,7 +41,8 @@ pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnu
         Type::I16 | Type::U16 => context.i16_type().into(),
         Type::Bool => context.bool_type().into(),
         // Strings, arrays and boxes (v16) are pointers to heap objects (spec §7).
-        Type::String | Type::Array(_) | Type::Ref(_) => {
+        // Handles (v16, milestone 88) are C pointers.
+        Type::String | Type::Array(_) | Type::Ref(_) | Type::Handle(_) => {
             context.ptr_type(AddressSpace::default()).into()
         }
         // Declared by `declare_enums` before anything is lowered.

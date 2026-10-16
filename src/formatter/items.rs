@@ -36,6 +36,7 @@ impl Printer<'_> {
                 f.span,
             ),
             Top::Item(Item::Extern(e)) => (e.visibility.map(|v| v.span.start), e.span),
+            Top::Item(Item::ExternType(t)) => (t.visibility.map(|v| v.span.start), t.span),
             Top::Item(Item::Struct(s)) => (s.visibility.map(|v| v.span.start), s.span),
             Top::Item(Item::Enum(e)) => (e.visibility.map(|v| v.span.start), e.span),
             Top::Item(Item::Impl(i)) => (None, i.span),
@@ -48,10 +49,19 @@ impl Printer<'_> {
         match top {
             Top::Import(i) => self.import(i),
             Top::Item(Item::Fun(f)) => self.fun(f),
+            Top::Item(Item::ExternType(t)) => text(format!(
+                "{}extern type {};",
+                visibility(t.visibility),
+                self.ident(&t.name)
+            )),
             Top::Item(Item::Extern(e)) => concat(vec![
                 text(format!(
-                    "{}extern fun {}",
+                    "{}extern {}fun {}",
                     visibility(e.visibility),
+                    // The symbol as written: re-escaping is the lexer's job, and a C name needs none.
+                    e.symbol
+                        .as_ref()
+                        .map_or(String::new(), |s| format!("{:?} ", s.name)),
                     self.ident(&e.name)
                 )),
                 self.params(None, &e.params),

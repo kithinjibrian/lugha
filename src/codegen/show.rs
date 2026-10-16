@@ -25,8 +25,10 @@ fn plain(ty: &Type) -> bool {
 /// A type's name as printed: its key's last part, without arguments.
 fn bare(ty: &Type) -> &str {
     match ty {
-        Type::Struct(key, _) | Type::Enum(key, _) => key.rsplit('.').next().unwrap_or(key),
-        _ => unreachable!("only structs have a printed name"),
+        Type::Struct(key, _) | Type::Enum(key, _) | Type::Handle(key) => {
+            key.rsplit('.').next().unwrap_or(key)
+        }
+        _ => unreachable!("only structs, enums and handles have a printed name"),
     }
 }
 
@@ -125,6 +127,8 @@ impl<'ctx> Lowerer<'ctx> {
             (None, Type::Struct(..)) => self.show_fields(value, ty),
             (None, Type::Array(_)) => self.show_elements(value.into_pointer_value(), ty),
             (None, Type::Ref(inner)) => self.show_box(value.into_pointer_value(), inner),
+            // A handle shows its type, never its address (v16).
+            (None, Type::Handle(_)) => self.string_literal(&format!("<{}>", bare(ty))).into(),
             (None, _) => self.show_variants(value, ty),
         };
         self.builder.build_return(Some(&text)).expect(POSITIONED);
@@ -139,8 +143,10 @@ impl<'ctx> Lowerer<'ctx> {
     /// method listed as an instance, or a generic type's instance (which
     /// the checker lists only when it has that shape).
     fn own_show(&self, ty: &Type) -> Option<Method<'ctx>> {
-        let (Type::Struct(owner, args) | Type::Enum(owner, args)) = ty else {
-            return None;
+        let (owner, args) = match ty {
+            Type::Struct(owner, args) | Type::Enum(owner, args) => (owner, args.as_slice()),
+            Type::Handle(owner) => (owner, &[][..]),
+            _ => return None,
         };
         let key = format!("{owner}.show");
         if !args.is_empty() {

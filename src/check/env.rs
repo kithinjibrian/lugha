@@ -16,6 +16,16 @@ pub(super) fn is_intrinsic(name: &str) -> bool {
         || super::test_fns::ASSERTIONS.contains(&name)
 }
 
+/// True if `symbol` is a C identifier lughac may call: not one of its own (`lugha_…`).
+fn c_name(symbol: &str) -> bool {
+    let mut chars = symbol.chars();
+    chars
+        .next()
+        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+        && chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+        && !symbol.starts_with("lugha_")
+}
+
 impl Checker {
     /// Every function and method body of the current module, once the
     /// passes of spec §6 have run over every module (`modules.rs`).
@@ -40,14 +50,23 @@ impl Checker {
             let (name, params, ret, is_extern, visibility) = match item {
                 Item::Fun(f) => (&f.name, &f.params, f.ret.as_ref(), false, f.visibility),
                 Item::Extern(e) => (&e.name, &e.params, e.ret.as_ref(), true, e.visibility),
-                Item::Struct(_) | Item::Enum(_) | Item::Impl(_) | Item::Interface(_) => continue,
+                Item::Struct(_)
+                | Item::Enum(_)
+                | Item::Impl(_)
+                | Item::Interface(_)
+                | Item::ExternType(_) => continue,
             };
             let generics = self.enter_params(item);
-            let declared = params;
-            let params = params
-                .iter()
-                .map(|p| self.resolve(&p.ty))
-                .collect::<Vec<_>>();
+            // An extern's callers write neither `data` nor `release`, and see
+            // each callback as a plain function type (v16, milestone 88).
+            let (declared, params) = match item {
+                Item::Extern(e) => self.extern_params(e, &self.key(&name.name)),
+                _ => {
+                    let types = params.iter().map(|p| self.resolve(&p.ty)).collect();
+                    (params.clone(), types)
+                }
+            };
+            let declared = &declared;
             let mut ret_type = match ret {
                 Some(ty) => self.resolve(ty),
                 None => Type::Void,
@@ -59,11 +78,21 @@ impl Checker {
                 ret_type = Type::Error;
             }
             if is_extern {
-                // Only numbers and strings cross the C boundary (spec §8).
+                // Only numbers and strings cross the C boundary (spec §8);
+                // handles and callbacks too (v16).
                 let annotations = declared.iter().map(|p| &p.ty).chain(ret);
-                for (annotation, ty) in annotations.zip(params.iter().chain([&ret_type])) {
+                let count = params.len();
+                for (i, (annotation, ty)) in annotations
+                    .zip(params.iter().chain([&ret_type]))
+                    .enumerate()
+                {
                     let at = annotation.span;
                     let d = match ty {
+                        // A written callback, checked by `extern_params`.
+                        Type::Fun(..) if i < count => continue,
+                        // A handle, or `Option` of one (`NULL` is `None`), is a C pointer (v16).
+                        Type::Handle(_) => continue,
+                        Type::Option(inner) if matches!(**inner, Type::Handle(_)) => continue,
                         Type::Array(_) => errors::extern_array(at),
                         Type::Struct(_, _) => errors::extern_struct(at),
                         Type::Fun(..) | Type::Interface(..) => errors::extern_value(ty, at),
@@ -76,7 +105,14 @@ impl Checker {
             self.type_params.clear();
             let text = &name.name;
             let key = self.key(text);
-            if is_extern && text.starts_with("lugha_") {
+            let renamed = match item {
+                Item::Extern(e) => e.symbol.as_ref(),
+                _ => None,
+            };
+            if let Some(symbol) = renamed.filter(|s| !c_name(&s.name)) {
+                self.report(errors::bad_symbol(&symbol.name, symbol.span));
+            }
+            if is_extern && renamed.is_none() && text.starts_with("lugha_") {
                 self.report(errors::reserved_extern(text, name.span));
             } else if is_intrinsic(text) {
                 self.report(errors::reserved(text, name.span));
@@ -90,7 +126,8 @@ impl Checker {
             {
                 self.report(errors::duplicate(text, name.span, first));
             } else {
-                if is_extern {
+                // A renamed extern may give its C function another signature (v16).
+                if is_extern && renamed.is_none() {
                     self.same_extern(text, &params, &ret_type, name.span);
                 }
                 self.register_item(&key, visibility);
@@ -187,6 +224,7 @@ impl Checker {
         as_struct
             .or_else(as_enum)
             .or_else(|| self.interfaces.get(name).map(|i| i.span))
+            .or_else(|| self.handles.get(name).copied())
     }
 
     /// True if `name` names a type here, or an imported module, so no local
@@ -197,6 +235,7 @@ impl Checker {
             || self.structs.contains_key(&key)
             || self.enums.contains_key(&key)
             || self.interfaces.contains_key(&key)
+            || self.handles.contains_key(&key)
             || self.imports.contains_key(name)
     }
 

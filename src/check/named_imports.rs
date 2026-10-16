@@ -35,6 +35,7 @@ fn declared(item: &Item) -> Option<&Ident> {
         Item::Struct(s) => &s.name,
         Item::Enum(e) => &e.name,
         Item::Interface(i) => &i.name,
+        Item::ExternType(t) => &t.name,
         Item::Impl(_) => return None,
     })
 }

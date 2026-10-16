@@ -130,6 +130,8 @@ impl Checker {
             Some(Type::Struct(name.to_string(), Vec::new()))
         } else if self.enums.contains_key(name) {
             Some(Type::Enum(name.to_string(), Vec::new()))
+        } else if self.handles.contains_key(name) {
+            Some(Type::Handle(name.to_string()))
         } else {
             None
         }
@@ -148,7 +150,8 @@ impl Checker {
 
     pub(super) fn method(&self, ty: &Type, name: &str) -> Option<Method> {
         let owner = match ty {
-            Type::Struct(n, _) | Type::Enum(n, _) => n,
+            // A handle may have methods of its own, wrapping externs (v16).
+            Type::Struct(n, _) | Type::Enum(n, _) | Type::Handle(n) => n,
             _ => return None,
         };
         self.methods.get(owner).and_then(|m| m.get(name)).cloned()

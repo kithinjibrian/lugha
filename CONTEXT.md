@@ -6890,19 +6890,40 @@ Branch: main
 
 ---
 
-## SESSION 188 — 2026-10-16 — Callbacks and handles (milestone 88) — open
+## SESSION 188 — 2026-10-16 — Callbacks and handles (milestone 88) — closed
 Branch: prp-118-callbacks_handles
 
 ### WHAT WAS DONE
-- In progress: the user approved PRP-118 ("yes build"); building in worktree `../lugha-prp-118`.
+- The user approved PRP-118 ("yes build"); built it in the worktree `../lugha-prp-118`, test-first.
+- Handles: `extern type`, `Type::Handle`, the `handles` pass, `==`, printing `<Name>`, `impl` methods, `Option<H>` as a nullable C pointer (`codegen/externs.rs`).
+- Callbacks: `CParam` plans (`check/callbacks.rs`, `Checked::c_params`), E0435/E0436, `codegen/callbacks.rs` (`lugha_cfn_`/`lugha_cbv_`, `lugha_cb_` trampolines), `runtime/callbacks.c` (`lugha_rt_cb_pin`/`_release`); renamed externs `extern "symbol" fun` sharing a symbol through their own function types.
+- Language server: hover, definition and completion for `extern type`; the formatter prints the new syntax.
+- Spec v16 §2, §3, §4, §7, §8, §9, E0306/E0409/E0435/E0436 rows, §11 row 88, changes list; draft status; `docs/errors/E0435.md`, `E0436.md`, E0306/E0409 pages; CLAUDE.md (rule 7, tree), README, TODO, CHANGELOG, MEMORY (169–170).
+- Checked byte-identical IR for the 185 compiling `tests/programs`; built the GTK 4 counter against the installed GTK (scratchpad `gtk_counter/`), not run (the user's).
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/{handles,callbacks}.rs`, `src/codegen/{externs,callbacks}.rs`, `runtime/callbacks.c`, `tests/callbacks.rs`, `docs/errors/E0435.md`, `E0436.md`.
+- Modified: `src/ast/mod.rs`, `src/parser/{item,import}.rs`, `src/parser/sexp/item.rs`, `src/check/{mod,types,env,methods,generics,call,checked,named_imports,visibility,fun_values}.rs`, `src/check/modules/{mod,lookup}.rs`, `src/check/errors/{types,v16}.rs`, `src/codegen/{mod,lower,declare,function,value,structs,equality,show,arith,methods,interfaces,instances}.rs`, `src/formatter/{items,tests}.rs`, `src/driver/lsp/{hover,completion}.rs`, `src/link/mod.rs`, `src/explain.rs`, `tests/lsp_{hover,definition}.rs`, docs.
+
+### TESTS WRITTEN
+- `tests/callbacks.rs` (8, -O0 and -O2), `check/handles.rs` (8), `check/callbacks.rs` (7), parser, formatter, hover and definition (1 each). Full suite (959), fmt, clippy pass.
+
+### DECISIONS MADE
+- As PRP-118 planned; deviations in its BUILT notes and MEMORY 170 (handles may have `impl` methods; static callbacks per call site; no `unsafe`).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's run of the GTK 4 counter (scratchpad `gtk_counter/counter`).
 
 ---
 
 ## NEXT SESSION START POINT
 
-**v16: milestones 67–87 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries).
+**v16: milestones 67–88 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles).
 
-**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. **Milestone 83 done** (tag `m83`): Find References and Rename (PRP-113), extension 0.6.0; its manual check (README step 16) is the user's. **Milestone 84 done** (tag `m84`): `lughac test` (PRP-114). **Milestone 85 done** (tag `m85`): tests in the editor (PRP-115), extension 0.8.0; its manual check (README step 17) is the user's. **Milestone 86 done** (tag `m86`): `lughac explain` (PRP-116), extension 0.9.0; its manual check (README step 18) is the user's. **Milestone 87 done** (tag `m87`): linking C libraries, `[link]` in `lugha.toml` (PRP-117). **Milestone 88 proposed:** callbacks and handles (PRP-118, session 187), waiting for approval; build in worktree `../lugha-prp-118`. Next candidates: Go to Implementations, the Outline, inlay hints, decorators, `lughac doc`. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. **Milestone 83 done** (tag `m83`): Find References and Rename (PRP-113), extension 0.6.0; its manual check (README step 16) is the user's. **Milestone 84 done** (tag `m84`): `lughac test` (PRP-114). **Milestone 85 done** (tag `m85`): tests in the editor (PRP-115), extension 0.8.0; its manual check (README step 17) is the user's. **Milestone 86 done** (tag `m86`): `lughac explain` (PRP-116), extension 0.9.0; its manual check (README step 18) is the user's. **Milestone 87 done** (tag `m87`): linking C libraries, `[link]` in `lugha.toml` (PRP-117). **Milestone 88 done** (tag `m88`): callbacks and handles (PRP-118); a GTK 4 counter works in plain Lugha. Toward GUI next: strings into callbacks, C structs by value, a GTK binding package. Next candidates: Go to Implementations, the Outline, inlay hints, decorators, `lughac doc`. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

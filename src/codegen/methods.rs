@@ -75,6 +75,7 @@ impl<'ctx> Lowerer<'ctx> {
                     params,
                     ret,
                     is_extern: false,
+                    c_type: None,
                 };
                 self.methods.insert(
                     key,
@@ -97,8 +98,11 @@ impl<'ctx> Lowerer<'ctx> {
             let name = qualify(unit.path, &i.ty.name);
             let owner = if self.enums.contains_key(&name) {
                 Type::Enum(name.clone(), Vec::new())
-            } else {
+            } else if self.structs.contains_key(&name) || !i.params.is_empty() {
                 Type::Struct(name.clone(), Vec::new())
+            } else {
+                // No layout and not an enum: an `extern type` (v16).
+                Type::Handle(name.clone())
             };
             for f in i.methods.iter().filter(|f| !generic(i, f)) {
                 let method = self.methods[&key(&name, &f.name.name)].clone();
@@ -182,7 +186,8 @@ impl<'ctx> Lowerer<'ctx> {
         // An associated call's method key comes from the checker (PRP-034).
         let (method, receiver) = match &base_type {
             Type::Void => (self.callees.get(&call.id).cloned(), None),
-            Type::Struct(owner, _) | Type::Enum(owner, _) => {
+            // A handle's methods are its `impl` block's, like a struct's (v16).
+            Type::Struct(owner, _) | Type::Enum(owner, _) | Type::Handle(owner) => {
                 (Some(key(owner, &name.name)), Some(base))
             }
             // Any other receiver through a bound: a default method (v5).

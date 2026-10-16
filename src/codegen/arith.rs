@@ -37,7 +37,11 @@ impl<'ctx> Lowerer<'ctx> {
         }
         let composite = matches!(
             ty,
-            Type::Struct(_, _) | Type::Enum(_, _) | Type::Option(_) | Type::Array(_)
+            Type::Struct(_, _)
+                | Type::Enum(_, _)
+                | Type::Option(_)
+                | Type::Array(_)
+                | Type::Handle(_)
         );
         // `<` on tuples (v14): element by element; on a struct or enum, its
         // `cmp` (v15).

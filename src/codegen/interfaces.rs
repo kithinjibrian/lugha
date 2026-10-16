@@ -154,6 +154,7 @@ impl<'ctx> Lowerer<'ctx> {
         name: &str,
     ) -> FunctionValue<'ctx> {
         let own = match ty {
+            Type::Handle(owner) => self.methods.get(&method_key(owner, name)),
             Type::Struct(owner, targs) | Type::Enum(owner, targs) => {
                 let k = method_key(owner, name);
                 match targs.is_empty() {

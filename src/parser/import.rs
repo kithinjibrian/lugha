@@ -114,11 +114,17 @@ impl Parser<'_> {
                 f.visibility = visibility;
                 Item::Fun(f)
             }
-            TokenKind::Extern => {
-                let mut e = self.extern_decl()?;
-                e.visibility = visibility;
-                Item::Extern(e)
-            }
+            TokenKind::Extern => match self.extern_item()? {
+                Item::Extern(mut e) => {
+                    e.visibility = visibility;
+                    Item::Extern(e)
+                }
+                Item::ExternType(mut t) => {
+                    t.visibility = visibility;
+                    Item::ExternType(t)
+                }
+                _ => unreachable!("`extern_item` makes only externs and extern types"),
+            },
             TokenKind::Struct => {
                 let mut s = self.struct_decl()?;
                 s.visibility = visibility;
