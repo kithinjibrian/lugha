@@ -348,9 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
-### lugha-gtk 0.1.0 (PRP-121) ✅ locally
+### lugha-gtk 0.1.0 (PRP-121) ✅ published
 - [x] `/home/kithinji/Documents/kithinji/lugha-gtk`: app, Window, Box, Button, Label, Entry, closures for signals; examples and a windowless smoke test run against GTK 4.22; tagged `v0.1.0` locally
-- [ ] Create the GitHub repository and push `main` and `v0.1.0` (waiting for the user's go)
+- [x] Created `github.com/kithinjibrian/lugha-gtk` (public) and pushed `main` and `v0.1.0` (session 194); a fresh program used it as a git package
 - [ ] More widgets (CheckButton, Scale, DropDown, ListView), layout (Grid), dialogs, CSS
 
 ### Milestone 90 — C structs by value ✅

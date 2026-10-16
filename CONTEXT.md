@@ -7048,11 +7048,27 @@ Branch: vscode-extern-syntax
 
 ---
 
-## SESSION 194 — 2026-10-16 — Publish lugha-gtk — open
+## SESSION 194 — 2026-10-16 — Publish lugha-gtk — closed
 Branch: main
 
 ### WHAT WAS DONE
-- In progress: the user said yes to publishing lugha-gtk.
+- The user said yes: created the public `github.com/kithinjibrian/lugha-gtk` (public like glowworm and lugha), pushed `main` and tag `v0.1.0`.
+- Verified as a git package: a fresh program with `gtk = { git = "https://github.com/kithinjibrian/lugha-gtk", version = "0.1" }` fetched, locked (`e693800…`), linked GTK through the package's `pkg-config` and ran windowless.
+
+### FILES CREATED OR MODIFIED
+- Modified: TODO, CHANGELOG, MEMORY, CONTEXT.
+
+### TESTS WRITTEN
+- None (a manual run of a git-package program).
+
+### DECISIONS MADE
+- The repository is public, as the user's other Lugha repositories are.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual checks: the two example windows, extension README step 20.
 
 ---
 
@@ -7060,7 +7076,7 @@ Branch: main
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
-**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. **Milestone 83 done** (tag `m83`): Find References and Rename (PRP-113), extension 0.6.0; its manual check (README step 16) is the user's. **Milestone 84 done** (tag `m84`): `lughac test` (PRP-114). **Milestone 85 done** (tag `m85`): tests in the editor (PRP-115), extension 0.8.0; its manual check (README step 17) is the user's. **Milestone 86 done** (tag `m86`): `lughac explain` (PRP-116), extension 0.9.0; its manual check (README step 18) is the user's. **Milestone 87 done** (tag `m87`): linking C libraries, `[link]` in `lugha.toml` (PRP-117). **Milestone 88 done** (tag `m88`): callbacks and handles (PRP-118); a GTK 4 counter works in plain Lugha. **Milestones 89–90 done** (tags `m89`, `m90`): strings from C (PRP-119), C structs by value (PRP-120). **lugha-gtk 0.1.0 built locally** (PRP-121, `../lugha-gtk`, tag `v0.1.0`), waiting for the user's go to create the GitHub repository and push. Next candidates: Go to Implementations, the Outline, inlay hints, decorators, `lughac doc`. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. **Milestone 83 done** (tag `m83`): Find References and Rename (PRP-113), extension 0.6.0; its manual check (README step 16) is the user's. **Milestone 84 done** (tag `m84`): `lughac test` (PRP-114). **Milestone 85 done** (tag `m85`): tests in the editor (PRP-115), extension 0.8.0; its manual check (README step 17) is the user's. **Milestone 86 done** (tag `m86`): `lughac explain` (PRP-116), extension 0.9.0; its manual check (README step 18) is the user's. **Milestone 87 done** (tag `m87`): linking C libraries, `[link]` in `lugha.toml` (PRP-117). **Milestone 88 done** (tag `m88`): callbacks and handles (PRP-118); a GTK 4 counter works in plain Lugha. **Milestones 89–90 done** (tags `m89`, `m90`): strings from C (PRP-119), C structs by value (PRP-120). **lugha-gtk 0.1.0 published** (PRP-121): https://github.com/kithinjibrian/lugha-gtk, tag `v0.1.0`. VS Code extension 0.10.0 (session 193). Next candidates: Go to Implementations, the Outline, inlay hints, decorators, `lughac doc`. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

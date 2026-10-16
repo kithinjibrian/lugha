@@ -2003,14 +2003,14 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ### 173. lugha-gtk 0.1.0 (PRP-121)
 
-**Decision:** built locally at `/home/kithinji/Documents/kithinji/lugha-gtk` (git repo, `main`, tag `v0.1.0`, not pushed: the GitHub repository waits for the user's go). Package `gtk`, `source = "src"`, `[link] pkg-config = ["gtk4"]`; `raw.la` (public handles `GtkApplication`, `GtkWidget`, `Argv`; externs checked against GTK 4's headers; `connect_app`/`connect_widget` renaming `g_signal_connect_data`), `app.la`, `widgets.la`. Deviation from the PRP: instead of `label.widget()`, every widget satisfies a `Widget` interface (`handle()`), so `Box.column([label, button])` converts implicitly; `margin` is a method on each widget, since an interface's default methods are reachable only through the interface. Lessons: `of` is a keyword; a method can't share a field's name (fields are `ptr`); a parameter can't share an imported module's name. **Bug found and fixed in lughac** (PR #27): `m.H` for another module's `extern type` resolved to an error type silently (`resolve_applied` dropped handles). Verified: both examples build, `test/smoke.la` runs windowless and prints text read back from GTK.
+**Decision:** built at `/home/kithinji/Documents/kithinji/lugha-gtk`; published (session 194) as the public `github.com/kithinjibrian/lugha-gtk` with tag `v0.1.0`, and verified as a git package from a fresh program (`gtk = { git = …, version = "0.1" }`, locked commit `e693800`). Package `gtk`, `source = "src"`, `[link] pkg-config = ["gtk4"]`; `raw.la` (public handles `GtkApplication`, `GtkWidget`, `Argv`; externs checked against GTK 4's headers; `connect_app`/`connect_widget` renaming `g_signal_connect_data`), `app.la`, `widgets.la`. Deviation from the PRP: instead of `label.widget()`, every widget satisfies a `Widget` interface (`handle()`), so `Box.column([label, button])` converts implicitly; `margin` is a method on each widget, since an interface's default methods are reachable only through the interface. Lessons: `of` is a keyword; a method can't share a field's name (fields are `ptr`); a parameter can't share an imported module's name. **Bug found and fixed in lughac** (PR #27): `m.H` for another module's `extern type` resolved to an error type silently (`resolve_applied` dropped handles). Verified: both examples build, `test/smoke.la` runs windowless and prints text read back from GTK.
 
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
-- **lugha-gtk 0.1.0** (PRP-121), local: GTK 4 windows and widgets in Lugha
+- **lugha-gtk 0.1.0** (PRP-121), published on GitHub: GTK 4 windows and widgets in Lugha
 - **Milestone 90 complete**: PRP-120 C structs by value
 - **Milestone 89 complete**: PRP-119 strings from C
 - **Milestone 88 complete**: PRP-118 callbacks and handles (`extern type`, `data`/`release`, E0435/E0436)
