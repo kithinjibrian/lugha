@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 85 — Tests in the editor ✅
+- [x] PRP-115: `lughac test --list`/`--json`/`--exact`; the VS Code Testing view; tagged `m85`
+
 ### Milestone 84 — `lughac test` ✅
 - [x] PRP-114: `@test`, `assert`/`assert_eq`/`assert_ne`, each test in its own process, in parallel, `--filter`, `--timeout`; tagged `m84`
 
@@ -426,7 +429,8 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [x] **Go-to-definition** — milestone 72, PRP-102.
 - [ ] **Bundling** the extension (vsce warns about 231 files; needs a bundler such as esbuild as a dev dependency).
 - [ ] **Publishing** the extension to the Marketplace and Open VSX (publisher accounts, a token as a CI secret).
-- [ ] **Run test from the editor** — a "▶ Run test" code lens above each `@test`, running `lughac test --filter`; needs a security review (it starts programs).
+- [x] **Run tests from the editor** — milestone 85, PRP-115 (the Testing view, not code lenses).
+- [ ] Tests in the editor, later: a Debug profile (needs debug info), test items from unsaved text, UTF-16 columns from `lughac test --list`.
 - [ ] **Outline and breadcrumbs** (`textDocument/documentSymbol`) — functions, structs, enums, interfaces, `impl` methods, fields and variants in the Outline panel and breadcrumbs; `Ctrl+Shift+O`.
 - [ ] **Go to Symbol in Workspace** (`workspace/symbol`, `Ctrl+T`) — functions and types by name across the checked files.
 - [ ] **Highlight uses** (`textDocument/documentHighlight`) — the other uses of the name under the cursor in the file, from References' search.

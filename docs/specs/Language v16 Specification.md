@@ -2,11 +2,11 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–84 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–85 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestones 67–84):
+**Changes since v15** (milestones 67–85):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
 - `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
 - `lughac init [folder] [--lib] [--name N]` starts a program, or a library with an example, in a folder; it never overwrites a file (milestone 69; section 9).
@@ -20,6 +20,7 @@ Oct 15, 2026 · @kithinji
 - More quick fixes: `let mut` for an assignment to an immutable `let` (E0501), the closest variant for a misspelled one (W0103), a std import for `math.`-style names (E0301) (milestone 82; section 9).
 - Find References and Rename in the editor, across the checked files; a rename is checked before it is offered (milestone 83; section 9).
 - `lughac test`: `@test` functions (`@` starts an attribute), `assert`, `assert_eq` and `assert_ne`, each test run in its own process, in parallel, with a time limit (milestone 84; sections 2, 3, 5, 9).
+- Tests in the editor: `lughac test --list`, `--json` and `--exact` for tools, and VS Code's Testing view with a ▶ beside each test, never in untrusted folders (milestone 85; section 9).
 
 Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type (a module's own type `Ref` still means its own), or declares a function named `assert`, `assert_eq` or `assert_ne`, which are intrinsics since milestone 84 (E0302).
 
@@ -1315,7 +1316,7 @@ The C `main(argc, argv)` emitted by the compiler calls `lugha_rt_init(argc, argv
 | `lughac init [folder] [--lib] [--name N]` | Start a program, or with `--lib` a library, in `folder` (default: the current one); see below (v16) |
 | `lughac lsp` | Serve the Language Server Protocol on stdin and stdout, for editors; see below (v16) |
 | `lughac fmt [paths…] [--check]` | Rewrite `.la` files in the canonical style; `--check` only lists the files that would change; see below (v16) |
-| `lughac test [paths…] [--filter TEXT] [--timeout SECS]` | Run the `@test` functions of `.la` files, each in its own process; see below (v16) |
+| `lughac test [paths…] [--filter TEXT]… [--exact] [--timeout SECS] [--list] [--json]` | Run (or list) the `@test` functions of `.la` files, each in its own process; see below (v16) |
 | `--offline` | On `build`, `run` and `check`: run no `git`; every git package must be locked and cached (v14) |
 | `lughac build --emit=tokens\|ast\|ir prog.la` | Print an intermediate stage and stop; with several modules, `tokens` and `ast` print each after a `; module <name>` line (`main` for the main file) |
 | `--diagnostics=human\|json` | Diagnostic format for `build`, `run` and `check`; `human` is the default |
@@ -1385,6 +1386,8 @@ fun area_of_unit() {
 - **Running:** each test runs as its own process of its file's executable, told which test by the environment variable `LUGHA_TEST`, so a panic, overflow, bounds error or stack overflow fails only that test. Up to one test per CPU runs at once. A test still running after `--timeout` seconds (default 10) is killed and fails. The executables live in a fresh temporary folder, removed afterwards; they are started directly, never through a shell.
 - **Output:** one line per test, in file then declaration order: `test geo.area_of_unit ... ok`, or `... FAILED` followed by the panic (`panic: assert_eq failed: left 4, right 5 at geo.la:13:5`) and, after `--- output ---`, what the test printed (captured, shown only on failure); `... FAILED (timed out after 10 s)`; `... FAILED (exit code N)` for a test that called `exit(N)`. Then a blank line and `N tests: P passed, F failed`, or just `0 tests`. A file with errors prints its diagnostics to stderr and its tests don't run; the others still do.
 - **Exit codes:** 0 when every test passed (also with none); 1 when a test failed or a file has errors; 2 for lughac's own errors (a test executable that can't be started, a temporary folder that can't be made).
+- **For tools** (milestone 85): `--list` names every test the paths hold, by parsing alone (nothing is checked or built, so a file with a type error still lists its tests), as `test <name> <file>:<line>:<col>` lines — the test's name — or with `--json` as `{"test":"geo.area_of_unit","file":"geo.la","line":5,"col":5}`. A run with `--json` prints, as each test finishes, `{"test":…,"file":…,"line":…,"status":"passed"|"failed"|"timed_out","message":…,"at":{"file":…,"line":…,"col":…},"output":…,"ms":…}` — `message` and `at` from the panic, absent when it passed (`at` also when the panic has no location) — and finally `{"summary":{"passed":P,"failed":F}}`; diagnostics stay on stderr, and the exit codes are the same. `--filter` may be given several times (a test runs when any matches), and `--exact` makes each one match a whole name. Lines and columns are 1-based, columns in bytes.
+- **In VS Code** (milestone 85): the extension lists every test of the workspace folders in the Testing view with a ▶ beside each `@test`, refreshed when a `.la` file changes, and runs them with `lughac test --json --exact`; results show at the failing line. It does so only when asked (or under the Testing view's continuous run), never in a folder VS Code doesn't trust, and starts only `lugha.path`, without a shell.
 
 **Diagnostics.** Errors print the file, line and column, the offending source line, a caret under the span with its label, and any secondary labels, in a rustc-like layout rendered by the `codespan-reporting` crate. Each diagnostic is followed by a blank line, and lines carry no trailing whitespace. The checker reports as many errors as it can find instead of stopping at the first one.
 
@@ -3282,6 +3285,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 82 | More quick fixes (v16) | `let mut` (E0501), the closest variant (W0103), a std import (E0301), each preferred | `tests/lsp_code_actions.rs` (done) |
 | 83 | Find References and Rename (v16) | every use of a name across the checked files; rename refused unless safe, self-checked in memory | `tests/lsp_references.rs`, `tests/lsp_rename.rs` (done) |
 | 84 | `lughac test` (v16) | `@test` functions (E0210, E0434), `assert`/`assert_eq`/`assert_ne`, each test in its own process, in parallel, `--filter`, `--timeout` | `tests/test_runner.rs`, `tests/programs/m84/` (done) |
+| 85 | Tests in the editor (v16) | `lughac test --list`/`--json`/`--exact`, repeatable `--filter`; the VS Code Testing view; nothing in untrusted folders | `tests/test_runner.rs`, the extension's `tests.test.ts` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

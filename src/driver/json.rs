@@ -66,7 +66,7 @@ fn position(source: &Source, offset: usize) -> String {
 }
 
 /// Escapes `text` as a JSON string, quotes included.
-fn string(text: &str) -> String {
+pub(super) fn string(text: &str) -> String {
     let mut out = String::with_capacity(text.len() + 2);
     out.push('"');
     for c in text.chars() {

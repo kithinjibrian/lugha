@@ -60,19 +60,26 @@ None.
 - For the user's review (CLAUDE.md: changes to how the extension starts `lughac` need it): the extension now also runs `lughac test`, which builds and runs the workspace's code. Mitigations: only on an explicit request; never in an untrusted workspace; only the `lugha.path` executable (machine-scoped, so a workspace can't set it); `spawn` with an argument array, no shell; arguments are fixed flags plus test names and file paths that the extension got from `lughac test --list`; `lughac test` itself starts test executables directly from a private temp folder (milestone 84). Listing (`--list`) only lexes and parses, but even it isn't started in an untrusted folder: there the extension starts nothing at all, so the Testing view stays empty until the folder is trusted.
 
 ## TESTS TO WRITE
-- [ ] **`tests/test_runner.rs`:** `--list` (text and JSON, positions, no build: a file with a type error still lists its tests); `--json` results (passed, failed with message and `at`, timed out, output, summary); `--exact` and repeated `--filter`; the human output unchanged.
-- [ ] **Unit tests (`driver/test.rs`):** splitting a panic line into message and location; JSON escaping of names, messages and output.
-- [ ] **Extension (`test/tests.test.ts`):** parsing list and result lines (and rejecting garbage); arguments for one test, a file, everything; result → status/message/location mapping; `package.json` describes the untrusted-workspace behaviour.
-- [ ] **Regression:** every existing test passes; `npm test`.
+- [x] **`tests/test_runner.rs`:** `--list` (text and JSON, positions, no build: a file with a type error still lists its tests); `--json` results (passed, failed with message and `at`, timed out, output, summary); `--exact` and repeated `--filter`; the human output unchanged.
+- [x] **Unit tests (`driver/test.rs`):** splitting a panic line into message and location; JSON escaping of names, messages and output.
+- [x] **Extension (`test/tests.test.ts`):** parsing list and result lines (and rejecting garbage); arguments for one test, a file, everything; result → status/message/location mapping; `package.json` describes the untrusted-workspace behaviour.
+- [x] **Regression:** every existing test passes; `npm test`.
+
+## BUILT (session 181)
+- As designed: `driver/test_json.rs` (2 unit tests), `driver/test.rs` (`Request.wants`, `list`, `json_result`, streaming `run_all`), `driver/mod.rs` flags; `driver/json.rs`'s `string` shared. `tests/test_runner.rs` gained 3 tests (list in text and JSON with a type error still listed; JSON results with message, `at`, output, `ms`, summary and `timed_out`; `--exact` and repeated filters).
+- JSON is written by hand, as `driver/json.rs` does: `serde_json` stays `lughac lsp`'s only (STACK).
+- Columns from lughac are 1-based bytes; the extension uses them as characters, which is exact for ASCII lines (test names and the usual `assert` lines).
+- Extension 0.8.0: `src/tests.ts` + `test/tests.test.ts` (6 tests), `src/testing.ts` (the controller), `extension.ts` registering it only in a trusted workspace; `workspaceContains:**/*.la` activation so the Testing view fills without opening a file first; the untrusted-workspace description says tests don't run there. Packaged and installed.
+- Not covered by automated tests: `testing.ts` itself (it needs a running VS Code); the manual check is README step 17.
 
 ## ROLLBACK PLAN
 - Branch `prp-115-editor_tests` from `main`; tag `m85`.
 - To abandon before merge: delete the branch. After: revert the merge (extension 0.7.0 still works with the newer `lughac`).
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test`, `npm test` (CI in the background).
-- [ ] Spec at milestone 85; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test`, `npm test` (CI in the background).
+- [x] Spec at milestone 85; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 - [ ] The manual check passes in VS Code (README steps): the Testing view lists the tests, ▶ runs one, a failure shows at its line, Restricted Mode runs nothing.
 
 ## VALIDATION

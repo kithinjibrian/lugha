@@ -1,13 +1,16 @@
 /**
  * The extension: starts the language server `lughac lsp` for `.la` files,
- * which publishes `lughac check`'s diagnostics as you type (PRP-100).
+ * which publishes `lughac check`'s diagnostics as you type (PRP-100), and,
+ * in a trusted workspace, the Testing view's `lughac test` (PRP-115,
+ * `testing.ts`).
  *
- * The only file importing `vscode`; highlighting and editing come from the
- * grammar and the language configuration, not from here.
+ * With `testing.ts`, the only files importing `vscode`; highlighting and
+ * editing come from the grammar and the language configuration.
  */
 import * as vscode from "vscode";
 import { LanguageClient, type LanguageClientOptions, type ServerOptions } from "vscode-languageclient/node";
 import { serverCommand, startFailure } from "./server";
+import { registerTests } from "./testing";
 
 let client: LanguageClient | undefined;
 
@@ -25,6 +28,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         }),
     );
+    // Tests run the folder's code: only once VS Code trusts it (decision 90).
+    const lughac = () => serverCommand(vscode.workspace.getConfiguration("lugha").get<string>("path")).command;
+    if (vscode.workspace.isTrusted) {
+        context.subscriptions.push(registerTests(output, lughac));
+    } else {
+        context.subscriptions.push(
+            vscode.workspace.onDidGrantWorkspaceTrust(() => context.subscriptions.push(registerTests(output, lughac))),
+        );
+    }
     await start(output);
 }
 
