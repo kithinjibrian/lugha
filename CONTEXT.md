@@ -7116,3 +7116,8 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - The green-threads discovery, at question 3. Note: `lugha_rt_spawn` already exists (std.process); green-thread runtime symbols should use `lugha_rt_task_`.
+
+---
+
+## SESSION 196 — 2026-10-16 — Green threads: discovery, continued — open
+Branch: main
