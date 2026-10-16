@@ -6501,6 +6501,11 @@ Branch: main
 
 ---
 
+## SESSION 173 — 2026-10-16 — More quick fixes (milestone 82) — open
+Branch: prp-112-more_quick_fixes
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–81 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor).

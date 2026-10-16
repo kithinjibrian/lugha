@@ -1,6 +1,6 @@
 ## FEATURE: more quick fixes — `let mut` for E0501, a misspelled variant for W0103, a std import for E0301; milestone 82.
 
-**Status:** proposed 2026-10-16 — session 172 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-16 ("build") — built in session 173; proposed in session 172.
 **Milestone:** 82 (one PRP; tag `m82` at merge). Builds on milestone 79's code actions (PRP-109).
 **Spec:** `Language v16 Draft.md` decisions 71–75; spec §9 (the `lughac lsp` section's **Quick fixes**), §11 (row 82).
 
