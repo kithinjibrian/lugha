@@ -8,8 +8,9 @@ use super::{Checker, Type};
 use crate::ast::{Expr, Item, Program};
 use crate::span::Span;
 
-/// The assertion intrinsics, usable in any code.
-pub(super) const ASSERTIONS: [&str; 3] = ["assert", "assert_eq", "assert_ne"];
+/// The assertion intrinsics, usable in any code; and `skip(reason)` (v17,
+/// milestone 97), which ends a test as skipped.
+pub(super) const ASSERTIONS: [&str; 4] = ["assert", "assert_eq", "assert_ne", "skip"];
 
 /// The names of `program`'s tests, in declaration order.
 pub(super) fn tests_of(program: &Program) -> Vec<String> {
@@ -49,7 +50,11 @@ impl Checker {
     /// `assert(cond)`, `assert_eq(a, b)` or `assert_ne(a, b)`: `a` and `b`
     /// of one type with `==` that prints, so a failure can show both.
     pub(super) fn assertion(&mut self, call: &Expr, name: &str, args: &[Expr]) -> Type {
-        let wanted = if name == "assert" { 1 } else { 2 };
+        let wanted = if matches!(name, "assert" | "skip") {
+            1
+        } else {
+            2
+        };
         if args.len() != wanted {
             self.report(errors::arity(name, wanted, args.len(), call.span));
             self.unchecked_args(args);
@@ -58,6 +63,11 @@ impl Checker {
         if name == "assert" {
             self.expect_type(&args[0], &Expect::of(Type::Bool));
             return Type::Void;
+        }
+        // `skip(reason)` ends the test: nothing after it runs (v17).
+        if name == "skip" {
+            self.expect_type(&args[0], &Expect::of(Type::String));
+            return Type::Never;
         }
         // The side that can't be typed alone (a literal, a call only its
         // result types) takes the other side's type (v17).

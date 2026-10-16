@@ -170,6 +170,12 @@ function runFolder(
                 testRun.passed(item, shown.ms);
                 return;
             }
+            // `skip(reason)`: the reason goes to the test's output.
+            if (shown.skipped) {
+                if (shown.message) testRun.appendOutput(`skipped: ${shown.message}\r\n`, undefined, item);
+                testRun.skipped(item);
+                return;
+            }
             const message = new vscode.TestMessage(shown.message ?? "failed");
             if (shown.at) {
                 const uri = vscode.Uri.file(path.join(folder.uri.fsPath, shown.at.file));

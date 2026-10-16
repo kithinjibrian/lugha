@@ -88,6 +88,9 @@ pub struct Loaded {
     pub manifests: Vec<ManifestFile>,
     /// New text for `lugha.lock`, when the build changed it (v14).
     pub lock: Option<String>,
+    /// Where `lugha.lock` belongs: beside the manifest governing the
+    /// build, or the main file's folder when there is none (v17).
+    pub lock_folder: PathBuf,
     /// The `[link]` tables of the packages with a module in the program,
     /// the program's first, in the order their manifests were read; only
     /// tables that list something (v16, milestone 87).
@@ -138,6 +141,10 @@ pub enum LoadError {
 /// ```
 pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, LoadError> {
     let root = main.parent().unwrap_or(Path::new("")).to_path_buf();
+    let as_module = env
+        .as_module
+        .then(|| layout::module_path(main, read, &env))
+        .flatten();
     let manifest_folder = layout::manifest_folder(&root, read, &env);
     let mut loaded = Loaded {
         modules: Vec::new(),
@@ -145,6 +152,7 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
         manifests: Vec::new(),
         lock: None,
         links: Vec::new(),
+        lock_folder: manifest_folder.clone(),
     };
     let (mut base, mut next_id) = (0usize, 0u32);
     let mut packages = packages::Packages::new(root, manifest_folder, env.fetcher);
@@ -155,7 +163,7 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
     type Pending = (Vec<String>, PathBuf, Option<String>, Option<Span>);
     let mut queue: VecDeque<Pending> = VecDeque::new();
     queue.push_back((Vec::new(), main.to_path_buf(), None, None));
-    while let Some((path, file, package, asked_by)) = queue.pop_front() {
+    while let Some((path, file, mut package, asked_by)) = queue.pop_front() {
         // A `std` module is embedded in `lughac`, never read from disk (v15).
         let embedded = (package.as_deref() == Some(packages::STD))
             .then(|| crate::STD.iter().find(|(n, _)| *n == path[1..].join(".")))
@@ -188,6 +196,17 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
             .ok_or(LoadError::TooLarge)?;
         // After its first module, so the main file keeps offset 0 (read once).
         packages.read_manifest(&package, read, &mut base, &mut loaded)?;
+        // A package's file under `test`/`check` is its module (v17 draft
+        // decision 43): imported by a hidden entry, so cycles through it hold.
+        if let Some((name, path)) = &as_module
+            && asked_by.is_none()
+            && packages.own.as_ref() == Some(name)
+        {
+            module.path = path.clone();
+            module.package = Some(name.clone());
+            package = Some(name.clone());
+            seen[0].1 = path.clone();
+        }
         if let Some(program) = &module.program {
             next_id = program.expr_count;
             for import in &program.imports {
@@ -199,7 +218,8 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
                 let (target, error) =
                     packages.resolve(import, &package, read, &mut base, &mut loaded)?;
                 module.imports.push(target.path.clone());
-                let error = error.or_else(|| resolve::check(import, program, main, &target.file));
+                let entry = as_module.is_none().then_some(main);
+                let error = error.or_else(|| resolve::check(import, program, entry, &target.file));
                 if let Some(d) = error {
                     loaded.diagnostics.push(d);
                     continue;
@@ -223,6 +243,14 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
         loaded.modules.push(module);
     }
     packages.check_versions(read, &mut base, &mut loaded)?;
+    // A program under its package's manifest (in `test/`, `examples/`, …)
+    // sees the package's package-level items (v17 draft decision 45). Set
+    // after every import resolved: resolution still treats it as the root.
+    if let Some(own) = &packages.own {
+        for module in loaded.modules.iter_mut().filter(|m| m.package.is_none()) {
+            module.package = Some(own.clone());
+        }
+    }
     loaded.lock = packages.fetcher.lock_text();
     Ok(loaded)
 }

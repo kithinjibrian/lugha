@@ -17,7 +17,7 @@ export interface TestResult {
     name: string;
     file: string;
     line: number;
-    status: "passed" | "failed" | "timed_out";
+    status: "passed" | "failed" | "timed_out" | "skipped";
     message?: string;
     at?: { file: string; line: number; col: number };
     output: string;
@@ -27,6 +27,8 @@ export interface TestResult {
 /** What the Testing view shows for a result. */
 export interface Outcome {
     passed: boolean;
+    /** Ended through `skip(reason)` (lughac milestone 97); `message` is the reason. */
+    skipped: boolean;
     message?: string;
     /** Where to show the message: the panic's place, else the test's line. */
     at?: { file: string; line: number; character: number };
@@ -60,7 +62,9 @@ export function parseResult(line: string): TestResult | undefined {
     if (!o || !isString(o.test) || !isString(o.file) || !isNumber(o.line) || !isString(o.output) || !isNumber(o.ms)) {
         return undefined;
     }
-    if (o.status !== "passed" && o.status !== "failed" && o.status !== "timed_out") return undefined;
+    if (o.status !== "passed" && o.status !== "failed" && o.status !== "timed_out" && o.status !== "skipped") {
+        return undefined;
+    }
     const result: TestResult = { name: o.test, file: o.file, line: o.line, status: o.status, output: o.output, ms: o.ms };
     if (isString(o.message)) result.message = o.message;
     const at = o.at as Record<string, unknown> | undefined;
@@ -88,9 +92,14 @@ export function outcome(result: TestResult): Outcome {
         : { file: result.file, line: result.line - 1, character: 0 };
     const shown: Outcome = {
         passed: result.status === "passed",
+        skipped: result.status === "skipped",
         output: result.output.replace(/\r?\n/g, "\r\n"),
         ms: result.ms,
     };
+    if (shown.skipped) {
+        shown.message = result.message;
+        return shown;
+    }
     if (!shown.passed) {
         shown.message = result.message ?? "failed";
         shown.at = at;

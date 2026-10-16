@@ -230,7 +230,10 @@ fn json_results_carry_status_message_location_and_output() {
     );
     assert!(failed.contains("\"output\":\"doubling 2\\n\""), "{failed}");
     assert!(failed.contains("\"ms\":"), "{failed}");
-    assert_eq!(lines[2], "{\"summary\":{\"passed\":1,\"failed\":1}}");
+    assert_eq!(
+        lines[2],
+        "{\"summary\":{\"passed\":1,\"failed\":1,\"skipped\":0}}"
+    );
     let out = lughac(&t.0, &["test", "--json", "--timeout", "1", "looping.la"]);
     assert!(
         text(&out.stdout).contains("\"status\":\"timed_out\""),
@@ -262,4 +265,123 @@ fn exact_filters_match_whole_names_and_filters_repeat() {
         names(&["--exact", "--filter", "m.a", "--filter", "m.b"]),
         ["m.a", "m.b"]
     );
+}
+
+const SKIPS: &str = "import std.env;
+
+@test
+fun needs_a_screen() {
+    if env.get(\"LUGHA_NO_SUCH_SCREEN\") == None {
+        skip(\"no display\");
+    }
+    assert(false);
+}
+
+@test
+fun passes() {
+    assert_eq(1, 1);
+}
+
+@test
+fun fails_before_skipping() {
+    assert_eq(1, 2);
+    skip(\"too late\");
+}
+
+@test
+fun exits_77_without_skipping() {
+    exit(77);
+}
+";
+
+#[test]
+fn skip_reports_a_test_skipped_and_never_hides_a_failure_v17() {
+    let t = Temp::with(&[("skips.la", SKIPS)]);
+    let out = lughac(&t.0, &["test", "skips.la"]);
+    let stdout = text(&out.stdout);
+    assert!(
+        stdout.contains("test skips.needs_a_screen ... skipped (no display)\n"),
+        "{stdout}"
+    );
+    assert!(stdout.contains("test skips.passes ... ok\n"), "{stdout}");
+    assert!(
+        stdout.contains("test skips.fails_before_skipping ... FAILED"),
+        "{stdout}"
+    );
+    assert!(
+        stdout.contains("test skips.exits_77_without_skipping ... FAILED (exit code 77)"),
+        "{stdout}"
+    );
+    assert!(
+        stdout.ends_with("4 tests: 1 passed, 2 failed, 1 skipped\n"),
+        "{stdout}"
+    );
+    assert_eq!(out.status.code(), Some(1));
+    let only = lughac(&t.0, &["test", "skips.la", "--filter", "needs_a_screen"]);
+    assert_eq!(only.status.code(), Some(0), "{}", text(&only.stdout));
+    assert!(text(&only.stdout).ends_with("1 test: 0 passed, 0 failed, 1 skipped\n"));
+    let json = lughac(
+        &t.0,
+        &["test", "skips.la", "--json", "--filter", "needs_a_screen"],
+    );
+    let lines = text(&json.stdout);
+    assert!(lines.contains("\"status\":\"skipped\""), "{lines}");
+    assert!(lines.contains("no display"), "{lines}");
+}
+
+#[test]
+fn skip_outside_a_test_panics_v17() {
+    let t = Temp::with(&[("main.la", "fun main() { skip(\"why\"); }\n")]);
+    let out = lughac(&t.0, &["run", "main.la"]);
+    assert_eq!(out.status.code(), Some(101));
+    assert!(
+        text(&out.stderr).contains("panic: skip outside a test at main.la:1:14"),
+        "{}",
+        text(&out.stderr)
+    );
+}
+
+/// A package whose `diff` and `vdom` modules import each other.
+fn cyclic_package() -> Temp {
+    let diff = "import vdom;\nfun patch(n: i64): i64 = vdom.size(n) + 1;\n\
+                @test\nfun patches() { assert_eq(patch(1), 3); }\n";
+    let vdom = "import diff;\nfun size(n: i64): i64 = n * 2;\n\
+                fun both(n: i64): i64 = diff.patch(n);\n";
+    Temp::with(&[
+        (
+            "lugha.toml",
+            "[package]\nname = \"glow\"\nsource = \"src\"\n",
+        ),
+        ("src/diff.la", diff),
+        ("src/vdom.la", vdom),
+    ])
+}
+
+#[test]
+fn a_package_file_is_tested_as_its_module_v17() {
+    let t = cyclic_package();
+    let out = lughac(&t.0, &["test", "src/diff.la"]);
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    assert!(
+        text(&out.stdout).contains("test glow.diff.patches ... ok"),
+        "{}",
+        text(&out.stdout)
+    );
+    // The same name in a listing, and found by an exact filter.
+    let listed = lughac(&t.0, &["test", "--list", "src/diff.la"]);
+    assert_eq!(
+        text(&listed.stdout),
+        "test glow.diff.patches src/diff.la:4:5\n"
+    );
+    let exact = lughac(
+        &t.0,
+        &["test", "--exact", "--filter", "glow.diff.patches", "src"],
+    );
+    assert!(
+        text(&exact.stdout).contains("1 test: 1 passed"),
+        "{}",
+        text(&exact.stdout)
+    );
+    let checked = lughac(&t.0, &["check", "src/vdom.la"]);
+    assert_eq!(checked.status.code(), Some(0), "{}", text(&checked.stderr));
 }

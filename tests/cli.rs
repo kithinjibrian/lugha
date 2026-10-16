@@ -340,3 +340,37 @@ fn std_random_seeds_from_the_runtime_only_through_from_os() {
         "{main}"
     );
 }
+
+#[test]
+fn check_takes_a_file_without_main_as_a_library_v17() {
+    let dir = TempDir::with(&[
+        ("lib.la", b"public fun double(n: i64): i64 = n * 2;\n"),
+        ("bad.la", b"public fun double(n: i64): i64 = n * \"2\";\n"),
+    ]);
+    let checked = lughac(&dir.0, &["check", "lib.la"]);
+    assert_eq!(checked.status.code(), Some(0), "{}", text(&checked.stderr));
+    // Errors are still found.
+    assert_eq!(lughac(&dir.0, &["check", "bad.la"]).status.code(), Some(1));
+    // Only `build` and `run` need `main`.
+    let built = lughac(&dir.0, &["build", "lib.la"]);
+    assert_eq!(built.status.code(), Some(1));
+    assert!(
+        text(&built.stderr).contains("E0303"),
+        "{}",
+        text(&built.stderr)
+    );
+}
+
+/// Was `tests/programs/m3/e0303`, whose runner checks with `lughac check`;
+/// since v17 only `build` and `run` report E0303.
+#[test]
+fn build_without_main_is_e0303() {
+    let dir = TempDir::with(&[("e0303.la", b"fun helper() {}\n")]);
+    let built = lughac(&dir.0, &["build", "e0303.la"]);
+    assert_eq!(built.status.code(), Some(1));
+    assert_eq!(
+        text(&built.stderr),
+        "error[E0303]: no `main` function\n  --> e0303.la:1:1\n  |\n1 | fun helper() {}\n  \
+         | ^\n  |\n  = help: add `fun main() { }`\n\nFor more about E0303, run `lughac explain E0303`.\n"
+    );
+}

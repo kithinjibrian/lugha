@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**v17 (concurrency): milestones 91–92 done** (tags `m91` green threads, `m92` actors; PRP-122, PRP-123). VS Code extension 0.12.0. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**v17: milestones 91–97 done** (tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -7754,8 +7754,24 @@ Branch: prp-127-sibling_inference
 
 ---
 
-## SESSION 222 — 2026-10-17 — Packages and tests (milestone 97) — open
+## SESSION 222 — 2026-10-17 — Packages and tests (milestone 97) — closed
 Branch: prp-128-packages_and_tests
 
 ### WHAT WAS DONE
-- In progress: building PRP-128 (approved in session 220) in worktree `../lugha-prp-128`; targeted tests only.
+- Built PRP-128 in worktree `../lugha-prp-128`, in five parts: `skip(reason)`; `lughac check` without `main`; `test/`, `tests/`, `examples/` inside their package; a package's file as its module under `test`/`check`; one `lugha.lock` per package. Spec v17 §5 (intrinsics), §6 (packages, lock, visibility), §9 (check, test, E0303), row 97; VS Code extension 0.13.0.
+
+### FILES CREATED OR MODIFIED
+- Modified: `runtime/test.c`, `src/link/mod.rs`, `src/check/{test_fns,modules/mod}.rs`, `src/codegen/{runtime,assertions}.rs`, `src/driver/{mod,pipeline,test,test_json,update}.rs`, `src/modules/{mod,layout,packages,fetch,resolve}.rs`, `docs/errors/E0303.md`, `editors/vscode/{src/tests.ts,src/testing.ts,test/tests.test.ts,package.json,package-lock.json}`, spec, draft, PRP-128, CLAUDE.md, TODO, CHANGELOG, MEMORY (180), CONTEXT.
+- Removed: `tests/programs/m3/e0303.{la,stderr}` (moved to `tests/cli.rs`).
+
+### TESTS WRITTEN
+- `test_runner` (3), `package_layout` (1), `git_packages` (1), `cli` (2), `test_json` units, extension tests. Targeted: `--lib`, `cli`, `package_layout`, `git_packages`, `test_runner`, `modules`, `init`, `lsp`, `interface_values`, `explain`, `spec`, `programs`, fmt, clippy, `npm test`.
+
+### DECISIONS MADE
+- As PRP-128 planned (BUILT notes, MEMORY 180).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing. kivuli's own updates belong to its session.

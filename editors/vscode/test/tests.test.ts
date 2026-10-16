@@ -53,14 +53,22 @@ test("a result becomes a status, a message at its zero-based place, and output",
     });
     assert.deepEqual(failed, {
         passed: false,
+        skipped: false,
         message: "assert_eq failed: left 4, right 5",
         at: { file: "geo.la", line: 12, character: 4 },
         output: "doubling 2\r\n",
         ms: 4,
     });
     const timedOut = outcome({ name: "m.loops", file: "m.la", line: 1, status: "timed_out", message: "timed out after 10 s", output: "", ms: 10000 });
-    assert.deepEqual(timedOut, { passed: false, message: "timed out after 10 s", at: { file: "m.la", line: 0, character: 0 }, output: "", ms: 10000 });
+    assert.deepEqual(timedOut, { passed: false, skipped: false, message: "timed out after 10 s", at: { file: "m.la", line: 0, character: 0 }, output: "", ms: 10000 });
     assert.equal(outcome({ name: "m.a", file: "m.la", line: 2, status: "passed", output: "", ms: 1 }).passed, true);
+    // `skip(reason)` (lughac milestone 97): skipped, not failed.
+    const skipped = parseResult('{"test":"m.screen","file":"m.la","line":3,"status":"skipped","message":"no display","output":"","ms":2}');
+    assert.equal(skipped?.status, "skipped");
+    const shownSkip = outcome(skipped!);
+    assert.equal(shownSkip.skipped, true);
+    assert.equal(shownSkip.passed, false);
+    assert.equal(shownSkip.message, "no display");
 });
 
 test("a start failure names the executable and the milestone it needs", () => {

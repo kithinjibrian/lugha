@@ -51,6 +51,9 @@ pub(super) struct Packages {
     /// Git packages that couldn't be fetched: their imports are skipped,
     /// since E0325 or E0326 already says why (v14).
     unfetched: Vec<String>,
+    /// The package the root's manifest names, if any: the main file and
+    /// its own modules belong to it for visibility (v17, milestone 97).
+    pub(super) own: Option<String>,
 }
 
 impl Packages {
@@ -66,6 +69,7 @@ impl Packages {
             listed: HashMap::new(),
             versions: HashMap::new(),
             required: Vec::new(),
+            own: None,
         }
     }
 
@@ -134,9 +138,15 @@ impl Packages {
                 table: manifest.link,
             });
         }
-        // The root's lock (v14), before any git entry needs it.
-        if package.is_none() {
-            self.fetcher.read_lock(&self.root, read, base, loaded)?;
+        // The root's lock (v14), before any git entry needs it: beside the
+        // manifest, or once from beside the main file, an older build's (v17).
+        if package.is_none()
+            && !self
+                .fetcher
+                .read_lock(&self.manifest_folder, read, base, loaded)?
+            && normalized(&self.root) != normalized(&self.manifest_folder)
+        {
+            self.fetcher.moved = self.fetcher.read_lock(&self.root, read, base, loaded)?;
         }
         for entry in manifest.entries {
             let target = match &entry.git {

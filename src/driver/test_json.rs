@@ -2,9 +2,14 @@
 //! 85): the lines tools such as the VS Code extension read. JSON is written
 //! by hand, as `json.rs` does, so no serialisation crate is needed.
 
+use std::path::Path;
+
+use super::fmt::display;
 use super::json::string;
 use super::source::line_col;
+use super::update;
 use crate::ast::Item;
+use crate::modules::{self, fetch::Mode};
 use crate::{lexer, parser};
 
 /// Where a panic happened, from its `panic: <message> at <file>:<line>:<col>`.
@@ -109,12 +114,61 @@ pub(super) fn result_line(r: &Result) -> String {
 }
 
 /// The `--json` summary line.
-pub(super) fn summary_line(passed: usize, failed: usize) -> String {
-    format!("{{\"summary\":{{\"passed\":{passed},\"failed\":{failed}}}}}\n")
+pub(super) fn summary_line(passed: usize, failed: usize, skipped: usize) -> String {
+    format!("{{\"summary\":{{\"passed\":{passed},\"failed\":{failed},\"skipped\":{skipped}}}}}\n")
+}
+
+/// The reason a test ended through `skip(reason)` (v17): exit code 77 *and*
+/// the runtime's `lugha-skip: ` line, so a plain `exit(77)` isn't a skip.
+pub(super) fn skipped(code: Option<i32>, stderr: &str) -> Option<String> {
+    if code != Some(77) {
+        return None;
+    }
+    stderr
+        .lines()
+        .rev()
+        .find_map(|l| l.strip_prefix("lugha-skip: "))
+        .map(str::to_string)
+}
+
+/// A test's module as reported: a file in its package's `source` folder
+/// is that package's module (`glow/src/diff.la` → `glow.diff`, v17);
+/// otherwise the file's path without `.la`, folders joined with `.`
+/// (`src/geo.la` → `src.geo`).
+pub(super) fn module_name(file: &Path) -> String {
+    let mut read = |p: &Path| std::fs::read(p);
+    let env = update::env(Mode {
+        offline: true,
+        update: false,
+    });
+    match modules::layout::module_path(file, &mut read, &env) {
+        Some((_, path)) => path.join("."),
+        None => display(&file.with_extension("")).replace(['/', '\\'], "."),
+    }
+}
+
+/// A test's own name: the last part of the checker's qualified name
+/// (`glow.diff.patches` → `patches`).
+pub(super) fn bare(test: &str) -> &str {
+    test.rsplit('.').next().unwrap_or(test)
 }
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
+    #[test]
+    fn module_names_follow_the_path() {
+        assert_eq!(super::module_name(Path::new("geo.la")), "geo");
+        assert_eq!(super::module_name(Path::new("./src/geo.la")), "src.geo");
+    }
+
+    #[test]
+    fn bare_names_drop_the_module() {
+        assert_eq!(super::bare("glow.diff.patches"), "patches");
+        assert_eq!(super::bare("patches"), "patches");
+    }
+
     use super::*;
 
     #[test]
@@ -155,8 +209,14 @@ mod tests {
         );
         assert_eq!(list_line(false, "m.t", "m.la", 2, 5), "test m.t m.la:2:5\n");
         assert_eq!(
-            summary_line(1, 0),
-            "{\"summary\":{\"passed\":1,\"failed\":0}}\n"
+            summary_line(1, 0, 2),
+            "{\"summary\":{\"passed\":1,\"failed\":0,\"skipped\":2}}\n"
         );
+        assert_eq!(
+            skipped(Some(77), "x\nlugha-skip: no display\n"),
+            Some("no display".into())
+        );
+        assert_eq!(skipped(Some(77), "x\n"), None);
+        assert_eq!(skipped(Some(1), "lugha-skip: no\n"), None);
     }
 }

@@ -7,16 +7,17 @@ use crate::ast::{Import, Item, Program};
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
 
-/// E0319 for importing the main file, or E0314 for a clash with an earlier
+/// E0319 for importing the main file (`main`; `None` when it is loaded as
+/// a package's module, v17), or E0314 for a clash with an earlier
 /// import or an item of the same file; `None` if `import` is fine.
 pub(super) fn check(
     import: &Import,
     program: &Program,
-    main: &Path,
+    main: Option<&Path>,
     target: &Path,
 ) -> Option<Diagnostic> {
     let at = import_path_span(import);
-    if same_file(target, main) {
+    if main.is_some_and(|main| same_file(target, main)) {
         return Some(
             Diagnostic::error("E0319", "the main file can't be imported", at)
                 .with_help("move what both files need into a module of its own"),
