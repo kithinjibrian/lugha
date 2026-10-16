@@ -7192,3 +7192,8 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - The green-threads discovery, at question 8 (select arms). Still to ask afterwards: a v17 Draft or not, files touched, testing.
+
+---
+
+## SESSION 199 — 2026-10-16 — Green threads: select arms explained — open
+Branch: main
