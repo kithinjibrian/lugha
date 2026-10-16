@@ -7342,3 +7342,8 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - Nothing new.
+
+---
+
+## SESSION 205 — 2026-10-16 — VS Code extension: spawn and select — open
+Branch: vscode-green-threads
