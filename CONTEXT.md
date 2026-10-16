@@ -7167,5 +7167,28 @@ Branch: main
 
 ---
 
-## SESSION 198 — 2026-10-16 — Green threads: discovery, continued — open
+## SESSION 198 — 2026-10-16 — Green threads: discovery, continued — closed
 Branch: main
+
+### WHAT WAS DONE
+- Discovery answers 4–7:
+  - (4) Like Go: a panic in any green thread ends the program (exit 101), and `main` returning ends the program and drops unfinished threads.
+  - (5) Channels like Go: `Chan.new()` is unbuffered and `Chan.buffered(n)` buffered; `recv()` returns `Option<T>` (`None` once closed and empty); `send` on a closed channel panics, and so does closing twice; values are copied; a channel is a shared handle like `Ref<T>`; `try_recv()` returns at once.
+  - (6) Deadlock (nothing ready, nothing sleeping) panics with `deadlock: every green thread is waiting`, exit 101.
+  - (7) `select` is IN this PRP (the user chose to include it rather than defer it).
+- Question 8 (what a `select` may contain: recommended recv arms binding `Option<T>`, send arms, `default`, `after(ms)`, a random pick among ready arms) was paused for clarification.
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- None recorded yet (the answers go into the PRP).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The green-threads discovery, at question 8 (select arms). Still to ask afterwards: a v17 Draft or not, files touched, testing.
