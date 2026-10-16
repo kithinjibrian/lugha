@@ -7436,3 +7436,26 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - Actor discussion: calls, stopping, panics/supervision.
+
+---
+
+## SESSION 209 — 2026-10-16 — Actors: discussion, continued — closed
+Branch: main
+
+### WHAT WAS DONE
+- The user chose call option A: a value-returning actor method waits for the reply, a void one is queued without waiting; messages handled in arrival order; a call to a stopped actor panics; mutual waiting is the existing deadlock panic. Asked the next question: how actors stop (recommended: a built-in `stop()` that finishes the queue, plus everything ends when `main` returns).
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- Actor calls: value methods wait, void methods don't (the user's choice).
+
+### PENDING DECISIONS OPENED
+- None (the discussion continues).
+
+### STILL OPEN AT CLOSE
+- Actor discussion: stopping, panics/supervision.
