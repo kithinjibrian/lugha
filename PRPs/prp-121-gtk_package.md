@@ -1,6 +1,6 @@
 ## FEATURE: `lugha-gtk` — a GTK 4 binding package in its own repository, with Lugha-style wrappers (widgets as handle types with methods, closures for signals).
 
-**Status:** approved 2026-10-16 ("yes build all three", session 190); proposed in session 189 with PRP-119 and PRP-120 as one batch.
+**Status:** built in session 192 (local repository, not pushed); approved 2026-10-16 ("yes build all three", session 190); proposed in session 189 with PRP-119 and PRP-120 as one batch.
 **Milestone:** none in lughac (it changes no compiler code); the package is tagged `v0.1.0` in its own repository.
 **Spec:** none changed. Uses spec §6 (packages, `[link]`), §8 (handles, callbacks, strings from C — milestones 87–89).
 
@@ -74,3 +74,10 @@ fun main(): i32 {
 
 ## VALIDATION
 - `lughac check examples/*.la`, `lughac build examples/counter.la` (in lugha-gtk)
+
+## BUILT (session 192)
+- `/home/kithinji/Documents/kithinji/lugha-gtk`, a git repository on `main` with tag `v0.1.0`, **not pushed**: creating the GitHub repository waits for the user.
+- `src/raw.la`, `src/app.la`, `src/widgets.la`, `examples/counter.la`, `examples/greeter.la`, `test/smoke.la`, README (coverage table), LICENSE (GPL-3.0 text from `/usr/share/common-licenses/GPL-3`), `.gitignore`.
+- **API change from the PRP's example:** no `label.widget()`. Every widget satisfies the `Widget` interface (`handle()`), so `Box.column([label, button])` and `window.set_child(box)` convert implicitly; each widget has its own `margin` (an interface's default methods are reachable only through the interface).
+- **A compiler bug found and fixed** (lughac PR #27, its own branch): `m.H` for another module's `extern type` resolved to an error type silently. With the fix, the package checks and builds.
+- **Verified:** `lughac check` and `lughac build` for both examples against GTK 4.22 through `pkg-config`; `test/smoke.la` runs without showing a window and prints the text it read back from GTK (`héllo`, `pressed`, `changed`, `changed` — the `changed` signal reached its closure). Opening the two example windows is the user's.

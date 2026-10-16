@@ -2001,11 +2001,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. `StructDecl.c_layout`; the checker's `c_structs` set, `c_field` (numbers, `bool`, `char`, handles, extern structs — `Option` of a handle was dropped from the PRP's list: Lugha lays an `Option` out as a tagged enum, not a nullable pointer), E0437 for fields, generics, empty structs. Codegen: `c_abi.rs` classifies like clang (pieces sized by their data; with two pieces the low one widened to 8 bytes; >16 bytes or not enough free registers → memory), `c_calls.rs` builds `CSig` (separate LLVM params per piece, `byval`/`sret` with align 8) and moves values piece by piece through struct GEPs (never past the struct's bytes). Used only when a signature carries a struct, so other IR is byte-identical (185 programs). Callback entries lift every C parameter first, then hand the `data` pointer to the trampoline (an `sret` or split piece shifts its LLVM index).
 
+### 173. lugha-gtk 0.1.0 (PRP-121)
+
+**Decision:** built locally at `/home/kithinji/Documents/kithinji/lugha-gtk` (git repo, `main`, tag `v0.1.0`, not pushed: the GitHub repository waits for the user's go). Package `gtk`, `source = "src"`, `[link] pkg-config = ["gtk4"]`; `raw.la` (public handles `GtkApplication`, `GtkWidget`, `Argv`; externs checked against GTK 4's headers; `connect_app`/`connect_widget` renaming `g_signal_connect_data`), `app.la`, `widgets.la`. Deviation from the PRP: instead of `label.widget()`, every widget satisfies a `Widget` interface (`handle()`), so `Box.column([label, button])` converts implicitly; `margin` is a method on each widget, since an interface's default methods are reachable only through the interface. Lessons: `of` is a keyword; a method can't share a field's name (fields are `ptr`); a parameter can't share an imported module's name. **Bug found and fixed in lughac** (PR #27): `m.H` for another module's `extern type` resolved to an error type silently (`resolve_applied` dropped handles). Verified: both examples build, `test/smoke.la` runs windowless and prints text read back from GTK.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **lugha-gtk 0.1.0** (PRP-121), local: GTK 4 windows and widgets in Lugha
 - **Milestone 90 complete**: PRP-120 C structs by value
 - **Milestone 89 complete**: PRP-119 strings from C
 - **Milestone 88 complete**: PRP-118 callbacks and handles (`extern type`, `data`/`release`, E0435/E0436)
