@@ -14,6 +14,9 @@ pub mod fetch;
 pub mod git;
 mod inline;
 pub mod layout;
+pub mod link_table;
+#[cfg(test)]
+mod link_tests;
 pub mod lock;
 pub mod manifest;
 pub mod package_table;
@@ -85,6 +88,10 @@ pub struct Loaded {
     pub manifests: Vec<ManifestFile>,
     /// New text for `lugha.lock`, when the build changed it (v14).
     pub lock: Option<String>,
+    /// The `[link]` tables of the packages with a module in the program,
+    /// the program's first, in the order their manifests were read; only
+    /// tables that list something (v16, milestone 87).
+    pub links: Vec<link_table::PackageLink>,
 }
 
 /// Why a program couldn't be loaded at all — an internal error, not a
@@ -137,6 +144,7 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
         diagnostics: Vec::new(),
         manifests: Vec::new(),
         lock: None,
+        links: Vec::new(),
     };
     let (mut base, mut next_id) = (0usize, 0u32);
     let mut packages = packages::Packages::new(root, manifest_folder, env.fetcher);

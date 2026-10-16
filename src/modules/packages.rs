@@ -5,9 +5,10 @@
 
 use std::collections::HashMap;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use super::fetch::Fetcher;
+use super::link_table::{LinkKey, LinkTable, PackageLink};
 use super::manifest::{self, MANIFEST};
 use super::paths::{clash, exists, normalized};
 use super::version::{self, Requirement, Version};
@@ -125,6 +126,14 @@ impl Packages {
             base: start,
             text,
         });
+        if !manifest.link.is_empty() {
+            missing_link_files(read, &folder, &manifest.link, loaded);
+            loaded.links.push(PackageLink {
+                package: package.clone(),
+                folder: folder.clone(),
+                table: manifest.link,
+            });
+        }
         // The root's lock (v14), before any git entry needs it.
         if package.is_none() {
             self.fetcher.read_lock(&self.root, read, base, loaded)?;
@@ -194,6 +203,9 @@ impl Packages {
         base: &mut usize,
         loaded: &mut Loaded,
     ) -> Result<(), LoadError> {
+        // A package read only for its version has no module in the
+        // program, so its `[link]` table must not reach the link (v16).
+        let used = loaded.links.len();
         let mut next = 0;
         while let Some((name, requirement, span)) = self.required.get(next).cloned() {
             next += 1;
@@ -205,6 +217,7 @@ impl Packages {
                 loaded.diagnostics.push(d);
             }
         }
+        loaded.links.truncate(used);
         Ok(())
     }
 
@@ -325,5 +338,29 @@ impl Packages {
             return (target, Some(d));
         }
         (target, None)
+    }
+}
+
+/// E0322 for each `paths` or `include` folder and `c` file of a `[link]`
+/// table that doesn't exist, at its line (v16, milestone 87).
+fn missing_link_files(read: &mut Read<'_>, folder: &Path, link: &LinkTable, loaded: &mut Loaded) {
+    for key in [LinkKey::Paths, LinkKey::Include, LinkKey::C] {
+        let Some(line) = link.line_of(key) else {
+            continue;
+        };
+        for value in &line.values {
+            let path = folder.join(value);
+            if exists(read, &path) {
+                continue;
+            }
+            let what = if key == LinkKey::C { "file" } else { "folder" };
+            let d = Diagnostic::error(
+                "E0322",
+                format!("the `[link]` {what} `{value}` doesn't exist"),
+                line.span,
+            )
+            .with_help(format!("there is no {what} `{}`", path.display()));
+            loaded.diagnostics.push(d);
+        }
     }
 }

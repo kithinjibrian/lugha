@@ -6811,19 +6811,40 @@ Branch: main
 
 ---
 
-## SESSION 185 — 2026-10-16 — Linking C libraries (milestone 87) — open
+## SESSION 185 — 2026-10-16 — Linking C libraries (milestone 87) — closed
 Branch: prp-117-linking_c_libraries
 
 ### WHAT WAS DONE
-- In progress: the user approved PRP-117 ("yes build"), security review included; building in worktree `../lugha-prp-117`.
+- The user approved PRP-117 ("yes build"), security review included; built it in the worktree `../lugha-prp-117`, test-first.
+- `link.rs` → `src/link/mod.rs` moved alone first; then `[link]` in `lugha.toml` (`modules/link_table.rs`), `Loaded.links` (used packages only, E0322 for missing files), `src/link/{inputs,pkg_config,c_files}.rs`, `link_with`, E0329–E0331 as diagnostics (exit 1) from `pipeline::build`.
+- Fixed on the way: the CLI's prelude overlapped manifests' offsets, so a manifest diagnostic made after checking showed in `<prelude>`; it now sits past every loaded file, as in the language server.
+- Spec v16 §6, §8, §9 (stage 6, E0321/E0322 rows, E0329–E0331), §11 row 87, the changes list; draft status; `docs/errors/E0329–E0331.md`, E0321/E0322 pages; CLAUDE.md, README, TODO, CHANGELOG, MEMORY (167–168).
+- Manual check: `libs = ["z"]` + `extern fun zlibCompileFlags(): u64;` prints `zlib flags: 169`; a missing raylib is E0331 at the line.
+
+### FILES CREATED OR MODIFIED
+- New: `src/link/{inputs,pkg_config,c_files}.rs`, `src/modules/{link_table,link_tests}.rs`, `tests/link_libs.rs`, `docs/errors/E0329.md`, `E0330.md`, `E0331.md`.
+- Moved: `src/link.rs` → `src/link/mod.rs`.
+- Modified: `src/link/mod.rs`, `src/modules/{mod,manifest,packages}.rs`, `src/driver/pipeline.rs`, `src/explain.rs`, `docs/errors/E0321.md`, `E0322.md`, the v16 spec and draft, PRP-117, CLAUDE.md, README, TODO, CHANGELOG, MEMORY, CONTEXT.
+
+### TESTS WRITTEN
+- `tests/link_libs.rs` (10), unit tests in `link_table.rs` (5), `manifest.rs` (1), `link_tests.rs` (5), `inputs.rs` (5), `pkg_config.rs` (4), `link/mod.rs` (3). Full suite (931), fmt and clippy pass.
+
+### DECISIONS MADE
+- Built as PRP-117 planned; deviations in its BUILT notes and MEMORY 168 (no `..` at all in paths; `$PKG_CONFIG`; tool output in `help`).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Toward GUI programs: structs/handles and callbacks across the C boundary (TODO, milestone 87 section). raylib already works through a C shim; GTK links but needs callbacks.
 
 ---
 
 ## NEXT SESSION START POINT
 
-**v16: milestones 67–86 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`).
+**v16: milestones 67–87 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries).
 
-**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. **Milestone 83 done** (tag `m83`): Find References and Rename (PRP-113), extension 0.6.0; its manual check (README step 16) is the user's. **Milestone 84 done** (tag `m84`): `lughac test` (PRP-114). **Milestone 85 done** (tag `m85`): tests in the editor (PRP-115), extension 0.8.0; its manual check (README step 17) is the user's. **Milestone 86 done** (tag `m86`): `lughac explain` (PRP-116), extension 0.9.0; its manual check (README step 18) is the user's. **Milestone 87 proposed:** linking C libraries, `[link]` in `lugha.toml` (PRP-117, session 184), waiting for approval and the user's security review; build it in worktree `../lugha-prp-117`. Then, toward GUI apps: structs/handles and callbacks across the C boundary. Next candidates: Go to Implementations, the Outline, inlay hints, decorators, `lughac doc`. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. **Milestone 83 done** (tag `m83`): Find References and Rename (PRP-113), extension 0.6.0; its manual check (README step 16) is the user's. **Milestone 84 done** (tag `m84`): `lughac test` (PRP-114). **Milestone 85 done** (tag `m85`): tests in the editor (PRP-115), extension 0.8.0; its manual check (README step 17) is the user's. **Milestone 86 done** (tag `m86`): `lughac explain` (PRP-116), extension 0.9.0; its manual check (README step 18) is the user's. **Milestone 87 done** (tag `m87`): linking C libraries, `[link]` in `lugha.toml` (PRP-117). Next toward GUI apps: structs/opaque handles and callbacks across the C boundary (each needs discovery and a PRP). Next candidates: Go to Implementations, the Outline, inlay hints, decorators, `lughac doc`. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

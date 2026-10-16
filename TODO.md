@@ -348,6 +348,10 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 87 — Linking C libraries ✅
+- [x] PRP-117: `[link]` in `lugha.toml` (`libs`, `paths`, `include`, `c`, `pkg-config`), every used package's table, E0329–E0331; tagged `m87`
+- [ ] Toward GUI programs: structs or opaque handles across the C boundary, then callbacks from C into Lugha (GTK needs both; raylib works today through a C shim)
+
 ### Milestone 86 — `lughac explain` ✅
 - [x] PRP-116: a page per code with checked examples, the hint after diagnostics, editor links; tagged `m86`
 

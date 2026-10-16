@@ -69,6 +69,7 @@ Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is c
 - **The standard library (v15, milestone 53):** `import std.math;` then `math.sqrt(2.0)`, `math.pow`, `math.sin`, `math.round`, `math.abs(-3)`, `math.max(2, 7)`, `math.clamp`, `math.pi()`; the float functions work for any `T: Float` (`f32`, `f64`). Std modules ship inside `lughac` and cost nothing unless imported.
 - **Copy-on-write arrays (v15, milestone 55):** `let g = grads[i];` no longer copies the array; it is shared until either side writes, and the writer copies it first. Programs print exactly what they did before, and read-heavy code such as firefly's autograd trains 13–35% faster.
 - **Lazy std modules (v15, milestone 60):** of an imported std module, only the functions your program reaches are compiled, as with the prelude; everything is still type-checked.
+- **C libraries (v16, milestone 87):** `[link]` in `lugha.toml` — `libs = ["z"]`, `paths = ["vendor/lib"]`, `c = ["shim.c"]`, `include = ["inc"]`, `pkg-config = ["gtk4"]` — links any C library, and a package's table travels with it to every program that imports it.
 - **`lughac explain` (v16, milestone 86):** `lughac explain E0501` explains any error code with an example and its fix; errors end with a pointer to it, and VS Code links each code to its explanation.
 - **Tests in VS Code (v16, milestone 85):** the Testing view lists every `@test`, with a ▶ beside each in the editor; failures show at the failing line. Nothing runs in an untrusted folder.
 - **`lughac test` (v16, milestone 84):** write `@test fun area_of_unit() { assert_eq(area(0.0), 0.0); }` beside your code and run `lughac test`: each test runs in its own process, in parallel, with a time limit; failures show the values and what the test printed.
@@ -107,6 +108,7 @@ Everything is a value: assigning an array, struct or enum gives you your own cop
 - **LLVM 21** development files. It must be major version 21, and it is linked dynamically.
 - **Boehm GC** development files and a **C compiler** (`cc`). `lughac` links every program with them.
 - **git**, only for programs whose `lugha.toml` lists git packages (v14).
+- **pkg-config** (or `pkgconf`), only for programs whose `lugha.toml` has `pkg-config` under `[link]` (v16), plus the development files of the C libraries a program links.
 
 On Ubuntu 26.04:
 

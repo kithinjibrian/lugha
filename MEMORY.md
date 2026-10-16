@@ -1977,11 +1977,20 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned: `docs/errors/<CODE>.md` (99 pages, written in four parallel batches against a fast checker script, then verified by `tests/explain.rs`), `src/explain.rs` (`EXPLANATIONS`, `explain`, `title`), `driver/explain.rs` (`run`, `hint`), the hint in `Output::diagnostics` (human only); `.stderr` fixtures rewritten by inserting the line after the last diagnostic (the diff only adds lines); `codeDescription` `lugha-explain:<CODE>.md` in `publish.rs`; extension 0.9.0 (`explain.ts`: only `^[EW][0-9]{4}\.md$` reaches lughac's arguments; a content provider, registered whatever the trust; the palette command `lugha.explain` as a fallback in case VS Code won't follow a custom-scheme link). Page examples: ```lugha blocks are compiled (`// error: CODE`, `// warning: CODE`, `// also: CODE` markers), ```text blocks are not (multi-file and package codes). **Rule:** a new diagnostic code needs its page, or `tests/explain.rs` fails.
 
+### 167. Linking C libraries planned (session 184, approved session 185)
+
+**Decision:** v16 draft decisions 98–104. The user asked whether Lugha can build GUI apps (not yet: a fixed link line, and no structs, pointers or callbacks across §8) and chose linking any library as the first step: `[link]` in `lugha.toml` (not an attribute or CLI flag); `pkg-config` included, for GTK; every used package's table applies (binding packages); packages may ship C files; fixable link failures are diagnostics, exit 1. Approved with its security review ("yes build").
+
+### 168. Linking C libraries — milestone 87 (PRP-117)
+
+**Decision:** built as planned: `modules/link_table.rs` (`LinkTable`, `LinkLine`, `LinkKey`, `PackageLink`; one-line string arrays; names `[A-Za-z0-9_+.-]`, never `-` first; paths relative without any `..`, stricter than "not leaving the package"), `Loaded.links` (pushed in `read_manifest` when a table lists something, E0322 for missing folders/files; truncated after `check_versions`, whose packages have no module), `src/link/` (`mod.rs` `link_with`, `args`, `LinkError::{CFile, Libraries}` → `diagnostic()`; `inputs.rs` `Plan`; `pkg_config.rs` `run`, `flags`; `c_files.rs` `compile` to `c<n>.o`), `pipeline::build` runs the plan before codegen. `$PKG_CONFIG` names the program (the usual convention; the tests' fake). Diagnostics carry the tool's output in `help` (`Diagnostic` has no notes). **Fix found on the way:** the CLI placed the prelude right after the last module, overlapping manifests' offsets, so a manifest diagnostic made after checking rendered in `<prelude>`; `check_parsed` now uses `with_prelude_at` past every file, like the language server.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 87 complete**: PRP-117 linking C libraries (`[link]`, E0329–E0331)
 - **Milestone 86 complete**: PRP-116 `lughac explain`, VS Code extension 0.9.0
 - **Milestone 85 complete**: PRP-115 tests in the editor, VS Code extension 0.8.0
 - **Milestone 84 complete**: PRP-114 `lughac test`, VS Code extension 0.7.0
