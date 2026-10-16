@@ -423,6 +423,17 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [x] **Go-to-definition** — milestone 72, PRP-102.
 - [ ] **Bundling** the extension (vsce warns about 231 files; needs a bundler such as esbuild as a dev dependency).
 - [ ] **Publishing** the extension to the Marketplace and Open VSX (publisher accounts, a token as a CI secret).
+- [ ] **Outline and breadcrumbs** (`textDocument/documentSymbol`) — functions, structs, enums, interfaces, `impl` methods, fields and variants in the Outline panel and breadcrumbs; `Ctrl+Shift+O`.
+- [ ] **Go to Symbol in Workspace** (`workspace/symbol`, `Ctrl+T`) — functions and types by name across the checked files.
+- [ ] **Highlight uses** (`textDocument/documentHighlight`) — the other uses of the name under the cursor in the file, from References' search.
+- [ ] **Inlay hints** (`textDocument/inlayHint`) — a `let`'s inferred type (`: i64`) and parameter names at calls, greyed out.
+- [ ] **Semantic highlighting** (`textDocument/semanticTokens`) — colours from the checker: parameters, locals, fields, types, variants, functions, methods.
+- [ ] **Run from the editor** — a "▶ Run" code lens above `fun main()` (or a task) running `lughac run`; needs a security review (it starts programs).
+- [ ] **Debugging** — breakpoints and stepping through a Debug Adapter; needs debug info (DWARF) from codegen first. Large.
+- [ ] **Call hierarchy** (`callHierarchy/*`) — a function's callers and callees.
+- [ ] **Go to Type Definition** (`textDocument/typeDefinition`) — from a value to its struct, enum or interface.
+- [ ] **Smart expand selection** (`textDocument/selectionRange`, `Shift+Alt+→`) — expression → statement → block → item.
+- [ ] **Folding by syntax** (`textDocument/foldingRange`) — `match` arms, `impl` blocks, imports and doc comments, beyond indentation.
 
 ## After v14 — noted, not scheduled (session 103)
 

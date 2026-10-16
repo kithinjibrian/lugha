@@ -6581,8 +6581,26 @@ Branch: prp-113-references_rename
 
 ---
 
-## SESSION 176 — 2026-10-16 — Editor features added to TODO — open
+## SESSION 176 — 2026-10-16 — Editor features added to TODO — closed
 Branch: main
+
+### WHAT WAS DONE
+- Listed the VS Code extension's remaining features; at the user's request added the eleven not yet in TODO's "Editor support" (Outline, workspace symbols, highlight uses, inlay hints, semantic highlighting, run from the editor, debugging, call hierarchy, Go to Type Definition, smart expand selection, folding by syntax).
+
+### FILES CREATED OR MODIFIED
+- Modified: TODO.md, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing; the next milestone needs a discovery (Go to Implementations, highlight uses, the Outline and inlay hints recommended).
 
 ---
 
