@@ -115,39 +115,47 @@ impl LinkTable {
     }
 }
 
-/// The strings of a one-line array `["a", "b"]` (a trailing comma allowed).
+/// The strings of a one-line array `["a", "b"]` (a trailing comma allowed),
+/// or what exactly is wrong: the reader just mistyped one character.
 fn strings(text: &str, key: LinkKey) -> Result<Vec<String>, String> {
-    let list = || {
-        format!(
-            "the value of `{}` must be a list, such as `[\"a\", \"b\"]`",
-            key.name()
-        )
-    };
-    let inner = text
-        .strip_prefix('[')
-        .and_then(|t| t.strip_suffix(']'))
-        .ok_or_else(list)?;
-    let quoted = || {
-        format!(
-            "the items of `{}` must be double-quoted strings without `\"` or `\\`",
-            key.name()
-        )
+    let key = key.name();
+    let inner = match text.strip_prefix('[') {
+        Some(rest) => rest
+            .strip_suffix(']')
+            .ok_or_else(|| format!("the list of `{key}` is missing its closing `]`"))?,
+        None => {
+            return Err(format!(
+                "the value of `{key}` must be a list, such as `[\"a\", \"b\"]`"
+            ));
+        }
     };
     let mut values = Vec::new();
     let mut rest = inner.trim_start();
     while !rest.is_empty() {
-        let body = rest.strip_prefix('"').ok_or_else(quoted)?;
-        let end = body.find('"').ok_or_else(quoted)?;
+        let Some(body) = rest.strip_prefix('"') else {
+            let item = rest.split(',').next().unwrap_or(rest).trim();
+            return Err(format!(
+                "`{item}` in `{key}` needs double quotes: write `\"{item}\"`"
+            ));
+        };
+        let Some(end) = body.find('"') else {
+            let item = body.trim_end();
+            return Err(format!(
+                "`\"{item}` in `{key}` is missing its closing `\"`: write `\"{item}\"`"
+            ));
+        };
         let value = &body[..end];
         if value.contains('\\') {
-            return Err(quoted());
+            return Err(format!(
+                "`{value}` in `{key}` holds `\\`: write paths with `/`"
+            ));
         }
         values.push(value.to_string());
         rest = body[end + 1..].trim_start();
         match rest.strip_prefix(',') {
             Some(after) => rest = after.trim_start(),
             None if rest.is_empty() => {}
-            None => return Err(format!("put a comma between the items of `{}`", key.name())),
+            None => return Err(format!("put a comma between the items of `{key}`")),
         }
     }
     Ok(values)
@@ -236,8 +244,8 @@ mod tests {
         for (bad, why) in [
             ("flags = [\"-Wl,-x\"]", "`[link]` holds"),
             ("libs = \"raylib\"", "a list"),
-            ("libs = [raylib]", "double-quoted"),
-            ("libs = [\"raylib\"", "a list"),
+            ("libs = [raylib]", "double quotes"),
+            ("libs = [\"raylib\"", "closing `]`"),
             ("libs = [\"a\" \"b\"]", "comma"),
             ("libs = [\"\"]", "not a library name"),
             ("libs = [\"-lraylib\"]", "not a library name"),
@@ -249,13 +257,49 @@ mod tests {
             ("paths = [\"../lib\"]", "inside the package"),
             ("include = [\"a/../../b\"]", "inside the package"),
             ("paths = [\"\"]", "inside the package"),
-            ("paths = [\"a\\\\b\"]", "double-quoted"),
+            ("paths = [\"a\\\\b\"]", "write paths with `/`"),
             ("c = [\"shim.h\"]", "`.c` file"),
             ("c = [\"/x/shim.c\"]", "inside the package"),
             ("libs", "expected"),
         ] {
             let err = table(&[bad]).expect_err(bad);
             assert!(err.contains(why), "{bad}: {err}");
+        }
+    }
+
+    #[test]
+    fn list_mistakes_say_exactly_what_is_missing() {
+        for (bad, message) in [
+            (
+                "libs = [\"z]",
+                "`\"z` in `libs` is missing its closing `\"`: write `\"z\"`",
+            ),
+            (
+                "libs = [\"a\", \"b]",
+                "`\"b` in `libs` is missing its closing `\"`: write `\"b\"`",
+            ),
+            (
+                "libs = [\"raylib\"",
+                "the list of `libs` is missing its closing `]`",
+            ),
+            (
+                "libs = [raylib]",
+                "`raylib` in `libs` needs double quotes: write `\"raylib\"`",
+            ),
+            (
+                "libs = [\"a\", m]",
+                "`m` in `libs` needs double quotes: write `\"m\"`",
+            ),
+            (
+                "libs = raylib",
+                "the value of `libs` must be a list, such as `[\"a\", \"b\"]`",
+            ),
+            (
+                "paths = [\"a\\b\"]",
+                "`a\\b` in `paths` holds `\\`: write paths with `/`",
+            ),
+        ] {
+            assert_eq!(table(&[bad]).unwrap_err(), message, "{bad}");
         }
     }
 
