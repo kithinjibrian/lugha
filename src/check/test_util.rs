@@ -43,6 +43,14 @@ fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic
     with_units(program, check_modules)
 }
 
+/// `src` checked for `lughac test` (milestone 84): its `Checked`, or the
+/// codes of its errors.
+pub fn test_mode(src: &str) -> Result<Checked, Vec<&'static str>> {
+    with_units(&program(src), super::check_tests)
+        .map(|(c, _)| c)
+        .map_err(|ds| ds.iter().map(|d| d.code).collect())
+}
+
 /// What `check_partial` finds in `src`, errors or not.
 pub fn partial(src: &str) -> super::Partial {
     with_units(&program(src), super::check_partial)

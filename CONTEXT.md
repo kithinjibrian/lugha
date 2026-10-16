@@ -6653,11 +6653,38 @@ Branch: main
 
 ---
 
+## SESSION 179 — 2026-10-16 — lughac test (milestone 84) — closed
+Branch: prp-114-test_runner
+
+### WHAT WAS DONE
+- The user approved PRP-114 ("build it", the security note included); built it in the worktree `../lugha-prp-114`.
+- `@` token and `@test` (E0210); E0434 and the assertions in the checker, `check_tests`; codegen of assertions and the test executable's `main`; `runtime/test.c`; `lughac test` with parallel isolated runs, timeouts, `--filter`, captured output.
+- Doc comments attach through `@test`; the VS Code grammar highlights it (extension 0.7.0, installed).
+- Spec v16 §2, §3, §5, §9 (E0210, E0434, the `lughac test` section), §11 row 84, compatibility line; draft status; docs.
+
+### FILES CREATED OR MODIFIED
+- New: `src/parser/attributes.rs`, `src/check/test_fns.rs`, `src/check/errors/v16.rs`, `src/codegen/{assertions,test_main}.rs`, `runtime/test.c`, `src/driver/test.rs`, `tests/test_runner.rs`, `tests/programs/m84/`, `editors/vscode/test/grammar/attributes.la`.
+- Modified: lexer (token, punct, tests), `ast/mod.rs`, parser (`item`, `decl`, `interface`, `mod`, `describe`, `sexp/item`), formatter (`items`, `tests`), checker (`mod`, `checked`, `env`, `call`, `fun_values`, `modules/mod`, `test_util`, `errors/mod`), codegen (`mod`, `lower`, `declare`, `runtime`), `link.rs`, driver (`mod`, `pipeline`, `fmt`, `lsp/docs`), `tests/cli.rs`, `tests/programs/m1/bad_char.*`, the extension (grammar, README, version), the v16 spec and draft, PRP-114, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (161–162), CONTEXT.
+
+### TESTS WRITTEN
+- Unit tests in attributes.rs (2), test_fns.rs (4), assertions.rs (1), test_main.rs (2), driver/test.rs (3), formatter (1), lexer (1), docs (1); `tests/test_runner.rs` (5); 5 program cases; a grammar test. Full suite, fmt, clippy and `npm test` pass.
+
+### DECISIONS MADE
+- Built as PRP-114 planned; details in its BUILT notes and MEMORY 162.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual check in VS Code (extension README step 16) and a first `lughac test` on their own code.
+
+---
+
 ## NEXT SESSION START POINT
 
-**v16: milestones 67–83 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename).
+**v16: milestones 67–84 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`).
 
-**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. **Milestone 83 done** (tag `m83`): Find References and Rename (PRP-113), extension 0.6.0; its manual check (README step 16) is the user's. **Proposed: milestone 84, `lughac test`** — v16 draft decisions 81–86 and PRP-114; it waits for the user's approval and security review. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. **Milestone 82 done** (tag `m82`): more quick fixes (PRP-112), extension 0.5.0; its manual check (README step 15) is the user's. **Milestone 83 done** (tag `m83`): Find References and Rename (PRP-113), extension 0.6.0; its manual check (README step 16) is the user's. **Milestone 84 done** (tag `m84`): `lughac test` (PRP-114), extension 0.7.0. Next candidates: `lughac explain`, the editor's "Run test" link, Go to Implementations, decorators (TODO ideas). Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

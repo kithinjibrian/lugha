@@ -1,0 +1,8 @@
+// SYNTAX TEST "source.lugha" "attributes"
+
+@test
+// <- punctuation.definition.decorator.lugha
+//^^^ entity.name.function.decorator.lugha
+fun adds() {
+    assert_eq(1 + 1, 2);
+}

@@ -1,6 +1,6 @@
 ## FEATURE: `lughac test` — `@test` functions, `assert`/`assert_eq`/`assert_ne`, and a runner that runs each test in its own process, in parallel, with a time limit; milestone 84.
 
-**Status:** proposed 2026-10-16 — session 178 (discovery in sessions 177–178); waits for approval.
+**Status:** approved 2026-10-16 ("build it", which also accepted the security note) — built in session 179; proposed in session 178.
 **Milestone:** 84 (one PRP; tag `m84` at merge). The editor's "▶ Run test" link and general decorators are later milestones.
 **Spec:** `Language v16 Draft.md` decisions 81–86; spec §2 (`@`), §3 (attributes), §5/§6 (the assertions, tests and `main`), §9 (the CLI table, a `lughac test` section, E0210 and E0434), §11 (row 84).
 
@@ -71,20 +71,33 @@ None.
 - `lughac test` builds and runs the user's own code, as `lughac run` does; the test executables are started directly (no shell), with the environment plus `LUGHA_TEST`, in the current folder. Temporary executables live in a fresh temp folder removed afterwards. For the user's review: this is a new way of starting programs (CLAUDE.md asks for review of how programs are started).
 
 ## TESTS TO WRITE
-- [ ] **Lexer/parser:** `@` lexes; `@test fun` parses with the attribute; E0210 for `@inline fun`, for `@test struct`; the sexp form; the formatter keeps `@test` and the corpus stays idempotent.
-- [ ] **Checker:** E0434 for parameters, a return type, type parameters, a method; `assert_eq` of two types, of a non-`Eq` type; E0303 waived only in test mode.
-- [ ] **Codegen / programs (`tests/programs/m84/`):** `assert` passing and failing (stderr, exit 101), `assert_eq`/`assert_ne` messages with strings, numbers and a struct; a program with `@test` functions builds and runs unchanged by `lughac run` (tests not emitted).
-- [ ] **`tests/test_runner.rs`:** a passing file (exit 0, summary); a failing assertion (message, location, captured output, exit 1); a panic, an overflow and a stack overflow each failing only their test; a timeout with `--timeout 1`; `--filter`; tests beside `private` code and in `tests/` through an import; a file with a compile error (diagnostics, others still run, exit 1); no tests (`0 tests`, exit 0); deterministic order with parallel runs.
-- [ ] **Regression:** every existing test passes; the extension's grammar test for `@test`.
+- [x] **Lexer/parser:** `@` lexes; `@test fun` parses with the attribute; E0210 for `@inline fun`, for `@test struct`; the sexp form; the formatter keeps `@test` and the corpus stays idempotent.
+- [x] **Checker:** E0434 for parameters, a return type, type parameters, a method; `assert_eq` of two types, of a non-`Eq` type; E0303 waived only in test mode.
+- [x] **Codegen / programs (`tests/programs/m84/`):** `assert` passing and failing (stderr, exit 101), `assert_eq`/`assert_ne` messages with strings, numbers and a struct; a program with `@test` functions builds and runs unchanged by `lughac run` (tests not emitted).
+- [x] **`tests/test_runner.rs`:** a passing file (exit 0, summary); a failing assertion (message, location, captured output, exit 1); a panic, an overflow and a stack overflow each failing only their test; a timeout with `--timeout 1`; `--filter`; tests beside `private` code and in `tests/` through an import; a file with a compile error (diagnostics, others still run, exit 1); no tests (`0 tests`, exit 0); deterministic order with parallel runs.
+- [x] **Regression:** every existing test passes; the extension's grammar test for `@test`.
+
+## BUILT (session 179)
+- As designed, with these specifics:
+  - **AST:** `FunDecl.test: Option<Span>` instead of a list of attributes (`@test` is the only one); `parser/attributes.rs` (2 tests). Inside an `impl`, `@` is an ordinary syntax error (E0201), so methods never reach E0434.
+  - **Checker:** `Signature.test`; `check/test_fns.rs` (4 tests): E0434 for a test's shape and for any call or value use (through `call_key` and `function_value`, so module calls are covered), the assertions (`assert(1)` reports the literal's E0401), `check_tests` and `Checked.tests: Option<Vec<String>>`; `errors/v16.rs`.
+  - **Codegen:** `assertions.rs` (1 test) and `test_main.rs` (2 tests); tests are neither declared nor defined unless `Checked.tests` is `Some`.
+  - **Runtime:** `runtime/test.c` (`lugha_rt_test_is`, `lugha_rt_test_unknown`), registered in `link.rs`.
+  - **Driver:** `pipeline::front_tests`, the shared `TempDir`, `fmt`'s file walk; `driver/test.rs` (3 unit tests); `lughac test` in `driver/mod.rs`, `--timeout` at least 1.
+- `tests/test_runner.rs` (5) and `tests/programs/m84/` (5 cases: assertions passing and failing, `assert_ne`, `assert`, E0434, E0210). The timeout case runs alone with `--timeout 1`; the crash cases use the default limit, as a loaded machine made a 1 s limit flaky once.
+- **Changed fixtures:** the E0101 examples used `@`, which is now a token; they use a backtick (`m1/bad_char`, `tests/cli.rs`, lexer tests), and the spec's E0101 row says so.
+- **Compatibility:** a function named `assert`, `assert_eq` or `assert_ne` is now E0302 (intrinsic names are reserved); the spec's compatibility line says so.
+- **Doc comments** attach through an `@test` too (`lsp/docs.rs`, spec §2).
+- The VS Code grammar highlights `@test` (`entity.name.function.decorator`), with a grammar test; extension 0.7.0, installed.
 
 ## ROLLBACK PLAN
 - Branch `prp-114-test_runner` from `main`; tag `m84`.
 - To abandon before merge: delete the branch. After: revert the merge.
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test`, `npm test` (CI in the background).
-- [ ] Spec at milestone 84; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test`, `npm test` (CI in the background).
+- [x] Spec at milestone 84; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 
 ## VALIDATION
 ```bash

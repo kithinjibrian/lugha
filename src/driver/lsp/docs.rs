@@ -168,6 +168,9 @@ pub(super) fn attached(text: &str, docs: &[Span], name: usize) -> Option<Span> {
             .map_or(0, |i| i + 1);
         if LEAD.contains(&&before[word_start..]) {
             at = word_start;
+        } else if &before[word_start..] == "test" && before[..word_start].ends_with('@') {
+            // `@test` (milestone 84) stands between them too.
+            at = word_start - 1;
         } else {
             at = before.len();
             break;
@@ -241,6 +244,8 @@ mod tests {
         let docs = |t: &str| crate::lexer::doc_comments(t);
         let text = "/** Doc. */\npublic fun max() {}";
         assert!(attached(text, &docs(text), text.find("max").unwrap()).is_some());
+        let text = "/** Doc. */\n@test\nfun adds() {}";
+        assert!(attached(text, &docs(text), text.find("adds").unwrap()).is_some());
         let text = "/** Doc. */\n\nstruct P {\n    /** The x. */\n    x: f64,\n}";
         assert!(attached(text, &docs(text), text.find("P").unwrap()).is_some());
         assert_eq!(

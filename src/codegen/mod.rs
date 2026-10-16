@@ -8,6 +8,7 @@
 
 mod arith;
 mod array;
+mod assertions;
 mod bits;
 mod cast;
 mod closures;
@@ -55,6 +56,7 @@ mod show_iface;
 mod stmt;
 mod structs;
 mod swap;
+mod test_main;
 mod tuples;
 mod unwrap;
 mod upcast;
@@ -262,6 +264,24 @@ pub(crate) mod test_util {
         let (tokens, _) = lexer::lex(src).expect("test source lexes");
         let (program, _) = parser::parse(&tokens).expect("test source parses");
         let (checked, _) = check::check(&program).unwrap_or_else(|e| panic!("{src:?}: {e:?}"));
+        let source = super::SourceInfo {
+            name: "test.la",
+            text: src,
+        };
+        emit_ir(&program, &checked, &source).unwrap_or_else(|e| panic!("{src:?}: {e}"))
+    }
+
+    /// The IR of `src` built for `lughac test` (milestone 84).
+    pub fn test_ir(src: &str) -> String {
+        let (tokens, _) = lexer::lex(src).expect("test source lexes");
+        let (program, _) = parser::parse(&tokens).expect("test source parses");
+        let unit = check::Unit {
+            path: &[],
+            program: &program,
+            imports: &[],
+            package: None,
+        };
+        let (checked, _) = check::check_tests(&[unit]).unwrap_or_else(|e| panic!("{src:?}: {e:?}"));
         let source = super::SourceInfo {
             name: "test.la",
             text: src,

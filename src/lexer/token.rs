@@ -91,6 +91,8 @@ pub enum TokenKind {
     PercentEq,
     /// `?`, the postfix early-return operator (v4).
     Question,
+    /// `@`, starting an attribute: `@test` (v16, milestone 84).
+    At,
     // v7 bit operators; `>>` is two `Gt` tokens (see `parser/operators.rs`).
     Amp,
     AmpEq,

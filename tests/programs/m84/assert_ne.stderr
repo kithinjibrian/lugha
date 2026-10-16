@@ -1,0 +1,1 @@
+panic: assert_ne failed: both "hi" at tests/programs/m84/assert_ne.la:3:5

@@ -51,4 +51,7 @@ pub struct Checked {
     /// Iterator loops (v6): the iterated expression's id, with what its
     /// `next` yields.
     pub iterations: HashMap<ExprId, Iteration>,
+    /// Under `lughac test` (milestone 84), the main file's tests in
+    /// declaration order; `None` in every other build.
+    pub tests: Option<Vec<String>>,
 }

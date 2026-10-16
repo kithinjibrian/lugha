@@ -125,9 +125,9 @@ mod tests {
 
     #[test]
     fn unterminated_at_end_of_line_resumes_on_next_line() {
-        let src = "\"abc\nlet x @";
-        // The span stops at the line break, and `@` on line 2 is still found.
-        assert_eq!(errors(src), [("E0102", "\"abc"), ("E0101", "@")]);
+        let src = "\"abc\nlet x `";
+        // The span stops at the line break, and `` ` `` on line 2 is still found.
+        assert_eq!(errors(src), [("E0102", "\"abc"), ("E0101", "`")]);
     }
 
     #[test]

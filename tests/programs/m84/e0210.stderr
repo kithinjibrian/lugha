@@ -1,0 +1,8 @@
+error[E0210]: unknown attribute `@inline`
+  --> tests/programs/m84/e0210.la:1:1
+  |
+1 | @inline
+  | ^^^^^^^
+  |
+  = help: the only attribute is `@test`, before a function
+

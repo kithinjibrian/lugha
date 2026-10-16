@@ -76,6 +76,8 @@ impl Checker {
         expect: Option<&Expect>,
     ) -> Type {
         self.callees.insert(call.id, key.to_string());
+        let named = super::partial::callee_name(call).unwrap_or(call.span);
+        self.not_a_test(key, named);
         if let Some(at) = super::partial::callee_name(call) {
             let decl = self.functions[key].span;
             self.hover.function(at, decl, Some(call));
@@ -118,6 +120,9 @@ impl Checker {
     fn intrinsic(&mut self, call: &Expr, name: &str, args: &[Expr]) -> Type {
         if name == "swap" {
             return self.swap(call, args);
+        }
+        if super::test_fns::ASSERTIONS.contains(&name) {
+            return self.assertion(call, name, args);
         }
         // `eprint`/`eprintln` follow the `print`/`println` rules below (v4).
         if super::input::INPUT.contains(&name) && !name.starts_with("eprint") {

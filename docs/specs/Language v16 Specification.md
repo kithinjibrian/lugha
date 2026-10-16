@@ -2,11 +2,11 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–83 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–84 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestones 67–83):
+**Changes since v15** (milestones 67–84):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
 - `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
 - `lughac init [folder] [--lib] [--name N]` starts a program, or a library with an example, in a folder; it never overwrites a file (milestone 69; section 9).
@@ -19,8 +19,9 @@ Oct 15, 2026 · @kithinji
 - Formatting in the editor: the language server answers Format Document with the same formatter, for unsaved text too (milestone 81; section 9).
 - More quick fixes: `let mut` for an assignment to an immutable `let` (E0501), the closest variant for a misspelled one (W0103), a std import for `math.`-style names (E0301) (milestone 82; section 9).
 - Find References and Rename in the editor, across the checked files; a rename is checked before it is offered (milestone 83; section 9).
+- `lughac test`: `@test` functions (`@` starts an attribute), `assert`, `assert_eq` and `assert_ne`, each test run in its own process, in parallel, with a time limit (milestone 84; sections 2, 3, 5, 9).
 
-Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type; a module's own type `Ref` still means its own.
+Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type (a module's own type `Ref` still means its own), or declares a function named `assert`, `assert_eq` or `assert_ne`, which are intrinsics since milestone 84 (E0302).
 
 **v14.** This is v13 plus binary I/O, `char`, tuples, `format`, import aliases and whole-module re-exports, and git packages (milestones 45–50).
 
@@ -206,7 +207,7 @@ Source files are UTF-8. The lexer produces a flat list of tokens, each carrying 
 - Block comments **nest**: `/* a /* b */ c */` is one comment, so code that holds one can be commented out. Nothing else inside is special: `//`, quotes and apostrophes are just text there. `/**` and `/*!` are ordinary block comments.
 - Inside a string, `/*` is text. Inside an interpolation, a block comment ends with its line, as the string does: a line break there ends the string (E0102).
 - A `/*` never closed is E0113, at the outermost one still open; the rest of the file is the comment. A `*/` outside a comment is the operators `*` and `/`.
-- **Doc comments** (milestone 77): a block comment starting `/**` (not `/**/`) followed, apart from whitespace and a `public` or `private`, by a function, method, extern, struct, field, enum, variant, interface or interface method documents it. Its text is Markdown, each line's leading `*` dropped; a line `@param name text` documents a parameter and `@returns text` the result; other `@tags` stay as written. To the compiler it is a comment like any other; editors show it (section 9).
+- **Doc comments** (milestone 77): a block comment starting `/**` (not `/**/`) followed, apart from whitespace, a `public` or `private` and an `@test` (v16, milestone 84), by a function, method, extern, struct, field, enum, variant, interface or interface method documents it. Its text is Markdown, each line's leading `*` dropped; a line `@param name text` documents a parameter and `@returns text` the result; other `@tags` stay as written. To the compiler it is a comment like any other; editors show it (section 9).
 
 **Identifiers.** `[A-Za-z_][A-Za-z0-9_]*`, excluding keywords. Identifiers are case-sensitive. In the sources bundled with `lughac` (the prelude and `std`), an identifier may also start with `$`, naming a compiler built-in such as `$float.sqrt` (v15); in a program `$` is E0101, so programs can never name one.
 
@@ -252,7 +253,7 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 
 | Code | Error | Example |
 | --- | --- | --- |
-| E0101 | Unexpected character | `@`, `#`, `é` or `$` outside a string |
+| E0101 | Unexpected character | `#`, `` ` ``, `é` or `$` outside a string (`@` starts an attribute since v16) |
 | E0102 | Unterminated string | `"abc` at end of line or file |
 | E0103 | Unknown escape sequence | `"\q"` |
 | E0104 | Integer literal too large | `18446744073709551616` |
@@ -273,6 +274,7 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 &  |  ^  ~  <<                                  (v7)
 =  +=  -=  *=  /=  %=  &=  |=  ^=  <<=          (v7: the bit forms; v9: `%=`)
 (  )  {  }  [  ]  ,  ;  :  .  ..  =>  ?
+@                                               (v16: attributes)
 ```
 
 `>>` and `>>=` (v7) are not tokens: the lexer gives two `>` (or `>` and `>=`), so `Option<Option<i64>>` closes both type-argument lists, and an expression reads `>` immediately followed by `>`, with nothing between, as a right shift (`>>=` likewise in an assignment). With a space between (`a > > b`), they stay two `>`, a parse error.
@@ -290,7 +292,8 @@ program      = { import } { item } EOF ;
 import       = [ "public" ] "import" IDENT { "." IDENT } [ "as" IDENT ]
                [ "{" import_item { "," import_item } [ "," ] "}" ] ";" ;   (* names and `public`: v11; `as`: v14 *)
 import_item  = IDENT [ "as" IDENT ] ;
-item         = [ visibility ] ( fun_decl | extern_decl | struct_decl | enum_decl | interface_decl ) | impl_decl ;
+item         = { attribute } [ visibility ] ( fun_decl | extern_decl | struct_decl | enum_decl | interface_decl ) | impl_decl ;
+attribute    = "@" IDENT ;                       (* v16: only `@test`, before a `fun` *)
 visibility   = "private" | "public" ;                (* `public`: v8, packages *)
 
 fun_decl     = "fun" IDENT [ type_params ] "(" [ params ] ")" [ ":" type ] fun_body ;
@@ -416,6 +419,7 @@ The bit operators sit between comparisons and `+ -`, as in Rust, so `flags & MAS
 | E0206 | Nesting too deep | More than 256 levels of nested expressions and blocks |
 | E0208 | `import` after an item | `fun f() {}` then `import geometry;` (v2) |
 | E0209 | A closure parameter that isn't a plain name | `fun(self) = 1`, `fun(mut x) = x` (v3) |
+| E0210 | An unknown or misplaced attribute (v16) | `@inline fun f() {}`; `@test struct S {}` |
 | E0207 | `::` used as a path separator | `Shape::Circle(1.0)` — help: write `Shape.Circle`; parsing continues as if `.` were written |
 
 ## 4. Type system
@@ -866,6 +870,9 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 | `print(x)` | Any value (v12) | Writes `x`'s text (below) to stdout with no newline |
 | `println(x)` | The same, or nothing | Writes `x`'s text and a newline |
 | `panic(msg)` | `string` | Panics with `msg` |
+| `assert(c)` (v16) | `bool` | Panics with `assertion failed` unless `c` holds |
+| `assert_eq(a, b)` (v16) | two values of one type with `==` | Panics with `assert_eq failed: left <a>, right <b>` unless `a == b`, each value printed as inside an array (strings quoted) |
+| `assert_ne(a, b)` (v16) | the same | Panics with `assert_ne failed: both <a>` if `a == b` |
 | `to_string(x)` | The same as `print` (v12) | Returns the text `print` would write; a `string` is itself |
 | `swap(a, b)` | Two places of the same type | Exchanges their contents |
 | `args()` | Nothing | Returns the program's command-line arguments as a new `string[]`; `args()[0]` is the program's path (v3) |
@@ -1308,6 +1315,7 @@ The C `main(argc, argv)` emitted by the compiler calls `lugha_rt_init(argc, argv
 | `lughac init [folder] [--lib] [--name N]` | Start a program, or with `--lib` a library, in `folder` (default: the current one); see below (v16) |
 | `lughac lsp` | Serve the Language Server Protocol on stdin and stdout, for editors; see below (v16) |
 | `lughac fmt [paths…] [--check]` | Rewrite `.la` files in the canonical style; `--check` only lists the files that would change; see below (v16) |
+| `lughac test [paths…] [--filter TEXT] [--timeout SECS]` | Run the `@test` functions of `.la` files, each in its own process; see below (v16) |
 | `--offline` | On `build`, `run` and `check`: run no `git`; every git package must be locked and cached (v14) |
 | `lughac build --emit=tokens\|ast\|ir prog.la` | Print an intermediate stage and stop; with several modules, `tokens` and `ast` print each after a `; module <name>` line (`main` for the main file) |
 | `--diagnostics=human\|json` | Diagnostic format for `build`, `run` and `check`; `human` is the default |
@@ -1360,6 +1368,24 @@ It prints `created <path>` for each file and then how to run the result.
 - **Safety:** before writing, the output is parsed again; its syntax tree (positions ignored) and its comments' texts must equal the original's. Otherwise nothing is written and it is an internal error, exit 2. Formatting formatted code changes nothing.
 - **Exit codes:** 0; 1 when `--check` found a file to change or a file has syntax errors (printed as diagnostics; the file is left alone and the others are still formatted); 2 when a path can't be read or written or a file fails the safety check.
 
+**`lughac test`** (v16, milestone 84) runs tests:
+
+```
+fun area(r: f64): f64 = 3.0 * r * r;
+
+@test
+fun area_of_unit() {
+    assert(area(1.0) > 2.0);
+    assert_eq(area(0.0), 0.0);
+}
+```
+
+- **Tests:** `@test` before a top-level `fun` makes it a test. A test takes no parameters, has no type parameters and returns nothing (E0434); nothing may call a test or use it as a value (E0434). `@` starts an attribute, and `@test` is the only one: any other name, or `@test` before anything but a `fun`, is E0210. Tests may be in any file, beside the code they test (reaching its `private` items) or in their own files through imports. `lughac build` and `run` leave tests out entirely.
+- **Which:** each path given (default: the current folder) is a file, or a folder meaning every `.la` file under it in name order, skipping hidden folders, `target/` and symbolic links. Each file holding `@test` is checked and built with its imports into one test executable, needing no `main` (one it has is ignored). A test is named `module.name`, the module being the file's path without `.la`, folders joined by `.` (`src/geo.la` → `src.geo.area_of_unit`). `--filter TEXT` runs only the tests whose name contains `TEXT`.
+- **Running:** each test runs as its own process of its file's executable, told which test by the environment variable `LUGHA_TEST`, so a panic, overflow, bounds error or stack overflow fails only that test. Up to one test per CPU runs at once. A test still running after `--timeout` seconds (default 10) is killed and fails. The executables live in a fresh temporary folder, removed afterwards; they are started directly, never through a shell.
+- **Output:** one line per test, in file then declaration order: `test geo.area_of_unit ... ok`, or `... FAILED` followed by the panic (`panic: assert_eq failed: left 4, right 5 at geo.la:13:5`) and, after `--- output ---`, what the test printed (captured, shown only on failure); `... FAILED (timed out after 10 s)`; `... FAILED (exit code N)` for a test that called `exit(N)`. Then a blank line and `N tests: P passed, F failed`, or just `0 tests`. A file with errors prints its diagnostics to stderr and its tests don't run; the others still do.
+- **Exit codes:** 0 when every test passed (also with none); 1 when a test failed or a file has errors; 2 for lughac's own errors (a test executable that can't be started, a temporary folder that can't be made).
+
 **Diagnostics.** Errors print the file, line and column, the offending source line, a caret under the span with its label, and any secondary labels, in a rustc-like layout rendered by the `codespan-reporting` crate. Each diagnostic is followed by a blank line, and lines carry no trailing whitespace. The checker reports as many errors as it can find instead of stopping at the first one.
 
 Internal errors — an unreadable file, a failed link — have no code and exit with 2. They print as `error: <message>`, with a source snippet when they have a location. A crash inside the compiler itself is reported the same way, as `error: internal compiler error: <message>` with a note asking for a bug report, and also exits with 2.
@@ -1381,7 +1407,7 @@ Name and type errors, reported by the checker:
 | --- | --- | --- |
 | E0301 | Undefined name | `count + 1` with no `count` in scope; a call to an undefined function |
 | E0302 | Name defined more than once, or a function named like an intrinsic | two `fun area`; `fun println()`; `import vec { add };` in a file declaring `add` (v11) |
-| E0303 | No `main` function | |
+| E0303 | No `main` function | (not under `lughac test`, v16) |
 | E0304 | `main` with the wrong signature, generic, or outside the main file | `fun main(argc: i32): i32`; `fun main<T>()`; a `main` in a module (v2) |
 | E0305 | Unknown type name | `let p: Point = 1;` with no `Point` |
 | E0306 | Reserved extern name, or one C function declared with two signatures | `extern fun lugha_rt_alloc(size: i64): i64;` (§8) |
@@ -1433,6 +1459,7 @@ Name and type errors, reported by the checker:
 | E0426 | A type pattern that can't apply | `c: Circle` on an `i64`; `s: Shape` (an interface); `d: Dot` when `Dot` doesn't satisfy the interface (v5) |
 | E0427 | An interface that uses `Self` used as a type | `let xs: Ordered[] = …;` where `Ordered` declares `fun less(self, other: Self): bool;` (v6) |
 | E0429 | A `let … else` whose `else` block can finish (v9) | `let Some(n) = o else { println("no"); };` |
+| E0434 | A misused test (v16) | `@test fun t(n: i64) {}`, `@test fun t(): i64 = 1;`, a generic test; calling a test or using it as a value |
 | E0433 | A pattern that must match every value but might not (v14) | `let (1, x) = t;`, `let Some(n) = o;` without `else`, `for (Some(a), b) of …` |
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
 | E0430 | A default method that two visible interfaces supply (v10) | `c.describe()` where `Named` and `Shown` both default `describe` and `Circle` satisfies both |
@@ -3254,6 +3281,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 81 | Formatting in the editor (v16) | `textDocument/formatting` in `lughac lsp` from the editor's text; quiet on syntax errors, one message on a verification failure; the VS Code extension the default Lugha formatter | `tests/lsp_formatting.rs` (done) |
 | 82 | More quick fixes (v16) | `let mut` (E0501), the closest variant (W0103), a std import (E0301), each preferred | `tests/lsp_code_actions.rs` (done) |
 | 83 | Find References and Rename (v16) | every use of a name across the checked files; rename refused unless safe, self-checked in memory | `tests/lsp_references.rs`, `tests/lsp_rename.rs` (done) |
+| 84 | `lughac test` (v16) | `@test` functions (E0210, E0434), `assert`/`assert_eq`/`assert_ne`, each test in its own process, in parallel, `--filter`, `--timeout` | `tests/test_runner.rs`, `tests/programs/m84/` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

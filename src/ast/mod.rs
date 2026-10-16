@@ -81,6 +81,8 @@ pub struct FunDecl {
     pub body: Block,
     /// From `fun` to the end of the body.
     pub span: Span,
+    /// The `@test` before it, which makes it a test (v16, milestone 84).
+    pub test: Option<Span>,
 }
 
 /// A C function declaration (spec §8).

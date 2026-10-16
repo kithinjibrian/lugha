@@ -1,0 +1,19 @@
+// `assert`, `assert_eq` and `assert_ne` in ordinary code (v16, milestone 84);
+// a `@test` function is left out of `lughac run`.
+struct P { x: i64, name: string }
+
+fun main() {
+    assert(1 < 2);
+    assert_eq(2 + 2, 4);
+    assert_eq("a" + "b", "ab");
+    assert_ne(P { x: 1, name: "a" }, P { x: 2, name: "a" });
+    assert_eq([1, 2], [1, 2]);
+    println("all held");
+    assert_eq(P { x: 1, name: "a" }, P { x: 1, name: "b" });
+    println("not reached");
+}
+
+@test
+fun never_run_here() {
+    assert(false);
+}

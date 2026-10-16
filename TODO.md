@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 84 — `lughac test` ✅
+- [x] PRP-114: `@test`, `assert`/`assert_eq`/`assert_ne`, each test in its own process, in parallel, `--filter`, `--timeout`; tagged `m84`
+
 ### Milestone 83 — Find References and Rename ✅
 - [x] PRP-113: references across the checked files; rename refused unless safe, self-checked; tagged `m83`
 
@@ -423,6 +426,7 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [x] **Go-to-definition** — milestone 72, PRP-102.
 - [ ] **Bundling** the extension (vsce warns about 231 files; needs a bundler such as esbuild as a dev dependency).
 - [ ] **Publishing** the extension to the Marketplace and Open VSX (publisher accounts, a token as a CI secret).
+- [ ] **Run test from the editor** — a "▶ Run test" code lens above each `@test`, running `lughac test --filter`; needs a security review (it starts programs).
 - [ ] **Outline and breadcrumbs** (`textDocument/documentSymbol`) — functions, structs, enums, interfaces, `impl` methods, fields and variants in the Outline panel and breadcrumbs; `Ctrl+Shift+O`.
 - [ ] **Go to Symbol in Workspace** (`workspace/symbol`, `Ctrl+T`) — functions and types by name across the checked files.
 - [ ] **Highlight uses** (`textDocument/documentHighlight`) — the other uses of the name under the cursor in the file, from References' search.
@@ -461,6 +465,8 @@ v15 takes system access and the Unicode follow-ups; everything else left at v14'
 - [ ] **Spec housekeeping:** tick §12 entries that later versions settled: `%=` and `mut` bindings (v9), re-exports (v11), iterating a copy / `for … of mut` (v13), Unicode text (v14).
 
 ## Ideas — noted, not scheduled
+
+- **Decorators** (after milestone 84): user-written `@name` attributes that wrap a function, as Python's do (`@logged`, `@memo`); `@` is already reserved for them. Needs a way to wrap any signature (variadic generics or compile-time rewriting). Also `@test(skip)`-style arguments.
 
 - [x] Move on last use: store a dead local's array without copying it (`grid = next`, `ps[i] = p`) — PRP-018.
 - [x] (PRP-025) A `panic: stack overflow` instead of a raw signal (exit 139) for too-deep recursion: an alternate signal stack and a SIGSEGV handler in the runtime (PRP-021 discovery).

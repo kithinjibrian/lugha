@@ -1,0 +1,1 @@
+panic: assert_eq failed: left P { x: 1, name: "a" }, right P { x: 1, name: "b" } at tests/programs/m84/assertions.la:12:5

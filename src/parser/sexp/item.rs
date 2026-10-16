@@ -173,7 +173,8 @@ fn fun(f: &FunDecl) -> String {
         .collect();
     list.extend(f.params.iter().map(param));
     format!(
-        "({}fun {}{} ({}) {} {})",
+        "({}{}fun {}{} ({}) {} {})",
+        if f.test.is_some() { "@test " } else { "" },
         visibility(f.visibility),
         f.name.name,
         type_params(&f.type_params),
