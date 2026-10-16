@@ -1,6 +1,6 @@
 # Lugha v16 — Draft (delta against v15)
 
-**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built. Milestone 76 (block comments) approved in session 159 (proposed in session 158), and built. Milestone 77 (doc comments) approved in session 161 (proposed in session 160), and built. Milestone 78 (snippets) approved in session 163 (proposed in session 162), and built. Milestone 79 (the add-missing-arms quick fix) approved in session 167 (proposed in session 166), and built. Milestone 80 (`lughac fmt`) approved in session 169 (proposed in session 168), and built.
+**Status:** milestone 67 (shared boxes, `Ref<T>`) approved in session 136 (proposed in session 135), and built. Milestone 68 (changing the working directory) approved in session 138 (proposed in session 137), and built. Milestone 69 (`lughac init`) approved in session 142 (proposed in session 139), and built. Milestone 70 (`lughac lsp`, live diagnostics) approved in session 145 (proposed in session 144), and built. Milestone 71 (hover) approved in session 147 (proposed in session 146), and built. Milestone 72 (go-to-definition) approved in session 149 (proposed in session 148), and built. Milestone 73 (completion) approved in session 152 (proposed in session 151), and built. Milestone 74 (signature help) approved in session 155 (proposed in session 154), and built. Milestone 75 (partial syntax trees) approved in session 157 (proposed in session 156), and built. Milestone 76 (block comments) approved in session 159 (proposed in session 158), and built. Milestone 77 (doc comments) approved in session 161 (proposed in session 160), and built. Milestone 78 (snippets) approved in session 163 (proposed in session 162), and built. Milestone 79 (the add-missing-arms quick fix) approved in session 167 (proposed in session 166), and built. Milestone 80 (`lughac fmt`) approved in session 169 (proposed in session 168), and built. Milestone 81 (formatting in the editor) proposed in session 170.
 **Base:** `Language v15 Specification.md`, complete (milestones 51–66). It stays the source of truth, and what `lughac spec` prints, until v16's first milestone starts `Language v16 Specification.md`. That file then grows milestone by milestone, and v15 is frozen.
 
 This draft lists only what changes, in the order of the v15 sections. Everything not mentioned keeps its v15 meaning.
@@ -165,6 +165,16 @@ A formatter, tree-based like rustfmt (the user's choice over a token-based one);
 64. **Idempotent:** formatting formatted code changes nothing.
 65. **Success:** milestone 80, tag `m80`. Tests: every program in the repo formats, verifies and is idempotent; style cases one by one.
 
+## Decisions behind milestone 81 (discovery, session 170)
+
+Formatting in the editor, through the language server and `lughac fmt`'s formatter (the user's choices).
+
+66. **Format Document:** `lughac lsp` answers `textDocument/formatting` for the whole document, from the editor's text (unsaved changes included), with the formatter of milestone 80. No range or on-type formatting.
+67. **Format on save** is the user's setting (`editor.formatOnSave`); the VS Code extension only makes itself Lugha's default formatter, and its README shows the setting.
+68. **Failures:** a document with syntax errors gets no edits and no message (its diagnostics already show the errors, and a save still saves); one that fails the formatter's verification gets no edits and one error message saying it was left as written.
+69. **Safety:** the server still writes no file and runs no `git`: formatting returns edits the editor applies.
+70. **Success:** milestone 81, tag `m81`. Tests in `tests/lsp_formatting.rs`; the extension's version bumped.
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -206,6 +216,7 @@ A formatter, tree-based like rustfmt (the user's choice over a token-based one);
 | 78 | Snippets | static declaration and control-flow snippets; call placeholders; postfix `.match` |
 | 79 | Add missing arms | quick fixes on E0417: every missing arm, or a `_` arm, bodies `panic("not handled")` |
 | 80 | `lughac fmt` | the tree-based formatter: canonical style, comments kept, self-verified, `--check` |
+| 81 | Formatting in the editor | `textDocument/formatting` in `lughac lsp`; the extension the default Lugha formatter |
 
 ## §12 Open questions — additions
 

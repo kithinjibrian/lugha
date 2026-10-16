@@ -6424,8 +6424,28 @@ Branch: prp-110-formatter
 
 ---
 
-## SESSION 170 — 2026-10-16 — Discovery: formatting in the editor — open
+## SESSION 170 — 2026-10-16 — Discovery: formatting in the editor — closed
 Branch: main
+
+### WHAT WAS DONE
+- Discovery for milestone 81 (the user's choices): Format Document only; format-on-save left to the user, the extension only the default Lugha formatter; syntax errors quiet, a verification failure one error message.
+- Added v16 draft decisions 66–70 and row 81; wrote PRP-111 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-111-editor_formatting.md`.
+- Modified: `docs/specs/Language v16 Draft.md`, CONTEXT.md.
+
+### TESTS WRITTEN
+- None (no code).
+
+### DECISIONS MADE
+- None final: PRP-111 waits for approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Waiting for the user's approval of PRP-111 (which includes a security note: the server returns edits, writes nothing).
 
 ---
 
@@ -6433,7 +6453,7 @@ Branch: main
 
 **v16: milestones 67–80 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`).
 
-**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Next: milestone 81, formatting in the editor** (Format Document, format on save through `lughac lsp`) — start with its discovery and PRP. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Proposed: milestone 81, formatting in the editor** — v16 draft decisions 66–70 and PRP-111; it waits for the user's approval. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 
