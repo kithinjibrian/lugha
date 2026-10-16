@@ -32,7 +32,7 @@ pub(super) fn answer(snapshot: &Snapshot, file: &Path, at: Position) -> Option<L
 }
 
 /// The target of the smallest use span containing `offset`.
-fn innermost(
+pub(super) fn innermost(
     definitions: &std::collections::HashMap<Span, Target>,
     offset: usize,
 ) -> Option<&Target> {

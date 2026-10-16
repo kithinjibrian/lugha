@@ -16,6 +16,8 @@ mod fixes;
 mod formatting;
 mod hover;
 mod publish;
+mod references;
+mod rename;
 mod server;
 mod signature;
 mod snippets;
@@ -33,6 +35,7 @@ use lsp_types::{
     SignatureHelpOptions, SignatureHelpParams, TextDocumentSyncCapability, TextDocumentSyncKind,
     TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
 };
+use lsp_types::{ReferenceParams, RenameOptions, RenameParams, TextDocumentPositionParams};
 use thiserror::Error;
 
 use self::server::Server;
@@ -174,6 +177,43 @@ fn run(connection: &Connection) -> Result<u8, LspError> {
                             ),
                         }
                     }
+                    "textDocument/references" => {
+                        match serde_json::from_value::<ReferenceParams>(request.params) {
+                            Ok(params) => {
+                                let (found, published) = server.references(&params, Instant::now());
+                                send(connection, published)?;
+                                Response::new_ok(request.id, found)
+                            }
+                            Err(error) => invalid(request.id, &error),
+                        }
+                    }
+                    "textDocument/prepareRename" | "textDocument/rename" => {
+                        let prepare = request.method == "textDocument/prepareRename";
+                        let parsed = if prepare {
+                            serde_json::from_value::<TextDocumentPositionParams>(request.params)
+                                .map(|p| (p, None))
+                        } else {
+                            serde_json::from_value::<RenameParams>(request.params)
+                                .map(|p| (p.text_document_position, Some(p.new_name)))
+                        };
+                        match parsed {
+                            Ok((at, new)) => {
+                                let (answer, published) =
+                                    server.rename(&at, new.as_deref(), Instant::now());
+                                send(connection, published)?;
+                                match answer {
+                                    Ok(value) => Response::new_ok(request.id, value),
+                                    // The reason is what the editor shows.
+                                    Err(reason) => Response::new_err(
+                                        request.id,
+                                        ErrorCode::RequestFailed as i32,
+                                        reason,
+                                    ),
+                                }
+                            }
+                            Err(error) => invalid(request.id, &error),
+                        }
+                    }
                     "textDocument/definition" => {
                         match serde_json::from_value::<GotoDefinitionParams>(request.params) {
                             Ok(params) => {
@@ -221,11 +261,21 @@ fn send(
     Ok(())
 }
 
+/// The reply to a request whose parameters didn't parse.
+fn invalid(id: lsp_server::RequestId, error: &serde_json::Error) -> Response {
+    Response::new_err(id, ErrorCode::InvalidParams as i32, error.to_string())
+}
+
 fn capabilities() -> ServerCapabilities {
     ServerCapabilities {
         position_encoding: Some(PositionEncodingKind::UTF16),
         hover_provider: Some(HoverProviderCapability::Simple(true)),
         definition_provider: Some(OneOf::Left(true)),
+        references_provider: Some(OneOf::Left(true)),
+        rename_provider: Some(OneOf::Right(RenameOptions {
+            prepare_provider: Some(true),
+            work_done_progress_options: Default::default(),
+        })),
         document_formatting_provider: Some(OneOf::Left(true)),
         code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
             code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),

@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 83 — Find References and Rename ✅
+- [x] PRP-113: references across the checked files; rename refused unless safe, self-checked; tagged `m83`
+
 ### Milestone 82 — More quick fixes ✅
 - [x] PRP-112: `let mut` (E0501), the closest variant (W0103), a std import (E0301); tagged `m82`
 
@@ -414,7 +417,8 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [ ] Formatter: break long binary chains and method chains; `fmt --check` in CI once the repo's own `.la` files are formatted (moves panic lines).
 - [x] More quick fixes — milestone 82, PRP-112 (`let mut`, a misspelled variant, a std import).
 - [ ] Later quick fixes: did-you-mean for any undefined name (E0301), an import for a user module.
-- [ ] **Find References** and **Go to Implementations** — the definitions table read backwards; implementations of interface methods.
+- [x] **Find References** and **Rename** — milestone 83, PRP-113.
+- [ ] **Go to Implementations** — from an interface method to every type's.
 - [ ] **A read-only view of bundled sources** (`std`, the prelude) for hover and definitions that land there.
 - [x] **Go-to-definition** — milestone 72, PRP-102.
 - [ ] **Bundling** the extension (vsce warns about 231 files; needs a bundler such as esbuild as a dev dependency).

@@ -4,6 +4,7 @@ Syntax highlighting, live `lughac` diagnostics and formatting for [Lugha](../../
 
 - **Highlighting:** keywords, types, numbers, `//` and `/* … */` comments (nested ones too), strings with `{…}` interpolation and format specifiers (`{pi:.2}`), `format("{} {:>4}", …)` templates, `char` literals.
 - **Editing:** `Ctrl+/` toggles `//`, `Shift+Alt+A` toggles `/* … */`; brackets and quotes close themselves.
+- **Find References** (`Shift+F12`) lists every use of the name under the cursor — a variable, function, method, type, field, variant or module — and **Rename** (`F2`) renames them all at once. Both search the files the server has checked: open files, their imports, the main files in `lugha.entries` and main files it has seen. Rename checks the renamed program before answering and refuses (with the reason) a keyword, a name from std or the prelude, a module, a clash or a changed meaning, and a public item of a module no checked main file imports. Needs a `lughac` from milestone 83.
 - **Formatting:** **Format Document** (`Shift+Alt+F`) formats the file exactly as `lughac fmt` would — the text in the editor, unsaved changes included — and one undo puts it back. To format on every save, add `"[lugha]": { "editor.formatOnSave": true }` to your user `settings.json`. A file with a syntax error is left as it is (its errors are already underlined). Needs a `lughac` from milestone 81.
 - **Quick fixes:** on a non-exhaustive `match` (E0417), the lightbulb offers **Add missing arms** (every missing case, in full) and **Add a `_` arm**; each new arm's body is `panic("not handled")` until you write it (milestone 79). Assigning to a `let` that isn't `mut` (E0501) offers **Make `x` mutable**; a misspelled variant in a pattern (W0103, `Some(Emtpy)`) offers **Change to `Empty`** when one variant is that close; `math.sqrt` without its import (E0301) offers **Add `import std.math;`** (milestone 82).
 - **Snippets:** type a prefix and Tab — `fun`, `main`, `struct`, `enum`, `impl`, `interface`, `import`, `doc`, `if`, `ifelse`, `while`, `forof`, `forin`, `iflet`, `letelse`, `match`. Picking a function, method or variant from completion inserts its call with each parameter as a tab stop; on an enum, `Option` or `Result` value, `value.match` writes out every variant. Needs a `lughac` from milestone 78 for the completion ones.
@@ -25,8 +26,8 @@ Needs Node 22.
 cd editors/vscode
 npm ci
 npm test                    # server-command and grammar tests
-npm run package             # lugha-0.5.0.vsix
-code --install-extension lugha-0.5.0.vsix
+npm run package             # lugha-0.6.0.vsix
+code --install-extension lugha-0.6.0.vsix
 ```
 
 **After any change in `editors/vscode/`**, bump the version in `package.json` (`npm version minor --no-git-tag-version`), rebuild the `.vsix` and reinstall it, then run **Developer: Reload Window**. VS Code skips a `.vsix` whose version is already installed, so an unbumped rebuild needs `code --install-extension … --force`. The language-server features come from `lughac` itself: reinstall it too (`cargo install --path .`) when they changed.
@@ -74,4 +75,5 @@ Also make sure the `lughac` VS Code starts is from milestone 73 or later (`cargo
 13. Leave a variant out of a `match`: the lightbulb offers **Add missing arms** and **Add a `_` arm**; either one clears the error.
 14. Mess up a function's spacing and press `Shift+Alt+F`: it is laid out as `lughac fmt` would; `Ctrl+Z` restores it in one step; delete a `;` and format again: nothing changes and no message appears.
 15. Write `let n = 0; n = 1;`, `Some(Emtpy) =>` in a match on an `Option` of an enum with `Empty`, and `math.sqrt(2.0)` with no import: the lightbulb offers **Make `n` mutable**, **Change to `Empty`** and **Add `import std.math;`**, and each clears its diagnostic.
-16. Set `lugha.path` to `/nonexistent`: one notification.
+16. `Shift+F12` on a function used in two files lists both; `F2` on it renames it in both, and `F2` to a name already used is refused with the reason.
+17. Set `lugha.path` to `/nonexistent`: one notification.

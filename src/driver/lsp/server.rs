@@ -1,7 +1,7 @@
 //! The server's state: open documents, settings, the checks waiting to run,
 //! which files each main loaded, and what has been published.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::time::{Duration, Instant};
@@ -13,7 +13,7 @@ use lsp_types::{
     DidChangeConfigurationParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
     DidOpenTextDocumentParams, DidSaveTextDocumentParams, GotoDefinitionParams, Hover, HoverParams,
     InitializeParams, Location, LogMessageParams, MessageType, PublishDiagnosticsParams,
-    SignatureHelp, SignatureHelpParams,
+    ReferenceParams, SignatureHelp, SignatureHelpParams, TextDocumentPositionParams,
 };
 use serde_json::Value;
 
@@ -23,8 +23,11 @@ use super::completion;
 use super::definition;
 use super::documents::{Documents, uri_to_path};
 use super::formatting;
+use super::hover::byte_offset;
 use super::hover::{self, Snapshot};
 use super::publish::{self, Store};
+use super::references;
+use super::rename;
 use super::signature;
 use super::targets::{self, Target};
 
@@ -48,6 +51,8 @@ pub(super) struct Server {
     store: Store,
     /// The client accepts snippets in completion items (milestone 78).
     snippets: bool,
+    /// The mains last checked as modules alone, for rename's re-checks.
+    alone: HashSet<PathBuf>,
 }
 
 impl Server {
@@ -87,6 +92,7 @@ impl Server {
                 .and_then(|c| c.completion_item.as_ref())
                 .and_then(|i| i.snippet_support)
                 .unwrap_or(false),
+            alone: HashSet::new(),
         };
         let mut out = Vec::new();
         if let Some(options) = &params.initialization_options {
@@ -183,6 +189,9 @@ impl Server {
             out.extend(outcome.log.iter().map(|l| log(MessageType::ERROR, l)));
             if !target.alone {
                 self.seen.insert(target.main.clone(), outcome.loaded);
+                self.alone.remove(&target.main);
+            } else {
+                self.alone.insert(target.main.clone());
             }
             match outcome.snapshot {
                 Some(snapshot) => {
@@ -248,6 +257,61 @@ impl Server {
             |n| n.to_string_lossy().into_owned(),
         );
         Some((name, formatting::format(text)))
+    }
+
+    /// Answers Find References (milestone 83) from every check held.
+    pub(super) fn references(
+        &mut self,
+        params: &ReferenceParams,
+        now: Instant,
+    ) -> (Option<Vec<Location>>, Vec<Message>) {
+        let at = &params.text_document_position;
+        let (file, out) = self.fresh(at.text_document.uri.as_str(), now);
+        let found = file.and_then(|f| {
+            let snapshot = self.snapshot(&f)?;
+            let (_, text) = snapshot.base(&f)?;
+            let (_, key) = references::at(snapshot, &f, byte_offset(text, at.position)?)?;
+            let places = references::find(
+                self.snapshots.values().map(|s| &**s),
+                &key,
+                params.context.include_declaration,
+            );
+            let read = |p: &Path| String::from_utf8(self.docs.read(p).ok()?).ok();
+            Some(
+                places
+                    .iter()
+                    .filter_map(|p| references::location(p, &read(&p.file)?))
+                    .collect(),
+            )
+        });
+        (found, out)
+    }
+
+    /// Answers prepareRename or rename (milestone 83): `new` is `None` for
+    /// prepare. Errors are the refusal's reason.
+    pub(super) fn rename(
+        &mut self,
+        at: &TextDocumentPositionParams,
+        new: Option<&str>,
+        now: Instant,
+    ) -> (Result<serde_json::Value, String>, Vec<Message>) {
+        let (file, out) = self.fresh(at.text_document.uri.as_str(), now);
+        let cx = rename::Context {
+            snapshots: &self.snapshots,
+            docs: &self.docs,
+            alone: &self.alone,
+        };
+        let snapshot = file.as_ref().and_then(|f| Some((f, self.snapshot(f)?)));
+        let Some((file, snapshot)) = snapshot else {
+            return (Err("nothing to rename here".to_string()), out);
+        };
+        let answer = match new {
+            None => rename::prepare(snapshot, file, at.position, &cx).map(|r| serde_json::json!(r)),
+            Some(new) => {
+                rename::rename(snapshot, file, at.position, new, &cx).map(|e| serde_json::json!(e))
+            }
+        };
+        (answer, out)
     }
 
     /// Answers Go to Definition, as fresh as a hover (decision 26).
