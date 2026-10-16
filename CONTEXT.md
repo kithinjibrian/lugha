@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**v17: milestones 91–97 done** (tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**v17: milestones 91–97 done** (tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -7775,3 +7775,27 @@ Branch: prp-128-packages_and_tests
 
 ### STILL OPEN AT CLOSE
 - Nothing. kivuli's own updates belong to its session.
+
+---
+
+## SESSION 223 — 2026-10-17 — pkg-config's SSE flags (PRP-129) — closed
+Branch: prp-129-pkg_config_sse
+
+### WHAT WAS DONE
+- Built PRP-129 (approved by the user as a security decision): `pkg-config --cflags` may give exactly `-mfpmath=sse`, `-msse`, `-msse2`, so packages can list C files with GTK. Earlier in the session: discussed variadic externs (recommended C shims for now; no PRP) and Lugha variadics (recommended arrays; none).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-129-pkg_config_sse.md`.
+- Modified: `src/link/{pkg_config,inputs}.rs`, `tests/link_libs.rs`, spec §8 and changes list, `docs/errors/E0329.md`, CLAUDE.md, CHANGELOG, MEMORY (181), CONTEXT.
+
+### TESTS WRITTEN
+- `pkg_config.rs` unit tests (keep + refusals), `link_libs` (C file with GTK-like cflags). Targeted: `--lib`, `link_libs`, `explain`, fmt, clippy.
+
+### DECISIONS MADE
+- Exact three-flag list, not dropping unknown `-m…` flags (the user).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing. The kivuli/lugha-gtk session needs a reinstalled `lughac`.
