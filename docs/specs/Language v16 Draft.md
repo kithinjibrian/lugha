@@ -254,6 +254,22 @@ Callbacks from C and handles for C objects, the second step toward GUI programs 
 113. **No `unsafe`:** the `extern` declaration stays the one place a program vouches for C (§7 "Safety"); a wrong callback type is undefined behavior, as a wrong extern signature already is.
 114. **Success:** milestone 88, tag `m88`. Tests: `tests/callbacks.rs` (C files through `[link]`: handles, `NULL`, named functions, closures kept across collections, `release`, renamed externs, E0409/E0435/E0436), unit tests; byte-identical IR for programs without them; manually, a GTK 4 window counting clicks.
 
+## Decisions behind milestones 89 and 90 (discovery, session 189)
+
+The rest of the GUI work (the user's choices: discover strings, structs and a GTK package together, approve once, build in order; strings from C both as results and in callbacks, invalid UTF-8 replaced; an explicit `extern struct`).
+
+115. **Strings from C:** an extern may return `string` or `Option<string>`, and a callback's parameters may be `string` or `Option<string>`. lughac copies C's NUL-terminated text into a new string; C keeps and frees its own memory, and Lugha never frees it.
+116. **UTF-8:** each invalid sequence in C's text becomes U+FFFD, as `utf8_decode` in the prelude defines a sequence.
+117. **`NULL`:** `None` for `Option<string>`; for a plain `string`, a panic: `C gave NULL for a \`string\`; declare it \`Option<string>\``.
+118. **`Option<string>` arguments:** `None` passes `NULL`, `Some(s)` the text. A callback may not return a string: C would keep a pointer into Lugha's memory (E0409).
+119. **Success:** milestone 89, tag `m89`. Tests: `tests/c_strings.rs` (C files through `[link]`: copies, `NULL`, U+FFFD, callbacks, the panic).
+120. **`extern struct Name { … }`** declares a struct with C's layout: fields in order with C's alignment. Its fields are numbers, `bool`, handles, `Option` of a handle and other extern structs; it has no type parameters (E0437). Otherwise it is an ordinary struct: literals, fields, `==`, methods, printing.
+121. **By value:** extern structs may be extern parameters and results and callback parameters and results; a plain struct there is still E0409, whose help names `extern struct`.
+122. **The calling convention** is C's on x86-64 System V: a struct over 16 bytes goes in memory (`byval` arguments, `sret` results); a smaller one is split into eightbytes, each in integer or SSE registers by its fields, as a C compiler would. lughac targets only x86-64 Linux; another target is an internal error, never a guess.
+123. **Not yet:** pointers to structs, arrays of structs to C, packed structs, unions, bit-fields.
+124. **No change** to how plain structs are laid out or passed between Lugha functions.
+125. **Success:** milestone 90, tag `m90`. Tests: the classification against clang's lowering, `tests/extern_structs.rs` (every shape both ways, nested, over 16 bytes, past six integer arguments, callbacks).
+
 ## §4 Type system — changes
 
 - **`Ref<T>`**, predeclared like `Option`, for any `T`. Recursion through a `Ref` is allowed, as through an array: `struct Node { value: i64, next: Option<Ref<Node>> }` needs no indirect slot.
@@ -303,6 +319,8 @@ Callbacks from C and handles for C objects, the second step toward GUI programs 
 | 86 | `lughac explain` | an explanation for every code, examples checked; the hint after diagnostics; code links in the editor |
 | 87 | Linking C libraries | `[link]` in `lugha.toml`: `libs`, `paths`, `include`, `c`, `pkg-config`; every used package's table; E0329–E0331 |
 | 88 | Callbacks and handles | `extern type`; functions and closures passed to C (`data`, `release`); `extern "symbol" fun`; E0435, E0436 |
+| 89 | Strings from C | `string` and `Option<string>` extern results, `Option<string>` arguments, string callback parameters; copies, U+FFFD |
+| 90 | C structs by value | `extern struct`; passed by value to and from C (externs, callbacks) as on x86-64 System V; E0437 |
 
 ## §12 Open questions — additions
 
