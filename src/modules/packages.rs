@@ -51,6 +51,9 @@ pub(super) struct Packages {
     /// Git packages that couldn't be fetched: their imports are skipped,
     /// since E0325 or E0326 already says why (v14).
     unfetched: Vec<String>,
+    /// The package the root's manifest names, if any: the main file and
+    /// its own modules belong to it for visibility (v17, milestone 97).
+    pub(super) own: Option<String>,
 }
 
 impl Packages {
@@ -66,6 +69,7 @@ impl Packages {
             listed: HashMap::new(),
             versions: HashMap::new(),
             required: Vec::new(),
+            own: None,
         }
     }
 

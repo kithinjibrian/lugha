@@ -143,6 +143,7 @@ impl Packages {
                     self.sources.insert(name.clone(), root);
                 }
                 manifest.entries.insert(0, entry);
+                self.own = Some(name.clone());
             }
             (None, None) => {}
         }

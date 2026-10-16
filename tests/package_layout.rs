@@ -153,3 +153,41 @@ fn one_file_imported_twice_is_e0328() {
         text(&check.stderr)
     );
 }
+
+#[test]
+fn a_programs_in_test_sees_its_packages_package_level_items_v17() {
+    let diff = "fun patch(n: i64): i64 = n + 1;\nprivate fun hidden(): i64 = 0;\n";
+    let uses = "import glowworm.diff;\n@test fun patches() { assert_eq(diff.patch(1), 2); }\n";
+    let t = Temp::with(&[
+        ("glow/lugha.toml", MANIFEST),
+        ("glow/src/diff.la", diff),
+        ("glow/test/diff_test.la", uses),
+        (
+            "glow/test/private_test.la",
+            "import glowworm.diff;\n@test fun hides() { assert_eq(diff.hidden(), 0); }\n",
+        ),
+    ]);
+    let glow = t.0.join("glow");
+    let tested = lughac(&glow, &t.0, &["test", "test/diff_test.la"]);
+    assert_eq!(tested.status.code(), Some(0), "{}", text(&tested.stderr));
+    // `private` stays private to its module.
+    let private = lughac(&glow, &t.0, &["check", "test/private_test.la"]);
+    assert_eq!(private.status.code(), Some(1));
+    assert!(
+        text(&private.stderr).contains("E0313"),
+        "{}",
+        text(&private.stderr)
+    );
+    // A program outside the package still sees only `public` items.
+    let outside = Temp::with(&[
+        ("glow/lugha.toml", MANIFEST),
+        ("glow/src/diff.la", diff),
+        ("app/lugha.toml", "[packages]\nglowworm = \"../glow\"\n"),
+        (
+            "app/main.la",
+            "import glowworm.diff;\nfun main() { println(diff.patch(1)); }\n",
+        ),
+    ]);
+    let app = lughac(&outside.0.join("app"), &outside.0, &["check", "main.la"]);
+    assert!(text(&app.stderr).contains("E0313"), "{}", text(&app.stderr));
+}

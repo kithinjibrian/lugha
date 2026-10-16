@@ -223,6 +223,14 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
         loaded.modules.push(module);
     }
     packages.check_versions(read, &mut base, &mut loaded)?;
+    // A program under its package's manifest (in `test/`, `examples/`, …)
+    // sees the package's package-level items (v17 draft decision 45). Set
+    // after every import resolved: resolution still treats it as the root.
+    if let Some(own) = &packages.own {
+        for module in loaded.modules.iter_mut().filter(|m| m.package.is_none()) {
+            module.package = Some(own.clone());
+        }
+    }
     loaded.lock = packages.fetcher.lock_text();
     Ok(loaded)
 }
