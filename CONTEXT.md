@@ -7048,6 +7048,14 @@ Branch: vscode-extern-syntax
 
 ---
 
+## SESSION 194 — 2026-10-16 — Publish lugha-gtk — open
+Branch: main
+
+### WHAT WAS DONE
+- In progress: the user said yes to publishing lugha-gtk.
+
+---
+
 ## NEXT SESSION START POINT
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
