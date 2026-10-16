@@ -80,11 +80,16 @@ fn blocks<'a>(page: &'a str, tag: &str) -> Vec<&'a str> {
     out
 }
 
-/// The codes `lughac check` reports for `program`, errors and warnings, in order.
+/// The codes `lughac check` reports for `program`, errors and warnings, in
+/// order; `lughac build` for E0303, which `check` leaves out since v17.
 fn codes(program: &str) -> Vec<String> {
     let t = Temp::new();
     std::fs::write(t.0.join("main.la"), program).expect("writable");
-    let out = lughac(&t.0, &["check", "--diagnostics=json", "main.la"]);
+    let command = match program.contains("// error: E0303") {
+        true => "build",
+        false => "check",
+    };
+    let out = lughac(&t.0, &[command, "--diagnostics=json", "main.la"]);
     text(&out.stderr)
         .lines()
         .filter_map(|l| {

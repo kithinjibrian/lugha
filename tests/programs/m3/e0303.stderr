@@ -1,9 +1,0 @@
-error[E0303]: no `main` function
-  --> tests/programs/m3/e0303.la:1:1
-  |
-1 | fun helper() {}
-  | ^
-  |
-  = help: add `fun main() { }`
-
-For more about E0303, run `lughac explain E0303`.

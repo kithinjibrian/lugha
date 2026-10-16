@@ -2033,11 +2033,18 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** built as planned. `check/siblings.rs`: `waits(e)` = `defers(e)` or a call (`f(…)`, `m.f(…)`) of a generic function with a type parameter only its result mentions (key found silently: `module_path` + `qualify` + `follow`, never reporting). Used in `infer` (such arguments go with the literals, checked against what siblings fixed), `ops::operands` (the swap for `==`/`!=`), and `assertion` (`assert_eq`/`assert_ne` check the waiting side second). Associated functions (`View.text(…)`) aren't covered (they aren't in `functions`). One expectation moved: `assert_eq(1, "a")` is now E0401 at `1`, as `1 == "a"` is.
 
+### 180. Packages and tests — milestone 97 (PRP-128)
+
+**Decision:** built as planned (v17 draft decisions 43–50). `skip`: `lugha_rt_test_skip` writes `lugha-skip: <reason>` to stderr and exits 77; the runner (`test_json::skipped`) needs both. `lughac check` → `pipeline::front_check`: test-mode check when the main module declares no `main`. `test/`/`examples/`: `Packages.own` (the root manifest's package name) is given to every root module after loading, so resolution is unchanged. Package files: `LoadEnv.as_module` (test/check only) + `layout::module_path`; the main module's path and package are rewritten after its manifest is read, and E0319 is off for it. Tests are listed qualified (`qualify(path, name)`); the runner names them `test_json::module_name(file)` + `bare(test)`. Lock: read beside the manifest, else once beside the main file (`Fetcher.moved` forces a write); `Loaded.lock_folder` is where it is written.
+
+**Consequences:** `lughac check src/main.la` with `import N.x` inside its own package is E0312 (as in any package module); E0303's program case moved to `tests/cli.rs` because the runner checks rejected programs with `check`.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 97 complete**: PRP-128 packages and tests
 - **Milestone 96 complete**: PRP-127 inference from siblings
 - **Milestone 95 complete**: PRP-126 formatter hugging
 - **Milestone 94 complete**: PRP-125 variants as function values

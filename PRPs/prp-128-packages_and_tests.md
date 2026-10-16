@@ -1,6 +1,6 @@
 ## FEATURE: Packages and tests — a package's modules tested as modules, `test/` inside its package, one `lugha.lock` per package, `lughac check` on a library file, and `skip(reason)` in tests; milestone 97 (v17).
 
-**Status:** approved 2026-10-17 ("approved all and build in one go", session 220); proposed in session 219, with PRP-126 and PRP-127.
+**Status:** built in session 222; approved 2026-10-17 ("approved all and build in one go", session 220); proposed in session 219, with PRP-126 and PRP-127.
 **Milestone:** 97 (tag `m97` at merge).
 **Spec:** `Language v17 Draft.md` decisions 43–50; v17 spec §6 (packages: the implicit package, `lugha.lock`), §9 (`lughac check`, `lughac test`, E0303), §11 (row 97).
 
@@ -62,6 +62,15 @@ test kivuli.live.patches_a_real_button ... skipped (no display)
 
 ## ROLLBACK PLAN
 - Branch `prp-128-packages_and_tests` in its own worktree.
+
+## BUILT (session 222)
+- Part 1 `skip(reason)`: `runtime/test.c` `lugha_rt_test_skip` (stderr line `lugha-skip: <reason>`, exit 77; outside a test it panics), `check/test_fns.rs`, `codegen/assertions.rs`, `driver/test.rs` (`Outcome::Skipped`), `test_json.rs` (`skipped`, summary `"skipped"`); extension 0.13.0 (`tests.ts`, `testing.ts`).
+- Part 2: `pipeline::front_check` — no `fun main` in the main module → checked as `lughac test` checks. E0303's explain example is verified with `build`; `tests/programs/m3/e0303` moved to `tests/cli.rs` (the program runner checks rejected cases with `check`, and the runner isn't edited).
+- Part 3: `Packages.own`; root modules join the package after every import resolved.
+- Part 4: `LoadEnv.as_module`, `layout::module_path`; `resolve::check` takes `Option<&Path>` for the main file. Tests are qualified by the checker; `test_json::module_name` (moved from `test.rs`, package-aware) and `bare`. Under `check`, `import N.x` inside N's own file is E0312, as in any package module (was E0328 through `check`; that test now uses `build`).
+- Part 5: `Fetcher.read_lock` returns whether it found one; `Fetcher.moved`; `Loaded.lock_folder`; `update::write_lock(folder, …)`. The old lock is left in place.
+- Tests: `test_runner` (skip, outside a test, package file with a cycle, list/exact names), `package_layout` (test/ visibility, private, outside), `git_packages` (one lock, migration), `cli` (check without main, E0303 through build), test_json unit tests, extension `npm test`. Targeted: `--lib`, `cli`, `package_layout`, `git_packages`, `test_runner`, `modules`, `init`, `lsp`, `interface_values`, `explain`, `spec`, `programs`, fmt, clippy. Full suite not run (the user).
+- Not done here: kivuli's own changes (another session owns it).
 
 ## ACCEPTANCE CRITERIA
 - [ ] kivuli: `views.la` split and wrapper-free layout no longer needed; one lock; the GTK smoke test back with `skip`.
