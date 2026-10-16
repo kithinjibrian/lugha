@@ -1,6 +1,6 @@
 ## FEATURE: formatting in the editor — `lughac lsp` answers Format Document with `lughac fmt`'s formatter, and the VS Code extension is Lugha's default formatter; milestone 81.
 
-**Status:** proposed 2026-10-16 — session 170 (discovery the same session); waits for approval.
+**Status:** approved 2026-10-16 ("build it") — built in session 171; proposed in session 170.
 **Milestone:** 81 (one PRP; tag `m81` at merge). The second of the two formatter PRPs (PRP-110 was milestone 80).
 **Spec:** `Language v16 Draft.md` decisions 66–70; spec §9 (the `lughac lsp` section gains **Formatting**), §11 (row 81).
 
