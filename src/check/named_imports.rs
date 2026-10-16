@@ -137,6 +137,19 @@ impl Checker {
                 continue;
             }
             self.item_visible(&target, item.name.span);
+            // The editor's hover, definition, references and rename reach
+            // the name, and its alias, as they reach any use.
+            let spans = [Some(item.name.span), item.alias.as_ref().map(|a| a.span)];
+            for at in spans.into_iter().flatten() {
+                match self.functions.get(&target) {
+                    Some(f) => self.hover.function(at, f.span, None),
+                    None => {
+                        if let Some(decl) = self.type_decl(&target) {
+                            self.hover.define(at, decl);
+                        }
+                    }
+                }
+            }
             let level = self.privacy.items.get(&target).map(|o| o.level);
             if alias.public && level.is_some_and(|l| l != Level::Public) {
                 self.report(not_public(&item.name.name, item.name.span));

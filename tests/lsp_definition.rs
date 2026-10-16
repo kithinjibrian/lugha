@@ -254,3 +254,33 @@ fn handle_types_jump_to_their_extern_type_v16() {
     );
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn names_inside_import_braces_hover_and_go_to_their_declarations() {
+    let main = "import shapes { area, Circle as C };\n\
+                fun main() { println(area(C { r: 1.0 })); }\n";
+    let shapes = "public struct Circle { public r: f64 }\n\
+                  public fun area(c: Circle): f64 = c.r;\n";
+    let t = Temp::with(&[("main.la", main), ("shapes.la", shapes)]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, main);
+    s.expect(&uri, &[]);
+    let shapes_uri = t.uri("shapes.la");
+    let (line, col) = pos(main, "{ area", "area");
+    assert_eq!(
+        s.definition(&uri, line, col),
+        location(&shapes_uri, range(shapes, "fun area", "area"))
+    );
+    let shown = s.hover(&uri, line, col)["contents"]["value"].to_string();
+    assert!(shown.contains("fun area(c: Circle): f64"), "{shown}");
+    for word in ["Circle", "C"] {
+        let (line, col) = pos(main, "Circle as C", word);
+        assert_eq!(
+            s.definition(&uri, line, col),
+            location(&shapes_uri, range(shapes, "struct Circle", "Circle")),
+            "{word}"
+        );
+    }
+    assert_eq!(s.finish(), Some(0));
+}

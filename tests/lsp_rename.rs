@@ -256,3 +256,20 @@ fn prepare_answers_the_names_range_or_the_refusal() {
     assert!(refused(&reply).contains("nothing to rename"));
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn renaming_a_function_renames_it_inside_import_braces() {
+    let main = "import geo { double };\nfun main() { println(double(2)); }\n";
+    let t = Temp::with(&[("main.la", main), ("geo.la", GEO)]);
+    let (mut s, uri) = opened(&t, &[("main.la", main), ("geo.la", GEO)]);
+    let reply = rename(&mut s, &uri, pos(main, "println(double", "double"), "twice");
+    let texts = applied(&t, &reply);
+    assert!(
+        texts.contains(&(
+            "main.la".to_string(),
+            "import geo { twice };\nfun main() { println(twice(2)); }\n".to_string()
+        )),
+        "{texts:?}"
+    );
+    assert_eq!(s.finish(), Some(0));
+}
