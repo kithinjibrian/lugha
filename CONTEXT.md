@@ -7140,3 +7140,8 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - The green-threads discovery, at question 4. Answers so far: M:1 scheduler; scope = spawn, join, yield_now, sleep, Chan<T>; `spawn <call>` only.
+
+---
+
+## SESSION 197 — 2026-10-16 — Green threads: discovery, continued — open
+Branch: main
