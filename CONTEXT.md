@@ -7143,5 +7143,24 @@ Branch: main
 
 ---
 
-## SESSION 197 — 2026-10-16 — Green threads: discovery, continued — open
+## SESSION 197 — 2026-10-16 — Green threads: discovery, continued — closed
 Branch: main
+
+### WHAT WAS DONE
+- The user clarified answer 3, "just like go where you can use an anonymous function with go keyword". Checked that Lugha already calls a closure literal directly (`fun(): i64 { k + 1 }()` and `(fun(): i64 { … })()` both run), so `spawn fun() { … }();` needs nothing beyond "`spawn` takes a call".
+- Question 4 (panics and `main` returning: recommended "like Go") was paused again for clarification.
+
+### FILES CREATED OR MODIFIED
+- Modified: CONTEXT.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- None recorded yet.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The green-threads discovery, at question 4. Answers so far: M:1; scope = spawn, join, yield_now, sleep, Chan<T>; `spawn <call>` only, Go-style `spawn fun() { … }();`.
