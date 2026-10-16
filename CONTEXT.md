@@ -7802,5 +7802,23 @@ Branch: prp-129-pkg_config_sse
 
 ---
 
-## SESSION 224 — 2026-10-17 — Module doc comments proposed (PRP-130) — open
+## SESSION 224 — 2026-10-17 — Module doc comments proposed (PRP-130) — closed
 Branch: prp-130-module_docs
+
+### WHAT WAS DONE
+- The user found that hovering a module shows no doc. Two questions answered (top `/** */` followed by a blank line or `import`; std modules too); PRP-130 written (milestone 98).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-130-module_docs.md`.
+
+### TESTS WRITTEN
+- None (proposal).
+
+### DECISIONS MADE
+- PRP-130 decisions 1–2 (the user).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-130 awaits approval; build on branch `prp-130-module_docs`.
