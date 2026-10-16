@@ -2,11 +2,11 @@
 
 Oct 15, 2026 · @kithinji
 
-**Status:** in progress (milestones 67–80 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
+**Status:** in progress (milestones 67–81 of v16). It is built from the approved plan, `Language v16 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v15 Specification.md` keeps v15 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
-**Changes since v15** (milestones 67–80):
+**Changes since v15** (milestones 67–81):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
 - `env.set_current_dir(path)` changes the program's working directory; relative paths and programs started afterwards follow it (milestone 68; "The standard library").
 - `lughac init [folder] [--lib] [--name N]` starts a program, or a library with an example, in a folder; it never overwrites a file (milestone 69; section 9).
@@ -16,6 +16,7 @@ Oct 15, 2026 · @kithinji
 - Snippets in the editor: completion inserts calls with a placeholder per parameter, and `value.match` writes out every variant (milestone 78; section 9).
 - Quick fixes in the editor: a non-exhaustive `match` (E0417) offers to add every missing arm, or a `_` arm (milestone 79; section 9).
 - `lughac fmt [paths…] [--check]` rewrites `.la` files in one canonical style, keeping every comment, and checks its own output before writing (milestone 80; section 9).
+- Formatting in the editor: the language server answers Format Document with the same formatter, for unsaved text too (milestone 81; section 9).
 
 Every valid v15 program is a valid v16 one, unless it uses `Ref` as the name of something other than a type; a module's own type `Ref` still means its own.
 
@@ -1344,6 +1345,7 @@ It prints `created <path>` for each file and then how to run the result.
 - **Documentation** (milestone 77): a declaration's doc comment (section 2) follows its header in hover, completion items carry it, and signature help shows its description with the active parameter's `@param` text. Hover also answers on a type's or variant's name: `struct Point`, `enum Shape`, `interface Area`, `Circle(f64)`, with their docs. std and the prelude are documented.
 - **Snippets** (milestone 78), for a client that supports them: completing a function, method, associated function or variant with a payload inserts its call with a placeholder per parameter, `max(${1:a}, ${2:b})`, unless a `(` already follows; after `.` on a value whose type is an enum, `Option` or `Result`, a `match` item replaces `value.` with a `match value { … }` holding every variant and a placeholder per payload slot. The VS Code extension adds fixed snippets for declarations and control flow.
 - **Quick fixes** (milestone 79): `textDocument/codeAction` answers each E0417 among the request's diagnostics with **Add missing arms** — one arm per missing pattern, every one the checker found, each written in full (`Rect(_, _)`, `Some(Dot)`), preferred — and **Add a `_` arm**; a match on integers, strings or interface values gets only the second. Each new arm's body is `panic("not handled")`; the arms go before the match's closing `}` at its arms' indentation, with a comma added after the last existing arm if needed. Only a current check of text that parses answers.
+- **Formatting** (milestone 81): `textDocument/formatting` (Format Document) formats the whole document from the editor's text, unsaved changes included, exactly as `lughac fmt` would format the file; the answer is one edit replacing the document, or none when it is already formatted. The request's tab and space options are ignored: the style has none. A document with syntax errors gets no edits and no message (its diagnostics show the errors); one that fails the formatter's own check gets no edits and one error message (`window/showMessage`). There is no range or on-type formatting, and the server still writes no file: the editor applies the edit. Format on save is the editor's setting; the VS Code extension makes itself Lugha's default formatter.
 - **Syntax errors** (milestone 75): while a module has one, the server publishes only the syntax errors (and the loader's other errors); what the checker finds in the recovered program is used by the features above, not shown, since a dropped statement makes later names look undefined.
 - **Exit codes:** 0 after `shutdown` and `exit`; 1 after `exit` without `shutdown`; 2 when the connection breaks (a malformed message, a closed stream). Requests other than `initialize`, `shutdown`, `textDocument/hover`, `textDocument/definition`, `textDocument/completion`, `textDocument/signatureHelp` and `textDocument/codeAction` get `MethodNotFound`.
 
@@ -3244,6 +3246,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 78 | Snippets (v16) | call placeholders and a postfix `.match` from the language server; declaration and control-flow snippets in the VS Code extension, each checked by `lughac check` | `tests/lsp_snippets.rs`, `tests/snippets.rs` (done) |
 | 79 | Add missing arms (v16) | quick fixes on E0417: every missing arm in full, or a `_` arm; bodies `panic("not handled")` | `tests/lsp_code_actions.rs` (done) |
 | 80 | `lughac fmt` (v16) | the tree-based formatter: the canonical style, comments kept, the output verified, `--check` | Every program in the repository formats, verifies and is idempotent (`tests/fmt_corpus.rs`); `tests/fmt.rs` (done) |
+| 81 | Formatting in the editor (v16) | `textDocument/formatting` in `lughac lsp` from the editor's text; quiet on syntax errors, one message on a verification failure; the VS Code extension the default Lugha formatter | `tests/lsp_formatting.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

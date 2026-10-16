@@ -6449,16 +6449,38 @@ Branch: main
 
 ---
 
-## SESSION 171 — 2026-10-16 — Formatting in the editor (milestone 81) — open
+## SESSION 171 — 2026-10-16 — Formatting in the editor (milestone 81) — closed
 Branch: prp-111-editor_formatting
+
+### WHAT WAS DONE
+- The user approved PRP-111 ("build it"); built it in the worktree `../lugha-prp-111`.
+- `driver/lsp/formatting.rs`: Format Document from the open document's text through `formatter::format`, one whole-document edit; quiet on syntax errors; one `window/showMessage` on a verification failure or a formatter panic. `documentFormattingProvider` declared.
+- Extension 0.4.0: the default Lugha formatter (`configurationDefaults`), README "Formatting" and manual step 14; packaged and installed.
+- Spec v16 §9 (Formatting bullet), §11 row 81, changes list; draft status; docs.
+
+### FILES CREATED OR MODIFIED
+- New: `src/driver/lsp/formatting.rs`, `tests/lsp_formatting.rs`, `editors/vscode/test/formatting.test.ts`.
+- Modified: `src/driver/lsp/{mod,server}.rs`, `editors/vscode/{package.json,package-lock.json,README.md}`, the v16 spec and draft, PRP-111, CLAUDE.md, README, TODO, CHANGELOG, MEMORY (155–156), CONTEXT.
+
+### TESTS WRITTEN
+- 6 unit tests in `formatting.rs`, 5 in `tests/lsp_formatting.rs`, 1 extension test; all written before the code. Full suite, fmt, clippy and `npm test` pass.
+
+### DECISIONS MADE
+- Built as PRP-111 planned; details in its BUILT notes and MEMORY 156.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's manual check in VS Code (extension README step 14).
 
 ---
 
 ## NEXT SESSION START POINT
 
-**v16: milestones 67–80 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`).
+**v16: milestones 67–81 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor).
 
-**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Proposed: milestone 81, formatting in the editor** — v16 draft decisions 66–70 and PRP-111; it waits for the user's approval. Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
+**Focus: the VS Code extension** (the user, session 144). Milestones 70–79 done: `lughac lsp` (live diagnostics, hover, go-to-definition, completion, signature help, partial syntax trees), block and doc comments, snippets, the add-missing-arms quick fix; extension 0.3.2; the user's manual checks of 70–73 passed, 74–79 are theirs (extension README steps 8–13). **Milestone 80 done** (tag `m80`): `lughac fmt`, the tree-based formatter (PRP-110). **Milestone 81 done** (tag `m81`): formatting in the editor (PRP-111), extension 0.4.0; its manual check (README step 14) is the user's. Next: a new discovery (candidates below). Later: a `lughac doc` tool, more quick fixes, Find References / Go to Implementations, a read-only view of bundled sources, expression error nodes, lexer recovery, bundling the extension; formatter limits (binary and method chains never break). Build in a git worktree and merge through a PR: another session has shared this checkout.
 
 Candidates (TODO's v16 section): streaming pipes and timeouts for `std.process`, a package entry module (`import glowworm;`), editing a box in place, a byte buffer, file streams; for editors, a language server.
 

@@ -49,20 +49,27 @@ None (`lsp-types` already has the formatting types).
 - The server reads only the text the editor sent; it opens, writes and runs nothing new. The edits go back to the client, which applies them to its buffer. (The extension's README and `untrustedWorkspaces` text stay true.) For the user's review, as CLAUDE.md asks for changes to what the server may do.
 
 ## TESTS TO WRITE
-- [ ] **`formatting.rs` unit tests:** a messy document → one edit spanning the whole text with `lughac fmt`'s output; a formatted one → no edits; a syntax error → `Unchanged`; the end position counts UTF-16 units (a line with `é` and an emoji) and a document without a final newline.
-- [ ] **`tests/lsp_formatting.rs`** over real stdio: the capability is declared; formatting an opened, unsaved, messy document returns the edit whose text equals `lughac fmt`'s; a formatted document → `[]`; a document with a syntax error → `null` and no `window/showMessage`; an unopened URI → `null`; the server wrote no file (the document's file on disk unchanged).
-- [ ] **Verification failure path:** a unit test of the reply for `Failed` (the message text and type) through a test-only formatter hook, since no real input is known to fail.
-- [ ] **Extension:** `npm test` passes; a test that `package.json` sets `editor.defaultFormatter` for `[lugha]` to the extension's own id (`publisher.name`).
-- [ ] **Regression:** every existing test passes.
+- [x] **`formatting.rs` unit tests:** a messy document → one edit spanning the whole text with `lughac fmt`'s output; a formatted one → no edits; a syntax error → `Unchanged`; the end position counts UTF-16 units (a line with `é` and an emoji) and a document without a final newline.
+- [x] **`tests/lsp_formatting.rs`** over real stdio: the capability is declared; formatting an opened, unsaved, messy document returns the edit whose text equals `lughac fmt`'s; a formatted document → `[]`; a document with a syntax error → `null` and no `window/showMessage`; an unopened URI → `null`; the server wrote no file (the document's file on disk unchanged).
+- [x] **Verification failure path:** a unit test of the reply for `Failed` (the message text and type) through a test-only formatter hook, since no real input is known to fail.
+- [x] **Extension:** `npm test` passes; a test that `package.json` sets `editor.defaultFormatter` for `[lugha]` to the extension's own id (`publisher.name`).
+- [x] **Regression:** every existing test passes.
+
+## BUILT (session 171)
+- As designed: `driver/lsp/formatting.rs` (6 unit tests, written first: the whole-document edit, UTF-16 end without a final newline, no edits, `Unchanged`, `Failed` from verification and from a panic, the replies); `Server::formatting` reads the open document's text (no check runs first: formatting needs only the text); `mod.rs` answers `textDocument/formatting` before the other requests and declares `documentFormattingProvider`.
+- The test-only hook is `format_with`, a private function taking the formatter, used by the unit tests; no flag in the shipped server.
+- A panic inside the formatter is caught in `formatting.rs` itself (`catch_unwind` + `guard::message`), not by the check guard, since formatting runs outside a check.
+- `tests/lsp_formatting.rs` (5); the extension's `test/formatting.test.ts` (the default formatter is `publisher.name`, no `formatOnSave` default). Extension 0.4.0, packaged and installed.
+- The manual check in VS Code is left to the user (extension README, step 14).
 
 ## ROLLBACK PLAN
 - Branch `prp-111-editor_formatting` from `main`; tag `m81`.
 - To abandon before merge: delete the branch. After: revert the merge (the extension's previous `.vsix` still works with the new `lughac`).
 
 ## ACCEPTANCE CRITERIA
-- [ ] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test` (CI in the background).
-- [ ] Spec at milestone 81; docs updated.
-- [ ] No file over 500 lines; no new dependencies; no `unsafe`.
+- [x] All tests pass; fmt, clippy, `cargo test`, the extension's `npm test` (CI in the background).
+- [x] Spec at milestone 81; docs updated.
+- [x] No file over 500 lines; no new dependencies; no `unsafe`.
 - [ ] The manual check passes in VS Code (README step: Shift+Alt+F on a messy file, then undo).
 
 ## VALIDATION

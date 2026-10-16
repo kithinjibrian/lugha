@@ -348,6 +348,9 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 68 — Changing directory ✅
 - [x] PRP-097: `env.set_current_dir(path)` (`$os.chdir`); oyster's `cd`; tagged `m68`
 
+### Milestone 81 — Formatting in the editor ✅
+- [x] PRP-111: Format Document in `lughac lsp`; the extension the default Lugha formatter (0.4.0); tagged `m81`
+
 ### Milestone 80 — `lughac fmt` ✅
 - [x] PRP-110: the tree-based formatter, comments kept, verified output, `--check`; tagged `m80`
 
@@ -403,7 +406,8 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [x] **Snippets** — milestone 78, PRP-108.
 - [x] **Quick fix: add missing match arms** — milestone 79, PRP-109.
 - [x] **`lughac fmt`** — milestone 80, PRP-110.
-- [ ] **Format Document and format on save** in `lughac lsp` and the extension — milestone 81 (its own discovery and PRP).
+- [x] **Format Document and format on save** — milestone 81, PRP-111.
+- [ ] Format Selection (the statements or items a selection touches).
 - [ ] Formatter: break long binary chains and method chains; `fmt --check` in CI once the repo's own `.la` files are formatted (moves panic lines).
 - [ ] More quick fixes: remove an unused binding (W0103), add a missing import (E0312), `let mut` for E0405-style mutability errors.
 - [ ] **Find References** and **Go to Implementations** — the definitions table read backwards; implementations of interface methods.
