@@ -294,11 +294,29 @@ impl Packages {
             file,
             package: Some(first.clone()),
         };
+        // The package's entry, `lib.la` at its module root (v17, milestone 99).
+        let entry = self.module_root(&first_package).join(ENTRY);
+        let has_entry = exists(read, &entry);
+        if written.len() == 1 && has_entry {
+            let target = Target {
+                file: entry,
+                ..target
+            };
+            let error =
+                (package.is_some() && self.local(read, package, first)).then(|| clash(first, at));
+            return Ok((target, error));
+        }
         if written.len() == 1 {
             let d = Diagnostic::error("E0312", format!("`{first}` is a package, not a module"), at)
                 .with_help(format!(
-                    "import one of its modules: `import {first}.<module>;`"
+                    "import one of its modules, `import {first}.<module>;`, or give it an \
+                     entry: a `{ENTRY}` in its source folder is `import {first};`"
                 ));
+            return Ok((target, Some(d)));
+        }
+        if written.len() == 2 && written[1] == "lib" && has_entry {
+            let d = Diagnostic::error("E0312", format!("`{first}.lib` is `{first}`'s entry"), at)
+                .with_help(format!("the entry is imported as `import {first};`"));
             return Ok((target, Some(d)));
         }
         if package.is_some() && self.local(read, package, first) {
@@ -307,6 +325,9 @@ impl Packages {
         Ok((target, None))
     }
 }
+
+/// A package's entry module, at its module root (v17, milestone 99).
+pub(super) const ENTRY: &str = "lib.la";
 
 /// The reserved name of the standard library's package (v15).
 pub(super) const STD: &str = "std";

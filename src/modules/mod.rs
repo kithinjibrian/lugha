@@ -10,6 +10,8 @@
 //! Depends on: ast, lexer, parser, diagnostic, span.
 
 pub mod cache;
+#[cfg(test)]
+mod entry_tests;
 pub mod fetch;
 pub mod git;
 mod inline;

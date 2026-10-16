@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**v17: milestones 91–98 done** (`m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**v17: milestones 91–99 done** (`m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -7868,3 +7868,49 @@ Branch: fix-kivuli-round-2
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 227 — 2026-10-17 — Package entry module proposed (PRP-131) — closed
+Branch: prp-131-package_entry
+
+### WHAT WAS DONE
+- Discussed library entries (the user asked: `lib.la` or a manifest key?); recommended a fixed `lib.la`; the user asked for a write-up. PRP-131 written (milestone 99), draft decisions 51–57 and row 99 added (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-131-package_entry.md`. Modified: `docs/specs/Language v17 Draft.md`, CONTEXT.
+
+### TESTS WRITTEN
+- None (proposal).
+
+### DECISIONS MADE
+- None final: decisions 51–57 await approval.
+
+### PENDING DECISIONS OPENED
+- PRP-131 approval.
+
+### STILL OPEN AT CLOSE
+- PRP-131 awaits approval; build on branch `prp-131-package_entry`.
+
+---
+
+## SESSION 228 — 2026-10-17 — Package entry modules (milestone 99) — closed
+Branch: prp-131-package_entry
+
+### WHAT WAS DONE
+- Built PRP-131: `import N;` imports the package's `lib.la` as the module `N`; E0312 helps; `init --lib` writes `src/lib.la` and `import N;`. Spec v17 §6, §9, E0312 row, row 99; draft.
+
+### FILES CREATED OR MODIFIED
+- New: `src/modules/entry_tests.rs`. Modified: `src/modules/{mod,packages,layout}.rs`, `src/driver/init.rs`, `tests/{package_layout,init,lsp_docs}.rs`, `docs/errors/E0312.md`, spec, draft, PRP-131, CLAUDE.md, TODO, CHANGELOG, MEMORY (184), CONTEXT.
+
+### TESTS WRITTEN
+- See PRP-131's BUILT notes.
+
+### DECISIONS MADE
+- Draft decisions 51–57 (approved).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing. kivuli may rename `ui.la` to `lib.la` (its session's call).

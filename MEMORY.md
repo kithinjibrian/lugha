@@ -2051,11 +2051,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** bug fixes within milestones 96, 97 and 87, no PRP. (1) `Checker::waits` recurses: a generic call waits when every argument for a parameter mentioning a result type parameter waits; lists and `Some` of waiting things wait; `array_literal` with no expected type lets the first non-waiting element lead when the first element is a waiting call (literal-first lists unchanged). (2) `load` reads the package's manifest under its own name after rewriting the main module, so its listed packages resolve; `layout::module_path` compares absolute paths (`env.cwd`). (3) `read_manifest` adds a `[link]` table once per folder; E0331's advice follows the linker text (`multiple definition` / `cannot find -l` / `undefined reference`).
 
+### 184. Package entry modules — milestone 99 (PRP-131)
+
+**Decision:** a fixed `lib.la` at the package's module root, no manifest key (the user approved PRP-131, session 228). `Packages::resolve`: a one-segment listed import with `lib.la` → `Target { path: [N], file: root/lib.la }` (E0320 clash check kept); without it E0312 with both remedies; `import N.lib;` E0312 when `lib.la` exists (`ENTRY` const). `layout::module_path` maps `src/lib.la` to `[N]`. `init --lib` writes `src/lib.la` + `import N;`. The language server needed nothing: the entry is an ordinary module.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 99 complete**: PRP-131 package entry modules
 - **Milestone 98 complete**: PRP-130 module doc comments
 - **Milestone 97 complete**: PRP-128 packages and tests
 - **Milestone 96 complete**: PRP-127 inference from siblings

@@ -424,7 +424,7 @@ The user chose this scope; the discovery stopped after its first answer, so v15 
 ### Milestone 69 — `lughac init` ✅
 - [x] PRP-098: program and library layouts, the name from the folder or `--name`, never overwrites; tagged `m69`
 
-Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer. Found with oyster: ~~changing the working directory (`cd`)~~ done in milestone 68 (PRP-097), streaming pipes and timeouts for `std.process`, and a package entry module (`import glowworm;`).
+Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer. Found with oyster: ~~changing the working directory (`cd`)~~ done in milestone 68 (PRP-097), streaming pipes and timeouts for `std.process`, and ~~a package entry module (`import glowworm;`)~~ done in milestone 99 (PRP-131).
 
 
 ## v17 (draft approved, session 201 — `docs/specs/Language v17 Draft.md`): concurrency
@@ -438,6 +438,9 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 
 ### Milestone 93 — Struct update syntax ✅
 - [x] (PRP-124) `S { f: e, ..base }`, Rust's rules; E0440, W0104; for kivuli
+
+### Milestone 99 — Package entry modules ✅
+- [x] (PRP-131) `import N;` imports the package's `lib.la`; `init --lib` writes one; tagged `m99`
 
 ### Milestone 98 — Module doc comments ✅
 - [x] (PRP-130) a file's top `/** */` documents its module; hover on module names; std documented; tagged `m98`

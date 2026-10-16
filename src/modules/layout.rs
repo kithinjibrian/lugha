@@ -44,7 +44,7 @@ impl LoadEnv {
 
 /// The package name and module path of `main` when it lies inside the
 /// `source` folder its manifest names (`glow/src/diff.la` → `glow`,
-/// `[glow, diff]`): the module a hidden entry would import (v17 draft
+/// `[glow, diff]`; `glow/src/lib.la` → `[glow]`): the module a hidden entry would import (v17 draft
 /// decision 43). `None` for a file outside one, or a path that can't be
 /// a module's.
 pub fn module_path(
@@ -70,6 +70,11 @@ pub fn module_path(
             std::path::Component::Normal(p) => path.push(p.to_str()?.to_string()),
             _ => return None,
         }
+    }
+    // The entry, `lib.la` at the module root, is the module `N` (v17, milestone 99).
+    if path.len() == 2 && path[1] == "lib" {
+        path.pop();
+        return Some((name, path));
     }
     (path.len() > 1).then_some((name, path))
 }

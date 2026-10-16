@@ -224,3 +224,44 @@ fn a_package_file_imports_its_dependencies_from_any_folder_v17() {
         );
     }
 }
+
+#[test]
+fn import_n_reaches_the_packages_lib_la_v17() {
+    let lib = "/**\n * Glowworm.\n */\n\npublic import array { zeros };\n\n\
+               public fun size(): i64 = 3;\n\n@test fun sized() { assert_eq(size(), 3); }\n";
+    let t = Temp::with(&[
+        ("glow/lugha.toml", MANIFEST),
+        ("glow/src/array.la", ARRAY),
+        ("glow/src/lib.la", lib),
+        (
+            "glow/examples/entry.la",
+            "import glowworm;\nfun main() { println(glowworm.zeros(glowworm.size())); }\n",
+        ),
+        ("app/lugha.toml", "[packages]\nglowworm = \"../glow\"\n"),
+        (
+            "app/main.la",
+            "import glowworm { zeros, size };\nfun main() { println(zeros(size())); }\n",
+        ),
+    ]);
+    for (cwd, file) in [("glow", "examples/entry.la"), ("app", "main.la")] {
+        let out = lughac(&t.0.join(cwd), &t.0, &["run", file]);
+        assert_eq!(
+            text(&out.stdout),
+            "[0.0, 0.0, 0.0]\n",
+            "{file}: {}",
+            text(&out.stderr)
+        );
+    }
+    let tested = lughac(&t.0.join("glow"), &t.0, &["test", "src/lib.la"]);
+    assert!(
+        text(&tested.stdout).contains("test glowworm.sized ... ok"),
+        "{}{}",
+        text(&tested.stdout),
+        text(&tested.stderr)
+    );
+    let listed = lughac(&t.0.join("glow"), &t.0, &["test", "--list", "src/lib.la"]);
+    assert_eq!(
+        text(&listed.stdout),
+        "test glowworm.sized src/lib.la:9:11\n"
+    );
+}
