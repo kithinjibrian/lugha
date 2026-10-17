@@ -157,7 +157,7 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
         lock_folder: manifest_folder.clone(),
     };
     let (mut base, mut next_id) = (0usize, 0u32);
-    let mut packages = packages::Packages::new(root, manifest_folder, env.fetcher);
+    let mut packages = packages::Packages::new(root.clone(), manifest_folder, env.fetcher);
     // Every file ever queued, with its module path, so each is read once
     // whoever imports it, and only under one name (E0328, v15).
     let mut seen: Vec<(PathBuf, Vec<String>)> = vec![(paths::normalized(main), Vec::new())];
@@ -175,9 +175,17 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
                 Ok(bytes) => bytes,
                 Err(e) if e.kind() == io::ErrorKind::NotFound && asked_by.is_some() => {
                     let at = asked_by.expect("checked just above");
+                    // From the main file: a module beside it, by a shorter name.
+                    let from_main = loaded
+                        .modules
+                        .first()
+                        .is_some_and(|m| at.end <= m.text.len());
+                    let beside = (1..path.len()).map(|k| &path[k..]).find(|rest| {
+                        from_main && paths::exists(read, &resolve::file_of(&root, rest))
+                    });
                     loaded
                         .diagnostics
-                        .push(resolve::not_found(&path, &file, at));
+                        .push(resolve::not_found(&path, &file, at, beside));
                     continue;
                 }
                 Err(source) => return Err(LoadError::Io { path: file, source }),

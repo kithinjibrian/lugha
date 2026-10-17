@@ -286,3 +286,28 @@ fn a_package_entry_flattens_a_module_with_a_glob_v17() {
         text(&out.stderr)
     );
 }
+
+#[test]
+fn e0312_in_a_test_file_suggests_its_neighbour_v17() {
+    let t = Temp::with(&[
+        (
+            "kiv/lugha.toml",
+            "[package]\nname = \"kiv\"\nsource = \"src\"\n",
+        ),
+        ("kiv/src/lib.la", "public fun one(): i64 = 1;\n"),
+        ("kiv/test/support.la", "public fun two(): i64 = 2;\n"),
+        ("kiv/test/a.la", "import test.support;\n@test fun t() {}\n"),
+        (
+            "kiv/test/b.la",
+            "import kiv.test.support;\n@test fun t() {}\n",
+        ),
+    ]);
+    for file in ["test/a.la", "test/b.la"] {
+        let out = lughac(&t.0.join("kiv"), &t.0, &["check", file]);
+        let err = text(&out.stderr);
+        assert!(
+            err.contains("E0312") && err.contains("`import support;`"),
+            "{file}: {err}"
+        );
+    }
+}
