@@ -8527,3 +8527,15 @@ Branch: prp-140-float_bits
 
 ### STILL OPEN AT CLOSE
 - Completion of `to_bits` waits on splitting `src/check/members.rs` (503 lines; needs the user's approval).
+
+## SESSION 260 — 2026-10-17 — Constants: discovery, PRP-141 proposed — closed
+Branch: main
+
+### DONE
+- Discovery (Q1: constants only, no mutable statics); PRP-141 proposed (milestone 109). Awaiting approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-141 awaits approval; `src/check/members.rs` is 503 lines.
