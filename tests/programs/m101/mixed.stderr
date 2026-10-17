@@ -1,0 +1,7 @@
+error[E0201]: this map's entries are `key: value`
+  --> tests/programs/m101/mixed.la:2:23
+  |
+2 |     let m = #{"a": 1, 2};
+  |                       ^
+
+For more about E0201, run `lughac explain E0201`.

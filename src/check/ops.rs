@@ -68,6 +68,9 @@ impl Checker {
                 _ if op.is_bitwise() => l.is_integer(),
                 _ => l.is_numeric(),
             };
+        if allowed && matches!(op, BinOp::Eq | BinOp::Ne) {
+            self.equality_used(expr, &l);
+        }
         if !allowed && l != Type::Never {
             let ord = !matches!(op, BinOp::Eq | BinOp::Ne);
             let wanted = self

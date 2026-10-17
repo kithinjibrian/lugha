@@ -87,6 +87,7 @@ impl Checker {
         } else {
             self.printed(&args[0], &ty);
             self.printed(&args[1], &ty);
+            self.equality_used(call, &ty);
         }
         Type::Void
     }

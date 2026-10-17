@@ -37,13 +37,19 @@ impl Checker {
     }
 
     /// The prelude's key for a type name no module declares: `Result`,
-    /// `Ordering` (v15), or an iterator type (v10).
+    /// `Ordering` (v15), `Map` and `Set` (v17), or an iterator type (v10).
     pub(super) fn prelude_type(&self, name: &str) -> Option<String> {
         if name == "Result" && self.enums.contains_key(RESULT) {
             return Some(RESULT.to_string());
         }
         if name == "Ordering" && self.enums.contains_key(super::ordering::ORDERING) {
             return Some(super::ordering::ORDERING.to_string());
+        }
+        // Maps and sets (v17, milestone 101).
+        for key in [super::maps::MAP, super::maps::SET] {
+            if key.strip_prefix("$prelude.") == Some(name) && self.structs.contains_key(key) {
+                return Some(key.to_string());
+            }
         }
         self.prelude_iter_type(name)
     }

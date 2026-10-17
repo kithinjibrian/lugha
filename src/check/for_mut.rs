@@ -13,6 +13,21 @@ impl Checker {
     /// `for var of mut iter { body }`.
     pub(super) fn for_of_mut(&mut self, var: &Ident, iter: &Expr, body: &Block) {
         let ty = self.value(iter, None);
+        // A map or set is never changed through its loop (v17, milestone 101).
+        if super::maps::key_of(&ty).is_some() {
+            let d = crate::diagnostic::Diagnostic::error(
+                "E0442",
+                format!(
+                    "`for … of mut` can't change a `{}` in place",
+                    ty.to_string().replace("$prelude.", "")
+                ),
+                iter.span,
+            )
+            .with_help("loop over `m.keys()` and assign `m[k] = …`");
+            self.report(d);
+            self.iterator_loop(var, iter, &ty, body);
+            return;
+        }
         self.loop_place(iter, &ty);
         let guard = self.place_path(iter);
         if let Some(path) = &guard {

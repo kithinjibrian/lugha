@@ -103,6 +103,7 @@ pub(super) fn symbol(kind: &TokenKind) -> &'static str {
         PercentEq => "%=",
         Question => "?",
         At => "@",
+        HashBrace => "#{",
         Amp => "&",
         AmpEq => "&=",
         Pipe => "|",

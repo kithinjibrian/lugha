@@ -144,6 +144,10 @@ impl Checker {
                     None if u.callee.key == PRINT => {
                         self.show_instances(&subst(&u.callee.args[0], &generics, &args))
                     }
+                    // An `==` reaches the `same` of each map and set it compares (v17).
+                    None if u.callee.key == super::maps::EQUAL => {
+                        self.same_instances(&subst(&u.callee.args[0], &generics, &args))
+                    }
                     None => vec![Instance {
                         key: u.callee.key.clone(),
                         args: u

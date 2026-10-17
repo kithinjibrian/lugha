@@ -182,7 +182,12 @@ impl Checker {
             TypeKind::Option(inner) => Type::Option(Box::new(self.resolve(inner))),
             TypeKind::Named(name) => self.resolve_named(name, ty.span),
             // `m.T`, `T<args>`, `m.T<args>` (PRP-034, PRP-035).
-            TypeKind::Applied(applied) => self.resolve_applied(applied, ty.span),
+            TypeKind::Applied(applied) => {
+                let resolved = self.resolve_applied(applied, ty.span);
+                // `Map<f64, V>` or `Set<f64>` written anywhere is E0441 (v17).
+                self.float_keys(&resolved, ty.span);
+                resolved
+            }
             TypeKind::Fun(params, ret) => self.resolve_fun(params, ret.as_deref()),
             TypeKind::Tuple(written) => {
                 let types = written.iter().map(|t| self.resolve(t)).collect();

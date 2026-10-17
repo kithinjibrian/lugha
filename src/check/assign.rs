@@ -12,6 +12,9 @@ impl Checker {
     /// an array being iterated.
     pub(super) fn assign(&mut self, op: AssignOp, place: &Expr, value: &Expr) {
         let mark = self.changes_mark();
+        if self.map_assign(op, place, value, mark) {
+            return;
+        }
         // Typing the place reports E0301/E0406/E0410/E0411 as for any expression.
         let target = self.expr(place, None);
         // `c.count = 1` on an actor's handle is E0439 already (v17).

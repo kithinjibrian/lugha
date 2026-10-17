@@ -154,6 +154,11 @@ pub fn expr(expr: &Expr) -> String {
         ExprKind::Array(elements) => list("array", &elements.iter().collect::<Vec<_>>()),
         ExprKind::Tuple(elements) => list("tuple", &elements.iter().collect::<Vec<_>>()),
         ExprKind::Repeat(value, count) => list("repeat", &[value, count]),
+        ExprKind::Hashed(lit) => match lit.kind {
+            crate::ast::HashKind::Map => list("map", &[&lit.keys, &lit.values]),
+            crate::ast::HashKind::Set => list("set", &[&lit.keys]),
+            crate::ast::HashKind::Empty => "(hash-empty)".to_string(),
+        },
         ExprKind::If { cond, then, else_ } => {
             let otherwise = else_
                 .as_ref()

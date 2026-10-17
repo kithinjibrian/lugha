@@ -87,6 +87,11 @@ impl Walk<'_> {
             ExprKind::Array(elements) | ExprKind::Tuple(elements) => {
                 elements.iter().for_each(|e| self.store(e))
             }
+            // `#{ … }` (v17): its keys' and values' arrays, stored like elements.
+            ExprKind::Hashed(lit) => {
+                self.expr(&lit.keys);
+                self.expr(&lit.values);
+            }
             ExprKind::StructLit(lit) => {
                 lit.fields.iter().for_each(|(_, e)| self.store(e));
                 // Its unwritten fields are stored too: copied from a place, moved on its last use (v17).

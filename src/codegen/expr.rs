@@ -26,6 +26,7 @@ impl<'ctx> Lowerer<'ctx> {
     /// Lowers an expression at its own type.
     pub(super) fn unconverted(&mut self, expr: &Expr) -> Result<Value<'ctx>, CodegenError> {
         let value: BasicValueEnum<'ctx> = match &expr.kind {
+            ExprKind::Hashed(lit) => self.hashed(expr, lit)?,
             ExprKind::Int(_) | ExprKind::Float(_) => self.literal(expr, false),
             ExprKind::Char(code) => self
                 .context
@@ -169,6 +170,10 @@ impl<'ctx> Lowerer<'ctx> {
             }
             ExprKind::Closure(c) => self.closure_value(expr, c)?,
             ExprKind::Try(inner) => return self.try_value(inner),
+            // `m[k]` on a map (v17): the `at` the checker recorded here.
+            ExprKind::Index(base, open, index) if self.is_map(base) => {
+                self.map_entry(expr, base, index, open.start)?
+            }
             ExprKind::Index(base, open, index) => self.index(base, open.start, index)?,
             // `i16.MAX` (v10): the checker typed the keyword `void` too.
             ExprKind::Field(base, field) if Type::int_limit(base, &field.name).is_some() => {

@@ -104,6 +104,17 @@ impl<'ctx> Lowerer<'ctx> {
                     self.scan_read(scan, init);
                     scan.bind(&name.name);
                 }
+                // `m[k] = v` on a map (v17) is `m.insert(k, v)`: the map changes.
+                StmtKind::Assign { place, value, .. } if matches!(&place.kind, ExprKind::Index(base, _, _) if self.is_map(base)) =>
+                {
+                    let ExprKind::Index(base, _, key) = &place.kind else {
+                        unreachable!("matched just above")
+                    };
+                    let deep = self.ty(base).is_deep(&self.structs);
+                    self.scan_write(scan, base, deep);
+                    self.scan_read(scan, key);
+                    self.scan_read(scan, value);
+                }
                 StmtKind::Assign { place, value, .. } => {
                     let deep = self.ty(place).is_deep(&self.structs);
                     self.scan_write(scan, place, deep);
@@ -225,6 +236,10 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Block(block) => self.block_scan(scan, block),
             ExprKind::Array(items) | ExprKind::Tuple(items) => {
                 items.iter().for_each(|e| self.scan_read(scan, e))
+            }
+            ExprKind::Hashed(lit) => {
+                self.scan_read(scan, &lit.keys);
+                self.scan_read(scan, &lit.values);
             }
             ExprKind::StructLit(lit) => {
                 lit.fields.iter().for_each(|(_, e)| self.scan_read(scan, e));

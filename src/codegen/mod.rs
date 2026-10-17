@@ -46,6 +46,7 @@ mod interfaces;
 mod io;
 mod iterators;
 mod lower;
+mod maps;
 mod matching;
 mod methods;
 mod operators;

@@ -52,6 +52,25 @@ impl Printer<'_> {
                 let items = self.exprs(elements);
                 huggable(list("[", items, "]"))
             }
+            // `#{"a": 1}`, `#{1, 2}`, `#{}` (v17, milestone 101).
+            ExprKind::Hashed(lit) => {
+                let (ExprKind::Array(keys), ExprKind::Array(values)) =
+                    (&lit.keys.kind, &lit.values.kind)
+                else {
+                    unreachable!("the parser gives a literal's keys and values as arrays")
+                };
+                let mut items = Vec::new();
+                for (i, key) in keys.iter().enumerate() {
+                    let k = self.allowing(|p| p.expr(key));
+                    items.push(match values.get(i) {
+                        Some(value) => {
+                            concat(vec![k, text(": "), self.allowing(|p| p.expr(value))])
+                        }
+                        None => k,
+                    });
+                }
+                huggable(list("#{", items, "}"))
+            }
             ExprKind::Repeat(value, count) => {
                 let (v, n) = self.allowing(|p| (p.expr(value), p.expr(count)));
                 concat(vec![text("["), v, text("; "), n, text("]")])

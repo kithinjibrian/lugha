@@ -107,14 +107,14 @@ impl Map<K: Eq, V> {
     /** True if `k` has a value. */
     fun has(self, k: K): bool = $map_find(self, k).1 >= 0;
 
-    /** The value of `k`: `m[k]`; panics when `k` has none. */
-    fun at(self, k: K): V {
+    /** The value of `k` for `m[k]`, or the panic's message, which codegen raises at the `[`. */
+    fun $entry(self, k: K): Result<V, string> {
         let (_, e) = $map_find(self, k);
         if e < 0 {
             let shown = to_string([k]);
-            panic("no key {shown.slice(1, shown.len - 1)} in the map");
+            return Err("no key {shown.slice(1, shown.len - 1)} in the map");
         }
-        self.$vals[e]
+        Ok(self.$vals[e])
     }
 
     /** Sets `k` to `v`: `m[k] = v`. A new key goes last; an old one keeps its place. */
@@ -184,7 +184,7 @@ impl Map<K: Eq, V> {
     /** `#{"ann": 31, "bo": 40}`. */
     fun show(self): string {
         let mut parts: string[] = [];
-        for (k, v) of self {
+        for (k, v) of self.iter() {
             let ks = to_string([k]);
             let vs = to_string([v]);
             parts.push("{ks.slice(1, ks.len - 1)}: {vs.slice(1, vs.len - 1)}");
@@ -200,7 +200,7 @@ impl Map<K: Eq, V: Eq> {
         if self.len != other.len {
             return false;
         }
-        for (k, v) of self {
+        for (k, v) of self.iter() {
             if other.get(k) != Some(v) {
                 return false;
             }
@@ -250,7 +250,7 @@ impl Set<T: Eq> {
     /** The values of both: `self`'s, then `other`'s new ones. */
     fun union(self, other: Set<T>): Set<T> {
         let mut out = self.iter();
-        for x of other {
+        for x of other.iter() {
             out.insert(x);
         }
         out
@@ -259,7 +259,7 @@ impl Set<T: Eq> {
     /** The values in both, in `self`'s order. */
     fun intersect(self, other: Set<T>): Set<T> {
         let mut out: Set<T> = $set_of([]);
-        for x of self {
+        for x of self.iter() {
             if other.has(x) {
                 out.insert(x);
             }
@@ -270,7 +270,7 @@ impl Set<T: Eq> {
     /** The values of `self` not in `other`. */
     fun minus(self, other: Set<T>): Set<T> {
         let mut out: Set<T> = $set_of([]);
-        for x of self {
+        for x of self.iter() {
             if !other.has(x) {
                 out.insert(x);
             }
@@ -283,7 +283,7 @@ impl Set<T: Eq> {
         if self.len != other.len {
             return false;
         }
-        for x of self {
+        for x of self.iter() {
             if !other.has(x) {
                 return false;
             }
@@ -294,7 +294,7 @@ impl Set<T: Eq> {
     /** `#{1, 2, 3}`. */
     fun show(self): string {
         let mut parts: string[] = [];
-        for x of self {
+        for x of self.iter() {
             let xs = to_string([x]);
             parts.push(xs.slice(1, xs.len - 1));
         }

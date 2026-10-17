@@ -1,0 +1,9 @@
+error[E0441]: a set's values can't hold a float: `f64`
+  --> tests/programs/m101/float_key.la:2:12
+  |
+2 |     let s: Set<f64> = #{1.5};
+  |            ^^^^^^^^
+  |
+  = help: `NaN != NaN`, so a float key could never be found again; use an integer
+
+For more about E0441, run `lughac explain E0441`.

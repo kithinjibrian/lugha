@@ -34,6 +34,10 @@ impl<'ctx> Lowerer<'ctx> {
                     "eq",
                 )
                 .expect(POSITIONED),
+            // Maps and sets (v17): their `same`, which ignores order.
+            Type::Struct(key, args) if key == "$prelude.Map" || key == "$prelude.Set" => {
+                self.same(a, b, key, args)
+            }
             Type::Struct(_, _) | Type::Enum(_, _) | Type::Option(_) | Type::Array(_) => {
                 let helper = self.eq_function(ty);
                 let call = self
