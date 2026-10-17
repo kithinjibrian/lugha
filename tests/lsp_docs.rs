@@ -332,3 +332,32 @@ fn a_packages_entry_hovers_and_opens_as_its_module_v17() {
     );
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn extern_types_and_actors_carry_their_docs_v17() {
+    let main = "/** A C window. */\npublic extern type Win;\n\n\
+                /** Counts. */\nactor Counter {\n    n: i64,\n    fun get(self): i64 = self.n;\n}\n\n\
+                fun keep(w: Win) {}\n\
+                fun main() {\n    let c = spawn Counter { n: 0 };\n    println(c.get());\n}\n";
+    let t = Temp::with(&[("main.la", main)]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, main);
+    s.expect(&uri, &[]);
+    let mut at = |context: &str, word: &str| {
+        let start = main.find(context).unwrap() + context.find(word).unwrap();
+        let before = &main[..start];
+        let line = before.matches('\n').count() as u32;
+        let col = (start - before.rfind('\n').map_or(0, |i| i + 1)) as u32;
+        s.hover(&uri, line, col)["contents"]["value"].to_string()
+    };
+    for (context, word, doc) in [
+        ("type Win", "Win", "A C window."),
+        ("w: Win", "Win", "A C window."),
+        ("actor Counter", "Counter", "Counts."),
+    ] {
+        let shown = at(context, word);
+        assert!(shown.contains(doc), "{context}: {shown}");
+    }
+    assert_eq!(s.finish(), Some(0));
+}

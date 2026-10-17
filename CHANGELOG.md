@@ -27,6 +27,7 @@ Never deleted. Older entries are never modified.
 - An extern parameter with a function type is now a callback instead of E0409; E0409's message for a function an extern would return says so (milestone 88)
 
 ### Fixed
+- Doc comments didn't attach to `extern type` and `actor` declarations, so hover showed no doc for them; they now do, and spec §2 lists both (the user, session 231)
 - A named import couldn't bring in an `extern type`: `import m { Handle };` and `public import m { Handle };` were E0301, while `m.Handle` worked; extern types now import and re-export by name like structs, and hover and Go to Definition reach them (kivuli's report, session 230). E0314's page now explains that a module is imported once per file, so `import m;` and `import m { X };` clash, and that `import m { X };` binds `m` too
 - The names inside an import's braces (`import kivuli { text, column };`, and an `as` alias) were invisible to the editor: hover, Go to Definition, Find References and Rename now reach them as they reach any use, so renaming `text` also edits `{ text }` (the user, session 229)
 - Inference from siblings reached only a waiting call itself: `assert_eq(column([text("a")]), expected)` was E0412. A generic call whose result's type parameter only waiting arguments could fix now waits too, as does a list or `Some` of waiting calls, and a list literal whose first element waits takes its type from the first element that doesn't (`[text("a"), button("+", Msg.Inc)]`) (kivuli's second report; milestone 96)
