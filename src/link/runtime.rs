@@ -93,4 +93,23 @@ mod tests {
         ));
         assert!(!missing_openssl("undefined reference to `foo'"));
     }
+
+    #[test]
+    fn only_a_tls_plan_links_openssl() {
+        use std::path::Path;
+        let mut plan = super::super::Plan::default();
+        let has_ssl = |plan: &super::super::Plan| {
+            super::super::args(&[], &[], Path::new("rt.c"), plan, Path::new("out"))
+                .iter()
+                .any(|a| a == "-lssl")
+        };
+        assert!(!has_ssl(&plan));
+        plan.tls = Some(crate::span::Span::new(0, 1));
+        assert!(has_ssl(&plan));
+        let d = super::super::LinkError::Tls {
+            span: crate::span::Span::new(0, 1),
+        }
+        .diagnostic();
+        assert_eq!(d.map(|d| d.code), Some("E0332"));
+    }
 }

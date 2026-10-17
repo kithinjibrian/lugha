@@ -8666,3 +8666,15 @@ Branch: prp-144-tls
 
 ### STILL OPEN AT CLOSE
 - Candidates: containing a handler's panic (runtime), non-blocking files/stdin, mutual TLS.
+
+## SESSION 271 — 2026-10-18 — link/mod.rs back under 500 lines — closed
+Branch: link-size
+
+### DONE
+- PR #72 left `src/link/mod.rs` at 501 lines; its TLS link test moved to `link/runtime.rs` (482 lines now). clippy, lib `link` pass.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.
