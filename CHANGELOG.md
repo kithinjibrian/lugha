@@ -8,6 +8,9 @@ Never deleted. Older entries are never modified.
 
 ## [Unreleased]
 
+### Fixed
+- An `if`/`match` branch that can't be typed alone (`[]`, `None`, `text("a")`) takes its sibling branch's type: `if c { [] } else { [1] }` and `match c { 0 => [], _ => [2] }` no longer report E0412 (kivuli, session 263)
+
 ### Added
 - Completion offers `to_bits` on floats (milestone 108's gap); `check/members.rs` split: its candidate names moved to `check/member_names.rs` (session 262)
 - Global constants, milestone 109 (PRP-141): `[private | public] const NAME: T = value;` — constant expressions only (E0445), any order without cycles (E0446), computed once before `main` (and before each test), read like a variable and copied like one (E0501 to assign); `m.NAME`, named imports and re-exports; hover, go-to-definition, references and completion; VS Code 0.19.0 highlights `const`. `const` is a keyword now

@@ -24,6 +24,9 @@ impl Checker {
         // A pattern with an error can't be reasoned about: skip E0417 then.
         let mut analysable = !matches!(sty, Type::Error | Type::Never);
         let mut result: Option<(Type, Span)> = None;
+        // Arms that wait for a sibling's type (`[]`, kivuli), with their
+        // bindings, checked once an arm fixes it.
+        let mut waiting: Vec<(&Arm, Vec<(Ident, Type, bool)>)> = Vec::new();
         for arm in arms {
             let mut bindings = Vec::new();
             let before = self.diagnostics.len();
@@ -48,6 +51,27 @@ impl Checker {
             }
             if let Some(guard) = &arm.guard {
                 self.expect_type(guard, &Expect::of(Type::Bool));
+            }
+            if expect.is_none() && result.is_none() && self.branch_waits(&arm.body) {
+                self.pop();
+                waiting.push((arm, bindings));
+                continue;
+            }
+            let ty = self.arm_body(&arm.body, &result, expect);
+            self.unused(&bindings);
+            self.pop();
+            if result.is_none() && ty != Type::Never {
+                result = Some((ty, arm.body.span));
+            }
+        }
+        for (arm, bindings) in waiting {
+            self.push();
+            for (name, ty, mutable) in &bindings {
+                let binding = match mutable {
+                    true => Binding::Let { mutable: true },
+                    false => Binding::Pattern,
+                };
+                self.declare(name, ty.clone(), binding);
             }
             let ty = self.arm_body(&arm.body, &result, expect);
             self.unused(&bindings);
@@ -294,5 +318,15 @@ mod tests {
         let discarded = "fun main() { let n = 1; match n { _ => 1 } let x = 2; }";
         assert_eq!(errors(discarded), [("E0505", "match n { _ => 1 }")]);
         ok("fun f(n: i64): i64 { match n { _ => { return 1; } } }\nfun main() {}");
+    }
+
+    #[test]
+    fn an_empty_array_arm_takes_a_later_arms_type() {
+        use crate::check::test_util::let_type;
+        let src = "fun main() { let c = 1; let v = match c { 0 => [], _ => [c] }; }";
+        assert_eq!(
+            let_type(src, "v"),
+            crate::check::Type::Array(Box::new(crate::check::Type::I64))
+        );
     }
 }

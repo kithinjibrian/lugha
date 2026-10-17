@@ -917,7 +917,7 @@ Float arithmetic follows IEEE 754: overflow gives an infinity and division by ze
 
 **Variable declarations.** Every variable must be initialized. A variable is in scope from the end of its declaration to the end of its enclosing block, so `let x = x + 1;` refers to an outer `x`. Shadowing is allowed, both in nested blocks and in the same block.
 
-**if / else.** `if` is an expression. The condition must be `bool`. With an `else`, both branches must have the same type, which becomes the type of the whole `if`. Without an `else`, the type is `()`. An expected type flows into both branches, so `let x: i32 = if c { 1 } else { 2 };` is valid.
+**if / else.** `if` is an expression. The condition must be `bool`. With an `else`, both branches must have the same type, which becomes the type of the whole `if`. Without an `else`, the type is `()`. An expected type flows into both branches, so `let x: i32 = if c { 1 } else { 2 };` is valid. With none, a branch that can't be typed alone — `[]`, `None`, an untyped closure, a result-only generic call — takes the other branch's type: `if c { [] } else { [1] }` is an `i64[]`, either way round; in a `match`, such arms wait for the first arm that can be typed (v17).
 
 ```
 let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
