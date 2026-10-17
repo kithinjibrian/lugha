@@ -192,7 +192,7 @@ HTTP/1.1 on `std.net`, written in Lugha. Details in PRP-143.
 
 153–166. **`std.http`** (milestone 111): `serve(addr, handler)` with keep-alive, one green thread per connection, strict limits (8 KiB line and headers, 100 headers, 1 MiB body, 30 s) and smuggling-safe framing; `Request`/`Response` with `Map` headers; a client for `http://` (`get`, `post`, `request`); a handler's panic ends the program (documented); no TLS, HTTP/2, streaming, redirects or cookies; tag `m111`. Needs the user's security sign-off.
 
-## Decisions behind milestone 112 (session 269; proposed)
+## Decisions behind milestone 112 (session 269; approved in session 270)
 
 `https://`: TLS through the system's OpenSSL 3. Details in PRP-144.
 

@@ -8652,3 +8652,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-144 awaits approval and the security review.
+
+## SESSION 270 — 2026-10-18 — TLS (milestone 112) — open
+Branch: prp-144-tls

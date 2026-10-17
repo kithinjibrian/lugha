@@ -1,6 +1,6 @@
 ## FEATURE: TLS — `std.tls` over system OpenSSL 3, and `https://` in `std.http`; milestone 112 (v17).
 
-**Status:** proposed 2026-10-18 (session 269), after discovery in the same session (the user: "okay do https"; Q1 "yeah": system OpenSSL 3, linked only into programs that use TLS; Q2 "ok": always verify, `ca_file` as the only way to trust more). **Needs the user's security review** (cryptography; a new linked C library).
+**Status:** approved 2026-10-18 (session 270, with the security review); proposed in session 269, after discovery in the same session (the user: "okay do https"; Q1 "yeah": system OpenSSL 3, linked only into programs that use TLS; Q2 "ok": always verify, `ca_file` as the only way to trust more). **Needs the user's security review** (cryptography; a new linked C library).
 
 ## OBJECTIVE
 ```lugha
