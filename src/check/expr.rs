@@ -120,6 +120,10 @@ impl Checker {
             ExprKind::Call(callee, args) if let Some(op) = super::float_ops::float_op(callee) => {
                 self.float_call(expr, (callee, op), args, expect)
             }
+            ExprKind::Hashed(lit) => self.hashed(expr, lit, expect),
+            ExprKind::Call(callee, args) if let Some(op) = super::hashing::hash_op(callee) => {
+                self.hash_call(expr, (callee, op), args)
+            }
             ExprKind::Call(callee, args) if let Some(op) = super::float_ops::os_op(callee) => {
                 self.os_call(expr, (callee, op), args)
             }
@@ -149,7 +153,7 @@ impl Checker {
             ExprKind::Closure(c) => self.closure(expr, c, expect),
             ExprKind::Try(inner) => self.try_expr(expr, inner),
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
-            ExprKind::Index(base, _, index) => self.index(base, index),
+            ExprKind::Index(base, _, index) => self.index(expr, base, index),
             ExprKind::Field(base, field) => match self.variant_value(expr, (base, field), expect) {
                 Some(ty) => ty,
                 None => match self.function_field(expr, (base, field), expect) {

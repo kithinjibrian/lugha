@@ -9,6 +9,8 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Changed
+- The iterator type `it.map(f)` returns is `Mapped<T, U>` (was `Map<T, U>`): `Map` is now the map type (milestone 101)
+- Completion no longer offers a prelude type's `$` members, which no program can write (milestone 101)
 - E0312's help names a module beside the main file when the import spelled a longer path: `import test.support;` in `test/uses.la` adds "`support.la` is beside this file: `import support;`" (session 238, after kivuli's report)
 - `lughac fmt` keeps an `if` with `else` whose branches are lone values on one line when it fits: `let y = if c { 1 } else { 2 };` (was five lines); chains break all or nothing (kivuli, session 235)
 - `lughac test`'s summary counts files that didn't compile: `1 test: 1 passed, 0 failed, 1 file didn't compile`, and `"uncompiled":K` in the `--json` summary (kivuli, session 235)
@@ -50,6 +52,7 @@ Never deleted. Older entries are never modified.
 - The language server published a `lugha.toml` error (E0325) to nothing once a program with loader errors was checked: the prelude's offsets overlapped the manifests'. The server now places the prelude after every loaded file (`modules::with_prelude_at`); the CLI never checked such programs and is unchanged
 
 ### Added
+- Maps and sets, milestone 101 (PRP-133): `Map<K, V>` and `Set<T>`, built in, with `#{"ann": 31}`, `#{1, 2}` and `#{}` literals; values like arrays; keys any `Eq` type without floats (E0441), hashed structurally (`$hash.value`, FNV-1a matching `==`); insertion order; `m[k]` (panics `no key …` at the `[`), `m[k] = v`, `get`/`has`/`insert`/`remove`/`clear`/`keys`/`values`, `for (k, v) of m`; set `insert`/`has`/`remove`/`union`/`intersect`/`minus`; `collect_map()`/`collect_set()`; `==` regardless of order; printing as literals; E0442 (`for … of mut` over a map), W0105 (a key written twice); written in Lugha in `src/prelude/maps.la`; VS Code 0.16.0 highlights `#{`
 - Glob re-exports, milestone 100 (PRP-132): `public import raw { * };` makes every `public` item of `raw` (functions, externs, extern types, structs, enums, interfaces, and what `raw` re-exports by name) an item of this module; E0201 for `{ * }` without `public` or beside other names; E0314 at the `*` for a clash, naming both sources. Completion after `m.` now also lists what `m` re-exports, by name or glob (kivuli / lugha-gtk)
 - Package entry modules, milestone 99 (PRP-131): `import kivuli;` imports the package's `lib.la` (at its module root) as the module `kivuli`, also as `import kivuli { X };` and `public import kivuli;`; `lughac test src/lib.la` names tests `kivuli.name`; `import N.lib;` is E0312
 - Module doc comments, milestone 98 (PRP-130): a file's first `/** … */`, followed by a blank line or an `import`, documents its module; hovering a module's name (in an `import` or `m.f`) shows `module a.b` and that doc; the std modules' headers are now module docs

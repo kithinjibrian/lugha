@@ -3,7 +3,7 @@
 //! editor work offline and match this compiler.
 
 /// Every code with its explanation, in code order (`docs/errors/<CODE>.md`).
-pub const EXPLANATIONS: [(&str, &str); 110] = [
+pub const EXPLANATIONS: [(&str, &str); 113] = [
     ("E0101", include_str!("../docs/errors/E0101.md")),
     ("E0102", include_str!("../docs/errors/E0102.md")),
     ("E0103", include_str!("../docs/errors/E0103.md")),
@@ -99,6 +99,8 @@ pub const EXPLANATIONS: [(&str, &str); 110] = [
     ("E0438", include_str!("../docs/errors/E0438.md")),
     ("E0439", include_str!("../docs/errors/E0439.md")),
     ("E0440", include_str!("../docs/errors/E0440.md")),
+    ("E0441", include_str!("../docs/errors/E0441.md")),
+    ("E0442", include_str!("../docs/errors/E0442.md")),
     ("E0501", include_str!("../docs/errors/E0501.md")),
     ("E0502", include_str!("../docs/errors/E0502.md")),
     ("E0503", include_str!("../docs/errors/E0503.md")),
@@ -114,6 +116,7 @@ pub const EXPLANATIONS: [(&str, &str); 110] = [
     ("W0102", include_str!("../docs/errors/W0102.md")),
     ("W0103", include_str!("../docs/errors/W0103.md")),
     ("W0104", include_str!("../docs/errors/W0104.md")),
+    ("W0105", include_str!("../docs/errors/W0105.md")),
 ];
 
 /// The explanation of `code` (`E0501`, `e0501`), if it is a code.

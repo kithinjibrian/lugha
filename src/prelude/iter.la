@@ -55,9 +55,9 @@ impl Range {
 fun range(from: i64, to: i64): Range = Range { at: from, end: to };
 
 // `f` of each value: `it.map(f)`.
-struct Map<T, U> { src: Iter<T>, f: fun(T): U }
+struct Mapped<T, U> { src: Iter<T>, f: fun(T): U }
 
-impl Map<T, U> {
+impl Mapped<T, U> {
     fun next(mut self): Option<U> = match self.src.next() {
         Some(x) => Some(self.f(x)),
         None => None,
@@ -65,7 +65,7 @@ impl Map<T, U> {
 }
 
 /** An iterator of `f` applied to each item, lazily: `it.map(f)`. */
-fun iter_map<T, U>(it: Iter<T>, f: fun(T): U): Map<T, U> = Map { src: it, f: f };
+fun iter_map<T, U>(it: Iter<T>, f: fun(T): U): Mapped<T, U> = Mapped { src: it, f: f };
 
 // The values `keep` is true for: `it.filter(keep)`.
 struct Filter<T> { src: Iter<T>, keep: fun(T): bool }

@@ -1,0 +1,321 @@
+// Maps and sets (v17, milestone 101, PRP-133): `#{k: v, …}` and `#{x, …}`.
+// A compact table: entries in insertion order (removed ones marked and
+// compacted when half are), and `$slots`, open addressing with linear probing
+// at a load of at most 2/3 over indexes into the entries. Values, like arrays:
+// copies are independent. Keys are hashed by `$hash.value`, which matches `==`.
+
+/**
+ * A map from keys to values, visited in insertion order: `#{"ann": 31}`.
+ * Read with `m[k]` (panics when missing) or `m.get(k)`; write with `m[k] = v`.
+ */
+struct Map<K, V> {
+    /** The number of entries. */
+    len: i64,
+    $keys: K[],
+    $vals: V[],
+    $live: bool[],
+    $slots: i64[],
+    $at: i64,
+}
+
+/**
+ * A set of distinct values, visited in insertion order: `#{1, 2, 3}`.
+ */
+struct Set<T> {
+    /** The number of values. */
+    len: i64,
+    $map: Map<T, bool>,
+}
+
+/** The slot `k` is in (`.0`) and its entry, or -1 when it has none (`.1`). */
+fun $map_find<K: Eq, V>(m: Map<K, V>, k: K): (i64, i64) {
+    let mask = m.$slots.len - 1;
+    let mut i = ($hash.value(k) & (mask as u64)) as i64;
+    while true {
+        let s = m.$slots[i];
+        if s == 0 {
+            return (i, -1);
+        }
+        let e = s - 1;
+        if m.$live[e] && m.$keys[e] == k {
+            return (i, e);
+        }
+        i = (i + 1) & mask;
+    }
+    panic("unreachable")
+}
+
+/** `m`'s live entries alone, in order, over `cap` slots (a power of two). */
+fun $map_rebuilt<K: Eq, V>(m: Map<K, V>, cap: i64): Map<K, V> {
+    let mut out: Map<K, V> = Map { len: 0, $keys: [], $vals: [], $live: [], $slots: [0; cap], $at: 0 };
+    for e in 0..m.$keys.len {
+        if m.$live[e] {
+            out = $map_put(out, m.$keys[e], m.$vals[e]);
+        }
+    }
+    out
+}
+
+/** `m` with `k` set to `v`: replaced in place, or added at the end. */
+fun $map_put<K: Eq, V>(m: Map<K, V>, k: K, v: V): Map<K, V> {
+    let mut m = m;
+    if (m.$keys.len + 1) * 3 > m.$slots.len * 2 {
+        let mut cap = m.$slots.len;
+        while (m.len + 1) * 3 > cap {
+            cap = cap * 2;
+        }
+        m = $map_rebuilt(m, cap);
+    }
+    let (slot, e) = $map_find(m, k);
+    if e >= 0 {
+        m.$vals[e] = v;
+    } else {
+        m.$keys.push(k);
+        m.$vals.push(v);
+        m.$live.push(true);
+        m.$slots[slot] = m.$keys.len;
+        m.len += 1;
+    }
+    m
+}
+
+/** A map of `keys[i]` to `vals[i]`; a later key replaces an earlier one's value. */
+fun $map_of<K: Eq, V>(keys: K[], vals: V[]): Map<K, V> {
+    let mut m: Map<K, V> = Map { len: 0, $keys: [], $vals: [], $live: [], $slots: [0; 8], $at: 0 };
+    for i in 0..keys.len {
+        m = $map_put(m, keys[i], vals[i]);
+    }
+    m
+}
+
+/** A set of `xs`, each once, in their first order. */
+fun $set_of<T: Eq>(xs: T[]): Set<T> {
+    let mut s: Set<T> = Set { len: 0, $map: $map_of([], []) };
+    for x of xs {
+        s.insert(x);
+    }
+    s
+}
+
+impl Map<K: Eq, V> {
+    /** The value of `k`, or `None`. */
+    fun get(self, k: K): Option<V> {
+        let (_, e) = $map_find(self, k);
+        if e < 0 { None } else { Some(self.$vals[e]) }
+    }
+
+    /** True if `k` has a value. */
+    fun has(self, k: K): bool = $map_find(self, k).1 >= 0;
+
+    /** The value of `k` for `m[k]`, or the panic's message, which codegen raises at the `[`. */
+    fun $entry(self, k: K): Result<V, string> {
+        let (_, e) = $map_find(self, k);
+        if e < 0 {
+            let shown = to_string([k]);
+            return Err("no key {shown.slice(1, shown.len - 1)} in the map");
+        }
+        Ok(self.$vals[e])
+    }
+
+    /** Sets `k` to `v`: `m[k] = v`. A new key goes last; an old one keeps its place. */
+    fun insert(mut self, k: K, v: V) {
+        self = $map_put(self, k, v);
+    }
+
+    /** Removes `k`, giving its value, or `None` if it had none. */
+    fun remove(mut self, k: K): Option<V> {
+        let (_, e) = $map_find(self, k);
+        if e < 0 {
+            return None;
+        }
+        self.$live[e] = false;
+        self.len -= 1;
+        let v = self.$vals[e];
+        // Compact once half the entries are removed ones.
+        if (self.$keys.len - self.len) * 2 > self.$keys.len {
+            self = $map_rebuilt(self, self.$slots.len);
+        }
+        Some(v)
+    }
+
+    /** Removes every entry. */
+    fun clear(mut self) {
+        self = $map_of([], []);
+    }
+
+    /** The keys, in order. */
+    fun keys(self): K[] {
+        let mut out: K[] = [];
+        for e in 0..self.$keys.len {
+            if self.$live[e] {
+                out.push(self.$keys[e]);
+            }
+        }
+        out
+    }
+
+    /** The values, in their keys' order. */
+    fun values(self): V[] {
+        let mut out: V[] = [];
+        for e in 0..self.$keys.len {
+            if self.$live[e] {
+                out.push(self.$vals[e]);
+            }
+        }
+        out
+    }
+
+    /** The entries as `(key, value)`, in order: `for (k, v) of m`. */
+    fun next(mut self): Option<(K, V)> {
+        while self.$at < self.$keys.len {
+            let e = self.$at;
+            self.$at += 1;
+            if self.$live[e] {
+                return Some((self.$keys[e], self.$vals[e]));
+            }
+        }
+        None
+    }
+
+    /** An iterator of the entries as `(key, value)`, in order. */
+    fun iter(self): Map<K, V> = Map { $at: 0, ..self };
+
+
+    /** `#{"ann": 31, "bo": 40}`. */
+    fun show(self): string {
+        let mut parts: string[] = [];
+        for (k, v) of self.iter() {
+            let ks = to_string([k]);
+            let vs = to_string([v]);
+            parts.push("{ks.slice(1, ks.len - 1)}: {vs.slice(1, vs.len - 1)}");
+        }
+        "#{{{parts.join(", ")}}}"
+    }
+}
+
+// `==` on maps needs equal values too.
+impl Map<K: Eq, V: Eq> {
+    /** True if both have the same keys with equal values, in any order: `==`. */
+    fun same(self, other: Map<K, V>): bool {
+        if self.len != other.len {
+            return false;
+        }
+        for (k, v) of self.iter() {
+            if other.get(k) != Some(v) {
+                return false;
+            }
+        }
+        true
+    }
+}
+
+impl Set<T: Eq> {
+    /** True if `x` is in the set. */
+    fun has(self, x: T): bool = self.$map.has(x);
+
+    /** Adds `x`; true if it wasn't there. */
+    fun insert(mut self, x: T): bool {
+        if self.$map.has(x) {
+            return false;
+        }
+        self.$map.insert(x, true);
+        self.len += 1;
+        true
+    }
+
+    /** Removes `x`; true if it was there. */
+    fun remove(mut self, x: T): bool {
+        let gone = self.$map.remove(x).is_some();
+        if gone {
+            self.len -= 1;
+        }
+        gone
+    }
+
+    /** Removes every value. */
+    fun clear(mut self) {
+        self.$map.clear();
+        self.len = 0;
+    }
+
+    /** The values, in order: `for x of s`. */
+    fun next(mut self): Option<T> = match self.$map.next() {
+        Some((x, _)) => Some(x),
+        None => None,
+    };
+
+    /** An iterator of the values, in order. */
+    fun iter(self): Set<T> = Set { len: self.len, $map: self.$map.iter() };
+
+    /** The values of both: `self`'s, then `other`'s new ones. */
+    fun union(self, other: Set<T>): Set<T> {
+        let mut out = self.iter();
+        for x of other.iter() {
+            out.insert(x);
+        }
+        out
+    }
+
+    /** The values in both, in `self`'s order. */
+    fun intersect(self, other: Set<T>): Set<T> {
+        let mut out: Set<T> = $set_of([]);
+        for x of self.iter() {
+            if other.has(x) {
+                out.insert(x);
+            }
+        }
+        out
+    }
+
+    /** The values of `self` not in `other`. */
+    fun minus(self, other: Set<T>): Set<T> {
+        let mut out: Set<T> = $set_of([]);
+        for x of self.iter() {
+            if !other.has(x) {
+                out.insert(x);
+            }
+        }
+        out
+    }
+
+    /** True if both hold the same values, in any order: `==`. */
+    fun same(self, other: Set<T>): bool {
+        if self.len != other.len {
+            return false;
+        }
+        for x of self.iter() {
+            if !other.has(x) {
+                return false;
+            }
+        }
+        true
+    }
+
+    /** `#{1, 2, 3}`. */
+    fun show(self): string {
+        let mut parts: string[] = [];
+        for x of self.iter() {
+            let xs = to_string([x]);
+            parts.push(xs.slice(1, xs.len - 1));
+        }
+        "#{{{parts.join(", ")}}}"
+    }
+}
+
+/** A map of an iterator's `(key, value)` pairs; a later key replaces an earlier one's value. */
+fun iter_collect_map<K: Eq, V>(it: Iter<(K, V)>): Map<K, V> {
+    let mut m: Map<K, V> = $map_of([], []);
+    for (k, v) of it {
+        m.insert(k, v);
+    }
+    m
+}
+
+/** A set of an iterator's values. */
+fun iter_collect_set<T: Eq>(it: Iter<T>): Set<T> {
+    let mut s: Set<T> = $set_of([]);
+    for x of it {
+        s.insert(x);
+    }
+    s
+}

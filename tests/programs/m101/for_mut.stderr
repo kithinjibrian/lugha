@@ -1,0 +1,19 @@
+error[E0442]: `for … of mut` can't change a `Map<string, i64>` in place
+  --> tests/programs/m101/for_mut.la:3:23
+  |
+3 |     for (k, v) of mut m {
+  |                       ^
+  |
+  = help: loop over `m.keys()` and assign `m[k] = …`
+
+error[E0501]: cannot assign to `v`: it is not mutable
+  --> tests/programs/m101/for_mut.la:4:9
+  |
+3 |     for (k, v) of mut m {
+  |             - declared here
+4 |         v = 2;
+  |         ^
+  |
+  = help: match bindings are immutable; copy it into a `let mut`
+
+For more about E0442 and E0501, run `lughac explain <code>`.

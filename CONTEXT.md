@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**v17: milestones 91–100 done** (`m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**v17: milestones 91–101 done** (`m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -8233,6 +8233,53 @@ Branch: vscode-import-path
 
 ### PENDING DECISIONS OPENED
 - None.
+
+### STILL OPEN AT CLOSE
+- Nothing.
+
+---
+
+## SESSION 243 — 2026-10-17 — Maps and sets discovery (PRP-133) — closed
+Branch: prp-133-maps_and_sets
+
+### WHAT WAS DONE
+- Discovery for maps and sets with the user: `#{ … }` literals (the user's idea: special syntax instead of `Map.new()`), Q1 names `Map`/`Set` built in (iterator type renamed `Mapped`), Q2 values, Q3 any `Eq` key but floats, Q4 insertion order, Q5 the full API, Q6 written in Lugha in the prelude over `$hash`. PRP-133 written (milestone 101); draft summary and row 101 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-133-maps_and_sets.md`. Modified: `docs/specs/Language v17 Draft.md`, CONTEXT.
+
+### TESTS WRITTEN
+- None (proposal).
+
+### DECISIONS MADE
+- PRP-133 decisions 67–75, 79 from the user's answers; 76–78, 80 proposed for review.
+
+### PENDING DECISIONS OPENED
+- PRP-133 approval.
+
+### STILL OPEN AT CLOSE
+- PRP-133 awaits approval; build on branch `prp-133-maps_and_sets`.
+
+---
+
+## SESSION 244 — 2026-10-17 — Maps and sets (milestone 101) — closed
+Branch: prp-133-maps_and_sets
+
+### WHAT WAS DONE
+- Built PRP-133 in seven steps: the iterator type renamed `Mapped`; `$hash.value` (checker + `lugha_hash_<type>` codegen); `src/prelude/maps.la`; `#{ … }` in the lexer, parser, formatter; checker (names, literal typing, `m[k]`, `m[k] = v`, E0441, E0442, W0105, `$equal`); codegen (literals, entries, `==` through `same`); spec v17 §3, §4, §10 (word count, dedupe), §11 row 101, error pages; VS Code 0.16.0 (`#{`).
+
+### FILES CREATED OR MODIFIED
+- New: `src/prelude/maps.la`, `src/parser/hashed.rs`, `src/check/{maps,hashing}.rs`, `src/codegen/{maps,hashing}.rs`, `tests/programs/m101/`, `docs/errors/{E0441,E0442,W0105}.md`, `editors/vscode/test/grammar/maps.la`.
+- Modified: lexer, AST, parser (`primary`, `sexp`), formatter, checker (`access`, `assign`, `expr`, `ops`, `test_fns`, `instances`, `results`, `for_mut`, `iter_helpers`, `members`, `env`, `float_ops`), codegen (`expr`, `stmt`, `equality`, `hoist_scan`), `src/lib.rs`, `src/explain.rs`, the VS Code grammar, spec, draft, PRP-133, CLAUDE.md, TODO, CHANGELOG, MEMORY (186), CONTEXT.
+
+### TESTS WRITTEN
+- See PRP-133's BUILT notes. Full `cargo test` (once, at the end, as the PRP asked), `npm test`, fmt, clippy.
+
+### DECISIONS MADE
+- PRP-133 as approved, with the build choices in its BUILT notes (decision 76's E0507 dropped: loops walk a copy).
+
+### PENDING DECISIONS OPENED
+- None. TODO: print prelude types without `$prelude.` in diagnostics.
 
 ### STILL OPEN AT CLOSE
 - Nothing.

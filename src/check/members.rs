@@ -262,6 +262,8 @@ pub fn value_members(partial: &Partial, ty: &Type) -> Vec<Member> {
             .members
             .iter()
             .filter(|m| matches!(m.kind, MemberKind::Field | MemberKind::Method))
+            // A `$` name is the prelude's own (v17 maps): no program can write it.
+            .filter(|m| !m.name.starts_with('$'))
         {
             let mut m = m.clone();
             if let Detail::Type(field) = &m.detail
@@ -323,6 +325,7 @@ pub fn type_members(partial: &Partial, key: &str) -> Vec<Member> {
             t.members
                 .iter()
                 .filter(|m| matches!(m.kind, MemberKind::Variant | MemberKind::Associated))
+                .filter(|m| !m.name.starts_with('$'))
                 .cloned()
                 .collect()
         })

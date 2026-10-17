@@ -439,6 +439,10 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 ### Milestone 93 — Struct update syntax ✅
 - [x] (PRP-124) `S { f: e, ..base }`, Rust's rules; E0440, W0104; for kivuli
 
+### Milestone 101 — Maps and sets ✅
+- [x] (PRP-133) `Map<K, V>`, `Set<T>`, `#{ … }` literals, E0441/E0442/W0105, `Mapped`; tagged `m101`
+- [ ] Diagnostics print prelude types as `$prelude.Map<…>`/`$prelude.ArrayIter<…>`: show them without the prefix (found in milestone 101)
+
 ### Milestone 100 — Glob re-exports ✅
 - [x] (PRP-132) `public import m { * };`; E0201/E0314; completion of re-exports; tagged `m100`
 

@@ -95,6 +95,14 @@ impl<'ctx> Lowerer<'ctx> {
         place: &Expr,
         value: &Expr,
     ) -> Result<(), CodegenError> {
+        // `m[k] = v` on a map (v17): the `insert` the checker recorded at the place.
+        if let crate::ast::ExprKind::Index(base, _, key) = &place.kind
+            && self.is_map(base)
+        {
+            return self
+                .map_method(place, base, "insert", &[(**key).clone(), value.clone()])
+                .map(|_| ());
+        }
         // The place's indexes are evaluated once, before the value (spec §5);
         // the arrays on its path are made unique after the value (v15), so a
         // value that shares one of them is never written through.

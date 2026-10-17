@@ -59,6 +59,8 @@ pub enum ExprKind {
     Array(Vec<Expr>),
     /// `[value; count]`.
     Repeat(Box<Expr>, Box<Expr>),
+    /// `#{k: v, …}`, `#{x, …}` or `#{}` (v17, milestone 101). Boxed: rare.
+    Hashed(Box<HashLiteral>),
     /// `if cond { then } [else …]`; the else branch is an `If` or `Block` expression.
     If {
         cond: Box<Expr>,
@@ -289,4 +291,26 @@ pub struct IfLet {
     pub scrutinee: Expr,
     pub then: Block,
     pub else_: Option<Box<Expr>>,
+}
+
+/// Which `#{ … }` a literal is (v17, milestone 101).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HashKind {
+    /// `#{k: v, …}`.
+    Map,
+    /// `#{x, …}`.
+    Set,
+    /// `#{}`: a map or a set, by its expected type.
+    Empty,
+}
+
+/// A `#{ … }` literal (v17, milestone 101). The parser gives its keys (a
+/// set's values) and a map's values as two array expressions of their own,
+/// so the checker and codegen treat the literal as a call of the prelude's
+/// `$map_of(keys, values)` or `$set_of(keys)`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HashLiteral {
+    pub kind: HashKind,
+    pub keys: Expr,
+    pub values: Expr,
 }

@@ -40,8 +40,22 @@ impl Checker {
     }
 
     /// `base[index]`: a string's byte (`u8`) or an array's element; the index is an `i64`.
-    pub(super) fn index(&mut self, base: &Expr, index: &Expr) -> Type {
+    pub(super) fn index(&mut self, expr: &Expr, base: &Expr, index: &Expr) -> Type {
+        let mark = self.changes_mark();
         let ty = self.value(base, None);
+        // `m[k]` on a map (v17, milestone 101): its `$entry`, whose `Err` codegen
+        // turns into a panic at the `[`; the value is the `Ok`'s.
+        if matches!(&ty, Type::Struct(k, _) if k == super::maps::MAP) {
+            let at = crate::ast::Ident {
+                name: "$entry".to_string(),
+                span: index.span,
+            };
+            let args = std::slice::from_ref(index);
+            return match self.on_value(expr, (base, &ty), &at, args, (mark, None)) {
+                Type::Enum(_, args) => args[0].clone(),
+                other => other,
+            };
+        }
         // Any integer type indexes (v14); a bare literal is an `i64`.
         let at = self.value(index, None);
         if !at.is_integer() && !matches!(at, Type::Error | Type::Never) {

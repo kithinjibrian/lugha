@@ -54,6 +54,7 @@ impl Lexer<'_> {
             (':', _) => (Colon, 1),
             ('?', _) => (Question, 1),
             ('@', _) => (At, 1),
+            ('#', Some(b'{')) => (HashBrace, 2),
             _ => return self.unexpected(start, c),
         };
         self.pos += len;

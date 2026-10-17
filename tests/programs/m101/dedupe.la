@@ -1,0 +1,27 @@
+// Sets (v17, milestone 101): the first of each value, and set algebra.
+fun main() {
+    let xs = [3, 1, 3, 2, 1];
+    let mut seen: Set<i64> = #{};
+    let mut firsts: i64[] = [];
+    for x of xs {
+        if seen.insert(x) {
+            firsts.push(x);
+        }
+    }
+    println(firsts);
+    println(seen);
+    println(seen.has(2));
+    println(seen.has(9));
+    let a = #{1, 2, 3};
+    let b = #{2, 3, 4};
+    println(a.union(b));
+    println(a.intersect(b));
+    println(a.minus(b));
+    let mut s = #{"x", "y"};
+    println(s.remove("x"));
+    println(s.remove("x"));
+    println(s.len);
+    for v of s {
+        println(v);
+    }
+}

@@ -233,3 +233,33 @@ fn nothing_completes_inside_a_string_or_comment() {
     let (text, at) = typed("println(word);\n", "    let s = \"p.");
     assert_eq!(complete(&t, &text, at), Vec::new());
 }
+
+#[test]
+fn a_maps_members_complete_without_its_internals_v17() {
+    let main = "fun main() {\n    let m = #{\"a\": 1};\n    println(m.len);\n}\n";
+    let t = Temp::with(&[("main.la", main)]);
+    let uri = t.uri("main.la");
+    let mut server = Server::start(&t, json!({}));
+    server.open(&uri, main);
+    server.expect(&uri, &[]);
+    let text = main.replace("println(m.len);", "println(m.len);\n    m.");
+    server.change(&uri, 2, &text);
+    let items = server.completion(&uri, 3, 6);
+    assert_eq!(server.finish(), Some(0));
+    for (label, kind) in [
+        ("get", METHOD),
+        ("has", METHOD),
+        ("keys", METHOD),
+        ("remove", METHOD),
+        ("len", FIELD),
+    ] {
+        assert!(
+            items.iter().any(|(l, k, _)| l == label && *k == kind),
+            "{label}: {items:?}"
+        );
+    }
+    assert!(
+        !items.iter().any(|(l, _, _)| l.starts_with('$')),
+        "{items:?}"
+    );
+}
