@@ -32,6 +32,10 @@ let n = f32.from_bits(0x7FC00000); // NaN
 ### New dependencies
 - none
 
+## BUILT (session 259)
+- As planned, except completion: `to_bits` isn't added to `check/members.rs`'s list because that file is already over the 500-line limit (503) and needs the user's approval to split.
+- Tests: parser (`f64.from_bits(b)`), checker `check/float_bits.rs` (types, E0403 ×2, E0405, E0415 ×2), `tests/programs/m108/float_bits` at -O0/-O2.
+
 ## ERROR HANDLING REQUIREMENTS
 - Existing codes only: E0403 (argument type), E0405 (arity), E0415 (`to_bits` on a non-float, other members on `f64.`).
 

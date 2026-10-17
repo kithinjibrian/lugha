@@ -56,6 +56,9 @@ impl Parser<'_> {
             | TokenKind::TyU16
             | TokenKind::TyU32
             | TokenKind::TyU64
+            // `f64.from_bits(b)` (v17, milestone 108).
+            | TokenKind::TyF32
+            | TokenKind::TyF64
                 if self.peek_at(1) == &TokenKind::Dot =>
             {
                 ExprKind::Name(super::describe::symbol(self.peek()).to_string())
@@ -324,6 +327,7 @@ mod tests {
             "(block (let a i8 1) (let b (as a i16)) (let c u16 2))"
         );
         assert_eq!(expr("i16.MAX"), "(. i16 MAX)");
+        assert_eq!(expr("f64.from_bits(b)"), "(call (. f64 from_bits) b)");
         assert_eq!(
             expr("u8.MIN.count_ones()"),
             "(call (. (. u8 MIN) count_ones))"

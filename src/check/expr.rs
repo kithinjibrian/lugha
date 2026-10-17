@@ -115,6 +115,12 @@ impl Checker {
             ExprKind::Call(callee, args) if let Some(op) = super::float_ops::float_op(callee) => {
                 self.float_call(expr, (callee, op), args, expect)
             }
+            // `f64.from_bits(b)` (v17, milestone 108).
+            ExprKind::Call(callee, args)
+                if let Some(found) = super::float_bits::from_bits(callee) =>
+            {
+                self.float_from_bits(expr, callee, found, args)
+            }
             ExprKind::Hashed(lit) => self.hashed(expr, lit, expect),
             // An `out` argument where no extern's `out` parameter takes it (v17).
             ExprKind::Pass(_, place) => {

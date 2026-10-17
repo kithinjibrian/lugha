@@ -71,4 +71,13 @@ impl<'ctx> Lowerer<'ctx> {
             ValueKind::Instruction(_) => unreachable!("lugha_rt_os_seed returns a u64"),
         }
     }
+
+    /// `value`'s bits reinterpreted as `to` (a float and its same-width
+    /// unsigned integer, either way): one `bitcast` (v17, milestone 108).
+    pub(super) fn bitcast(&self, value: BasicValueEnum<'ctx>, to: &Type) -> BasicValueEnum<'ctx> {
+        let target = super::value::llvm_type(self.context, to);
+        self.builder
+            .build_bit_cast(value, target, "bits")
+            .expect(POSITIONED)
+    }
 }

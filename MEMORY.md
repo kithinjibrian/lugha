@@ -2095,6 +2095,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-139 (discovery session 254: a real type and value; warn on binding). `Type::Void` is now `Type::Unit` (prints `()`); the AST reuses `Tuple(vec![])` for the type and the value (`tuple_type` of nothing is `Unit`). Codegen keeps `Value::Void` for statement-like results and turns it into `{}` (`unit_value`) where a value is needed; `llvm_type(Unit)` is `{}`, layout (0, 1); functions returning `()` stay LLVM `void`. W0106 in `check/unit.rs`. Parser: `(`'s handling stays in `primary` (a call-out per level overflows E0206's stack); the identifier arm moved out to make room. `()` is also a pattern (session 256): an empty `PatternKind::Tuple`, `Pat::Wild` in the checker, no test in codegen.
 
+### 194. Float bits — milestone 108 (PRP-140)
+
+**Decision:** as PRP-140 (proposed session 258, approved 259). `to_bits` is a built-in method in `check/builtins.rs`; `f64.from_bits`/`f32.from_bits` are recognised by `check::from_bits` (a member call on a float keyword, which `primary` now reads as a name like the integer keywords) and lowered by `codegen/float_ops.rs`'s `bitcast`. Completion doesn't offer `to_bits` yet: `check/members.rs` is over the 500-line limit and needs a split first.
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

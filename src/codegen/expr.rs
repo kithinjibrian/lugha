@@ -115,6 +115,13 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Call(callee, args) if let Some(op) = crate::check::float_op(callee) => {
                 self.float_call(expr, op, args)?
             }
+            // `f64.from_bits(b)` (v17, milestone 108): the same bits as a float.
+            ExprKind::Call(callee, args)
+                if let Some((float, _)) = crate::check::from_bits(callee) =>
+            {
+                let bits = self.get(&args[0], &crate::check::bits_of(&float))?;
+                self.bitcast(bits, &float)
+            }
             // `$os.sleep(ms)` and `$os.yield()` in `std.task` (v17).
             ExprKind::Call(callee, args)
                 if let Some(op @ ("sleep" | "yield")) = crate::check::os_op(callee) =>
