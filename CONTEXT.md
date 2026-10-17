@@ -8564,3 +8564,6 @@ Branch: split-members
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+## SESSION 263 — 2026-10-17 — Empty `[]` typed from its sibling branch (kivuli) — open
+Branch: branch-inference
