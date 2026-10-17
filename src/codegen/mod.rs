@@ -51,6 +51,7 @@ mod lower;
 mod maps;
 mod matching;
 mod methods;
+mod net;
 mod operators;
 mod or_patterns;
 mod ordering;

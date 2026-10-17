@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–109 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–110 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–109):
+**Changes since v16** (milestones 91–110):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- `std.net` (milestone 110; sections 7, standard library): TCP listeners and connections whose waits pause only their green thread, through `epoll`; timeouts; no UDP yet.
 - Global constants (milestone 109; sections 2, 3, 6, 8): `[private | public] const NAME: T = value;` — constant expressions only (E0445), in any order without cycles (E0446), evaluated once before `main`; no mutable statics. `const` is a keyword.
 - A float's raw bits (milestone 108; section 4): `x.to_bits()` (`f64` → `u64`, `f32` → `u32`) and `f64.from_bits(b)` / `f32.from_bits(b)`, exactly the IEEE 754 bits.
 - The unit type `()` replaces `void` (milestone 107; sections 3, 4, 6): a type and its one value, held anywhere a value is (`Result<(), E>`, `Chan<()>`); E0407 is retired; W0106 warns on `let x = log();`.
@@ -1104,12 +1105,12 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 **Green threads** (v17, milestone 91). `spawn` starts a green thread; every one runs on the program's one OS thread, so green threads take turns and never run at the same instant: there are no data races, and `Ref` needs no locks.
 - **Switching:** a green thread runs until it waits — `join` on an unfinished task, `send` or `recv` that can't go on, a `select` that waits, `task.sleep`, `task.yield_now` — or is preempted. Waiting threads wake in the order they began to wait; sleepers in the order of their deadlines. A new thread starts after the threads already ready.
 - **Preemption:** in a program that uses `spawn`, every function entry and every loop iteration counts down a step budget; when it runs out (every 4096 steps) the running thread lets the ready ones run first. There are no signals and no timers, so a program's interleaving is the same on every run given the same input and timing of sleeps. Programs without `spawn` compile exactly as before.
-- **Blocking calls:** reading input, files, `std.process` and `extern` calls run to completion on the one OS thread, so every green thread waits for them.
+- **Blocking calls:** reading input, files, `std.process` and `extern` calls run to completion on the one OS thread, so every green thread waits for them. Sockets (`std.net`, milestone 110) don't: a thread waiting to accept, connect, read or write is parked until its socket is ready, and the others run; when no thread is ready, the program waits for a socket or the next sleeper.
 - **The end:** when `main` returns, the program exits with `main`'s code; green threads still running are dropped. A panic in any green thread ends the whole program with its message and exit code 101.
-- **Deadlock:** when no green thread can run, none is sleeping and one waits, the program panics with `panic: deadlock: every green thread is waiting` (no location), exit 101.
+- **Deadlock:** when no green thread can run, none is sleeping, none waits on a socket and one waits, the program panics with `panic: deadlock: every green thread is waiting` (no location), exit 101.
 - **Actors** (milestone 92) are green threads that take messages from an unbounded mailbox one at a time: messages from one caller in the order sent, from several in the order they arrive. A panic inside an actor's method prints its message, as any panic does, but ends only that actor: the caller waiting for that message's result, and every later caller, panics with ``actor `Counter` panicked`` at its call; a call to a stopped actor panics with ``actor `Counter` has stopped``. A stack overflow inside an actor still ends the program. Plain `spawn f()` threads keep the rule above. Actors waiting on each other are a deadlock.
 
-**The standard library** (v15). Version 15 has `std.math`, `std.random`, `std.env`, `std.fs` and `std.process`; version 17 adds `std.task`.
+**The standard library** (v15). Version 15 has `std.math`, `std.random`, `std.env`, `std.fs` and `std.process`; version 17 adds `std.task` and `std.net`.
 
 `std.math` (milestone 53). The float functions take and return any `T: Float` (`f32` or `f64`) and follow IEEE 754: they never panic, `sqrt(-1.0)` is `NaN`, `ln(0.0)` is `-inf` and `pow(0.0, -1.0)` is `inf`.
 
@@ -1205,6 +1206,19 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 | --- | --- |
 | `sleep(ms: i64)` | pauses this green thread for at least `ms` milliseconds while the others run; `ms <= 0` is `yield_now()` |
 | `yield_now()` | lets every ready green thread run first, then goes on |
+
+`std.net` (v17, milestone 110). TCP sockets. Waiting pauses only the waiting green thread (above). Addresses are `"host:port"` or `"[v6]:port"`; port `0` listens on any free port. Names resolve through the system's resolver, which blocks the OS thread while it looks one up. Failures are `Err` with a reason (the system's message, `"closed"`, `"timed out"`); nothing here panics. `Listener` and `Conn` share their socket between copies, so closing one copy closes them all; closing twice is harmless; the collector never closes a socket, so an unclosed one stays open until the program exits.
+
+| Function or method | Effect |
+| --- | --- |
+| `listen(addr: string): Result<Listener, string>` | listens (reusing the address, a backlog of 128) |
+| `connect(addr: string): Result<Conn, string>`, `connect_timeout(addr, ms)` | connects, trying each address the name gives |
+| `l.accept(): Result<Conn, string>` | the next connection |
+| `l.addr(): string`, `c.addr(): string`, `c.peer(): string` | `host:port` of this end or the other; `""` once closed |
+| `l.set_timeout(ms)`, `c.set_timeout(ms)` | an `accept`, read or write waiting longer is `Err("timed out")`; `0` waits forever (the default) |
+| `c.read(max: i64): Result<u8[], string>` | what has arrived, 1 to `max` bytes (`max` from 1 to 16777216), waiting for some; `[]` once the other end has finished |
+| `c.write(bytes: u8[]): Result<(), string>` | every byte, waiting while the connection is full; a closed peer is `Err`, never a signal |
+| `l.close()`, `c.close()` | closes the socket |
 
 **Visibility.** Each function, extern, struct, enum, interface, method, associated function and struct field has one of three levels (v8):
 
@@ -3715,6 +3729,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 107 | The unit type (v17) | `()` type and value, W0106, E0407 retired | `tests/programs/m107/` (done) |
 | 108 | Float bits (v17) | `x.to_bits()`, `f64.from_bits(b)`, `f32.from_bits(b)` | `tests/programs/m108/` (done) |
 | 109 | Global constants (v17) | `const NAME: T = value;`, E0445, E0446 | `tests/programs/m109/` (done) |
+| 110 | `std.net` (v17) | TCP, non-blocking sockets in the scheduler | `tests/net.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
@@ -3741,7 +3756,7 @@ fun main(): i32 {
 - directories, streams and processes;
 - shared references and closures that change their captures;
 - explicit type arguments and `.len()`;
-- green threads and actors on several OS threads, built-in supervisors, generic actors, actors as interface values, bounded mailboxes, catching a plain green thread's panic, and non-blocking input and output.
+- green threads and actors on several OS threads, built-in supervisors, generic actors, actors as interface values, bounded mailboxes, catching a plain green thread's panic, and non-blocking input and output other than sockets (v17 milestone 110 made sockets non-blocking).
 
 ## 12. Open questions
 

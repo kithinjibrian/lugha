@@ -30,6 +30,7 @@ pub const STD: &[(&str, &str)] = &[
     ("fs", include_str!("std/fs.la")),
     ("process", include_str!("std/process.la")),
     ("task", include_str!("std/task.la")),
+    ("net", include_str!("std/net.la")),
 ];
 
 /// The prelude: the array helpers, written in Lugha and loaded with every

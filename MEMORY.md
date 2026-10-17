@@ -2103,6 +2103,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-141 (discovery session 260: constants only, no mutable statics; approved 261). `Item::Const`; checker `check/consts.rs` (`collect_consts` pass after `collect`, `const_values` before each module's bodies, `order_consts` after all; `ConstInfo`, `const_uses`, E0445/E0446; `assign.rs` refuses a constant root before `place_path`); codegen `codegen/consts.rs`: globals `lugha_const_<key>`, `lugha_const_init` called by both C `main`s after `lugha_rt_init`; a read loads the global, and `value_for_store`'s place copy keeps arrays copy-on-write. Hover `Name::Const`. A small superset of the PRP's constant expressions: fields and indexing of constant values are allowed.
 
+### 196. `std.net` — milestone 110 (PRP-142)
+
+**Decision:** as PRP-142 (discovery sessions 264–265: sockets and non-blocking I/O first, then HTTP/1.1, then TLS; approved with the security sign-off in 266). Built-ins are `$os.net_*` (not a `$net` namespace: the `$os` machinery — `os_signature`, `os_call` → `codegen/net.rs`). `runtime/net.c`: one `epoll` set, `wait_fd` (one-shot, parks the fiber, timeout as a sleeper, disarmed after a timeout), `idle_wait` replacing `schedule()`'s nanosleep/deadlock tail in `tasks.c`, `poll_ready_sockets` in `yield` so busy threads can't starve socket waiters. `Listener` gained `set_timeout` (for `accept`), and `connect_timeout` exists for connects.
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

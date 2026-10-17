@@ -1,0 +1,145 @@
+/**
+ * std.net: TCP sockets (v17). Waiting to accept, connect, read or write
+ * pauses only the green thread that waits: the others keep running, so one
+ * program serves many connections on its one OS thread. Name lookup
+ * (`example.com:80`) does block the thread while it runs.
+ *
+ * Close what you open: the collector never closes a socket, so one left open
+ * stays open until the program exits. Listen on `127.0.0.1` unless other
+ * machines should reach the program.
+ */
+
+/** A socket accepting connections: `net.listen(addr)`. */
+public struct Listener {
+    fd: Ref<i64>,
+    timeout: Ref<i64>,
+}
+
+/** A connection, from `listener.accept()` or `net.connect(addr)`. */
+public struct Conn {
+    fd: Ref<i64>,
+    timeout: Ref<i64>,
+}
+
+/**
+ * Listens on an address: `"127.0.0.1:8080"`, `"[::1]:8080"`, port `0` for
+ * any free one (`addr()` says which).
+ * @param addr host:port
+ * @returns the listener, or `Err` with the reason
+ */
+public fun listen(addr: string): Result<Listener, string> {
+    let fd = $os.net_listen(addr)?;
+    Ok(Listener { fd: Ref.new(fd), timeout: Ref.new(0) })
+}
+
+/**
+ * Connects to an address, trying each one its name resolves to.
+ * @param addr host:port
+ * @returns the connection, or `Err` with the reason
+ */
+public fun connect(addr: string): Result<Conn, string> {
+    let fd = $os.net_connect(addr, 0)?;
+    Ok(Conn { fd: Ref.new(fd), timeout: Ref.new(0) })
+}
+
+/**
+ * Connects, giving up after `ms` milliseconds.
+ * @param addr host:port
+ * @param ms the longest wait
+ * @returns the connection, or `Err("timed out")` or another reason
+ */
+public fun connect_timeout(addr: string, ms: i64): Result<Conn, string> {
+    let fd = $os.net_connect(addr, ms)?;
+    Ok(Conn { fd: Ref.new(fd), timeout: Ref.new(0) })
+}
+
+impl Listener {
+    /**
+     * Waits for the next connection; only this green thread waits.
+     * @returns the connection, or `Err` (`"closed"`, `"timed out"`, the system's reason)
+     */
+    public fun accept(self): Result<Conn, string> {
+        let fd = self.fd.get();
+        if fd < 0 {
+            return Err("closed");
+        }
+        let conn = $os.net_accept(fd, self.timeout.get())?;
+        Ok(Conn { fd: Ref.new(conn), timeout: Ref.new(0) })
+    }
+
+    /** The address it listens on, as `host:port`; `""` once closed. */
+    public fun addr(self): string = name(self.fd.get(), 0);
+
+    /** How long `accept` waits, in milliseconds; `0` (the default) waits forever. */
+    public fun set_timeout(self, ms: i64) {
+        self.timeout.set(ms);
+    }
+
+    /** Stops listening; every copy of this listener is closed. Closing twice is fine. */
+    public fun close(self) {
+        shut(self.fd);
+    }
+}
+
+impl Conn {
+    /**
+     * Reads what has arrived, up to `max` bytes, waiting for some if none has.
+     * @param max at most this many bytes, from 1 to 16777216
+     * @returns the bytes (`[]` once the other end has finished), or `Err`
+     */
+    public fun read(self, max: i64): Result<u8[], string> {
+        let fd = self.fd.get();
+        if fd < 0 {
+            return Err("closed");
+        }
+        $os.net_read(fd, max, self.timeout.get())
+    }
+
+    /**
+     * Writes every byte, waiting while the connection is full.
+     * @param bytes what to send
+     * @returns `Ok(())`, or `Err` with the reason
+     */
+    public fun write(self, bytes: u8[]): Result<(), string> {
+        let fd = self.fd.get();
+        if fd < 0 {
+            return Err("closed");
+        }
+        $os.net_write(fd, bytes, self.timeout.get())?;
+        Ok(())
+    }
+
+    /** How long a read or write waits, in milliseconds; `0` (the default) waits forever. */
+    public fun set_timeout(self, ms: i64) {
+        self.timeout.set(ms);
+    }
+
+    /** The other end's address, as `host:port`; `""` once closed. */
+    public fun peer(self): string = name(self.fd.get(), 1);
+
+    /** This end's address, as `host:port`; `""` once closed. */
+    public fun addr(self): string = name(self.fd.get(), 0);
+
+    /** Closes the connection; every copy of it is closed. Closing twice is fine. */
+    public fun close(self) {
+        shut(self.fd);
+    }
+}
+
+fun name(fd: i64, peer: i64): string {
+    if fd < 0 {
+        return "";
+    }
+    match $os.net_name(fd, peer) {
+        Ok(text) => text,
+        Err(_) => "",
+    }
+}
+
+fun shut(fd: Ref<i64>) {
+    let open = fd.get();
+    if open >= 0 {
+        $os.net_close(open);
+        fd.set(-1);
+    }
+}

@@ -19,6 +19,8 @@ impl<'ctx> Lowerer<'ctx> {
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         let bytes = Type::Array(Box::new(Type::U8));
         Ok(match op {
+            // `std.net` (v17, milestone 110).
+            _ if op.starts_with("net_") => self.net_call(call, op, args)?,
             "seed" => self.os_seed(),
             // `Some(bytes)` of the variable, or `None` (milestone 64).
             "env" => {
