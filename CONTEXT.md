@@ -8403,5 +8403,23 @@ Branch: prp-134-out_params
 
 ---
 
-## SESSION 250 — 2026-10-17 — C boundary PRPs proposed (PRP-135, 136, 137) — open
+## SESSION 250 — 2026-10-17 — C boundary PRPs proposed (PRP-135, 136, 137) — closed
 Branch: prp-135-137-c_boundary
+
+### WHAT WAS DONE
+- The user: "let's knock them out" (lugha-wasmtime's remaining needs). Wrote three PRPs from the design already discussed: PRP-135 `ptr`/`mut` parameters (milestone 103), PRP-136 arrays and `extern union` (104), PRP-137 `CPtr`, `c_read`/`c_write` and pointer callbacks (105; needs security sign-off). Draft summary and rows 103–105 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-135-ptr_mut_params.md`, `PRPs/prp-136-c_arrays_unions.md`, `PRPs/prp-137-c_memory_callbacks.md`. Modified: draft, CONTEXT.
+
+### TESTS WRITTEN
+- None (proposal).
+
+### DECISIONS MADE
+- None final.
+
+### PENDING DECISIONS OPENED
+- Approval of PRP-135–137; the security sign-off for PRP-137's `c_read`/`c_write`.
+
+### STILL OPEN AT CLOSE
+- Awaiting approval; build on this branch, one PRP at a time.
