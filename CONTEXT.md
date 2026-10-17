@@ -8552,3 +8552,6 @@ Branch: prp-141-constants
 
 ### STILL OPEN AT CLOSE
 - `src/check/members.rs` is 503 lines (completion of `to_bits` waits on its split; needs the user's approval).
+
+## SESSION 262 — 2026-10-17 — Split check/members.rs; `to_bits` in completion — open
+Branch: split-members
