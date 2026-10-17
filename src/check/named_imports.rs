@@ -131,7 +131,9 @@ impl Checker {
             let exists = self.functions.contains_key(&target)
                 || self.structs.contains_key(&target)
                 || self.enums.contains_key(&target)
-                || self.interfaces.contains_key(&target);
+                || self.interfaces.contains_key(&target)
+                // An `extern type` (v16) is an item like a struct.
+                || self.handles.contains_key(&target);
             if !exists {
                 self.report(errors::undefined(&item.name.name, item.name.span));
                 continue;

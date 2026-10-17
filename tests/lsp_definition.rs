@@ -284,3 +284,26 @@ fn names_inside_import_braces_hover_and_go_to_their_declarations() {
     }
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn a_named_imported_extern_type_hovers_and_goes_to_its_declaration() {
+    // kivuli's report (session 230): E0301 before; now a type like a struct.
+    let main = "import handles { Handle };\nfun keep(h: Handle) {}\nfun main() {}\n";
+    let handles = "public extern type Handle;\n";
+    let t = Temp::with(&[("main.la", main), ("handles.la", handles)]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, main);
+    s.expect(&uri, &[]);
+    let declared = location(
+        &t.uri("handles.la"),
+        range(handles, "type Handle", "Handle"),
+    );
+    for context in ["{ Handle", "h: Handle"] {
+        let (line, col) = pos(main, context, "Handle");
+        assert_eq!(s.definition(&uri, line, col), declared, "{context}");
+        let shown = s.hover(&uri, line, col)["contents"]["value"].to_string();
+        assert!(shown.contains("extern type Handle"), "{context}: {shown}");
+    }
+    assert_eq!(s.finish(), Some(0));
+}

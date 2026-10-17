@@ -7940,5 +7940,23 @@ Branch: fix-import-names
 
 ---
 
-## SESSION 230 — 2026-10-17 — Named imports of extern types (kivuli's report) — open
+## SESSION 230 — 2026-10-17 — Named imports of extern types (kivuli's report) — closed
 Branch: fix-import-extern-type
+
+### WHAT WAS DONE
+- Fixed kivuli's report: `check_named_imports` didn't count `extern type`s as items (E0301); now it does, so they import and re-export by name. E0314's page explains one import per module per file. Found and left for the user: doc comments don't attach to `extern type` (spec §2 doesn't list them).
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m88/{named_handle,reexport_handle}/` with `.stdout`/`.exit`. Modified: `src/check/named_imports.rs`, `tests/lsp_definition.rs`, `docs/errors/E0314.md`, CLAUDE.md (tree), CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- Two program cases, one LSP test (definition and hover in the braces and at a use). Targeted: `--lib`, `programs`, `lsp_definition`, `lsp_hover`, `lsp_references`, `modules`, `callbacks`, `explain`, fmt, clippy.
+
+### DECISIONS MADE
+- A bug fix (v11 named imports, v16 handles), no PRP.
+
+### PENDING DECISIONS OPENED
+- Doc comments on `extern type` (asked of the user).
+
+### STILL OPEN AT CLOSE
+- Nothing.

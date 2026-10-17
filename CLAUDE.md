@@ -383,7 +383,7 @@ pub fn parse_number(src: &str) -> i64 {
 │   ├── lsp_completion.rs — completion through `lughac lsp`: members, modules, variants, names in scope, while the text doesn't parse (v16)
 │   ├── package_layout.rs — package layout through lughac: `source`, `examples/` by name, the `$HOME` bound, E0327/E0328
 │   ├── common/      — spec_programs.rs: extracts the §10/§11 programs from the embedded spec; lsp_client.rs: a `lughac lsp` client over stdio
-│   ├── programs/    — m1/ … m68/, m76/, m84/, m91/, m92/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
+│   ├── programs/    — m1/ … m68/, m76/, m84/, m88/, m91/, m92/, v1_1/, v1_2/, v4_1/: <name>.la + .stdout/.exit/.stderr expectations (+ .args, .stdin, .scratch);
 │   │                  a directory <name>/ with main.la (+ modules) and <name>.* beside it is one case
 │   └── support/     — fixture.rs (temp dirs), runner/ (discover, dirs (directory cases), args (.args/.stdin/.scratch/.envvars),
 │                      execute, report)
