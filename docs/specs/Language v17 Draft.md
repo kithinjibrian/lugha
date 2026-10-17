@@ -130,7 +130,7 @@ A package's front door (the user asked whether libraries should have an entry li
 56. **`lughac init --lib`** writes `src/lib.la` and an example with `import N;`; libraries from older `init` (`src/N.la`) keep working as `N.N`.
 57. **Success:** milestone 99, tag `m99`.
 
-## Decisions behind milestone 100 (discovery, session 232; proposed)
+## Decisions behind milestone 100 (discovery, session 232; approved in session 233)
 
 Glob re-exports (kivuli / lugha-gtk: an entry flattening its C-bindings module; PRP-132). Q1–Q6 answered by the user; 64–66 follow from them, for review.
 
@@ -172,4 +172,4 @@ For milestone 92: **§2** keyword `actor`; **§3** `actor_decl = [ visibility ] 
 | 97 | Packages and tests (v17) | package files as modules in `test`/`check`, `test/` inside the package, one lock per package, `skip(reason)` |
 | 98 | Module doc comments (v17) | a file's top `/** */` (before a blank line or an `import`) documents its module; hover on module names; std modules documented (PRP-130, approved in session 225) |
 | 99 | Package entry modules (v17) | `import N;` imports the package's `lib.la`; `init --lib` writes one (PRP-131, approved in session 228) |
-| 100 | Glob re-exports (v17) | `public import m { * };` re-exports every `public` item of `m` (PRP-132, proposed in session 232) |
+| 100 | Glob re-exports (v17) | `public import m { * };` re-exports every `public` item of `m` (PRP-132, approved in session 233) |

@@ -8006,3 +8006,8 @@ Branch: prp-132-glob_imports
 
 ### STILL OPEN AT CLOSE
 - PRP-132 awaits approval; build on branch `prp-132-glob_imports`.
+
+---
+
+## SESSION 233 — 2026-10-17 — Glob re-exports (milestone 100) — open
+Branch: prp-132-glob_imports
