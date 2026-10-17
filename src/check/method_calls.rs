@@ -61,7 +61,10 @@ impl Checker {
             return Some(self.associated(call, &ty, (name, method), args, expect));
         }
         let mark = self.changes_mark();
-        let receiver = self.value(base, None);
+        // A receiver only its result types takes the call's expected type
+        // when the method returns the receiver's own (v17, kivuli).
+        let receiver_expect = self.receiver_expect(base, &name.name, expect);
+        let receiver = self.value(base, receiver_expect.as_ref());
         // `b.on_click(2)`: a field holding a function, when no method has that name (v3).
         if let Some(field) = self.fun_field(&receiver, name) {
             self.record(callee, field.clone());

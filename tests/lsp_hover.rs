@@ -274,3 +274,27 @@ fn handles_show_their_extern_type_v16() {
     );
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn a_receiver_typed_by_its_calls_expected_type_hovers_with_it_v17() {
+    let main = "enum Node<M> { Leaf(string), Wrapped(Node<M>, i64) }\n\
+                impl Node<M> { fun pad(self, n: i64): Node<M> = Node.Wrapped(self, n); }\n\
+                fun leaf<M>(s: string): Node<M> = Node.Leaf(s);\n\
+                enum Msg { Go }\n\
+                fun a(): Node<Msg> = leaf(\"x\").pad(8);\n\
+                fun main() {}\n";
+    let t = Temp::with(&[("main.la", main)]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, main);
+    s.expect(&uri, &[]);
+    // `leaf` in `a`: the call's instance; the `(` after it: the receiver's type.
+    let line = 4;
+    let col = main.lines().nth(4).unwrap().find("leaf").unwrap() as u32;
+    let shown = s.hover(&uri, line, col)["contents"]["value"].to_string();
+    assert!(shown.contains("instance: leaf<Msg>"), "{shown}");
+    let paren = main.lines().nth(4).unwrap().find("\")").unwrap() as u32 + 1;
+    let shown = s.hover(&uri, line, paren)["contents"]["value"].to_string();
+    assert!(shown.contains("Node<Msg>"), "{shown}");
+    assert_eq!(s.finish(), Some(0));
+}
