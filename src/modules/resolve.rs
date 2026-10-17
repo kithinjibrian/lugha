@@ -73,17 +73,11 @@ pub(super) fn not_found(
     // `import test.support;` in `test/uses.la` means `test/test/support.la`;
     // the neighbour is `import support;` (kivuli's report, session 237).
     if let Some(rest) = beside {
-        let name = rest.last().map_or("", String::as_str);
         help.push_str(&format!(
-            "; `{name}.la` is beside this file: `import {};`",
+            "; `{}.la` is beside this file: `import {};`",
+            rest.join("/"),
             rest.join(".")
         ));
-        if rest.len() > 1 {
-            help = help.replace(
-                &format!("`{name}.la` is beside"),
-                &format!("`{}.la` is beside", rest.join("/")),
-            );
-        }
     }
     Diagnostic::error(
         "E0312",
