@@ -8029,3 +8029,8 @@ Branch: prp-132-glob_imports
 
 ### STILL OPEN AT CLOSE
 - Nothing. lugha-gtk can switch its `lib.la` to `public import raw { * };` (its session).
+
+---
+
+## SESSION 234 — 2026-10-17 — Inference into tuples (kivuli) — open
+Branch: fix-tuple-inference
