@@ -120,8 +120,8 @@ fn closures_keep_their_body_form() {
 #[test]
 fn declarations_struct_enum_impl_interface_extern_import() {
     check(
-        "import a.b as c;public import m{X,y as z};\nstruct P<T>{private x:T,y:i64}\nenum E{A,B(i64,string)}",
-        "import a.b as c;\npublic import m { X, y as z };\nstruct P<T> {\n    private x: T,\n    y: i64,\n}\nenum E {\n    A,\n    B(i64, string),\n}\n",
+        "import a.b as c;public import m{X,y as z};public import r{*};\nstruct P<T>{private x:T,y:i64}\nenum E{A,B(i64,string)}",
+        "import a.b as c;\npublic import m { X, y as z };\npublic import r { * };\nstruct P<T> {\n    private x: T,\n    y: i64,\n}\nenum E {\n    A,\n    B(i64, string),\n}\n",
     );
     check(
         "impl Stack<T>{fun push(mut self,x:T){}\nfun len(self):i64=0;}",

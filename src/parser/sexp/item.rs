@@ -29,7 +29,9 @@ pub fn program(program: &Program) -> String {
             })
             .collect();
         // `(import a b (items X y))` for named items (v11), `(as c)` (v14).
-        let items = if items.is_empty() {
+        let items = if i.glob.is_some() {
+            " (items *)".to_string()
+        } else if items.is_empty() {
             String::new()
         } else {
             format!(" (items {})", items.join(" "))

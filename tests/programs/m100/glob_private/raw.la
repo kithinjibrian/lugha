@@ -1,0 +1,18 @@
+// Bindings, as lugha-gtk's `gtk.raw`: every item `public`.
+public extern type Widget;
+
+public extern fun make_widget(): Widget;
+
+public struct Point {
+    public x: i64,
+    public y: i64,
+}
+
+public enum Dir {
+    Up,
+    Down,
+}
+
+public fun twice(n: i64): i64 = n * 2;
+
+fun hidden(): i64 = 1;

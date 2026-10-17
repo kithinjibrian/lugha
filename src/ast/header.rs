@@ -14,6 +14,9 @@ pub struct Import {
     pub alias: Option<Ident>,
     /// The names in `{ X, y as z }` after the path, in order (v11, v14).
     pub items: Vec<ImportItem>,
+    /// The `*` of `public import m { * };`: every `public` item of `m`
+    /// re-exported (v17, milestone 100); `items` is then empty.
+    pub glob: Option<Span>,
     /// The `public` before a re-export, `public import m { X };` (v11) or
     /// `public import m;` (v14).
     pub public: Option<Span>,

@@ -439,6 +439,9 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 ### Milestone 93 — Struct update syntax ✅
 - [x] (PRP-124) `S { f: e, ..base }`, Rust's rules; E0440, W0104; for kivuli
 
+### Milestone 100 — Glob re-exports ✅
+- [x] (PRP-132) `public import m { * };`; E0201/E0314; completion of re-exports; tagged `m100`
+
 ### Milestone 99 — Package entry modules ✅
 - [x] (PRP-131) `import N;` imports the package's `lib.la`; `init --lib` writes one; tagged `m99`
 

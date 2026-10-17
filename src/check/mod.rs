@@ -37,6 +37,7 @@ mod flow;
 mod for_mut;
 mod fun_values;
 mod generics;
+mod globs;
 mod handles;
 mod helpers;
 mod iface_calls;
@@ -164,6 +165,7 @@ impl Checker {
             imports: HashMap::new(),
             privacy: visibility::Privacy::default(),
             aliases: named_imports::Aliases::new(),
+            glob_clashes: Vec::new(),
             reexports: HashMap::new(),
             externs: HashMap::new(),
             callees: HashMap::new(),
@@ -267,6 +269,8 @@ pub(super) struct Checker {
     privacy: visibility::Privacy,
     /// Named imports and re-exports, by their key in their module (v11).
     aliases: named_imports::Aliases,
+    /// Glob names another import already binds, checked later (v17).
+    glob_clashes: Vec<globs::Pending>,
     /// Whole-module re-exports (v14): `m.v` (as a key of `m`) → `v`'s path.
     reexports: HashMap<String, Vec<String>>,
     /// Every extern's C name: its signature and first declaration (E0306).

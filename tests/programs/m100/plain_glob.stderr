@@ -1,0 +1,9 @@
+error[E0201]: `{ * }` is only for `public import`
+  --> tests/programs/m100/plain_glob.la:1:19
+  |
+1 | import std.math { * };
+  |                   ^
+  |
+  = help: list the items you need, or import the module: `import m;`
+
+For more about E0201, run `lughac explain E0201`.

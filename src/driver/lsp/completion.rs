@@ -322,15 +322,19 @@ impl<'a> Here<'a> {
 
     /// The items of the module at `path` that this module may use.
     fn module_items(&self, path: &[String]) -> Vec<CompletionItem> {
-        let module = self.snapshot.modules.iter().find(|m| m.path == path);
-        match module.and_then(|m| m.program.as_ref()) {
-            Some(program) => self.program_items(program, false),
-            None => Vec::new(),
-        }
+        let Some(module) = self.snapshot.modules.iter().find(|m| m.path == path) else {
+            return Vec::new();
+        };
+        let mut out = module
+            .program
+            .as_ref()
+            .map_or_else(Vec::new, |p| self.program_items(p, false));
+        out.extend(self.reexported_items(module, &mut Vec::new()));
+        out
     }
 
     /// A program's functions and types; `private` ones only for its own module.
-    fn program_items(&self, program: &Program, own: bool) -> Vec<CompletionItem> {
+    pub(super) fn program_items(&self, program: &Program, own: bool) -> Vec<CompletionItem> {
         let shown = |v: &Option<crate::ast::Visibility>| {
             own || v.as_ref().is_none_or(|v| v.kind != VisibilityKind::Private)
         };

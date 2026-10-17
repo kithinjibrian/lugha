@@ -1,0 +1,5 @@
+import gtk;
+
+fun main() {
+    println(gtk.twice(1));
+}

@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–99 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–100 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–99):
+**Changes since v16** (milestones 91–100):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- Glob re-exports: `public import raw { * };` makes every `public` item of `raw` an item of this module, so a package's entry can flatten a sub-module (milestone 100; sections 3, 6).
 - Package entry modules: `import kivuli;` imports the package's `lib.la` (in its `source` folder) as the module `kivuli`; `lughac init --lib` writes one (milestone 99; sections 6, 9).
 - Module doc comments: a `/** … */` at the top of a file, followed by a blank line or an `import`, documents its module; hovering the module's name shows it, and the std modules are documented (milestone 98; sections 2, 9).
 - `pkg-config --cflags` may give `-mfpmath=sse`, `-msse` and `-msse2`, so a package can list C files alongside GTK (section 8).
@@ -313,7 +314,7 @@ The grammar is LL(1) apart from expressions, which use Pratt parsing with the pr
 ```ebnf
 program      = { import } { item } EOF ;
 import       = [ "public" ] "import" IDENT { "." IDENT } [ "as" IDENT ]
-               [ "{" import_item { "," import_item } [ "," ] "}" ] ";" ;   (* names and `public`: v11; `as`: v14 *)
+               [ "{" ( "*" | import_item { "," import_item } [ "," ] ) "}" ] ";" ;   (* names and `public`: v11; `as`: v14; `*` (only with `public`): v17 *)
 import_item  = IDENT [ "as" IDENT ] ;
 item         = { attribute } [ visibility ] ( fun_decl | extern_decl | extern_type | [ "extern" ] struct_decl | enum_decl | interface_decl ) | impl_decl ;   (* `extern struct`, v16 *)
 attribute    = "@" IDENT ;                       (* v16: only `@test`, before a `fun` *)
@@ -1157,6 +1158,13 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 - **`import a.b { X as Y };`** binds the item as `Y` only. With `public`, the item is re-exported as `Y`.
 - **`public import a.b;`** (or `public import a.b as v;`) makes the module a member of this one, visible to every package. A file that imports this module as `m` names `v`'s items `m.v.X`: calls `m.v.f()`, types `m.v.T`, literals `m.v.T { … }`, associated calls `m.v.T.f()`, variants `m.v.E.V`, bounds `T: m.v.I`, and function values `m.v.f`. Only `public` items are reached this way (E0313). One re-export is followed: a module re-exported by a re-exported module is reached through its own import.
 - **Same items:** as with named imports, `m.v.X` is the item itself, so keys, types and symbols are the declaring module's.
+
+**Glob re-exports** (v17, milestone 100).
+- **`public import a.b { * };`** re-exports every `public` item of `a.b` — functions, externs, extern types, structs, enums and interfaces — as items of this module, exactly as if each were listed by name: `public import raw { * };` in `gtk` lets a program write `import gtk { GtkWidget, gtk_box_new };` or `gtk.gtk_box_new()`. Items `a.b` doesn't declare `public` are left behind. Like a named import, it also binds `b` in its file.
+- **Chained:** items `a.b` itself re-exports by name, or with its own `{ * }`, come along; modules it re-exports whole (`public import x;`) stay members (`m.b.x`, not `m.x`). A cycle of globs adds each item once.
+- **Only re-exports:** `*` needs `public` (`import a.b { * };` is E0201: list the items or import the module) and stands alone in its braces (`{ *, X }` is E0201).
+- **Clashes:** a name a glob brings that the module already has — its own item, another import's name, another glob's — is E0314 at the `*`, naming the name and both sources, unless both are the same item. Nothing is shadowed silently.
+- **Same items:** a glob-re-exported name is the declaration itself, as for named imports; the editor's hover, Go to Definition, completion, references and rename reach the declaration.
 
 **Names.** Each module has its own namespace for functions, structs, enums, interfaces and externs, so two modules may each declare `Point`; duplicates within a module are a compile error. Intrinsics and the built-in names `Option`, `Some`, `None`, `Eq` and `Ord` are visible in every module, and no program may declare them (E0302). Methods live in their type's namespace, so a function `dist` and a method `Point.dist` can coexist. No local may be named like a type or an imported module (E0311, section 4). Local variables may shadow function names. Names resolve from the innermost scope outward: block scopes, then function parameters, then the module's own items and named imports (v11), then imported module names. In messages a type from another module is shown with its full module path (`shapes.circle.Circle`); a main-file type keeps its bare name. `main` belongs in the main file (E0304 elsewhere).
 
@@ -3602,6 +3610,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 97 | Packages and tests (v17) | package files as modules under `test`/`check`, `test/` inside the package, `check` without `main`, one lock per package, `skip(reason)` | `tests/test_runner.rs`, `tests/package_layout.rs`, `tests/git_packages.rs`, `tests/cli.rs` (done) |
 | 98 | Module doc comments (v17) | a file's top `/** */` documents its module; hover on module names; std documented | `tests/lsp_docs.rs`, `lsp/docs.rs` (done) |
 | 99 | Package entry modules (v17) | `import N;` imports the package's `lib.la`; `lughac init --lib` writes one | `src/modules/entry_tests.rs`, `tests/package_layout.rs`, `tests/init.rs`, `tests/lsp_docs.rs` (done) |
+| 100 | Glob re-exports (v17) | `public import m { * };` re-exports every `public` item of `m`; E0201 for misuse, E0314 for clashes | `src/check/globs.rs`, `tests/programs/m100/`, `tests/package_layout.rs`, `tests/lsp_definition.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

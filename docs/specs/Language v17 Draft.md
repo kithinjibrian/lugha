@@ -1,6 +1,6 @@
 # Lugha v17 — Draft (delta against v16)
 
-**Status:** milestone 91 (green threads) approved in session 201 (proposed in session 200, after discovery in sessions 195–200), and built. Milestone 92 (actors) approved in session 214 (proposed in session 213, after discussion in sessions 207–212), and built. Milestones 93 (struct update syntax) and 94 (variants as functions) approved in session 216 (proposed in session 215); 93 built in session 216, 94 in session 217. Milestones 95–97 (formatter hugging, inference from siblings, packages and tests) approved in session 220 (proposed in session 219); 95 built in session 220, 96 in session 221, 97 in session 222. Milestone 98 (module doc comments, PRP-130) proposed in session 224, approved and built in session 225. Milestone 99 (package entry modules, PRP-131) proposed in session 227, approved and built in session 228.
+**Status:** milestone 91 (green threads) approved in session 201 (proposed in session 200, after discovery in sessions 195–200), and built. Milestone 92 (actors) approved in session 214 (proposed in session 213, after discussion in sessions 207–212), and built. Milestones 93 (struct update syntax) and 94 (variants as functions) approved in session 216 (proposed in session 215); 93 built in session 216, 94 in session 217. Milestones 95–97 (formatter hugging, inference from siblings, packages and tests) approved in session 220 (proposed in session 219); 95 built in session 220, 96 in session 221, 97 in session 222. Milestone 98 (module doc comments, PRP-130) proposed in session 224, approved and built in session 225. Milestone 99 (package entry modules, PRP-131) proposed in session 227, approved and built in session 228. Milestone 100 (glob re-exports, PRP-132) proposed in session 232, approved and built in session 233.
 **Base:** `Language v16 Specification.md` (milestones 67–90), frozen when milestone 91 started. `Language v17 Specification.md` starts from it and grows milestone by milestone; it is what `lughac spec` prints.
 
 **Theme:** concurrency without async/await. Every function stays an ordinary function: a green thread pauses only where it waits (`join`, a channel, `select`, `sleep`), and the scheduler preempts long loops on its own, so nothing is marked `async` and nothing is awaited: no function colouring. Milestone 91 brings green threads and channels. Actors, which build on them (a green thread owning a channel as its mailbox), follow in a later v17 milestone.
@@ -130,6 +130,20 @@ A package's front door (the user asked whether libraries should have an entry li
 56. **`lughac init --lib`** writes `src/lib.la` and an example with `import N;`; libraries from older `init` (`src/N.la`) keep working as `N.N`.
 57. **Success:** milestone 99, tag `m99`.
 
+## Decisions behind milestone 100 (discovery, session 232; approved in session 233)
+
+Glob re-exports (kivuli / lugha-gtk: an entry flattening its C-bindings module; PRP-132). Q1–Q6 answered by the user; 64–66 follow from them, for review.
+
+58. **Syntax:** `{ * }` in an import's braces; `*` stands alone (`{ *, X }` is E0201).
+59. **Only re-exports:** `{ * }` needs `public`; `import raw { * };` is E0201.
+60. **Coverage:** every `public` item of the module (functions, externs, extern types, structs, enums, interfaces); package-level and `private` items skipped.
+61. **Chained:** the module's own named re-exports and globs come along; whole-module re-exports stay members; glob cycles add each item once.
+62. **Clashes:** E0314 at the glob, naming the name and both sources, unless the same item; no silent shadowing.
+63. **One import per module:** `public import raw;` with `public import raw { * };` stays E0314; the glob also binds `raw` in its file.
+64. **The same items:** a glob-re-exported name is the declaration itself.
+65. **Editor and formatter:** hover, definition, completion, references and rename reach the declaration; `lughac fmt` keeps `{ * }`.
+66. **Success:** milestone 100, tag `m100`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
@@ -158,3 +172,4 @@ For milestone 92: **§2** keyword `actor`; **§3** `actor_decl = [ visibility ] 
 | 97 | Packages and tests (v17) | package files as modules in `test`/`check`, `test/` inside the package, one lock per package, `skip(reason)` |
 | 98 | Module doc comments (v17) | a file's top `/** */` (before a blank line or an `import`) documents its module; hover on module names; std modules documented (PRP-130, approved in session 225) |
 | 99 | Package entry modules (v17) | `import N;` imports the package's `lib.la`; `init --lib` writes one (PRP-131, approved in session 228) |
+| 100 | Glob re-exports (v17) | `public import m { * };` re-exports every `public` item of `m` (PRP-132, approved in session 233) |
