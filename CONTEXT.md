@@ -8078,5 +8078,23 @@ Branch: fix-summary-and-short-if
 
 ---
 
-## SESSION 236 — 2026-10-17 — Expected types reach a waiting receiver (kivuli) — open
+## SESSION 236 — 2026-10-17 — Expected types reach a waiting receiver (kivuli) — closed
 Branch: fix-receiver-inference
+
+### WHAT WAS DONE
+- kivuli's report: `leaf("x").pad(8)` with an expected `Node<Msg>` was E0412. `check/siblings.rs`: `waiting_receiver`/`waiting_head`/`returns_self`/`receiver_expect` (a method returning its receiver's own type passes the expected type down; such a call waits for siblings); `method_calls.rs` uses `receiver_expect`. Spec §4 (inference) extended — flagged to the user as an extension of milestone 96's rule.
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m96/receivers.{la,stdout,exit}`. Modified: `src/check/{siblings,method_calls}.rs`, `tests/lsp_hover.rs`, spec §4, CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- Program case (a, b, chain, list, tuple, `==`), `siblings` unit test (incl. E0412 kept), `lsp_hover` (instance and receiver type). Targeted: `--lib`, `programs`, `lsp_hover`, `test_runner`, `spec`, fmt, clippy.
+
+### DECISIONS MADE
+- Only methods returning the receiver's own type (at the `impl`'s parameters, in order) pass the expected type; a general unification of other result types was left out.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- kivuli's E0312 report still awaits a reproduction.

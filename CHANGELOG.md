@@ -29,6 +29,7 @@ Never deleted. Older entries are never modified.
 - An extern parameter with a function type is now a callback instead of E0409; E0409's message for a function an extern would return says so (milestone 88)
 
 ### Fixed
+- The expected type didn't reach a method call's receiver: `fun a(): Node<Msg> = leaf("x").pad(8);` was E0412. A receiver only its result types now takes the call's expected type when the method returns the receiver's own type, through chains (`.pad(1).pad(2)`), lists, tuples and `==`; hover shows the inferred type (kivuli, session 236)
 - Inference from siblings didn't reach a call inside a tuple: `assert_eq(keyed_column([("a", text("a"))]), expected)` was E0412. A tuple holding a waiting call now waits too; tuples of literals keep their own types (kivuli, session 234)
 - Doc comments didn't attach to `extern type` and `actor` declarations, so hover showed no doc for them; they now do, and spec §2 lists both (the user, session 231)
 - A named import couldn't bring in an `extern type`: `import m { Handle };` and `public import m { Handle };` were E0301, while `m.Handle` worked; extern types now import and re-export by name like structs, and hover and Go to Definition reach them (kivuli's report, session 230). E0314's page now explains that a module is imported once per file, so `import m;` and `import m { X };` clash, and that `import m { X };` binds `m` too

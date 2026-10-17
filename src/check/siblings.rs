@@ -5,6 +5,7 @@
 //! operand of `==`, or the other side of `assert_eq` — as literals and
 //! `None` already do, and takes the type they fix as its expected type.
 
+use super::expr::Expect;
 use super::ops::defers;
 use super::{Checker, Type};
 use crate::ast::{Expr, ExprKind};
@@ -28,8 +29,70 @@ impl Checker {
             {
                 self.waits(&args[0])
             }
-            _ => self.waiting_call(e),
+            _ => self.waiting_call(e) || self.waiting_receiver(e).is_some(),
         }
+    }
+
+    /// The type a waiting expression will have, by name: a waiting call's
+    /// declared result (`Node` for `leaf<M>(s): Node<M>`), or, through a
+    /// method that returns its receiver's own type, the receiver's.
+    fn waiting_head(&self, e: &Expr) -> Option<String> {
+        if let Some(head) = self.waiting_receiver(e) {
+            return Some(head);
+        }
+        let ExprKind::Call(callee, _) = &e.kind else {
+            return None;
+        };
+        if !self.waiting_call(e) {
+            return None;
+        }
+        let ret = &self.functions.get(&self.callee_key(callee)?)?.ret;
+        match ret {
+            Type::Struct(key, _) | Type::Enum(key, _) => Some(key.clone()),
+            _ => None,
+        }
+    }
+
+    /// For `r.m(…)` whose receiver `r` waits and whose method `m` returns
+    /// the receiver's own type (`fun pad(self, n: i64): Node<M>` in
+    /// `impl Node<M>`): the type's name. Such a call waits too, and its
+    /// expected type is the receiver's (kivuli: `text("a").padding(8)`).
+    fn waiting_receiver(&self, e: &Expr) -> Option<String> {
+        let ExprKind::Call(callee, _) = &e.kind else {
+            return None;
+        };
+        let ExprKind::Field(base, name) = &callee.kind else {
+            return None;
+        };
+        let head = self.waiting_head(base)?;
+        self.returns_self(&head, &name.name).then_some(head)
+    }
+
+    /// True if `head`'s method `name` returns `head` at the `impl`'s own
+    /// type parameters, in order.
+    fn returns_self(&self, head: &str, name: &str) -> bool {
+        let Some(m) = self.methods.get(head).and_then(|ms| ms.get(name)) else {
+            return false;
+        };
+        let own: Vec<Type> = m.generics[..m.outer]
+            .iter()
+            .map(|g| Type::Param(g.name.clone()))
+            .collect();
+        matches!(&m.ret, Type::Struct(k, args) | Type::Enum(k, args) if k == head && *args == own)
+    }
+
+    /// The expected type for the receiver of `base.name(…)`: the call's own,
+    /// when the receiver waits and the method returns the receiver's type.
+    pub(super) fn receiver_expect(
+        &self,
+        base: &Expr,
+        name: &str,
+        expect: Option<&Expect>,
+    ) -> Option<Expect> {
+        let expected = expect?;
+        let head = self.waiting_head(base)?;
+        let fits = matches!(&expected.ty, Type::Struct(k, _) | Type::Enum(k, _) if *k == head);
+        (fits && self.returns_self(&head, name)).then(|| Expect::of(expected.ty.clone()))
     }
 
     /// A call `f(…)` or `m.f(…)` of a generic function whose result has a
@@ -40,16 +103,8 @@ impl Checker {
         let ExprKind::Call(callee, args) = &e.kind else {
             return false;
         };
-        let key = match &callee.kind {
-            ExprKind::Name(name) if self.local(name).is_none() => self.key(name),
-            ExprKind::Field(base, f) => {
-                let Some((path, _)) = Self::module_name(base).and_then(|m| self.module_path(&m))
-                else {
-                    return false;
-                };
-                self.follow(super::qualify(&path, &f.name))
-            }
-            _ => return false,
+        let Some(key) = self.callee_key(callee) else {
+            return false;
         };
         let Some(sig) = self.functions.get(&key) else {
             return false;
@@ -65,6 +120,20 @@ impl Checker {
                     .zip(args)
                     .all(|(p, a)| !mentions(p, &g.name) || self.waits(a))
         })
+    }
+}
+
+impl Checker {
+    /// The function a callee names, `f` or `m.f`, without reporting.
+    fn callee_key(&self, callee: &Expr) -> Option<String> {
+        match &callee.kind {
+            ExprKind::Name(name) if self.local(name).is_none() => Some(self.key(name)),
+            ExprKind::Field(base, f) => {
+                let (path, _) = Self::module_name(base).and_then(|m| self.module_path(&m))?;
+                Some(self.follow(super::qualify(&path, &f.name)))
+            }
+            _ => None,
+        }
     }
 }
 
@@ -176,6 +245,28 @@ mod tests {
         ok(
             "fun main() { let t = (1, \"a\"); let u: (i64, string) = t; println(t == (1, \"a\")); }",
         );
+    }
+
+    #[test]
+    fn a_waiting_receiver_takes_the_calls_expected_type_v17() {
+        let node = "enum Node<M> { Leaf(string), Wrapped(Node<M>, i64) }\n\
+            impl Node<M> {\n\
+                fun pad(self, n: i64): Node<M> = Node.Wrapped(self, n);\n\
+                fun size(self): i64 = 1;\n\
+            }\n\
+            fun leaf<M>(s: string): Node<M> = Node.Leaf(s);\n\
+            enum Msg { Go }\n";
+        ok(&format!(
+            "{node}fun a(): Node<Msg> = leaf(\"x\").pad(1).pad(2);\n\
+             fun main() {{ let n: Node<Msg> = leaf(\"x\").pad(1); }}"
+        ));
+        // A method not returning the receiver's type passes nothing back.
+        let src = format!("{node}fun main() {{ let s: i64 = leaf(\"x\").size(); }}");
+        let found = errors(&src);
+        assert_eq!(found.first().map(|(c, _)| *c), Some("E0412"), "{found:?}");
+        let src = format!("{node}fun main() {{ println(leaf(\"x\").pad(1) == leaf(\"y\")); }}");
+        let found = errors(&src);
+        assert_eq!(found.first().map(|(c, _)| *c), Some("E0412"), "{found:?}");
     }
 
     #[test]
