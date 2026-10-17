@@ -244,9 +244,22 @@ impl Checker {
                 let then_ty = self.block(then, sibling(&else_ty).as_ref());
                 return self.join_branches(expr, then, then_ty, else_expr, else_ty);
             }
-            if else_waits && !then_waits {
+            // A literal branch (`255`, `[0]`) takes a typed sibling's type
+            // too, rather than defaulting to `i64` (session 268).
+            let then_follows = then_waits || then.tail.as_ref().is_some_and(|t| branch_defers(t));
+            let else_follows = else_waits || branch_defers(else_expr);
+            if (else_waits && !then_waits) || (else_follows && !then_follows) {
                 let then_ty = self.block(then, None);
-                let else_ty = self.expr(else_expr, sibling(&then_ty).as_ref());
+                let given = sibling(&then_ty).filter(|e| else_waits || takes(else_expr, &e.ty));
+                let else_ty = self.expr(else_expr, given.as_ref());
+                return self.join_branches(expr, then, then_ty, else_expr, else_ty);
+            }
+            if then_follows && !else_follows {
+                let else_ty = self.expr(else_expr, None);
+                let tail = then.tail.as_ref();
+                let given = sibling(&else_ty)
+                    .filter(|e| then_waits || tail.is_some_and(|t| takes(t, &e.ty)));
+                let then_ty = self.block(then, given.as_ref());
                 return self.join_branches(expr, then, then_ty, else_expr, else_ty);
             }
         }
@@ -299,6 +312,31 @@ impl Checker {
                 Type::Error
             }
         }
+    }
+}
+
+/// True if branch `e` (through a block's tail) takes an expected type when
+/// one is given: a literal, `None`, `[]` (`ops::defers`).
+fn branch_defers(e: &Expr) -> bool {
+    match &e.kind {
+        ExprKind::Block(b) => b.tail.as_ref().is_some_and(|t| branch_defers(t)),
+        _ => super::ops::defers(e),
+    }
+}
+
+/// True if literal-like branch `e` could have type `ty`, so taking it as
+/// expected helps; otherwise the branches' mismatch is the clearer error.
+fn takes(e: &Expr, ty: &Type) -> bool {
+    match (&e.kind, ty) {
+        (ExprKind::Block(b), _) => b.tail.as_ref().is_some_and(|t| takes(t, ty)),
+        (ExprKind::Float(_), _) => ty.is_float(),
+        (ExprKind::Unary(_, inner), _) => takes(inner, ty),
+        (ExprKind::Int(_), _) => ty.is_numeric(),
+        (ExprKind::Array(xs), Type::Array(inner)) => xs.iter().all(|x| takes(x, inner)),
+        (ExprKind::Repeat(x, _), Type::Array(inner)) => takes(x, inner),
+        (ExprKind::Name(_) | ExprKind::Call(..), Type::Option(_)) => true,
+        (ExprKind::Closure(_), Type::Fun(..)) => true,
+        _ => false,
     }
 }
 

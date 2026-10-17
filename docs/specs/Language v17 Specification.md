@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–110 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–111 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–110):
+**Changes since v16** (milestones 91–111):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- `std.http` (milestone 111; standard library): an HTTP/1.1 server with strict limits and a client, in Lugha over `std.net`; a literal `if` branch takes a typed sibling's type (`if c { b - 1 } else { 255 }` with `b: u8`).
 - `std.net` (milestone 110; sections 7, standard library): TCP listeners and connections whose waits pause only their green thread, through `epoll`; timeouts; no UDP yet.
 - Global constants (milestone 109; sections 2, 3, 6, 8): `[private | public] const NAME: T = value;` — constant expressions only (E0445), in any order without cycles (E0446), evaluated once before `main`; no mutable statics. `const` is a keyword.
 - A float's raw bits (milestone 108; section 4): `x.to_bits()` (`f64` → `u64`, `f32` → `u32`) and `f64.from_bits(b)` / `f32.from_bits(b)`, exactly the IEEE 754 bits.
@@ -918,7 +919,7 @@ Float arithmetic follows IEEE 754: overflow gives an infinity and division by ze
 
 **Variable declarations.** Every variable must be initialized. A variable is in scope from the end of its declaration to the end of its enclosing block, so `let x = x + 1;` refers to an outer `x`. Shadowing is allowed, both in nested blocks and in the same block.
 
-**if / else.** `if` is an expression. The condition must be `bool`. With an `else`, both branches must have the same type, which becomes the type of the whole `if`. Without an `else`, the type is `()`. An expected type flows into both branches, so `let x: i32 = if c { 1 } else { 2 };` is valid. With none, a branch that can't be typed alone — `[]`, `None`, an untyped closure, a result-only generic call — takes the other branch's type: `if c { [] } else { [1] }` is an `i64[]`, either way round; in a `match`, such arms wait for the first arm that can be typed (v17).
+**if / else.** `if` is an expression. The condition must be `bool`. With an `else`, both branches must have the same type, which becomes the type of the whole `if`. Without an `else`, the type is `()`. An expected type flows into both branches, so `let x: i32 = if c { 1 } else { 2 };` is valid. With none, a branch that can't be typed alone — `[]`, `None`, an untyped closure, a result-only generic call — takes the other branch's type: `if c { [] } else { [1] }` is an `i64[]`, either way round; in a `match`, such arms wait for the first arm that can be typed (v17). A literal branch (`255`, `[0]`) likewise takes a typed sibling's type when it could have it, so `if c { b - 1 } else { 255 }` is a `u8` for `b: u8`.
 
 ```
 let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
@@ -1110,7 +1111,7 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 - **Deadlock:** when no green thread can run, none is sleeping, none waits on a socket and one waits, the program panics with `panic: deadlock: every green thread is waiting` (no location), exit 101.
 - **Actors** (milestone 92) are green threads that take messages from an unbounded mailbox one at a time: messages from one caller in the order sent, from several in the order they arrive. A panic inside an actor's method prints its message, as any panic does, but ends only that actor: the caller waiting for that message's result, and every later caller, panics with ``actor `Counter` panicked`` at its call; a call to a stopped actor panics with ``actor `Counter` has stopped``. A stack overflow inside an actor still ends the program. Plain `spawn f()` threads keep the rule above. Actors waiting on each other are a deadlock.
 
-**The standard library** (v15). Version 15 has `std.math`, `std.random`, `std.env`, `std.fs` and `std.process`; version 17 adds `std.task` and `std.net`.
+**The standard library** (v15). Version 15 has `std.math`, `std.random`, `std.env`, `std.fs` and `std.process`; version 17 adds `std.task`, `std.net` and `std.http`.
 
 `std.math` (milestone 53). The float functions take and return any `T: Float` (`f32` or `f64`) and follow IEEE 754: they never panic, `sqrt(-1.0)` is `NaN`, `ln(0.0)` is `-inf` and `pow(0.0, -1.0)` is `inf`.
 
@@ -1219,6 +1220,12 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 | `c.read(max: i64): Result<u8[], string>` | what has arrived, 1 to `max` bytes (`max` from 1 to 16777216), waiting for some; `[]` once the other end has finished |
 | `c.write(bytes: u8[]): Result<(), string>` | every byte, waiting while the connection is full; a closed peer is `Err`, never a signal |
 | `l.close()`, `c.close()` | closes the socket |
+
+`std.http` (v17, milestone 111). HTTP/1.1 over `std.net`, written in Lugha, `http://` only. `Request` has `method`, `path` (before `?`, not decoded), `query` (after `?`, raw), `headers` (`Map<string, string>`, names in lower case, a repeated header's values joined with `", "`), `body: u8[]` and `peer`; `Response` has `status`, `headers` and `body`; both have `text()` (UTF-8) and `header(name)` (any case). `text(status, s)`, `json(status, s)` and `bytes(status, b)` make responses.
+- **Serving:** `serve(addr, handler: fun(Request): Response)` (or `serve_with(addr, limits, handler)`) serves forever, one green thread per connection, keeping HTTP/1.1 connections open between requests (HTTP/1.0 only when asked); it returns only when it can't listen. The server sets `content-length` and, when it closes, `connection: close`; a response header whose name isn't a token or whose value holds a control character is dropped, so no handler can inject lines. A handler's panic ends the program, as any green thread's does.
+- **Limits** (`Limits`, `limits()` for the defaults): request line 8192 bytes (414 past it), all headers 8192 bytes and 100 of them (431), body 1048576 bytes (413), 30000 ms for a whole request to arrive and for a write (408 if part of a request came; an idle open connection just closes). Anything malformed is 400: a bad request line, a header name that isn't a token, a control character in a value, a `Content-Length` that isn't one decimal number, both `Content-Length` and `Transfer-Encoding`; another transfer coding than `chunked` is 501, another version than `HTTP/1.0`/`HTTP/1.1` is 505. Each closes the connection; the server goes on. `Expect: 100-continue` is answered before the body is read.
+- **Client:** `get(url)`, `post(url, content_type, body)`, `request(method, url, headers, body)` and `request_with(…, limits)` send one request per connection (`connection: close`) to `http://host[:port]/path?query` and read the response by `Content-Length`, `chunked` or to the end, skipping `1xx` responses; bodies up to 16777216 bytes by default. Failures are `Err`: `"bad URL"`, `"https isn't supported yet"`, `"response too large"`, `"malformed response"`, `"timed out"`, or the network's message.
+- Its reader lives in `std.$http_wire`, which only bundled sources can import.
 
 **Visibility.** Each function, extern, struct, enum, interface, method, associated function and struct field has one of three levels (v8):
 
@@ -3730,6 +3737,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 108 | Float bits (v17) | `x.to_bits()`, `f64.from_bits(b)`, `f32.from_bits(b)` | `tests/programs/m108/` (done) |
 | 109 | Global constants (v17) | `const NAME: T = value;`, E0445, E0446 | `tests/programs/m109/` (done) |
 | 110 | `std.net` (v17) | TCP, non-blocking sockets in the scheduler | `tests/net.rs` (done) |
+| 111 | `std.http` (v17) | HTTP/1.1 server and client, limits | `tests/http.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

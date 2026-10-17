@@ -43,6 +43,8 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
     let result = |t: Type| Type::Enum(super::results::RESULT.to_string(), vec![t, Type::String]);
     Some(match op {
         "seed" => (Vec::new(), Type::U64),
+        // A monotonic clock in milliseconds, for `std.http`'s deadlines (v17, milestone 111).
+        "now_ms" => (Vec::new(), Type::I64),
         "env" => (vec![Type::String], Type::Option(Box::new(bytes()))),
         "cwd" => (Vec::new(), result(bytes())),
         // v16, milestone 68: `std.env.set_current_dir`.

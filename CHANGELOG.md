@@ -9,6 +9,13 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `std.http`, milestone 111 (PRP-143): an HTTP/1.1 server (`serve`, `serve_with`, keep-alive, one green thread per connection, strict limits answered with 400/408/413/414/431/501/505, smuggling-safe framing, no header injection) and client (`get`, `post`, `request`), written in Lugha over `std.net`; its reader is the internal `std.$http_wire`
+- A literal `if` branch takes its typed sibling's type: `if c { b - 1 } else { 255 }` is a `u8` for `b: u8` (found while writing `std.http`)
+
+### Fixed
+- E0312's list of std modules names `std.net` (milestone 110) and `std.http`, and never an internal `$` module
+
+### Added
 - `std.net`, milestone 110 (PRP-142): TCP `net.listen`/`connect`/`connect_timeout`, `accept`, `read(max)`, `write`, `set_timeout`, `addr`, `peer`, `close`; a waiting socket call pauses only its green thread (the scheduler waits on `epoll`), so one program serves many connections on its one OS thread. Runtime fragment `runtime/net.c`
 
 ### Fixed

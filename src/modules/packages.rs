@@ -358,6 +358,8 @@ impl Packages {
         if written.len() == 1 || !known {
             let modules: Vec<String> = crate::STD
                 .iter()
+                // A `$` module is internal to another std module.
+                .filter(|(n, _)| !n.starts_with('$'))
                 .map(|(n, _)| format!("`std.{n}`"))
                 .collect();
             let d = Diagnostic::error(

@@ -22,6 +22,7 @@ impl<'ctx> Lowerer<'ctx> {
             // `std.net` (v17, milestone 110).
             _ if op.starts_with("net_") => self.net_call(call, op, args)?,
             "seed" => self.os_seed(),
+            "now_ms" => self.os_now_ms(),
             // `Some(bytes)` of the variable, or `None` (milestone 64).
             "env" => {
                 let name = self.get(&args[0], &Type::String)?;

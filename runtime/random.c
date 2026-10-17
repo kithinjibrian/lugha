@@ -31,3 +31,11 @@ uint64_t lugha_rt_os_seed(void) {
     die("panic: no randomness available from the operating system\n");
     return 0;
 }
+
+/* `$os.now_ms()` (v17, milestone 111): a monotonic clock in milliseconds,
+ * for deadlines; never the time of day. */
+int64_t lugha_rt_now_ms(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (int64_t)t.tv_sec * 1000 + t.tv_nsec / 1000000;
+}
