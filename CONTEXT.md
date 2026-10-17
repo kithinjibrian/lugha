@@ -8144,3 +8144,8 @@ Branch: e0312-beside-hint
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 239 — 2026-10-17 — check/test take a loose library file as a module (cycles) — open
+Branch: fix-check-cycle-loose
