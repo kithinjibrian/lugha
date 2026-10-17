@@ -70,6 +70,12 @@ impl Checker {
             && self.module_path(&m).is_some()
         {
             let key = self.member_through(&m, name)?;
+            // `m.NAME`: another module's constant (v17, milestone 109).
+            if self.consts.contains_key(&key) {
+                self.record(base, Type::Unit);
+                self.item_visible(&key, name.span);
+                return Some(self.const_read(expr, name.span, &key));
+            }
             if !self.functions.contains_key(&key) {
                 return None;
             }

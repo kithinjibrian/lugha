@@ -114,6 +114,7 @@ pub(super) fn answer(snapshot: &Snapshot, file: &Path, at: Position) -> Option<H
         Found::Name(Name::Function { decl, .. }) | Found::Type(decl, _) => Some(*decl),
         // A field's name at its declaration.
         Found::Name(Name::Field { .. }) => Some(span),
+        Found::Name(Name::Const { decl, .. }) => Some(*decl),
         _ => None,
     };
     let doc = match &found {
@@ -203,6 +204,7 @@ fn render(snapshot: &Snapshot, found: &Found) -> Option<(String, Vec<String>)> {
             (format!("let {mutable}{name}: {ty}"), Vec::new())
         }
         Found::Name(Name::Field { name, ty }) => (format!("{name}: {ty}"), Vec::new()),
+        Found::Name(Name::Const { name, ty, .. }) => (format!("const {name}: {ty}"), Vec::new()),
         Found::Name(Name::Function { decl, call }) => {
             let (header, name) = declaration(snapshot, *decl)?;
             let notes = call

@@ -367,6 +367,9 @@ impl<'a> Here<'a> {
                     Kind::STRUCT,
                     format!("extern type {}", t.name.name),
                 ),
+                Item::Const(c) if shown(&c.visibility) => {
+                    (&c.name, Kind::CONSTANT, format!("const {}", c.name.name))
+                }
                 _ => continue,
             };
             out.push(self.documented(item(&name.name, kind, detail), Some(name.span)));

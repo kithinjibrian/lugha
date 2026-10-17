@@ -37,6 +37,8 @@ pub enum TokenKind {
     // Keywords.
     Fun,
     Extern,
+    /// `const` (v17, milestone 109).
+    Const,
     Struct,
     Enum,
     Impl,
@@ -153,6 +155,7 @@ pub fn keyword(word: &str) -> Option<TokenKind> {
     Some(match word {
         "fun" => Fun,
         "extern" => Extern,
+        "const" => Const,
         "struct" => Struct,
         "enum" => Enum,
         "impl" => Impl,

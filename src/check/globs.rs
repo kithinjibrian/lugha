@@ -44,6 +44,7 @@ fn public_names(units: &[Unit], path: &[String], seen: &mut Vec<Vec<String>>) ->
             Item::Enum(e) if public(&e.visibility) => Some(&e.name),
             Item::Interface(i) if public(&i.visibility) => Some(&i.name),
             Item::ExternType(t) if public(&t.visibility) => Some(&t.name),
+            Item::Const(c) if public(&c.visibility) => Some(&c.name),
             _ => None,
         })
         .map(|n| n.name.clone())

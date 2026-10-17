@@ -55,6 +55,7 @@ impl Printer<'_> {
             ),
             Top::Item(Item::Extern(e)) => (e.visibility.map(|v| v.span.start), e.span),
             Top::Item(Item::ExternType(t)) => (t.visibility.map(|v| v.span.start), t.span),
+            Top::Item(Item::Const(c)) => (c.visibility.map(|v| v.span.start), c.span),
             Top::Item(Item::Struct(s)) => (s.visibility.map(|v| v.span.start), s.span),
             Top::Item(Item::Enum(e)) => (e.visibility.map(|v| v.span.start), e.span),
             Top::Item(Item::Impl(i)) => (None, i.span),
@@ -73,6 +74,16 @@ impl Printer<'_> {
                 visibility(t.visibility),
                 self.ident(&t.name)
             )),
+            Top::Item(Item::Const(c)) => concat(vec![
+                text(format!(
+                    "{}const {}: {} = ",
+                    visibility(c.visibility),
+                    self.ident(&c.name),
+                    self.ty(&c.ty)
+                )),
+                self.expr(&c.value),
+                text(";"),
+            ]),
             Top::Item(Item::Extern(e)) => concat(vec![
                 text(format!(
                     "{}extern {}fun {}",

@@ -107,6 +107,13 @@ fn item(item: &Item) -> String {
             ret(&e.ret)
         ),
         Item::ExternType(t) => format!("({}extern-type {})", visibility(t.visibility), t.name.name),
+        Item::Const(c) => format!(
+            "({}const {} {} {})",
+            visibility(c.visibility),
+            c.name.name,
+            self::ty(&c.ty),
+            super::expr(&c.value)
+        ),
         Item::Struct(s) => {
             let fields: String = s
                 .fields

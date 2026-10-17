@@ -48,6 +48,10 @@ fun main() {
 ### New dependencies
 - none
 
+## BUILT (session 261)
+- As planned. Constant expressions also allow a field or index of a constant value (`PRIMES[0] + ORIGIN.y`): evaluation is at startup, so they need nothing more.
+- Tests: parser (`consts.rs`), checker (`check/consts.rs`: types, order, shadowing, E0445 ×8, E0446 ×2, E0501 ×2, E0302 ×2, E0403; modules: visibility E0313 and a glob re-export), formatter rule, hover and definition, VS Code `consts.la`, `tests/programs/m109/` (`constants`, `modules`, `overflow`), E0445/E0446 pages; `lughac test` reads constants.
+
 ## ERROR HANDLING REQUIREMENTS
 - E0445 (new): a part of a constant's value that isn't a constant expression, or a type a constant can't have.
 - E0446 (new): constants that depend on themselves.

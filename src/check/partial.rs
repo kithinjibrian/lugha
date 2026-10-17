@@ -25,6 +25,8 @@ pub enum Name {
     Function { decl: Span, call: Option<ExprId> },
     /// A struct field at its declaration.
     Field { name: String, ty: Type },
+    /// A constant at its declaration or a use (v17, milestone 109).
+    Const { name: String, ty: Type, decl: Span },
 }
 
 /// Where a written name is defined (v16 draft decision 23).
@@ -124,6 +126,14 @@ impl Recorder {
     pub(super) fn function(&mut self, at: Span, decl: Span, call: Option<&Expr>) {
         let call = call.map(|c| c.id);
         self.names.insert(at, Name::Function { decl, call });
+        self.define(at, decl);
+    }
+
+    /// Constant `name` written at `at`, declared at `decl` (v17).
+    pub(super) fn constant(&mut self, at: Span, decl: Span, name: &str, ty: &Type) {
+        let name = name.to_string();
+        let ty = ty.clone();
+        self.names.insert(at, Name::Const { name, ty, decl });
         self.define(at, decl);
     }
 

@@ -67,6 +67,12 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) c_entries: usize,
     /// Variants used as function values (`Checked::variant_values`, v17).
     pub(super) variant_values: HashMap<ExprId, (Type, String)>,
+    /// Names reading a constant (`Checked::const_uses`, v17).
+    pub(super) const_uses: HashMap<ExprId, String>,
+    /// Every constant's global and type (v17).
+    pub(super) const_globals: HashMap<String, (inkwell::values::GlobalValue<'ctx>, Type)>,
+    /// `lugha_const_init`, if the program has constants (v17).
+    pub(super) const_init: Option<FunctionValue<'ctx>>,
     /// Expressions converted to an interface value (`Checked::conversions`).
     pub(super) conversions: HashMap<ExprId, Type>,
     /// `?` operands whose error converts (`Checked::try_conversions`).
@@ -169,6 +175,9 @@ pub(super) fn lower<'ctx>(
         c_params: checked.c_params.clone(),
         c_entries: 0,
         variant_values: checked.variant_values.clone(),
+        const_uses: checked.const_uses.clone(),
+        const_globals: HashMap::new(),
+        const_init: None,
         conversions: checked.conversions.clone(),
         interfaces: checked.interfaces.clone(),
         try_conversions: checked.try_conversions.clone(),
@@ -205,6 +214,7 @@ pub(super) fn lower<'ctx>(
         lowerer.declare_methods(unit);
     }
     lowerer.declare_instances(units, &checked.monos);
+    lowerer.declare_consts(&checked.consts);
     for unit in units {
         for item in &unit.program.items {
             if let Item::Fun(f) = item
@@ -220,6 +230,7 @@ pub(super) fn lower<'ctx>(
         lowerer.define_methods(unit)?;
     }
     lowerer.define_instances(units, &checked.monos)?;
+    lowerer.const_init = lowerer.define_const_init(units, &checked.consts)?;
     lowerer.finish_upcasts();
     lowerer.finish_shows();
     match lowerer.tests.clone() {
@@ -258,6 +269,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.builder
             .build_call(init, &init_args, "")
             .expect(POSITIONED);
+        self.call_const_init();
         let call = self
             .builder
             .build_call(user_main, &[], "result")
@@ -267,6 +279,16 @@ impl<'ctx> Lowerer<'ctx> {
             ValueKind::Instruction(_) => i32_type.const_zero(),
         };
         self.builder.build_return(Some(&code)).expect(POSITIONED);
+    }
+}
+
+impl Lowerer<'_> {
+    /// Fills every constant, after the runtime starts and before any test or
+    /// `main` runs (v17, milestone 109).
+    pub(super) fn call_const_init(&mut self) {
+        if let Some(init) = self.const_init {
+            self.builder.build_call(init, &[], "").expect(POSITIONED);
+        }
     }
 }
 

@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- Global constants, milestone 109 (PRP-141): `[private | public] const NAME: T = value;` — constant expressions only (E0445), any order without cycles (E0446), computed once before `main` (and before each test), read like a variable and copied like one (E0501 to assign); `m.NAME`, named imports and re-exports; hover, go-to-definition, references and completion; VS Code 0.19.0 highlights `const`. `const` is a keyword now
 - A float's raw bits, milestone 108 (PRP-140): `x.to_bits()` (`f64` → `u64`, `f32` → `u32`) and `f64.from_bits(b)` / `f32.from_bits(b)`, one `bitcast` each way
 - The unit type `()`, milestone 107 (PRP-139): a type and its one value, replacing `void` — a function without a return type returns `()`; `Result<(), string>`, `Ok(())`, `Chan<()>`, `Task<()>`, `Map<K, ()>`, `()[]`, fields and generic arguments hold it; `==`, `<`, hashing and printing (`()`); no memory. W0106 warns on `let x = log();` (silenced by `let x: () = log();`); `()` can't cross to C (E0409, E0437); `()` is a pattern too (`Some(())`, `let () = log();`)
 

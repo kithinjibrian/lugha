@@ -36,6 +36,7 @@ pub(super) fn declared(item: &Item) -> Option<&Ident> {
         Item::Enum(e) => &e.name,
         Item::Interface(i) => &i.name,
         Item::ExternType(t) => &t.name,
+        Item::Const(c) => &c.name,
         Item::Impl(_) => return None,
     })
 }
@@ -138,6 +139,7 @@ impl Checker {
             }
             let target = self.follow(key);
             let exists = self.functions.contains_key(&target)
+                || self.consts.contains_key(&target)
                 || self.structs.contains_key(&target)
                 || self.enums.contains_key(&target)
                 || self.interfaces.contains_key(&target)

@@ -27,6 +27,7 @@ mod concrete_defaults;
 mod conditional;
 mod conflicts;
 mod construct;
+mod consts;
 mod defaults;
 mod enums;
 mod env;
@@ -159,6 +160,9 @@ impl Checker {
             handles: HashMap::new(),
             c_params: HashMap::new(),
             variant_values: HashMap::new(),
+            consts: HashMap::new(),
+            const_uses: HashMap::new(),
+            const_order: Vec::new(),
             c_structs: std::collections::HashSet::new(),
             c_unions: std::collections::HashSet::new(),
             methods: HashMap::new(),
@@ -251,6 +255,12 @@ pub(super) struct Checker {
     c_params: callbacks::CParams,
     /// See `Checked::variant_values`.
     variant_values: HashMap<ExprId, (Type, String)>,
+    /// Every constant by key (v17, milestone 109).
+    consts: HashMap<String, consts::ConstInfo>,
+    /// See `Checked::const_uses`.
+    const_uses: HashMap<ExprId, String>,
+    /// See `Checked::consts`.
+    const_order: Vec<String>,
     /// Every `extern struct`, by key: C's layout, passed to C by value (v16, milestone 90).
     c_structs: std::collections::HashSet<String>,
     /// The `extern union`s among `c_structs` (v17, milestone 104).

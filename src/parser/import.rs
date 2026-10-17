@@ -172,7 +172,16 @@ impl Parser<'_> {
                 i.visibility = visibility;
                 Item::Interface(i)
             }
-            _ => return Err(self.expected("`fun`, `extern`, `struct`, `enum` or `interface`")),
+            TokenKind::Const => {
+                let mut c = self.const_decl()?;
+                c.visibility = visibility;
+                Item::Const(c)
+            }
+            _ => {
+                return Err(
+                    self.expected("`fun`, `extern`, `const`, `struct`, `enum` or `interface`")
+                );
+            }
         })
     }
 }

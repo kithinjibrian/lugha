@@ -74,12 +74,13 @@ impl Parser<'_> {
             TokenKind::Enum => self.enum_decl().map(Item::Enum),
             TokenKind::Impl => self.impl_decl().map(Item::Impl),
             TokenKind::Interface => self.interface_decl().map(Item::Interface),
+            TokenKind::Const => self.const_decl().map(Item::Const),
             TokenKind::Private | TokenKind::Public => self.visible_item(),
             TokenKind::At => self.attributed_item(),
             other => {
                 let is_statement = starts_statement(other);
-                let reported =
-                    self.expected("`fun`, `extern`, `struct`, `enum`, `impl` or `interface`");
+                let reported = self
+                    .expected("`fun`, `extern`, `const`, `struct`, `enum`, `impl` or `interface`");
                 if is_statement && let Some(last) = self.diagnostics.last_mut() {
                     last.help = Some("statements and variables must be inside a function".into());
                 }

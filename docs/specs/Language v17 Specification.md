@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–108 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–109 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–108):
+**Changes since v16** (milestones 91–109):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- Global constants (milestone 109; sections 2, 3, 6, 8): `[private | public] const NAME: T = value;` — constant expressions only (E0445), in any order without cycles (E0446), evaluated once before `main`; no mutable statics. `const` is a keyword.
 - A float's raw bits (milestone 108; section 4): `x.to_bits()` (`f64` → `u64`, `f32` → `u32`) and `f64.from_bits(b)` / `f32.from_bits(b)`, exactly the IEEE 754 bits.
 - The unit type `()` replaces `void` (milestone 107; sections 3, 4, 6): a type and its one value, held anywhere a value is (`Result<(), E>`, `Chan<()>`); E0407 is retired; W0106 warns on `let x = log();`.
 - Extern structs hold `Option` of a handle (C's nullable pointer); unions hold plain data only, so no pointer is made up from a number (milestone 106; section 8).
@@ -27,7 +28,7 @@ Oct 16, 2026 · @kithinji
 - A generic call only its result can type takes its type from its siblings: `assert_eq(text("hi"), expected)`, `text("hi") == expected` (milestone 96; section 4).
 - Packages and tests: `lughac test` and `lughac check` on a file in a package's `source` folder build it as that package's module (`glow.diff`), so modules importing each other can be tested, and its tests are named `glow.diff.name`; programs in a package's `test/`, `tests/` and `examples/` see its package-level items; `lughac check` takes a file without `main` as a library; `lugha.lock` sits beside the governing `lugha.toml`; and `skip(reason)` reports a test skipped (milestone 97; sections 6, 9).
 
-Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select` or `actor` as a name (keywords now), or declares a function named `skip` (an intrinsic since milestone 97, E0302), or names the iterator type `Map` (now `Mapped`, milestone 101; a program's own `Map` is fine). A module's own `Task` or `Chan` still means its own, as for `Ref`.
+Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select`, `actor` or `const` as a name (keywords now), or declares a function named `skip` (an intrinsic since milestone 97, E0302), or names the iterator type `Map` (now `Mapped`, milestone 101; a program's own `Map` is fine). A module's own `Task` or `Chan` still means its own, as for `Ref`.
 
 **Changes in v16 since v15** (milestones 67–90):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
@@ -246,7 +247,7 @@ Source files are UTF-8. The lexer produces a flat list of tokens, each carrying 
 ```
 fun  extern  struct  enum  impl  let  mut  if  else  while  for  in  of  match
 import  private  public  interface
-return  break  continue  true  false  as  self  spawn  select  actor
+return  break  continue  true  false  as  self  spawn  select  actor  const
 i32  i64  u8  f64  bool  string  u32  u64  f32  i8  i16  u16  char
 ```
 
@@ -322,7 +323,8 @@ program      = { import } { item } EOF ;
 import       = [ "public" ] "import" IDENT { "." IDENT } [ "as" IDENT ]
                [ "{" ( "*" | import_item { "," import_item } [ "," ] ) "}" ] ";" ;   (* names and `public`: v11; `as`: v14; `*` (only with `public`): v17 *)
 import_item  = IDENT [ "as" IDENT ] ;
-item         = { attribute } [ visibility ] ( fun_decl | extern_decl | extern_type | [ "extern" ] struct_decl | enum_decl | interface_decl ) | impl_decl ;   (* `extern struct`, v16 *)
+item         = { attribute } [ visibility ] ( fun_decl | extern_decl | extern_type | [ "extern" ] struct_decl | enum_decl | interface_decl | const_decl ) | impl_decl ;
+const_decl   = "const" IDENT ":" type "=" expr ";" ;   (* v17 *)   (* `extern struct`, v16 *)
 attribute    = "@" IDENT ;                       (* v16: only `@test`, before a `fun` *)
 visibility   = "private" | "public" ;                (* `public`: v8, packages *)
 
@@ -1043,7 +1045,9 @@ Floats print as the shortest decimal that round-trips, in Lugha float-literal sy
 
 ## 6. Functions and program structure
 
-A v0 program is a single `.la` file containing top-level items: functions, extern declarations and structs. There are no top-level variables or statements.
+A v0 program is a single `.la` file containing top-level items: functions, extern declarations and structs. There are no top-level variables or statements; v17 adds constants (below), but still no variables.
+
+**Constants** (v17, milestone 109). `[private | public] const NAME: T = value;` declares a module-level constant. The type is always written. Visibility, `m.NAME`, named imports, aliases and re-exports work as for functions; a constant shares its module's names with functions (E0302 for a clash), and a local may shadow it. The value is a *constant expression*: literals, other constants (in any order, but not in a circle: E0446), `I.MIN`/`I.MAX`, unary and binary operators, `as`, indexing and fields of those, and array (list and repeat), struct, tuple and variant literals (`Some`, `Ok`, `Err`, `E.V`) of constant expressions — never calls, closures, `if`, `match`, blocks, interpolation, `#{…}` or `..base` (E0445). Its type holds plain data: numbers, `bool`, `char`, `string`, `()`, and arrays, structs, tuples and enums of those (E0445 for functions, interfaces, `Ref`, `Task`, `Chan`, actors, handles, maps and sets). Every constant is computed once, before `main` (and before a test runs), each after those it reads; an overflow, division by zero or failed index panics then, at its expression. A constant is read like a variable and copied like one — `let mut xs = PRIMES; xs.push(1);` leaves `PRIMES` as it was — but is never assigned (E0501), changed in place, passed `mut` or swapped. There are no mutable globals: shared state lives in a `Ref` or an actor.
 
 **Item order doesn't matter.** A function can call a function declared later in the file, and a struct or enum can use a struct or enum declared later. The type checker runs in two passes to support this:
 
@@ -1420,6 +1424,7 @@ on_clicked(button, "clicked", fun(b: GtkWidget) { clicks.update(fun(n) = n + 1);
 - An or-pattern (v9) lowers in the arm chain: each alternative that fails tries the next, and every alternative stores a name's value into the arm's one local for it; a `match` with an or-pattern or a `mut` binding never uses the flat `switch`. A `mut` binding is a local of its own, deep-copied when its type is.
 - An iterator loop (v6) stores the iterator in a hidden local and calls its `next` with that local's address: directly for a struct or enum (its own method, or a bound default's instance in a generic instance), and through the table for an interface value.
 - An actor's message handler (v17, milestone 92) is `lugha_actor_<Type>.<method>(state, args, result)`: it reads the arguments from a GC block, one field each in element layout, calls `lugha_fn_<Type>.<method>` on the state and stores the result.
+- Each constant (v17) is a global `lugha_const_<key>` (the key's module path joined with `/`), zeroed, filled by `lugha_const_init()`, which the C `main` (and a test executable's) calls right after `lugha_rt_init`; a read loads the global.
 - A `spawn` site (v17) starts `lugha_task_<enclosing>.<n>(code, env, result)`, numbered per enclosing function from 0 like closures: it calls the closure the call was wrapped in and stores its result, in element layout, at `result`.
 - A closure's body (v3) is `lugha_closure_<enclosing>.<n>`: the enclosing function's symbol without its prefix, then the closure's number in that function from 0 (`lugha_closure_main.0`, `lugha_closure_main.0.0` for a closure inside it, `lugha_closure_max<i64>.0` in an instance). Its environment comes first, as for every function value's code.
 - The array helpers (v3) are generic functions of a prelude written in Lugha, bundled with the compiler and checked with every program, under the module path `$prelude`, which no program can name: `lugha_fn_$prelude/map<Person, string>`. Each is compiled only at the types a program uses.
@@ -1703,6 +1708,8 @@ Name and type errors, reported by the checker:
 | E0442 | `for … of mut` over a map or set (v17) | `for (k, v) of mut m { … }` |
 | E0443 | `out` missing or misplaced in a call (v17) | `get_fuel(ctx, fuel)` for `out fuel: u64`; `put(out n)` where `n` isn't `out` |
 | E0444 | A union literal writing other than one field (v17) | `U { a: 1, b: 2.0 }`; `U {}` |
+| E0445 | Not a constant (v17) | a call, closure, `if`, block, interpolation or `#{…}` in a constant's value; a constant of type `Ref<T>`, a function, a task, a channel, an actor, a handle, a map or a set |
+| E0446 | A constant that depends on itself (v17) | `const A: i64 = B; const B: i64 = A;` |
 | E0437 | A malformed `extern struct` (v16) | `extern struct S { s: string }`; a field of an array, a plain struct, an enum, `Option` (other than of a handle, v17) or a function type; a handle, `Option` of one or `CPtr` in an `extern union`, at any depth (v17); `extern struct S<T> { … }`; `extern struct S {}` |
 | E0433 | A pattern that must match every value but might not (v14) | `let (1, x) = t;`, `let Some(n) = o;` without `else`, `for (Some(a), b) of …` |
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
@@ -3707,6 +3714,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 106 | Nullable handle fields, plain-data unions (v17) | `Option<H>` fields, E0437 for pointers in unions | `tests/extern_structs.rs`, `tests/c_arrays.rs` (done) |
 | 107 | The unit type (v17) | `()` type and value, W0106, E0407 retired | `tests/programs/m107/` (done) |
 | 108 | Float bits (v17) | `x.to_bits()`, `f64.from_bits(b)`, `f32.from_bits(b)` | `tests/programs/m108/` (done) |
+| 109 | Global constants (v17) | `const NAME: T = value;`, E0445, E0446 | `tests/programs/m109/` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
