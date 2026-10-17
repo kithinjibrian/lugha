@@ -385,3 +385,24 @@ fn a_package_file_is_tested_as_its_module_v17() {
     let checked = lughac(&t.0, &["check", "src/vdom.la"]);
     assert_eq!(checked.status.code(), Some(0), "{}", text(&checked.stderr));
 }
+
+#[test]
+fn a_loose_library_file_in_a_cycle_is_tested_as_a_module() {
+    let t = Temp::with(&[
+        (
+            "diff.la",
+            "import vdom;\nfun patch(n: i64): i64 = vdom.size(n) + 1;\n@test\nfun patches() { assert_eq(patch(1), 3); }\n",
+        ),
+        (
+            "vdom.la",
+            "import diff;\nfun size(n: i64): i64 = n * 2;\nfun both(n: i64): i64 = diff.patch(n);\n",
+        ),
+    ]);
+    let out = lughac(&t.0, &["test", "diff.la"]);
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    assert!(
+        text(&out.stdout).contains("test diff.patches ... ok"),
+        "{}",
+        text(&out.stdout)
+    );
+}

@@ -30,6 +30,7 @@ Never deleted. Older entries are never modified.
 - An extern parameter with a function type is now a callback instead of E0409; E0409's message for a function an extern would return says so (milestone 88)
 
 ### Fixed
+- `lughac check` and `lughac test` on a library file outside a package reported E0319 when a module it imports imported it back (`diff.la` ↔ `vdom.la`), though the editor and a program using it were fine; such a file (no `fun main`) now loads as the module named after it (session 239)
 - The expected type didn't reach a method call's receiver: `fun a(): Node<Msg> = leaf("x").pad(8);` was E0412. A receiver only its result types now takes the call's expected type when the method returns the receiver's own type, through chains (`.pad(1).pad(2)`), lists, tuples and `==`; hover shows the inferred type (kivuli, session 236)
 - Inference from siblings didn't reach a call inside a tuple: `assert_eq(keyed_column([("a", text("a"))]), expected)` was E0412. A tuple holding a waiting call now waits too; tuples of literals keep their own types (kivuli, session 234)
 - Doc comments didn't attach to `extern type` and `actor` declarations, so hover showed no doc for them; they now do, and spec §2 lists both (the user, session 231)

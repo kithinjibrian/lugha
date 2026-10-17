@@ -1493,7 +1493,7 @@ The C `main(argc, argv)` emitted by the compiler calls `lugha_rt_init(argc, argv
 | --- | --- |
 | `lughac build prog.la [-o prog]` | Compile and link an executable |
 | `lughac run prog.la [-- args…]` | Build to a temporary file and run it, passing `args` to the program (v3) |
-| `lughac check prog.la` | Lex, parse and type-check only; no codegen or linking (type checking from milestone 3). A file without `fun main` is checked as a library (v17); a file in its package's `source` folder is checked as that package's module (v17) |
+| `lughac check prog.la` | Lex, parse and type-check only; no codegen or linking (type checking from milestone 3). A file without `fun main` is checked as a library (v17): in its package's `source` folder as that package's module, elsewhere as the module named after the file (`diff.la` → `diff`), so modules it imports may import it back (v17); `lughac test` loads files the same way |
 | `lughac spec` | Print the LLM-ready spec bundled with this compiler version |
 | `lughac update prog.la` | Re-resolve every git package to its newest matching tag and rewrite `lugha.lock` (v14) |
 | `lughac init [folder] [--lib] [--name N]` | Start a program, or with `--lib` a library, in `folder` (default: the current one); see below (v16) |
