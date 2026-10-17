@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–101 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–102 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–101):
+**Changes since v16** (milestones 91–102):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- `out` parameters on externs: `extern fun get_fuel(c: Context, out fuel: u64): bool;` and `get_fuel(ctx, out fuel)` — C writes through the pointer and the place gets the value after the call (milestone 102; sections 3, 8).
 - Maps and sets: `Map<K, V>` and `Set<T>`, built in, with `#{"ann": 31}` and `#{1, 2}` literals; values like arrays, keys any `Eq` type without floats, insertion order, `m[k]`, `for (k, v) of m`, `==` regardless of order. The iterator type `it.map(f)` returns is renamed `Mapped` (milestone 101; sections 2–5, 9, 10).
 - Glob re-exports: `public import raw { * };` makes every `public` item of `raw` an item of this module, so a package's entry can flatten a sub-module (milestone 100; sections 3, 6).
 - Package entry modules: `import kivuli;` imports the package's `lib.la` (in its `source` folder) as the module `kivuli`; `lughac init --lib` writes one (milestone 99; sections 6, 9).
@@ -340,7 +341,7 @@ iface_item   = "fun" IDENT "(" [ receiver [ "," params ] | params ] ")" [ ":" ty
 receiver     = [ "mut" ] "self" ;
 variant      = IDENT [ "(" type { "," type } [ "," ] ")" ] ;
 params       = param { "," param } [ "," ] ;
-param        = IDENT ":" type ;
+param        = [ "out" ] IDENT ":" type ;            (* `out`: an extern's only, v17 *)
 
 type         = base_type { "[" "]" } ;
 base_type    = "i32" | "i64" | "u8" | "f64" | "bool" | "string"
@@ -387,7 +388,8 @@ alternative  = "_"
 expr         = prefix { infix } ;            (* Pratt loop, see table *)
 prefix       = ( "-" | "!" ) prefix | "spawn" postfix | postfix ;   (* binds tighter than infix; spawn: v17 *)
 postfix      = primary { call | index | member | "?" } ;   (* `read(p)?` (v4) *)
-call         = "(" [ expr { "," expr } [ "," ] ] ")" ;
+call         = "(" [ arg { "," arg } [ "," ] ] ")" ;
+arg          = [ "out" ] expr ;                     (* `out place`: for an extern's `out` parameter, v17 *)
 index        = "[" expr "]" ;
 member       = "." ( IDENT | INT ) ;          (* `t.0` (v14) *)
 primary      = INT | FLOAT | CHAR | STRING | interpolated | closure | "true" | "false"
@@ -1324,6 +1326,8 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 
 **Text from C** (v16, milestone 89). A `string` or `Option<string>` coming from C — an extern's result, or a callback's parameter — is copied into a new Lugha string: C's bytes up to the first NUL, each invalid UTF-8 sequence replaced by U+FFFD and the copy moving one byte on, exactly as `chars()` decodes. C keeps its memory and Lugha never frees it, so a C function returning text the caller must free leaks unless it is declared returning a handle and freed through another extern. For `Option<string>`, `NULL` is `None`; for a plain `string`, `NULL` panics: `panic: C gave NULL for a \`string\`; declare it \`Option<string>\`` (without a location: the runtime can't tell which call).
 
+**`out` parameters** (v17, milestone 102). `out name: T` in an extern's parameters is C's `T *` that C writes through: `extern fun wasmtime_context_get_fuel(c: Context, out fuel: u64): Option<WasmError>;`. The call writes `out place` for it — `get_fuel(ctx, out fuel)` — where `place` is anything assignable (a `let mut` variable, a field, an element), under the assignment rules (E0501, E0502, E0506, E0507) and of exactly the type `T`. C gets a pointer to a zeroed slot, not the place's old value; after the call returns, what C wrote is stored into the place, the `out` arguments' places in order, each fixed (its indexes evaluated) when its argument is evaluated. `T` is an integer, a float, `bool`, a handle (C's `T **`; C's pointer as is, as for a handle result), `Option` of a handle (`NULL` is `None`: the usual way to declare C's `T **`, since a variable must start with a value) or an extern struct C fills; a `string` is E0409. A missing `out` for an `out` parameter, or `out` for any other argument, is E0443; `out` on a Lugha function's parameter is E0201. `out` is a keyword only there, before a name, so `out` stays usable as a name. The slot lives for the call only: C must not keep the pointer.
+
 **Passing structs** (v16, milestone 90). An extern struct goes to and from C — as an extern's parameter or result, or a callback's — the way the x86-64 System V ABI passes it, which is how a C compiler passes it:
 - **Over 16 bytes:** in memory. An argument is a copy C receives on the stack (LLVM `byval`); a result is written through a hidden pointer the caller passes first (`sret`).
 - **16 bytes or less:** split into eightbytes. One holding only `f32`/`f64` fields goes in an SSE register, any other in an integer register. A struct whose eightbytes don't all fit the registers still free at its argument goes in memory as a whole.
@@ -1675,6 +1679,7 @@ Name and type errors, reported by the checker:
 | E0440 | `..base` of another type (v17) | `P { x: 1.0, ..q }` where `q` is a `Q` |
 | E0441 | A float as a map key or set value (v17) | `#{1.5: "a"}`; `Set<f64>`; `Map<(i64, f64), i64>` |
 | E0442 | `for … of mut` over a map or set (v17) | `for (k, v) of mut m { … }` |
+| E0443 | `out` missing or misplaced in a call (v17) | `get_fuel(ctx, fuel)` for `out fuel: u64`; `put(out n)` where `n` isn't `out` |
 | E0437 | A malformed `extern struct` (v16) | `extern struct S { s: string }`; a field of an array, a plain struct, an enum, `Option` or a function type; `extern struct S<T> { … }`; `extern struct S {}` |
 | E0433 | A pattern that must match every value but might not (v14) | `let (1, x) = t;`, `let Some(n) = o;` without `else`, `for (Some(a), b) of …` |
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
@@ -3671,6 +3676,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 99 | Package entry modules (v17) | `import N;` imports the package's `lib.la`; `lughac init --lib` writes one | `src/modules/entry_tests.rs`, `tests/package_layout.rs`, `tests/init.rs`, `tests/lsp_docs.rs` (done) |
 | 100 | Glob re-exports (v17) | `public import m { * };` re-exports every `public` item of `m`; E0201 for misuse, E0314 for clashes | `src/check/globs.rs`, `tests/programs/m100/`, `tests/package_layout.rs`, `tests/lsp_definition.rs` (done) |
 | 101 | Maps and sets (v17) | `Map<K, V>`, `Set<T>`, `#{ … }` literals; E0441, E0442, W0105; the iterator type `Mapped` | `tests/programs/m101/`, the §10 word count and dedupe programs (done) |
+| 102 | `out` parameters (v17) | `out` on extern parameters and call arguments; E0443 | `tests/out_params.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

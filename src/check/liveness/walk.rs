@@ -87,6 +87,8 @@ impl Walk<'_> {
             ExprKind::Array(elements) | ExprKind::Tuple(elements) => {
                 elements.iter().for_each(|e| self.store(e))
             }
+            // `out place` (v17): the place C fills, written after the call.
+            ExprKind::Out(place) => self.expr(place),
             // `#{ … }` (v17): its keys' and values' arrays, stored like elements.
             ExprKind::Hashed(lit) => {
                 self.expr(&lit.keys);

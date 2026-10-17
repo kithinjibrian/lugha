@@ -1,6 +1,6 @@
 # Lugha v17 — Draft (delta against v16)
 
-**Status:** milestone 91 (green threads) approved in session 201 (proposed in session 200, after discovery in sessions 195–200), and built. Milestone 92 (actors) approved in session 214 (proposed in session 213, after discussion in sessions 207–212), and built. Milestones 93 (struct update syntax) and 94 (variants as functions) approved in session 216 (proposed in session 215); 93 built in session 216, 94 in session 217. Milestones 95–97 (formatter hugging, inference from siblings, packages and tests) approved in session 220 (proposed in session 219); 95 built in session 220, 96 in session 221, 97 in session 222. Milestone 98 (module doc comments, PRP-130) proposed in session 224, approved and built in session 225. Milestone 99 (package entry modules, PRP-131) proposed in session 227, approved and built in session 228. Milestone 100 (glob re-exports, PRP-132) proposed in session 232, approved and built in session 233. Milestone 101 (maps and sets, PRP-133) proposed in session 243, approved and built in session 244.
+**Status:** milestone 91 (green threads) approved in session 201 (proposed in session 200, after discovery in sessions 195–200), and built. Milestone 92 (actors) approved in session 214 (proposed in session 213, after discussion in sessions 207–212), and built. Milestones 93 (struct update syntax) and 94 (variants as functions) approved in session 216 (proposed in session 215); 93 built in session 216, 94 in session 217. Milestones 95–97 (formatter hugging, inference from siblings, packages and tests) approved in session 220 (proposed in session 219); 95 built in session 220, 96 in session 221, 97 in session 222. Milestone 98 (module doc comments, PRP-130) proposed in session 224, approved and built in session 225. Milestone 99 (package entry modules, PRP-131) proposed in session 227, approved and built in session 228. Milestone 100 (glob re-exports, PRP-132) proposed in session 232, approved and built in session 233. Milestone 101 (maps and sets, PRP-133) proposed in session 243, approved and built in session 244. Milestone 102 (`out` parameters, PRP-134) proposed in session 248, approved and built in session 249.
 **Base:** `Language v16 Specification.md` (milestones 67–90), frozen when milestone 91 started. `Language v17 Specification.md` starts from it and grows milestone by milestone; it is what `lughac spec` prints.
 
 **Theme:** concurrency without async/await. Every function stays an ordinary function: a green thread pauses only where it waits (`join`, a channel, `select`, `sleep`), and the scheduler preempts long loops on its own, so nothing is marked `async` and nothing is awaited: no function colouring. Milestone 91 brings green threads and channels. Actors, which build on them (a green thread owning a channel as its mailbox), follow in a later v17 milestone.
@@ -148,6 +148,18 @@ Glob re-exports (kivuli / lugha-gtk: an entry flattening its C-bindings module; 
 
 Maps and sets (the user: "let's work on map and set"; literal syntax and Q1–Q6 answered by the user; PRP-133). In short: `#{k: v}` and `#{x}` literals; `Map<K, V>` and `Set<T>` built in, the iterator type renamed `Mapped`; values like arrays; keys any `Eq` type without floats (E0441), hashed structurally; insertion order; the API of PRP-133 decisions 73–75; `==` regardless of order; `for … of mut` refused (E0442); W0105 for equal literal keys; written in Lugha in the prelude over a `$hash` built-in. Full list: PRP-133 decisions 67–80.
 
+## Decisions behind milestone 102 (discovery, session 248; approved in session 249)
+
+`out` parameters on externs (lugha-wasmtime's need list, items 1, 2 and part of 6; PRP-134). Q1–Q4 answered by the user.
+
+81. **Declaration:** `out name: T` in an `extern fun`'s parameters (C's `T *`); contextual keyword; on a Lugha function's parameter E0201.
+82. **Call site:** `out place`; a missing or misplaced `out` is E0443.
+83. **The place:** any assignable place (assignment rules); C gets a zeroed slot, and its value is stored into the place after the call.
+84. **Types:** integers, `bool`, floats, handles (NULL panics), `Option` of a handle (NULL → `None`), extern structs; others E0409.
+85. **Order:** arguments left to right; write-backs after the call, left to right.
+86. **Scope:** only `out`; `ptr` and in-out `mut` next.
+87. **Success:** milestone 102, tag `m102`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
@@ -178,3 +190,4 @@ For milestone 92: **§2** keyword `actor`; **§3** `actor_decl = [ visibility ] 
 | 99 | Package entry modules (v17) | `import N;` imports the package's `lib.la`; `init --lib` writes one (PRP-131, approved in session 228) |
 | 100 | Glob re-exports (v17) | `public import m { * };` re-exports every `public` item of `m` (PRP-132, approved in session 233) |
 | 101 | Maps and sets (v17) | `Map<K, V>`, `Set<T>`, `#{ … }` literals, iteration, printing, `==`; E0441, E0442, W0105 (PRP-133, approved in session 244) |
+| 102 | `out` parameters (v17) | `out x` on extern parameters and call arguments; E0443 (PRP-134, approved in session 249) |

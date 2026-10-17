@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**v17: milestones 91–101 done** (`m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**v17: milestones 91–102 done** (`m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -8353,3 +8353,50 @@ Branch: fix-private-import-leak
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 248 — 2026-10-17 — `out` parameters discovery (PRP-134) — closed
+Branch: prp-134-out_params
+
+### WHAT WAS DONE
+- Discussed lugha-wasmtime's needs (pointers and bytes at the C boundary); the user found the full design a lot, so narrowed to `out` parameters first. Discovery Q1–Q4 (all recommended answers): `out` at declaration and call; any assignable place, C sees zeroes; numbers, bool, handles, `Option` of a handle, extern structs; only `out` this milestone. PRP-134 written (milestone 102); draft decisions 81–87 and row 102 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-134-out_params.md`. Modified: `docs/specs/Language v17 Draft.md`, CONTEXT.
+
+### TESTS WRITTEN
+- None (proposal).
+
+### DECISIONS MADE
+- Q1–Q4 (the user); 85, 87 proposed.
+
+### PENDING DECISIONS OPENED
+- PRP-134 approval.
+
+### STILL OPEN AT CLOSE
+- PRP-134 awaits approval; build on branch `prp-134-out_params`. Later milestones (for lugha-wasmtime): `ptr`/`mut` pointers, arrays across the boundary and unions, raw C memory and pointer callbacks.
+
+---
+
+## SESSION 249 — 2026-10-17 — `out` parameters (milestone 102) — closed
+Branch: prp-134-out_params
+
+### WHAT WAS DONE
+- Built PRP-134: `out` in extern parameters and call arguments (parser, formatter, checker with E0443, codegen slots and write-backs), spec v17 §3, §8, §11 row 102, E0443's page, VS Code 0.17.0.
+
+### FILES CREATED OR MODIFIED
+- New: `src/parser/out_params.rs`, `src/check/out_params.rs`, `src/codegen/out_params.rs`, `tests/out_params.rs`, `docs/errors/E0443.md`, `editors/vscode/test/grammar/out.la`.
+- Modified: AST (`Param.out`, `ExprKind::Out`), parser (`item`, `expr`, `actors`, `sexp`), formatter (`leaves`, `exprs`, tests), checker (`callbacks`, `call`, `env`, `expr`, `liveness/walk`), codegen (`callbacks`, `declare`, `function`, `expr`, `hoist_scan`, `lower`), `src/explain.rs`, VS Code grammar and version, spec, draft, PRP-134, CLAUDE.md, TODO, CHANGELOG, MEMORY (188), CONTEXT.
+
+### TESTS WRITTEN
+- See PRP-134's BUILT notes (narrow runs).
+
+### DECISIONS MADE
+- PRP-134 as approved; deviation on NULL handles recorded.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing. Next for lugha-wasmtime (TODO): `ptr`/`mut` pointers, arrays and unions, raw C memory and pointer callbacks.

@@ -27,6 +27,9 @@ pub enum CParam {
     Data,
     /// The function C calls when it drops the callback: `lugha_rt_cb_release`.
     Release,
+    /// `out x` (v17, milestone 102): a pointer to a zeroed slot C writes,
+    /// stored into the argument's place after the call.
+    Out,
 }
 
 /// Every extern's plan whose parameters aren't all plain values, by key.
@@ -110,7 +113,11 @@ impl Checker {
                     ty
                 }
                 _ => {
-                    plan.push(CParam::Value);
+                    plan.push(if p.out.is_some() {
+                        CParam::Out
+                    } else {
+                        CParam::Value
+                    });
                     self.resolve(&p.ty)
                 }
             };

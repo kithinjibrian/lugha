@@ -113,11 +113,11 @@ impl Printer<'_> {
             .map(|r| text(if r.mutable { "mut self" } else { "self" }))
             .into_iter()
             .collect();
-        items.extend(
-            params
-                .iter()
-                .map(|p| text(format!("{}: {}", self.ident(&p.name), self.ty(&p.ty)))),
-        );
+        items.extend(params.iter().map(|p| {
+            // `out` before an extern's parameter (v17).
+            let out = if p.out.is_some() { "out " } else { "" };
+            text(format!("{out}{}: {}", self.ident(&p.name), self.ty(&p.ty)))
+        }));
         list("(", items, ")")
     }
 

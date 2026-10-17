@@ -237,6 +237,11 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Array(items) | ExprKind::Tuple(items) => {
                 items.iter().for_each(|e| self.scan_read(scan, e))
             }
+            // `out place` (v17): the call writes the place.
+            ExprKind::Out(place) => {
+                let deep = self.ty(place).is_deep(&self.structs);
+                self.scan_write(scan, place, deep);
+            }
             ExprKind::Hashed(lit) => {
                 self.scan_read(scan, &lit.keys);
                 self.scan_read(scan, &lit.values);

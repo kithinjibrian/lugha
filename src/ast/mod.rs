@@ -205,6 +205,9 @@ pub struct Param {
     pub name: Ident,
     /// Its declared type.
     pub ty: Type,
+    /// The `out` before an extern's parameter: C writes the value through
+    /// a pointer (v17, milestone 102).
+    pub out: Option<Span>,
 }
 
 /// `{ stmts tail }`.

@@ -127,7 +127,8 @@ impl Parser<'_> {
         }
         self.bump();
         let name = self.ident("function name")?;
-        let params = self.params()?;
+        let open = self.expect(&TokenKind::LParen)?;
+        let params = self.comma_list(open, TokenKind::RParen, |p| p.extern_param())?;
         let ret = self.return_type()?;
         self.expect(&TokenKind::Semi)?;
         Ok(Item::Extern(ExternDecl {
@@ -150,7 +151,7 @@ impl Parser<'_> {
         let fields = self.in_impl(&name, &params, |this| {
             this.comma_list(open, TokenKind::RBrace, |p| {
                 let visibility = p.visibility();
-                let Param { name, ty } = p.param("field name")?;
+                let Param { name, ty, .. } = p.param("field name")?;
                 Ok(Field {
                     visibility,
                     name,
@@ -169,11 +170,6 @@ impl Parser<'_> {
         })
     }
 
-    fn params(&mut self) -> PResult<Vec<Param>> {
-        let open = self.expect(&TokenKind::LParen)?;
-        self.comma_list(open, TokenKind::RParen, |p| p.param("parameter name"))
-    }
-
     pub(super) fn param(&mut self, what: &str) -> PResult<Param> {
         // Fields read their visibility first; anywhere else one is a mistake
         // reported once, and parsing goes on as if it weren't there.
@@ -182,11 +178,13 @@ impl Parser<'_> {
             let help = "only items, methods and fields take `private` or `public`";
             self.error(Diagnostic::error("E0201", message, v.span).with_help(help));
         }
+        self.misplaced_out();
         let name = self.ident(what)?;
         self.expect(&TokenKind::Colon)?;
         Ok(Param {
             name,
             ty: self.ty()?,
+            out: None,
         })
     }
 

@@ -206,7 +206,8 @@ fn params(params: &[Param]) -> String {
 }
 
 fn param(param: &Param) -> String {
-    format!("({} {})", param.name.name, ty(&param.ty))
+    let out = if param.out.is_some() { "out " } else { "" };
+    format!("({out}{} {})", param.name.name, ty(&param.ty))
 }
 
 fn ret(ret: &Option<Type>) -> String {

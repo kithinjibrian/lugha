@@ -196,7 +196,10 @@ impl<'ctx> Lowerer<'ctx> {
             let plan = plan.unwrap_or_else(|| vec![CParam::Value; args.len()]);
             let raw = self.callback_arguments(args, &signature.params, &plan)?;
             let code = signature.function.as_global_value().as_pointer_value();
-            return Ok(match (self.c_sig_call(&sig, code, raw), &signature.ret) {
+            let called = self.c_sig_call(&sig, code, raw);
+            // `out` arguments take what C wrote (v17, milestone 102).
+            self.write_outs();
+            return Ok(match (called, &signature.ret) {
                 (Some(result), Some(ret)) if converts_from_c(ret) => {
                     Value::Val(self.value_from_c(result, ret))
                 }
@@ -228,6 +231,7 @@ impl<'ctx> Lowerer<'ctx> {
                 .build_call(signature.function, &values, "call")
                 .expect(POSITIONED),
         };
+        self.write_outs();
         Ok(match (site.try_as_basic_value(), &signature.ret) {
             (ValueKind::Basic(result), Some(ret))
                 if signature.is_extern && converts_from_c(ret) =>

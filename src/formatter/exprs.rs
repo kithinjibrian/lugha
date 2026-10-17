@@ -52,6 +52,7 @@ impl Printer<'_> {
                 let items = self.exprs(elements);
                 huggable(list("[", items, "]"))
             }
+            ExprKind::Out(place) => concat(vec![text("out "), self.expr(place)]),
             // `#{"a": 1}`, `#{1, 2}`, `#{}` (v17, milestone 101).
             ExprKind::Hashed(lit) => {
                 let (ExprKind::Array(keys), ExprKind::Array(values)) =

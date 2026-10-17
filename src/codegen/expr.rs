@@ -26,6 +26,7 @@ impl<'ctx> Lowerer<'ctx> {
     /// Lowers an expression at its own type.
     pub(super) fn unconverted(&mut self, expr: &Expr) -> Result<Value<'ctx>, CodegenError> {
         let value: BasicValueEnum<'ctx> = match &expr.kind {
+            ExprKind::Out(_) => unreachable!("checked: `out` is only an extern's argument"),
             ExprKind::Hashed(lit) => self.hashed(expr, lit)?,
             ExprKind::Int(_) | ExprKind::Float(_) => self.literal(expr, false),
             ExprKind::Char(code) => self

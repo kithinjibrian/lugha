@@ -72,7 +72,7 @@ impl<'ctx> Lowerer<'ctx> {
                 Some(plan) => params
                     .iter()
                     .zip(plan)
-                    .filter(|(_, c)| matches!(c, CParam::Value | CParam::Callback { .. }))
+                    .filter(|(_, c)| !matches!(c, CParam::Data | CParam::Release))
                     .map(|(p, _)| self.annotation_type(&p.ty))
                     .collect(),
                 None => params.iter().map(|p| self.annotation_type(&p.ty)).collect(),
@@ -176,7 +176,7 @@ impl<'ctx> Lowerer<'ctx> {
         plan.iter()
             .map(|c| match c {
                 CParam::Value => CKind::Value(written.next().expect("checked arity").clone()),
-                CParam::Callback { .. } => {
+                CParam::Callback { .. } | CParam::Out => {
                     written.next();
                     CKind::Pointer
                 }
