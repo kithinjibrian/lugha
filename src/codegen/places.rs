@@ -83,6 +83,10 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Field(base, field) => {
                 let (base_address, base_ty, _) = self.walk(base, plan, next, own);
                 let (index, field_ty) = self.field_index(&base_ty, &field.name);
+                // Every field of a union is at its start (v17).
+                if self.is_union(&base_ty) {
+                    return (base_address, field_ty, true);
+                }
                 let llvm = llvm_type(self.context, &base_ty).into_struct_type();
                 let address = self
                     .builder

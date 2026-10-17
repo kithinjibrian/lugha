@@ -139,6 +139,9 @@ pub struct StructDecl {
     /// The `extern` of `extern struct`: C's layout, passed to C by value
     /// (v16, milestone 90).
     pub c_layout: Option<Span>,
+    /// The `union` of `extern union` (v17, milestone 104): C's union, its
+    /// fields sharing one place.
+    pub union: Option<Span>,
     /// The `actor` keyword when this is an actor's state (v17, milestone 92);
     /// its methods follow as an `impl` with `actor` set. `span` is the
     /// whole actor.
@@ -205,9 +208,31 @@ pub struct Param {
     pub name: Ident,
     /// Its declared type.
     pub ty: Type,
-    /// The `out` before an extern's parameter: C writes the value through
-    /// a pointer (v17, milestone 102).
-    pub out: Option<Span>,
+    /// `out`, `ptr` or `mut` before an extern's parameter: how it reaches C
+    /// by address (v17, milestones 102–104), and where the word is.
+    pub mode: Option<(PassMode, Span)>,
+}
+
+/// How an extern's parameter reaches C by address (v17).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PassMode {
+    /// `out x`: C writes a zeroed slot; the place gets it after the call (milestone 102).
+    Out,
+    /// `ptr e`: C reads a copy through `const T *` (milestone 103).
+    Ptr,
+    /// `mut x`: C reads and writes the place's value; it goes back after the call (milestone 103).
+    Mut,
+}
+
+impl PassMode {
+    /// The word written for this mode.
+    pub fn word(self) -> &'static str {
+        match self {
+            PassMode::Out => "out",
+            PassMode::Ptr => "ptr",
+            PassMode::Mut => "mut",
+        }
+    }
 }
 
 /// `{ stmts tail }`.

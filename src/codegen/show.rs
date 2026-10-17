@@ -188,6 +188,10 @@ impl<'ctx> Lowerer<'ctx> {
     /// `Name { f: v, … }`, or `Name {}`.
     fn show_fields(&mut self, value: BasicValueEnum<'ctx>, ty: &Type) -> BasicValueEnum<'ctx> {
         let fields = self.structs[&ty.to_string()].clone();
+        // Only C knows a union's live field (v17).
+        if super::structs::is_union_fields(&fields) {
+            return self.string_literal("<union>").into();
+        }
         // A tuple prints as `(a, b)` (v14).
         if crate::check::tuple_elements(ty).is_some() {
             return self.show_tuple(value, &fields);

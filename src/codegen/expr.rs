@@ -26,7 +26,9 @@ impl<'ctx> Lowerer<'ctx> {
     /// Lowers an expression at its own type.
     pub(super) fn unconverted(&mut self, expr: &Expr) -> Result<Value<'ctx>, CodegenError> {
         let value: BasicValueEnum<'ctx> = match &expr.kind {
-            ExprKind::Out(_) => unreachable!("checked: `out` is only an extern's argument"),
+            ExprKind::Pass(..) => {
+                unreachable!("checked: `out`/`ptr`/`mut` only as an extern's argument")
+            }
             ExprKind::Hashed(lit) => self.hashed(expr, lit)?,
             ExprKind::Int(_) | ExprKind::Float(_) => self.literal(expr, false),
             ExprKind::Char(code) => self
@@ -180,6 +182,17 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Field(base, field) if Type::int_limit(base, &field.name).is_some() => {
                 let (ty, max) = Type::int_limit(base, &field.name).expect("just matched");
                 self.int_limit(&ty, max).into()
+            }
+            // `CPtr.null` (v17): a null pointer.
+            ExprKind::Field(base, field)
+                if self.ty(base) == Type::Void
+                    && field.name == "null"
+                    && matches!(self.ty(expr), Type::Handle(ref k) if k == "CPtr") =>
+            {
+                self.context
+                    .ptr_type(Default::default())
+                    .const_null()
+                    .into()
             }
             // The checker gives a type name `void`: `Shape.Empty` is a variant.
             ExprKind::Field(base, field) if self.ty(base) == Type::Void => {

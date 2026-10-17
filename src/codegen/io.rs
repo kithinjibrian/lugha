@@ -60,6 +60,41 @@ impl<'ctx> Lowerer<'ctx> {
                 );
                 Ok(Value::Val(self.result(call, ok, (data, &bytes), error)))
             }
+            // C memory (v17, milestone 105): copies through a `CPtr`.
+            "c_read" => {
+                let cptr = Type::Handle("CPtr".to_string());
+                let bytes = Type::Array(Box::new(Type::U8));
+                let p = self.get(&args[0], &cptr)?;
+                let offset = self.get(&args[1], &Type::U64)?;
+                let len = self.get(&args[2], &Type::U64)?;
+                let read = self.runtime(
+                    "lugha_rt_c_read",
+                    &[cptr, Type::U64, Type::U64],
+                    Some(bytes),
+                );
+                let site = self
+                    .builder
+                    .build_call(read, &[p.into(), offset.into(), len.into()], "c.read")
+                    .expect(POSITIONED);
+                match site.try_as_basic_value() {
+                    inkwell::values::ValueKind::Basic(v) => Ok(Value::Val(v)),
+                    inkwell::values::ValueKind::Instruction(_) => {
+                        unreachable!("c_read returns an array")
+                    }
+                }
+            }
+            "c_write" => {
+                let cptr = Type::Handle("CPtr".to_string());
+                let bytes = Type::Array(Box::new(Type::U8));
+                let p = self.get(&args[0], &cptr)?;
+                let offset = self.get(&args[1], &Type::U64)?;
+                let data = self.get(&args[2], &bytes)?;
+                let write = self.runtime("lugha_rt_c_write", &[cptr, Type::U64, bytes], None);
+                self.builder
+                    .build_call(write, &[p.into(), offset.into(), data.into()], "")
+                    .expect(POSITIONED);
+                Ok(Value::Void)
+            }
             "write_bytes" | "append_bytes" => {
                 let path = self.get(&args[0], &Type::String)?;
                 let bytes = Type::Array(Box::new(Type::U8));

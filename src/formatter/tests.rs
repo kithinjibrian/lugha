@@ -54,6 +54,10 @@ fn out_parameters_and_arguments_keep_out() {
         "extern fun f(c:i64,out n:u64):bool;\nfun g(){let mut n:u64=0;f(1,out n);}",
         "extern fun f(c: i64, out n: u64): bool;\nfun g() {\n    let mut n: u64 = 0;\n    f(1, out n);\n}\n",
     );
+    check(
+        "extern union U{a:i32,b:f64}\nextern fun h(ptr u:U,mut n:u64,xs:u8[]);\nfun g(){h(ptr u,mut n,xs);}",
+        "extern union U {\n    a: i32,\n    b: f64,\n}\nextern fun h(ptr u: U, mut n: u64, xs: u8[]);\nfun g() {\n    h(ptr u, mut n, xs);\n}\n",
+    );
 }
 
 #[test]

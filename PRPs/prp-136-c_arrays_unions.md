@@ -38,6 +38,10 @@ println(results[0].of.i64);
 ### New dependencies
 - none
 
+## BUILT (session 251)
+- Deviations: printing a union gives `<union>` and `==` is E0404 (not E0444: E0444 is only the literal); unions, and structs holding one, are E0409 by value across the boundary (the x86-64 classification of a union isn't built) — pass them by `ptr`/`out`/`mut` or in arrays. A union is an LLVM array of its alignment unit, sized to C's size; a field read goes through a stack copy.
+- Tests: formatter, `tests/c_arrays.rs` (C sums `u8[]`/`i64[]`, fills a `mut` array of extern structs, copy-on-write keeps an earlier copy, handles, a union both ways, a struct holding a union through `out`; E0409 ×2, E0444, E0404).
+
 ## ERROR HANDLING REQUIREMENTS
 - E0409 (existing) for arrays of disallowed elements; E0444 (new) for union literals with other than one field, and `==`/printing of unions.
 

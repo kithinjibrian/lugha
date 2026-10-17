@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use super::{Checker, Type, errors};
-use crate::ast::{Expr, ExprKind, ExternDecl, Param, Type as Annotation, TypeKind};
+use crate::ast::{Expr, ExprKind, ExternDecl, Param, PassMode, Type as Annotation, TypeKind};
 use crate::span::Span;
 
 /// How one parameter of an extern reaches C, in declaration order.
@@ -27,9 +27,12 @@ pub enum CParam {
     Data,
     /// The function C calls when it drops the callback: `lugha_rt_cb_release`.
     Release,
-    /// `out x` (v17, milestone 102): a pointer to a zeroed slot C writes,
-    /// stored into the argument's place after the call.
-    Out,
+    /// `out x`, `ptr e` or `mut x` (v17, milestones 102–103): a pointer to
+    /// a slot C reads or writes.
+    Pointer(PassMode),
+    /// `xs: T[]` or `mut xs: T[]` (v17, milestone 104): a pointer to the
+    /// array's elements for the call, which C may write when `mut`.
+    Elements { mutable: bool },
 }
 
 /// Every extern's plan whose parameters aren't all plain values, by key.
@@ -113,12 +116,16 @@ impl Checker {
                     ty
                 }
                 _ => {
-                    plan.push(if p.out.is_some() {
-                        CParam::Out
-                    } else {
-                        CParam::Value
+                    let ty = self.resolve(&p.ty);
+                    let mode = p.mode.map(|(m, _)| m);
+                    plan.push(match (&ty, mode) {
+                        (Type::Array(_), m) => CParam::Elements {
+                            mutable: m == Some(PassMode::Mut),
+                        },
+                        (_, Some(m)) => CParam::Pointer(m),
+                        (_, None) => CParam::Value,
                     });
-                    self.resolve(&p.ty)
+                    ty
                 }
             };
             written.push(p.clone());
@@ -168,7 +175,18 @@ impl Checker {
                 }
                 None => {
                     let ty = self.resolve(p);
-                    if !crosses_from_c(&ty, &self.c_structs) {
+                    // `T[]` and `Ref<T[]>`: C's pointer and count (v17, milestone 105).
+                    let counted = match &ty {
+                        Type::Array(e) => Some(&**e),
+                        Type::Ref(inner) => match &**inner {
+                            Type::Array(e) => Some(&**e),
+                            _ => None,
+                        },
+                        _ => None,
+                    };
+                    let element_ok =
+                        counted.is_some_and(|e| crosses_into_callback(e, &self.c_structs));
+                    if !element_ok && !crosses_from_c(&ty, &self.c_structs) {
                         self.report(errors::callback_type(p.span));
                     }
                     types.push(ty);

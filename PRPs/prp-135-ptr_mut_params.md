@@ -34,6 +34,10 @@ bump(mut n);
 ### New dependencies
 - none
 
+## BUILT (session 251)
+- As planned. `Param.out` became `Param.mode: Option<(PassMode, Span)>`, `ExprKind::Out` became `ExprKind::Pass(mode, e)`, `CParam::Out` became `CParam::Pointer(mode)`. `ptr` is a keyword before a name, a literal, `[` or `#{` (so `ptr(x)` stays a call); `mut` before a name.
+- Tests: parser (`ptr`/`mut`, `ptr(x)` a call), formatter, `tests/out_params.rs` (`ptr` reads, `mut` reads and writes incl. `bool`, E0443 each way), VS Code `c_boundary.la`.
+
 ## ERROR HANDLING REQUIREMENTS
 - E0443 (existing, widened), E0409, E0501/E0502 (existing).
 

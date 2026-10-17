@@ -10,7 +10,7 @@ use crate::format;
 
 /// The input and I/O intrinsics (v3, v4), checked here rather than in
 /// `call.rs` — except `eprint`/`eprintln`, which follow `print`'s rules.
-pub(super) const INPUT: [&str; 17] = [
+pub(super) const INPUT: [&str; 19] = [
     "args",
     "parse_i64",
     "parse_u64",
@@ -28,9 +28,16 @@ pub(super) const INPUT: [&str; 17] = [
     "append_bytes",
     "read_stdin_bytes",
     "string_from_utf8",
+    // v17, milestone 105: C memory.
+    "c_read",
+    "c_write",
     // v14: a `format` call reaching here has no literal template (E0432).
     "format",
 ];
+
+/// The built-in type of an untyped C pointer (v17, milestone 105): a handle
+/// no module declares.
+pub const CPTR: &str = "CPtr";
 
 /// The prelude function behind an intrinsic written in Lugha (v15).
 pub fn prelude_helper(intrinsic: &str) -> Option<&'static str> {
@@ -50,6 +57,7 @@ impl Checker {
         }
         let result = |t: Type| Type::Enum(RESULT.to_string(), vec![t, Type::String]);
         let bytes = || Type::Array(Box::new(Type::U8));
+        let cptr = || Type::Handle(CPTR.to_string());
         let (params, ret) = match name {
             "args" => (Vec::new(), Type::Array(Box::new(Type::String))),
             "parse_i64" => (vec![Type::String], Type::Option(Box::new(Type::I64))),
@@ -62,6 +70,9 @@ impl Checker {
             "write_bytes" | "append_bytes" => (vec![Type::String, bytes()], result(Type::I64)),
             "read_stdin_bytes" => (Vec::new(), bytes()),
             "string_from_utf8" => (vec![bytes()], result(Type::String)),
+            // C memory (v17): copies only, through a `CPtr`.
+            "c_read" => (vec![cptr(), Type::U64, Type::U64], bytes()),
+            "c_write" => (vec![cptr(), Type::U64, bytes()], Type::Void),
             // `exit` never returns (v4 draft §5).
             _ => (vec![Type::I32], Type::Never),
         };

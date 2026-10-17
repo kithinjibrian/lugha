@@ -107,6 +107,7 @@ pub use iface_tables::{InterfaceMethod, InterfaceShape};
 pub use input::prelude_helper;
 pub use instances::Instance;
 pub use iterators::Iteration;
+pub use layouts::UNION_MARK;
 pub use members::{Detail, Member, MemberKind, TypeMembers, type_members, value_members};
 pub use modules::{Unit, check_modules, check_tests, qualify, symbol};
 pub use ordering::ORDERING;
@@ -156,6 +157,7 @@ impl Checker {
             c_params: HashMap::new(),
             variant_values: HashMap::new(),
             c_structs: std::collections::HashSet::new(),
+            c_unions: std::collections::HashSet::new(),
             methods: HashMap::new(),
             scopes: Vec::new(),
             ret: Type::Void,
@@ -248,6 +250,8 @@ pub(super) struct Checker {
     variant_values: HashMap<ExprId, (Type, String)>,
     /// Every `extern struct`, by key: C's layout, passed to C by value (v16, milestone 90).
     c_structs: std::collections::HashSet<String>,
+    /// The `extern union`s among `c_structs` (v17, milestone 104).
+    c_unions: std::collections::HashSet<String>,
     methods: methods::Methods,
     scopes: Vec<HashMap<String, Local>>,
     /// The return type of the function being checked.

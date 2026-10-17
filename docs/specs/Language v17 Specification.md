@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–102 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–105 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–102):
+**Changes since v16** (milestones 91–105):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- The C boundary takes pointers (milestones 103–105; section 8): `ptr` and `mut` parameters; arrays as `xs: T[]` and `mut xs: T[]`; `extern union`; `CPtr` with `c_read`/`c_write`; callbacks taking `T[]` and `Ref<T[]>`.
 - `out` parameters on externs: `extern fun get_fuel(c: Context, out fuel: u64): bool;` and `get_fuel(ctx, out fuel)` — C writes through the pointer and the place gets the value after the call (milestone 102; sections 3, 8).
 - Maps and sets: `Map<K, V>` and `Set<T>`, built in, with `#{"ann": 31}` and `#{1, 2}` literals; values like arrays, keys any `Eq` type without floats, insertion order, `m[k]`, `for (k, v) of m`, `==` regardless of order. The iterator type `it.map(f)` returns is renamed `Mapped` (milestone 101; sections 2–5, 9, 10).
 - Glob re-exports: `public import raw { * };` makes every `public` item of `raw` an item of this module, so a package's entry can flatten a sub-module (milestone 100; sections 3, 6).
@@ -325,6 +326,7 @@ visibility   = "private" | "public" ;                (* `public`: v8, packages *
 fun_decl     = "fun" IDENT [ type_params ] "(" [ params ] ")" [ ":" type ] fun_body ;
 fun_body     = block | "=" expr ";" ;          (* "= e;" means "{ e }" *)
 extern_decl  = "extern" [ STRING ] "fun" IDENT "(" [ params ] ")" [ ":" type ] ";" ;   (* the string: the C symbol, v16 *)
+extern_union = "extern" "union" IDENT "{" field { "," field } [ "," ] "}" ;   (* v17 *)
 extern_type  = "extern" "type" IDENT ";" ;                                         (* v16; `type` isn't a keyword *)
 struct_decl  = "struct" IDENT [ type_params ] "{" [ field { "," field } [ "," ] ] "}" ;
 field        = [ visibility ] IDENT ":" type ;
@@ -341,7 +343,7 @@ iface_item   = "fun" IDENT "(" [ receiver [ "," params ] | params ] ")" [ ":" ty
 receiver     = [ "mut" ] "self" ;
 variant      = IDENT [ "(" type { "," type } [ "," ] ")" ] ;
 params       = param { "," param } [ "," ] ;
-param        = [ "out" ] IDENT ":" type ;            (* `out`: an extern's only, v17 *)
+param        = [ "out" | "ptr" | "mut" ] IDENT ":" type ;   (* an extern's only, v17 *)
 
 type         = base_type { "[" "]" } ;
 base_type    = "i32" | "i64" | "u8" | "f64" | "bool" | "string"
@@ -389,7 +391,7 @@ expr         = prefix { infix } ;            (* Pratt loop, see table *)
 prefix       = ( "-" | "!" ) prefix | "spawn" postfix | postfix ;   (* binds tighter than infix; spawn: v17 *)
 postfix      = primary { call | index | member | "?" } ;   (* `read(p)?` (v4) *)
 call         = "(" [ arg { "," arg } [ "," ] ] ")" ;
-arg          = [ "out" ] expr ;                     (* `out place`: for an extern's `out` parameter, v17 *)
+arg          = [ "out" | "ptr" | "mut" ] expr ;      (* for an extern's parameter of that mode, v17 *)
 index        = "[" expr "]" ;
 member       = "." ( IDENT | INT ) ;          (* `t.0` (v14) *)
 primary      = INT | FLOAT | CHAR | STRING | interpolated | closure | "true" | "false"
@@ -1328,6 +1330,16 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 
 **`out` parameters** (v17, milestone 102). `out name: T` in an extern's parameters is C's `T *` that C writes through: `extern fun wasmtime_context_get_fuel(c: Context, out fuel: u64): Option<WasmError>;`. The call writes `out place` for it — `get_fuel(ctx, out fuel)` — where `place` is anything assignable (a `let mut` variable, a field, an element), under the assignment rules (E0501, E0502, E0506, E0507) and of exactly the type `T`. C gets a pointer to a zeroed slot, not the place's old value; after the call returns, what C wrote is stored into the place, the `out` arguments' places in order, each fixed (its indexes evaluated) when its argument is evaluated. `T` is an integer, a float, `bool`, a handle (C's `T **`; C's pointer as is, as for a handle result), `Option` of a handle (`NULL` is `None`: the usual way to declare C's `T **`, since a variable must start with a value) or an extern struct C fills; a `string` is E0409. A missing `out` for an `out` parameter, or `out` for any other argument, is E0443; `out` on a Lugha function's parameter is E0201. `out` is a keyword only there, before a name, so `out` stays usable as a name. The slot lives for the call only: C must not keep the pointer.
 
+**`ptr` and `mut` parameters** (v17, milestone 103). `ptr name: T` is C's `const T *`: the call writes `ptr e` for any expression `e` of type `T`, and C reads a copy through the pointer. `mut name: T` is C's `T *` read and written: the call writes `mut place`, C gets a pointer to a slot holding the place's value, and after the call the slot is stored into the place, as for `out`. The types are `out`'s; a mode at the call that isn't the declaration's (or is missing) is E0443.
+
+**Arrays** (v17, milestone 104). An extern parameter `xs: T[]`, `T` a number, `bool`, a handle or an extern struct (or union), is C's `const T *` to the array's first element, valid during the call; the length goes as its own argument, as C's API spells it. `mut xs: T[]` (written `mut place` at the call) lets C write the elements in place: the array is made unique first, so no copy of it sees the change; its length never changes. Other arrays (`string[]`, Lugha structs) are E0409, and no extern returns an array.
+
+**Unions** (v17, milestone 104). `extern union Name { field: T, … }` declares C's union: C's size (its largest field's, rounded to its largest alignment) and alignment; fields are what an extern struct's may be. A literal writes exactly one field (E0444); reading any field reads the same bytes as that field's type, as C does; `u.f = v` writes one. Unions go where extern structs go — fields, arrays, `out`/`ptr`/`mut` — but not by value across the C boundary, nor a struct holding one (E0409: pass it by address or in an array). They have no `==` (E0404: only C knows the live field) and print as `<union>`.
+
+**C memory** (v17, milestone 105). `CPtr` is C's untyped pointer (`void *`, `uint8_t *`): a handle no module declares, usable wherever a handle is (parameters, results, `out`/`ptr`/`mut`, extern-struct fields), compared with `==`, `CPtr.null` being C's `NULL`. Two built-ins copy through it: `c_read(p, offset: u64, len: u64): u8[]` copies `len` bytes at `p + offset` into a new array, and `c_write(p, offset: u64, bytes: u8[])` copies the array's bytes there. They trust C's pointer and the length given — check them against C's own size first — and a null `p` panics (`NULL CPtr given to c_read`). Nothing keeps the pointer, and there is no pointer arithmetic.
+
+**Arrays in callbacks** (v17, milestone 105). In a callback's parameters, `T[]` is C's `const T *, size_t` (two C parameters): the callback gets a copy of the elements. `Ref<T[]>` is C's `T *, size_t`: the callback gets a box holding a copy, and when it returns the box's elements are copied back to C — no more than C gave, so a longer array is cut and a shorter one leaves the rest as it was. `T` is what an extern array's elements may be.
+
 **Passing structs** (v16, milestone 90). An extern struct goes to and from C — as an extern's parameter or result, or a callback's — the way the x86-64 System V ABI passes it, which is how a C compiler passes it:
 - **Over 16 bytes:** in memory. An argument is a copy C receives on the stack (LLVM `byval`); a result is written through a hidden pointer the caller passes first (`sret`).
 - **16 bytes or less:** split into eightbytes. One holding only `f32`/`f64` fields goes in an SSE register, any other in an integer register. A struct whose eightbytes don't all fit the registers still free at its argument goes in memory as a whole.
@@ -1680,6 +1692,7 @@ Name and type errors, reported by the checker:
 | E0441 | A float as a map key or set value (v17) | `#{1.5: "a"}`; `Set<f64>`; `Map<(i64, f64), i64>` |
 | E0442 | `for … of mut` over a map or set (v17) | `for (k, v) of mut m { … }` |
 | E0443 | `out` missing or misplaced in a call (v17) | `get_fuel(ctx, fuel)` for `out fuel: u64`; `put(out n)` where `n` isn't `out` |
+| E0444 | A union literal writing other than one field (v17) | `U { a: 1, b: 2.0 }`; `U {}` |
 | E0437 | A malformed `extern struct` (v16) | `extern struct S { s: string }`; a field of an array, a plain struct, an enum, `Option` or a function type; `extern struct S<T> { … }`; `extern struct S {}` |
 | E0433 | A pattern that must match every value but might not (v14) | `let (1, x) = t;`, `let Some(n) = o;` without `else`, `for (Some(a), b) of …` |
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
@@ -3677,6 +3690,9 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 100 | Glob re-exports (v17) | `public import m { * };` re-exports every `public` item of `m`; E0201 for misuse, E0314 for clashes | `src/check/globs.rs`, `tests/programs/m100/`, `tests/package_layout.rs`, `tests/lsp_definition.rs` (done) |
 | 101 | Maps and sets (v17) | `Map<K, V>`, `Set<T>`, `#{ … }` literals; E0441, E0442, W0105; the iterator type `Mapped` | `tests/programs/m101/`, the §10 word count and dedupe programs (done) |
 | 102 | `out` parameters (v17) | `out` on extern parameters and call arguments; E0443 | `tests/out_params.rs` (done) |
+| 103 | `ptr` and `mut` parameters (v17) | `ptr e`, `mut place` | `tests/out_params.rs` (done) |
+| 104 | Arrays and unions at the C boundary (v17) | `T[]`, `mut T[]`, `extern union`, E0444 | `tests/c_arrays.rs` (done) |
+| 105 | C memory and pointer callbacks (v17) | `CPtr`, `c_read`/`c_write`, callback `T[]`/`Ref<T[]>` | `tests/c_memory.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

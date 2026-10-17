@@ -51,6 +51,9 @@ impl Checker {
                 if s.c_layout.is_some() {
                     if s.type_params.is_empty() {
                         self.c_structs.insert(key.clone());
+                        if s.union.is_some() {
+                            self.c_unions.insert(key.clone());
+                        }
                     } else {
                         self.report(errors::c_struct_generic(s.name.span));
                     }

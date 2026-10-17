@@ -43,6 +43,11 @@ fun add(env: data, caller: Caller, args: Val[] nargs, mut results: Val[] nresult
 ### New dependencies
 - none
 
+## BUILT (session 251)
+- Deviations: no `p.is_null()` — compare `p == CPtr.null`; `CPtr` prints like any handle. Callback arrays are written `xs: T[]` (C's `T *, size_t` as two C parameters) and `results: Ref<T[]>` for the written array, not `mut xs: T[] n`; the copy back is `min(len, count)` elements, not a panic on a changed length.
+- Runtime: `runtime/cmem.c` (`lugha_rt_c_read`, `lugha_rt_c_write`; NULL panics `NULL CPtr given to c_read`/`c_write`).
+- Tests: `tests/c_memory.rs` (a C-filled `ByteVec` read with `c_read`, `c_write` into a C buffer, a host callback summing `Val[]` and writing `Ref<Val[]>`, the NULL panic exit 101).
+
 ## ERROR HANDLING REQUIREMENTS
 - E0409 for `CPtr` outside the C boundary positions; E0435 (existing callback-declaration code) for a malformed `T[] n` (missing count, count not an integer).
 - Runtime: `panic: NULL CPtr` for `c_read`/`c_write` on null; a `mut` callback array whose length changed panics.

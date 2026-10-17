@@ -62,7 +62,7 @@ impl<'ctx> Lowerer<'ctx> {
                         .expect("checked: a value per written parameter");
                     (self.param_type(ty), Some(ty.clone()))
                 }
-                CParam::Callback { .. } | CParam::Out => {
+                CParam::Callback { .. } | CParam::Pointer(_) | CParam::Elements { .. } => {
                     written.next();
                     (ptr.into(), None)
                 }
@@ -86,9 +86,16 @@ impl<'ctx> Lowerer<'ctx> {
             .iter()
             .filter(|c| !matches!(c, CParam::Data | CParam::Release));
         for (arg, ty) in args.iter().zip(params) {
-            if kinds.next() == Some(&CParam::Out) {
-                written.push(self.out_argument(arg, ty)?);
-                continue;
+            match kinds.next() {
+                Some(CParam::Pointer(mode)) => {
+                    written.push(self.pointer_argument(arg, ty, *mode)?);
+                    continue;
+                }
+                Some(CParam::Elements { mutable }) => {
+                    written.push(self.elements_argument(arg, ty, *mutable)?);
+                    continue;
+                }
+                _ => {}
             }
             let value = self.get(arg, ty)?;
             written.push(match ty {
@@ -103,7 +110,9 @@ impl<'ctx> Lowerer<'ctx> {
         let mut data_at = None;
         for c in plan {
             let value: BasicValueEnum = match c {
-                CParam::Value | CParam::Out => written.next().expect("checked arity"),
+                CParam::Value | CParam::Pointer(_) | CParam::Elements { .. } => {
+                    written.next().expect("checked arity")
+                }
                 CParam::Callback { params, ret, data } => {
                     let pair = written.next().expect("checked arity").into_struct_value();
                     match data {
@@ -166,6 +175,9 @@ impl<'ctx> Lowerer<'ctx> {
         ret: &Type,
         data: Option<usize>,
     ) -> FunctionType<'ctx> {
+        // Counted arrays are two C parameters (v17, milestone 105).
+        let (params, data) = &super::c_arrays::c_params(params, data);
+        let (params, data) = (params.as_slice(), *data);
         if let Some(sig) = self.entry_sig(params, ret, data) {
             return sig.fn_type;
         }
@@ -245,11 +257,13 @@ impl<'ctx> Lowerer<'ctx> {
         data: Option<usize>,
         pair: impl FnOnce(&mut Self, Option<PointerValue<'ctx>>) -> StructValue<'ctx>,
     ) {
+        // Counted arrays are two C parameters each (v17, milestone 105).
+        let (c_params, c_data) = super::c_arrays::c_params(params, data);
         // Structs by value arrive as C passes them (v16, milestone 90).
-        let sig = self.entry_sig(params, ret, data);
+        let sig = self.entry_sig(&c_params, ret, c_data);
         match &sig {
             Some(sig) => self.c_sig_attributes(sig, |at, a| entry.add_attribute(at, a)),
-            None => self.c_abi_entry(entry, params, ret, data),
+            None => self.c_abi_entry(entry, &c_params, ret, c_data),
         }
         let (saved_block, saved_function) = (self.builder.get_insert_block(), self.function);
         self.function = Some(entry);
@@ -259,17 +273,21 @@ impl<'ctx> Lowerer<'ctx> {
             Some(sig) => self.c_sig_params(sig, entry),
             None => (entry.get_param_iter().collect(), None),
         };
-        let pinned = data.map(|at| all[at].into_pointer_value());
+        let pinned = c_data.map(|at| all[at].into_pointer_value());
         let pair = pair(self, pinned);
-        let incoming: Vec<BasicValueEnum> = all
+        let mut incoming = all
             .into_iter()
             .enumerate()
-            .filter(|(i, _)| Some(*i) != data)
-            .map(|(_, p)| p)
-            .collect();
+            .filter(|(i, _)| Some(*i) != c_data)
+            .map(|(_, p)| p);
         let mut values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(params.len());
-        for (value, ty) in incoming.into_iter().zip(params) {
-            let value = if converts_from_c(ty) {
+        let mut copies = Vec::new();
+        for ty in params {
+            let value = incoming.next().expect("C passes every parameter");
+            let value = if super::c_arrays::counted(ty).is_some() {
+                let count = incoming.next().expect("a counted array has its count");
+                self.counted_from_c(ty, (value, count), &mut copies)
+            } else if converts_from_c(ty) {
                 self.value_from_c(value, ty)
             } else {
                 value
@@ -285,6 +303,7 @@ impl<'ctx> Lowerer<'ctx> {
             values.push(value.into());
         }
         let result = self.call_pair(pair, (params, ret), values);
+        self.copy_back(copies);
         if let Some(sig) = &sig {
             let result = match result {
                 Value::Val(result) if is_nullable_handle(ret) => {

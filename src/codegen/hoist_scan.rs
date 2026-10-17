@@ -238,7 +238,9 @@ impl<'ctx> Lowerer<'ctx> {
                 items.iter().for_each(|e| self.scan_read(scan, e))
             }
             // `out place` (v17): the call writes the place.
-            ExprKind::Out(place) => {
+            // `ptr e` only reads; `out`/`mut` places are written.
+            ExprKind::Pass(crate::ast::PassMode::Ptr, e) => self.scan_read(scan, e),
+            ExprKind::Pass(_, place) => {
                 let deep = self.ty(place).is_deep(&self.structs);
                 self.scan_write(scan, place, deep);
             }

@@ -121,7 +121,9 @@ fn item(item: &Item) -> String {
                 })
                 .collect();
             let (p, tp) = (visibility(s.visibility), type_params(&s.type_params));
-            let kind = if s.c_layout.is_some() {
+            let kind = if s.union.is_some() {
+                "extern-union"
+            } else if s.c_layout.is_some() {
                 "extern-struct"
             } else if s.actor.is_some() {
                 "actor"
@@ -206,8 +208,10 @@ fn params(params: &[Param]) -> String {
 }
 
 fn param(param: &Param) -> String {
-    let out = if param.out.is_some() { "out " } else { "" };
-    format!("({out}{} {})", param.name.name, ty(&param.ty))
+    let mode = param
+        .mode
+        .map_or(String::new(), |(m, _)| format!("{} ", m.word()));
+    format!("({mode}{} {})", param.name.name, ty(&param.ty))
 }
 
 fn ret(ret: &Option<Type>) -> String {
