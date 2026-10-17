@@ -8577,3 +8577,15 @@ Branch: branch-inference
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+## SESSION 264 — 2026-10-17 — Clippy fix after #68 — closed
+Branch: clippy-bindings
+
+### DONE
+- PR #68 merged with a clippy `type_complexity` error (the merge command did not stop on it); `match_expr` now names its deferred arms with `patterns::Bindings`. clippy, lib `check::matching` pass.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.
