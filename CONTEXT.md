@@ -8491,3 +8491,6 @@ Branch: prp-139-unit_type
 ### STILL OPEN AT CLOSE
 - `src/check/members.rs` is 503 lines (over the 500 limit before this session; untouched beyond a rename): a split needs the user's approval.
 - A `()` pattern (`Some(())`) isn't built; a follow-up if wanted.
+
+## SESSION 256 — 2026-10-17 — `()` as a pattern (PRP-139 addendum) — open
+Branch: unit-pattern
