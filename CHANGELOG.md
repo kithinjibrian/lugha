@@ -30,6 +30,7 @@ Never deleted. Older entries are never modified.
 - An extern parameter with a function type is now a callback instead of E0409; E0409's message for a function an extern would return says so (milestone 88)
 
 ### Fixed
+- VS Code highlighting: names in an import's braces got no colour unless capitalised; a function there is now highlighted as a function (`import kivuli { text, column as col, View };`); extension 0.14.0 (session 241)
 - An associated function only its result can type (`Cmd.none()` for `fun none(): Cmd<M>`) didn't wait for its siblings, so `App { init: (0, Cmd.none()), update: step }` was E0412 while the reverse field order checked; struct literal fields now type each other in any order (kivuli, session 240)
 - `lughac check` and `lughac test` on a library file outside a package reported E0319 when a module it imports imported it back (`diff.la` ↔ `vdom.la`), though the editor and a program using it were fine; such a file (no `fun main`) now loads as the module named after it (session 239)
 - The expected type didn't reach a method call's receiver: `fun a(): Node<Msg> = leaf("x").pad(8);` was E0412. A receiver only its result types now takes the call's expected type when the method returns the receiver's own type, through chains (`.pad(1).pad(2)`), lists, tuples and `==`; hover shows the inferred type (kivuli, session 236)

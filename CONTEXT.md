@@ -8193,5 +8193,23 @@ Branch: fix-struct-field-inference
 
 ---
 
-## SESSION 241 — 2026-10-17 — Highlight function names in import braces (VS Code) — open
+## SESSION 241 — 2026-10-17 — Highlight function names in import braces (VS Code) — closed
 Branch: vscode-import-names
+
+### WHAT WAS DONE
+- The user: named functions in imports aren't highlighted. The TextMate grammar coloured a function only at its declaration or before `(`. New `import` rule (before `#keyword`): inside an import's braces, lowercase names are `entity.name.function.lugha`, capitalised ones types, `as` an operator. Extension 0.14.0; `.vsix` built.
+
+### FILES CREATED OR MODIFIED
+- New: `editors/vscode/test/grammar/imports.la`. Modified: `editors/vscode/syntaxes/lugha.tmLanguage.json`, `editors/vscode/package.json` (+ lock), CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- Grammar scope test `imports.la` (functions, alias, types, `public import`, nothing outside the braces). `npm test` (15 + 7 grammar files).
+
+### DECISIONS MADE
+- Case decides function vs type (the grammar can't know more); the language server's semantic colouring is not part of this.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.

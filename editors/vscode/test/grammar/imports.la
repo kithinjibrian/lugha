@@ -1,0 +1,20 @@
+// SYNTAX TEST "source.lugha" "names in an import's braces"
+
+import kivuli { text, column as col, View };
+// <------ keyword.other.import.lugha
+//              ^^^^ entity.name.function.lugha
+//                    ^^^^^^ entity.name.function.lugha
+//                           ^^ keyword.operator.as.lugha
+//                              ^^^ entity.name.function.lugha
+//                                   ^^^^ entity.name.type.lugha
+
+public import raw { gtk_box_new, GtkWidget };
+// <------ storage.modifier.lugha
+//                  ^^^^^^^^^^^ entity.name.function.lugha
+//                               ^^^^^^^^^ entity.name.type.lugha
+
+import std.math;
+//     ^^^ - entity.name.function.lugha
+
+fun main() { let text = 1; }
+//                 ^^^^ - entity.name.function.lugha
