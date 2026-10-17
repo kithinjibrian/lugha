@@ -76,7 +76,7 @@
       }
     },
     "import": {
-      "comment": "`import m { f, T as U };`: in the braces, lowercase names are functions and capitalised ones types.",
+      "comment": "`import m.n as k { f, T as U };`: the path and its alias are namespaces; in the braces, lowercase names are functions and capitalised ones types.",
       "begin": "\\b(import)\\b",
       "beginCaptures": { "1": { "name": "keyword.other.import.lugha" } },
       "end": ";",
@@ -85,6 +85,8 @@
         { "include": "#block-comment" },
         { "include": "#comment" },
         { "name": "keyword.operator.as.lugha", "match": "\\bas\\b" },
+        { "name": "entity.name.namespace.lugha", "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b" },
+        { "name": "punctuation.accessor.lugha", "match": "\\." },
         {
           "begin": "\\{",
           "end": "\\}",

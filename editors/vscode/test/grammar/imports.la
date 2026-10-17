@@ -2,6 +2,7 @@
 
 import kivuli { text, column as col, View };
 // <------ keyword.other.import.lugha
+//     ^^^^^^ entity.name.namespace.lugha
 //              ^^^^ entity.name.function.lugha
 //                    ^^^^^^ entity.name.function.lugha
 //                           ^^ keyword.operator.as.lugha
@@ -14,7 +15,17 @@ public import raw { gtk_box_new, GtkWidget };
 //                               ^^^^^^^^^ entity.name.type.lugha
 
 import std.math;
-//     ^^^ - entity.name.function.lugha
+//     ^^^ entity.name.namespace.lugha
+//         ^^^^ entity.name.namespace.lugha
+
+import kivuli;
+//     ^^^^^^ entity.name.namespace.lugha
+
+import gtk.raw as r { GtkWidget };
+//     ^^^ entity.name.namespace.lugha
+//         ^^^ entity.name.namespace.lugha
+//                ^ entity.name.namespace.lugha
+//                    ^^^^^^^^^ entity.name.type.lugha
 
 fun main() { let text = 1; }
 //                 ^^^^ - entity.name.function.lugha
