@@ -8451,3 +8451,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-138 awaits approval.
+
+## SESSION 253 — 2026-10-17 — Nullable handle fields and plain-data unions (milestone 106) — open
+Branch: prp-138-nullable_fields

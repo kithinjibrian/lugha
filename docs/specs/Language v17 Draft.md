@@ -168,7 +168,7 @@ The rest of lugha-wasmtime's C-boundary needs (the user: "let's knock them out")
 93–99. **Arrays and unions** (milestone 104): `T[]` extern parameters pass a pointer to the elements for the call, `mut` arrays made unique and written in place; `extern union` with C's layout, one-field literals (E0444), not `==` or printable.
 100–106. **C memory and pointer callbacks** (milestone 105): `CPtr`, `c_read`/`c_write` (copy-only; the user's security sign-off required); callback parameters `T[] n` and `mut T[] n`.
 
-## Decisions behind milestone 106 (session 252; proposed)
+## Decisions behind milestone 106 (session 252; approved in session 253)
 
 lugha-wasmtime's probe found no way to start a NULL-able pointer field; session 251 found unions making pointers out of numbers. Details in PRP-138.
 

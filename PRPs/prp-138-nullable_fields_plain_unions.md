@@ -1,6 +1,6 @@
 ## FEATURE: Nullable handle fields and plain-data unions — `Option<H>` in extern structs and unions, and unions that can't hold pointers; milestone 106 (v17).
 
-**Status:** proposed 2026-10-17 (session 252), after lugha-wasmtime's probe (an extern struct can't start a pointer field as NULL) and the union hole found in session 251 (a union turns a number into a `CPtr`).
+**Status:** approved 2026-10-17 (session 253); proposed in session 252, after lugha-wasmtime's probe (an extern struct can't start a pointer field as NULL) and the union hole found in session 251 (a union turns a number into a `CPtr`).
 
 ## OBJECTIVE
 ```lugha
