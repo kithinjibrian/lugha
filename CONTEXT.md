@@ -8167,3 +8167,8 @@ Branch: fix-check-cycle-loose
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 240 — 2026-10-17 — Struct literal fields wait for their siblings (kivuli) — open
+Branch: fix-struct-field-inference
