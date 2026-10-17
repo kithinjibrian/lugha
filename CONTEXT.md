@@ -8356,5 +8356,23 @@ Branch: fix-private-import-leak
 
 ---
 
-## SESSION 248 — 2026-10-17 — `out` parameters discovery (PRP-134) — open
+## SESSION 248 — 2026-10-17 — `out` parameters discovery (PRP-134) — closed
 Branch: prp-134-out_params
+
+### WHAT WAS DONE
+- Discussed lugha-wasmtime's needs (pointers and bytes at the C boundary); the user found the full design a lot, so narrowed to `out` parameters first. Discovery Q1–Q4 (all recommended answers): `out` at declaration and call; any assignable place, C sees zeroes; numbers, bool, handles, `Option` of a handle, extern structs; only `out` this milestone. PRP-134 written (milestone 102); draft decisions 81–87 and row 102 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-134-out_params.md`. Modified: `docs/specs/Language v17 Draft.md`, CONTEXT.
+
+### TESTS WRITTEN
+- None (proposal).
+
+### DECISIONS MADE
+- Q1–Q4 (the user); 85, 87 proposed.
+
+### PENDING DECISIONS OPENED
+- PRP-134 approval.
+
+### STILL OPEN AT CLOSE
+- PRP-134 awaits approval; build on branch `prp-134-out_params`. Later milestones (for lugha-wasmtime): `ptr`/`mut` pointers, arrays across the boundary and unions, raw C memory and pointer callbacks.
