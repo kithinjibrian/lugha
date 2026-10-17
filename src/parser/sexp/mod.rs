@@ -247,7 +247,10 @@ fn pattern(pattern: &Pattern) -> String {
         PatternKind::Mut(inner) => format!("(mut {})", self::pattern(inner)),
         PatternKind::Tuple(elements) => {
             let shown: Vec<String> = elements.iter().map(self::pattern).collect();
-            format!("(tuple {})", shown.join(" "))
+            format!(
+                "(tuple{})",
+                shown.iter().map(|s| format!(" {s}")).collect::<String>()
+            )
         }
     }
 }

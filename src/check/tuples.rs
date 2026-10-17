@@ -75,6 +75,13 @@ impl Checker {
         ty: &Type,
         bindings: &mut Bindings,
     ) -> Vec<Pat> {
+        // `()` matches the one unit value, like `_` (v17, milestone 107).
+        if given.is_empty() {
+            if !matches!(ty, Type::Unit | Type::Error | Type::Never) {
+                self.report(errors::pattern_mismatch(ty, pattern.span));
+            }
+            return vec![Pat::Wild];
+        }
         let Some(types) = elements(ty)
             .filter(|ts| ts.len() == given.len())
             .map(<[Type]>::to_vec)

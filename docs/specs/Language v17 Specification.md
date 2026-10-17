@@ -388,7 +388,8 @@ alternative  = "_"
              | ( IDENT | "_" ) ":" type               (* `c: Circle` (v5) *)
              | "mut" IDENT [ ":" type ]               (* a mutable binding (v9) *)
              | "(" pattern ")"
-             | "(" pattern "," pattern { "," pattern } [ "," ] ")" ;   (* a tuple (v14) *)
+             | "(" pattern "," pattern { "," pattern } [ "," ] ")"   (* a tuple (v14) *)
+             | "(" ")" ;                              (* the unit pattern (v17) *)
 
 expr         = prefix { infix } ;            (* Pratt loop, see table *)
 prefix       = ( "-" | "!" ) prefix | "spawn" postfix | postfix ;   (* binds tighter than infix; spawn: v17 *)
@@ -506,7 +507,7 @@ ys[0] = 9;        // xs[0] is still 1
 
 There is no null. Every string and array variable holds a valid object.
 
-**The unit type `()`** (v17, milestone 107; `void` until then). `()` is a type with one value, also written `()`. Statements that produce nothing have it: a function without a return type, a block without a tail, an `if` without `else`, loops and assignments. It is a value like any other: variables, parameters, fields, array elements and type arguments hold it (`Result<(), string>`, `Ok(())`, `Chan<()>`, `Task<()>`, `Map<K, ()>`). It is `Eq` and `Ord` (always equal), hashable, prints as `()` and takes no memory. Binding it with `let x = e` when `e` isn't the literal `()` warns (W0106: usually a call kept for a result it doesn't have); writing the type, `let x: () = e`, or `let _ = e` doesn't. It can't cross the C boundary as a parameter or field (E0409, E0437); an extern without a result type is C's `void`.
+**The unit type `()`** (v17, milestone 107; `void` until then). `()` is a type with one value, also written `()`. Statements that produce nothing have it: a function without a return type, a block without a tail, an `if` without `else`, loops and assignments. It is a value like any other: variables, parameters, fields, array elements and type arguments hold it (`Result<(), string>`, `Ok(())`, `Chan<()>`, `Task<()>`, `Map<K, ()>`). It is `Eq` and `Ord` (always equal), hashable, prints as `()` and takes no memory. As a pattern, `()` matches it like `_` (`Some(())`, `let () = log();`); against any other type it is E0403. Binding it with `let x = e` when `e` isn't the literal `()` warns (W0106: usually a call kept for a result it doesn't have); writing the type, `let x: () = e`, or `let _ = e` doesn't. It can't cross the C boundary as a parameter or field (E0409, E0437); an extern without a result type is C's `void`.
 
 **Structs.** Declared at top level with named, typed fields. A struct literal must initialize every field exactly once, in any order — or end with `..base` (v17, milestone 93): `Point { x: 1.0, ..p }` takes every field not written from `base`, an expression of exactly the literal's struct type (type arguments included; another type is E0440). `..base` comes last, once (E0201); the written fields are evaluated first, left to right, then `base` once, and its fields are stored like any value (copied from a place, moved on its last use). Every unwritten field must be visible too (E0313). Writing every field as well as `..base` is warning W0104. Structs may contain other structs and arrays, but a struct may not contain itself directly or through other structs (it would have infinite size). Containing itself through an array is fine, because an array is a pointer: `struct Node { value: i64, kids: Node[] }` builds trees. Other recursive data, such as linked lists, uses an enum or `Option`: a struct may contain itself through either, as in `struct Item { value: i64, next: Option<Item> }`. Only a cycle through structs alone is an error (E0307).
 

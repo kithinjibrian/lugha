@@ -125,6 +125,13 @@ impl Parser<'_> {
         }
         if self.at(&TokenKind::LParen) {
             let open = self.bump();
+            // `()` (v17, milestone 107): the unit pattern, an empty tuple.
+            if self.eat(&TokenKind::RParen) {
+                return Ok(Pattern {
+                    kind: PatternKind::Tuple(Vec::new()),
+                    span: Span::new(start, self.prev_end()),
+                });
+            }
             let inner = self.pattern()?;
             if self.at(&TokenKind::Comma) {
                 return self.tuple_pattern(start, open, inner);

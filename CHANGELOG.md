@@ -9,7 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
-- The unit type `()`, milestone 107 (PRP-139): a type and its one value, replacing `void` — a function without a return type returns `()`; `Result<(), string>`, `Ok(())`, `Chan<()>`, `Task<()>`, `Map<K, ()>`, `()[]`, fields and generic arguments hold it; `==`, `<`, hashing and printing (`()`); no memory. W0106 warns on `let x = log();` (silenced by `let x: () = log();`); `()` can't cross to C (E0409, E0437)
+- The unit type `()`, milestone 107 (PRP-139): a type and its one value, replacing `void` — a function without a return type returns `()`; `Result<(), string>`, `Ok(())`, `Chan<()>`, `Task<()>`, `Map<K, ()>`, `()[]`, fields and generic arguments hold it; `==`, `<`, hashing and printing (`()`); no memory. W0106 warns on `let x = log();` (silenced by `let x: () = log();`); `()` can't cross to C (E0409, E0437); `()` is a pattern too (`Some(())`, `let () = log();`)
 
 ### Changed
 - E0407 ("`void` used as a value") is retired: every expression has a value now (milestone 107); `let v: i32 = { 1 + 1; };`'s E0403 keeps the "remove this semicolon" label
