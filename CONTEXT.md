@@ -8464,3 +8464,6 @@ Branch: prp-138-nullable_fields
 
 ### STILL OPEN AT CLOSE
 - Nothing. lugha-wasmtime: `CPtr` for byte pointers, `Option<H>` for NULL-able typed pointers, after reinstalling `lughac`.
+
+## SESSION 254 — 2026-10-17 — Unit type: discovery — open
+Branch: main
