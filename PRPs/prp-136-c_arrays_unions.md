@@ -1,6 +1,6 @@
 ## FEATURE: Arrays and unions at the C boundary — `T[]` as a pointer to its elements for the call, and `extern union`; milestone 104 (v17).
 
-**Status:** proposed in session 250 with PRP-135 and PRP-137 (lugha-wasmtime's needs 3, 6 and 8).
+**Status:** approved 2026-10-17 ("build all in one go", session 251; the user's security sign-off for PRP-137 included); proposed in session 250 with PRP-135 and PRP-137 (lugha-wasmtime's needs 3, 6 and 8).
 
 ## OBJECTIVE
 ```lugha

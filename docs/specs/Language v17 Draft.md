@@ -160,7 +160,7 @@ Maps and sets (the user: "let's work on map and set"; literal syntax and Q1–Q6
 86. **Scope:** only `out`; `ptr` and in-out `mut` next.
 87. **Success:** milestone 102, tag `m102`.
 
-## Decisions behind milestones 103–105 (session 250; proposed)
+## Decisions behind milestones 103–105 (session 250; approved in session 251)
 
 The rest of lugha-wasmtime's C-boundary needs (the user: "let's knock them out"). Details in PRP-135, PRP-136 and PRP-137.
 
@@ -199,6 +199,6 @@ For milestone 92: **§2** keyword `actor`; **§3** `actor_decl = [ visibility ] 
 | 100 | Glob re-exports (v17) | `public import m { * };` re-exports every `public` item of `m` (PRP-132, approved in session 233) |
 | 101 | Maps and sets (v17) | `Map<K, V>`, `Set<T>`, `#{ … }` literals, iteration, printing, `==`; E0441, E0442, W0105 (PRP-133, approved in session 244) |
 | 102 | `out` parameters (v17) | `out x` on extern parameters and call arguments; E0443 (PRP-134, approved in session 249) |
-| 103 | `ptr` and `mut` parameters (v17) | `ptr e` and `mut place` on extern parameters and arguments (PRP-135, proposed in session 250) |
-| 104 | Arrays and unions at the C boundary (v17) | `T[]` extern parameters, `mut` arrays, `extern union`, E0444 (PRP-136, proposed in session 250) |
-| 105 | C memory and pointer callbacks (v17) | `CPtr`, `c_read`/`c_write`, callback `T[] n` parameters (PRP-137, proposed in session 250) |
+| 103 | `ptr` and `mut` parameters (v17) | `ptr e` and `mut place` on extern parameters and arguments (PRP-135, approved in session 251) |
+| 104 | Arrays and unions at the C boundary (v17) | `T[]` extern parameters, `mut` arrays, `extern union`, E0444 (PRP-136, approved in session 251) |
+| 105 | C memory and pointer callbacks (v17) | `CPtr`, `c_read`/`c_write`, callback `T[] n` parameters (PRP-137, approved in session 251) |

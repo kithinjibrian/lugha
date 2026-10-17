@@ -1,6 +1,6 @@
 ## FEATURE: C memory and pointer callbacks — a `CPtr` type with copy-only access, and callbacks that receive arrays and `mut` arrays; milestone 105 (v17).
 
-**Status:** proposed in session 250 with PRP-135 and PRP-136 (lugha-wasmtime's needs 4, 5 and 7). **Needs the user's security sign-off** (decision 102): `c_read`/`c_write` trust a pointer and length from C.
+**Status:** approved 2026-10-17 ("build all in one go", session 251; the user's security sign-off for PRP-137 included); proposed in session 250 with PRP-135 and PRP-136 (lugha-wasmtime's needs 4, 5 and 7). **Needs the user's security sign-off** (decision 102): `c_read`/`c_write` trust a pointer and length from C.
 
 ## OBJECTIVE
 ```lugha

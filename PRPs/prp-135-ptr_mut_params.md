@@ -1,6 +1,6 @@
 ## FEATURE: `ptr` and `mut` parameters on externs — C reads a value by address (`const T *`), or reads and changes it (`T *`); milestone 103 (v17).
 
-**Status:** proposed in session 250 (the user: "let's knock them out" — lugha-wasmtime's remaining needs), with PRP-136 and PRP-137. Decisions follow `out` (PRP-134) and the recommendations already discussed.
+**Status:** approved 2026-10-17 ("build all in one go", session 251; the user's security sign-off for PRP-137 included); proposed in session 250 (the user: "let's knock them out" — lugha-wasmtime's remaining needs), with PRP-136 and PRP-137. Decisions follow `out` (PRP-134) and the recommendations already discussed.
 
 ## OBJECTIVE
 ```lugha

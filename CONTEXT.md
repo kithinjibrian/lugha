@@ -8423,3 +8423,8 @@ Branch: prp-135-137-c_boundary
 
 ### STILL OPEN AT CLOSE
 - Awaiting approval; build on this branch, one PRP at a time.
+
+---
+
+## SESSION 251 — 2026-10-17 — C boundary: `ptr`/`mut`, arrays and unions, C memory (milestones 103–105) — open
+Branch: prp-135-137-c_boundary
