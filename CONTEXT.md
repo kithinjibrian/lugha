@@ -8564,3 +8564,16 @@ Branch: split-members
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+## SESSION 263 — 2026-10-17 — Empty `[]` typed from its sibling branch (kivuli) — closed
+Branch: branch-inference
+
+### DONE
+- kivuli reported E0412 for an empty `[]` branch. Fixed as a bug (no PRP, as earlier inference fixes): `if_expr` checks the branch that can be typed alone first and gives its type to the waiting one (`branch_waits`: literals don't wait, `[]`/`None`/untyped closures/waiting generic calls do); `match_expr` defers waiting arms until an arm fixes the type. Spec §5 sentence; CHANGELOG. Runs: lib `check::` (395), repros, fmt, clippy.
+- Not fixed (by design): `let kids = if c { [] } else { [text("b")] };` where neither branch knows `M` until a later use — no backward inference; annotate the `let`.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.

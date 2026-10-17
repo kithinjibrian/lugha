@@ -234,9 +234,45 @@ impl Checker {
             self.block(then, None);
             return Type::Unit;
         };
+        // With nothing expected, a branch that can't be typed alone (`[]`,
+        // `None`, `text("a")`) takes the other branch's type (kivuli).
+        if expect.is_none() {
+            let then_waits = then.tail.as_ref().is_some_and(|t| self.branch_waits(t));
+            let else_waits = self.branch_waits(else_expr);
+            if then_waits && !else_waits {
+                let else_ty = self.expr(else_expr, None);
+                let then_ty = self.block(then, sibling(&else_ty).as_ref());
+                return self.join_branches(expr, then, then_ty, else_expr, else_ty);
+            }
+            if else_waits && !then_waits {
+                let then_ty = self.block(then, None);
+                let else_ty = self.expr(else_expr, sibling(&then_ty).as_ref());
+                return self.join_branches(expr, then, then_ty, else_expr, else_ty);
+            }
+        }
         let then_ty = self.block(then, expect);
         let else_ty = self.expr(else_expr, expect);
         self.join_branches(expr, then, then_ty, else_expr, else_ty)
+    }
+
+    /// True if branch `e` (through a block's tail) can't be typed alone
+    /// and waits for a sibling's type: `[]`, `None`, `[None]`, `Some([])`,
+    /// an untyped closure, a waiting generic call. A literal can (it
+    /// defaults: `[1]` is `i64[]`).
+    pub(super) fn branch_waits(&self, e: &Expr) -> bool {
+        match &e.kind {
+            ExprKind::Block(b) => b.tail.as_ref().is_some_and(|t| self.branch_waits(t)),
+            _ if is_literal(e) => false,
+            ExprKind::Array(xs) => xs.iter().all(|x| self.branch_waits(x)),
+            ExprKind::Repeat(value, _) => self.branch_waits(value),
+            ExprKind::Tuple(xs) => xs.iter().any(|x| self.branch_waits(x)),
+            ExprKind::Call(callee, args)
+                if matches!(&callee.kind, ExprKind::Name(n) if n == "Some") && args.len() == 1 =>
+            {
+                self.branch_waits(&args[0])
+            }
+            _ => self.waits(e),
+        }
     }
 
     /// The type of an `if` (or `if let`, v9) whose branches have these
@@ -266,6 +302,12 @@ impl Checker {
     }
 }
 
+/// The expectation a sibling branch of type `ty` gives a waiting one, if
+/// `ty` is a value's type.
+pub(super) fn sibling(ty: &Type) -> Option<Expect> {
+    (!matches!(ty, Type::Never | Type::Error | Type::Unit)).then(|| Expect::of(ty.clone()))
+}
+
 #[cfg(test)]
 mod tests {
     use crate::check::Type;
@@ -275,6 +317,15 @@ mod tests {
     fn if_branches_must_agree_unless_one_diverges() {
         let src = "fun main() { let v = if true { 1 } else { false }; }";
         assert_eq!(errors(src), [("E0403", "if true { 1 } else { false }")]);
+        // An empty `[]` takes the other branch's type, on either side (kivuli).
+        for v in [
+            "if c { [] } else { [1] }",
+            "if c { [1] } else { [] }",
+            "if c { { [] } } else { [1] }",
+        ] {
+            let src = format!("fun main() {{ let c = true; let v = {v}; }}");
+            assert_eq!(let_type(&src, "v"), Type::Array(Box::new(Type::I64)), "{v}");
+        }
         let abs = "fun abs(x: i64): i64 { if x < 0 { return 0; } else { x } }\nfun main() { let a = abs(1); }";
         assert_eq!(let_type(abs, "a"), Type::I64);
         // The expected type flows into both branches.
