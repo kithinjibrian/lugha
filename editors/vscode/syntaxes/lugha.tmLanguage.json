@@ -16,6 +16,7 @@
         { "include": "#number" },
         { "include": "#declaration" },
         { "include": "#c-marker" },
+        { "include": "#import" },
         { "include": "#keyword" },
         { "include": "#builtin" },
         { "include": "#call" },
@@ -73,6 +74,32 @@
         "1": { "name": "punctuation.separator.lugha" },
         "2": { "name": "storage.type.c-marker.lugha" }
       }
+    },
+    "import": {
+      "comment": "`import m { f, T as U };`: in the braces, lowercase names are functions and capitalised ones types.",
+      "begin": "\\b(import)\\b",
+      "beginCaptures": { "1": { "name": "keyword.other.import.lugha" } },
+      "end": ";",
+      "endCaptures": { "0": { "name": "punctuation.terminator.lugha" } },
+      "patterns": [
+        { "include": "#block-comment" },
+        { "include": "#comment" },
+        { "name": "keyword.operator.as.lugha", "match": "\\bas\\b" },
+        {
+          "begin": "\\{",
+          "end": "\\}",
+          "beginCaptures": { "0": { "name": "punctuation.lugha" } },
+          "endCaptures": { "0": { "name": "punctuation.lugha" } },
+          "patterns": [
+            { "include": "#block-comment" },
+            { "include": "#comment" },
+            { "name": "keyword.operator.as.lugha", "match": "\\bas\\b" },
+            { "include": "#type" },
+            { "name": "entity.name.function.lugha", "match": "\\b[a-z_][A-Za-z0-9_]*\\b" },
+            { "include": "#punctuation" }
+          ]
+        }
+      ]
     },
     "keyword": {
       "patterns": [
