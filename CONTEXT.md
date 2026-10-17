@@ -8098,3 +8098,26 @@ Branch: fix-receiver-inference
 
 ### STILL OPEN AT CLOSE
 - kivuli's E0312 report still awaits a reproduction.
+
+---
+
+## SESSION 237 — 2026-10-17 — kivuli's E0312 report closed — closed
+Branch: close-e0312-report
+
+### WHAT WAS DONE
+- kivuli confirmed PR #48 (chained modifiers check; 49/49 kivuli tests pass) and withdrew the E0312 report left open in sessions 234–236: the failing imports were `import test.support;` and `import kivuli.test.support;` from a file in `test/`; the bare `import support;` works, as specified. Not a lughac bug; nothing changed.
+
+### FILES CREATED OR MODIFIED
+- CONTEXT only.
+
+### TESTS WRITTEN
+- None.
+
+### DECISIONS MADE
+- None.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.
