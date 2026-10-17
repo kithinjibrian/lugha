@@ -74,7 +74,7 @@ pub fn string_op(callee: &Expr) -> Option<&str> {
     builtin_op(callee, "$string")
 }
 
-fn builtin_op<'e>(callee: &'e Expr, namespace: &str) -> Option<&'e str> {
+pub(super) fn builtin_op<'e>(callee: &'e Expr, namespace: &str) -> Option<&'e str> {
     let ExprKind::Field(base, name) = &callee.kind else {
         return None;
     };

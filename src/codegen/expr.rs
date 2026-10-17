@@ -118,6 +118,9 @@ impl<'ctx> Lowerer<'ctx> {
                 return self.task_os_call(op, args);
             }
             // `$os.seed()` in `std.random`, `$os.env(name)` in `std.env`, … (v15).
+            ExprKind::Call(callee, args) if crate::check::hash_op(callee).is_some() => {
+                self.hash_call(args)?
+            }
             ExprKind::Call(callee, args) if let Some(op) = crate::check::os_op(callee) => {
                 self.os_call(expr, op, args)?
             }

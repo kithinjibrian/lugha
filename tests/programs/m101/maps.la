@@ -1,0 +1,59 @@
+// Maps and sets as values (v17, milestone 101): copies, equality regardless
+// of order, every key kind, nesting, removal and growth.
+struct Point {
+    x: i64,
+    y: i64,
+}
+
+enum Color {
+    Red,
+    Rgb(i64, i64, i64),
+}
+
+fun main() {
+    let a = #{"x": 1, "y": 2};
+    let mut b = a;
+    b["z"] = 3;
+    println(a.len);
+    println(b.len);
+    println(a == #{"y": 2, "x": 1});
+    println(a == b);
+    println(#{1, 2} == #{2, 1});
+    let mut m = #{"k": 10};
+    m["k"] = 11;
+    println(m.get("k"));
+    println(m.get("nope"));
+    println(m.remove("k"));
+    println(m.has("k"));
+    println(m);
+    let points = #{Point { x: 1, y: 2 }: "a", Point { x: 3, y: 4 }: "b"};
+    println(points[Point { x: 3, y: 4 }]);
+    let colors = #{Color.Red: 0, Color.Rgb(1, 2, 3): 1};
+    println(colors[Color.Rgb(1, 2, 3)]);
+    let grid = #{(0, 0): '.', (0, 1): '#'};
+    println(grid[(0, 1)]);
+    let mut groups: Map<string, Set<i64>> = #{};
+    groups["even"] = #{2, 4};
+    groups["odd"] = #{1};
+    println(groups);
+    println(b.keys());
+    println(b.values());
+    let mut big: Map<i64, i64> = #{};
+    for i in 0..1000 {
+        big[i] = i * i;
+    }
+    for i in 0..990 {
+        big.remove(i);
+    }
+    println(big.len);
+    println(big.keys());
+    println(big[999]);
+    let doubled = [1, 2, 3].iter().map(fun(n: i64): (i64, i64) = (n, n * 2)).collect_map();
+    println(doubled);
+    let unique = [5, 5, 6].iter().collect_set();
+    println(unique);
+    let pairs: (string, i64)[] = a.iter().collect();
+    println(pairs);
+    b.clear();
+    println(b);
+}

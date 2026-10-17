@@ -34,6 +34,7 @@ mod format;
 mod fun_values;
 mod function;
 mod growth;
+mod hashing;
 mod heap;
 mod hoist;
 mod hoist_scan;
