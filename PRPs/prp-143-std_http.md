@@ -1,6 +1,6 @@
 ## FEATURE: `std.http` — an HTTP/1.1 server and client in Lugha over `std.net`; milestone 111 (v17).
 
-**Status:** proposed 2026-10-18 (session 267), after discovery in the same session (Q1 "yes": server and small client, `http://` only, strict limits; Q2 "accept": a handler's panic ends the program, documented). **Needs the user's security sign-off** (a parser of untrusted network input).
+**Status:** approved 2026-10-18 (session 268, with the security sign-off); proposed in session 267, after discovery in the same session (Q1 "yes": server and small client, `http://` only, strict limits; Q2 "accept": a handler's panic ends the program, documented). **Needs the user's security sign-off** (a parser of untrusted network input).
 
 ## OBJECTIVE
 ```lugha

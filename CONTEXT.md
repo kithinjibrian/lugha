@@ -8626,3 +8626,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-143 awaits approval and the security sign-off.
+
+## SESSION 268 — 2026-10-18 — std.http (milestone 111) — open
+Branch: prp-143-std_http

@@ -186,7 +186,7 @@ The user: "wanna build a std http lib?" — sockets with non-blocking I/O first,
 
 141–152. **`std.net`** (milestone 110): TCP `Listener`/`Conn` in Lugha over `$net.*` built-ins; non-blocking sockets parked in the scheduler through `epoll`, with timeouts; `Result<…, string>` errors; explicit `close()`; blocking name lookup; no UDP, Unix sockets or non-blocking files; tag `m110`. Needs the user's security sign-off.
 
-## Decisions behind milestone 111 (session 267; proposed)
+## Decisions behind milestone 111 (session 267; approved in session 268)
 
 HTTP/1.1 on `std.net`, written in Lugha. Details in PRP-143.
 
