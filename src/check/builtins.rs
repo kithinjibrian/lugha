@@ -68,6 +68,8 @@ pub(super) fn builtin(receiver: &Type, name: &str) -> Option<Method> {
         (int, "count_ones" | "leading_zeros" | "trailing_zeros") if int.is_integer() => {
             (Vec::new(), Type::I64, false)
         }
+        // A float's IEEE 754 bits (v17, milestone 108).
+        (float, "to_bits") if float.is_float() => (Vec::new(), super::bits_of(float), false),
         _ => return None,
     };
     Some(Method {

@@ -172,6 +172,12 @@ impl<'ctx> Lowerer<'ctx> {
                 .unwrap_method(base, &base_type, &name.name, args, name.span.start)
                 .map(Some);
         }
+        // `x.to_bits()` (v17, milestone 108): the same bits as an integer.
+        if base_type.is_float() && name.name == "to_bits" {
+            let value = self.get(base, &base_type)?;
+            let bits = self.bitcast(value, &crate::check::bits_of(&base_type));
+            return Ok(Some(Value::Val(bits)));
+        }
         // `x.wrapping_add(y)`, `x.count_ones()` and the rest (v7).
         if base_type.is_integer() {
             return self

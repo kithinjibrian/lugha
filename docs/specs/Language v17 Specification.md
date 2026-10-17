@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–107 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–108 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–107):
+**Changes since v16** (milestones 91–108):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- A float's raw bits (milestone 108; section 4): `x.to_bits()` (`f64` → `u64`, `f32` → `u32`) and `f64.from_bits(b)` / `f32.from_bits(b)`, exactly the IEEE 754 bits.
 - The unit type `()` replaces `void` (milestone 107; sections 3, 4, 6): a type and its one value, held anywhere a value is (`Result<(), E>`, `Chan<()>`); E0407 is retired; W0106 warns on `let x = log();`.
 - Extern structs hold `Option` of a handle (C's nullable pointer); unions hold plain data only, so no pointer is made up from a number (milestone 106; section 8).
 - The C boundary takes pointers (milestones 103–105; section 8): `ptr` and `mut` parameters; arrays as `xs: T[]` and `mut xs: T[]`; `extern union`; `CPtr` with `c_read`/`c_write`; callbacks taking `T[]` and `Ref<T[]>`.
@@ -895,6 +896,8 @@ Every iterator `it` that yields `T` (a value whose type has `fun next(mut self):
 | `a.rotate_left(n)`, `a.rotate_right(n)` | `a`'s type | the bits rotated by `n`, an `i64`, modulo the width: a negative `n` rotates the other way (v10) |
 
 `b` has `a`'s type, and a literal `b` takes it (E0403 for another type, E0405 for the wrong count).
+
+**A float's bits** (v17, milestone 108). `x.to_bits()` gives the IEEE 754 bits of a float exactly — a `u64` for `f64`, a `u32` for `f32`, NaN payloads and the sign of `-0.0` kept — and `f64.from_bits(b)` / `f32.from_bits(b)`, called on the type keyword, read them back; `b` is exactly `u64` / `u32` (a literal takes the type; E0403 otherwise, E0405 for the wrong count, E0415 for another member). `as` converts a value, never its bits.
 
 **Integer limits** (v10). `I.MIN` and `I.MAX` are the smallest and largest value of integer type `I`, of type `I`: `i8.MIN` is −128, `u64.MAX` is 18446744073709551615. Only these two names follow an integer type keyword (E0415 otherwise); other type keywords take none. Any other method on an integer, and these names on a float or `bool`, is E0415. A literal receiver with no expected type is `i64`: `(5).count_ones()` is `2`. The wrapping methods are the explicit way to wrap; `+`, `-` and `*` still panic on overflow.
 
@@ -3703,6 +3706,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 105 | C memory and pointer callbacks (v17) | `CPtr`, `c_read`/`c_write`, callback `T[]`/`Ref<T[]>` | `tests/c_memory.rs` (done) |
 | 106 | Nullable handle fields, plain-data unions (v17) | `Option<H>` fields, E0437 for pointers in unions | `tests/extern_structs.rs`, `tests/c_arrays.rs` (done) |
 | 107 | The unit type (v17) | `()` type and value, W0106, E0407 retired | `tests/programs/m107/` (done) |
+| 108 | Float bits (v17) | `x.to_bits()`, `f64.from_bits(b)`, `f32.from_bits(b)` | `tests/programs/m108/` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
