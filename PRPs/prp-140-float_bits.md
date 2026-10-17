@@ -1,6 +1,6 @@
 ## FEATURE: A float's raw bits — `x.to_bits()` and `f64.from_bits(b)` / `f32.from_bits(b)`; milestone 108 (v17).
 
-**Status:** proposed 2026-10-17 (session 258), from the user's report: "lughac has no way to turn a float into its raw bits or back (to_bits/from_bits for f64/u64 and f32/u32)".
+**Status:** approved 2026-10-17 (session 259: "build"); proposed in session 258, from the user's report: "lughac has no way to turn a float into its raw bits or back (to_bits/from_bits for f64/u64 and f32/u32)".
 
 ## OBJECTIVE
 ```lugha

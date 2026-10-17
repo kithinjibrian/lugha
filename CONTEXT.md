@@ -8515,3 +8515,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-140 awaits approval; `src/check/members.rs` is 503 lines.
+
+## SESSION 259 — 2026-10-17 — Float bits (milestone 108) — open
+Branch: prp-140-float_bits
