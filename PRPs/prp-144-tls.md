@@ -47,6 +47,13 @@ Encrypted connections that behave like `std.net`'s: waits park only their green 
 ### New dependencies
 - System OpenSSL 3 (`libssl`, `libcrypto`; Apache-2.0), only for TLS programs. No crates.
 
+## BUILT (session 270)
+- As planned. `runtime/tls.c` is appended to the runtime only for TLS programs (`src/link/runtime.rs`, which also took the runtime temp-file writer out of `link/mod.rs`).
+- Found while testing: OpenSSL writes without `MSG_NOSIGNAL`, so a peer that hung up raised SIGPIPE (exit 141); SIGPIPE is now blocked around each OpenSSL call and a pending one taken back, leaving the rest of the program's signal handling alone.
+- A peer closing without `close_notify` reads as the end of the stream (`SSL_OP_IGNORE_UNEXPECTED_EOF`), as most HTTP servers close that way; HTTP bodies with a length are still checked by length.
+- `serve_tls` bounds each handshake by the limits' timeout; the accept loop waits for one handshake at a time.
+- Tests: `tests/tls.rs` (certificates from the `openssl` command per run: echo by IP and by name, system roots only, self-signed refused and trusted through `ca_file`, expired, IP mismatch, missing key file, a plain-TCP peer; `serve_tls` with `request_tls`, the untrusted case, plain `http://` to a TLS port), stable; link unit tests (only TLS plans get `-lssl`, E0332, the TLS source's symbols); `tests/http.rs` updated.
+
 ## ERROR HANDLING REQUIREMENTS
 - E0332 (new): OpenSSL missing when building a TLS program.
 - Runtime: `Err` for handshake, verification, I/O, file-loading failures; never a panic for network input.

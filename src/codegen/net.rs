@@ -1,6 +1,7 @@
-//! `std.net`'s built-ins in codegen (v17, milestone 110): each
-//! `$os.net_<op>` calls `lugha_rt_net_<op>`, which returns a flag and
-//! writes its result or message through out-pointers, as `os.rs` does.
+//! `std.net`'s and `std.tls`'s built-ins in codegen (v17, milestones 110
+//! and 112): each `$os.net_<op>` or `$os.tls_<op>` calls `lugha_rt_<op>`,
+//! which returns a flag and writes its result or message through
+//! out-pointers as `os.rs` does, or (a close, a socket number) just returns.
 
 use inkwell::values::BasicValueEnum;
 
@@ -25,23 +26,32 @@ impl<'ctx> Lowerer<'ctx> {
         for (arg, ty) in args.iter().zip(&params) {
             values.push(self.get(arg, ty)?);
         }
-        if op == "net_close" {
-            let function = self.runtime(&name, &params, None);
+        // A close (`()`) or a socket number (`i64`): a plain call (v17).
+        let (_, ret) = crate::check::os_signature(op).expect("checked: a known built-in");
+        if matches!(ret, Type::Unit | Type::I64) {
+            let returns = (ret == Type::I64).then_some(Type::I64);
+            let function = self.runtime(&name, &params, returns);
             let values: Vec<_> = values.iter().map(|v| (*v).into()).collect();
-            self.builder
+            let site = self
+                .builder
                 .build_call(function, &values, "")
                 .expect(POSITIONED);
-            return Ok(super::value::unit_value(self.context));
+            return Ok(match site.try_as_basic_value() {
+                inkwell::values::ValueKind::Basic(value) => value,
+                inkwell::values::ValueKind::Instruction(_) => {
+                    super::value::unit_value(self.context)
+                }
+            });
         }
-        // What `Ok` holds: a descriptor, bytes, a name, or the `0` of a write.
+        // What `Ok` holds: a handle, bytes, a name, or the `0` of a write.
         let held = match op {
-            "net_read" => bytes,
+            "net_read" | "tls_read" => bytes,
             "net_name" => Type::String,
             _ => Type::I64,
         };
         let (out, error) = (self.out_slot(&held), self.out_slot(&Type::String));
         let mut types = params.clone();
-        if op != "net_write" {
+        if op != "net_write" && op != "tls_write" {
             types.push(Type::String);
             values.push(out.into());
         }

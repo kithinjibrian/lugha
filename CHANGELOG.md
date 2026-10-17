@@ -9,6 +9,13 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- TLS, milestone 112 (PRP-144): `std.tls` (`connect`, `connect_with(opts)`, `listen(addr, cert, key)`) over the system's OpenSSL 3, always verifying certificates (system roots, host names; `Options.ca_file` to trust more), TLS 1.2+, non-blocking through the scheduler; `https://` in `std.http` (`serve_tls`, `serve_tls_with`, `request_tls`). OpenSSL is linked only into programs that load `std.tls` (or `std.http`); E0332 when it isn't installed. `runtime/tls.c`, `src/link/runtime.rs`; CI installs `libssl-dev`
+
+### Changed
+- Programs that import `std.http` now link OpenSSL (it speaks `https://` through `std.tls`): building them needs `libssl-dev`
+- `http.get("https://…")` connects instead of answering `Err("https isn't supported yet")`
+
+### Added
 - `std.http`, milestone 111 (PRP-143): an HTTP/1.1 server (`serve`, `serve_with`, keep-alive, one green thread per connection, strict limits answered with 400/408/413/414/431/501/505, smuggling-safe framing, no header injection) and client (`get`, `post`, `request`), written in Lugha over `std.net`; its reader is the internal `std.$http_wire`
 - A literal `if` branch takes its typed sibling's type: `if c { b - 1 } else { 255 }` is a `u8` for `b: u8` (found while writing `std.http`)
 

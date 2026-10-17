@@ -20,7 +20,9 @@ impl<'ctx> Lowerer<'ctx> {
         let bytes = Type::Array(Box::new(Type::U8));
         Ok(match op {
             // `std.net` (v17, milestone 110).
-            _ if op.starts_with("net_") => self.net_call(call, op, args)?,
+            _ if op.starts_with("net_") || op.starts_with("tls_") => {
+                self.net_call(call, op, args)?
+            }
             "seed" => self.os_seed(),
             "now_ms" => self.os_now_ms(),
             // `Some(bytes)` of the variable, or `None` (milestone 64).

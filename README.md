@@ -118,7 +118,7 @@ Everything is a value: assigning an array, struct or enum gives you your own cop
 On Ubuntu 26.04:
 
 ```sh
-sudo apt install llvm-21-dev libgc-dev build-essential
+sudo apt install llvm-21-dev libgc-dev build-essential libssl-dev   # libssl-dev only for programs using TLS (std.tls, std.http)
 ```
 
 ## Build and install

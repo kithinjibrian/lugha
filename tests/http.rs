@@ -211,7 +211,7 @@ fun main() {{
     let mut small = http.limits();
     small.body = 10;
     println(http.request_with(\"GET\", \"http://127.0.0.1:{port}/\", #{{}}, [], small).is_err());
-    println(http.get(\"https://example.com/\"));
+    println(http.get(\"https://127.0.0.1:{refused}/\").is_err());
     println(http.get(\"ftp://x\"));
     println(http.get(\"http:///\"));
     match http.get(\"http://127.0.0.1:{refused}/\") {{
@@ -224,7 +224,7 @@ fun main() {{
     let out = case.command().output().unwrap();
     assert_eq!(
         String::from_utf8_lossy(&out.stdout),
-        "200 wikipedia\n201 to the end Some(\"yes\")\ntrue\nErr(\"https isn't supported yet\")\n\
+        "200 wikipedia\n201 to the end Some(\"yes\")\ntrue\ntrue\n\
          Err(\"bad URL\")\nErr(\"bad URL\")\nConnection refused\n",
         "{}",
         String::from_utf8_lossy(&out.stderr)
