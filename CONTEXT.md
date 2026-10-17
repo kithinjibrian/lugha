@@ -7960,3 +7960,8 @@ Branch: fix-import-extern-type
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 231 — 2026-10-17 — Doc comments on extern types — open
+Branch: fix-doc-extern-type
