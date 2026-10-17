@@ -7963,5 +7963,23 @@ Branch: fix-import-extern-type
 
 ---
 
-## SESSION 231 — 2026-10-17 — Doc comments on extern types — open
+## SESSION 231 — 2026-10-17 — Doc comments on extern types — closed
 Branch: fix-doc-extern-type
+
+### WHAT WAS DONE
+- The user said yes to doc comments on `extern type`; `actor` declarations had the same gap. `lsp/docs.rs` `LEAD` gains `type` and `actor`; spec §2 lists both. Noticed, not changed: hover shows an actor as `struct Counter`.
+
+### FILES CREATED OR MODIFIED
+- Modified: `src/driver/lsp/docs.rs`, `tests/lsp_docs.rs`, spec §2, CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- `lsp_docs::extern_types_and_actors_carry_their_docs_v17` (declaration and use of an extern type; an actor). Targeted: `--lib`, LSP suites, `spec`, fmt, clippy.
+
+### DECISIONS MADE
+- Doc comments on `extern type` (the user); `actor` alongside as the same gap.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.

@@ -146,9 +146,12 @@ fn dedent(lines: &[&str]) -> String {
 }
 
 /// Words that may stand between a doc comment and a declaration's name.
-const LEAD: [&str; 7] = [
+const LEAD: [&str; 9] = [
     "fun",
     "extern",
+    // `extern type Name;` (v16) and `actor Name { … }` (v17).
+    "type",
+    "actor",
     "struct",
     "enum",
     "interface",
