@@ -8075,3 +8075,8 @@ Branch: fix-summary-and-short-if
 
 ### STILL OPEN AT CLOSE
 - kivuli's E0312 report still awaits a reproduction.
+
+---
+
+## SESSION 236 — 2026-10-17 — Expected types reach a waiting receiver (kivuli) — open
+Branch: fix-receiver-inference
