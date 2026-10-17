@@ -45,45 +45,11 @@ fun $map_find<K: Eq, V>(m: Map<K, V>, k: K): (i64, i64) {
     panic("unreachable")
 }
 
-/** `m`'s live entries alone, in order, over `cap` slots (a power of two). */
-fun $map_rebuilt<K: Eq, V>(m: Map<K, V>, cap: i64): Map<K, V> {
-    let mut out: Map<K, V> = Map { len: 0, $keys: [], $vals: [], $live: [], $slots: [0; cap], $at: 0 };
-    for e in 0..m.$keys.len {
-        if m.$live[e] {
-            out = $map_put(out, m.$keys[e], m.$vals[e]);
-        }
-    }
-    out
-}
-
-/** `m` with `k` set to `v`: replaced in place, or added at the end. */
-fun $map_put<K: Eq, V>(m: Map<K, V>, k: K, v: V): Map<K, V> {
-    let mut m = m;
-    if (m.$keys.len + 1) * 3 > m.$slots.len * 2 {
-        let mut cap = m.$slots.len;
-        while (m.len + 1) * 3 > cap {
-            cap = cap * 2;
-        }
-        m = $map_rebuilt(m, cap);
-    }
-    let (slot, e) = $map_find(m, k);
-    if e >= 0 {
-        m.$vals[e] = v;
-    } else {
-        m.$keys.push(k);
-        m.$vals.push(v);
-        m.$live.push(true);
-        m.$slots[slot] = m.$keys.len;
-        m.len += 1;
-    }
-    m
-}
-
 /** A map of `keys[i]` to `vals[i]`; a later key replaces an earlier one's value. */
 fun $map_of<K: Eq, V>(keys: K[], vals: V[]): Map<K, V> {
     let mut m: Map<K, V> = Map { len: 0, $keys: [], $vals: [], $live: [], $slots: [0; 8], $at: 0 };
     for i in 0..keys.len {
-        m = $map_put(m, keys[i], vals[i]);
+        m.$put(keys[i], vals[i]);
     }
     m
 }
@@ -98,6 +64,51 @@ fun $set_of<T: Eq>(xs: T[]): Set<T> {
 }
 
 impl Map<K: Eq, V> {
+    /**
+     * Sets `k` to `v` in place: replaced, or added at the end, after growing
+     * the table when it is full. Everything here changes `self` where it is:
+     * a map passed by value and changed would copy its arrays on every insert.
+     */
+    fun $put(mut self, k: K, v: V) {
+        if (self.$keys.len + 1) * 3 > self.$slots.len * 2 {
+            let mut cap = self.$slots.len;
+            while (self.len + 1) * 3 > cap {
+                cap = cap * 2;
+            }
+            self.$rebuild(cap);
+        }
+        let (slot, e) = $map_find(self, k);
+        if e >= 0 {
+            self.$vals[e] = v;
+        } else {
+            self.$keys.push(k);
+            self.$vals.push(v);
+            self.$live.push(true);
+            self.$slots[slot] = self.$keys.len;
+            self.len += 1;
+        }
+    }
+
+    /** Keeps only the live entries, in order, over `cap` slots (a power of two). */
+    fun $rebuild(mut self, cap: i64) {
+        let mut keys: K[] = [];
+        let mut vals: V[] = [];
+        for e in 0..self.$keys.len {
+            if self.$live[e] {
+                keys.push(self.$keys[e]);
+                vals.push(self.$vals[e]);
+            }
+        }
+        self.$slots = [0; cap];
+        self.$live = [true; keys.len];
+        self.$keys = keys;
+        self.$vals = vals;
+        for e in 0..self.$keys.len {
+            let (slot, _) = $map_find(self, self.$keys[e]);
+            self.$slots[slot] = e + 1;
+        }
+    }
+
     /** The value of `k`, or `None`. */
     fun get(self, k: K): Option<V> {
         let (_, e) = $map_find(self, k);
@@ -119,7 +130,7 @@ impl Map<K: Eq, V> {
 
     /** Sets `k` to `v`: `m[k] = v`. A new key goes last; an old one keeps its place. */
     fun insert(mut self, k: K, v: V) {
-        self = $map_put(self, k, v);
+        self.$put(k, v);
     }
 
     /** Removes `k`, giving its value, or `None` if it had none. */
@@ -133,7 +144,7 @@ impl Map<K: Eq, V> {
         let v = self.$vals[e];
         // Compact once half the entries are removed ones.
         if (self.$keys.len - self.len) * 2 > self.$keys.len {
-            self = $map_rebuilt(self, self.$slots.len);
+            self.$rebuild(self.$slots.len);
         }
         Some(v)
     }

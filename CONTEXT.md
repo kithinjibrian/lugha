@@ -8309,5 +8309,24 @@ Branch: fix-prelude-type-names
 
 ---
 
-## SESSION 246 — 2026-10-17 — Map/Set inserts in place (kivuli's performance report) — open
+## SESSION 246 — 2026-10-17 — Map/Set inserts in place (kivuli's performance report) — closed
 Branch: fix-map-insert-quadratic
+
+### WHAT WAS DONE
+- kivuli: Map/Set inserts quadratic. Cause (narrowed with three struct experiments): `self = $map_put(self, k, v)` passed the map by value into a function that changed it, copying its arrays every insert. `maps.la` now grows and rebuilds in place (`$put`, `$rebuild` methods). 8 000 inserts: 1.2 s → <1 ms (-O2); 512 000 map+set inserts 0.12 s.
+- The user asked to narrow test runs as much as possible; the testing memory updated.
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m101/many_inserts.{la,stdout,exit}`. Modified: `src/prelude/maps.la`, CHANGELOG, TODO, MEMORY (187), CONTEXT.
+
+### TESTS WRITTEN
+- `many_inserts` (timed out past 30 s before, 0.4 s after at -O0). Narrow run: `--lib` map/prelude filters (10), the m101 programs and spec §10 map programs compared directly. No Rust changed: no fmt/clippy run needed.
+
+### DECISIONS MADE
+- None (a bug fix).
+
+### PENDING DECISIONS OPENED
+- None. TODO: copy-on-write could treat `x = f(x)` as a move.
+
+### STILL OPEN AT CLOSE
+- Nothing.

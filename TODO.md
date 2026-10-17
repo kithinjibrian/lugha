@@ -440,6 +440,7 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [x] (PRP-124) `S { f: e, ..base }`, Rust's rules; E0440, W0104; for kivuli
 
 ### Milestone 101 — Maps and sets ✅
+- [ ] Copy-on-write: `x = f(x)` where `f` takes `x` by value and changes it copies `x`'s arrays every time (the argument isn't treated as a move although `x` is overwritten); found in session 246, worked around in the prelude
 - [x] (PRP-133) `Map<K, V>`, `Set<T>`, `#{ … }` literals, E0441/E0442/W0105, `Mapped`; tagged `m101`
 - [x] Diagnostics print prelude types as `$prelude.Map<…>`/`$prelude.ArrayIter<…>`: show them without the prefix (found in milestone 101; done in session 245)
 

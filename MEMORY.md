@@ -2063,6 +2063,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-133 (discovery session 243, approved 244). Built: prelude `src/prelude/maps.la` (`Map { len, $keys, $vals, $live, $slots, $at }`, `Set { len, $map: Map<T, bool> }`, `$map_of`/`$set_of`, methods, `$entry` for `m[k]`, `same` for `==`, `show` for printing, `next`/`iter` for loops); `$hash.value` (checker `hashing.rs`, codegen `hashing.rs`, FNV-1a per type like `lugha_eq_*`); parser `hashed.rs` builds the literal's keys/values as hidden array nodes (`HashLiteral`), checked/lowered as a call of `$map_of`/`$set_of` at the literal's id; `m[k]`/`m[k] = v` are `$entry`/`insert` method calls at the index/place id (`check/access.rs`, `check/maps.rs::map_assign`, codegen `maps.rs`); `==` records a `$equal` pseudo-use expanded to `Map.same`/`Set.same` instances (like `$print`), and codegen's `equal()` calls them (also nested in structs). Deviation: decision 76's E0507 dropped — loops walk a copy (the map's own cursor), so changing the map in the body is safe; `for … of mut` is E0442. `primary`'s `#{` arm is `#[inline(never)]` (`hash_literal`) or deep nesting overflows the stack before E0206.
 
+### 187. Map/Set inserts in place (session 246)
+
+**Decision:** the prelude's maps change themselves through `mut self` methods (`$put`, `$rebuild`), never `self = f(self, …)`: passing a value into a function that changes and returns it copies its arrays (copy-on-write sees two owners), which made inserts quadratic. Read-only passes (`$map_find(self, k)`) are fine. The compiler-side improvement (treating such an argument as a move) is a TODO. Regression guard: `tests/programs/m101/many_inserts` (100 000 inserts inside the runner's 10 s).
+
 ---
 
 ## CURRENT PROJECT STATE
