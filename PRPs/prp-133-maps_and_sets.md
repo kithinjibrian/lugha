@@ -1,6 +1,6 @@
 ## FEATURE: Maps and sets — `Map<K, V>` and `Set<T>` with `#{ … }` literals, built in; milestone 101 (v17).
 
-**Status:** proposed in session 243, after a discovery of seven questions answered by the user (literal syntax, Q1–Q6).
+**Status:** approved 2026-10-17 ("approved", session 244); proposed in session 243, after a discovery of seven questions answered by the user (literal syntax, Q1–Q6).
 
 ## OBJECTIVE
 Lugha programs get the two collections every program reaches for, with a literal that reads like the data:

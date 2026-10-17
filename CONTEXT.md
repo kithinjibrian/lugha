@@ -8259,3 +8259,8 @@ Branch: prp-133-maps_and_sets
 
 ### STILL OPEN AT CLOSE
 - PRP-133 awaits approval; build on branch `prp-133-maps_and_sets`.
+
+---
+
+## SESSION 244 — 2026-10-17 — Maps and sets (milestone 101) — open
+Branch: prp-133-maps_and_sets
