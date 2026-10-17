@@ -8029,3 +8029,26 @@ Branch: prp-132-glob_imports
 
 ### STILL OPEN AT CLOSE
 - Nothing. lugha-gtk can switch its `lib.la` to `public import raw { * };` (its session).
+
+---
+
+## SESSION 234 — 2026-10-17 — Inference into tuples (kivuli) — closed
+Branch: fix-tuple-inference
+
+### WHAT WAS DONE
+- Fixed kivuli's report: a tuple holding a waiting call waits (`Checker::waits`), so `keyed_column([("a", text("a"))])` is typed by its sibling. kivuli's second item (test files importing one another, E0312) didn't reproduce from the CLI with kivuli's layout; asked the user for the failing import and command.
+
+### FILES CREATED OR MODIFIED
+- Modified: `src/check/siblings.rs`, spec §4 (inference), CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- `siblings::a_tuple_holding_a_waiting_call_waits_v17`. Targeted: `--lib`, `programs`, `test_runner`, `spec`, fmt, clippy.
+
+### DECISIONS MADE
+- A bug fix (milestone 96), no PRP.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The E0312 report awaits a reproduction.

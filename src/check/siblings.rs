@@ -14,12 +14,15 @@ impl Checker {
     /// its siblings: what `defers` says (literals, `None`, `[]`, untyped
     /// closures); a call of a generic function with a type parameter in its
     /// result that only waiting arguments could fix (`text("a")`, and since
-    /// kivuli's second report `column([text("a")])`); and a list or `Some`
-    /// of such calls.
+    /// kivuli's second report `column([text("a")])`); a list or `Some` of
+    /// such calls; and a tuple holding one.
     pub(super) fn waits(&self, e: &Expr) -> bool {
         match &e.kind {
             _ if defers(e) => true,
             ExprKind::Array(elements) => elements.iter().all(|x| self.waits(x)),
+            // A tuple's type needs every element's: one waiting call makes
+            // it wait (`("a", text("a"))`); literals alone keep their types.
+            ExprKind::Tuple(elements) => elements.iter().any(|x| !defers(x) && self.waits(x)),
             ExprKind::Call(callee, args)
                 if matches!(&callee.kind, ExprKind::Name(n) if n == "Some") && args.len() == 1 =>
             {
@@ -153,6 +156,26 @@ mod tests {
         );
         let found = errors(&src);
         assert_eq!(found.first().map(|(c, _)| *c), Some("E0412"), "{found:?}");
+    }
+
+    #[test]
+    fn a_tuple_holding_a_waiting_call_waits_v17() {
+        let src = format!(
+            "{VIEW}fun keyed_column<M>(kids: (string, View<M>)[]): View<M> = kids[0].1;\n\
+             @test fun t() {{\n\
+                 let expected: View<Msg> = View.Text(\"a\");\n\
+                 assert_eq(keyed_column([(\"a\", text(\"a\"))]), expected);\n\
+                 assert_eq(expected, keyed_column([(\"a\", text(\"a\")), (\"b\", text(\"b\"))]));\n\
+                 println(keyed_column([(\"a\", text(\"a\"))]) == expected);\n\
+                 let pair: (string, View<Msg>) = (\"a\", text(\"a\"));\n\
+                 assert_eq((\"a\", text(\"a\")), pair);\n\
+             }}"
+        );
+        assert_eq!(test_mode(&src).err(), None);
+        // Tuples of literals keep their own types.
+        ok(
+            "fun main() { let t = (1, \"a\"); let u: (i64, string) = t; println(t == (1, \"a\")); }",
+        );
     }
 
     #[test]
