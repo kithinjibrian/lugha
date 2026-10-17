@@ -8330,3 +8330,8 @@ Branch: fix-map-insert-quadratic
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 247 — 2026-10-17 — A module's private imports aren't importable through it — open
+Branch: fix-private-import-leak
