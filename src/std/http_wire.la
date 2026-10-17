@@ -4,6 +4,50 @@
  * (programs can't write `$`); see `std.http`.
  */
 import std.net;
+import std.tls;
+
+/** A connection `std.http` reads and writes: plain, or encrypted (v17, milestone 112). */
+enum Stream {
+    Plain(net.Conn),
+    Secure(tls.Conn),
+}
+
+impl Stream {
+    fun read(self, max: i64): Result<u8[], string> {
+        match self {
+            Plain(c) => c.read(max),
+            Secure(c) => c.read(max),
+        }
+    }
+
+    fun write(self, bytes: u8[]): Result<(), string> {
+        match self {
+            Plain(c) => c.write(bytes),
+            Secure(c) => c.write(bytes),
+        }
+    }
+
+    fun set_timeout(self, ms: i64) {
+        match self {
+            Plain(c) => c.set_timeout(ms),
+            Secure(c) => c.set_timeout(ms),
+        }
+    }
+
+    fun peer(self): string {
+        match self {
+            Plain(c) => c.peer(),
+            Secure(c) => c.peer(),
+        }
+    }
+
+    fun close(self) {
+        match self {
+            Plain(c) => c.close(),
+            Secure(c) => c.close(),
+        }
+    }
+}
 
 /** Why reading a message stopped: a status to answer with, or the connection's end. */
 enum Fail {
@@ -13,7 +57,7 @@ enum Fail {
 
 /** A connection's incoming bytes, read as they're needed, by a deadline. */
 struct Reader {
-    conn: net.Conn,
+    conn: Stream,
     buf: u8[],
     pos: i64,
     deadline: i64,

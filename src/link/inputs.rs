@@ -50,6 +50,9 @@ pub struct Plan {
     /// The first `[link]` line, for E0331; `None` when no table lists
     /// anything, and a link failure is lughac's own.
     pub at: Option<Span>,
+    /// The import that brings in `std.tls` (v17), for E0332; `Some` adds
+    /// the TLS runtime and `-lssl -lcrypto`.
+    pub tls: Option<Span>,
 }
 
 /// Runs `pkg-config` for some names: [`super::pkg_config::run`], or a fake in tests.

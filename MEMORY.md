@@ -2111,6 +2111,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-143 (discovery session 267; approved with the security sign-off in 268). All Lugha: `src/std/http.la` (types, builders, server, client) and the internal `src/std/http_wire.la` (`std.$http_wire`: `Reader` with `fill`/`line`/`exact`/`rest`/`headers`/`body`/`chunked`/`request` → `Head`, `Fail { Status, Gone }`, byte helpers) — split at 629 lines as the PRP allowed; a `$` std module is importable only by bundled sources and left out of E0312's list. The per-request deadline uses a new internal `$os.now_ms()` (`lugha_rt_now_ms`, monotonic). Found on the way: literal `if` branches now take a typed sibling's type (`check/expr.rs` `branch_defers`/`takes`).
 
+### 198. TLS — milestone 112 (PRP-144)
+
+**Decision:** as PRP-144 (discovery session 269: system OpenSSL 3, linked only into TLS programs; always verify, `ca_file` only; approved with the security review in 270). `runtime/tls.c` is not a `RUNTIME_PARTS` fragment: `src/link/runtime.rs` appends `TLS_SOURCE` to the runtime file and `link/mod.rs` adds `-lssl -lcrypto` when `Plan.tls` is set (the driver's `tls_import`: the program loads `std.tls`, span of the user's `std.tls`/`std.http` import for E0332). OpenSSL's `send` lacks `MSG_NOSIGNAL`, so SIGPIPE is blocked around each OpenSSL call and a raised one taken back (`tls_quiet`/`tls_loud`). `SSL_OP_IGNORE_UNEXPECTED_EOF`: a missing `close_notify` reads as EOF. `std.http` talks through `$http_wire.Stream { Plain, Secure }`.
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

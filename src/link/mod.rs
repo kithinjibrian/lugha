@@ -14,12 +14,12 @@
 pub mod c_files;
 pub mod inputs;
 pub mod pkg_config;
+pub mod runtime;
 
 use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 pub use self::inputs::{Plan, PlanError};
 use crate::diagnostic::Diagnostic;
@@ -189,6 +189,9 @@ pub enum LinkError {
     /// Linking failed with `[link]` input (v16): E0331 at its first line.
     #[error("linking failed:\n{stderr}")]
     Libraries { span: Span, stderr: String },
+    /// A TLS program, and no OpenSSL to build it with (v17): E0332 at its import.
+    #[error("OpenSSL is missing")]
+    Tls { span: Span },
 }
 
 impl LinkError {
@@ -220,6 +223,12 @@ impl LinkError {
                         .with_help(format!("the linker said:\n{}{advice}", stderr.trim_end())),
                 )
             }
+            LinkError::Tls { span } => Some(
+                Diagnostic::error("E0332", "TLS needs OpenSSL, which isn't installed", *span)
+                    .with_help(
+                        "install OpenSSL's development files: `sudo apt install libssl-dev`",
+                    ),
+            ),
             LinkError::CcNotFound | LinkError::Io(_) | LinkError::Failed { .. } => None,
         }
     }
@@ -265,7 +274,7 @@ pub fn link_with(
     output: &Path,
 ) -> Result<(), LinkError> {
     let shims = c_files::compile(&plan.c_files, temp)?;
-    let runtime = RuntimeFile::write().map_err(LinkError::Io)?;
+    let runtime = runtime::RuntimeFile::write(plan.tls.is_some()).map_err(LinkError::Io)?;
     let result = Command::new("cc")
         .args(args(objects, &shims, &runtime.0, plan, output))
         .output();
@@ -278,6 +287,12 @@ pub fn link_with(
         return Ok(());
     }
     let stderr = String::from_utf8_lossy(&out.stderr).into_owned();
+    // A TLS program on a machine without OpenSSL's headers or libraries (v17).
+    if let Some(span) = plan.tls
+        && runtime::missing_openssl(&stderr)
+    {
+        return Err(LinkError::Tls { span });
+    }
     match plan.at {
         Some(span) => Err(LinkError::Libraries { span, stderr }),
         None => Err(LinkError::Failed {
@@ -301,40 +316,37 @@ fn args(
     args.extend(shims.iter().map(|o| o.as_os_str().to_owned()));
     args.push(runtime.as_os_str().to_owned());
     args.extend(["-lgc", "-lm"].map(OsString::from));
+    if plan.tls.is_some() {
+        args.extend(["-lssl", "-lcrypto"].map(OsString::from));
+    }
     args.extend(plan.link_args());
     args.push(OsString::from("-o"));
     args.push(output.as_os_str().to_owned());
     args
 }
 
-/// The runtime source in a private temp file, removed on drop.
-struct RuntimeFile(PathBuf);
-
-impl RuntimeFile {
-    fn write() -> io::Result<Self> {
-        static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("lughac-rt-{}-{n}.c", std::process::id()));
-        // create_new: fail rather than reuse a file someone planted under that name.
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&path)?;
-        io::Write::write_all(&mut file, RUNTIME_SOURCE.as_bytes())?;
-        Ok(RuntimeFile(path))
-    }
-}
-
-impl Drop for RuntimeFile {
-    fn drop(&mut self) {
-        // Best effort: a leftover temp file is harmless and must not hide the result.
-        let _ = std::fs::remove_file(&self.0);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::{RUNTIME_PARTS, RUNTIME_SOURCE};
+
+    #[test]
+    fn only_a_tls_plan_links_openssl() {
+        use std::path::Path;
+        let mut plan = super::Plan::default();
+        let has_ssl = |plan: &super::Plan| {
+            super::args(&[], &[], Path::new("rt.c"), plan, Path::new("out"))
+                .iter()
+                .any(|a| a == "-lssl")
+        };
+        assert!(!has_ssl(&plan));
+        plan.tls = Some(crate::span::Span::new(0, 1));
+        assert!(has_ssl(&plan));
+        let d = super::LinkError::Tls {
+            span: crate::span::Span::new(0, 1),
+        }
+        .diagnostic();
+        assert_eq!(d.map(|d| d.code), Some("E0332"));
+    }
 
     #[test]
     fn runtime_parts_join_in_order_core_first() {

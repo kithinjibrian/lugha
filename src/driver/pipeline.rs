@@ -266,8 +266,9 @@ pub(super) fn ir(front: &Front) -> Result<String, Failure> {
 /// `[link]` tables add (v16): `pkg-config` runs first, so its failures
 /// come before codegen's work.
 pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Failure> {
-    let plan = link::Plan::new(&front.links, &mut link::pkg_config::run)
+    let mut plan = link::Plan::new(&front.links, &mut link::pkg_config::run)
         .map_err(|e| Failure::Program(front.source.clone(), vec![e.diagnostic()]))?;
+    plan.tls = tls_import(&front.modules);
     let temp = TempDir::new().map_err(|e| internal(&front.source, temp_error(e)))?;
     let object = temp.path.join("prog.o");
     codegen::emit_object_modules(
@@ -282,6 +283,26 @@ pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Fail
         Some(d) => Failure::Program(front.source.clone(), vec![d]),
         None => internal(&front.source, e.to_string()),
     })
+}
+
+/// The program's import that brings in `std.tls` (v17, milestone 112):
+/// `std.tls` itself, or `std.http`, which imports it for `https://`. Only
+/// such programs get TLS's runtime and OpenSSL on the link line.
+fn tls_import(modules: &[Module]) -> Option<crate::span::Span> {
+    let loads_tls = modules.iter().any(|m| m.path == ["std", "tls"]);
+    if !loads_tls {
+        return None;
+    }
+    modules
+        .iter()
+        .filter(|m| m.package.as_deref() != Some("std"))
+        .filter_map(|m| m.program.as_ref())
+        .flat_map(|p| &p.imports)
+        .find(|i| {
+            let names: Vec<&str> = i.path.iter().map(|s| s.name.as_str()).collect();
+            matches!(names.as_slice(), ["std", "tls" | "http", ..])
+        })
+        .map(|i| i.span)
 }
 
 /// Builds `front` into a temp dir and runs it with inherited standard

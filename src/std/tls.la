@@ -1,0 +1,172 @@
+/**
+ * std.tls: TLS connections (v17), through the system's OpenSSL 3, shaped
+ * like `std.net`'s. Every certificate is verified — its chain against the
+ * system's trusted roots and the host name — and nothing turns that off:
+ * `Options.ca_file` adds certificates to trust (a private CA, or a
+ * self-signed certificate). TLS 1.2 is the oldest version spoken.
+ *
+ * A program that uses this module is linked with OpenSSL (`libssl-dev`
+ * must be installed to build it). Close what you open, as with `std.net`.
+ */
+import std.net;
+
+/** How to connect: `options()` gives the defaults. */
+public struct Options {
+    /** A PEM file of certificates to trust besides the system's; `""` for none. */
+    public ca_file: string,
+    /** Milliseconds a connect, read or write may wait; `0` waits forever. */
+    public timeout_ms: i64,
+}
+
+/** The defaults: the system's roots only, no timeout. */
+public fun options(): Options = Options { ca_file: "", timeout_ms: 0 };
+
+/** An encrypted connection. */
+public struct Conn {
+    h: Ref<i64>,
+    timeout: Ref<i64>,
+}
+
+/** A socket accepting encrypted connections: `tls.listen(addr, cert, key)`. */
+public struct Listener {
+    h: Ref<i64>,
+    timeout: Ref<i64>,
+}
+
+/**
+ * Connects and verifies the server's certificate for the address's host.
+ * @param addr host:port, `example.com:443`
+ * @returns the connection, or `Err` with the reason (`certificate verify failed: …`)
+ */
+public fun connect(addr: string): Result<Conn, string> = connect_with(addr, options());
+
+/**
+ * `connect` with options: certificates to trust, a timeout.
+ * @param addr host:port
+ * @param opts what to trust and how long to wait
+ */
+public fun connect_with(addr: string, opts: Options): Result<Conn, string> {
+    let h = $os.tls_connect(addr, host_of(addr), opts.ca_file, opts.timeout_ms)?;
+    Ok(Conn { h: Ref.new(h), timeout: Ref.new(opts.timeout_ms) })
+}
+
+/**
+ * Listens for TLS connections with a certificate and its private key.
+ * @param addr host:port
+ * @param cert_file the certificate chain, PEM
+ * @param key_file the private key, PEM
+ */
+public fun listen(addr: string, cert_file: string, key_file: string): Result<Listener, string> {
+    let h = $os.tls_listen(addr, cert_file, key_file)?;
+    Ok(Listener { h: Ref.new(h), timeout: Ref.new(0) })
+}
+
+/** The host a certificate must name: `addr` without its port and brackets. */
+fun host_of(addr: string): string {
+    let mut colon = -1;
+    let raw = addr.to_bytes();
+    for i in 0..raw.len {
+        if raw[i] == 58 {
+            colon = i;
+        }
+    }
+    let host = if colon < 0 { addr } else { addr.slice(0, colon) };
+    if host.starts_with("[") && host.ends_with("]") && host.len > 2 { host.slice(1, host.len - 1) } else { host }
+}
+
+impl Listener {
+    /**
+     * The next connection, after its handshake; only this green thread waits.
+     * @returns the connection, or `Err` (a failed handshake is one too)
+     */
+    public fun accept(self): Result<Conn, string> {
+        let h = self.h.get();
+        if h < 0 {
+            return Err("closed");
+        }
+        let conn = $os.tls_accept(h, self.timeout.get())?;
+        Ok(Conn { h: Ref.new(conn), timeout: Ref.new(0) })
+    }
+
+    /** How long `accept` (with its handshake) waits, in milliseconds; `0` waits forever. */
+    public fun set_timeout(self, ms: i64) {
+        self.timeout.set(ms);
+    }
+
+    /** The address it listens on, as `host:port`; `""` once closed. */
+    public fun addr(self): string {
+        let h = self.h.get();
+        if h < 0 { "" } else { name($os.tls_listener_fd(h), 0) }
+    }
+
+    /** Stops listening; every copy is closed. Closing twice is fine. */
+    public fun close(self) {
+        let h = self.h.get();
+        if h >= 0 {
+            $os.tls_close_listener(h);
+            self.h.set(-1);
+        }
+    }
+}
+
+impl Conn {
+    /**
+     * Reads what has arrived, up to `max` bytes, waiting for some if none has.
+     * @param max at most this many bytes, from 1 to 16777216
+     * @returns the bytes (`[]` once the other end has finished), or `Err`
+     */
+    public fun read(self, max: i64): Result<u8[], string> {
+        let h = self.h.get();
+        if h < 0 {
+            return Err("closed");
+        }
+        $os.tls_read(h, max, self.timeout.get())
+    }
+
+    /**
+     * Writes every byte.
+     * @param bytes what to send
+     * @returns `Ok(())`, or `Err` with the reason
+     */
+    public fun write(self, bytes: u8[]): Result<(), string> {
+        let h = self.h.get();
+        if h < 0 {
+            return Err("closed");
+        }
+        $os.tls_write(h, bytes, self.timeout.get())?;
+        Ok(())
+    }
+
+    /** How long a read or write waits, in milliseconds; `0` waits forever. */
+    public fun set_timeout(self, ms: i64) {
+        self.timeout.set(ms);
+    }
+
+    /** The other end's address, as `host:port`; `""` once closed. */
+    public fun peer(self): string {
+        let h = self.h.get();
+        if h < 0 { "" } else { name($os.tls_fd(h), 1) }
+    }
+
+    /** This end's address, as `host:port`; `""` once closed. */
+    public fun addr(self): string {
+        let h = self.h.get();
+        if h < 0 { "" } else { name($os.tls_fd(h), 0) }
+    }
+
+    /** Ends the connection (telling the other end), and closes every copy. */
+    public fun close(self) {
+        let h = self.h.get();
+        if h >= 0 {
+            $os.tls_close(h);
+            self.h.set(-1);
+        }
+    }
+}
+
+fun name(fd: i64, peer: i64): string {
+    match $os.net_name(fd, peer) {
+        Ok(text) => text,
+        Err(_) => "",
+    }
+}
