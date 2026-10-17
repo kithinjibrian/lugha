@@ -48,10 +48,7 @@ impl Parser<'_> {
                 let open = self.bump();
                 return self.with_struct_literals(true, |p| p.array(start, open));
             }
-            TokenKind::HashBrace => {
-                let open = self.bump();
-                return self.with_struct_literals(true, |p| p.hashed(start, open));
-            }
+            TokenKind::HashBrace => return self.hash_literal(start),
             TokenKind::If | TokenKind::LBrace | TokenKind::Match | TokenKind::Select => {
                 return self.block_like();
             }

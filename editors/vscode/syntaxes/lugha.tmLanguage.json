@@ -16,6 +16,7 @@
         { "include": "#number" },
         { "include": "#declaration" },
         { "include": "#c-marker" },
+        { "include": "#hashed" },
         { "include": "#import" },
         { "include": "#keyword" },
         { "include": "#builtin" },
@@ -176,6 +177,14 @@
         { "include": "#braces" },
         { "include": "#code" }
       ]
+    },
+    "hashed": {
+      "comment": "`#{k: v}` and `#{x}`: map and set literals (v17).",
+      "begin": "#\\{",
+      "end": "\\}",
+      "beginCaptures": { "0": { "name": "punctuation.definition.map.begin.lugha" } },
+      "endCaptures": { "0": { "name": "punctuation.definition.map.end.lugha" } },
+      "patterns": [{ "include": "#braces" }, { "include": "#code" }]
     },
     "braces": {
       "begin": "\\{",

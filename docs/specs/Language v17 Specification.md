@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–100 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–101 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–100):
+**Changes since v16** (milestones 91–101):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- Maps and sets: `Map<K, V>` and `Set<T>`, built in, with `#{"ann": 31}` and `#{1, 2}` literals; values like arrays, keys any `Eq` type without floats, insertion order, `m[k]`, `for (k, v) of m`, `==` regardless of order. The iterator type `it.map(f)` returns is renamed `Mapped` (milestone 101; sections 2–5, 9, 10).
 - Glob re-exports: `public import raw { * };` makes every `public` item of `raw` an item of this module, so a package's entry can flatten a sub-module (milestone 100; sections 3, 6).
 - Package entry modules: `import kivuli;` imports the package's `lib.la` (in its `source` folder) as the module `kivuli`; `lughac init --lib` writes one (milestone 99; sections 6, 9).
 - Module doc comments: a `/** … */` at the top of a file, followed by a blank line or an `import`, documents its module; hovering the module's name shows it, and the std modules are documented (milestone 98; sections 2, 9).
@@ -21,7 +22,7 @@ Oct 16, 2026 · @kithinji
 - A generic call only its result can type takes its type from its siblings: `assert_eq(text("hi"), expected)`, `text("hi") == expected` (milestone 96; section 4).
 - Packages and tests: `lughac test` and `lughac check` on a file in a package's `source` folder build it as that package's module (`glow.diff`), so modules importing each other can be tested, and its tests are named `glow.diff.name`; programs in a package's `test/`, `tests/` and `examples/` see its package-level items; `lughac check` takes a file without `main` as a library; `lugha.lock` sits beside the governing `lugha.toml`; and `skip(reason)` reports a test skipped (milestone 97; sections 6, 9).
 
-Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select` or `actor` as a name (keywords now), or declares a function named `skip` (an intrinsic since milestone 97, E0302). A module's own `Task` or `Chan` still means its own, as for `Ref`.
+Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select` or `actor` as a name (keywords now), or declares a function named `skip` (an intrinsic since milestone 97, E0302), or names the iterator type `Map` (now `Mapped`, milestone 101; a program's own `Map` is fine). A module's own `Task` or `Chan` still means its own, as for `Ref`.
 
 **Changes in v16 since v15** (milestones 67–90):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
@@ -396,6 +397,7 @@ primary      = INT | FLOAT | CHAR | STRING | interpolated | closure | "true" | "
              | int_type "." IDENT                 (* `i16.MAX` (v10) *)
              | "(" expr ")"
              | "[" [ expr ( ";" expr | { "," expr } [ "," ] ) ] "]"
+             | "#{" [ entry { "," entry } [ "," ] ] "}"      (* v17: a map's entries are `expr ":" expr`, a set's `expr` *)
              | block_like ;
 interpolated = STRING_START expr [ FMT_SPEC ] { STRING_MID expr [ FMT_SPEC ] } STRING_END ;   (* "a {x} b {y:>5} c" *)
 closure      = "fun" "(" [ cparam { "," cparam } [ "," ] ] ")" [ ":" type ] ( block | "=" expr ) ;   (* v3 *)
@@ -817,6 +819,17 @@ Evaluation is strictly left to right: operands, call arguments and struct-litera
 - **Unchanged:** `==`, `!=`, `<` and the others, `&&`/`||`, the bit operators and indexing are not overloadable.
 
 **Arithmetic.** Integer `+`, `-`, `*` and unary `-` panic on overflow: if the true result doesn't fit the type, the program stops with `integer overflow` instead of continuing with a wrong value. Integer `/` and `%` panic when the divisor is zero, and also for `MIN / -1`, which overflows. `%` takes the sign of the dividend, like C and Rust. Compound assignments such as `+=` are checked the same way, including `%=` (v9), which panics on a zero divisor as `%` does. Shifts (v7) lose the bits shifted out and never panic for overflow; `>>` copies the sign bit for `i32` and `i64` and fills with zeros for the unsigned types; a shift amount that is negative, or at least the type's width (8, 32 or 64), panics with `shift out of range` at the operator. `&=`, `|=`, `^=`, `<<=` and `>>=` mean `x = x op y` with the place evaluated once, as `+=` does, and need an integer.
+
+**Maps and sets** (v17, milestone 101). `Map<K, V>` maps keys to values and `Set<T>` holds distinct values; both are built in, like `Option` (a module's own `Map` or `Set` still means its own). A literal writes them: `#{"ann": 31, "bo": 40}` is a `Map<string, i64>`, `#{1, 2, 3}` a `Set<i64>`; the first entry decides which, and mixing `key: value` and plain entries is E0201. `#{}` is empty and takes its type from where it is used, like `[]` (E0412 with nothing to go on). Entries are typed like an array literal's elements. Two equal literal keys in one literal are warning W0105; the later one wins.
+- **Values:** like arrays, maps and sets copy on assignment and passing (copy-on-write, so a copy is cheap until one side changes), change only through `let mut` or `mut self`, and move on their last use. Share one through `Ref<Map<K, V>>`.
+- **Keys:** `K`, and a set's `T`, must be `Eq` (E0419) and hold no float anywhere: integers, `bool`, `char`, `string`, and the structs, enums, tuples, arrays and `Option`s built from them. A float in a key type is E0441, written (`Set<f64>`) or inferred (`#{1.5: 1}`): `NaN != NaN` would lose the entry. Keys are hashed by their structure, consistently with `==`; there is no hashing to write.
+- **Order:** iteration, printing, `keys()` and `values()` follow insertion order; giving a key a new value keeps its place; removing a key and adding it again puts it last.
+- **Maps:** `m.len`; `m[k]` (panics `no key "z" in the map` at the `[` when `k` has no value); `m[k] = v` adds or replaces (a place, as `xs[i] = v`; `m[k] += v` is E0404 — write `m[k] = m[k] + v`); `m.get(k): Option<V>`; `m.has(k): bool`; `m.insert(k, v)`; `m.remove(k): Option<V>`; `m.clear()`; `m.keys(): K[]`; `m.values(): V[]`; `for (k, v) of m` and `m.iter()`, each entry a tuple.
+- **Sets:** `s.len`; `s.has(x)`; `s.insert(x): bool` (true when new); `s.remove(x): bool`; `s.clear()`; `for x of s` and `s.iter()`; `a.union(b)` (`a`'s values, then `b`'s new ones), `a.intersect(b)`, `a.minus(b)`.
+- **Collecting:** `it.collect_map()` on an iterator of `(K, V)` and `it.collect_set()` on any other; a later key's value wins, a repeated value is kept once.
+- **Loops:** `for … of m` visits a copy, so the body may change `m` (`m[k] = …`) without changing what the loop visits. `for … of mut` over a map or set is E0442: loop over `m.keys()` and assign `m[k]`.
+- **Equality and printing:** `==` compares entries regardless of order (`#{"a": 1, "b": 2} == #{"b": 2, "a": 1}`); a map is `Eq` when its values are. They print as their literals: `#{"ann": 31, "bo": 40}`, `#{1, 2, 3}`, `#{}`.
+- **Implementation:** written in Lugha in the prelude (`Map`, `Set`, a compact table in insertion order over arrays, open addressing), with one built-in only the prelude can name, `$hash.value(x)`: FNV-1a over the same structure `==` compares. Hashing isn't hardened against keys chosen to collide.
 
 **Tuples** (v14). `(A, B, …)` is a tuple type of two or more elements, and `(a, b, …)` a tuple value; `(x)` is just `x`, and `(a,)` is E0201. A tuple is a value like a struct whose fields are named `0`, `1`, …: `t.0` reads an element and `t.0 = v` changes one in a `let mut` tuple (an index past the end is E0410), and `t.1.0` reaches into a nested tuple. Assigning, passing and returning copy it by the copy rules. `==` compares element-wise; `<`, `<=`, `>` and `>=` compare lexicographically, the first unequal element deciding, and need every element `Ord` (E0404 otherwise), so a tuple of `Ord` elements is `Ord`. Functions can return several values: `fun divmod(a: i64, b: i64): (i64, i64) = (a / b, a % b);`. A tuple prints as `(1, "a")`, its strings quoted. `Pair` (v13) is gone: `zip` yields tuples.
 - **Patterns:** `(p, q, …)` matches a tuple element by element, nesting like any pattern; bare names inside it bind. A tuple has one constructor, so `match` checks exhaustiveness through its elements (E0417, W0102).
@@ -1660,6 +1673,8 @@ Name and type errors, reported by the checker:
 | E0439 | An actor used against its rules (v17) | `c.count` through a handle; `Counter { count: 0 }` outside `spawn`; `actor A<T>`; `fun stop(self)` in an actor; a `Ref`, function or interface type in an actor's field, parameter or result |
 | E0438 | A `spawn` that changes a copy, or a malformed `select` (v17) | `spawn xs.push(1)`, `spawn p.bump()` with `mut self`; `select { default => 1 }`; two `default`s or `after`s; `after` with `default`; `m = s.recv()` with `s` not a `Chan` |
 | E0440 | `..base` of another type (v17) | `P { x: 1.0, ..q }` where `q` is a `Q` |
+| E0441 | A float as a map key or set value (v17) | `#{1.5: "a"}`; `Set<f64>`; `Map<(i64, f64), i64>` |
+| E0442 | `for … of mut` over a map or set (v17) | `for (k, v) of mut m { … }` |
 | E0437 | A malformed `extern struct` (v16) | `extern struct S { s: string }`; a field of an array, a plain struct, an enum, `Option` or a function type; `extern struct S<T> { … }`; `extern struct S {}` |
 | E0433 | A pattern that must match every value but might not (v14) | `let (1, x) = t;`, `let Some(n) = o;` without `else`, `for (Some(a), b) of …` |
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
@@ -1683,6 +1698,7 @@ Name and type errors, reported by the checker:
 | W0102 | Unreachable `match` arm (warning) | an arm after `_`, or a variant already covered |
 | W0103 | Unused `match` binding (warning) | `Some(Emtpy) => 0`, a misspelled variant that became a binding |
 | W0104 | `..base` that copies nothing (warning, v17) | `P { x: 1.0, y: 2.0, ..p }` |
+| W0105 | A key written twice in a `#{ … }` literal (warning, v17) | `#{"a": 1, "a": 2}`; `#{1, 1}` |
 
 **JSON diagnostics.** With `--diagnostics=json`, the compiler writes one JSON object per line to stderr, one per diagnostic, and nothing else. Lines and columns are 1-based; columns and offsets count UTF-8 bytes. `label` is the text shown under the primary span, or `null`. `labels` holds secondary spans, and `help` is an optional suggestion. Internal errors have `"code":null`, and `"span":null` when they have no location. `"file"` is the file of the primary span: the main file as given on the command line, or a module's path relative to the main file's directory (`shapes/circle.la`); lines, columns and offsets are within that file. A label in a different file carries its own `"file"` key, which appears only then.
 
@@ -3505,6 +3521,49 @@ fun main() {
 }
 ```
 
+**Word count** (milestone 101). Prints `#{"the": 3, "cat": 1, "and": 2, "hat": 1, "bat": 1}`, `3`, `5`, `the: 3`, `and: 2` on five lines, exits with 0.
+
+```
+fun main() {
+    let text = "the cat and the hat and the bat";
+    let mut counts: Map<string, i64> = #{};
+    for w of text.split(" ") {
+        counts[w] = counts.get(w).unwrap_or(0) + 1;
+    }
+    println(counts);
+    println(counts["the"]);
+    println(counts.len);
+    for (w, n) of counts {
+        if n > 1 {
+            println("{w}: {n}");
+        }
+    }
+}
+```
+
+**Dedupe** (milestone 101). Prints `[3, 1, 2]`, `#{3, 1, 2}`, `true`, `#{1, 2, 3, 4}`, `#{2, 3}`, `#{1}`, `true` on seven lines, exits with 0.
+
+```
+fun main() {
+    let mut seen: Set<i64> = #{};
+    let mut firsts: i64[] = [];
+    for x of [3, 1, 3, 2, 1] {
+        if seen.insert(x) {
+            firsts.push(x);
+        }
+    }
+    println(firsts);
+    println(seen);
+    println(seen.has(2));
+    let a = #{1, 2, 3};
+    let b = #{2, 3, 4};
+    println(a.union(b));
+    println(a.intersect(b));
+    println(a.minus(b));
+    println(#{1, 2} == #{2, 1});
+}
+```
+
 ## 11. Milestones and scope
 
 The spec is implemented in five milestones, each ending in a program that runs. Build them in order; each one only adds to the last.
@@ -3611,6 +3670,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 98 | Module doc comments (v17) | a file's top `/** */` documents its module; hover on module names; std documented | `tests/lsp_docs.rs`, `lsp/docs.rs` (done) |
 | 99 | Package entry modules (v17) | `import N;` imports the package's `lib.la`; `lughac init --lib` writes one | `src/modules/entry_tests.rs`, `tests/package_layout.rs`, `tests/init.rs`, `tests/lsp_docs.rs` (done) |
 | 100 | Glob re-exports (v17) | `public import m { * };` re-exports every `public` item of `m`; E0201 for misuse, E0314 for clashes | `src/check/globs.rs`, `tests/programs/m100/`, `tests/package_layout.rs`, `tests/lsp_definition.rs` (done) |
+| 101 | Maps and sets (v17) | `Map<K, V>`, `Set<T>`, `#{ … }` literals; E0441, E0442, W0105; the iterator type `Mapped` | `tests/programs/m101/`, the §10 word count and dedupe programs (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

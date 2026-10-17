@@ -1,6 +1,6 @@
 ## FEATURE: Maps and sets — `Map<K, V>` and `Set<T>` with `#{ … }` literals, built in; milestone 101 (v17).
 
-**Status:** approved 2026-10-17 ("approved", session 244); proposed in session 243, after a discovery of seven questions answered by the user (literal syntax, Q1–Q6).
+**Status:** built in session 244; approved 2026-10-17 ("approved", session 244); proposed in session 243, after a discovery of seven questions answered by the user (literal syntax, Q1–Q6).
 
 ## OBJECTIVE
 Lugha programs get the two collections every program reaches for, with a literal that reads like the data:
@@ -83,6 +83,18 @@ They are values like arrays, keyed by any `Eq` type but floats, visited in inser
 
 ## ROLLBACK PLAN
 - Branch to return to: `main`; revert the merge.
+
+## BUILT (session 244)
+- As planned, with these choices made while building (MEMORY 186):
+  - `$hash.of` became `$hash.value` (`of` is a keyword).
+  - The literal's keys and values are hidden array nodes the parser makes, so the literal is an ordinary generic call of `$map_of`/`$set_of`.
+  - `m[k]` calls a prelude `$entry` returning `Result<V, string>`; codegen panics with its message at the `[`, so the location is the user's (a plain prelude `panic` would point into the prelude).
+  - `==` on maps and sets (also nested in structs) calls the prelude's `same` through a `$equal` pseudo-use, as printing uses `$print`.
+  - Loops: `Map`/`Set` carry a cursor and a `next`, so `for … of` needs nothing new; a loop walks a copy, so decision 76's E0507 is dropped (changing the map in the body is safe); `for … of mut` is E0442. `iter()` resets the cursor; the prelude's own loops use it.
+  - `m[k] += v` is E0404 with help (not in the PRP).
+  - Completion hides `$` members.
+- Not done here: diagnostics still print prelude types as `$prelude.Map<…>` (as they did `$prelude.ArrayIter<…>`); E0441/E0442 messages strip the prefix themselves. TODO item added.
+- Tests: parser `hashed.rs` (2), checker `maps.rs` (4), `tests/programs/m101/` (word count, dedupe, maps, missing key panic, float key, for mut, mixed), spec §10 word count and dedupe, `lsp_completion` (members without internals), VS Code grammar `maps.la`; full `cargo test`, `npm test`, fmt, clippy.
 
 ## ACCEPTANCE CRITERIA
 - [ ] The word-count and dedupe programs run; every decision above has a test.

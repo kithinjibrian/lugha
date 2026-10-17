@@ -8,8 +8,16 @@ use crate::lexer::TokenKind;
 use crate::span::Span;
 
 impl Parser<'_> {
+    /// `#{ … }` at its `#{`. Never inlined: `primary` is on every nesting
+    /// level's stack, and E0206's depth limit assumes small frames.
+    #[inline(never)]
+    pub(super) fn hash_literal(&mut self, start: usize) -> PResult<Expr> {
+        let open = self.bump();
+        self.with_struct_literals(true, |p| p.hashed(start, open))
+    }
+
     /// The rest of `#{ … }` after its `#{`.
-    pub(super) fn hashed(&mut self, start: usize, open: Span) -> PResult<Expr> {
+    fn hashed(&mut self, start: usize, open: Span) -> PResult<Expr> {
         let (mut keys, mut values) = (Vec::new(), Vec::new());
         let mut kind = HashKind::Empty;
         while !self.at(&TokenKind::RBrace) {

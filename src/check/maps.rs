@@ -268,10 +268,7 @@ mod tests {
         assert_eq!(ty.to_string(), "$prelude.Set<char>");
         let ty = let_type("fun main() { let m: Map<u8, bool> = #{}; }", "m");
         assert!(matches!(ty, Type::Struct(k, _) if k == "$prelude.Map"));
-        assert_eq!(
-            errors("fun main() { let e = #{}; }"),
-            [("E0412", "#{}".into())]
-        );
+        assert_eq!(errors("fun main() { let e = #{}; }"), [("E0412", "#{}")]);
         assert_eq!(
             errors("fun main() { let m = #{\"a\": 1, \"b\": 2.5}; }")[0].0,
             "E0401"
@@ -284,7 +281,7 @@ mod tests {
         assert_eq!(errors("fun main() { let m = #{1.5: 1}; }")[0].0, "E0441");
         assert_eq!(
             errors("fun main() { let m = #{\"a\": 1}; m[\"a\"] = 2; }"),
-            [("E0501", "m".into())]
+            [("E0501", "m")]
         );
         assert_eq!(
             errors("fun main() { let mut m = #{\"a\": 1}; m[\"a\"] += 2; }")[0].0,

@@ -2059,11 +2059,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** `{ * }` (Q1), `public` only (Q2), `public` items (Q3), named re-exports and globs chained, whole-module members not (Q4), E0314 naming both sources unless the same item (Q5), `*` alone (Q6) — the user, session 232. Built: `Import.glob`; parser E0201s; `check/globs.rs` (`public_names` over the units with a `seen` list; `glob_imports` after `named_imports` registers one public `Alias` per name; `Pending` clashes settled in `settle_globs` once every alias exists, comparing `follow`ed targets). Completion: `lsp/reexports.rs` lists a module's named and glob re-exports (named ones were missing before too); `completion.rs` is at 497 lines.
 
+### 186. Maps and sets — milestone 101 (PRP-133)
+
+**Decision:** as PRP-133 (discovery session 243, approved 244). Built: prelude `src/prelude/maps.la` (`Map { len, $keys, $vals, $live, $slots, $at }`, `Set { len, $map: Map<T, bool> }`, `$map_of`/`$set_of`, methods, `$entry` for `m[k]`, `same` for `==`, `show` for printing, `next`/`iter` for loops); `$hash.value` (checker `hashing.rs`, codegen `hashing.rs`, FNV-1a per type like `lugha_eq_*`); parser `hashed.rs` builds the literal's keys/values as hidden array nodes (`HashLiteral`), checked/lowered as a call of `$map_of`/`$set_of` at the literal's id; `m[k]`/`m[k] = v` are `$entry`/`insert` method calls at the index/place id (`check/access.rs`, `check/maps.rs::map_assign`, codegen `maps.rs`); `==` records a `$equal` pseudo-use expanded to `Map.same`/`Set.same` instances (like `$print`), and codegen's `equal()` calls them (also nested in structs). Deviation: decision 76's E0507 dropped — loops walk a copy (the map's own cursor), so changing the map in the body is safe; `for … of mut` is E0442. `primary`'s `#{` arm is `#[inline(never)]` (`hash_literal`) or deep nesting overflows the stack before E0206.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 101 complete**: PRP-133 maps and sets
 - **Milestone 100 complete**: PRP-132 glob re-exports
 - **Milestone 99 complete**: PRP-131 package entry modules
 - **Milestone 98 complete**: PRP-130 module doc comments
