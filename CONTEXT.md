@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**PRP-139 proposed (milestone 107, the unit type `()`), awaiting approval.** **v17: milestones 91–109 done** (`m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**PRP-139 proposed (milestone 107, the unit type `()`), awaiting approval.** **v17: milestones 91–110 done** (`m110` std.net; `m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -8602,5 +8602,15 @@ Branch: main
 ### STILL OPEN AT CLOSE
 - PRP-142 awaits approval and the security sign-off.
 
-## SESSION 266 — 2026-10-18 — std.net (milestone 110) — open
+## SESSION 266 — 2026-10-18 — std.net (milestone 110) — closed
 Branch: prp-142-std_net
+
+### DONE
+- PRP-142 built: `std.net` (TCP) with non-blocking sockets parked in the scheduler via `epoll`; `runtime/net.c`; `$os.net_*` built-ins; `src/std/net.la`. Spec (green threads, std.net table, §11), CHANGELOG, MEMORY 196.
+- Runs: `tests/net.rs` ×4 (stable), lib (849), `tasks_runtime`, `lazy_std`, `fmt_corpus`, `lsp_docs`, `spec`; fmt, clippy (exit checked).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Next: the HTTP/1.1 PRP (milestone 111) on top of `std.net`.

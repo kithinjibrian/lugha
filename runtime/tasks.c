@@ -261,6 +261,11 @@ static void switch_to(Fiber *next) {
     reap();
 }
 
+/* Nothing is ready: waits for a socket or the next sleeper; wakes threads
+ * whose sockets are ready without waiting (net.c, v17). */
+static void idle_wait(void);
+static void poll_ready_sockets(void);
+
 static void deadlock(void) {
     die("panic: deadlock: every green thread is waiting\n");
 }
@@ -275,15 +280,7 @@ static void schedule(void) {
             switch_to(next);
             return;
         }
-        if (sleepers == NULL) {
-            deadlock();
-        }
-        int64_t wait = sleepers->wake_at - now_ns();
-        if (wait > 0) {
-            struct timespec t = {.tv_sec = wait / 1000000000, .tv_nsec = wait % 1000000000};
-            while (nanosleep(&t, &t) != 0 && errno == EINTR) {
-            }
-        }
+        idle_wait();
     }
 }
 

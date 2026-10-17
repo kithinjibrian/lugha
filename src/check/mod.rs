@@ -106,7 +106,7 @@ pub use channels::{CHAN_BUFFERED, CHAN_NEW};
 pub use checked::Checked;
 pub use defaults::SELF;
 pub use float_bits::{bits_of, from_bits};
-pub use float_ops::{float_op, os_op, string_op};
+pub use float_ops::{float_op, os_op, os_signature, string_op};
 pub use hashing::hash_op;
 pub use iface_tables::{InterfaceMethod, InterfaceShape};
 pub use input::prelude_helper;

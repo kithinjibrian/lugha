@@ -66,6 +66,11 @@ Thousands of connections are served on the one OS thread: a task waiting to acce
 ### New dependencies
 - none (libc sockets and `epoll`, Linux).
 
+## BUILT (session 266)
+- As planned, with: built-ins named `$os.net_*` (reusing the `$os` machinery) rather than `$net.*`; `Listener.set_timeout` (for `accept`) and `net.connect_timeout(addr, ms)` added, since a connection's timeout can't apply before it exists.
+- Not done: the `tasks_runtime` C-harness cases; the scheduler change is covered through Lugha programs instead (200 clients with a ticking thread, `main` alone waiting on a socket, timeouts).
+- Tests: `tests/net.rs` (5 cases at -O0/-O2: echo and copies sharing `close`, 200 concurrent clients plus a ticker, timeouts and every error, IPv6, `main` alone served by a Rust client), stable over repeated runs.
+
 ## ERROR HANDLING REQUIREMENTS
 - Every failure is `Err(message)`; `read`'s `max` outside 1 … 16 MiB is `Err`; a malformed address is `Err`; a closed socket is `Err("closed")`; a timeout is `Err("timed out")`.
 - Runtime invariants (an `epoll` failure itself) panic with a message, as the scheduler does today.

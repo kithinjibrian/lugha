@@ -8,6 +8,9 @@ Never deleted. Older entries are never modified.
 
 ## [Unreleased]
 
+### Added
+- `std.net`, milestone 110 (PRP-142): TCP `net.listen`/`connect`/`connect_timeout`, `accept`, `read(max)`, `write`, `set_timeout`, `addr`, `peer`, `close`; a waiting socket call pauses only its green thread (the scheduler waits on `epoll`), so one program serves many connections on its one OS thread. Runtime fragment `runtime/net.c`
+
 ### Fixed
 - An `if`/`match` branch that can't be typed alone (`[]`, `None`, `text("a")`) takes its sibling branch's type: `if c { [] } else { [1] }` and `match c { 0 => [], _ => [2] }` no longer report E0412 (kivuli, session 263)
 

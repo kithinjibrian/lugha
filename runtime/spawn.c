@@ -115,6 +115,7 @@ void *lugha_rt_task_join(LughaTask *task) {
 void lugha_rt_task_yield(void) {
     ensure_started();
     wake_due_sleepers();
+    poll_ready_sockets();
     if (ready_head == NULL) {
         return;
     }

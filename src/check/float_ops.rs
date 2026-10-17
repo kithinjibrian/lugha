@@ -65,6 +65,23 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         // `std.task` (v17, milestone 91).
         "sleep" => (vec![Type::I64], Type::Unit),
         "yield" => (Vec::new(), Type::Unit),
+        // `std.net` (v17, milestone 110): sockets as `i64` descriptors.
+        "net_listen" => (vec![Type::String], result(Type::I64)),
+        "net_connect" | "net_accept" => (
+            vec![
+                if op == "net_connect" {
+                    Type::String
+                } else {
+                    Type::I64
+                },
+                Type::I64,
+            ],
+            result(Type::I64),
+        ),
+        "net_read" => (vec![Type::I64, Type::I64, Type::I64], result(bytes())),
+        "net_write" => (vec![Type::I64, bytes(), Type::I64], result(Type::I64)),
+        "net_close" => (vec![Type::I64], Type::Unit),
+        "net_name" => (vec![Type::I64, Type::I64], result(Type::String)),
         _ => return None,
     })
 }
