@@ -3,7 +3,7 @@
 //! that break when too long, literals copied from the source.
 
 use super::Printer;
-use super::doc::{Doc, call_args, concat, huggable, list, spaced, text};
+use super::doc::{Doc, call_args, concat, group, huggable, list, nest, spaced, text};
 use crate::ast::{Arm, BinOp, Block, Expr, ExprKind, SelectArm, SelectKind, UnOp, spawned_call};
 
 /// Binding strength: a closure's `= body` takes everything after it.
@@ -240,14 +240,71 @@ impl Printer<'_> {
         concat(vec![left, text(format!(" {} ", op.symbol())), right])
     }
 
-    /// `head { then } else …`, `else if` chains on the closing line.
+    /// `head { then } else …`, `else if` chains on the closing line. A
+    /// chain whose every branch is just a value prints on one line when it
+    /// fits, `if c { 1 } else { 2 }`, as rustfmt does (v17).
     fn if_chain(&mut self, head: Doc, then: &Block, else_: Option<&Expr>) -> Doc {
+        let broken = std::mem::replace(&mut self.in_broken_chain, false);
+        if !broken && let Some(short) = self.value_chain(&head, then, else_) {
+            return short;
+        }
         let mut parts = vec![head, self.block(then, 0)];
         if let Some(otherwise) = else_ {
             parts.push(text(" else "));
+            // An `else if` continues this chain, broken like it.
+            self.in_broken_chain = matches!(otherwise.kind, ExprKind::If { .. });
             parts.push(self.allowing(|p| p.expr(otherwise)));
+            self.in_broken_chain = false;
         }
         concat(parts)
+    }
+
+    /// The chain as one group, flat when it fits, broken as [`Self::block`]
+    /// would print it; `None` unless it has an `else` and every branch is a
+    /// lone value with no comment inside.
+    fn value_chain(&mut self, head: &Doc, then: &Block, else_: Option<&Expr>) -> Option<Doc> {
+        let mut branches = vec![(None, then)];
+        let mut next = else_?;
+        loop {
+            match &next.kind {
+                ExprKind::If { cond, then, else_ } => {
+                    branches.push((Some(&**cond), then));
+                    next = else_.as_deref()?;
+                }
+                ExprKind::Block(last) => {
+                    branches.push((None, last));
+                    break;
+                }
+                _ => return None,
+            }
+        }
+        let lone = |b: &Block| {
+            let inside = &self.src[b.span.start..b.span.end];
+            b.stmts.is_empty()
+                && b.tail.is_some()
+                && !inside.contains("//")
+                && !inside.contains("/*")
+        };
+        if !branches.iter().all(|(_, b)| lone(b)) {
+            return None;
+        }
+        let mut parts = vec![head.clone()];
+        for (i, (cond, block)) in branches.into_iter().enumerate() {
+            match cond {
+                Some(c) => parts.extend([text(" else if "), self.cond(c), text(" ")]),
+                None if i > 0 => parts.push(text(" else ")),
+                None => {}
+            }
+            let tail = block.tail.as_deref().expect("checked: a lone value");
+            let value = self.allowing(|p| p.expr(tail));
+            parts.extend([
+                text("{"),
+                nest(concat(vec![Doc::Line, value])),
+                Doc::Line,
+                text("}"),
+            ]);
+        }
+        Some(group(concat(parts)))
     }
 
     /// A function or closure body: ` = e` as written that way, else the block.

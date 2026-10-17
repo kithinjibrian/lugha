@@ -8055,5 +8055,23 @@ Branch: fix-tuple-inference
 
 ---
 
-## SESSION 235 — 2026-10-17 — Test summary counts uncompiled files; fmt keeps short if/else — open
+## SESSION 235 — 2026-10-17 — Test summary counts uncompiled files; fmt keeps short if/else — closed
 Branch: fix-summary-and-short-if
+
+### WHAT WAS DONE
+- kivuli's two reports, with the user's choices: the test summary appends `, K files didn't compile` (and `"uncompiled":K` in `--json`); `lughac fmt` keeps an `if`/`else` chain of lone values on one line when it fits (rustfmt's rule), all branches flat or all broken.
+
+### FILES CREATED OR MODIFIED
+- Modified: `src/driver/{test,test_json}.rs`, `src/formatter/{exprs,mod,tests}.rs`, `tests/test_runner.rs`, spec §9 (fmt style, test output and JSON), CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- `test_json` summary units; `test_runner` (uncompiled count, JSON summary); formatter rule test (flat, chain, too long, no else, statement, comment). Targeted: `--lib`, `fmt`, `fmt_corpus`, `lsp_formatting`, `snippets`, `test_runner`, `init`, `spec`, fmt, clippy.
+
+### DECISIONS MADE
+- Both by the user (session 235): count files; value branches that fit.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- kivuli's E0312 report still awaits a reproduction.
