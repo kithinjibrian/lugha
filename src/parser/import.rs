@@ -44,16 +44,22 @@ impl Parser<'_> {
             path.push(self.ident("module name")?);
         }
         let alias = self.import_alias()?;
+        let mut glob = None;
         let items = if self.at(&TokenKind::LBrace) {
             let open = self.bump();
-            if self.at(&TokenKind::RBrace) {
-                return Err(self.expected("item name"));
+            if self.at(&TokenKind::Star) {
+                glob = Some(self.glob(public)?);
+                Vec::new()
+            } else {
+                if self.at(&TokenKind::RBrace) {
+                    return Err(self.expected("item name"));
+                }
+                self.comma_list(open, TokenKind::RBrace, |p| {
+                    let name = p.ident("item name")?;
+                    let alias = p.import_alias()?;
+                    Ok(ImportItem { name, alias })
+                })?
             }
-            self.comma_list(open, TokenKind::RBrace, |p| {
-                let name = p.ident("item name")?;
-                let alias = p.import_alias()?;
-                Ok(ImportItem { name, alias })
-            })?
         } else {
             Vec::new()
         };
@@ -62,9 +68,31 @@ impl Parser<'_> {
             path,
             alias,
             items,
+            glob,
             public,
             span: Span::new(start, self.prev_end()),
         })
+    }
+
+    /// `* }` at the `*` of a glob re-export (v17, milestone 100): it needs
+    /// `public` and stands alone in its braces (E0201 otherwise).
+    fn glob(&mut self, public: Option<Span>) -> PResult<Span> {
+        let star = self.bump();
+        if public.is_none() {
+            self.error(
+                Diagnostic::error("E0201", "`{ * }` is only for `public import`", star)
+                    .with_help("list the items you need, or import the module: `import m;`"),
+            );
+        }
+        if self.at(&TokenKind::Comma) {
+            let at = self.span();
+            return Err(self.error(
+                Diagnostic::error("E0201", "`*` stands alone in its braces", at)
+                    .with_help("re-export everything with `{ * }`, or list the items"),
+            ));
+        }
+        self.expect(&TokenKind::RBrace)?;
+        Ok(star)
     }
 
     /// `as name` after an import path or item, if written (v14).
@@ -208,6 +236,17 @@ fun main() {}"
         assert_eq!(errors("import a { };"), [("E0201", "}")]);
         assert_eq!(errors("import a as;"), [("E0201", ";")]);
         assert_eq!(errors("import a { X"), [("E0202", "{")]);
+    }
+
+    #[test]
+    fn glob_re_exports_v17() {
+        assert_eq!(
+            program("public import a.b { * };\nfun main() {}"),
+            "(public import a b (items *))\n(fun main () void (block))"
+        );
+        assert_eq!(errors("import a { * };"), [("E0201", "*")]);
+        assert_eq!(errors("public import a { *, X };"), [("E0201", ",")]);
+        assert_eq!(errors("public import a { X, * };"), [("E0201", "*")]);
     }
 
     #[test]

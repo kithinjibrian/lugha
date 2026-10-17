@@ -265,3 +265,24 @@ fn import_n_reaches_the_packages_lib_la_v17() {
         "test glowworm.sized src/lib.la:9:11\n"
     );
 }
+
+#[test]
+fn a_package_entry_flattens_a_module_with_a_glob_v17() {
+    let t = Temp::with(&[
+        ("glow/lugha.toml", MANIFEST),
+        ("glow/src/array.la", ARRAY),
+        ("glow/src/lib.la", "public import array { * };\n"),
+        ("app/lugha.toml", "[packages]\nglowworm = \"../glow\"\n"),
+        (
+            "app/main.la",
+            "import glowworm { zeros };\nfun main() { println(zeros(2)); println(glowworm.zeros(1)); }\n",
+        ),
+    ]);
+    let out = lughac(&t.0.join("app"), &t.0, &["run", "main.la"]);
+    assert_eq!(
+        text(&out.stdout),
+        "[0.0, 0.0]\n[0.0]\n",
+        "{}",
+        text(&out.stderr)
+    );
+}

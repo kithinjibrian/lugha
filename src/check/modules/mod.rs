@@ -154,6 +154,7 @@ impl Checker {
         for unit in units {
             self.enter(unit);
             self.named_imports(unit);
+            self.glob_imports(unit, units);
         }
         for pass in passes {
             for unit in units {
@@ -165,6 +166,7 @@ impl Checker {
             self.enter(unit);
             self.visibility_rules(unit.program);
             self.check_named_imports(unit);
+            self.settle_globs();
             self.test_shapes(unit.program);
         }
         if let Some((main, others)) = units.split_first() {

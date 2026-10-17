@@ -1,6 +1,6 @@
 ## FEATURE: Glob re-exports — `public import raw { * };` makes every `public` item of `raw` an item of this module; milestone 100 (v17).
 
-**Status:** approved 2026-10-17 ("approved", session 233); proposed in session 232, after a discovery of six questions answered by the user (kivuli / lugha-gtk's request, with recommendations attached).
+**Status:** built in session 233; approved 2026-10-17 ("approved", session 233); proposed in session 232, after a discovery of six questions answered by the user (kivuli / lugha-gtk's request, with recommendations attached).
 
 ## OBJECTIVE
 A package's entry flattens a sub-module into its own namespace without a hand-kept list. lugha-gtk's `src/lib.la` writes `public import raw { * };`, and programs write `import gtk { GtkWidget, gtk_box_new };` or `gtk.gtk_box_new(…)` for every public item of `gtk.raw` — extern functions, extern types, structs, enums, interfaces and functions — including ones `raw.la` gains later. Each name is the same item as its declaration, so the editor's hover, definition, references and rename land there.
@@ -57,6 +57,12 @@ A package's entry flattens a sub-module into its own namespace without a hand-ke
 
 ## ROLLBACK PLAN
 - Branch to return to: `main`; revert the merge.
+
+## BUILT (session 233)
+- Parser: `Import.glob`, `Parser::glob` (E0201 without `public`, recovered; E0201 for `,` after `*`); the s-expression prints `(items *)`. Formatter prints `{ * }`.
+- Checker: `src/check/globs.rs` — `public_names`, `glob_imports` (after `named_imports`, so named imports register first), `Pending` + `settle_globs` (in the `check_named_imports` pass). `named_imports::declared` made `pub(super)`.
+- Completion: decision 65 assumed named re-exports already completed after `m.`; they didn't. New `src/driver/lsp/reexports.rs` (`Here::reexported_items`) adds named and glob re-exports; `program_items` is `pub(super)`. `completion.rs` is at 497 lines (limit 500): the next addition there needs a split first.
+- Tests: parser (`glob_re_exports_v17`), formatter rule, `check/globs.rs` (5), `tests/programs/m100/` (`glob`, `glob_clash`, `glob_private`, `plain_glob`), `package_layout::a_package_entry_flattens_a_module_with_a_glob_v17`, `lsp_definition::glob_re_exported_names_hover_complete_and_go_to_their_declarations` (also a named re-export with an alias in completion). Targeted suites listed in VALIDATION, fmt, clippy.
 
 ## ACCEPTANCE CRITERIA
 - [ ] lugha-gtk's case: `public import raw { * };` in an entry; `import gtk { GtkWidget, gtk_box_new };` checks in a dependent program.

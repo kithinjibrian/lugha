@@ -1,0 +1,7 @@
+error[E0301]: cannot find `hidden` in this scope
+  --> tests/programs/m100/glob_private/main.la:5:17
+  |
+5 |     println(gtk.hidden());
+  |                 ^^^^^^
+
+For more about E0301, run `lughac explain E0301`.

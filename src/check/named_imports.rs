@@ -28,7 +28,7 @@ pub(super) struct Alias {
 pub(super) type Aliases = HashMap<String, Alias>;
 
 /// The name and span of what `item` declares.
-fn declared(item: &Item) -> Option<&Ident> {
+pub(super) fn declared(item: &Item) -> Option<&Ident> {
     Some(match item {
         Item::Fun(f) => &f.name,
         Item::Extern(e) => &e.name,

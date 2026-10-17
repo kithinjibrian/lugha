@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**v17: milestones 91–99 done** (`m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**v17: milestones 91–100 done** (`m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -8009,5 +8009,23 @@ Branch: prp-132-glob_imports
 
 ---
 
-## SESSION 233 — 2026-10-17 — Glob re-exports (milestone 100) — open
+## SESSION 233 — 2026-10-17 — Glob re-exports (milestone 100) — closed
 Branch: prp-132-glob_imports
+
+### WHAT WAS DONE
+- Built PRP-132: `public import m { * };` (parser, formatter, checker `globs.rs`, E0201/E0314), completion of named and glob re-exports (`lsp/reexports.rs`). Spec v17 §3 grammar, §6 glob re-exports, changes list, row 100; E0314's page.
+
+### FILES CREATED OR MODIFIED
+- New: `src/check/globs.rs`, `src/driver/lsp/reexports.rs`, `tests/programs/m100/`. Modified: `src/ast/header.rs`, `src/parser/{import,sexp/item}.rs`, `src/formatter/{items,tests}.rs`, `src/check/{mod,named_imports,modules/mod}.rs`, `src/driver/lsp/{completion,mod}.rs`, `tests/{package_layout,lsp_definition}.rs`, `docs/errors/E0314.md`, spec, draft, PRP-132, CLAUDE.md, TODO, CHANGELOG, MEMORY (185), CONTEXT.
+
+### TESTS WRITTEN
+- See PRP-132's BUILT notes.
+
+### DECISIONS MADE
+- Draft decisions 58–66 (approved).
+
+### PENDING DECISIONS OPENED
+- None. Note: `src/driver/lsp/completion.rs` is at 497/500 lines.
+
+### STILL OPEN AT CLOSE
+- Nothing. lugha-gtk can switch its `lib.la` to `public import raw { * };` (its session).

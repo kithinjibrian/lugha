@@ -191,7 +191,10 @@ impl Printer<'_> {
             head.push_str(&format!(" as {}", self.ident(alias)));
         }
         let mut parts = vec![text(head)];
-        if !i.items.is_empty() {
+        if i.glob.is_some() {
+            // `{ * }` (v17): every public item, written as is.
+            parts.push(text(" { * }"));
+        } else if !i.items.is_empty() {
             let items: Vec<Doc> = i
                 .items
                 .iter()

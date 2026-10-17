@@ -2055,11 +2055,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** a fixed `lib.la` at the package's module root, no manifest key (the user approved PRP-131, session 228). `Packages::resolve`: a one-segment listed import with `lib.la` → `Target { path: [N], file: root/lib.la }` (E0320 clash check kept); without it E0312 with both remedies; `import N.lib;` E0312 when `lib.la` exists (`ENTRY` const). `layout::module_path` maps `src/lib.la` to `[N]`. `init --lib` writes `src/lib.la` + `import N;`. The language server needed nothing: the entry is an ordinary module.
 
+### 185. Glob re-exports — milestone 100 (PRP-132)
+
+**Decision:** `{ * }` (Q1), `public` only (Q2), `public` items (Q3), named re-exports and globs chained, whole-module members not (Q4), E0314 naming both sources unless the same item (Q5), `*` alone (Q6) — the user, session 232. Built: `Import.glob`; parser E0201s; `check/globs.rs` (`public_names` over the units with a `seen` list; `glob_imports` after `named_imports` registers one public `Alias` per name; `Pending` clashes settled in `settle_globs` once every alias exists, comparing `follow`ed targets). Completion: `lsp/reexports.rs` lists a module's named and glob re-exports (named ones were missing before too); `completion.rs` is at 497 lines.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 100 complete**: PRP-132 glob re-exports
 - **Milestone 99 complete**: PRP-131 package entry modules
 - **Milestone 98 complete**: PRP-130 module doc comments
 - **Milestone 97 complete**: PRP-128 packages and tests

@@ -16,6 +16,7 @@ mod fixes;
 mod formatting;
 mod hover;
 mod publish;
+mod reexports;
 mod references;
 mod rename;
 mod server;

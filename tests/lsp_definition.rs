@@ -307,3 +307,42 @@ fn a_named_imported_extern_type_hovers_and_goes_to_its_declaration() {
     }
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn glob_re_exported_names_hover_complete_and_go_to_their_declarations() {
+    let main = "import gtk { twice };\nfun main() { println(twice(1) + gtk.twice(2)); }\n";
+    let raw = "/** Doubles. */\npublic fun twice(n: i64): i64 = n * 2;\n";
+    let t = Temp::with(&[
+        ("main.la", main),
+        (
+            "gtk.la",
+            "public import raw { * };\npublic import more { extra as bonus };\n",
+        ),
+        ("raw.la", raw),
+        ("more.la", "public fun extra(): i64 = 3;\n"),
+    ]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, main);
+    s.expect(&uri, &[]);
+    let declared = location(&t.uri("raw.la"), range(raw, "fun twice", "twice"));
+    for context in ["{ twice", "println(twice", "gtk.twice"] {
+        let (line, col) = pos(main, context, "twice");
+        assert_eq!(s.definition(&uri, line, col), declared, "{context}");
+        let shown = s.hover(&uri, line, col)["contents"]["value"].to_string();
+        assert!(
+            shown.contains("fun twice(n: i64): i64") && shown.contains("Doubles."),
+            "{context}: {shown}"
+        );
+    }
+    let (line, col) = pos(main, "gtk.twice", "twice");
+    let labels: Vec<String> = s
+        .completion(&uri, line, col)
+        .into_iter()
+        .map(|i| i.0)
+        .collect();
+    for wanted in ["twice", "bonus"] {
+        assert!(labels.contains(&wanted.to_string()), "{labels:?}");
+    }
+    assert_eq!(s.finish(), Some(0));
+}

@@ -1,0 +1,13 @@
+// Glob re-exports (v17, milestone 100): `gtk.Point` is `raw.Point`.
+import gtk { Point, Dir, twice, Widget };
+import raw;
+
+fun keep(w: Widget): raw.Widget = w;
+
+fun main() {
+    let p: raw.Point = Point { x: twice(2), y: gtk.twice(3) };
+    let q: gtk.Point = p;
+    println(q.x + q.y);
+    println(match Dir.Up { Up => "up", Down => "down" });
+    println(gtk.run());
+}
