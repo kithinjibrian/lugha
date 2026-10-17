@@ -337,3 +337,22 @@ fn partial_loading_keeps_a_broken_module_and_follows_its_imports() {
         "geo is loaded"
     );
 }
+
+#[test]
+fn e0312_suggests_a_module_beside_the_main_file() {
+    let loaded = run(&[
+        ("main.la", b"import dir.support;\nfun main() {}\n"),
+        ("support.la", b"fun f() {}\n"),
+    ])
+    .unwrap();
+    assert_eq!(codes(&loaded), [("E0312", "dir.support".to_string())]);
+    let help = loaded.diagnostics[0].help.clone().unwrap_or_default();
+    assert!(
+        help.contains("`support.la` is beside this file: `import support;`"),
+        "{help}"
+    );
+    // Without such a file, only where it looked.
+    let loaded = run(&[("main.la", b"import dir.nothing;\nfun main() {}\n")]).unwrap();
+    let help = loaded.diagnostics[0].help.clone().unwrap_or_default();
+    assert!(!help.contains("beside"), "{help}");
+}

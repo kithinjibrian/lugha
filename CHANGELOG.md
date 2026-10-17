@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Changed
+- E0312's help names a module beside the main file when the import spelled a longer path: `import test.support;` in `test/uses.la` adds "`support.la` is beside this file: `import support;`" (session 238, after kivuli's report)
 - `lughac fmt` keeps an `if` with `else` whose branches are lone values on one line when it fits: `let y = if c { 1 } else { 2 };` (was five lines); chains break all or nothing (kivuli, session 235)
 - `lughac test`'s summary counts files that didn't compile: `1 test: 1 passed, 0 failed, 1 file didn't compile`, and `"uncompiled":K` in the `--json` summary (kivuli, session 235)
 - `lughac init --lib` writes the library as `src/lib.la` (its entry, with a module doc) and its example imports it as `import N;` (was `src/N.la` and `import N.N;`); E0312's help for `import N;` mentions the entry (milestone 99)
