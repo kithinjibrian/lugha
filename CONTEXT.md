@@ -8640,3 +8640,15 @@ Branch: prp-143-std_http
 
 ### STILL OPEN AT CLOSE
 - Next candidates: TLS (`https://`, its own security review), containing a handler's panic (runtime), non-blocking files/stdin.
+
+## SESSION 269 — 2026-10-18 — TLS: discovery, PRP-144 proposed — closed
+Branch: main
+
+### DONE
+- Discovery for https (Q1 "yeah": system OpenSSL 3, linked only into TLS programs; Q2 "ok": always verify, `ca_file` only). PRP-144 proposed (milestone 112). Awaiting approval and the security review.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-144 awaits approval and the security review.

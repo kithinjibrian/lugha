@@ -192,6 +192,12 @@ HTTP/1.1 on `std.net`, written in Lugha. Details in PRP-143.
 
 153–166. **`std.http`** (milestone 111): `serve(addr, handler)` with keep-alive, one green thread per connection, strict limits (8 KiB line and headers, 100 headers, 1 MiB body, 30 s) and smuggling-safe framing; `Request`/`Response` with `Map` headers; a client for `http://` (`get`, `post`, `request`); a handler's panic ends the program (documented); no TLS, HTTP/2, streaming, redirects or cookies; tag `m111`. Needs the user's security sign-off.
 
+## Decisions behind milestone 112 (session 269; proposed)
+
+`https://`: TLS through the system's OpenSSL 3. Details in PRP-144.
+
+167–180. **TLS** (milestone 112): `std.tls` (`connect`, `connect_with(opts)`, `listen(addr, cert, key)`, `Conn`/`Listener` shaped like `std.net`'s) and `https://` in `std.http` (`serve_tls`, `request_tls`); OpenSSL linked only into programs that load `std.tls` (E0332 when it's missing); always-on verification with the system roots and host names, `ca_file` to trust more, TLS 1.2+; non-blocking through `wait_fd`; no mutual TLS, pinning or verification bypass; tag `m112`. Needs the user's security review.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
