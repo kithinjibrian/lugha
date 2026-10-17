@@ -174,6 +174,12 @@ lugha-wasmtime's probe found no way to start a NULL-able pointer field; session 
 
 107–113. **Nullable handle fields and plain-data unions** (milestone 106): `Option<H>` as an extern-struct field (NULL is `None`); union fields only plain data (no handles, `Option<H>` or `CPtr`, at any depth: E0437); spec §8 states `c_read`/`c_write` as the program's responsibility; tag `m106`.
 
+## Decisions behind milestone 107 (session 254; proposed)
+
+The user: "add unit type" — a real type and value, and a warning for binding one. Details in PRP-139.
+
+114–122. **The unit type** (milestone 107): `()` is a type and its one value and replaces `void` (omitted return types mean `: ()`); it works in generics, variables, fields and arrays, is `Eq`/`Ord`/hashable/printable, takes no memory; E0407 withdrawn; W0106 for `let x = e` binding a `()` that isn't the literal (silenced by `let x: () = e`); not across C (E0409/E0437); tag `m107`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
