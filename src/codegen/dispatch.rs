@@ -115,7 +115,7 @@ impl<'ctx> Lowerer<'ctx> {
         let mut types: Vec<BasicMetadataTypeEnum> = vec![ptr.into()];
         types.extend(method.params.iter().map(|p| self.param_type(p)));
         let fn_type = match &method.ret {
-            Type::Void => self.context.void_type().fn_type(&types, false),
+            Type::Unit => self.context.void_type().fn_type(&types, false),
             ret => llvm_type(self.context, ret).fn_type(&types, false),
         };
         let site = self

@@ -307,8 +307,8 @@ mod tests {
     #[test]
     fn arrays_cant_cross_into_c() {
         assert_eq!(
-            errors("extern fun f(a: i64[]);\nfun main() {}"),
-            [("E0409", "i64[]")]
+            errors("extern fun f(a: string[]);\nfun main() {}"),
+            [("E0409", "string[]")]
         );
     }
 }

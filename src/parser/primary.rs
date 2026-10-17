@@ -25,15 +25,10 @@ impl Parser<'_> {
             }
             TokenKind::True => ExprKind::Bool(true),
             TokenKind::False => ExprKind::Bool(false),
-            TokenKind::Ident(name) => {
-                let name = Ident {
-                    name,
-                    span: self.bump(),
-                };
-                if name.name == "format" && self.at_template() {
-                    return self.format_call(start);
-                }
-                return self.name_or_struct(start, name);
+            TokenKind::Ident(name) => return self.ident_primary(start, name),
+            // `()` (v17, milestone 107): the unit value, an empty tuple.
+            TokenKind::LParen if self.peek_at(1) == &TokenKind::RParen => {
+                return self.unit_literal(start);
             }
             TokenKind::LParen => {
                 let open = self.bump();
@@ -71,6 +66,20 @@ impl Parser<'_> {
         };
         self.bump();
         Ok(self.mk(start, kind))
+    }
+
+    /// A name, a struct literal or a `format` call. Kept out of `primary`,
+    /// whose frame is on every nesting level's stack (E0206's limit).
+    #[inline(never)]
+    fn ident_primary(&mut self, start: usize, name: String) -> PResult<Expr> {
+        let name = Ident {
+            name,
+            span: self.bump(),
+        };
+        if name.name == "format" && self.at_template() {
+            return self.format_call(start);
+        }
+        self.name_or_struct(start, name)
     }
 
     /// After an identifier: a struct literal if `{` follows and literals are

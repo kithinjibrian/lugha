@@ -71,7 +71,7 @@ impl Sig {
         let name = owner.map_or_else(|| name.to_string(), |o| format!("{o}.{name}"));
         let ret = subst(&self.ret, &generics, args);
         Some(match ret {
-            Type::Void => format!("fun {name}({})", parts.join(", ")),
+            Type::Unit => format!("fun {name}({})", parts.join(", ")),
             ret => format!("fun {name}({}): {ret}", parts.join(", ")),
         })
     }

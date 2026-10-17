@@ -10,7 +10,7 @@ impl Checker {
     /// The type `fun(params): ret` names.
     pub(super) fn resolve_fun(&mut self, params: &[Annotation], ret: Option<&Annotation>) -> Type {
         let params = params.iter().map(|p| self.resolve(p)).collect();
-        let ret = ret.map_or(Type::Void, |r| self.resolve(r));
+        let ret = ret.map_or(Type::Unit, |r| self.resolve(r));
         Type::Fun(params, Box::new(ret))
     }
 
@@ -73,13 +73,13 @@ impl Checker {
             if !self.functions.contains_key(&key) {
                 return None;
             }
-            self.record(base, Type::Void);
+            self.record(base, Type::Unit);
             self.item_visible(&key, name.span);
             return Some(self.function_value(expr, &key, expect));
         }
         let owner = self.type_named_by(base)?;
         let method = self.method(&owner, &name.name)?;
-        self.record(base, Type::Void);
+        self.record(base, Type::Unit);
         if method.receiver.is_some() {
             let help = format!(
                 "a method isn't a value; call it on a value: `x.{}()`",
@@ -285,7 +285,7 @@ mod tests {
         let fs = Type::Array(Box::new(i64_to_i64()));
         assert_eq!(fs.to_string(), "(fun(i64): i64)[]");
         assert_eq!(
-            Type::Fun(vec![Type::I64], Box::new(Type::Void)).to_string(),
+            Type::Fun(vec![Type::I64], Box::new(Type::Unit)).to_string(),
             "fun(i64)"
         );
         let d = diagnostics(&format!("{LIB}fun main() {{ let f: fun(i64) = double; }}"));

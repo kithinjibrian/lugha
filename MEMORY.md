@@ -2091,6 +2091,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-138 (proposed session 252, approved 253). `Option<H>` (a handle `H`) is held in memory as C's nullable pointer everywhere — `storage_type`, `stored_form`/`loaded_form`, `layout` (8, 8) — so extern-struct fields need no special case; nested patterns over such a payload or field load it as a value first (`patterns.rs`, `!top`). Unions: `check_union_fields`/`plain_data` in `check/structs.rs`, E0437 "a union can't hold a pointer". Spec §8 says `c_read`/`c_write` are where memory safety is the program's.
 
+### 193. The unit type `()` — milestone 107 (PRP-139)
+
+**Decision:** as PRP-139 (discovery session 254: a real type and value; warn on binding). `Type::Void` is now `Type::Unit` (prints `()`); the AST reuses `Tuple(vec![])` for the type and the value (`tuple_type` of nothing is `Unit`). Codegen keeps `Value::Void` for statement-like results and turns it into `{}` (`unit_value`) where a value is needed; `llvm_type(Unit)` is `{}`, layout (0, 1); functions returning `()` stay LLVM `void`. W0106 in `check/unit.rs`. Parser: `(`'s handling stays in `primary` (a call-out per level overflows E0206's stack); the identifier arm moved out to make room. Not built: a `()` pattern (`Some(())`; `Some(_)` works).
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

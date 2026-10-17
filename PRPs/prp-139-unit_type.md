@@ -45,6 +45,12 @@ let x = log("hi");      // warning W0106: `x` holds `()`; drop the `let`, or wri
 ### New dependencies
 - none
 
+## BUILT (session 255)
+- As planned, with the AST reusing `Tuple(vec![])` for `()` (no new node) and codegen's `Value::Void` kept as the in-register form of `()`.
+- Not built: `()` as a pattern (`Some(())`) — out of the PRP's scope; `Some(_)` covers it.
+- Fixed on the way: m104/m105 had left three unit tests stale (arrays and callback arrays now crossing to C; `c_read`/`c_write` missing from the language server's signature table and the spec's built-in table).
+- Tests: parser (`()` type and value), checker `check/unit.rs` (everywhere, W0106 and its silences, E0409/E0437), old E0407 tests turned into unit tests, formatter rule, hover, `tests/programs/m107/` (`unit`, `anywhere`, `w0106`), E0407 retired and W0106 pages.
+
 ## ERROR HANDLING REQUIREMENTS
 - W0106 (new). E0407 no longer reported. E0409/E0437 for `()` across C.
 

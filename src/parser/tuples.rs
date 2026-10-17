@@ -33,6 +33,15 @@ impl Parser<'_> {
         Ok(self.mk(start, ExprKind::Tuple(elements)))
     }
 
+    /// `()` (v17, milestone 107): the unit value, an empty tuple. Kept out
+    /// of `primary`, whose frame is on every nesting level's stack.
+    #[inline(never)]
+    pub(super) fn unit_literal(&mut self, start: usize) -> PResult<Expr> {
+        self.bump();
+        self.bump();
+        Ok(self.mk(start, ExprKind::Tuple(Vec::new())))
+    }
+
     /// The rest of `(p, q, …)` after its first pattern, at a `,`.
     pub(super) fn tuple_pattern(
         &mut self,
@@ -140,5 +149,17 @@ mod tests {
         );
         assert_eq!(body("for (x of xs) { }"), "(block (for x (of xs) (block)))");
         assert_eq!(errors("fun f() { let t = (a,); }")[0].0, "E0201");
+    }
+
+    #[test]
+    fn unit_is_the_empty_tuple_v17() {
+        assert_eq!(expr("()"), "(tuple)");
+        assert_eq!(expr("(a)"), "a");
+        assert_eq!(expr("f(())"), "(call f (tuple))");
+        assert_eq!(
+            program("fun f(u: ()): Result<(), string> {}"),
+            "(fun f ((u (tuple))) (applied Result (tuple) string) (block))"
+        );
+        assert_eq!(body("let x: () = ();"), "(block (let x (tuple) (tuple)))");
     }
 }

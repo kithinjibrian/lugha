@@ -1,0 +1,47 @@
+// The unit type `()` (v17, milestone 107): a value like any other.
+fun log(s: string) {
+    println(s);
+}
+
+fun save(path: string): Result<(), string> {
+    if path == "" {
+        return Err("no path");
+    }
+    log("saved {path}");
+    Ok(())
+}
+
+fun both(a: string, b: string): Result<(), string> {
+    save(a)?;
+    save(b)
+}
+
+fun id<T>(x: T): T = x;
+
+struct Tick {
+    at: i64,
+    done: (),
+}
+
+fun main() {
+    println(both("a", "b"));
+    println(both("a", ""));
+    let u: () = log("hi");
+    println(u);
+    println(u == ());
+    let us = [(), id(()), u];
+    println(us);
+    println(us.len);
+    let o: Option<()> = Some(());
+    println("{o} {u}");
+    let t = Tick { at: 3, done: () };
+    println(t);
+    let done: Chan<()> = Chan.buffered(1);
+    done.send(());
+    println(done.recv());
+    let task: Task<()> = spawn log("from a task");
+    let r: () = task.join();
+    println(r);
+    let seen: Map<string, ()> = #{"x": ()};
+    println(seen.has("x"));
+}

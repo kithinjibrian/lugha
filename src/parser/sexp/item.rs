@@ -238,7 +238,10 @@ pub(super) fn ty(ty: &Type) -> String {
         TypeKind::Option(inner) => format!("(Option {})", self::ty(inner)),
         TypeKind::Tuple(elements) => {
             let shown: Vec<String> = elements.iter().map(self::ty).collect();
-            format!("(tuple {})", shown.join(" "))
+            format!(
+                "(tuple{})",
+                shown.iter().map(|s| format!(" {s}")).collect::<String>()
+            )
         }
         TypeKind::Fun(params, ret) => {
             let params: Vec<String> = params.iter().map(self::ty).collect();

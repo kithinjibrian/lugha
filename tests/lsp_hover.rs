@@ -313,3 +313,19 @@ fn prelude_types_show_as_written_v17() {
     assert!(it.contains("let it: ArrayIter<i64>"), "{it}");
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn a_unit_binding_shows_its_type_v17() {
+    let program =
+        "fun log() {}\n\nfun main() {\n    let done: () = log();\n    println(done);\n}\n";
+    let t = Temp::with(&[("main.la", program)]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, program);
+    s.expect(&uri, &[]);
+    assert_eq!(
+        hover_at(&mut s, &uri, pos(program, "let done", "done")),
+        code("let done: ()", &[])
+    );
+    assert_eq!(s.finish(), Some(0));
+}

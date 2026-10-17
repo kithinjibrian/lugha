@@ -48,7 +48,7 @@ impl Checker {
             return self.call_expr(call, callee, args);
         }
         // A function called by name is not a value here; `void` marks it.
-        self.record(callee, Type::Void);
+        self.record(callee, Type::Unit);
         let mut key = self.key(name);
         // `range(a, b)` is the prelude's unless a module declares one (v10).
         let prelude = qualify(&[crate::modules::PRELUDE_PATH.to_string()], name);
@@ -130,7 +130,7 @@ impl Checker {
             return self.input_intrinsic(call, name, args);
         }
         let result = match name {
-            "print" | "println" | "eprint" | "eprintln" => Type::Void,
+            "print" | "println" | "eprint" | "eprintln" => Type::Unit,
             "to_string" => Type::String,
             _ => Type::Never,
         };
@@ -215,21 +215,17 @@ mod tests {
         // v3: a function is a value (PRP-039).
         assert_eq!(
             let_type("fun g() {}\nfun main() { let h = g; }", "h"),
-            Type::Fun(Vec::new(), Box::new(Type::Void))
+            Type::Fun(Vec::new(), Box::new(Type::Unit))
         );
     }
 
     #[test]
-    fn void_is_not_a_value() {
+    fn unit_is_a_value_v17() {
         let noop = "fun noop() {}\n";
-        assert_eq!(
-            errors(&format!("{noop}fun main() {{ let x = noop(); }}")),
-            [("E0407", "noop()")]
-        );
-        assert_eq!(
-            errors(&format!("{noop}fun main() {{ let y = noop() + 1; }}")),
-            [("E0407", "noop()")]
-        );
+        crate::check::test_util::ok(&format!("{noop}fun main() {{ let x: () = noop(); }}"));
+        let src = format!("{noop}fun main() {{ let y = noop() + 1; }}");
+        let found = errors(&src);
+        assert_eq!(found.len(), 1, "{found:?}");
     }
 
     #[test]
@@ -242,15 +238,9 @@ mod tests {
             errors("fun main() { println(1, 2); }"),
             [("E0405", "println(1, 2)")]
         );
-        assert_eq!(
-            errors("fun f() {}\nfun main() { let s = to_string(f()); }"),
-            [("E0407", "f()")]
-        );
+        crate::check::test_util::ok("fun f() {}\nfun main() { let s = to_string(f()); }");
         assert_eq!(errors("fun main() { panic(1); }"), [("E0403", "1")]);
-        assert_eq!(
-            errors("fun noop() {}\nfun main() { println(noop()); }"),
-            [("E0407", "noop()")]
-        );
+        crate::check::test_util::ok("fun noop() {}\nfun main() { println(noop()); }");
         assert_eq!(
             errors("fun main() { let p = println; }"),
             [("E0406", "println")]

@@ -8,6 +8,14 @@ Never deleted. Older entries are never modified.
 
 ## [Unreleased]
 
+### Added
+- The unit type `()`, milestone 107 (PRP-139): a type and its one value, replacing `void` — a function without a return type returns `()`; `Result<(), string>`, `Ok(())`, `Chan<()>`, `Task<()>`, `Map<K, ()>`, `()[]`, fields and generic arguments hold it; `==`, `<`, hashing and printing (`()`); no memory. W0106 warns on `let x = log();` (silenced by `let x: () = log();`); `()` can't cross to C (E0409, E0437)
+
+### Changed
+- E0407 ("`void` used as a value") is retired: every expression has a value now (milestone 107); `let v: i32 = { 1 + 1; };`'s E0403 keeps the "remove this semicolon" label
+- `lugha_rt_array_grow` accepts zero-byte elements (`()[]`)
+- The language server's signature help knows `c_read` and `c_write` (missed in milestone 105); the spec's built-in table lists them
+
 ### Changed
 - The iterator type `it.map(f)` returns is `Mapped<T, U>` (was `Map<T, U>`): `Map` is now the map type (milestone 101)
 - Completion no longer offers a prelude type's `$` members, which no program can write (milestone 101)

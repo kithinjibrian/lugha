@@ -75,7 +75,7 @@ impl<'ctx> Lowerer<'ctx> {
             .build_extract_value(pair, 1, "env")
             .expect("a pair has 2 fields");
         let size = match *result {
-            Type::Void | Type::Never => 1,
+            Type::Unit | Type::Never => 1,
             ref ty => self.element_size(ty).max(1),
         };
         let ptr = self.context.ptr_type(Default::default());
@@ -153,7 +153,7 @@ impl<'ctx> Lowerer<'ctx> {
             .expect(POSITIONED)
             .into_struct_value();
         let ret = match result {
-            Type::Never => Type::Void,
+            Type::Never => Type::Unit,
             ty => ty.clone(),
         };
         if let Value::Val(value) = self.call_pair(pair, (&[], &ret), Vec::new()) {
@@ -181,7 +181,7 @@ impl<'ctx> Lowerer<'ctx> {
         let ValueKind::Basic(at) = site.try_as_basic_value() else {
             unreachable!("lugha_rt_task_join returns the result's address")
         };
-        if matches!(**result, Type::Void | Type::Never) {
+        if matches!(**result, Type::Unit | Type::Never) {
             return Ok(Value::Void);
         }
         // A copy site: joining again gives another copy.

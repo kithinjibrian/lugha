@@ -12,30 +12,30 @@ use crate::span::Span;
 /// `mut self` receiver; `slice(from, to)` on a string (v4), with `self`.
 pub(super) fn builtin(receiver: &Type, name: &str) -> Option<Method> {
     let (params, ret, mutable) = match (receiver, name) {
-        (Type::Array(element), "push") => (vec![(**element).clone()], Type::Void, true),
+        (Type::Array(element), "push") => (vec![(**element).clone()], Type::Unit, true),
         (Type::Array(element), "pop") => (Vec::new(), Type::Option(element.clone()), true),
-        (Type::Array(_), "clear") => (Vec::new(), Type::Void, true),
+        (Type::Array(_), "clear") => (Vec::new(), Type::Unit, true),
         (Type::String, "slice") => (vec![Type::I64, Type::I64], Type::String, false),
         // v16: a box's whole API besides `Ref.new`; plain `self`, since they
         // change the box, not the handle (milestone 67).
         (Type::Ref(inner), "get") => (Vec::new(), (**inner).clone(), false),
-        (Type::Ref(inner), "set") => (vec![(**inner).clone()], Type::Void, false),
+        (Type::Ref(inner), "set") => (vec![(**inner).clone()], Type::Unit, false),
         (Type::Ref(inner), "update") => {
             let f = Type::Fun(vec![(**inner).clone()], inner.clone());
-            (vec![f], Type::Void, false)
+            (vec![f], Type::Unit, false)
         }
         (Type::Ref(_), "is") => (vec![receiver.clone()], Type::Bool, false),
         // v17: a task's result, and a channel's API besides `Chan.new` and
         // `Chan.buffered`; plain `self`, as for boxes.
         (Type::Task(inner), "join") => (Vec::new(), (**inner).clone(), false),
-        (Type::Chan(inner), "send") => (vec![(**inner).clone()], Type::Void, false),
+        (Type::Chan(inner), "send") => (vec![(**inner).clone()], Type::Unit, false),
         (Type::Chan(inner), "recv" | "try_recv") => {
             (Vec::new(), Type::Option(inner.clone()), false)
         }
-        (Type::Chan(_), "close") => (Vec::new(), Type::Void, false),
+        (Type::Chan(_), "close") => (Vec::new(), Type::Unit, false),
         (Type::Chan(_), "is") => (vec![receiver.clone()], Type::Bool, false),
         // v17, milestone 92: every actor handle's own messages.
-        (Type::Actor(_), "stop") => (Vec::new(), Type::Void, false),
+        (Type::Actor(_), "stop") => (Vec::new(), Type::Unit, false),
         (Type::Actor(_), "join") => (Vec::new(), Type::Option(Box::new(Type::String)), false),
         (Type::Actor(_), "is") => (vec![receiver.clone()], Type::Bool, false),
         (Type::String, "to_bytes") => (Vec::new(), Type::Array(Box::new(Type::U8)), false),

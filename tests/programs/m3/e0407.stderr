@@ -1,7 +1,0 @@
-error[E0407]: this expression has no value
-  --> tests/programs/m3/e0407.la:4:13
-  |
-4 |     let x = log();
-  |             ^^^^^ its type is void
-
-For more about E0407, run `lughac explain E0407`.

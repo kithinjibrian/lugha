@@ -42,7 +42,7 @@ impl Checker {
         self.unused(&bindings);
         self.pop();
         let Some(else_expr) = else_ else {
-            return Type::Void;
+            return Type::Unit;
         };
         let else_ty = self.expr(else_expr, expect);
         self.join_branches(expr, then, then_ty, else_expr, else_ty)

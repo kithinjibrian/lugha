@@ -126,7 +126,7 @@ impl<'ctx> Lowerer<'ctx> {
         let mut types: Vec<BasicMetadataTypeEnum> = vec![ptr.into()];
         types.extend(params.iter().map(|p| self.param_type(p)));
         let fn_type = match ret {
-            Type::Void => self.context.void_type().fn_type(&types, false),
+            Type::Unit => self.context.void_type().fn_type(&types, false),
             ret => llvm_type(self.context, ret).fn_type(&types, false),
         };
         self.module
@@ -144,7 +144,7 @@ impl<'ctx> Lowerer<'ctx> {
     ) -> Result<(), CodegenError> {
         let saved_block = self.builder.get_insert_block();
         let saved_function = self.function.replace(function);
-        let saved_ret = std::mem::replace(&mut self.ret, (*ret != Type::Void).then(|| ret.clone()));
+        let saved_ret = std::mem::replace(&mut self.ret, (*ret != Type::Unit).then(|| ret.clone()));
         let saved_scopes = std::mem::take(&mut self.scopes);
         let saved_loops = std::mem::take(&mut self.loops);
         self.builder
@@ -195,7 +195,7 @@ impl<'ctx> Lowerer<'ctx> {
             );
         }
         let value = self.block_inner(&c.body, true)?;
-        match (*ret == Type::Void, value) {
+        match (*ret == Type::Unit, value) {
             (_, Value::Never) => self.builder.build_unreachable(),
             (true, _) => self.builder.build_return(None),
             (false, Value::Val(result)) => self.builder.build_return(Some(&result)),

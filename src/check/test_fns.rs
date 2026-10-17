@@ -58,11 +58,11 @@ impl Checker {
         if args.len() != wanted {
             self.report(errors::arity(name, wanted, args.len(), call.span));
             self.unchecked_args(args);
-            return Type::Void;
+            return Type::Unit;
         }
         if name == "assert" {
             self.expect_type(&args[0], &Expect::of(Type::Bool));
-            return Type::Void;
+            return Type::Unit;
         }
         // `skip(reason)` ends the test: nothing after it runs (v17).
         if name == "skip" {
@@ -78,7 +78,7 @@ impl Checker {
         let ty = self.value(first, None);
         self.expect_type(second, &Expect::of(ty.clone()));
         if matches!(ty, Type::Error | Type::Never) {
-            return Type::Void;
+            return Type::Unit;
         }
         if !self.eq_ok(&ty) {
             self.report(errors::bad_operands_on("==", &[ty], call.span));
@@ -89,7 +89,7 @@ impl Checker {
             self.printed(&args[1], &ty);
             self.equality_used(call, &ty);
         }
-        Type::Void
+        Type::Unit
     }
 }
 

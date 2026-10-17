@@ -94,7 +94,7 @@ mod tests {
             [("E0431", ":.2".into())]
         );
         assert_eq!(codes("let r = format(\"\\t{:.2}\", n);").len(), 1);
-        assert_eq!(codes("let r = format(\"{}\", v());")[0].0, "E0407");
+        crate::check::test_util::ok("fun v() {}\nfun main() { let r = format(\"{}\", v()); }");
         assert_eq!(
             errors("fun format(): i64 = 1;\nfun main() {}"),
             [("E0302", "format")]

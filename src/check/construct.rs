@@ -38,7 +38,7 @@ impl Checker {
         expect: Option<&Expect>,
     ) -> Option<Type> {
         let name = self.enum_named(base)?;
-        self.record(base, Type::Void);
+        self.record(base, Type::Unit);
         // A variant with payloads, not called, is a function value (v17).
         if let Some(ty) = self.enum_variant_function(expr, &name, &variant.name, expect) {
             self.hover.variant_use(&name, variant);
@@ -62,15 +62,15 @@ impl Checker {
             && name == "Some"
             && self.local(name).is_none()
         {
-            self.record(callee, Type::Void);
+            self.record(callee, Type::Unit);
             return Some(self.some(call, args, expect));
         }
         let ExprKind::Field(base, variant) = &callee.kind else {
             return None;
         };
         let name = self.enum_named(base)?;
-        self.record(base, Type::Void);
-        self.record(callee, Type::Void);
+        self.record(base, Type::Unit);
+        self.record(callee, Type::Unit);
         Some(self.construct((call, call.span), &name, variant, args, expect))
     }
 

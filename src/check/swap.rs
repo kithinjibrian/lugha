@@ -15,7 +15,7 @@ impl Checker {
             for arg in args {
                 self.expr(arg, None);
             }
-            return Type::Void;
+            return Type::Unit;
         };
         let mark = self.changes_mark();
         // Places, not values: neither is a store site, so nothing moves or copies.
@@ -23,7 +23,7 @@ impl Checker {
         let a_ok = self.check_place_for(a, PlaceUse::Swap);
         let b_ok = self.check_place_for(b, PlaceUse::Swap);
         if !(a_ok && b_ok) {
-            return Type::Void;
+            return Type::Unit;
         }
         self.no_change_inside(&[a, b], PlaceUse::Swap, mark);
         let failed = |t: &Type| matches!(t, Type::Error | Type::Never);
@@ -31,7 +31,7 @@ impl Checker {
             if !failed(&first) && !failed(&second) {
                 self.report(errors::swap_types(first, second, b.span, a.span));
             }
-            return Type::Void;
+            return Type::Unit;
         }
         // Equal depths are fine even when they might be the same place
         // (`swap(xs[i], xs[j])`, `swap(a, a)`): exchanging a place with
@@ -52,7 +52,7 @@ impl Checker {
             };
             self.report(errors::swap_with_part(&text, part.span, whole.span));
         }
-        Type::Void
+        Type::Unit
     }
 }
 

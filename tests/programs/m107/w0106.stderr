@@ -1,0 +1,9 @@
+warning[W0106]: `x` holds `()`
+  --> tests/programs/m107/w0106.la:5:9
+  |
+5 |     let x = log();
+  |         ^   ----- this has no other value than `()`
+  |
+  = help: drop the `let`, or write `let x: () = …` if that's what you meant
+
+For more about W0106, run `lughac explain W0106`.

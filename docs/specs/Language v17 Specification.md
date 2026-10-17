@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–106 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–107 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–106):
+**Changes since v16** (milestones 91–107):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- The unit type `()` replaces `void` (milestone 107; sections 3, 4, 6): a type and its one value, held anywhere a value is (`Result<(), E>`, `Chan<()>`); E0407 is retired; W0106 warns on `let x = log();`.
 - Extern structs hold `Option` of a handle (C's nullable pointer); unions hold plain data only, so no pointer is made up from a number (milestone 106; section 8).
 - The C boundary takes pointers (milestones 103–105; section 8): `ptr` and `mut` parameters; arrays as `xs: T[]` and `mut xs: T[]`; `extern union`; `CPtr` with `c_read`/`c_write`; callbacks taking `T[]` and `Ref<T[]>`.
 - `out` parameters on externs: `extern fun get_fuel(c: Context, out fuel: u64): bool;` and `get_fuel(ctx, out fuel)` — C writes through the pointer and the place gets the value after the call (milestone 102; sections 3, 8).
@@ -352,6 +353,7 @@ base_type    = "i32" | "i64" | "u8" | "f64" | "bool" | "string"
              | "i8" | "i16" | "u16"                 (* v10 *)
              | "char"                               (* v14 *)
              | "(" type "," type { "," type } [ "," ] ")"   (* a tuple (v14) *)
+             | "(" ")"                              (* the unit type (v17) *)
              | IDENT [ "." IDENT [ "." IDENT ] ] [ "<" type { "," type } [ "," ] ">" ]
              | "fun" "(" [ type { "," type } [ "," ] ] ")" [ ":" type ]   (* a function type (v3) *)
              | "(" type ")" ;                  (* `(fun(i64): i64)[]` is an array of functions *)
@@ -397,6 +399,7 @@ index        = "[" expr "]" ;
 member       = "." ( IDENT | INT ) ;          (* `t.0` (v14) *)
 primary      = INT | FLOAT | CHAR | STRING | interpolated | closure | "true" | "false"
              | "(" expr "," expr { "," expr } [ "," ] ")"   (* a tuple (v14) *)
+             | "(" ")"                              (* the unit value (v17) *)
              | IDENT [ "." IDENT ] [ struct_init ]  (* `m.T { … }` *)
              | "self"
              | int_type "." IDENT                 (* `i16.MAX` (v10) *)
@@ -487,7 +490,7 @@ Lugha is statically typed with one implicit conversion: a value becomes an inter
 | `S` (struct) | User-declared record | LLVM named struct `%S` |
 | `E` (enum) | One of the declared variants, with its payloads | LLVM named struct `%E` = `{ i32 tag, payload area }` (section 7) |
 | `Option<T>` | `Some(T)` or `None` | As an enum with those two variants |
-| `void` | Return type only; written by omitting `: type` | `void` |
+| `()` | The unit type (v17): one value, also written `()`; a function without `: type` returns it | `{}` (no bytes) |
 
 **Value semantics.** Every Lugha type behaves as a value. Assigning or storing a value gives the new place its own independent copy, so changing one variable never changes another. Strings are immutable, so the compiler shares them freely and no program can tell. Arrays live on the heap but are copied whenever sharing could be observed (see Array copies below). Enum payloads can't be changed in place, so enum values share them freely too, and no program can tell.
 
@@ -503,7 +506,7 @@ ys[0] = 9;        // xs[0] is still 1
 
 There is no null. Every string and array variable holds a valid object.
 
-**void is not a value.** `void` can't be written as a type, and no variable, parameter, field or array element can hold one. `let x = println(1);` is a type error. A `void` expression can only be used as a statement, as the tail of a `void` block or function, or as a branch of an `if` whose type is `void`.
+**The unit type `()`** (v17, milestone 107; `void` until then). `()` is a type with one value, also written `()`. Statements that produce nothing have it: a function without a return type, a block without a tail, an `if` without `else`, loops and assignments. It is a value like any other: variables, parameters, fields, array elements and type arguments hold it (`Result<(), string>`, `Ok(())`, `Chan<()>`, `Task<()>`, `Map<K, ()>`). It is `Eq` and `Ord` (always equal), hashable, prints as `()` and takes no memory. Binding it with `let x = e` when `e` isn't the literal `()` warns (W0106: usually a call kept for a result it doesn't have); writing the type, `let x: () = e`, or `let _ = e` doesn't. It can't cross the C boundary as a parameter or field (E0409, E0437); an extern without a result type is C's `void`.
 
 **Structs.** Declared at top level with named, typed fields. A struct literal must initialize every field exactly once, in any order — or end with `..base` (v17, milestone 93): `Point { x: 1.0, ..p }` takes every field not written from `base`, an expression of exactly the literal's struct type (type arguments included; another type is E0440). `..base` comes last, once (E0201); the written fields are evaluated first, left to right, then `base` once, and its fields are stored like any value (copied from a place, moved on its last use). Every unwritten field must be visible too (E0313). Writing every field as well as `..base` is warning W0104. Structs may contain other structs and arrays, but a struct may not contain itself directly or through other structs (it would have infinite size). Containing itself through an array is fine, because an array is a pointer: `struct Node { value: i64, kids: Node[] }` builds trees. Other recursive data, such as linked lists, uses an enum or `Option`: a struct may contain itself through either, as in `struct Item { value: i64, next: Option<Item> }`. Only a cycle through structs alone is an error (E0307).
 
@@ -908,18 +911,18 @@ Float arithmetic follows IEEE 754: overflow gives an infinity and division by ze
 
 **Variable declarations.** Every variable must be initialized. A variable is in scope from the end of its declaration to the end of its enclosing block, so `let x = x + 1;` refers to an outer `x`. Shadowing is allowed, both in nested blocks and in the same block.
 
-**if / else.** `if` is an expression. The condition must be `bool`. With an `else`, both branches must have the same type, which becomes the type of the whole `if`. Without an `else`, the type is `void`. An expected type flows into both branches, so `let x: i32 = if c { 1 } else { 2 };` is valid.
+**if / else.** `if` is an expression. The condition must be `bool`. With an `else`, both branches must have the same type, which becomes the type of the whole `if`. Without an `else`, the type is `()`. An expected type flows into both branches, so `let x: i32 = if c { 1 } else { 2 };` is valid.
 
 ```
 let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 ```
 
-**Blocks and tail values.** A block `{ stmts tail }` runs its statements, then evaluates `tail` and yields it as the block's value. A block with no tail has type `void`. Variables declared inside a block go out of scope at its closing brace. A block-like statement in the middle of a block must have type `void`, because a value there would be silently thrown away; the checker reports it as an error.
+**Blocks and tail values.** A block `{ stmts tail }` runs its statements, then evaluates `tail` and yields it as the block's value. A block with no tail has type `()`. Variables declared inside a block go out of scope at its closing brace. A block-like statement in the middle of a block must have type `void`, because a value there would be silently thrown away; the checker reports it as an error.
 
 **while.** Evaluates the condition before each iteration; stops when it is `false`.
 
 **Conditional patterns** (v9). Each tests one pattern, typed as a `match` arm's (or-patterns and `mut` included), with no exhaustiveness check; the scrutinee is a condition, so a struct literal needs parentheses.
-- **`if let p = e { a } [else b]`** evaluates `e` once; if `p` matches it runs `a` with `p`'s bindings in scope, otherwise `b` (or nothing). It is an `if`: with `else` both branches agree on a type and it is a value; without, it is `void`. `else if let` chains. An irrefutable pattern (`if let x = e`) is allowed.
+- **`if let p = e { a } [else b]`** evaluates `e` once; if `p` matches it runs `a` with `p`'s bindings in scope, otherwise `b` (or nothing). It is an `if`: with `else` both branches agree on a type and it is a value; without, it is `()`. `else if let` chains. An irrefutable pattern (`if let x = e`) is allowed.
 - **`while let p = e { body }`** evaluates `e` and tests `p` before each iteration, running `body` with the bindings while it matches; `break` ends the loop and `continue` goes to the next test.
 - **`let p = e else { … };`** evaluates `e`; if `p` matches, its bindings are in scope for the rest of the block. Otherwise the `else` block runs, and it must not finish normally: it ends in `return`, `break`, `continue`, `panic(…)` or `exit(…)`, or is otherwise of type `never` (E0429). `let x = e else { … };` reads `x` as a pattern, so at the top it is a variant, as in a `match` arm. `mut` goes inside the pattern: `let Some(mut n) = o else { return; };`.
 
@@ -962,7 +965,7 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 
 **break and continue.** Apply to the innermost enclosing loop. Using either outside a loop is a compile error.
 
-**Expression statements.** Any expression followed by `;` is a statement, and its value is discarded. Discarding the result of a non-`void` call is allowed. Adding `;` after a would-be tail expression turns it into a statement, so `{ x * x; }` is a `void` block. When a value was expected, the checker reports this as "remove this semicolon" and points at it.
+**Expression statements.** Any expression followed by `;` is a statement, and its value is discarded. Discarding the result of any call is allowed. Adding `;` after a would-be tail expression turns it into a statement, so `{ x * x; }` is a `()` block. When a value was expected, the checker reports this as "remove this semicolon" and points at it.
 
 **Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), a shift out of range (`shift out of range`; v7), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), an out-of-range `slice` (`slice out of bounds: from F to T of a string of length L`, at the method name; v4), `split` with an empty separator (located in the prelude, `<prelude>:…`; v4), a negative repeat-literal count, too-deep recursion (`stack overflow`), `unwrap` on a `None` or an `Err` (`unwrap on None`, `unwrap on Err: <error>` with the error printed, v12) and `expect(msg)` likewise (message `msg`), each located at the method name (v9), and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. A stack overflow is the one panic without a location — it prints just `panic: stack overflow` — because the runtime can't tell which call went too deep. They cannot be caught.
 
@@ -991,6 +994,8 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 | `write_bytes(path, data)`, `append_bytes(path, data)` | `string`, `u8[]` | `Result<i64, string>`: like `write_file` and `append_file`, writing exactly `data` (v14) |
 | `read_stdin_bytes()` | Nothing | `u8[]`: everything left on stdin (v14) |
 | `string_from_utf8(data)` | `u8[]` | `Result<string, string>`: a string of exactly those bytes if they are valid UTF-8 (no overlong forms, surrogates, code points above U+10FFFF or truncated sequences), else `Err("invalid UTF-8 at byte N")` with the first bad sequence's offset; the only way from bytes to a `string` (v14) |
+| `c_read(p, offset, len)` | `CPtr`, `u64`, `u64` | `u8[]`: a copy of `len` bytes at `p + offset` in C's memory; a null `p` panics (v17, section 8) |
+| `c_write(p, offset, bytes)` | `CPtr`, `u64`, `u8[]` | `()`: copies `bytes` to `p + offset` in C's memory; a null `p` panics (v17, section 8) |
 | `eprint(x)`, `eprintln(x)` | Like `print`, `println` | Writes to stderr, formatted as `print` does, after flushing stdout so a terminal shows output in program order (v4) |
 | `exit(code)` | `i32` | Flushes stdout and stops the program with exit code `code`; never returns, so code after it is unreachable (W0101) (v4) |
 
@@ -1015,7 +1020,7 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 - **`show`:** the prelude declares `interface Display { fun show(self): string; }`, visible in every module like `Iter` unless the module declares `Display`. A struct or enum with its own method of exactly that shape prints through it, whatever the method's visibility, since printing is the type's own behaviour; a method `show` of any other shape is ignored, and the built-in form is used. Like any interface, `Display` works as a bound (`T: Display` gives `x.show()`) and as a type.
 - **Depth:** a recursive enum prints to its full depth. Values are trees, so printing always ends.
 
-**Interpolated strings** (v3). Each `{expr}` is evaluated left to right and formatted exactly as `print` would write it (floats as below); the parts are joined into one new `string`. Any value interpolates (v12); only a `void` expression can't (E0407).
+**Interpolated strings** (v3). Each `{expr}` is evaluated left to right and formatted exactly as `print` would write it (floats as below); the parts are joined into one new `string`. Any value interpolates (v12), `()` too (v17).
 
 **Format specifiers** (v13). An interpolation may end in `:` and a specifier, `{expr:spec}`, which changes how its value is written. The lexer splits the specifier off at the first `:` outside every `(`, `[` and `{` of the expression and outside strings, and takes everything up to the closing `}`; an expression that needs such a `:` goes in parentheses. A specifier is `[[fill]align][#][0][width][.precision][kind]`:
 - **`align`:** `<` left, `>` right, `^` centre (an odd gap's extra character goes right). Without one, numbers align right and everything else left. **`fill`**, written before an alignment, is any character other than `{` and `}` (v15; ASCII only before); the default is a space.
@@ -1207,11 +1212,11 @@ A program without a `lugha.toml` is one package, so there "nothing" means the wh
 - **Fields and variants:** a field can be no more visible than its struct; variants share their enum's visibility.
 - **No leaking** (E0318): a declaration may not mention a type less visible than itself, since the code that can use it couldn't name that type. A declaration that isn't `private` may not mention a `private` type in its signature (parameters, return type, a field's type, a variant's payloads, an interface item), looking inside arrays, `Option` and function types. A `public` declaration (v8) may mention only `public` structs, enums and interfaces, looking also inside type arguments (`Box<Inner>`), interface types and a generic function's bounds.
 
-**Functions.** Declared with `fun`, typed parameters, and an optional `: type` return annotation. Omitting the annotation means `void`.
+**Functions.** Declared with `fun`, typed parameters, and an optional `: type` return annotation. Omitting the annotation means `()` (v17; `void` before).
 
 **Generic functions.** A generic function is declared once and compiled once for each distinct list of type arguments the program uses (section 9). One that nothing calls is checked but not compiled. An `extern fun` can't be generic, which the grammar enforces.
 
-**Expression bodies.** A function whose body is a single expression can be written Kotlin-style, with `=` and a semicolon instead of braces. `fun f(...): T = e;` means exactly `fun f(...): T { e }`, so every rule for blocks and tail values applies. The return type follows the same rule as block bodies: it must be written, and omitting it means `void`. This keeps signatures readable without looking at the body, and lets the checker collect every signature before it checks any body.
+**Expression bodies.** A function whose body is a single expression can be written Kotlin-style, with `=` and a semicolon instead of braces. `fun f(...): T = e;` means exactly `fun f(...): T { e }`, so every rule for blocks and tail values applies. The return type follows the same rule as block bodies: it must be written, and omitting it means `()`. This keeps signatures readable without looking at the body, and lets the checker collect every signature before it checks any body.
 
 ```
 fun square(x: i64): i64 = x * x;
@@ -1233,7 +1238,7 @@ fun clamp(x: i64, lo: i64, hi: i64): i64 {
 - Recursion, including mutual recursion, is allowed.
 - There are no default parameters, overloading, variadics or nested functions.
 
-**Return checking.** A non-`void` function must produce a value on every path. Its body passes if its tail expression has the return type, or if the body *definitely returns* by these rules:
+**Return checking.** A function whose return type isn't `()` must produce a value on every path. Its body passes if its tail expression has the return type, or if the body *definitely returns* by these rules:
 
 - `return e;` definitely returns.
 - A block definitely returns if any statement in it does. Statements after it are unreachable and reported as a warning.
@@ -1242,7 +1247,7 @@ fun clamp(x: i64, lo: i64, hi: i64): i64 {
 
 A `panic(...);` statement also counts as definitely returning, because it never returns. A block that definitely returns can stand in for a value of any type, so `if x < 0 { return 0; } else { x }` has type `i64`.
 
-This rejects a few correct programs, such as a function whose only exit is a `return` inside `while true`. Add a final `panic("unreachable");` in that case. `return` stays available for early exits. In a `void` function, `return;` is allowed and falling off the end is an implicit return.
+This rejects a few correct programs, such as a function whose only exit is a `return` inside `while true`. Add a final `panic("unreachable");` in that case. `return` stays available for early exits. In a function returning `()`, `return;` (the same as `return ();`) is allowed and falling off the end is an implicit return.
 
 **Entry point.** Every program must define `main` as either `fun main()` or `fun main(): i32`, without type parameters (E0304). The process exit code is 0 for the first form and `main`'s return value for the second. The user's `main` is emitted as `lugha_fn_main`, like every Lugha function, and the compiler emits a real C `main` that initializes the runtime and calls it (see section 9). Command-line arguments are not accessible in v0.
 
@@ -1323,7 +1328,7 @@ extern fun sqrt(x: f64): f64;
 | `Option<H>` of a handle (v16) | `T *` | The pointer; `NULL` for `None` |
 | `fun(…)` (parameter only, v16) | a function pointer | A callback; see below |
 | an `extern struct` (v16) | the C struct | By value, as C passes it; see "Passing structs" |
-| return type omitted | `void` | — |
+| return type omitted, or `()` | `void` (calls that need the value use `{}`) | — |
 
 The compiler adjusts the string pointer at each call site. C code receives an ordinary NUL-terminated string.
 
@@ -1453,7 +1458,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 - **Division:** compare the divisor to zero (and check `MIN / -1`) before `sdiv`/`srem`; branch to a panic call on failure.
 - **Bounds checks:** load the length header, compare with `icmp ult` (an unsigned compare catches negative indexes too), branch to a panic call on failure.
 - **Short-circuit `&&` and `||`:** separate basic blocks joined by a `phi`.
-- **if expressions:** lower each branch to its own basic block, as for statements, and merge a non-`void` result with a `phi` in the join block. A branch that definitely returns contributes no incoming edge.
+- **if expressions:** lower each branch to its own basic block, as for statements, and merge a result other than `()` with a `phi` in the join block. A branch that definitely returns contributes no incoming edge.
 - **Float-to-int casts:** the `llvm.fptosi.sat` intrinsic gives the saturating behavior in section 4.
 - **Opaque pointers:** every `load`, `store` and `getelementptr` needs its element type, taken from the checker's type table.
 - **Array copies:** generate one deep-copy function per type that contains arrays (for example `lugha_copy_i64_arr_arr`, or `lugha_copy_5Point_arr` — struct names are length-prefixed so they can't be confused with `_arr` or primitive names; the `lugha_copy_` prefix is disjoint from `lugha_fn_` and `lugha_rt_`), and call it to clone a shared array before a write (v15). A copy site itself only marks arrays shared: `or` of the flag into `cap`, through the struct, interface box and closure copies that reach them. For arrays of plain values, a clone is one `lugha_rt_alloc` plus `llvm.memcpy`; for arrays of arrays, the helper copies the outer array and marks the inner ones.
@@ -1664,7 +1669,7 @@ Name and type errors, reported by the checker:
 | E0404 | Operator applied to invalid operand types | `r == s` on boxes, with help (v16); `a < b` on a struct without a `cmp` of the right shape (v15); `true + 1`, `-u` where `u` is `u8`, `u16`, `u32` or `u64`; `a == b` on a `T` without `Eq` (with help to declare it); `s + 1` where `s`'s type has no `add` of the operator shape, `a + a` on a `T` without `Add` or `Num` (v15) |
 | E0405 | Wrong number of arguments | `add(1)` for `fun add(a: i64, b: i64)` |
 | E0406 | Not a function, or something that can't be a value | `let step = 2; step(1);`; `let a = Circle.area;` (a method), `let p = println;`, an extern (v3) |
-| E0407 | `void` used as a value | `let x = log();` where `log` returns nothing |
+| E0407 | Retired in v17 (was: `void` used as a value, before `()` was one); never reported, never reused | |
 | E0410 | No such field | `s.size` on a `string`; `(5).len`; `p.z` or `Point { z: 1.0 }` on a `Point` without `z` |
 | E0411 | Not indexable or not iterable | `n[0]` where `n` is an `i64`; `for c of 5`; a `for … of` over a type whose `next` isn't `fun next(mut self): Option<T>` (v6) |
 | E0412 | Cannot infer an array's element type, `None`'s type, or a type argument | `let xs = [];`, `let x = None;`, `let s = Stack.new();`, `let m = max;` — annotate it: `let xs: i64[] = [];` |
@@ -1704,7 +1709,7 @@ Name and type errors, reported by the checker:
 | E0408 | Invalid cast | `ready as i32` where `ready` is `bool`; `x as bool`; `n as T` for a `T` without `Num` or `Float` (v15) |
 | E0501 | Assignment to an immutable binding | `let total = 0; total = 5;`; assigning to a parameter or loop variable; `xs[0] = 1;` where `xs` isn't `let mut`; `for x of mut xs` where `xs` isn't (v13) |
 | E0502 | Assignment to something that isn't a place | `(a + b) = 3;`; `for x of mut [1, 2]` (v13) |
-| E0503 | Missing return | a non-void function whose body can end without a value (§6); a stray `;` after the result gets a "remove this semicolon" label |
+| E0503 | Missing return | a function not returning `()` whose body can end without a value (§6); a stray `;` after the result gets a "remove this semicolon" label |
 | E0504 | `break` or `continue` outside a loop | |
 | E0505 | Block-like statement with a discarded value | `if big { 100 } else { 1 }` followed by more statements |
 | E0506 | Assignment into a string | `s[0] = 104;`, `s.len = 2;`, `for b of mut s` (v13) — strings are immutable (§4) |
@@ -1718,6 +1723,7 @@ Name and type errors, reported by the checker:
 | W0103 | Unused `match` binding (warning) | `Some(Emtpy) => 0`, a misspelled variant that became a binding |
 | W0104 | `..base` that copies nothing (warning, v17) | `P { x: 1.0, y: 2.0, ..p }` |
 | W0105 | A key written twice in a `#{ … }` literal (warning, v17) | `#{"a": 1, "a": 2}`; `#{1, 1}` |
+| W0106 | A `let` holding `()` (warning, v17) | `let x = log();` where `log` has no return type; not `let x: () = log();`, `let x = ();` or `let _ = log();` |
 
 **JSON diagnostics.** With `--diagnostics=json`, the compiler writes one JSON object per line to stderr, one per diagnostic, and nothing else. Lines and columns are 1-based; columns and offsets count UTF-8 bytes. `label` is the text shown under the primary span, or `null`. `labels` holds secondary spans, and `help` is an optional suggestion. Internal errors have `"code":null`, and `"span":null` when they have no location. `"file"` is the file of the primary span: the main file as given on the command line, or a module's path relative to the main file's directory (`shapes/circle.la`); lines, columns and offsets are within that file. A label in a different file carries its own `"file"` key, which appears only then.
 
@@ -3695,6 +3701,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 104 | Arrays and unions at the C boundary (v17) | `T[]`, `mut T[]`, `extern union`, E0444 | `tests/c_arrays.rs` (done) |
 | 105 | C memory and pointer callbacks (v17) | `CPtr`, `c_read`/`c_write`, callback `T[]`/`Ref<T[]>` | `tests/c_memory.rs` (done) |
 | 106 | Nullable handle fields, plain-data unions (v17) | `Option<H>` fields, E0437 for pointers in unions | `tests/extern_structs.rs`, `tests/c_arrays.rs` (done) |
+| 107 | The unit type (v17) | `()` type and value, W0106, E0407 retired | `tests/programs/m107/` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

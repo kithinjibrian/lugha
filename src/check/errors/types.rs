@@ -153,11 +153,6 @@ pub(in crate::check) fn not_value(name: &str, span: Span, help: &str) -> Diagnos
     Diagnostic::error("E0406", format!("`{name}` can't be used as a value"), span).with_help(help)
 }
 
-pub(in crate::check) fn no_value(span: Span) -> Diagnostic {
-    Diagnostic::error("E0407", "this expression has no value", span)
-        .with_primary_label("its type is void")
-}
-
 pub(in crate::check) fn bad_cast(from: Type, to: Type, span: Span) -> Diagnostic {
     let d = Diagnostic::error("E0408", format!("cannot cast `{from}` to `{to}`"), span);
     match (from, to) {

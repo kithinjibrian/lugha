@@ -58,7 +58,7 @@ impl Checker {
                 self.type_params = [outer.clone(), own].concat();
                 self.check_params(&f.type_params, &outer);
                 let params: Vec<Type> = f.params.iter().map(|p| self.resolve(&p.ty)).collect();
-                let ret = f.ret.as_ref().map_or(Type::Void, |t| self.resolve(t));
+                let ret = f.ret.as_ref().map_or(Type::Unit, |t| self.resolve(t));
                 if let Some(first) = self.methods.get(owner).and_then(|m| m.get(name)) {
                     let first = first.span;
                     self.report(errors::duplicate_method(name, owner, f.name.span, first));

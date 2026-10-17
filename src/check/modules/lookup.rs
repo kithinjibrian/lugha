@@ -115,8 +115,8 @@ impl Checker {
             self.module_named(base.span, name);
         }
         // A module and a function name aren't values: `void` marks them.
-        self.record(base, Type::Void);
-        self.record(callee, Type::Void);
+        self.record(base, Type::Unit);
+        self.record(callee, Type::Unit);
         let key = self.member_through(&m, f)?;
         if !self.functions.contains_key(&key) {
             self.report(errors::undefined(&f.name, f.span));

@@ -43,7 +43,7 @@ impl Checker {
             let ty = self.types[expr.id.0 as usize]
                 .clone()
                 .unwrap_or(Type::Error);
-            if !matches!(ty, Type::Void | Type::Never | Type::Error) {
+            if !matches!(ty, Type::Unit | Type::Never | Type::Error) {
                 let what = match expr.kind {
                     ExprKind::If { .. } => "`if`",
                     ExprKind::Match(..) => "`match`",
@@ -91,7 +91,7 @@ impl Checker {
         };
         let ty = self.types[expr.id.0 as usize].clone()?;
         // The parser ends a `semicolon: true` statement's span with its `;`.
-        let has_value = !matches!(ty, Type::Void | Type::Never | Type::Error);
+        let has_value = !matches!(ty, Type::Unit | Type::Never | Type::Error);
         has_value.then(|| Span::new(last.span.end - 1, last.span.end))
     }
 }
@@ -128,7 +128,7 @@ mod tests {
                     && l.message == "remove this semicolon")
         );
         let block = "fun main() { let v: i32 = { 1 + 1; }; }";
-        assert_eq!(errors(block), [("E0407", "{ 1 + 1; }")]);
+        assert_eq!(errors(block), [("E0403", "{ 1 + 1; }")]);
         let d = crate::check::test_util::diagnostics(block);
         assert!(
             d[0].labels

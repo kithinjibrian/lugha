@@ -1,0 +1,16 @@
+saved a
+saved b
+Ok(())
+saved a
+Err("no path")
+hi
+()
+true
+[(), (), ()]
+3
+Some(()) ()
+Tick { at: 3, done: () }
+Some(())
+from a task
+()
+true

@@ -98,7 +98,7 @@ pub(super) fn answer(snapshot: &Snapshot, file: &Path, at: Position) -> Option<H
         let (Some(span), Some(ty)) = (span, partial.types.get(id).and_then(Option::as_ref)) else {
             continue;
         };
-        if contains(span) && !matches!(ty, Type::Error | Type::Void) {
+        if contains(span) && !matches!(ty, Type::Error | Type::Unit) {
             consider(&mut best, *span, Found::Expr(id, ty));
         }
     }

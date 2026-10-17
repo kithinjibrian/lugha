@@ -205,7 +205,7 @@ impl<'ctx> Lowerer<'ctx> {
         // The checker gives a type name `void` (associated calls and variants).
         // An associated call's method key comes from the checker (PRP-034).
         let (method, receiver) = match &base_type {
-            Type::Void => (self.callees.get(&call.id).cloned(), None),
+            Type::Unit => (self.callees.get(&call.id).cloned(), None),
             // A handle's methods are its `impl` block's, like a struct's (v16).
             Type::Struct(owner, _) | Type::Enum(owner, _) | Type::Handle(owner) => {
                 (Some(key(owner, &name.name)), Some(base))

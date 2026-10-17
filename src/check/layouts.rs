@@ -101,7 +101,7 @@ impl Checker {
         }
         key.rsplit_once('.')
             .and_then(|(owner, name)| self.methods.get(owner)?.get(name))
-            .map_or((Vec::new(), Type::Void), |m| {
+            .map_or((Vec::new(), Type::Unit), |m| {
                 (m.params.clone(), m.ret.clone())
             })
     }
@@ -118,7 +118,7 @@ impl Checker {
                 let mut fields = info.fields.clone();
                 // Codegen lays a union out by this mark (v17, milestone 104).
                 if self.c_unions.contains(key) {
-                    fields.insert(0, (UNION_MARK.to_string(), Type::Void));
+                    fields.insert(0, (UNION_MARK.to_string(), Type::Unit));
                 }
                 (key.clone(), fields)
             })

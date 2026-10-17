@@ -66,7 +66,9 @@ pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnu
             let ptr = context.ptr_type(AddressSpace::default());
             context.struct_type(&[ptr.into(), ptr.into()], false).into()
         }
-        Type::Void | Type::Never | Type::Error => unreachable!("checked: {ty} is not a value type"),
+        // `()` is the empty struct `{}`: no bytes, one value (v17, milestone 107).
+        Type::Unit => context.struct_type(&[], false).into(),
+        Type::Never | Type::Error => unreachable!("checked: {ty} is not a value type"),
         // The gate stops generic programs before codegen (PRP-035).
         Type::Param(_) => unreachable!("codegen never sees a type parameter"),
     }
@@ -117,9 +119,15 @@ impl<'ctx> Lowerer<'ctx> {
         Ok(match self.expr(expr)? {
             Value::Val(value) => value,
             Value::Never => undef(self.context, ty),
-            Value::Void => unreachable!("checked: E0407 rejects void values"),
+            // A statement-like expression used as a value is `()` (v17).
+            Value::Void => unit_value(self.context),
         })
     }
+}
+
+/// `()`'s one value: the empty struct `{}` (v17, milestone 107).
+pub(super) fn unit_value(context: &Context) -> BasicValueEnum<'_> {
+    context.const_struct(&[], false).into()
 }
 
 fn undef<'ctx>(context: &'ctx Context, ty: &Type) -> BasicValueEnum<'ctx> {

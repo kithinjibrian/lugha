@@ -63,6 +63,8 @@ impl<'ctx> Lowerer<'ctx> {
                 self.call_runtime_value("lugha_rt_str_quote", &[Type::String], &[value])
             }
             Type::Fun(..) => self.string_literal("<fun>").into(),
+            // `()` has one value, printed as written (v17, milestone 107).
+            Type::Unit => self.string_literal("()").into(),
             // `'a'` inside a built-in form (v14).
             Type::Char => self.call_runtime_value("lugha_rt_char_quote", &[Type::Char], &[value]),
             _ if plain(ty) => self.text_of(ty, value),

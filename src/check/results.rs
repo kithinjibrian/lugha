@@ -23,7 +23,7 @@ impl Checker {
         {
             return None;
         }
-        self.record(callee, Type::Void);
+        self.record(callee, Type::Unit);
         let variant = Ident {
             name: name.clone(),
             span: callee.span,

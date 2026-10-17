@@ -52,7 +52,7 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         "make_dir" | "remove_file" | "remove_dir" => (vec![Type::String], result(Type::I64)),
         "stat_kind" => (vec![Type::String], Type::I64),
         // `std.process` (milestone 66): the result's tuple is built by
-        // `os_call`, which can register it; `Void` stands in here.
+        // `os_call`, which can register it; `Unit` stands in here.
         "start" => (
             vec![
                 Type::String,
@@ -60,11 +60,11 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
                 Type::String,
                 Type::I32,
             ],
-            Type::Void,
+            Type::Unit,
         ),
         // `std.task` (v17, milestone 91).
-        "sleep" => (vec![Type::I64], Type::Void),
-        "yield" => (Vec::new(), Type::Void),
+        "sleep" => (vec![Type::I64], Type::Unit),
+        "yield" => (Vec::new(), Type::Unit),
         _ => return None,
     })
 }
@@ -90,9 +90,9 @@ impl Checker {
         args: &[Expr],
         expect: Option<&Expect>,
     ) -> Type {
-        self.record(callee, Type::Void);
+        self.record(callee, Type::Unit);
         if let ExprKind::Field(base, _) = &callee.kind {
-            self.record(base, Type::Void);
+            self.record(base, Type::Unit);
         }
         // `$float.from_f64(x)`: an `f64` as the float type expected (v15).
         if op == "from_f64" {
@@ -153,9 +153,9 @@ impl Checker {
         (callee, op): (&Expr, &str),
         args: &[Expr],
     ) -> Type {
-        self.record(callee, Type::Void);
+        self.record(callee, Type::Unit);
         if let ExprKind::Field(base, _) = &callee.kind {
-            self.record(base, Type::Void);
+            self.record(base, Type::Unit);
         }
         match os_signature(op) {
             Some((params, ret)) if params.len() == args.len() => {
@@ -195,9 +195,9 @@ impl Checker {
         (callee, op): (&Expr, &str),
         args: &[Expr],
     ) -> Type {
-        self.record(callee, Type::Void);
+        self.record(callee, Type::Unit);
         if let ExprKind::Field(base, _) = &callee.kind {
-            self.record(base, Type::Void);
+            self.record(base, Type::Unit);
         }
         if op != "from_bytes" || args.len() != 1 {
             let d = Diagnostic::error(
