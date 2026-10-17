@@ -1,6 +1,6 @@
 ## FEATURE: `out` parameters on externs — C fills a value through a pointer and Lugha gets it back after the call; milestone 102 (v17).
 
-**Status:** proposed in session 248, after a discovery of four questions answered by the user. Asked for by lugha-wasmtime (its DECISION-005, need list items 1, 2 and part of 6).
+**Status:** approved 2026-10-17 ("approved", session 249); proposed in session 248, after a discovery of four questions answered by the user. Asked for by lugha-wasmtime (its DECISION-005, need list items 1, 2 and part of 6).
 
 ## OBJECTIVE
 A Lugha binding can call C functions that return values through pointers:

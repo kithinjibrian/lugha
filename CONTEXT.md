@@ -8376,3 +8376,8 @@ Branch: prp-134-out_params
 
 ### STILL OPEN AT CLOSE
 - PRP-134 awaits approval; build on branch `prp-134-out_params`. Later milestones (for lugha-wasmtime): `ptr`/`mut` pointers, arrays across the boundary and unions, raw C memory and pointer callbacks.
+
+---
+
+## SESSION 249 — 2026-10-17 — `out` parameters (milestone 102) — open
+Branch: prp-134-out_params
