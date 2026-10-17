@@ -156,3 +156,49 @@ fn out_is_checked_at_both_ends() {
                 fun main() { let n: u64 = 0; get_fuel(out n); let mut m: u64 = 0; get_fuel(m); }\n";
     Case::new(main, SIDE).rejects(&["E0501", "E0443"]);
 }
+
+const PTR_SIDE: &str = r#"
+#include <stdint.h>
+#include <stdbool.h>
+typedef struct { uint64_t store_id; uint64_t hidden; } instance;
+uint64_t read_instance(const instance *i) { return i->store_id * 10 + i->hidden; }
+void bump(uint64_t *n) { *n += 1; }
+void flip(bool *b) { *b = !*b; }
+void grow(instance *i) { i->store_id += 100; }
+uint64_t peek(const uint64_t *n) { return *n; }
+"#;
+
+#[test]
+fn ptr_reads_and_mut_reads_and_writes_v17() {
+    let main = r#"
+extern struct Instance { store_id: u64, hidden: u64 }
+extern fun read_instance(ptr i: Instance): u64;
+extern fun bump(mut n: u64);
+extern fun flip(mut b: bool);
+extern fun grow(mut i: Instance);
+extern fun peek(ptr n: u64): u64;
+
+fun main() {
+    let inst = Instance { store_id: 4, hidden: 2 };
+    println(read_instance(ptr inst));
+    let mut n: u64 = 41;
+    bump(mut n);
+    println(n);
+    let mut b = true;
+    flip(mut b);
+    println(b);
+    let mut all = [Instance { store_id: 1, hidden: 0 }];
+    grow(mut all[0]);
+    println(all[0].store_id);
+    println(peek(ptr 7));
+}
+"#;
+    Case::new(main, PTR_SIDE).runs("42\n42\nfalse\n101\n7\n");
+}
+
+#[test]
+fn modes_must_match_v17() {
+    let main = "extern fun bump(mut n: u64);\n\
+                fun main() { let mut n: u64 = 0; bump(out n); bump(n); }\n";
+    Case::new(main, PTR_SIDE).rejects(&["E0443", "E0443"]);
+}

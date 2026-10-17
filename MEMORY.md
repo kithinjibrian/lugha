@@ -2075,6 +2075,18 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ## CURRENT PROJECT STATE
 
+### 189. `ptr` and `mut` parameters — milestone 103 (PRP-135)
+
+**Decision:** as PRP-135 (proposed session 250, approved 251 with "build all in one go"). `PassMode { Out, Ptr, Mut }` on `Param.mode` and `ExprKind::Pass`; `CParam::Pointer(mode)`; `ptr` takes any expression, `out`/`mut` a place; E0443 for any mismatch. Codegen `out_params.rs`: one slot per pointer argument, zeroed (`out`) or holding the value (`ptr`/`mut`), stored back for `out`/`mut`.
+
+### 190. Arrays and unions at the C boundary — milestone 104 (PRP-136)
+
+**Decision:** as PRP-136 with deviations (its BUILT notes): `CParam::Elements { mutable }` passes the element pointer (`own_place` first for `mut`); `extern union` is a struct marked by a leading `$union` field in `Checked.structs` (`UNION_MARK`), laid out as C's union; E0444 for literals; no `==` (E0404), prints `<union>`; by value across the boundary E0409.
+
+### 191. C memory and callback arrays — milestone 105 (PRP-137)
+
+**Decision:** as PRP-137 with deviations (its BUILT notes); the user's security sign-off for `c_read`/`c_write` was "build all in one go" (session 251). `CPtr` is `Type::Handle("CPtr")` unless a module declares its own; `c_read`/`c_write` are intrinsics in `check/input.rs` calling `runtime/cmem.c`. Callback `T[]`/`Ref<T[]>` expand to C's pointer and `u64` count (`codegen/c_arrays.rs`), copied in, and for `Ref` copied back (`min(len, count)`).
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

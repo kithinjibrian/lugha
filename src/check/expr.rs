@@ -122,7 +122,7 @@ impl Checker {
             }
             ExprKind::Hashed(lit) => self.hashed(expr, lit, expect),
             // An `out` argument where no extern's `out` parameter takes it (v17).
-            ExprKind::Out(place) => {
+            ExprKind::Pass(_, place) => {
                 self.report(super::out_params::misplaced(expr.span));
                 self.expr(place, None);
                 Type::Error
@@ -160,6 +160,16 @@ impl Checker {
             ExprKind::Try(inner) => self.try_expr(expr, inner),
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
             ExprKind::Index(base, _, index) => self.index(expr, base, index),
+            // `CPtr.null` (v17, milestone 105): C's NULL as a `CPtr`.
+            ExprKind::Field(base, field)
+                if field.name == "null"
+                    && matches!(&base.kind, ExprKind::Name(n) if n == super::input::CPTR
+                        && self.local(n).is_none()
+                        && self.named_type(&self.key(n)).is_none()) =>
+            {
+                self.record(base, Type::Void);
+                Type::Handle(super::input::CPTR.to_string())
+            }
             ExprKind::Field(base, field) => match self.variant_value(expr, (base, field), expect) {
                 Some(ty) => ty,
                 None => match self.function_field(expr, (base, field), expect) {

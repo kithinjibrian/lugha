@@ -114,9 +114,11 @@ impl Printer<'_> {
             .into_iter()
             .collect();
         items.extend(params.iter().map(|p| {
-            // `out` before an extern's parameter (v17).
-            let out = if p.out.is_some() { "out " } else { "" };
-            text(format!("{out}{}: {}", self.ident(&p.name), self.ty(&p.ty)))
+            // `out`, `ptr` or `mut` before an extern's parameter (v17).
+            let mode = p
+                .mode
+                .map_or(String::new(), |(m, _)| format!("{} ", m.word()));
+            text(format!("{mode}{}: {}", self.ident(&p.name), self.ty(&p.ty)))
         }));
         list("(", items, ")")
     }

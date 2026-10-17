@@ -178,6 +178,10 @@ impl Checker {
         if let Some(ty) = self.resolve_task_type(name, &[], span) {
             return ty;
         }
+        // `CPtr` (v17): C's untyped pointer, unless a module names a type so.
+        if name == super::input::CPTR && self.named_type(&self.key(name)).is_none() {
+            return Type::Handle(super::input::CPTR.to_string());
+        }
         // Markers of extern signatures (v16), unless a module names a type so.
         if matches!(name, "data" | "release") && self.named_type(&self.key(name)).is_none() {
             self.report(errors::marker_outside(name, span));

@@ -6,62 +6,90 @@ use super::assign::PlaceUse;
 use super::callbacks::CParam;
 use super::expr::Expect;
 use super::{Checker, Type, errors};
-use crate::ast::{Expr, ExprKind};
+use crate::ast::{Expr, ExprKind, PassMode};
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
 
-/// E0443: `out` where no extern's `out` parameter takes it.
+/// E0443: a mode where the extern's parameter has another, or none.
 pub(super) fn misplaced(at: Span) -> Diagnostic {
-    Diagnostic::error("E0443", "this parameter isn't `out`", at)
-        .with_help("`out` is only for an extern's `out` parameters: pass the value itself")
+    Diagnostic::error("E0443", "this parameter isn't `out`, `ptr` or `mut`", at)
+        .with_help("`out`, `ptr` and `mut` are only for an extern's parameters of that mode: pass the value itself")
 }
 
-/// E0409: a string as an `out` parameter.
+/// E0409: a string passed by address.
 pub(super) fn not_out(ty: &Type, at: Span) -> Diagnostic {
-    Diagnostic::error("E0409", format!("`{ty}` can't be an `out` parameter"), at)
-        .with_help("C can hand back numbers, `bool`, handles and extern structs through `out`")
+    Diagnostic::error("E0409", format!("`{ty}` can't be passed by address"), at)
+        .with_help("`out`, `ptr` and `mut` take numbers, `bool`, handles and extern structs")
+}
+
+/// E0444: a union literal writing other than one field.
+pub(super) fn union_literal(name: &str, at: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0444",
+        format!("a `{name}` literal writes exactly one field"),
+        at,
+    )
+    .with_help("a union holds one field at a time: write the one you set, `U { i64: 0 }`")
+}
+
+/// The mode `plan` gives each written parameter (`None` for a value).
+fn modes(plan: Option<&Vec<CParam>>) -> Vec<Option<PassMode>> {
+    plan.map_or_else(Vec::new, |plan| {
+        plan.iter()
+            .filter(|c| !matches!(c, CParam::Data | CParam::Release))
+            .map(|c| match c {
+                CParam::Pointer(m) => Some(*m),
+                CParam::Elements { mutable: true } => Some(PassMode::Mut),
+                _ => None,
+            })
+            .collect()
+    })
 }
 
 impl Checker {
-    /// The arguments of a call of `key` that infer and check as values: an
-    /// extern's `out` parameters take `out place` instead (E0443 otherwise),
-    /// checked here.
+    /// The arguments of a call of `key` that infer and check as values; an
+    /// extern's `out`/`ptr`/`mut` parameters take an argument written with
+    /// that mode (E0443 otherwise), checked here.
     pub(super) fn extern_inputs<'a>(
         &mut self,
         key: &str,
         args: &'a [Expr],
         params: Vec<Type>,
     ) -> Vec<(&'a Expr, Expect)> {
-        // The caller writes neither `data` nor `release` (v16).
-        let outs: Vec<bool> = self.c_params.get(key).map_or_else(Vec::new, |plan| {
-            plan.iter()
-                .filter(|c| !matches!(c, CParam::Data | CParam::Release))
-                .map(|c| *c == CParam::Out)
-                .collect()
-        });
+        let modes = modes(self.c_params.get(key));
         let mut inputs = Vec::new();
         for (i, (arg, ty)) in args.iter().zip(params).enumerate() {
-            let out = outs.get(i).copied().unwrap_or(false);
-            match (&arg.kind, out) {
-                (ExprKind::Out(place), true) => self.out_argument(arg, place, &ty),
-                (ExprKind::Out(place), false) => {
+            let wanted = modes.get(i).copied().flatten();
+            match (&arg.kind, wanted) {
+                (ExprKind::Pass(given, inner), Some(wanted)) if *given == wanted => match wanted {
+                    PassMode::Ptr => {
+                        self.expect_type(inner, &Expect::of(ty.clone()));
+                        self.record(arg, ty);
+                    }
+                    PassMode::Out | PassMode::Mut => self.out_argument(arg, inner, &ty),
+                },
+                (ExprKind::Pass(_, inner), None) => {
                     self.report(misplaced(arg.span));
-                    self.expr(place, None);
+                    self.expr(inner, None);
                 }
-                (_, true) => {
-                    let d = Diagnostic::error("E0443", "this parameter is `out`", arg.span)
-                        .with_help("C writes it: pass a place as `out x`");
-                    self.report(d);
-                    self.expr(arg, None);
+                (_, Some(wanted)) => {
+                    let message = format!("this parameter is `{}`", wanted.word());
+                    let help = format!("write `{} x` for it", wanted.word());
+                    self.report(Diagnostic::error("E0443", message, arg.span).with_help(help));
+                    let inner = match &arg.kind {
+                        ExprKind::Pass(_, inner) => inner,
+                        _ => arg,
+                    };
+                    self.expr(inner, None);
                 }
-                (_, false) => inputs.push((arg, Expect::of(ty))),
+                (_, None) => inputs.push((arg, Expect::of(ty))),
             }
         }
         inputs
     }
 
-    /// `out place` for an `out` parameter of type `ty`: the place is
-    /// assigned after the call, so the assignment rules apply.
+    /// `out place` or `mut place` for a parameter of type `ty`: the place
+    /// is assigned after the call, so the assignment rules apply.
     fn out_argument(&mut self, arg: &Expr, place: &Expr, ty: &Type) {
         let mark = self.changes_mark();
         let found = self.expr(place, None);
@@ -70,6 +98,54 @@ impl Checker {
         }
         self.no_change_inside(&[place], PlaceUse::Assign, mark);
         self.record(arg, ty.clone());
+    }
+
+    /// The C-boundary rule for an extern's parameter or result of type `ty`
+    /// with `mode` (v17): `Some(None)` when allowed here, `Some(Some(d))`
+    /// when not, `None` when the v16 rules decide.
+    pub(super) fn pointer_param(
+        &self,
+        ty: &Type,
+        mode: Option<PassMode>,
+        param: bool,
+        at: Span,
+    ) -> Option<Option<Diagnostic>> {
+        let elements_ok = |t: &Type| {
+            t.is_numeric()
+                || matches!(t, Type::Bool | Type::Handle(_))
+                || matches!(t, Type::Struct(k, _) if self.c_structs.contains(k))
+        };
+        match ty {
+            // `xs: T[]` and `mut xs: T[]` (milestone 104).
+            Type::Array(element) if param => Some(
+                (!(elements_ok(element) && matches!(mode, None | Some(PassMode::Mut)))).then(|| {
+                    Diagnostic::error("E0409", "this array can't cross the C boundary", at).with_help(
+                        "an extern takes `xs: T[]` or `mut xs: T[]` of numbers, `bool`, handles or extern structs",
+                    )
+                }),
+            ),
+            Type::String | Type::Option(_) if mode.is_some() && !matches!(ty, Type::Option(inner) if matches!(**inner, Type::Handle(_))) => {
+                Some(Some(not_out(ty, at)))
+            }
+            // A union only crosses by address or inside an array (milestone 104).
+            Type::Struct(key, _) if mode.is_none() && self.holds_union(key) => Some(Some(
+                Diagnostic::error("E0409", "a union can't cross the C boundary by value", at)
+                    .with_help("pass it, or a struct holding one, through `ptr`, `mut`, `out` or an array"),
+            )),
+            _ => None,
+        }
+    }
+
+    /// True if extern struct or union `key` is a union or holds one.
+    pub(super) fn holds_union(&self, key: &str) -> bool {
+        if self.c_unions.contains(key) {
+            return true;
+        }
+        self.structs.get(key).is_some_and(|s| {
+            s.fields
+                .iter()
+                .any(|(_, t)| matches!(t, Type::Struct(k, _) if k != key && self.holds_union(k)))
+        })
     }
 }
 

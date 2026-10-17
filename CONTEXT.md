@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**v17: milestones 91–102 done** (`m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.13.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**v17: milestones 91–105 done** (`m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -8400,3 +8400,42 @@ Branch: prp-134-out_params
 
 ### STILL OPEN AT CLOSE
 - Nothing. Next for lugha-wasmtime (TODO): `ptr`/`mut` pointers, arrays and unions, raw C memory and pointer callbacks.
+
+---
+
+## SESSION 250 — 2026-10-17 — C boundary PRPs proposed (PRP-135, 136, 137) — closed
+Branch: prp-135-137-c_boundary
+
+### WHAT WAS DONE
+- The user: "let's knock them out" (lugha-wasmtime's remaining needs). Wrote three PRPs from the design already discussed: PRP-135 `ptr`/`mut` parameters (milestone 103), PRP-136 arrays and `extern union` (104), PRP-137 `CPtr`, `c_read`/`c_write` and pointer callbacks (105; needs security sign-off). Draft summary and rows 103–105 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-135-ptr_mut_params.md`, `PRPs/prp-136-c_arrays_unions.md`, `PRPs/prp-137-c_memory_callbacks.md`. Modified: draft, CONTEXT.
+
+### TESTS WRITTEN
+- None (proposal).
+
+### DECISIONS MADE
+- None final.
+
+### PENDING DECISIONS OPENED
+- Approval of PRP-135–137; the security sign-off for PRP-137's `c_read`/`c_write`.
+
+### STILL OPEN AT CLOSE
+- Awaiting approval; build on this branch, one PRP at a time.
+
+---
+
+## SESSION 251 — 2026-10-17 — C boundary: `ptr`/`mut`, arrays and unions, C memory (milestones 103–105) — closed
+Branch: prp-135-137-c_boundary
+
+### DONE
+- PRP-135/136/137 approved ("build all in one go") and built: milestones 103 (`ptr`/`mut` extern parameters), 104 (arrays at the C boundary, `extern union`, E0444), 105 (`CPtr`, `c_read`/`c_write` in `runtime/cmem.c`, callback `T[]`/`Ref<T[]>`). Spec §3/§4/§8, rows 103–105; E0444 page; E0443/E0409 pages updated; VS Code 0.18.0 installed.
+- Deviations in the PRPs' BUILT notes: unions print `<union>` and `==` is E0404; unions by value across the boundary are E0409; no `is_null()` (`p == CPtr.null`); callback written arrays are `Ref<T[]>`, copied back `min(len, count)`.
+- Narrow runs: `out_params`, `c_arrays`, `c_memory`, `callbacks`, `extern_structs`, `explain`, lib parser/formatter/out_params filters, `npm test`, fmt, clippy.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing. lugha-wasmtime can switch to `ptr`/`mut`, arrays, unions and `CPtr` after reinstalling `lughac`.

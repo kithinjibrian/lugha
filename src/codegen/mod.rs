@@ -12,6 +12,7 @@ mod array;
 mod assertions;
 mod bits;
 mod c_abi;
+mod c_arrays;
 mod c_calls;
 mod callbacks;
 mod cast;

@@ -102,6 +102,18 @@ impl Parser<'_> {
                 span: Span::new(start, self.prev_end()),
             }));
         }
+        // `extern union` (v17, milestone 104): C's union. `union` is a name
+        // anywhere else.
+        if matches!(self.peek(), TokenKind::Ident(word) if word == "union")
+            && matches!(self.peek_at(1), TokenKind::Ident(_))
+        {
+            let union = self.span();
+            let mut s = self.struct_decl()?;
+            s.c_layout = Some(Span::new(start, start + "extern".len()));
+            s.union = Some(union);
+            s.span = Span::new(start, s.span.end);
+            return Ok(Item::Struct(s));
+        }
         // `extern struct` (v16): a struct with C's layout.
         if self.at(&TokenKind::Struct) {
             let mut s = self.struct_decl()?;
@@ -166,6 +178,7 @@ impl Parser<'_> {
             fields,
             span: Span::new(start, self.prev_end()),
             c_layout: None,
+            union: None,
             actor: None,
         })
     }
@@ -184,7 +197,7 @@ impl Parser<'_> {
         Ok(Param {
             name,
             ty: self.ty()?,
-            out: None,
+            mode: None,
         })
     }
 

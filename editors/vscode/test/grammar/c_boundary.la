@@ -1,0 +1,7 @@
+// SYNTAX TEST "source.lugha" "ptr, mut and extern union"
+
+extern union U { a: i32, b: f64 }
+//     ^^^^^ storage.modifier.out.lugha
+extern fun h(ptr u: U, mut n: u64);
+//           ^^^ storage.modifier.out.lugha
+//                     ^^^ storage.modifier.lugha

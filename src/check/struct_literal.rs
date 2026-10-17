@@ -102,12 +102,19 @@ impl Checker {
             .map(|(f, _)| f.as_str())
             .filter(|f| !given.iter().any(|(g, _)| g.name == *f))
             .collect();
-        match &lit.base {
-            None if !missing.is_empty() => {
-                self.report(errors::missing_fields(&missing, &name.name, expr.span));
+        // A union's literal writes exactly one field (v17, milestone 104).
+        if self.c_unions.contains(&key) {
+            if given.len() != 1 || lit.base.is_some() {
+                self.report(super::out_params::union_literal(&name.name, expr.span));
             }
-            Some(base) if missing.is_empty() => self.report(errors::base_unused(base.span)),
-            _ => {}
+        } else {
+            match &lit.base {
+                None if !missing.is_empty() => {
+                    self.report(errors::missing_fields(&missing, &name.name, expr.span));
+                }
+                Some(base) if missing.is_empty() => self.report(errors::base_unused(base.span)),
+                _ => {}
+            }
         }
         // With a base, its type is the literal's: checked against what's expected here.
         if let Some(args) = base_args {

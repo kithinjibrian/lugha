@@ -113,7 +113,7 @@
         {
           "comment": "`out` before a name: an extern's `out` parameter or argument (v17).",
           "name": "storage.modifier.out.lugha",
-          "match": "\\bout(?=\\s+[A-Za-z_])"
+          "match": "\\b(?:out|ptr)(?=\\s+[A-Za-z_0-9\\[\"'#])|(?<=\\bextern\\s)union\\b"
         },
         { "name": "keyword.operator.as.lugha", "match": "\\bas\\b" },
         { "name": "constant.language.boolean.lugha", "match": "\\b(true|false)\\b" },

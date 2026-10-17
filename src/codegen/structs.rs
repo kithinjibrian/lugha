@@ -13,6 +13,14 @@ use super::lower::{Lowerer, POSITIONED};
 use crate::ast::{Expr, Ident};
 use crate::check::{Enums, Structs, Type};
 
+/// True if a struct's fields in `Checked.structs` are an `extern union`'s:
+/// they start with the checker's mark (v17, milestone 104).
+pub(super) fn is_union_fields(fields: &[(String, Type)]) -> bool {
+    fields
+        .first()
+        .is_some_and(|(f, _)| f == crate::check::UNION_MARK)
+}
+
 /// `(size, alignment)` in bytes of a value of type `ty` held in memory: natural
 /// alignment on a 64-bit target, matching LLVM's layout for `%S` there (spec §7).
 pub(super) fn layout(ty: &Type, structs: &Structs, enums: &Enums) -> (u64, u64) {
@@ -26,6 +34,16 @@ pub(super) fn layout(ty: &Type, structs: &Structs, enums: &Enums) -> (u64, u64) 
         Type::Handle(_) => (8, 8),
         // `{ code, env }` (v3 draft §7), `{ table, box }` (v5 draft §7).
         Type::Fun(..) | Type::Interface(..) => (16, 8),
+        // An `extern union` (v17): its largest field, at its largest alignment.
+        Type::Struct(..) if is_union_fields(&structs[&ty.to_string()]) => {
+            let (mut size, mut align) = (0u64, 1u64);
+            for (_, field) in &structs[&ty.to_string()][1..] {
+                let (field_size, field_align) = layout(field, structs, enums);
+                size = size.max(field_size);
+                align = align.max(field_align);
+            }
+            (size.next_multiple_of(align), align)
+        }
         Type::Struct(..) => {
             let (mut size, mut align) = (0u64, 1u64);
             for (_, field) in &structs[&ty.to_string()] {
@@ -48,8 +66,23 @@ impl<'ctx> Lowerer<'ctx> {
             self.context.opaque_struct_type(name);
         }
         for (name, fields) in &self.structs {
-            let body: Vec<BasicTypeEnum> =
-                fields.iter().map(|(_, ty)| self.storage_type(ty)).collect();
+            let body: Vec<BasicTypeEnum> = if is_union_fields(fields) {
+                // A union: whole units of its alignment, as many as its size needs.
+                let ty = Type::Struct(name.clone(), Vec::new());
+                let (size, align) = layout(&ty, &self.structs, &self.enums);
+                let unit = match align {
+                    1 => self.context.i8_type(),
+                    2 => self.context.i16_type(),
+                    4 => self.context.i32_type(),
+                    _ => self.context.i64_type(),
+                };
+                vec![
+                    unit.array_type(u32::try_from(size / align).expect("small union"))
+                        .into(),
+                ]
+            } else {
+                fields.iter().map(|(_, ty)| self.storage_type(ty)).collect()
+            };
             let named = self
                 .context
                 .get_struct_type(name)
@@ -61,6 +94,15 @@ impl<'ctx> Lowerer<'ctx> {
     /// Bytes per array element of type `ty` (spec §7).
     pub(super) fn element_size(&self, ty: &Type) -> u64 {
         layout(ty, &self.structs, &self.enums).0
+    }
+
+    /// True if `ty` is an `extern union` (v17, milestone 104).
+    pub(super) fn is_union(&self, ty: &Type) -> bool {
+        matches!(ty, Type::Struct(..))
+            && self
+                .structs
+                .get(&ty.to_string())
+                .is_some_and(|f| is_union_fields(f))
     }
 
     /// The position and type of `field` in struct type `ty`.
@@ -105,6 +147,21 @@ impl<'ctx> Lowerer<'ctx> {
         let Type::Struct(..) = &ty else {
             unreachable!("checked: a literal has its struct type")
         };
+        // A union's literal: zeroed bytes with its one field written (v17).
+        if self.is_union(&ty) {
+            let slot = self.entry_alloca(&ty, "union");
+            let zero = super::value::llvm_type(self.context, &ty).const_zero();
+            self.builder.build_store(slot, zero).expect(POSITIONED);
+            // The value is already in element layout, as a field is stored.
+            if let Some((_, value)) = values.first() {
+                self.builder.build_store(slot, *value).expect(POSITIONED);
+            }
+            let llvm = super::value::llvm_type(self.context, &ty);
+            return Ok(self
+                .builder
+                .build_load(llvm, slot, "union")
+                .expect(POSITIONED));
+        }
         let struct_type = self
             .context
             .get_struct_type(&ty.to_string())
@@ -128,6 +185,13 @@ impl<'ctx> Lowerer<'ctx> {
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         let ty = self.ty(base);
         let (index, field_ty) = self.field_index(&ty, &field.name);
+        // A union's field is its bytes read as that field's type (v17).
+        if self.is_union(&ty) {
+            let value = self.get(base, &ty)?;
+            let slot = self.entry_alloca(&ty, "union");
+            self.builder.build_store(slot, value).expect(POSITIONED);
+            return Ok(self.load_element(slot, &field_ty));
+        }
         let aggregate = self.get(base, &ty)?.into_struct_value();
         let raw = self
             .builder

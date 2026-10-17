@@ -9,6 +9,10 @@ use super::generics::{has_param, subst};
 use super::instances::{Instance, MAX_DEPTH};
 use super::{Checker, Enums, Structs, Type, errors};
 
+/// The first "field" of an `extern union` in `Checked.structs`: its real
+/// fields follow and share one place (v17, milestone 104).
+pub const UNION_MARK: &str = "$union";
+
 impl Checker {
     /// Remembers `ty` for the generic body being checked, when it mentions
     /// a type parameter.
@@ -110,7 +114,14 @@ impl Checker {
             .structs
             .iter()
             .filter(|(_, info)| info.generics.is_empty())
-            .map(|(key, info)| (key.clone(), info.fields.clone()))
+            .map(|(key, info)| {
+                let mut fields = info.fields.clone();
+                // Codegen lays a union out by this mark (v17, milestone 104).
+                if self.c_unions.contains(key) {
+                    fields.insert(0, (UNION_MARK.to_string(), Type::Void));
+                }
+                (key.clone(), fields)
+            })
             .collect();
         let mut enums: Enums = self
             .enums

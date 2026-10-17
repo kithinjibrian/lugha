@@ -176,7 +176,7 @@ impl<'ctx> Lowerer<'ctx> {
         plan.iter()
             .map(|c| match c {
                 CParam::Value => CKind::Value(written.next().expect("checked arity").clone()),
-                CParam::Callback { .. } | CParam::Out => {
+                CParam::Callback { .. } | CParam::Pointer(_) | CParam::Elements { .. } => {
                     written.next();
                     CKind::Pointer
                 }

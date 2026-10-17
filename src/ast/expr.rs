@@ -59,9 +59,9 @@ pub enum ExprKind {
     Array(Vec<Expr>),
     /// `[value; count]`.
     Repeat(Box<Expr>, Box<Expr>),
-    /// `out place`, a call argument for an extern's `out` parameter (v17,
-    /// milestone 102).
-    Out(Box<Expr>),
+    /// `out place`, `ptr e` or `mut place`: a call argument for an extern's
+    /// parameter of that mode (v17, milestones 102–103).
+    Pass(crate::ast::PassMode, Box<Expr>),
     /// `#{k: v, …}`, `#{x, …}` or `#{}` (v17, milestone 101). Boxed: rare.
     Hashed(Box<HashLiteral>),
     /// `if cond { then } [else …]`; the else branch is an `If` or `Block` expression.

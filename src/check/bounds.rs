@@ -63,6 +63,8 @@ impl Checker {
             // `Num` gives `==` and `<` too (v15).
             Type::Param(n) => self.bounds(n).eq || self.has_num(n),
             Type::Array(inner) | Type::Option(inner) => self.eq_ok(inner),
+            // Only C knows which field of a union is live (v17, milestone 104).
+            Type::Struct(key, _) if self.holds_union(key) => false,
             // A function anywhere inside has no `==` (v3 draft §4).
             Type::Struct(_, args) | Type::Enum(_, args) => {
                 !self.holds_fun(ty) && args.iter().all(|a| self.eq_ok(a))

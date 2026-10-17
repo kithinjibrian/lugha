@@ -46,6 +46,7 @@ impl Parser<'_> {
             fields,
             span,
             c_layout: None,
+            union: None,
             actor: Some(keyword),
         };
         let methods = ImplDecl {

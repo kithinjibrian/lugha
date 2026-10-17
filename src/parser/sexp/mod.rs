@@ -154,7 +154,7 @@ pub fn expr(expr: &Expr) -> String {
         ExprKind::Array(elements) => list("array", &elements.iter().collect::<Vec<_>>()),
         ExprKind::Tuple(elements) => list("tuple", &elements.iter().collect::<Vec<_>>()),
         ExprKind::Repeat(value, count) => list("repeat", &[value, count]),
-        ExprKind::Out(place) => list("out", &[place]),
+        ExprKind::Pass(mode, place) => list(mode.word(), &[place]),
         ExprKind::Hashed(lit) => match lit.kind {
             crate::ast::HashKind::Map => list("map", &[&lit.keys, &lit.values]),
             crate::ast::HashKind::Set => list("set", &[&lit.keys]),

@@ -176,6 +176,9 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Field(base, field) => {
                 let address = self.guarded_slot(base, skip)?;
                 let base_ty = self.ty(base);
+                if self.is_union(&base_ty) {
+                    return Ok(address);
+                }
                 let (index, _) = self.field_index(&base_ty, &field.name);
                 let llvm = llvm_type(self.context, &base_ty).into_struct_type();
                 Ok(self

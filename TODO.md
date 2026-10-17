@@ -441,7 +441,7 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 
 ### Milestone 102 — `out` parameters ✅
 - [x] (PRP-134) `out` on extern parameters and call arguments, E0443; tagged `m102`
-- [ ] lugha-wasmtime, next: `ptr` (`const T *`) and in-out `mut` pointers; arrays across the boundary and `extern union`; raw C memory (`CPtr`, copies) and callbacks with pointer parameters
+- [x] lugha-wasmtime, next (milestones 103–105, session 251): `ptr` (`const T *`) and in-out `mut` pointers; arrays across the boundary and `extern union`; raw C memory (`CPtr`, copies) and callbacks with pointer parameters
 
 ### Milestone 101 — Maps and sets ✅
 - [ ] Copy-on-write: `x = f(x)` where `f` takes `x` by value and changes it copies `x`'s arrays every time (the argument isn't treated as a move although `x` is overwritten); found in session 246, worked around in the prelude
