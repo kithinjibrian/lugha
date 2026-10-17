@@ -99,11 +99,7 @@ impl Checker {
                 Type::Error
             };
         }
-        let inputs: Vec<_> = args
-            .iter()
-            .zip(params)
-            .map(|(a, t)| (a, Expect::of(t)))
-            .collect();
+        let inputs = self.extern_inputs(key, args, params);
         match self.infer(
             call,
             &generics,

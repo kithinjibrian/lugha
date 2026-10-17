@@ -1,6 +1,6 @@
 ## FEATURE: `out` parameters on externs — C fills a value through a pointer and Lugha gets it back after the call; milestone 102 (v17).
 
-**Status:** approved 2026-10-17 ("approved", session 249); proposed in session 248, after a discovery of four questions answered by the user. Asked for by lugha-wasmtime (its DECISION-005, need list items 1, 2 and part of 6).
+**Status:** built in session 249; approved 2026-10-17 ("approved", session 249); proposed in session 248, after a discovery of four questions answered by the user. Asked for by lugha-wasmtime (its DECISION-005, need list items 1, 2 and part of 6).
 
 ## OBJECTIVE
 A Lugha binding can call C functions that return values through pointers:
@@ -65,6 +65,12 @@ let err = wasmtime_context_get_fuel(ctx, out fuel);
 
 ## ROLLBACK PLAN
 - Branch to return to: `main`; revert the merge.
+
+## BUILT (session 249)
+- As planned (MEMORY 188), with one deviation: decision 84's "a non-`Option` handle C leaves NULL panics" assumed handle results panic; spec §8 passes them through as is, so `out` handles do the same. `Option<H>` is the natural declaration for C's `T **` (a variable needs a first value, which a plain handle can only get from C).
+- `out` before a literal (`out 3`) doesn't parse as `out`: `out` is a keyword only before a name (so `f(out)` still reads a variable `out`).
+- Fixed on the way: codegen's extern declaration kept only `Value`/`Callback` parameters as written ones.
+- Tests: parser `out_params.rs` (2), checker `out_params.rs` (3), formatter rule, `tests/out_params.rs` (C fills every kind at -O0/-O2; C sees zero, not the old value; elements, fields, order; E0501/E0443 through `lughac check`), VS Code grammar `out.la` (fails on the old grammar). Narrow runs: those, `callbacks`, `extern_structs`, `explain`, `npm test`, fmt, clippy.
 
 ## ACCEPTANCE CRITERIA
 - [ ] lugha-wasmtime's `wasmtime_context_get_fuel`, `wasmtime_trap_code` and `wasmtime_module_new` shapes work in tests against a C stand-in.

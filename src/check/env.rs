@@ -82,6 +82,15 @@ impl Checker {
                     .enumerate()
                 {
                     let at = annotation.span;
+                    // C can't hand back text through an `out` (v17, milestone 102).
+                    let out = declared.get(i).is_some_and(|p| p.out.is_some());
+                    if out
+                        && matches!(ty, Type::String | Type::Option(_))
+                        && !matches!(ty, Type::Option(inner) if matches!(**inner, Type::Handle(_)))
+                    {
+                        self.report(super::out_params::not_out(ty, at));
+                        continue;
+                    }
                     let d = match ty {
                         // A written callback, checked by `extern_params`.
                         Type::Fun(..) if i < count => continue,

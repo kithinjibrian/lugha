@@ -92,7 +92,7 @@ impl Parser<'_> {
             let kind = match self.peek() {
                 TokenKind::LParen => {
                     let open = self.bump();
-                    let args = self.comma_list(open, TokenKind::RParen, |p| p.expr())?;
+                    let args = self.comma_list(open, TokenKind::RParen, |p| p.argument())?;
                     ExprKind::Call(Box::new(expr), args)
                 }
                 TokenKind::LBracket => {

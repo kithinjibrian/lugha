@@ -121,6 +121,12 @@ impl Checker {
                 self.float_call(expr, (callee, op), args, expect)
             }
             ExprKind::Hashed(lit) => self.hashed(expr, lit, expect),
+            // An `out` argument where no extern's `out` parameter takes it (v17).
+            ExprKind::Out(place) => {
+                self.report(super::out_params::misplaced(expr.span));
+                self.expr(place, None);
+                Type::Error
+            }
             ExprKind::Call(callee, args) if let Some(op) = super::hashing::hash_op(callee) => {
                 self.hash_call(expr, (callee, op), args)
             }

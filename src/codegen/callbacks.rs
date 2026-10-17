@@ -62,7 +62,7 @@ impl<'ctx> Lowerer<'ctx> {
                         .expect("checked: a value per written parameter");
                     (self.param_type(ty), Some(ty.clone()))
                 }
-                CParam::Callback { .. } => {
+                CParam::Callback { .. } | CParam::Out => {
                     written.next();
                     (ptr.into(), None)
                 }
@@ -81,7 +81,15 @@ impl<'ctx> Lowerer<'ctx> {
         plan: &[CParam],
     ) -> Result<Vec<BasicValueEnum<'ctx>>, CodegenError> {
         let mut written = Vec::with_capacity(args.len());
+        // The written parameters' kinds: `out` ones pass a slot (v17).
+        let mut kinds = plan
+            .iter()
+            .filter(|c| !matches!(c, CParam::Data | CParam::Release));
         for (arg, ty) in args.iter().zip(params) {
+            if kinds.next() == Some(&CParam::Out) {
+                written.push(self.out_argument(arg, ty)?);
+                continue;
+            }
             let value = self.get(arg, ty)?;
             written.push(match ty {
                 Type::String => self.c_string(value),
@@ -95,7 +103,7 @@ impl<'ctx> Lowerer<'ctx> {
         let mut data_at = None;
         for c in plan {
             let value: BasicValueEnum = match c {
-                CParam::Value => written.next().expect("checked arity"),
+                CParam::Value | CParam::Out => written.next().expect("checked arity"),
                 CParam::Callback { params, ret, data } => {
                     let pair = written.next().expect("checked arity").into_struct_value();
                     match data {

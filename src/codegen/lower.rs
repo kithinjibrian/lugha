@@ -22,6 +22,8 @@ pub(super) const POSITIONED: &str = "builder is positioned in a block";
 
 /// Lowering state for one module.
 pub(super) struct Lowerer<'ctx> {
+    /// `out` arguments of the extern call being lowered (v17, milestone 102).
+    pub(super) outs: Vec<super::out_params::OutSlot<'ctx>>,
     pub(super) context: &'ctx Context,
     pub(super) module: Module<'ctx>,
     pub(super) builder: Builder<'ctx>,
@@ -159,6 +161,7 @@ pub(super) fn lower<'ctx>(
         used: checked.used.clone(),
         instances: checked.instances.clone(),
         monos: HashMap::new(),
+        outs: Vec::new(),
         subst: HashMap::new(),
         captures: checked.captures.clone(),
         uses_tasks: checked.uses_tasks,

@@ -49,6 +49,14 @@ fn if_else_chains_keep_else_on_the_closing_line() {
 }
 
 #[test]
+fn out_parameters_and_arguments_keep_out() {
+    check(
+        "extern fun f(c:i64,out n:u64):bool;\nfun g(){let mut n:u64=0;f(1,out n);}",
+        "extern fun f(c: i64, out n: u64): bool;\nfun g() {\n    let mut n: u64 = 0;\n    f(1, out n);\n}\n",
+    );
+}
+
+#[test]
 fn an_if_whose_branches_are_values_stays_on_one_line_when_it_fits() {
     check(
         "fun f(c:bool):i64{let y=if c{1}else{2};if c{y}else if d{2}else{3}}",

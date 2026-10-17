@@ -2067,11 +2067,16 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** the prelude's maps change themselves through `mut self` methods (`$put`, `$rebuild`), never `self = f(self, …)`: passing a value into a function that changes and returns it copies its arrays (copy-on-write sees two owners), which made inserts quadratic. Read-only passes (`$map_find(self, k)`) are fine. The compiler-side improvement (treating such an argument as a move) is a TODO. Regression guard: `tests/programs/m101/many_inserts` (100 000 inserts inside the runner's 10 s).
 
+### 188. `out` parameters — milestone 102 (PRP-134)
+
+**Decision:** as PRP-134 (discovery session 248, approved 249). Built: `Param.out`, `ExprKind::Out`, parser `out_params.rs` (contextual `out` before a name; `argument` never inlined, as `postfix` is on every nesting level's stack); checker `CParam::Out` in the extern's plan, `extern_inputs`/`out_argument` (assignment rules, exact type), E0443, E0409 for strings; codegen `out_params.rs`: a zeroed slot of C's type (`bool` as a byte, `Option` of a handle as a pointer) passed by address, `write_outs` after the call through `place_plan`/`place_commit`. Deviation: a non-`Option` handle C leaves NULL is not a panic — the same as a handle result (spec §8 never checked those); `Option<H>` is the usual declaration for C's `T **`, since a variable needs a first value. Fixed on the way: codegen's written-parameter filter kept only `Value`/`Callback`.
+
 ---
 
 ## CURRENT PROJECT STATE
 
 ### Fully Working
+- **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets
 - **Milestone 100 complete**: PRP-132 glob re-exports
 - **Milestone 99 complete**: PRP-131 package entry modules

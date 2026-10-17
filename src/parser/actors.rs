@@ -98,7 +98,7 @@ impl Parser<'_> {
                     methods.push(method);
                 }
                 TokenKind::Ident(_) => {
-                    let Param { name, ty } = self.param("field name")?;
+                    let Param { name, ty, .. } = self.param("field name")?;
                     fields.push(Field {
                         visibility,
                         name,
