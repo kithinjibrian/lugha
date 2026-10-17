@@ -8128,7 +8128,7 @@ Branch: close-e0312-report
 Branch: e0312-beside-hint
 
 ### WHAT WAS DONE
-- The user agreed to the hint offered after kivuli's withdrawn report: for an import from the main file that isn't found, E0312's help names a module beside the main file reached by a shorter suffix of the path (`import support;`). `resolve::not_found` takes the suggestion; `resolve::file_of`; `load` searches the suffixes. E0312's explain page explains where imports are read from.
+- The user agreed to the hint offered after kivuli's withdrawn report: for an import from the main file that isn't found, E0312's help names a module beside the main file reached by a shorter suffix of the path (`import support;`). `resolve::not_found` takes the suggestion (its help text tidied in a follow-up PR); `resolve::file_of`; `load` searches the suffixes. E0312's explain page explains where imports are read from.
 
 ### FILES CREATED OR MODIFIED
 - Modified: `src/modules/{mod,resolve,tests}.rs`, `tests/package_layout.rs`, `docs/errors/E0312.md`, CHANGELOG, CONTEXT.
