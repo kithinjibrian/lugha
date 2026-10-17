@@ -8283,3 +8283,26 @@ Branch: prp-133-maps_and_sets
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 245 — 2026-10-17 — Prelude types shown without `$prelude.` — closed
+Branch: fix-prelude-type-names
+
+### WHAT WAS DONE
+- The user asked to fix the `$prelude.` names left in TODO by milestone 101. `check::shown` strips the prefix; `Checker::report` applies it to every checker diagnostic's message, labels and help; the language server's hover, completion details and signature help apply it too. Type `Display` is unchanged (symbols use it). The local stripping in E0441/E0442 removed.
+
+### FILES CREATED OR MODIFIED
+- Modified: `src/check/{mod,maps,for_mut}.rs`, `src/driver/lsp/{hover,completion,signature}.rs`, `tests/programs/m36/e0415.stderr`, `tests/lsp_hover.rs`, CHANGELOG, TODO, CONTEXT.
+
+### TESTS WRITTEN
+- `check::maps::tests::diagnostics_name_prelude_types_as_written`, `lsp_hover::prelude_types_show_as_written_v17`; `m36/e0415` expectation updated. Targeted: `--lib`, `programs`, `explain`, `spec`, `lsp_hover`, `lsp_completion`, `lsp_signature`, `lsp_docs`, `lsp`, `cli`, fmt, clippy.
+
+### DECISIONS MADE
+- None.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.

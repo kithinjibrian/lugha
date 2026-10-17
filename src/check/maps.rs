@@ -210,7 +210,6 @@ impl Checker {
             } else {
                 "a map's keys"
             };
-            let key = key.to_string().replace("$prelude.", "");
             let d = Diagnostic::error("E0441", format!("{what} can't hold a float: `{key}`"), at)
                 .with_help(
                     "`NaN != NaN`, so a float key could never be found again; use an integer",
@@ -298,6 +297,18 @@ mod tests {
         let codes: Vec<&str> = found.iter().map(|d| d.code).collect();
         assert_eq!(codes, ["W0105", "W0105"], "{found:?}");
         assert!(found[0].message.contains("map") && found[1].message.contains("set"));
+    }
+
+    #[test]
+    fn diagnostics_name_prelude_types_as_written() {
+        let found = crate::check::test_util::diagnostics(
+            "fun main() { let m: Map<string, i64> = #{\"a\": 1}; let n: i64 = m; }",
+        );
+        assert!(
+            found[0].message.contains("found Map<string, i64>"),
+            "{found:?}"
+        );
+        assert!(!format!("{found:?}").contains("$prelude."), "{found:?}");
     }
 
     #[test]

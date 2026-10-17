@@ -68,6 +68,11 @@ pub(super) fn answer(
     let call = call(text, cursor)?;
     let here = Here::new(snapshot, file, text)?;
     let (label, note, decl) = signature(&here, &call)?;
+    // Prelude types as programs write them (v17); before the offsets are taken.
+    let (label, note) = (
+        crate::check::shown(&label),
+        note.map(|n| crate::check::shown(&n)),
+    );
     let doc = decl.and_then(|d| docs::doc_for(snapshot, d));
     let mut parameters = parameters(&label);
     // Each parameter's `@param` text under its highlight (milestone 77).

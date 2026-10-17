@@ -324,7 +324,18 @@ pub(super) struct Checker {
 }
 
 impl Checker {
-    fn report(&mut self, diagnostic: Diagnostic) {
+    fn report(&mut self, mut diagnostic: Diagnostic) {
+        // A prelude type is named as programs write it, `Map<K, V>`, not by
+        // its key (`$prelude.Map`), which symbols keep using (v17).
+        let texts = std::iter::once(&mut diagnostic.message)
+            .chain(diagnostic.label.as_mut())
+            .chain(diagnostic.help.as_mut())
+            .chain(diagnostic.labels.iter_mut().map(|l| &mut l.message));
+        for text in texts {
+            if text.contains(PRELUDE_PREFIX) {
+                *text = shown(text);
+            }
+        }
         self.diagnostics.push(diagnostic);
     }
 
@@ -337,3 +348,12 @@ impl Checker {
 
 #[cfg(test)]
 pub(crate) mod test_util;
+
+/// How a prelude type's key starts: `$prelude.Map`.
+const PRELUDE_PREFIX: &str = "$prelude.";
+
+/// `text` with prelude types named as programs write them: `$prelude.Map<string, i64>`
+/// becomes `Map<string, i64>`. For anything shown to people; symbols keep the key.
+pub fn shown(text: &str) -> String {
+    text.replace(PRELUDE_PREFIX, "")
+}

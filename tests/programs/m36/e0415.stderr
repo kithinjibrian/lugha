@@ -1,4 +1,4 @@
-error[E0415]: no method `sum` on `$prelude.ArrayIter<string>`
+error[E0415]: no method `sum` on `ArrayIter<string>`
   --> tests/programs/m36/e0415.la:2:35
   |
 2 |     let total = ["a", "b"].iter().sum();

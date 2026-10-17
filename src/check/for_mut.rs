@@ -17,10 +17,7 @@ impl Checker {
         if super::maps::key_of(&ty).is_some() {
             let d = crate::diagnostic::Diagnostic::error(
                 "E0442",
-                format!(
-                    "`for … of mut` can't change a `{}` in place",
-                    ty.to_string().replace("$prelude.", "")
-                ),
+                format!("`for … of mut` can't change a `{ty}` in place"),
                 iter.span,
             )
             .with_help("loop over `m.keys()` and assign `m[k] = …`");

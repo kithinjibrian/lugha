@@ -298,3 +298,18 @@ fn a_receiver_typed_by_its_calls_expected_type_hovers_with_it_v17() {
     assert!(shown.contains("Node<Msg>"), "{shown}");
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn prelude_types_show_as_written_v17() {
+    let main = "fun main() {\n    let m = #{\"a\": 1};\n    let it = [1].iter();\n    println(m.len);\n}\n";
+    let t = Temp::with(&[("main.la", main)]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, main);
+    s.expect(&uri, &[]);
+    let m = shown(&s.hover(&uri, 1, 8)).unwrap_or_default();
+    assert!(m.contains("let m: Map<string, i64>"), "{m}");
+    let it = shown(&s.hover(&uri, 2, 8)).unwrap_or_default();
+    assert!(it.contains("let it: ArrayIter<i64>"), "{it}");
+    assert_eq!(s.finish(), Some(0));
+}
