@@ -79,6 +79,30 @@ mod tests {
     }
 
     #[test]
+    fn unit_is_a_pattern() {
+        ok("fun log() {}\n\
+            fun main() {\n\
+                let () = log();\n\
+                match log() { () => println(1) }\n\
+                let o: Option<()> = Some(());\n\
+                match o { Some(()) => println(2), None => println(3) }\n\
+                if let Some(()) = o { println(4); }\n\
+                let t = ((), 5);\n\
+                let ((), n) = t;\n\
+            }");
+        assert_eq!(
+            errors("fun main() { match 1 { () => println(1), _ => println(2) } }"),
+            [("E0403", "()")]
+        );
+        assert_eq!(
+            errors("fun main() { let o: Option<()> = None; match o { Some(()) => println(1) } }")
+                [0]
+            .0,
+            "E0417"
+        );
+    }
+
+    #[test]
     fn unit_doesnt_cross_to_c() {
         assert_eq!(
             errors("extern fun f(u: ());\nfun main() {}"),

@@ -8492,5 +8492,14 @@ Branch: prp-139-unit_type
 - `src/check/members.rs` is 503 lines (over the 500 limit before this session; untouched beyond a rename): a split needs the user's approval.
 - A `()` pattern (`Some(())`) isn't built; a follow-up if wanted.
 
-## SESSION 256 — 2026-10-17 — `()` as a pattern (PRP-139 addendum) — open
+## SESSION 256 — 2026-10-17 — `()` as a pattern (PRP-139 addendum) — closed
 Branch: unit-pattern
+
+### DONE
+- `()` as a pattern, at the user's request ("add it as a pattern"), recorded in PRP-139's BUILT notes: `Some(())`, `let () = log();`, `match u { () => … }`; E0403 against other types. Parser, sexp, checker (`Pat::Wild`), codegen (nothing to test); spec grammar and §4; `tests/programs/m107/pattern`.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- `src/check/members.rs` is 503 lines (over the limit since before session 255): a split needs the user's approval.

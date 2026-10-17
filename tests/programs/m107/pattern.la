@@ -1,0 +1,21 @@
+// `()` as a pattern (v17, milestone 107).
+fun log(s: string) {
+    println(s);
+}
+
+fun main() {
+    let () = log("bound");
+    match log("matched") {
+        () => println("unit"),
+    }
+    let found: Option<()> = Some(());
+    match found {
+        Some(()) => println("some"),
+        None => println("none"),
+    }
+    if let Some(()) = found {
+        println("again");
+    }
+    let ((), n) = ((), 7);
+    println(n);
+}

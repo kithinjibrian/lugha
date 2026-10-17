@@ -52,6 +52,10 @@ impl<'ctx> Lowerer<'ctx> {
         ty: &Type,
         next: BasicBlock<'ctx>,
     ) {
+        // `()` always matches: there is nothing to test (v17, milestone 107).
+        if given.is_empty() {
+            return;
+        }
         let slot = match subject {
             Subject::At(slot) => slot,
             Subject::Value(value) => {

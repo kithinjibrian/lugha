@@ -2093,7 +2093,7 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ### 193. The unit type `()` — milestone 107 (PRP-139)
 
-**Decision:** as PRP-139 (discovery session 254: a real type and value; warn on binding). `Type::Void` is now `Type::Unit` (prints `()`); the AST reuses `Tuple(vec![])` for the type and the value (`tuple_type` of nothing is `Unit`). Codegen keeps `Value::Void` for statement-like results and turns it into `{}` (`unit_value`) where a value is needed; `llvm_type(Unit)` is `{}`, layout (0, 1); functions returning `()` stay LLVM `void`. W0106 in `check/unit.rs`. Parser: `(`'s handling stays in `primary` (a call-out per level overflows E0206's stack); the identifier arm moved out to make room. Not built: a `()` pattern (`Some(())`; `Some(_)` works).
+**Decision:** as PRP-139 (discovery session 254: a real type and value; warn on binding). `Type::Void` is now `Type::Unit` (prints `()`); the AST reuses `Tuple(vec![])` for the type and the value (`tuple_type` of nothing is `Unit`). Codegen keeps `Value::Void` for statement-like results and turns it into `{}` (`unit_value`) where a value is needed; `llvm_type(Unit)` is `{}`, layout (0, 1); functions returning `()` stay LLVM `void`. W0106 in `check/unit.rs`. Parser: `(`'s handling stays in `primary` (a call-out per level overflows E0206's stack); the identifier arm moved out to make room. `()` is also a pattern (session 256): an empty `PatternKind::Tuple`, `Pat::Wild` in the checker, no test in codegen.
 
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
