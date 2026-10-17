@@ -835,7 +835,7 @@ Every iterator `it` that yields `T` (a value whose type has `fun next(mut self):
 
 | Helper | Gives | Meaning |
 | --- | --- | --- |
-| `it.map(f)`, `f: fun(T): U` | `Map<T, U>`, yielding `U` | `f` of each value |
+| `it.map(f)`, `f: fun(T): U` | `Mapped<T, U>` (v17; `Map` before), yielding `U` | `f` of each value |
 | `it.filter(f)`, `f: fun(T): bool` | `Filter<T>` | the values `f` is true for |
 | `it.take(n)` | `Take<T>` | the first `n` values (`n` an `i64`); after them it pulls nothing more |
 | `it.skip(n)` | `Skip<T>` | every value after the first `n` |
@@ -858,7 +858,7 @@ Every iterator `it` that yields `T` (a value whose type has `fun next(mut self):
 - **Copies:** a helper takes its iterator by copy, as `for … of` does, so `let m = it.map(f);` leaves `it` unchanged; `xs.iter()` holds its own copy of `xs`.
 - **Arguments:** closures are typed from the receiver as for the array helpers, and `take`/`skip` take an `i64`, a negative one taking or skipping nothing. Arrays keep their eager helpers: `xs.map(f)` is an array, `xs.iter().map(f)` an iterator.
 - **Panics:** `sum` uses `+`, so it panics on overflow, located in the prelude.
-- **Names:** these are Lugha in the prelude. `range` and the types `ArrayIter`, `Bytes`, `Range`, `Map`, `Filter`, `Take`, `Skip`, `Enumerate` and `Indexed`, and (v13) `Zip`, `Chain`, `TakeWhile`, `SkipWhile` and `FlatMap`, are visible in every module, like `Result`, unless the module declares the name; they print with their module, `$prelude.Map<i64, string>`.
+- **Names:** these are Lugha in the prelude. `range` and the types `ArrayIter`, `Bytes`, `Range`, `Mapped`, `Filter`, `Take`, `Skip`, `Enumerate` and `Indexed`, and (v13) `Zip`, `Chain`, `TakeWhile`, `SkipWhile` and `FlatMap`, are visible in every module, like `Result`, unless the module declares the name; they print with their module, `$prelude.Map<i64, string>`.
 
 **Methods on integers** (v7, v10). Every integer type (`i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`) has these built-in methods:
 

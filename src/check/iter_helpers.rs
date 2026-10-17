@@ -40,7 +40,7 @@ pub(super) const ITER_TYPES: [&str; 15] = [
     "ArrayIter",
     "Bytes",
     "Range",
-    "Map",
+    "Mapped",
     "Filter",
     "Take",
     "Skip",
@@ -145,7 +145,7 @@ mod tests {
         assert_eq!(ty("let r = range(0, 3);"), "$prelude.Range");
         assert_eq!(
             ty("let r = xs.iter().map(fun(n) = \"{n}\");"),
-            "$prelude.Map<i64, string>"
+            "$prelude.Mapped<i64, string>"
         );
         assert_eq!(
             ty("let r = xs.iter().filter(fun(n) = n > 1);"),
