@@ -8503,3 +8503,15 @@ Branch: unit-pattern
 
 ### STILL OPEN AT CLOSE
 - `src/check/members.rs` is 503 lines (over the limit since before session 255): a split needs the user's approval.
+
+## SESSION 258 — 2026-10-17 — Float bits: PRP-140 proposed — closed
+Branch: main
+
+### DONE
+- PRP-140 proposed (milestone 108): `x.to_bits()`, `f64.from_bits(b)`, `f32.from_bits(b)`. Awaiting approval.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-140 awaits approval; `src/check/members.rs` is 503 lines.
