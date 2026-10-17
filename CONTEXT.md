@@ -8190,3 +8190,8 @@ Branch: fix-struct-field-inference
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 241 — 2026-10-17 — Highlight function names in import braces (VS Code) — open
+Branch: vscode-import-names
