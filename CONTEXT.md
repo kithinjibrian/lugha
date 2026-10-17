@@ -8306,3 +8306,8 @@ Branch: fix-prelude-type-names
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 246 — 2026-10-17 — Map/Set inserts in place (kivuli's performance report) — open
+Branch: fix-map-insert-quadratic
