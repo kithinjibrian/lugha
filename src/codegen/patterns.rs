@@ -152,6 +152,14 @@ impl<'ctx> Lowerer<'ctx> {
             }
             PatternKind::Variant(name, slots) => {
                 let slot = match subject {
+                    // Inside a payload or field, `Option` of a handle is held
+                    // as C's nullable pointer (v17): test it as a value.
+                    Subject::At(address) if !top && super::externs::is_option_handle(ty) => {
+                        let value = self.load_element(address, ty);
+                        let slot = self.entry_alloca(ty, "subject");
+                        self.builder.build_store(slot, value).expect(POSITIONED);
+                        slot
+                    }
                     Subject::At(slot) => slot,
                     Subject::Value(value) => {
                         let slot = self.entry_alloca(ty, "subject");

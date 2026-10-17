@@ -113,6 +113,7 @@ impl Checker {
                 .fields = fields;
         }
         self.type_params.clear();
+        self.check_union_fields(program);
         let mut reported = HashSet::new();
         for item in &program.items {
             let Item::Struct(s) = item else { continue };
@@ -174,11 +175,54 @@ impl Checker {
 
 impl Checker {
     /// True if an `extern struct` may hold a field of type `ty`: numbers,
-    /// `bool`, `char`, handles and other extern structs (v16, milestone 90).
+    /// `bool`, `char`, handles, `Option` of a handle (v17, milestone 106)
+    /// and other extern structs (v16, milestone 90).
     pub(super) fn c_field(&self, ty: &Type) -> bool {
         ty.is_numeric()
             || matches!(ty, Type::Bool | Type::Char | Type::Handle(_) | Type::Error)
+            || matches!(ty, Type::Option(inner) if matches!(**inner, Type::Handle(_)))
             || matches!(ty, Type::Struct(key, args) if args.is_empty() && self.c_structs.contains(key))
+    }
+
+    /// E0437 for every `extern union` field that is or holds a pointer: read
+    /// through another field's bytes it would be made up (v17, milestone 106).
+    fn check_union_fields(&mut self, program: &Program) {
+        for item in &program.items {
+            let Item::Struct(s) = item else { continue };
+            if s.union.is_none() {
+                continue;
+            }
+            let key = self.key(&s.name.name);
+            for field in &s.fields {
+                let Some(ty) = self.struct_field(&key, &field.name.name) else {
+                    continue;
+                };
+                if !self.plain_data(&ty, &mut HashSet::new()) {
+                    self.report(errors::c_union_pointer(field.ty.span));
+                }
+            }
+        }
+    }
+
+    /// True if `ty` holds no pointer at any depth: numbers, `bool`, `char`,
+    /// and extern structs and unions of those.
+    fn plain_data(&self, ty: &Type, seen: &mut HashSet<String>) -> bool {
+        match ty {
+            Type::Bool | Type::Char | Type::Error => true,
+            Type::Struct(key, args) if args.is_empty() && self.c_structs.contains(key) => {
+                // A cycle is E0307's; don't report it again here.
+                if !seen.insert(key.clone()) {
+                    return true;
+                }
+                let fields = self
+                    .structs
+                    .get(key)
+                    .map(|i| i.fields.clone())
+                    .unwrap_or_default();
+                fields.iter().all(|(_, f)| self.plain_data(f, seen))
+            }
+            _ => ty.is_numeric() || !self.c_field(ty),
+        }
     }
 }
 

@@ -31,10 +31,13 @@ pub(super) fn element_of(ty: &Type) -> Type {
 }
 
 impl<'ctx> Lowerer<'ctx> {
-    /// How an element is held in memory: `bool` as `i8`, anything else as itself.
+    /// How an element is held in memory: `bool` as `i8`, `Option` of a
+    /// handle as C's nullable pointer (v17), anything else as itself.
     pub(super) fn storage_type(&self, ty: &Type) -> BasicTypeEnum<'ctx> {
         if *ty == Type::Bool {
             self.context.i8_type().into()
+        } else if super::externs::is_option_handle(ty) {
+            self.context.ptr_type(Default::default()).into()
         } else {
             llvm_type(self.context, ty)
         }

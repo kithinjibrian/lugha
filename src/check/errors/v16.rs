@@ -90,3 +90,11 @@ pub(in crate::check) fn c_struct_empty(span: Span) -> Diagnostic {
     Diagnostic::error("E0437", "an `extern struct` needs at least one field", span)
         .with_help("C has no empty structs; pass nothing instead")
 }
+
+/// A pointer (a handle, `Option` of one, `CPtr`) in an `extern union`, at
+/// any depth: another field's bytes would make one up (v17, milestone 106).
+pub(in crate::check) fn c_union_pointer(span: Span) -> Diagnostic {
+    Diagnostic::error("E0437", "a union can't hold a pointer", span).with_help(
+        "reading it from another field's bytes would make one up; a union holds numbers, `bool`, `char` and extern structs and unions of those",
+    )
+}

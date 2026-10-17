@@ -53,6 +53,8 @@ pub(super) fn layout(ty: &Type, structs: &Structs, enums: &Enums) -> (u64, u64) 
             }
             (size.next_multiple_of(align), align)
         }
+        // `Option` of a handle is held as C's nullable pointer (v17, milestone 106).
+        Type::Option(inner) if matches!(**inner, Type::Handle(_)) => (8, 8),
         Type::Enum(_, _) | Type::Option(_) => super::enums::enum_layout(ty, structs, enums),
         _ => unreachable!("checked: {ty} is not stored in memory"),
     }
@@ -200,12 +202,16 @@ impl<'ctx> Lowerer<'ctx> {
         Ok(self.loaded_form(raw, &field_ty))
     }
 
-    /// A value as it is held in memory: `bool` widened to `i8`.
+    /// A value as it is held in memory: `bool` widened to `i8`, `Option` of
+    /// a handle as a nullable pointer (v17, milestone 106).
     pub(super) fn stored_form(
         &self,
         value: BasicValueEnum<'ctx>,
         ty: &Type,
     ) -> BasicValueEnum<'ctx> {
+        if super::externs::is_option_handle(ty) {
+            return self.option_to_pointer(value, ty);
+        }
         if *ty != Type::Bool {
             return value;
         }
@@ -216,8 +222,12 @@ impl<'ctx> Lowerer<'ctx> {
             .into()
     }
 
-    /// A value read from memory: an `i8` narrowed back to `bool`.
+    /// A value read from memory: an `i8` narrowed back to `bool`, a
+    /// nullable pointer back to `Option` of a handle.
     pub(super) fn loaded_form(&self, raw: BasicValueEnum<'ctx>, ty: &Type) -> BasicValueEnum<'ctx> {
+        if super::externs::is_option_handle(ty) {
+            return self.pointer_to_option(raw, ty);
+        }
         if *ty != Type::Bool {
             return raw;
         }

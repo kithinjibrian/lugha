@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**PRP-138 proposed (milestone 106), awaiting approval**: `Option<H>` extern-struct fields, plain-data unions. **v17: milestones 91–105 done** (`m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**v17: milestones 91–106 done** (`m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -8452,5 +8452,15 @@ Branch: main
 ### STILL OPEN AT CLOSE
 - PRP-138 awaits approval.
 
-## SESSION 253 — 2026-10-17 — Nullable handle fields and plain-data unions (milestone 106) — open
+## SESSION 253 — 2026-10-17 — Nullable handle fields and plain-data unions (milestone 106) — closed
 Branch: prp-138-nullable_fields
+
+### DONE
+- PRP-138 approved and built (milestone 106): `Option<H>` extern-struct fields (one memory form for `Option` of a handle: C's nullable pointer, everywhere); unions of plain data only (E0437 at any depth), so the session-251 forge no longer compiles. Spec §8 (fields, unions, `c_read`/`c_write` as the program's responsibility), row 106; E0437 page; CHANGELOG; MEMORY 192.
+- Narrow runs: lib `handles structs patterns externs`; `extern_structs`, `c_arrays`, `c_memory`, `out_params`, `callbacks`, `c_strings`, `explain`; m88's `named_handle`; fmt, clippy.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing. lugha-wasmtime: `CPtr` for byte pointers, `Option<H>` for NULL-able typed pointers, after reinstalling `lughac`.
