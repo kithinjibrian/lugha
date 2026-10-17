@@ -8614,3 +8614,15 @@ Branch: prp-142-std_net
 
 ### STILL OPEN AT CLOSE
 - Next: the HTTP/1.1 PRP (milestone 111) on top of `std.net`.
+
+## SESSION 267 — 2026-10-18 — std.http: discovery, PRP-143 proposed — closed
+Branch: main
+
+### DONE
+- Discovery (Q1 "yes": server + client, http only, strict limits; Q2 "accept": handler panics end the program). PRP-143 proposed (milestone 111). Awaiting approval and security sign-off.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-143 awaits approval and the security sign-off.

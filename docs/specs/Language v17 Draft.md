@@ -186,6 +186,12 @@ The user: "wanna build a std http lib?" — sockets with non-blocking I/O first,
 
 141–152. **`std.net`** (milestone 110): TCP `Listener`/`Conn` in Lugha over `$net.*` built-ins; non-blocking sockets parked in the scheduler through `epoll`, with timeouts; `Result<…, string>` errors; explicit `close()`; blocking name lookup; no UDP, Unix sockets or non-blocking files; tag `m110`. Needs the user's security sign-off.
 
+## Decisions behind milestone 111 (session 267; proposed)
+
+HTTP/1.1 on `std.net`, written in Lugha. Details in PRP-143.
+
+153–166. **`std.http`** (milestone 111): `serve(addr, handler)` with keep-alive, one green thread per connection, strict limits (8 KiB line and headers, 100 headers, 1 MiB body, 30 s) and smuggling-safe framing; `Request`/`Response` with `Map` headers; a client for `http://` (`get`, `post`, `request`); a handler's panic ends the program (documented); no TLS, HTTP/2, streaming, redirects or cookies; tag `m111`. Needs the user's security sign-off.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
