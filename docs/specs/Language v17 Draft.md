@@ -180,6 +180,12 @@ The user: "add unit type" — a real type and value, and a warning for binding o
 
 114–122. **The unit type** (milestone 107): `()` is a type and its one value and replaces `void` (omitted return types mean `: ()`); it works in generics, variables, fields and arrays, is `Eq`/`Ord`/hashable/printable, takes no memory; E0407 withdrawn; W0106 for `let x = e` binding a `()` that isn't the literal (silenced by `let x: () = e`); not across C (E0409/E0437); tag `m107`.
 
+## Decisions behind milestone 110 (sessions 264–265; proposed)
+
+The user: "wanna build a std http lib?" — sockets with non-blocking I/O first, HTTP/1.1 next, TLS later. Details in PRP-142.
+
+141–152. **`std.net`** (milestone 110): TCP `Listener`/`Conn` in Lugha over `$net.*` built-ins; non-blocking sockets parked in the scheduler through `epoll`, with timeouts; `Result<…, string>` errors; explicit `close()`; blocking name lookup; no UDP, Unix sockets or non-blocking files; tag `m110`. Needs the user's security sign-off.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.

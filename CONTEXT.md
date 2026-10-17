@@ -8589,3 +8589,15 @@ Branch: clippy-bindings
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+## SESSION 265 — 2026-10-18 — std.net: discovery, PRP-142 proposed — closed
+Branch: main
+
+### DONE
+- Discovery for an HTTP library: plan sockets → HTTP/1.1 → TLS. Q1 "let's start" (sockets + non-blocking I/O first), Q2 "cool" (API). PRP-142 proposed (milestone 110). Awaiting approval and security sign-off.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-142 awaits approval and the security sign-off.
