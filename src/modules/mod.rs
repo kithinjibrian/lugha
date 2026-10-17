@@ -165,6 +165,8 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
     type Pending = (Vec<String>, PathBuf, Option<String>, Option<Span>);
     let mut queue: VecDeque<Pending> = VecDeque::new();
     queue.push_back((Vec::new(), main.to_path_buf(), None, None));
+    // The main file was loaded as a module (`check`/`test`): no E0319.
+    let mut entry_is_module = false;
     while let Some((path, file, mut package, asked_by)) = queue.pop_front() {
         // A `std` module is embedded in `lughac`, never read from disk (v15).
         let embedded = (package.as_deref() == Some(packages::STD))
@@ -218,6 +220,17 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
             seen[0].1 = path.clone();
             // Its imports resolve as the package's: the names its manifest lists.
             packages.read_manifest(&package, read, &mut base, &mut loaded)?;
+            entry_is_module = true;
+        } else if env.as_module
+            && asked_by.is_none()
+            && let Some(name) = library_name(&module, main)
+        {
+            // Outside a package, a library file (no `fun main`) under
+            // `check`/`test` is the module named after it, so modules it
+            // imports may import it back (session 239).
+            module.path = vec![name.clone()];
+            seen[0].1 = vec![name];
+            entry_is_module = true;
         }
         if let Some(program) = &module.program {
             next_id = program.expr_count;
@@ -230,7 +243,7 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
                 let (target, error) =
                     packages.resolve(import, &package, read, &mut base, &mut loaded)?;
                 module.imports.push(target.path.clone());
-                let entry = as_module.is_none().then_some(main);
+                let entry = (!entry_is_module).then_some(main);
                 let error = error.or_else(|| resolve::check(import, program, entry, &target.file));
                 if let Some(d) = error {
                     loaded.diagnostics.push(d);
@@ -265,6 +278,22 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
     }
     loaded.lock = packages.fetcher.lock_text();
     Ok(loaded)
+}
+
+/// The module name of `main`, a library file (no `fun main`), when its
+/// file name can be one: `diff.la` → `diff`.
+fn library_name(module: &Module, main: &Path) -> Option<String> {
+    let program = module.program.as_ref()?;
+    let has_main = program
+        .items
+        .iter()
+        .any(|i| matches!(i, crate::ast::Item::Fun(f) if f.name.name == "main"));
+    let stem = main.file_stem()?.to_str()?;
+    let mut chars = stem.chars();
+    let first = chars.next()?;
+    let ident = (first.is_ascii_alphabetic() || first == '_')
+        && chars.all(|c| c.is_ascii_alphanumeric() || c == '_');
+    (!has_main && ident).then(|| stem.to_string())
 }
 
 /// The prelude's module path. `$` can't start a module name, so no file clashes.

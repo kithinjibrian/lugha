@@ -374,3 +374,31 @@ fn build_without_main_is_e0303() {
          | ^\n  |\n  = help: add `fun main() { }`\n\nFor more about E0303, run `lughac explain E0303`.\n"
     );
 }
+
+/// Outside a package, a library file in an import cycle checks as a module
+/// (session 239): `vdom` importing it back is no E0319.
+#[test]
+fn check_takes_a_loose_library_file_in_a_cycle_as_a_module() {
+    let dir = TempDir::with(&[
+        ("diff.la", b"import vdom;\npublic fun patch(n: i64): i64 = vdom.size(n) + 1;\n"),
+        (
+            "vdom.la",
+            b"import diff;\npublic fun size(n: i64): i64 = n * 2;\npublic fun both(n: i64): i64 = diff.patch(n);\n",
+        ),
+        ("main.la", b"import vdom;\nfun main() { println(vdom.both(1)); }\n"),
+    ]);
+    let checked = lughac(&dir.0, &["check", "diff.la"]);
+    assert_eq!(checked.status.code(), Some(0), "{}", text(&checked.stderr));
+    // A file with `main` is still the main file: importing it is E0319.
+    std::fs::write(
+        dir.0.join("vdom.la"),
+        "import main;\npublic fun both(n: i64): i64 = n;\n",
+    )
+    .unwrap();
+    let main = lughac(&dir.0, &["check", "main.la"]);
+    assert!(
+        text(&main.stderr).contains("E0319"),
+        "{}",
+        text(&main.stderr)
+    );
+}

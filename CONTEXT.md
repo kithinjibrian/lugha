@@ -8147,5 +8147,23 @@ Branch: e0312-beside-hint
 
 ---
 
-## SESSION 239 — 2026-10-17 — check/test take a loose library file as a module (cycles) — open
+## SESSION 239 — 2026-10-17 — check/test take a loose library file as a module (cycles) — closed
 Branch: fix-check-cycle-loose
+
+### WHAT WAS DONE
+- The user asked whether the language server reports import cycles: it doesn't (probed in and outside a package), but `lughac check` of a loose library file in a cycle reported E0319. Fixed with the user's go-ahead: under `check`/`test` (`LoadEnv.as_module`), a main file outside a package with no `fun main` and an identifier file name loads as the module `[stem]` (`modules::library_name`); E0319 is off for it.
+
+### FILES CREATED OR MODIFIED
+- Modified: `src/modules/mod.rs`, `tests/{cli,test_runner}.rs`, spec §9 (`check` row), CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- `cli::check_takes_a_loose_library_file_in_a_cycle_as_a_module` (with `main` still E0319), `test_runner::a_loose_library_file_in_a_cycle_is_tested_as_a_module`. Targeted: `--lib`, `programs`, `explain`, `cli`, `test_runner`, `package_layout`, `modules`, `spec`, `init`, `snippets`, fmt, clippy.
+
+### DECISIONS MADE
+- A bug fix (milestone 97's rule extended to files outside packages), no PRP.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.
