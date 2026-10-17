@@ -1,0 +1,49 @@
+// A struct literal's field takes its type from any sibling field, in
+// either order (kivuli): `Cmd.none()` in `init` waits for `update`.
+enum Cmd<M> {
+    Nothing,
+    Send(M),
+}
+
+impl Cmd<M> {
+    fun none(): Cmd<M> = Cmd.Nothing;
+    fun send(m: M): Cmd<M> = Cmd.Send(m);
+}
+
+struct App<S, M> {
+    init: (S, Cmd<M>),
+    update: fun(S, M): S,
+}
+
+fun run<S, M>(app: App<S, M>): S {
+    let (s, cmd) = app.init;
+    match cmd {
+        Nothing => s,
+        Send(m) => (app.update)(s, m),
+    }
+}
+
+enum Ev {
+    Go,
+}
+
+fun step(n: i64, e: Ev): i64 = n + 1;
+
+struct Shell<S, M> {
+    app: App<S, M>,
+    name: string,
+}
+
+fun a(): i64 = run(App { init: (0, Cmd.none()), update: step });
+
+fun b(): i64 = run(App { update: step, init: (0, Cmd.none()) });
+
+fun main() {
+    println(a());
+    println(b());
+    println(run(App { init: (41, Cmd.send(Ev.Go)), update: step }));
+    let app = App { init: (5, Cmd.none()), update: step };
+    println(run(app));
+    let shell = Shell { name: "nested", app: App { init: (7, Cmd.none()), update: step } };
+    println(run(shell.app));
+}
