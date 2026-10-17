@@ -7,6 +7,7 @@
 use std::collections::HashMap;
 
 use super::generics::{Generic, subst};
+use super::member_names::{CANDIDATES, MORE_CANDIDATES};
 use super::{Checker, Partial, Type, builtins, helpers, iter_helpers};
 use crate::modules::PRELUDE_PATH;
 use crate::span::Span;
@@ -55,80 +56,6 @@ pub struct TypeMembers {
     pub(crate) generics: Vec<Generic>,
     pub members: Vec<Member>,
 }
-
-/// Every name a built-in method or prelude helper may have; each receiver
-/// keeps only those the checker's resolvers accept for it.
-const CANDIDATES: [&str; 47] = [
-    "push",
-    "pop",
-    "clear",
-    "slice",
-    "get",
-    "set",
-    "update",
-    "is",
-    "to_bytes",
-    "unwrap",
-    "expect",
-    "wrapping_add",
-    "wrapping_sub",
-    "wrapping_mul",
-    "checked_add",
-    "checked_sub",
-    "checked_mul",
-    "checked_div",
-    "saturating_add",
-    "saturating_sub",
-    "saturating_mul",
-    "rotate_left",
-    "rotate_right",
-    "count_ones",
-    "leading_zeros",
-    "trailing_zeros",
-    "map",
-    "filter",
-    "fold",
-    "sort_by",
-    "sort",
-    "any",
-    "all",
-    "lines",
-    "split",
-    "trim",
-    "contains",
-    "starts_with",
-    "ends_with",
-    "join",
-    "iter",
-    "bytes",
-    "chars",
-    "char_count",
-    "unwrap_or",
-    "ok_or",
-    "is_some",
-];
-
-/// More helper names, kept apart so each list stays readable.
-const MORE_CANDIDATES: [&str; 17] = [
-    "is_none",
-    "ok",
-    "map_err",
-    "is_ok",
-    "is_err",
-    "is_alphabetic",
-    "is_digit",
-    "is_whitespace",
-    "is_upper",
-    "is_lower",
-    "to_upper",
-    "to_lower",
-    // A task's and a channel's (v17).
-    "join",
-    "send",
-    "recv",
-    "try_recv",
-    "close",
-];
 
 impl Checker {
     /// The members of every struct, enum and interface, by key.
@@ -450,6 +377,9 @@ fun main() { }
         );
         let int = names(&value_members(&partial, &Type::I64));
         assert!(int.contains(&"checked_add".to_string()) && !int.contains(&"push".to_string()));
+        assert!(!int.contains(&"to_bits".to_string()));
+        let float = names(&value_members(&partial, &Type::F64));
+        assert!(float.contains(&"to_bits".to_string()), "{float:?}");
     }
 
     #[test]
@@ -481,6 +411,7 @@ fun main() { }
             Type::String,
             Type::Char,
             Type::I64,
+            Type::F64,
             Type::Option(Box::new(Type::I64)),
             Type::Enum(
                 super::super::results::RESULT.into(),

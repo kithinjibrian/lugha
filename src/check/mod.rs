@@ -59,6 +59,7 @@ mod literal;
 mod liveness;
 mod maps;
 mod matching;
+mod member_names;
 mod members;
 mod method_calls;
 mod methods;
