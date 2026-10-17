@@ -194,7 +194,7 @@ impl Checker {
             }
         }
         let ret = match ret {
-            None => Type::Void,
+            None => Type::Unit,
             Some(r) if marker(r).is_some() => {
                 self.report(errors::callback_decl(
                     "a callback can't return `data` or `release`",
@@ -337,7 +337,7 @@ mod tests {
                 "E0435",
                 "fun(data)",
             ),
-            ("extern fun f(cb: fun(i64[]));", "E0409", "i64[]"),
+            ("extern fun f(cb: fun(string[]));", "E0409", "string[]"),
             ("extern fun f(cb: fun(fun(i64)));", "E0409", "fun(i64)"),
             ("extern fun f(cb: fun(i64): string);", "E0409", "string"),
             ("extern fun f(): fun(i64);", "E0409", "fun(i64)"),

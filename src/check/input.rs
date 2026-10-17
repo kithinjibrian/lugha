@@ -72,7 +72,7 @@ impl Checker {
             "string_from_utf8" => (vec![bytes()], result(Type::String)),
             // C memory (v17): copies only, through a `CPtr`.
             "c_read" => (vec![cptr(), Type::U64, Type::U64], bytes()),
-            "c_write" => (vec![cptr(), Type::U64, bytes()], Type::Void),
+            "c_write" => (vec![cptr(), Type::U64, bytes()], Type::Unit),
             // `exit` never returns (v4 draft §5).
             _ => (vec![Type::I32], Type::Never),
         };
@@ -139,9 +139,8 @@ mod tests {
 
     #[test]
     fn only_printable_values_interpolate() {
-        // v12: every value but `void` interpolates.
-        let src = "fun f() {}\nfun main() { let t = \"{f()}\"; }";
-        assert_eq!(errors(src), [("E0407", "f()")]);
+        // v12: every value interpolates; `()` too since v17 (milestone 107).
+        crate::check::test_util::ok("fun f() {}\nfun main() { let t = \"{f()}\"; }");
         crate::check::test_util::ok(
             "struct P { x: i64 }\nfun main() { let t = \"{[1]} {P { x: 1 }}\"; }",
         );
@@ -205,10 +204,7 @@ mod tests {
             [("E0401", "1")]
         );
         assert_eq!(errors("fun main() { exit(\"x\"); }"), [("E0403", "\"x\"")]);
-        assert_eq!(
-            errors("fun f() {}\nfun main() { eprint(f()); }"),
-            [("E0407", "f()")]
-        );
+        crate::check::test_util::ok("fun f() {}\nfun main() { eprint(f()); }");
         assert_eq!(errors("fun exit() {}\nfun main() {}"), [("E0302", "exit")]);
     }
 

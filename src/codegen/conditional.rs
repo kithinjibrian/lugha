@@ -38,7 +38,7 @@ impl<'ctx> Lowerer<'ctx> {
         let (pattern, then, else_) = (&parts.pattern, &parts.then, parts.else_.as_deref());
         let (subject, sty) = self.subject_of(&parts.scrutinee)?;
         let rty = self.ty(expr);
-        let result = (!matches!(rty, Type::Void | Type::Never))
+        let result = (!matches!(rty, Type::Unit | Type::Never))
             .then(|| self.entry_alloca(&rty, "iflet.value"));
         let (otherwise, merge) = (self.append("iflet.else"), self.append("iflet.end"));
         self.scopes.push();

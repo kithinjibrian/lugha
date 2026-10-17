@@ -58,7 +58,7 @@ impl Checker {
         for ((name, _), ty) in c.params.iter().zip(&params) {
             self.declare(name, ty.clone(), Binding::Param);
         }
-        let body_expect = ret.clone().filter(|r| *r != Type::Void).map(Expect::of);
+        let body_expect = ret.clone().filter(|r| *r != Type::Unit).map(Expect::of);
         let body = self.block(&c.body, body_expect.as_ref());
         self.pop();
         let frame = self.closures.pop().expect("pushed above");
@@ -68,14 +68,14 @@ impl Checker {
         self.captures.insert(expr.id, frame.captures);
         let ret = match ret {
             Some(r) => {
-                if r != Type::Void && !body.fits(&r) {
+                if r != Type::Unit && !body.fits(&r) {
                     let span = c.body.tail.as_ref().map_or(c.body.span, |t| t.span);
                     self.report(errors::mismatch(r.clone(), body, span, None));
                 }
                 r
             }
             // A body that never finishes returns nothing.
-            None if body == Type::Never => Type::Void,
+            None if body == Type::Never => Type::Unit,
             None => body,
         };
         Type::Fun(params, Box::new(ret))
@@ -144,7 +144,7 @@ mod tests {
             ty("let h = fun(x: i64) = x > 1;", "h"),
             fun(vec![Type::I64], Type::Bool)
         );
-        assert_eq!(ty("let k = fun() {};", "k"), fun(Vec::new(), Type::Void));
+        assert_eq!(ty("let k = fun() {};", "k"), fun(Vec::new(), Type::Unit));
     }
 
     #[test]

@@ -178,7 +178,7 @@ impl Checker {
                 Some(m)
                     if m.receiver == Some(false)
                         && m.params.len() == arity
-                        && m.ret != Type::Void =>
+                        && m.ret != Type::Unit =>
                 {
                     Ok(())
                 }

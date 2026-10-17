@@ -91,7 +91,8 @@ impl Checker {
             }
             // A struct or enum with `cmp` (v15, milestone 59).
             Type::Struct(..) | Type::Enum(..) => self.has_cmp(ty),
-            _ => ty.is_numeric() || matches!(ty, Type::String | Type::Char),
+            // `()` (v17, milestone 107): always equal.
+            _ => ty.is_numeric() || matches!(ty, Type::String | Type::Char | Type::Unit),
         }
     }
 

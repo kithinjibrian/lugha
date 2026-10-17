@@ -14,9 +14,10 @@ use crate::ast::Expr;
 /// The key of a print site's use: its one argument is the printed type.
 pub(super) const PRINT: &str = "$print";
 
-/// True if a value of `ty` can be printed: everything but `void` (v12).
-pub(super) fn printable(ty: &Type) -> bool {
-    *ty != Type::Void
+/// True if a value of `ty` can be printed: everything (v12), `()` too
+/// since it became a value (v17, milestone 107).
+pub(super) fn printable(_ty: &Type) -> bool {
+    true
 }
 
 /// True for the types codegen prints without any helper.
@@ -24,7 +25,7 @@ fn plain(ty: &Type) -> bool {
     ty.is_numeric()
         || matches!(
             ty,
-            Type::Bool | Type::String | Type::Char | Type::Error | Type::Never
+            Type::Bool | Type::String | Type::Char | Type::Error | Type::Never | Type::Unit
         )
 }
 
@@ -156,8 +157,11 @@ mod tests {
                 .map(|(c, _)| c)
                 .collect::<Vec<_>>()
         };
-        assert_eq!(e("println(nothing());"), ["E0407"]);
-        assert_eq!(e("let t = \"{nothing()}\";"), ["E0407"]);
+        // `()` prints too since v17 (milestone 107).
+        assert_eq!(
+            e("println(nothing()); let t = \"{nothing()}\"; panic(1);"),
+            ["E0403"]
+        );
     }
 
     #[test]

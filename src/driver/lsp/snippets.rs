@@ -122,7 +122,7 @@ fn receiver_type(here: &Here, dot: usize) -> Option<(Type, usize)> {
             .iter()
             .enumerate()
             .filter_map(|(id, s)| Some(((*s)?, partial.types.get(id)?.as_ref()?)))
-            .filter(|(s, ty)| s.end == end && !matches!(ty, Type::Void | Type::Error | Type::Never))
+            .filter(|(s, ty)| s.end == end && !matches!(ty, Type::Unit | Type::Error | Type::Never))
             .min_by_key(|(s, _)| (s.end - s.start, s.start));
         if let Some((span, ty)) = found {
             return Some((ty.clone(), span.start - here.base));

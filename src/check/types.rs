@@ -44,7 +44,7 @@ pub enum Type {
     /// A shared box, `Ref<T>` (v16, milestone 67): copies share one box.
     Ref(Box<Type>),
     /// A green thread's handle, `Task<T>`, or a plain `Task` when `T` is
-    /// `Void` (v17, milestone 91): copies share one task.
+    /// `()` (v17, milestone 91): copies share one task.
     Task(Box<Type>),
     /// A channel, `Chan<T>` (v17, milestone 91): copies share one channel.
     Chan(Box<Type>),
@@ -53,15 +53,16 @@ pub enum Type {
     Actor(String),
     /// A handle, by its `extern type`'s key: an opaque C pointer (v16, milestone 88).
     Handle(String),
-    /// A function value, `fun(A, B): R`; `R` is `Void` for no result (v3).
+    /// A function value, `fun(A, B): R`; `R` is `Unit` for no result (v3).
     Fun(Vec<Type>, Box<Type>),
     /// A value of an interface type, by the interface's key, with its type
     /// arguments (empty unless it is generic, v6): some type that satisfies
     /// it, chosen at run time (v5 draft §4).
     Interface(String, Vec<Type>),
-    /// No value: statements, blocks without a tail, `if` without `else`,
-    /// functions without a return type.
-    Void,
+    /// `()`, the unit type and its one value (v17, milestone 107):
+    /// statements, blocks without a tail, `if` without `else`, functions
+    /// without a return type.
+    Unit,
     /// Control never gets here (`return`, `break`, `continue`, or every
     /// branch of an `if` doing so); fits any expected type (spec §6).
     Never,
@@ -204,7 +205,7 @@ impl fmt::Display for Type {
                 let params: Vec<String> = params.iter().map(ToString::to_string).collect();
                 write!(f, "fun({})", params.join(", "))?;
                 return match **ret {
-                    Type::Void => Ok(()),
+                    Type::Unit => Ok(()),
                     ref ret => write!(f, ": {ret}"),
                 };
             }
@@ -236,10 +237,10 @@ impl fmt::Display for Type {
             Type::Param(name) | Type::Interface(name, _) => name,
             Type::Option(inner) => return write!(f, "Option<{inner}>"),
             Type::Ref(inner) => return write!(f, "Ref<{inner}>"),
-            Type::Task(inner) if **inner == Type::Void => "Task",
+            Type::Task(inner) if **inner == Type::Unit => "Task",
             Type::Task(inner) => return write!(f, "Task<{inner}>"),
             Type::Chan(inner) => return write!(f, "Chan<{inner}>"),
-            Type::Void => "void",
+            Type::Unit => "()",
             Type::Never => "never",
             Type::Error => "{error}",
         })

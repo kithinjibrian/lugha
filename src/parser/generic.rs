@@ -43,6 +43,10 @@ impl Parser<'_> {
     pub(super) fn compound_type(&mut self) -> PResult<TypeKind> {
         if self.at(&TokenKind::LParen) {
             let open = self.bump();
+            // `()` (v17, milestone 107): the unit type, an empty tuple.
+            if self.eat(&TokenKind::RParen) {
+                return Ok(TypeKind::Tuple(Vec::new()));
+            }
             let inner = self.nested(|p| p.ty())?;
             // `(A, B)` (v14): a tuple type.
             if self.at(&TokenKind::Comma) {

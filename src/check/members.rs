@@ -362,7 +362,7 @@ pub(super) fn signature(name: &str, receiver: Option<bool>, params: &[Type], ret
     };
     parts.extend(params.iter().map(Type::to_string));
     match ret {
-        Type::Void => format!("fun {name}({})", parts.join(", ")),
+        Type::Unit => format!("fun {name}({})", parts.join(", ")),
         ret => format!("fun {name}({}): {ret}", parts.join(", ")),
     }
 }

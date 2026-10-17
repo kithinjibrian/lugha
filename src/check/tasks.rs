@@ -34,7 +34,7 @@ impl Checker {
         }
         let args: Vec<Type> = args.iter().map(|a| self.resolve(a)).collect();
         Some(match (name, args.as_slice()) {
-            ("Task", []) => Type::Task(Box::new(Type::Void)),
+            ("Task", []) => Type::Task(Box::new(Type::Unit)),
             ("Task", [t]) => Type::Task(Box::new(t.clone())),
             ("Chan", [t]) => Type::Chan(Box::new(t.clone())),
             _ => {
@@ -50,7 +50,7 @@ impl Checker {
         self.uses_tasks = true;
         // `let t: Task<u8> = spawn f(1)` types the call as a `u8`.
         let wanted = match expect.map(|e| &e.ty) {
-            Some(Type::Task(inner)) if **inner != Type::Void => {
+            Some(Type::Task(inner)) if **inner != Type::Unit => {
                 Some(Expect::of(Type::Fun(Vec::new(), inner.clone())))
             }
             _ => None,
@@ -85,7 +85,7 @@ impl Checker {
             self.report(errors::spawn_changes_copy(span));
         }
         match ty {
-            Type::Fun(_, ret) if *ret == Type::Never => Type::Task(Box::new(Type::Void)),
+            Type::Fun(_, ret) if *ret == Type::Never => Type::Task(Box::new(Type::Unit)),
             Type::Fun(_, ret) => Type::Task(ret),
             _ => Type::Error,
         }
@@ -125,7 +125,7 @@ mod tests {
         assert_eq!(let_type(&src, "t"), Type::Task(Box::new(Type::I64)));
         assert_eq!(let_type(&src, "n"), Type::I64);
         let void = "fun log(s: string) { println(s); }\nfun main() { let t = spawn log(\"x\"); t.join(); }";
-        assert_eq!(let_type(void, "t"), Type::Task(Box::new(Type::Void)));
+        assert_eq!(let_type(void, "t"), Type::Task(Box::new(Type::Unit)));
         ok(
             "fun main() { let k = 2; let t = spawn fun(): i64 { k * 10 }(); let n: i64 = t.join(); }",
         );
@@ -158,10 +158,12 @@ mod tests {
     }
 
     #[test]
-    fn joining_a_plain_task_gives_no_value() {
+    fn joining_a_plain_task_gives_unit_v17() {
         assert_eq!(
-            errors("fun main() { let t = spawn println(1); let x = t.join(); }"),
-            [("E0407", "t.join()")]
+            crate::check::test_util::warnings(
+                "fun main() { let t = spawn println(1); let x = t.join(); }"
+            ),
+            [("W0106", "x")]
         );
     }
 

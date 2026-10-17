@@ -23,6 +23,8 @@ impl<'ctx> Lowerer<'ctx> {
         ty: &Type,
     ) -> IntValue<'ctx> {
         match ty {
+            // `()` has one value (v17, milestone 107).
+            Type::Unit => self.context.bool_type().const_int(1, false),
             Type::String => self.string_binary(BinOp::Eq, a, b).into_int_value(),
             // Handles are equal when they are the same C object (v16).
             Type::Handle(_) => self

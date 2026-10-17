@@ -90,6 +90,7 @@ mod test_fns;
 mod tuples;
 mod type_patterns;
 mod types;
+mod unit;
 mod upcast;
 mod usefulness;
 mod variant_values;
@@ -160,7 +161,7 @@ impl Checker {
             c_unions: std::collections::HashSet::new(),
             methods: HashMap::new(),
             scopes: Vec::new(),
-            ret: Type::Void,
+            ret: Type::Unit,
             loops: 0,
             dead: false,
             iterating: Vec::new(),

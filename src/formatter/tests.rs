@@ -61,6 +61,14 @@ fn out_parameters_and_arguments_keep_out() {
 }
 
 #[test]
+fn unit_prints_as_written_v17() {
+    check(
+        "fun f(u:( )):Result<(),string>{let x:()=( );Ok(())}",
+        "fun f(u: ()): Result<(), string> {\n    let x: () = ();\n    Ok(())\n}\n",
+    );
+}
+
+#[test]
 fn an_if_whose_branches_are_values_stays_on_one_line_when_it_fits() {
     check(
         "fun f(c:bool):i64{let y=if c{1}else{2};if c{y}else if d{2}else{3}}",

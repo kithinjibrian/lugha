@@ -1,5 +1,0 @@
-fun log() {}
-
-fun main() {
-    let x = log();
-}

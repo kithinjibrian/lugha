@@ -34,7 +34,7 @@ fn c_signature(params: &[Type], ret: &Type, data: Option<usize>) -> String {
         parts.insert(at, "data".into());
     }
     match ret {
-        Type::Void => format!("fun({})", parts.join(", ")),
+        Type::Unit => format!("fun({})", parts.join(", ")),
         ret => format!("fun({}): {ret}", parts.join(", ")),
     }
 }
@@ -187,7 +187,7 @@ impl<'ctx> Lowerer<'ctx> {
             types.insert(at, self.context.ptr_type(Default::default()).into());
         }
         match ret {
-            Type::Void => self.context.void_type().fn_type(&types, false),
+            Type::Unit => self.context.void_type().fn_type(&types, false),
             ret => self.c_result_type(ret).fn_type(&types, false),
         }
     }

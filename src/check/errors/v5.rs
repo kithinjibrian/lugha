@@ -59,6 +59,10 @@ pub(in crate::check) fn extern_value(ty: &Type, span: Span) -> Diagnostic {
             Diagnostic::error("E0409", "interface values can't cross the C boundary", span)
                 .with_help("C can't call a Lugha method; pass the data it needs instead")
         }
+        Type::Unit => Diagnostic::error("E0409", "`()` can't cross the C boundary", span)
+            .with_help(
+                "leave the parameter out; an extern without a result type returns C's `void`",
+            ),
         _ => super::extern_fun(span),
     }
 }

@@ -26,6 +26,8 @@ pub(super) fn is_union_fields(fields: &[(String, Type)]) -> bool {
 pub(super) fn layout(ty: &Type, structs: &Structs, enums: &Enums) -> (u64, u64) {
     match ty {
         Type::U8 | Type::I8 | Type::Bool => (1, 1),
+        // `()` takes no memory (v17, milestone 107).
+        Type::Unit => (0, 1),
         Type::I16 | Type::U16 => (2, 2),
         Type::I32 | Type::U32 | Type::F32 | Type::Char => (4, 4),
         Type::I64 | Type::U64 | Type::F64 | Type::String | Type::Array(_) | Type::Ref(_) => (8, 8),

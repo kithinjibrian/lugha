@@ -51,32 +51,27 @@ impl Checker {
         self.convert(expr, ty, expect)
     }
 
-    /// Checks an expression used as a value: `void` is E0407 and becomes `Error`.
+    /// Checks an expression used as a value. Every expression has one: a
+    /// statement-like one is `()` (v17, milestone 107; E0407 is retired).
     pub(super) fn value(&mut self, expr: &Expr, expect: Option<&Expect>) -> Type {
-        let ty = self.expr(expr, expect);
-        if ty == Type::Void {
-            let mut d = errors::no_value(expr.span);
-            if let ExprKind::Block(block) = &expr.kind
-                && let Some(semicolon) = self.stray_semicolon(block)
-            {
-                d = errors::with_stray_semicolon(d, semicolon);
-            }
-            self.report(d);
-            return Type::Error;
-        }
-        ty
+        self.expr(expr, expect)
     }
 
     /// Checks `expr` where a value of `expect.ty` is required (E0403 otherwise).
     pub(super) fn expect_type(&mut self, expr: &Expr, expect: &Expect) -> Type {
         let found = self.value(expr, Some(expect));
         if !found.fits(&expect.ty) {
-            self.report(errors::mismatch(
-                expect.ty.clone(),
-                found,
-                expr.span,
-                expect.reason.as_ref(),
-            ));
+            let unit = found == Type::Unit;
+            let mut d =
+                errors::mismatch(expect.ty.clone(), found, expr.span, expect.reason.as_ref());
+            // `{ x; }` where a value is wanted: the `;` made it `()`.
+            if unit
+                && let ExprKind::Block(block) = &expr.kind
+                && let Some(semicolon) = self.stray_semicolon(block)
+            {
+                d = errors::with_stray_semicolon(d, semicolon);
+            }
+            self.report(d);
             return Type::Error;
         }
         found
@@ -167,7 +162,7 @@ impl Checker {
                         && self.local(n).is_none()
                         && self.named_type(&self.key(n)).is_none()) =>
             {
-                self.record(base, Type::Void);
+                self.record(base, Type::Unit);
                 Type::Handle(super::input::CPTR.to_string())
             }
             ExprKind::Field(base, field) => match self.variant_value(expr, (base, field), expect) {
@@ -231,7 +226,7 @@ impl Checker {
         self.expect_type(cond, &Expect::of(Type::Bool));
         let Some(else_expr) = else_ else {
             self.block(then, None);
-            return Type::Void;
+            return Type::Unit;
         };
         let then_ty = self.block(then, expect);
         let else_ty = self.expr(else_expr, expect);

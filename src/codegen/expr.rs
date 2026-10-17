@@ -185,7 +185,7 @@ impl<'ctx> Lowerer<'ctx> {
             }
             // `CPtr.null` (v17): a null pointer.
             ExprKind::Field(base, field)
-                if self.ty(base) == Type::Void
+                if self.ty(base) == Type::Unit
                     && field.name == "null"
                     && matches!(self.ty(expr), Type::Handle(ref k) if k == "CPtr") =>
             {
@@ -195,7 +195,7 @@ impl<'ctx> Lowerer<'ctx> {
                     .into()
             }
             // The checker gives a type name `void`: `Shape.Empty` is a variant.
-            ExprKind::Field(base, field) if self.ty(base) == Type::Void => {
+            ExprKind::Field(base, field) if self.ty(base) == Type::Unit => {
                 let ty = self.ty(expr);
                 self.construct(&ty, &field.name, &[])?
             }

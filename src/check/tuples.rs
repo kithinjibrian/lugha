@@ -25,6 +25,10 @@ pub fn elements(ty: &Type) -> Option<&[Type]> {
 impl Checker {
     /// The tuple type of `elements`, registering its struct on first use.
     pub(super) fn tuple_type(&mut self, elements: Vec<Type>) -> Type {
+        // `()` is the unit type, not an empty tuple struct (v17, milestone 107).
+        if elements.is_empty() {
+            return Type::Unit;
+        }
         let n = elements.len();
         let key = format!("{TUPLE}{n}");
         if !self.structs.contains_key(&key) {

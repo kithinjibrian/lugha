@@ -70,7 +70,7 @@ impl Checker {
             // A `string` result is C's text, copied (v16, milestone 89).
             let ret_type = match ret {
                 Some(ty) => self.resolve(ty),
-                None => Type::Void,
+                None => Type::Unit,
             };
             if is_extern {
                 // Only numbers and strings cross the C boundary (spec §8);
@@ -106,6 +106,8 @@ impl Checker {
                         Type::Array(_) => errors::extern_array(at),
                         Type::Struct(_, _) => errors::extern_struct(at),
                         Type::Fun(..) | Type::Interface(..) => errors::extern_value(ty, at),
+                        // `()` has no C form; an extern without a result is C's `void` (v17).
+                        Type::Unit if i < count => errors::extern_value(ty, at),
                         Type::Enum(_, _) | Type::Option(_) => errors::extern_enum(at),
                         _ => continue,
                     };

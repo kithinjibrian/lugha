@@ -1,4 +1,4 @@
-//! v17 codes: green threads (E0438, milestone 91); actors (E0439, milestone 92); struct update (E0440, W0104, milestone 93); variant values (E0412, milestone 94).
+//! v17 codes: green threads (E0438, milestone 91); actors (E0439, milestone 92); struct update (E0440, W0104, milestone 93); variant values (E0412, milestone 94); the unit type (W0106, milestone 107).
 
 use crate::check::Type;
 use crate::diagnostic::Diagnostic;
@@ -66,4 +66,13 @@ pub(in crate::check) fn variant_value_infer(variant: &str, span: Span) -> Diagno
         span,
     )
     .with_help("say what it should be: `let f: fun(i64): Option<i64> = Some;`, or pass it where the type is known")
+}
+
+/// `let x = e` where `e` is `()` but not the literal (v17, milestone 107).
+pub(in crate::check) fn unit_binding(name: &str, span: Span, init: Span) -> Diagnostic {
+    Diagnostic::warning("W0106", format!("`{name}` holds `()`"), span)
+        .with_label(init, "this has no other value than `()`")
+        .with_help(format!(
+            "drop the `let`, or write `let {name}: () = …` if that's what you meant"
+        ))
 }

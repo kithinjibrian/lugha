@@ -119,7 +119,7 @@ impl Checker {
             let mut items: Vec<Requirement> = Vec::new();
             for it in &i.items {
                 let params = it.params.iter().map(|p| self.resolve(&p.ty)).collect();
-                let ret = it.ret.as_ref().map_or(Type::Void, |t| self.resolve(t));
+                let ret = it.ret.as_ref().map_or(Type::Unit, |t| self.resolve(t));
                 let name = &it.name.name;
                 if let Some(first) = items.iter().find(|r| r.name == *name) {
                     let d = errors::duplicate_method(name, &key, it.name.span, first.span);

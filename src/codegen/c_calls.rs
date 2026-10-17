@@ -95,7 +95,7 @@ impl<'ctx> Lowerer<'ctx> {
     pub(super) fn c_sig(&self, kinds: &[CKind], ret: &Type) -> CSig<'ctx> {
         let classified = |ty: &Type| classify(ty, &self.structs, &self.enums);
         let ret = match ret {
-            Type::Void => Ret::Void,
+            Type::Unit => Ret::Void,
             Type::Struct(..) => match classified(ret) {
                 Passing::Memory => Ret::Memory(ret.clone()),
                 Passing::Registers(pieces) => Ret::Split(ret.clone(), self.piece_types(&pieces)),

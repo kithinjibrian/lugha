@@ -48,12 +48,12 @@ impl Checker {
         for (param, ty) in f.params.iter().zip(params) {
             self.declare(&param.name, ty, Binding::Param);
         }
-        let expect = (ret != Type::Void).then(|| Expect::of(ret.clone()));
+        let expect = (ret != Type::Unit).then(|| Expect::of(ret.clone()));
         let body = self.block(&f.body, expect.as_ref());
         self.pop();
-        if ret != Type::Void && body == Type::Void {
+        if ret != Type::Unit && body == Type::Unit {
             self.missing_return(f, ret);
-        } else if ret != Type::Void && !body.fits(&ret) {
+        } else if ret != Type::Unit && !body.fits(&ret) {
             let span = f.body.tail.as_ref().map_or(f.body.span, |tail| tail.span);
             self.report(errors::mismatch(ret, body, span, None));
         }

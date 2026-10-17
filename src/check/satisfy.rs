@@ -171,7 +171,7 @@ fn shown(req: &Requirement) -> String {
         .into_iter()
         .chain(params)
         .collect();
-    let ret = if req.ret == Type::Void {
+    let ret = if req.ret == Type::Unit {
         String::new()
     } else {
         format!(": {}", req.ret)

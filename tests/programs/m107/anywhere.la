@@ -1,0 +1,54 @@
+// `()` in every position: keys, sets, closures, boxes, tuples, generics, order (v17, milestone 107).
+struct Wrap<T> {
+    v: T,
+    n: i64,
+}
+
+fun log(s: string) {
+    println(s);
+}
+
+fun pick<T>(a: T, b: T, first: bool): T = if first { a } else { b };
+
+fun main() {
+    let m: Map<(), i64> = #{(): 7};
+    println(m[()]);
+    let s: Set<()> = #{(), ()};
+    println(s);
+    let mut us: ()[] = [(), (), ()];
+    us.push(());
+    let popped = us.pop();
+    println("{us.len} {popped}");
+    let f = fun(): () = log("closure");
+    let r: () = f();
+    println(r);
+    let units = [1, 2].map(fun(x: i64) {
+        println(x);
+    });
+    println(units);
+    let b = Ref.new(());
+    b.set(());
+    println(b.get());
+    let t = ((), 1);
+    println(t);
+    let (u, n) = t;
+    println("{u} {n}");
+    let w = Wrap { v: (), n: 2 };
+    println(w == Wrap { v: (), n: 2 });
+    println(pick((), (), true));
+    let o: Option<()> = None;
+    match o {
+        Some(_) => println("some"),
+        None => println("none"),
+    }
+    println(() < ());
+    println(() <= ());
+    more();
+}
+
+fun more() {
+    let mut xs = [(), ()];
+    xs = xs.sort();
+    println(xs);
+    println(((), 2) < ((), 3));
+}

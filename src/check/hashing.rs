@@ -21,9 +21,9 @@ impl Checker {
         (callee, op): (&Expr, &str),
         args: &[Expr],
     ) -> Type {
-        self.record(callee, Type::Void);
+        self.record(callee, Type::Unit);
         if let ExprKind::Field(base, _) = &callee.kind {
-            self.record(base, Type::Void);
+            self.record(base, Type::Unit);
         }
         if op != "value" || args.len() != 1 {
             let d = Diagnostic::error(

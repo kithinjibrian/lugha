@@ -25,7 +25,7 @@ impl Checker {
                 self.reachable(&mut flow, tail.span);
                 self.expr(tail, expect)
             }
-            None => Type::Void,
+            None => Type::Unit,
         };
         self.dead = was_dead;
         self.pop();
@@ -111,6 +111,10 @@ impl Checker {
             None => match self.value(init, None) {
                 // Nothing useful to bind; `Error` keeps later uses quiet.
                 Type::Never => Type::Error,
+                Type::Unit => {
+                    self.unit_binding(name, init);
+                    Type::Unit
+                }
                 ty => ty,
             },
         };
@@ -146,14 +150,14 @@ impl Checker {
             return;
         }
         match (self.ret.clone(), value) {
-            (Type::Void, None) => {}
-            (Type::Void, Some(value)) => {
+            (Type::Unit, None) => {}
+            (Type::Unit, Some(value)) => {
                 let ty = self.expr(value, None);
-                if !matches!(ty, Type::Void | Type::Never | Type::Error) {
-                    self.report(errors::mismatch(Type::Void, ty, span, None));
+                if !matches!(ty, Type::Unit | Type::Never | Type::Error) {
+                    self.report(errors::mismatch(Type::Unit, ty, span, None));
                 }
             }
-            (ret, None) => self.report(errors::mismatch(ret, Type::Void, span, None)),
+            (ret, None) => self.report(errors::mismatch(ret, Type::Unit, span, None)),
             (ret, Some(value)) => {
                 self.expect_type(value, &Expect::of(ret));
             }

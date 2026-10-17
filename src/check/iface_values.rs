@@ -84,7 +84,7 @@ impl Checker {
         };
         match &ty {
             // Already reported, never produced, already converted, or E0407 to come.
-            Type::Error | Type::Never | Type::Void => ty,
+            Type::Error | Type::Never | Type::Unit => ty,
             Type::Interface(..) if ty.fits(wanted) => ty,
             // Another interface converts when it declares every item (v6).
             Type::Interface(key, _) if *key != interface.key => {

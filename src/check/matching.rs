@@ -76,10 +76,10 @@ impl Checker {
     ) -> Type {
         match result {
             // Arms without a value: the others must have none either.
-            Some((Type::Void, _)) => {
+            Some((Type::Unit, _)) => {
                 let ty = self.expr(body, None);
-                if !matches!(ty, Type::Void | Type::Never | Type::Error) {
-                    self.report(errors::mismatch(Type::Void, ty.clone(), body.span, None));
+                if !matches!(ty, Type::Unit | Type::Never | Type::Error) {
+                    self.report(errors::mismatch(Type::Unit, ty.clone(), body.span, None));
                 }
                 ty
             }

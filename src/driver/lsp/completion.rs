@@ -204,7 +204,7 @@ impl<'a> Here<'a> {
                 let span = (*span)?;
                 let ty = partial.types.get(id)?.as_ref()?;
                 let usable =
-                    span.end == end && !matches!(ty, Type::Void | Type::Error | Type::Never);
+                    span.end == end && !matches!(ty, Type::Unit | Type::Error | Type::Never);
                 usable.then_some((span, ty))
             });
             if let Some(ty) = smallest(typed) {

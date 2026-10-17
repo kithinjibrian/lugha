@@ -28,7 +28,7 @@ impl Checker {
             && self.type_params.iter().any(|g| g.name == *t)
         {
             self.record(base, Type::Param(t.clone()));
-            self.record(callee, Type::Void);
+            self.record(callee, Type::Unit);
             return Some(match self.through_bound(call, t, name, false) {
                 Some(m) => self.arguments(call, &name.name, &m, args, (&[], expect)),
                 None => self.unchecked(args),
@@ -38,8 +38,8 @@ impl Checker {
         if let ExprKind::Name(t) = &base.kind
             && self.predeclared_ref(t)
         {
-            self.record(base, Type::Void);
-            self.record(callee, Type::Void);
+            self.record(base, Type::Unit);
+            self.record(callee, Type::Unit);
             return Some(self.ref_new(call, name, args, expect));
         }
         // `Chan.new()` and `Chan.buffered(n)` (v17), unless the module has a `Chan`.
@@ -47,8 +47,8 @@ impl Checker {
             && t == "Chan"
             && self.predeclared_task(t)
         {
-            self.record(base, Type::Void);
-            self.record(callee, Type::Void);
+            self.record(base, Type::Unit);
+            self.record(callee, Type::Unit);
             return Some(self.chan_new(call, name, args, expect));
         }
         if let Some(ty) = self.type_named_by(base) {
@@ -56,8 +56,8 @@ impl Checker {
             if method.is_none() && matches!(ty, Type::Enum(_, _)) {
                 return None; // `E.V(..)`: a variant, or E0415 from construction
             }
-            self.record(base, Type::Void);
-            self.record(callee, Type::Void);
+            self.record(base, Type::Unit);
+            self.record(callee, Type::Unit);
             return Some(self.associated(call, &ty, (name, method), args, expect));
         }
         let mark = self.changes_mark();
@@ -70,7 +70,7 @@ impl Checker {
             self.record(callee, field.clone());
             return Some(self.call_value(call, &name.name, &field, args));
         }
-        self.record(callee, Type::Void);
+        self.record(callee, Type::Unit);
         // A message to an actor (v17): its methods, through the handle.
         if let Type::Actor(key) = &receiver
             && let Some(ty) = self.actor_call(call, key, name, args, expect)

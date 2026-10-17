@@ -166,7 +166,7 @@ impl<'ctx> Lowerer<'ctx> {
     ) -> Result<Value<'ctx>, CodegenError> {
         let i64_type = self.context.i64_type();
         let rty = self.ty(expr);
-        let result = (!matches!(rty, Type::Void | Type::Never))
+        let result = (!matches!(rty, Type::Unit | Type::Never))
             .then(|| self.entry_alloca(&rty, "select.value"));
         let end = self.append("select.end");
         let impossible = self.append("select.impossible");

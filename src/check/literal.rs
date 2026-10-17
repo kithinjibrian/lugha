@@ -23,7 +23,7 @@ impl Checker {
             .filter(|t| {
                 !matches!(
                     t,
-                    Type::Void | Type::Never | Type::Error | Type::Interface(..)
+                    Type::Unit | Type::Never | Type::Error | Type::Interface(..)
                 )
             });
         let reason = expect.and_then(|e| e.reason.as_ref());

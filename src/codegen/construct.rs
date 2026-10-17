@@ -21,7 +21,7 @@ impl<'ctx> Lowerer<'ctx> {
             {
                 Some(name.clone())
             }
-            ExprKind::Field(base, variant) if self.ty(base) == Type::Void => {
+            ExprKind::Field(base, variant) if self.ty(base) == Type::Unit => {
                 Some(variant.name.clone())
             }
             _ => None,

@@ -24,6 +24,10 @@ impl<'ctx> Lowerer<'ctx> {
         given: &[Expr],
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         let ty = self.ty(expr);
+        // `()`: the unit value (v17, milestone 107).
+        if ty == Type::Unit {
+            return Ok(super::value::unit_value(self.context));
+        }
         let fields = self.structs[&ty.to_string()].clone();
         let mut aggregate = llvm_type(self.context, &ty).into_struct_type().get_undef();
         for (index, (value, (_, field_ty))) in given.iter().zip(&fields).enumerate() {

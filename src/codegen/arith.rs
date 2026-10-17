@@ -202,6 +202,11 @@ impl<'ctx> Lowerer<'ctx> {
         a: BasicValueEnum<'ctx>,
         b: BasicValueEnum<'ctx>,
     ) -> IntValue<'ctx> {
+        // `()` has one value: always equal (v17, milestone 107).
+        if ty == Type::Unit {
+            let holds = matches!(op, BinOp::Eq | BinOp::Le | BinOp::Ge);
+            return self.context.bool_type().const_int(u64::from(holds), false);
+        }
         if ty.is_float() {
             let predicate = match op {
                 BinOp::Lt => FloatPredicate::OLT,

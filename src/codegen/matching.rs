@@ -27,7 +27,7 @@ impl<'ctx> Lowerer<'ctx> {
         }
         let value = self.get(scrutinee, &sty)?;
         let rty = self.ty(expr);
-        let result = (!matches!(rty, Type::Void | Type::Never))
+        let result = (!matches!(rty, Type::Unit | Type::Never))
             .then(|| self.entry_alloca(&rty, "match.value"));
         let end = self.append("match.end");
         // Arms that can never run (W0102) are not lowered: a `switch` can't

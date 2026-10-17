@@ -11,7 +11,7 @@ impl Checker {
         if let ExprKind::Name(keyword) = &base.kind
             && let Some(int) = Type::int_keyword(keyword)
         {
-            self.record(base, Type::Void);
+            self.record(base, Type::Unit);
             if Type::int_limit(base, &field.name).is_none() {
                 self.report(errors::no_method(&field.name, &int, field.span, None));
                 return Type::Error;

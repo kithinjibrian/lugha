@@ -158,7 +158,7 @@ mod tests {
         assert!(!shape[0].mutable && shape[1].mutable);
         assert_eq!(
             (&shape[1].params, &shape[1].ret),
-            (&vec![Type::F64], &Type::Void)
+            (&vec![Type::F64], &Type::Unit)
         );
     }
 }

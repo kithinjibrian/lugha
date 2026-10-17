@@ -89,7 +89,7 @@ impl<'ctx> Lowerer<'ctx> {
                 c_params.iter().map(|(t, _)| *t).collect();
             // An extern passing structs by value gets clang's lowering (v16, milestone 90).
             let kinds = self.c_kinds(plan.as_deref(), &params);
-            let void = Type::Void;
+            let void = Type::Unit;
             let c_sig = (is_extern && has_struct(&kinds, ret.as_ref().unwrap_or(&void)))
                 .then(|| self.c_sig(&kinds, ret.as_ref().unwrap_or(&void)));
             let fn_type = match &ret {
