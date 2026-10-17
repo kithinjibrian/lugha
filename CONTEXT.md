@@ -8353,3 +8353,8 @@ Branch: fix-private-import-leak
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 248 — 2026-10-17 — `out` parameters discovery (PRP-134) — open
+Branch: prp-134-out_params
