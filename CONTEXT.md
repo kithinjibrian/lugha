@@ -8239,5 +8239,23 @@ Branch: vscode-import-path
 
 ---
 
-## SESSION 243 — 2026-10-17 — Maps and sets discovery (PRP-133) — open
+## SESSION 243 — 2026-10-17 — Maps and sets discovery (PRP-133) — closed
 Branch: prp-133-maps_and_sets
+
+### WHAT WAS DONE
+- Discovery for maps and sets with the user: `#{ … }` literals (the user's idea: special syntax instead of `Map.new()`), Q1 names `Map`/`Set` built in (iterator type renamed `Mapped`), Q2 values, Q3 any `Eq` key but floats, Q4 insertion order, Q5 the full API, Q6 written in Lugha in the prelude over `$hash`. PRP-133 written (milestone 101); draft summary and row 101 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-133-maps_and_sets.md`. Modified: `docs/specs/Language v17 Draft.md`, CONTEXT.
+
+### TESTS WRITTEN
+- None (proposal).
+
+### DECISIONS MADE
+- PRP-133 decisions 67–75, 79 from the user's answers; 76–78, 80 proposed for review.
+
+### PENDING DECISIONS OPENED
+- PRP-133 approval.
+
+### STILL OPEN AT CLOSE
+- PRP-133 awaits approval; build on branch `prp-133-maps_and_sets`.
