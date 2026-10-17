@@ -19,6 +19,10 @@ impl Checker {
         if self.functions.contains_key(&key) {
             return self.function_value(expr, &key, expect);
         }
+        // A constant (v17, milestone 109).
+        if self.consts.contains_key(&key) {
+            return self.const_read(expr, expr.span, &key);
+        }
         // `Some`, `Ok`, `Err` as function values (v17).
         if let Some(ty) = self.named_variant_value(expr, name, expect) {
             return ty;

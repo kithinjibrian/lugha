@@ -23,6 +23,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.builder
             .build_call(init, &[argc.into(), argv.into()], "")
             .expect(POSITIONED);
+        self.call_const_init();
         // `ptr` stands for a C string: opaque pointers are all alike.
         let is = self.runtime("lugha_rt_test_is", &[Type::String], Some(Type::I32));
         for name in names {

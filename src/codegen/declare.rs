@@ -49,6 +49,8 @@ impl<'ctx> Lowerer<'ctx> {
                 // Tests are built only by `lughac test` (milestone 84).
                 Item::Fun(f) if f.test.is_some() && self.tests.is_none() => continue,
                 Item::Fun(f) => (&f.name.name, &f.params, f.ret.as_ref(), false, None),
+                // Constants are globals (`consts.rs`, v17).
+                Item::Const(_) => continue,
                 Item::Extern(e) => (
                     &e.name.name,
                     &e.params,

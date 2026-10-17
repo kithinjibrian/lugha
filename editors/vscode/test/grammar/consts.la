@@ -1,0 +1,4 @@
+// SYNTAX TEST "source.lugha" "constants"
+
+public const LIMIT: i64 = 8;
+//     ^^^^^ keyword.other.const.lugha

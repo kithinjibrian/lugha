@@ -83,6 +83,12 @@ fn check_with(units: &[Unit], tests: bool) -> Result<(Checked, Vec<Diagnostic>),
             uses_tasks: checker.uses_tasks,
             c_params: checker.c_params,
             variant_values: checker.variant_values,
+            consts: checker
+                .const_order
+                .iter()
+                .map(|k| (k.clone(), checker.consts[k].ty.clone()))
+                .collect(),
+            const_uses: checker.const_uses,
             tests: tests.then(|| {
                 // Qualified, so a package's module keeps its tests' keys (v17).
                 units.first().map_or_else(Vec::new, |u| {
@@ -137,7 +143,7 @@ impl Checker {
     /// Every pass of spec §6 over every module in turn, then every body.
     fn modules(&mut self, units: &[Unit]) {
         type Pass = fn(&mut Checker, &Program);
-        let passes: [Pass; 11] = [
+        let passes: [Pass; 12] = [
             Checker::collect_handles,
             Checker::collect_interfaces,
             Checker::collect_structs,
@@ -147,6 +153,7 @@ impl Checker {
             Checker::resolve_enums,
             Checker::resolve_interfaces,
             Checker::collect,
+            Checker::collect_consts,
             Checker::collect_methods,
             Checker::check_actors,
         ];
@@ -182,8 +189,10 @@ impl Checker {
         }
         for unit in units {
             self.enter(unit);
+            self.const_values(unit.program);
             self.bodies(unit.program);
         }
+        self.order_consts();
     }
 
     /// Makes `unit` the module whose names are being resolved.

@@ -329,3 +329,25 @@ fn a_unit_binding_shows_its_type_v17() {
     );
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn a_constant_shows_its_declaration_v17() {
+    let program = "const LIMIT: i64 = 8;\n\nfun main() {\n    println(LIMIT);\n}\n";
+    let t = Temp::with(&[("main.la", program)]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, program);
+    s.expect(&uri, &[]);
+    let want = code("const LIMIT: i64", &[]);
+    assert_eq!(
+        hover_at(&mut s, &uri, pos(program, "(LIMIT)", "LIMIT")),
+        want
+    );
+    assert_eq!(
+        hover_at(&mut s, &uri, pos(program, "const LIMIT", "LIMIT")),
+        want
+    );
+    let found = s.definition(&uri, 3, 13);
+    assert_eq!(found["range"]["start"]["line"], 0, "{found}");
+    assert_eq!(s.finish(), Some(0));
+}

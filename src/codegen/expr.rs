@@ -61,6 +61,10 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Name(_) | ExprKind::Field(..) if self.callees.contains_key(&expr.id) => {
                 self.function_value(expr)
             }
+            // A constant (v17, milestone 109).
+            ExprKind::Name(_) | ExprKind::Field(..) if self.const_uses.contains_key(&expr.id) => {
+                self.const_value(expr)
+            }
             ExprKind::Name(name) => {
                 let local = self.scopes.lookup(name);
                 self.load(&local, name)

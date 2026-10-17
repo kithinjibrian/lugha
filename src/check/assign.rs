@@ -81,6 +81,14 @@ impl Checker {
                 return false;
             }
         }
+        // A constant is never a place (v17, milestone 109).
+        if let Some(name) = root_name(place)
+            && self.local(name).is_none()
+            && self.consts.contains_key(&self.key(name))
+        {
+            self.report(reword(errors::assign_const(name, place.span)));
+            return false;
+        }
         let Some(path) = self.place_path(place) else {
             // Rooted in an undefined name (already E0301) or a non-place base.
             if !matches!(place.kind, ExprKind::Name(_)) && root_name(place).is_none() {

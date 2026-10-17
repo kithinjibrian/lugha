@@ -20,6 +20,7 @@ mod channels;
 mod closures;
 mod conditional;
 mod construct;
+mod consts;
 mod control;
 mod copy;
 mod cow;

@@ -70,6 +70,7 @@ fn public_only(items: Vec<CompletionItem>, program: &Program) -> Vec<CompletionI
                 Item::Enum(e) => (&e.name, &e.visibility),
                 Item::Interface(i) => (&i.name, &i.visibility),
                 Item::ExternType(t) => (&t.name, &t.visibility),
+                Item::Const(c) => (&c.name, &c.visibility),
                 Item::Impl(_) => return None,
             };
             visibility

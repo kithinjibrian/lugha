@@ -11,6 +11,7 @@ mod actors;
 mod attributes;
 mod closure;
 mod conditional;
+mod consts;
 mod decl;
 mod describe;
 mod expr;

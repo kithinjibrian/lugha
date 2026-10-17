@@ -55,6 +55,7 @@ pub(super) fn symbol(kind: &TokenKind) -> &'static str {
         Ident(_) => "identifier",
         Fun => "fun",
         Extern => "extern",
+        Const => "const",
         Struct => "struct",
         Enum => "enum",
         Impl => "impl",

@@ -61,6 +61,14 @@ fn out_parameters_and_arguments_keep_out() {
 }
 
 #[test]
+fn constants_print_on_one_line_v17() {
+    check(
+        "public   const N:i64=1+2;\nconst XS:i64[]=[1,2];",
+        "public const N: i64 = 1 + 2;\nconst XS: i64[] = [1, 2];\n",
+    );
+}
+
+#[test]
 fn unit_prints_as_written_v17() {
     check(
         "fun f(u:( )):Result<(),string>{let x:()=( );Ok(())}",

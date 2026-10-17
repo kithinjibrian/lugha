@@ -137,6 +137,8 @@ impl Checker {
                 Item::Fun(f) => self.signature(f),
                 // A handle holds nothing that could be less visible (v16).
                 Item::ExternType(_) => {}
+                // A constant's type is no more visible than the constant (v17).
+                Item::Const(c) => self.leak(&c.ty, level(c.visibility)),
                 Item::Extern(e) => {
                     let at = level(e.visibility);
                     e.params.iter().for_each(|p| self.leak(&p.ty, at));

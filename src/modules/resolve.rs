@@ -50,6 +50,7 @@ pub(super) fn check(
         Item::Extern(e) if &e.name.name == last => Some(e.name.span),
         Item::Struct(s) if &s.name.name == last => Some(s.name.span),
         Item::Enum(e) if &e.name.name == last => Some(e.name.span),
+        Item::Const(c) if &c.name.name == last => Some(c.name.span),
         _ => None,
     })?;
     Some(

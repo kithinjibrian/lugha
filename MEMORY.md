@@ -2099,6 +2099,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-140 (proposed session 258, approved 259). `to_bits` is a built-in method in `check/builtins.rs`; `f64.from_bits`/`f32.from_bits` are recognised by `check::from_bits` (a member call on a float keyword, which `primary` now reads as a name like the integer keywords) and lowered by `codegen/float_ops.rs`'s `bitcast`. Completion doesn't offer `to_bits` yet: `check/members.rs` is over the 500-line limit and needs a split first.
 
+### 195. Global constants — milestone 109 (PRP-141)
+
+**Decision:** as PRP-141 (discovery session 260: constants only, no mutable statics; approved 261). `Item::Const`; checker `check/consts.rs` (`collect_consts` pass after `collect`, `const_values` before each module's bodies, `order_consts` after all; `ConstInfo`, `const_uses`, E0445/E0446; `assign.rs` refuses a constant root before `place_path`); codegen `codegen/consts.rs`: globals `lugha_const_<key>`, `lugha_const_init` called by both C `main`s after `lugha_rt_init`; a read loads the global, and `value_for_store`'s place copy keeps arrays copy-on-write. Hover `Name::Const`. A small superset of the PRP's constant expressions: fields and indexing of constant values are allowed.
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

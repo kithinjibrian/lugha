@@ -44,6 +44,11 @@ pub struct Checked {
     /// Variants used as function values (v17, milestone 94): the enum type they
     /// build, type arguments filled in, and the variant's name.
     pub variant_values: HashMap<ExprId, (Type, String)>,
+    /// Every constant, by key with its type, in evaluation order: each after
+    /// the constants it reads (v17, milestone 109).
+    pub consts: Vec<(String, Type)>,
+    /// Every name (or `m.NAME`) that reads a constant, with its key.
+    pub const_uses: HashMap<ExprId, String>,
     /// Expressions converted to an interface value, with the interface type
     /// (v5); the expression's own type stays in `types`.
     pub conversions: HashMap<ExprId, Type>,

@@ -1,6 +1,6 @@
 ## FEATURE: Global constants — `const NAME: T = expr;` at the top level of a module; milestone 109 (v17).
 
-**Status:** proposed 2026-10-17 (session 260), after discovery in the same session (the user: "what about global const and statics"; Q1: "constants only").
+**Status:** approved 2026-10-17 (session 261); proposed in session 260, after discovery in the same session (the user: "what about global const and statics"; Q1: "constants only").
 
 ## OBJECTIVE
 ```lugha
@@ -47,6 +47,10 @@ fun main() {
 - Mutable statics; constants in patterns; calls in constant expressions; compile-time evaluation beyond what LLVM folds.
 ### New dependencies
 - none
+
+## BUILT (session 261)
+- As planned. Constant expressions also allow a field or index of a constant value (`PRIMES[0] + ORIGIN.y`): evaluation is at startup, so they need nothing more.
+- Tests: parser (`consts.rs`), checker (`check/consts.rs`: types, order, shadowing, E0445 ×8, E0446 ×2, E0501 ×2, E0302 ×2, E0403; modules: visibility E0313 and a glob re-export), formatter rule, hover and definition, VS Code `consts.la`, `tests/programs/m109/` (`constants`, `modules`, `overflow`), E0445/E0446 pages; `lughac test` reads constants.
 
 ## ERROR HANDLING REQUIREMENTS
 - E0445 (new): a part of a constant's value that isn't a constant expression, or a type a constant can't have.

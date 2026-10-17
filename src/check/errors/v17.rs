@@ -1,4 +1,4 @@
-//! v17 codes: green threads (E0438, milestone 91); actors (E0439, milestone 92); struct update (E0440, W0104, milestone 93); variant values (E0412, milestone 94); the unit type (W0106, milestone 107).
+//! v17 codes: green threads (E0438, milestone 91); actors (E0439, milestone 92); struct update (E0440, W0104, milestone 93); variant values (E0412, milestone 94); the unit type (W0106, milestone 107); constants (E0445, E0446, milestone 109).
 
 use crate::check::Type;
 use crate::diagnostic::Diagnostic;
@@ -75,4 +75,34 @@ pub(in crate::check) fn unit_binding(name: &str, span: Span, init: Span) -> Diag
         .with_help(format!(
             "drop the `let`, or write `let {name}: () = …` if that's what you meant"
         ))
+}
+
+/// A part of a constant's value that isn't a constant expression (milestone 109).
+pub(in crate::check) fn not_constant(span: Span) -> Diagnostic {
+    Diagnostic::error("E0445", "not a constant expression", span).with_help(
+        "a constant's value is built from literals, other constants, operators, `as`, and array, struct, tuple and variant literals; no calls, closures, `if`, blocks or interpolation",
+    )
+}
+
+/// A type a constant can't have (milestone 109).
+pub(in crate::check) fn const_type(ty: &Type, span: Span) -> Diagnostic {
+    Diagnostic::error("E0445", format!("a constant can't be of type `{ty}`"), span).with_help(
+        "constants hold plain data: numbers, `bool`, `char`, strings, `()`, and arrays, structs, tuples and enums of those",
+    )
+}
+
+/// Constants that depend on themselves (milestone 109).
+pub(in crate::check) fn const_cycle(path: &str, span: Span) -> Diagnostic {
+    Diagnostic::error("E0446", "this constant depends on itself", span)
+        .with_help(format!("the values go round: {path}"))
+}
+
+/// Assigning to a constant (milestone 109).
+pub(in crate::check) fn assign_const(name: &str, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0501",
+        format!("cannot assign to `{name}`: it is a constant"),
+        span,
+    )
+    .with_help(format!("copy it first: `let mut x = {name};`"))
 }

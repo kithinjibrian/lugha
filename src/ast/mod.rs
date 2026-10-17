@@ -62,6 +62,23 @@ pub enum Item {
     Impl(ImplDecl),
     /// `interface Name { signatures }` (v2 draft §4, milestone 12).
     Interface(InterfaceDecl),
+    /// `const NAME: T = value;` (v17, milestone 109).
+    Const(ConstDecl),
+}
+
+/// A global constant: evaluated once before `main` (v17, milestone 109).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ConstDecl {
+    /// `private` or `public`, if written.
+    pub visibility: Option<Visibility>,
+    /// The constant's name.
+    pub name: Ident,
+    /// Its written type.
+    pub ty: Type,
+    /// Its value, a constant expression.
+    pub value: Expr,
+    /// From `const` to the `;`.
+    pub span: Span,
 }
 
 /// A function with a body.
