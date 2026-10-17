@@ -170,10 +170,6 @@ mod extern_struct_tests {
             ("extern struct S { xs: i64[] }", "i64[]"),
             ("struct P { x: i64 }\nextern struct S { p: P }", "P"),
             ("extern struct S { o: Option<i64> }", "Option<i64>"),
-            (
-                "extern type W;\nextern struct S { o: Option<W> }",
-                "Option<W>",
-            ),
             ("extern struct S { f: fun(i64) }", "fun(i64)"),
             ("extern struct S<T> { x: T }", "S"),
             ("extern struct S {}", "S"),
@@ -181,6 +177,57 @@ mod extern_struct_tests {
             let src = format!("{decl}\nfun main() {{}}");
             let found = errors(&src);
             assert_eq!(found.first(), Some(&("E0437", at)), "{decl}: {found:?}");
+        }
+    }
+
+    #[test]
+    fn option_handle_fields_are_allowed_v17() {
+        ok("extern type W;\n\
+            extern struct S { n: u64, w: Option<W>, p: Option<CPtr> }\n\
+            extern fun f(out s: S);\n\
+            fun main() {\n\
+                let mut s = S { n: 0, w: None, p: None };\n\
+                f(out s);\n\
+                if let Some(w) = s.w { println(1); }\n\
+                s.w = None;\n\
+            }");
+    }
+
+    #[test]
+    fn unions_hold_plain_data_v17() {
+        ok("extern struct P { x: f64, ok: bool }\n\
+            extern union In { a: i32, c: char }\n\
+            extern union U { a: i64, p: P, i: In }\n\
+            fun main() {}");
+        for (decl, at) in [
+            ("extern type W;\nextern union U { n: u64, w: W }", "W"),
+            ("extern union U { n: u64, p: CPtr }", "CPtr"),
+            (
+                "extern type W;\nextern union U { n: u64, w: Option<W> }",
+                "Option<W>",
+            ),
+            (
+                "extern struct H { p: CPtr }\nextern union U { n: u64, h: H }",
+                "H",
+            ),
+            (
+                "extern type W;\nextern struct D { w: Option<W> }\nextern struct H { d: D }\nextern union U { n: u64, h: H }",
+                "H",
+            ),
+            (
+                "extern union In { p: CPtr }\nextern union U { n: u64, i: In }",
+                "In",
+            ),
+        ] {
+            let src = format!("{decl}\nfun main() {{}}");
+            let found = errors(&src);
+            assert_eq!(found.last(), Some(&("E0437", at)), "{decl}: {found:?}");
+            let d = crate::check::test_util::diagnostics(&src);
+            assert!(
+                d.iter()
+                    .any(|d| d.message.contains("union can't hold a pointer")),
+                "{d:?}"
+            );
         }
     }
 

@@ -1,6 +1,6 @@
 ## FEATURE: Nullable handle fields and plain-data unions — `Option<H>` in extern structs and unions, and unions that can't hold pointers; milestone 106 (v17).
 
-**Status:** proposed 2026-10-17 (session 252), after lugha-wasmtime's probe (an extern struct can't start a pointer field as NULL) and the union hole found in session 251 (a union turns a number into a `CPtr`).
+**Status:** approved 2026-10-17 (session 253); proposed in session 252, after lugha-wasmtime's probe (an extern struct can't start a pointer field as NULL) and the union hole found in session 251 (a union turns a number into a `CPtr`).
 
 ## OBJECTIVE
 ```lugha
@@ -39,6 +39,10 @@ An extern struct can hold a pointer C may leave NULL, written as an `Option` of 
 - A zeroed-struct or "uninitialised" syntax (decision 108); nullable plain handles; any change to `c_read`/`c_write` themselves.
 ### New dependencies
 - none
+
+## BUILT (session 253)
+- `Option<H>` is held as a nullable pointer wherever it is in memory, not only in extern structs (one memory form, as `bool`'s byte): arrays of `Option<H>`, Lugha struct fields, enum payloads and `Ref` boxes use it too. Nested patterns over it load the value first. Only programs with handles see the change.
+- Tests: checker `handles.rs` (Option fields; every union case, nested), `tests/extern_structs.rs` (`nullable_handle_fields_v17`: `None`, `out` NULL/non-NULL, by value, arrays; `option_handles_held_anywhere_v17`: arrays, push/pop, Lugha structs, `Option<Option<W>>`, enum payloads, `Ref`, tuples, `match`), `tests/c_arrays.rs` (the forge is E0437), E0437's page examples.
 
 ## ERROR HANDLING REQUIREMENTS
 - E0437 (existing): a union field that is or holds a handle, `Option<H>` or `CPtr`; still for `string`, Lugha structs and other disallowed fields.

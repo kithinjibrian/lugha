@@ -17,6 +17,12 @@ pub(super) fn is_nullable_handle(ty: &Type) -> bool {
     matches!(ty, Type::Option(inner) if matches!(**inner, Type::Handle(_) | Type::String))
 }
 
+/// True for `Option<H>` of a handle `H`: held in memory as C's nullable
+/// pointer (v17, milestone 106), so extern structs lay it out as C does.
+pub(super) fn is_option_handle(ty: &Type) -> bool {
+    matches!(ty, Type::Option(inner) if matches!(**inner, Type::Handle(_)))
+}
+
 /// True for a value C hands Lugha that needs converting: a nullable
 /// pointer, or C's text as a `string`.
 pub(super) fn converts_from_c(ty: &Type) -> bool {
@@ -123,6 +129,76 @@ impl<'ctx> Lowerer<'ctx> {
         let some = self.construct_values(ty, "Some", vec![payload]);
         self.builder
             .build_select(is_null, none, some, "option")
+            .expect(POSITIONED)
+    }
+
+    /// `Option<H>` → its handle, or `NULL` for `None`, without calls: the
+    /// memory form of the value (see `stored_form`).
+    pub(super) fn option_to_pointer(
+        &self,
+        value: BasicValueEnum<'ctx>,
+        ty: &Type,
+    ) -> BasicValueEnum<'ctx> {
+        let slot = self.entry_alloca(ty, "opt");
+        self.builder.build_store(slot, value).expect(POSITIONED);
+        let (some, payloads) = self.variant(ty, "Some");
+        let is_some = self
+            .builder
+            .build_int_compare(
+                inkwell::IntPredicate::EQ,
+                self.tag(ty, slot),
+                self.context.i32_type().const_int(u64::from(some), false),
+                "is.some",
+            )
+            .expect(POSITIONED);
+        let ptr = self.context.ptr_type(Default::default());
+        let address = self.payload_address(ty, slot, &payloads, 0);
+        let handle = self
+            .builder
+            .build_load(ptr, address, "handle")
+            .expect(POSITIONED);
+        self.builder
+            .build_select(is_some, handle, ptr.const_null().into(), "opt.ptr")
+            .expect(POSITIONED)
+    }
+
+    /// A nullable pointer held in memory → `Option<H>`: `None` for `NULL`.
+    pub(super) fn pointer_to_option(
+        &self,
+        raw: BasicValueEnum<'ctx>,
+        ty: &Type,
+    ) -> BasicValueEnum<'ctx> {
+        let slot = self.entry_alloca(ty, "opt");
+        let named = self
+            .context
+            .get_struct_type(&ty.to_string())
+            .expect("declared before lowering");
+        let is_null = self
+            .builder
+            .build_is_null(raw.into_pointer_value(), "is.null")
+            .expect(POSITIONED);
+        let (some, payloads) = self.variant(ty, "Some");
+        let (none, _) = self.variant(ty, "None");
+        let i32_type = self.context.i32_type();
+        let tag = self
+            .builder
+            .build_select(
+                is_null,
+                i32_type.const_int(u64::from(none), false),
+                i32_type.const_int(u64::from(some), false),
+                "opt.tag",
+            )
+            .expect(POSITIONED);
+        let at = self
+            .builder
+            .build_struct_gep(named, slot, 0, "tag.at")
+            .expect("enums have two fields");
+        self.builder.build_store(at, tag).expect(POSITIONED);
+        // A `None` carries the null pointer as its unread payload.
+        let address = self.payload_address(ty, slot, &payloads, 0);
+        self.builder.build_store(address, raw).expect(POSITIONED);
+        self.builder
+            .build_load(named, slot, "opt")
             .expect(POSITIONED)
     }
 }

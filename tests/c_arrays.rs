@@ -139,3 +139,13 @@ fn what_cant_cross_is_rejected() {
                 fun main() { let u = U { a: 1, b: 2.0 }; let v = U { a: 1 }; println(v == v); }\n";
     Case::new(main, SIDE).rejects(&["E0409", "E0409", "E0444", "E0404"]);
 }
+
+#[test]
+fn a_union_cant_make_a_pointer_v17() {
+    let main = "extern union Forge { n: u64, p: CPtr }\n\
+        fun main() {\n\
+            let f = Forge { n: 4096 };\n\
+            println(c_read(f.p, 0, 8).len);\n\
+        }\n";
+    Case::new(main, SIDE).rejects(&["E0437"]);
+}

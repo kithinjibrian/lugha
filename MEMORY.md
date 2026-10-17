@@ -2087,6 +2087,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-137 with deviations (its BUILT notes); the user's security sign-off for `c_read`/`c_write` was "build all in one go" (session 251). `CPtr` is `Type::Handle("CPtr")` unless a module declares its own; `c_read`/`c_write` are intrinsics in `check/input.rs` calling `runtime/cmem.c`. Callback `T[]`/`Ref<T[]>` expand to C's pointer and `u64` count (`codegen/c_arrays.rs`), copied in, and for `Ref` copied back (`min(len, count)`).
 
+### 192. Nullable handle fields and plain-data unions — milestone 106 (PRP-138)
+
+**Decision:** as PRP-138 (proposed session 252, approved 253). `Option<H>` (a handle `H`) is held in memory as C's nullable pointer everywhere — `storage_type`, `stored_form`/`loaded_form`, `layout` (8, 8) — so extern-struct fields need no special case; nested patterns over such a payload or field load it as a value first (`patterns.rs`, `!top`). Unions: `check_union_fields`/`plain_data` in `check/structs.rs`, E0437 "a union can't hold a pointer". Spec §8 says `c_read`/`c_write` are where memory safety is the program's.
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets
