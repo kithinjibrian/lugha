@@ -8400,3 +8400,8 @@ Branch: prp-134-out_params
 
 ### STILL OPEN AT CLOSE
 - Nothing. Next for lugha-wasmtime (TODO): `ptr`/`mut` pointers, arrays and unions, raw C memory and pointer callbacks.
+
+---
+
+## SESSION 250 — 2026-10-17 — C boundary PRPs proposed (PRP-135, 136, 137) — open
+Branch: prp-135-137-c_boundary
