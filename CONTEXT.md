@@ -8052,3 +8052,8 @@ Branch: fix-tuple-inference
 
 ### STILL OPEN AT CLOSE
 - The E0312 report awaits a reproduction.
+
+---
+
+## SESSION 235 — 2026-10-17 — Test summary counts uncompiled files; fmt keeps short if/else — open
+Branch: fix-summary-and-short-if
