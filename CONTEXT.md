@@ -8236,3 +8236,8 @@ Branch: vscode-import-path
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 243 — 2026-10-17 — Maps and sets discovery (PRP-133) — open
+Branch: prp-133-maps_and_sets
