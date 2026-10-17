@@ -1,6 +1,6 @@
 ## FEATURE: `std.net` — TCP sockets with non-blocking I/O in the green-thread scheduler; milestone 110 (v17).
 
-**Status:** proposed 2026-10-18 (session 265), after discovery in sessions 264–265 (the user: "wanna build a std http lib?"; plan: sockets → HTTP/1.1 → TLS; Q1 "let's start" — sockets with non-blocking I/O first; Q2 "cool" — the API below). **Needs the user's security sign-off** (new network surface in `runtime/`).
+**Status:** approved 2026-10-18 (session 266, with the security sign-off); proposed in session 265, after discovery in sessions 264–265 (the user: "wanna build a std http lib?"; plan: sockets → HTTP/1.1 → TLS; Q1 "let's start" — sockets with non-blocking I/O first; Q2 "cool" — the API below). **Needs the user's security sign-off** (new network surface in `runtime/`).
 
 ## OBJECTIVE
 ```lugha

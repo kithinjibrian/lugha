@@ -180,7 +180,7 @@ The user: "add unit type" — a real type and value, and a warning for binding o
 
 114–122. **The unit type** (milestone 107): `()` is a type and its one value and replaces `void` (omitted return types mean `: ()`); it works in generics, variables, fields and arrays, is `Eq`/`Ord`/hashable/printable, takes no memory; E0407 withdrawn; W0106 for `let x = e` binding a `()` that isn't the literal (silenced by `let x: () = e`); not across C (E0409/E0437); tag `m107`.
 
-## Decisions behind milestone 110 (sessions 264–265; proposed)
+## Decisions behind milestone 110 (sessions 264–265; approved in session 266)
 
 The user: "wanna build a std http lib?" — sockets with non-blocking I/O first, HTTP/1.1 next, TLS later. Details in PRP-142.
 
