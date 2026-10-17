@@ -33,7 +33,7 @@ let n = f32.from_bits(0x7FC00000); // NaN
 - none
 
 ## BUILT (session 259)
-- As planned, except completion: `to_bits` isn't added to `check/members.rs`'s list because that file is already over the 500-line limit (503) and needs the user's approval to split.
+- As planned, except completion: `to_bits` waited for `check/members.rs` (503 lines) to be split; done in session 262 (the user: "split"), with the names in `check/member_names.rs`.
 - Tests: parser (`f64.from_bits(b)`), checker `check/float_bits.rs` (types, E0403 ×2, E0405, E0415 ×2), `tests/programs/m108/float_bits` at -O0/-O2.
 
 ## ERROR HANDLING REQUIREMENTS

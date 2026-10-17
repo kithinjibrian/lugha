@@ -8552,3 +8552,15 @@ Branch: prp-141-constants
 
 ### STILL OPEN AT CLOSE
 - `src/check/members.rs` is 503 lines (completion of `to_bits` waits on its split; needs the user's approval).
+
+## SESSION 262 — 2026-10-17 — Split check/members.rs; `to_bits` in completion — closed
+Branch: split-members
+
+### DONE
+- The user approved the split ("split"): `CANDIDATES`/`MORE_CANDIDATES` moved verbatim to `check/member_names.rs` (members.rs 503 → 433 lines); `to_bits` added, with a completion test. Runs: lib `members`, `lsp_completion`, fmt, clippy.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.

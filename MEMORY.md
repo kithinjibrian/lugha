@@ -2097,7 +2097,7 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ### 194. Float bits — milestone 108 (PRP-140)
 
-**Decision:** as PRP-140 (proposed session 258, approved 259). `to_bits` is a built-in method in `check/builtins.rs`; `f64.from_bits`/`f32.from_bits` are recognised by `check::from_bits` (a member call on a float keyword, which `primary` now reads as a name like the integer keywords) and lowered by `codegen/float_ops.rs`'s `bitcast`. Completion doesn't offer `to_bits` yet: `check/members.rs` is over the 500-line limit and needs a split first.
+**Decision:** as PRP-140 (proposed session 258, approved 259). `to_bits` is a built-in method in `check/builtins.rs`; `f64.from_bits`/`f32.from_bits` are recognised by `check::from_bits` (a member call on a float keyword, which `primary` now reads as a name like the integer keywords) and lowered by `codegen/float_ops.rs`'s `bitcast`. Completion offers `to_bits` since session 262, which split the candidate names out of `check/members.rs` into `check/member_names.rs`.
 
 ### 195. Global constants — milestone 109 (PRP-141)
 
