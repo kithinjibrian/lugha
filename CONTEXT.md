@@ -8213,3 +8213,26 @@ Branch: vscode-import-names
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 242 — 2026-10-17 — Highlight import paths (VS Code) — closed
+Branch: vscode-import-path
+
+### WHAT WAS DONE
+- The user: `kivuli` in `import kivuli;` isn't highlighted. The grammar's `import` rule now scopes path segments and the alias as `entity.name.namespace.lugha` (dots `punctuation.accessor.lugha`). Extension 0.15.0, built and installed into VS Code.
+
+### FILES CREATED OR MODIFIED
+- Modified: `editors/vscode/{syntaxes/lugha.tmLanguage.json,test/grammar/imports.la,package.json,package-lock.json}`, CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- `imports.la` scope assertions for paths and an alias. `npm test` passes.
+
+### DECISIONS MADE
+- None.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.
