@@ -8213,3 +8213,8 @@ Branch: vscode-import-names
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 242 — 2026-10-17 — Highlight import paths (VS Code) — open
+Branch: vscode-import-path
