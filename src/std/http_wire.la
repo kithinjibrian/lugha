@@ -1,0 +1,336 @@
+/**
+ * std.$http_wire: what `std.http` reads off a connection — lines, headers and
+ * bodies within limits — and the byte helpers it shares. Bundled sources only
+ * (programs can't write `$`); see `std.http`.
+ */
+import std.net;
+
+/** Why reading a message stopped: a status to answer with, or the connection's end. */
+enum Fail {
+    Status(i64),
+    Gone(string),
+}
+
+/** A connection's incoming bytes, read as they're needed, by a deadline. */
+struct Reader {
+    conn: net.Conn,
+    buf: u8[],
+    pos: i64,
+    deadline: i64,
+}
+
+impl Reader {
+    /** More bytes from the connection; `false` at its end. */
+    fun fill(mut self): Result<bool, Fail> {
+        let left = self.deadline - $os.now_ms();
+        if left <= 0 {
+            return Err(Fail.Status(408));
+        }
+        self.conn.set_timeout(left);
+        match self.conn.read(65536) {
+            Ok(more) => {
+                if self.pos > 0 {
+                    self.buf = cut(self.buf, self.pos, self.buf.len);
+                    self.pos = 0;
+                }
+                for b of more {
+                    self.buf.push(b);
+                }
+                Ok(more.len > 0)
+            }
+            Err(e) => Err(if e == "timed out" { Fail.Status(408) } else { Fail.Gone(e) }),
+        }
+    }
+
+    /** The next line without its line end (`CRLF`, or a bare `LF`); `None` at the end of the stream; `too_long` if it passes `max`. */
+    fun line(mut self, max: i64, too_long: i64): Result<Option<u8[]>, Fail> {
+        let mut from = self.pos;
+        while true {
+            let mut i = from;
+            while i < self.buf.len {
+                if self.buf[i] == 10 {
+                    let end = if i > self.pos && self.buf[i - 1] == 13 { i - 1 } else { i };
+                    if end - self.pos > max {
+                        return Err(Fail.Status(too_long));
+                    }
+                    let line = cut(self.buf, self.pos, end);
+                    self.pos = i + 1;
+                    return Ok(Some(line));
+                }
+                i += 1;
+            }
+            if self.buf.len - self.pos > max {
+                return Err(Fail.Status(too_long));
+            }
+            // `fill` may drop the bytes before `pos`: resume where scanning stopped.
+            let scanned = self.buf.len - self.pos;
+            if !self.fill()? {
+                if self.buf.len > self.pos {
+                    return Err(Fail.Status(400));
+                }
+                return Ok(None);
+            }
+            from = self.pos + scanned;
+        }
+        Ok(None)
+    }
+
+    /** Exactly `n` bytes. */
+    fun exact(mut self, n: i64): Result<u8[], Fail> {
+        while self.buf.len - self.pos < n {
+            if !self.fill()? {
+                return Err(Fail.Status(400));
+            }
+        }
+        let got = cut(self.buf, self.pos, self.pos + n);
+        self.pos += n;
+        Ok(got)
+    }
+
+    /** Everything until the stream ends, up to `max` bytes. */
+    fun rest(mut self, max: i64): Result<u8[], Fail> {
+        while self.fill()? {
+            if self.buf.len - self.pos > max {
+                return Err(Fail.Status(413));
+            }
+        }
+        Ok(cut(self.buf, self.pos, self.buf.len))
+    }
+
+    /** Header lines up to the empty one, within the limits. */
+    fun headers(mut self, bytes: i64, count_max: i64): Result<Map<string, string>, Fail> {
+        let mut found: Map<string, string> = #{};
+        let mut used = 0;
+        let mut count = 0;
+        while true {
+            let line = match self.line(bytes - used, 431)? {
+                Some(line) => line,
+                None => {
+                    return Err(Fail.Status(400));
+                }
+            };
+            if line.len == 0 {
+                return Ok(found);
+            }
+            used += line.len + 2;
+            count += 1;
+            if used > bytes || count > count_max {
+                return Err(Fail.Status(431));
+            }
+            let (name, value) = split_header(line)?;
+            let joined = match found.get(name) {
+                Some(before) => before + ", " + value,
+                None => value,
+            };
+            found[name] = joined;
+        }
+        Ok(found)
+    }
+
+    /** A body framed by `headers`: `Content-Length`, `chunked`, or none. */
+    fun body(mut self, headers: Map<string, string>, max: i64, to_end: bool): Result<u8[], Fail> {
+        let framing = headers.get("transfer-encoding");
+        let length = headers.get("content-length");
+        if framing.is_some() && length.is_some() {
+            return Err(Fail.Status(400));
+        }
+        if let Some(coding) = framing {
+            if lower(coding.trim()) != "chunked" {
+                return Err(Fail.Status(501));
+            }
+            return self.chunked(max);
+        }
+        if let Some(text) = length {
+            let n = digits(text.trim()).ok_or(Fail.Status(400))?;
+            if n > max {
+                return Err(Fail.Status(413));
+            }
+            return self.exact(n);
+        }
+        if to_end { self.rest(max) } else { Ok([]) }
+    }
+
+    /** A `chunked` body: hex sizes, then the chunks, then trailers (dropped). */
+    fun chunked(mut self, max: i64): Result<u8[], Fail> {
+        let mut body: u8[] = [];
+        while true {
+            let line = self.line(1024, 400)?.ok_or(Fail.Status(400))?;
+            let size = hex(line).ok_or(Fail.Status(400))?;
+            if size == 0 {
+                while self.line(8192, 431)?.ok_or(Fail.Status(400))?.len > 0 {}
+                return Ok(body);
+            }
+            if body.len + size > max {
+                return Err(Fail.Status(413));
+            }
+            for b of self.exact(size)? {
+                body.push(b);
+            }
+            if self.line(0, 400)?.ok_or(Fail.Status(400))?.len != 0 {
+                return Err(Fail.Status(400));
+            }
+        }
+        Ok(body)
+    }
+}
+
+/** A request's parts, as the server read them; `std.http` makes its `Request`. */
+struct Head {
+    method: string,
+    target: string,
+    keep: bool,
+    headers: Map<string, string>,
+    body: u8[],
+}
+
+impl Reader {
+    /** The next request (within the limits given) and whether the connection stays open after it. */
+    fun request(mut self, line_max: i64, header_bytes: i64, header_count: i64, body_max: i64): Result<Option<Head>, Fail> {
+    let mut line: u8[] = [];
+    // An empty line before the request line is allowed (RFC 9112).
+    while line.len == 0 {
+        line = match self.line(line_max, 414)? {
+            Some(l) => l,
+            None => {
+                return Ok(None);
+            }
+        };
+    }
+    let text = string_from_utf8(line).map_err(fun(_e: string): Fail = Fail.Status(400))?;
+    let parts = text.split(" ");
+    if parts.len != 3 || !token(parts[0]) || !visible(parts[1]) || parts[1].len == 0 {
+        return Err(Fail.Status(400));
+    }
+    let version = parts[2];
+    if version != "HTTP/1.1" && version != "HTTP/1.0" {
+        return Err(Fail.Status(if version.starts_with("HTTP/") { 505 } else { 400 }));
+    }
+    let headers = self.headers(header_bytes, header_count)?;
+    let wants = lower(headers.get("connection").unwrap_or(""));
+    let keep = if version == "HTTP/1.1" { !wants.contains("close") } else { wants.contains("keep-alive") };
+    if lower(headers.get("expect").unwrap_or("")) == "100-continue" {
+        let _ = self.conn.write("HTTP/1.1 100 Continue\r\n\r\n".to_bytes());
+    }
+    let body = self.body(headers, body_max, false)?;
+    Ok(Some(Head { method: parts[0], target: parts[1], keep: keep, headers: headers, body: body }))
+}
+}
+
+/** `name: value` with the name a token, lower-cased, and the value clean. */
+fun split_header(line: u8[]): Result<(string, string), Fail> {
+    let mut colon = -1;
+    for i in 0..line.len {
+        if line[i] == 58 && colon < 0 {
+            colon = i;
+        }
+    }
+    if colon <= 0 {
+        return Err(Fail.Status(400));
+    }
+    let text = string_from_utf8(line).map_err(fun(_e: string): Fail = Fail.Status(400))?;
+    let name = text.slice(0, colon);
+    let value = text.slice(colon + 1, text.len).trim();
+    if !token(name) || !clean(value) {
+        return Err(Fail.Status(400));
+    }
+    Ok((lower(name), value))
+}
+
+/** `bytes[from..to]` as a new array. */
+fun cut(bytes: u8[], from: i64, to: i64): u8[] {
+    let mut out: u8[] = [];
+    for i in from..to {
+        out.push(bytes[i]);
+    }
+    out
+}
+
+/** ASCII letters in lower case; other bytes as they are. */
+fun lower(s: string): string {
+    let mut out: u8[] = [];
+    for b of s.to_bytes() {
+        out.push(if b >= 65 && b <= 90 { b + 32 } else { b });
+    }
+    string_from_utf8(out).unwrap_or(s)
+}
+
+/** A token (RFC 9110): one or more of `!#$%&'*+-.^_`|~`, digits and letters. */
+fun token(s: string): bool {
+    if s.len == 0 {
+        return false;
+    }
+    for b of s.to_bytes() {
+        let ok = (b >= 48 && b <= 57) || (b >= 65 && b <= 90) || (b >= 97 && b <= 122)
+            || "!#$%&'*+-.^_`|~".contains(string_from_utf8([b]).unwrap_or(" "));
+        if !ok {
+            return false;
+        }
+    }
+    true
+}
+
+/** No control characters (a tab is fine), so nothing can end a line. */
+fun clean(s: string): bool = !s.to_bytes().any(fun(b: u8): bool = (b < 32 && b != 9) || b == 127);
+
+/** Printable and without spaces: a request target or a URL's parts. */
+fun visible(s: string): bool = !s.to_bytes().any(fun(b: u8): bool = b <= 32 || b == 127);
+
+/** Decimal digits only (at most 15 of them), as a number. */
+fun digits(s: string): Option<i64> {
+    if s.len == 0 || s.len > 15 {
+        return None;
+    }
+    let mut n = 0;
+    for b of s.to_bytes() {
+        if b < 48 || b > 57 {
+            return None;
+        }
+        n = n * 10 + (b - 48) as i64;
+    }
+    Some(n)
+}
+
+/** A chunk size: hex digits (at most 15), before any `;` extension. */
+fun hex(line: u8[]): Option<i64> {
+    let mut n = 0;
+    let mut count = 0;
+    for b of line {
+        if b == 59 {
+            break;
+        }
+        let d = if b >= 48 && b <= 57 { b - 48 } else if b >= 97 && b <= 102 { b - 87 } else if b >= 65 && b <= 70 { b - 55 } else { 255 };
+        if d == 255 || count == 15 {
+            return None;
+        }
+        n = n * 16 + d as i64;
+        count += 1;
+    }
+    if count == 0 { None } else { Some(n) }
+}
+
+/** The reason phrase sent with a status. */
+fun reason(status: i64): string {
+    match status {
+        100 => "Continue",
+        200 => "OK",
+        201 => "Created",
+        204 => "No Content",
+        301 => "Moved Permanently",
+        302 => "Found",
+        304 => "Not Modified",
+        400 => "Bad Request",
+        401 => "Unauthorized",
+        403 => "Forbidden",
+        404 => "Not Found",
+        405 => "Method Not Allowed",
+        408 => "Request Timeout",
+        413 => "Content Too Large",
+        414 => "URI Too Long",
+        431 => "Request Header Fields Too Large",
+        500 => "Internal Server Error",
+        501 => "Not Implemented",
+        503 => "Service Unavailable",
+        505 => "HTTP Version Not Supported",
+        _ => "Unknown",
+    }
+}

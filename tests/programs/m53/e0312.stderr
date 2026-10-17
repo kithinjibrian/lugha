@@ -4,6 +4,6 @@ error[E0312]: module `std.maths` not found
 1 | import std.maths;
   |        ^^^^^^^^^
   |
-  = help: the standard library's modules are `std.math`, `std.random`, `std.env`, `std.fs`, `std.process`, `std.task`
+  = help: the standard library's modules are `std.math`, `std.random`, `std.env`, `std.fs`, `std.process`, `std.task`, `std.net`, `std.http`
 
 For more about E0312, run `lughac explain E0312`.

@@ -52,6 +52,11 @@ println("{res.status} {res.text()?}");
 ### New dependencies
 - none.
 
+## BUILT (session 268)
+- As planned. Split into `std.http` and the internal `std.$http_wire` (a `$` module only bundled sources can import, left out of E0312's list); the whole-request deadline needed a monotonic clock, added as the internal `$os.now_ms()`.
+- Language fix found while writing it: a literal `if` branch takes its typed sibling's type when it could have it.
+- Tests: `tests/http.rs` (server: round trips, keep-alive, chunked, HTTP/1.0, `100-continue`, header injection dropped, 404; 11 hostile requests each with its status and a closed connection, slow request 408; client: chunked, to-the-end, header lookup, body limit, `https`, bad URLs, refused), stable over repeated runs; checker units for the literal branches; `programs` (E0312 list updated).
+
 ## ERROR HANDLING REQUIREMENTS
 - Malformed or over-limit requests: the status in 157/158, then close; the server keeps serving others.
 - Client: every failure `Err(message)` (`"bad URL"`, `"https isn't supported yet"`, the network's message, `"response too large"`, `"malformed response"`).

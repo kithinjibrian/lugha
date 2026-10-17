@@ -72,6 +72,19 @@ impl<'ctx> Lowerer<'ctx> {
         }
     }
 
+    /// `$os.now_ms()`: the monotonic clock in milliseconds (v17, milestone 111).
+    pub(super) fn os_now_ms(&mut self) -> BasicValueEnum<'ctx> {
+        let function = self.runtime("lugha_rt_now_ms", &[], Some(Type::I64));
+        let site = self
+            .builder
+            .build_call(function, &[], "now")
+            .expect(POSITIONED);
+        match site.try_as_basic_value() {
+            ValueKind::Basic(value) => value,
+            ValueKind::Instruction(_) => unreachable!("lugha_rt_now_ms returns an i64"),
+        }
+    }
+
     /// `value`'s bits reinterpreted as `to` (a float and its same-width
     /// unsigned integer, either way): one `bitcast` (v17, milestone 108).
     pub(super) fn bitcast(&self, value: BasicValueEnum<'ctx>, to: &Type) -> BasicValueEnum<'ctx> {

@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**PRP-139 proposed (milestone 107, the unit type `()`), awaiting approval.** **v17: milestones 91–110 done** (`m110` std.net; `m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**PRP-139 proposed (milestone 107, the unit type `()`), awaiting approval.** **v17: milestones 91–111 done** (`m111` std.http; `m110` std.net; `m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -8627,5 +8627,16 @@ Branch: main
 ### STILL OPEN AT CLOSE
 - PRP-143 awaits approval and the security sign-off.
 
-## SESSION 268 — 2026-10-18 — std.http (milestone 111) — open
+## SESSION 268 — 2026-10-18 — std.http (milestone 111) — closed
 Branch: prp-143-std_http
+
+### DONE
+- PRP-143 built: `std.http` (+ internal `std.$http_wire`), `$os.now_ms()`; literal-branch inference; E0312 list fixed for `std.net`/`std.http`. Spec, CHANGELOG, MEMORY 197.
+- Runs: `tests/http.rs` ×3 (stable), `net`, `programs`, `lazy_std`, `lsp_docs`, `fmt_corpus`, lib (`check::`, `modules`; 849 earlier), fmt, clippy (exit checked).
+- Note: m110 merged without a `programs` run; its E0312 expectation was stale until now.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Next candidates: TLS (`https://`, its own security review), containing a handler's panic (runtime), non-blocking files/stdin.

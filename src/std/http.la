@@ -1,0 +1,317 @@
+/**
+ * std.http: HTTP/1.1 over `std.net` (v17), for `http://` only. A server
+ * gives each connection its own green thread; a client sends one request per
+ * connection. Requests come from strangers, so the server reads within
+ * limits (`Limits`) and answers anything malformed or too big with an error
+ * status and a closed connection.
+ *
+ * A panic in a handler ends the whole program, as any green thread's panic
+ * does: return `http.text(500, …)` for failures instead.
+ */
+import std.net;
+import std.$http_wire { Fail, Head, Reader, clean, digits, lower, reason, token, visible };
+
+/** A request as the server received it. */
+public struct Request {
+    /** `GET`, `POST`, … as sent. */
+    public method: string,
+    /** The target before `?`, not decoded: `/users/7`. */
+    public path: string,
+    /** The target after `?`, raw; `""` without one. */
+    public query: string,
+    /** Header names in lower case; a repeated header's values joined with `", "`. */
+    public headers: Map<string, string>,
+    /** The body's bytes; `[]` without one. */
+    public body: u8[],
+    /** The client's address, `host:port`. */
+    public peer: string,
+}
+
+/** A response: what a handler returns, and what the client receives. */
+public struct Response {
+    /** The status code: 200, 404, … */
+    public status: i64,
+    /** Header names in lower case. */
+    public headers: Map<string, string>,
+    /** The body's bytes. */
+    public body: u8[],
+}
+
+/** How much the server reads before it refuses a request (`limits()` gives the defaults). */
+public struct Limits {
+    /** The request line, in bytes (8192): longer is 414. */
+    public line: i64,
+    /** All the header lines together, in bytes (8192): more is 431. */
+    public headers: i64,
+    /** How many headers (100): more is 431. */
+    public header_count: i64,
+    /** The body, in bytes (1048576): more is 413. */
+    public body: i64,
+    /** Milliseconds for a whole request to arrive, and for a write (30000). */
+    public timeout_ms: i64,
+}
+
+/** The default limits. */
+public fun limits(): Limits = Limits {
+    line: 8192,
+    headers: 8192,
+    header_count: 100,
+    body: 1048576,
+    timeout_ms: 30000,
+};
+
+/**
+ * A `text/plain` response.
+ * @param status the status code
+ * @param text the body
+ */
+public fun text(status: i64, text: string): Response = Response {
+    status: status,
+    headers: #{"content-type": "text/plain; charset=utf-8"},
+    body: text.to_bytes(),
+};
+
+/**
+ * An `application/json` response of JSON text you give; nothing is checked.
+ * @param status the status code
+ * @param json the body
+ */
+public fun json(status: i64, json: string): Response = Response {
+    status: status,
+    headers: #{"content-type": "application/json"},
+    body: json.to_bytes(),
+};
+
+/**
+ * An `application/octet-stream` response.
+ * @param status the status code
+ * @param body the bytes
+ */
+public fun bytes(status: i64, body: u8[]): Response = Response {
+    status: status,
+    headers: #{"content-type": "application/octet-stream"},
+    body: body,
+};
+
+impl Request {
+    /** The body as UTF-8 text, or `Err` when it isn't. */
+    public fun text(self): Result<string, string> = string_from_utf8(self.body);
+
+    /** A header's value by name, in any case. */
+    public fun header(self, name: string): Option<string> = self.headers.get(lower(name));
+}
+
+impl Response {
+    /** The body as UTF-8 text, or `Err` when it isn't. */
+    public fun text(self): Result<string, string> = string_from_utf8(self.body);
+
+    /** A header's value by name, in any case. */
+    public fun header(self, name: string): Option<string> = self.headers.get(lower(name));
+}
+
+/**
+ * Serves forever: each connection gets its own green thread, each request a
+ * call of `handler`. Returns only when it can't listen.
+ * @param addr host:port, `127.0.0.1:8080` for this machine only
+ * @param handler makes a response for each request
+ */
+public fun serve(addr: string, handler: fun(Request): Response): Result<(), string> =
+    serve_with(addr, limits(), handler);
+
+/**
+ * `serve` with other limits.
+ * @param addr host:port
+ * @param limits what to accept
+ * @param handler makes a response for each request
+ */
+public fun serve_with(addr: string, limits: Limits, handler: fun(Request): Response): Result<(), string> {
+    let listener = net.listen(addr)?;
+    while true {
+        if let Ok(conn) = listener.accept() {
+            spawn connection(conn, limits, handler);
+        }
+    }
+    Ok(())
+}
+
+
+/** One connection: requests until it closes, fails, or asks to close. */
+fun connection(conn: net.Conn, limits: Limits, handler: fun(Request): Response) {
+    let mut reader = Reader { conn: conn, buf: [], pos: 0, deadline: 0 };
+    let mut open = true;
+    while open {
+        reader.deadline = $os.now_ms() + limits.timeout_ms;
+        let waiting = reader.buf.len == reader.pos;
+        match reader.request(limits.line, limits.headers, limits.header_count, limits.body) {
+            Ok(Some(head)) => {
+                let keep = head.keep;
+                open = keep;
+                let req = request_of(head, conn.peer());
+                let res = handler(req);
+                conn.set_timeout(limits.timeout_ms);
+                if send(conn, res, keep).is_err() {
+                    open = false;
+                }
+            }
+            Ok(None) => {
+                open = false;
+            }
+            Err(Status(code)) => {
+                // An idle keep-alive connection timing out just closes.
+                if !(code == 408 && waiting && reader.buf.len == reader.pos) {
+                    let _ = send(conn, text(code, reason(code)), false);
+                }
+                open = false;
+            }
+            Err(Gone(_)) => {
+                open = false;
+            }
+        }
+    }
+    conn.close();
+}
+
+
+/** The `Request` a parsed head makes: the target split at its first `?`. */
+fun request_of(head: Head, peer: string): Request {
+    let pieces = head.target.split("?");
+    let path = pieces[0];
+    let query = if pieces.len > 1 { head.target.slice(path.len + 1, head.target.len) } else { "" };
+    Request {
+        method: head.method,
+        path: path,
+        query: query,
+        headers: head.headers,
+        body: head.body,
+        peer: peer,
+    }
+}
+
+/** Writes `res`; `content-length` (and `connection: close`) are the server's. */
+fun send(conn: net.Conn, res: Response, keep: bool): Result<(), string> {
+    let mut head = "HTTP/1.1 {res.status} {reason(res.status)}\r\n";
+    for (name, value) of res.headers {
+        let lname = lower(name);
+        // A name or value that could end the line would inject headers: dropped.
+        if lname != "content-length" && lname != "connection" && token(name) && clean(value) {
+            head = head + lname + ": " + value + "\r\n";
+        }
+    }
+    head = head + "content-length: {res.body.len}\r\n";
+    if !keep {
+        head = head + "connection: close\r\n";
+    }
+    conn.write((head + "\r\n").to_bytes())?;
+    conn.write(res.body)
+}
+
+/**
+ * `GET url`.
+ * @param url `http://host[:port]/path?query`
+ * @returns the response, or `Err` with the reason
+ */
+public fun get(url: string): Result<Response, string> = request("GET", url, #{}, []);
+
+/**
+ * `POST url` with a body.
+ * @param url `http://host[:port]/path?query`
+ * @param content_type the body's type, `application/json` say
+ * @param body the bytes
+ */
+public fun post(url: string, content_type: string, body: u8[]): Result<Response, string> =
+    request("POST", url, #{"content-type": content_type}, body);
+
+/**
+ * Any request, with the default limits (response bodies up to 16777216 bytes).
+ * @param method `GET`, `PUT`, …
+ * @param url `http://host[:port]/path?query`
+ * @param headers extra headers
+ * @param body the bytes, `[]` for none
+ */
+public fun request(method: string, url: string, headers: Map<string, string>, body: u8[]): Result<Response, string> {
+    let mut l = limits();
+    l.body = 16777216;
+    request_with(method, url, headers, body, l)
+}
+
+/**
+ * `request` with other limits.
+ * @param method `GET`, `PUT`, …
+ * @param url `http://host[:port]/path?query`
+ * @param headers extra headers
+ * @param body the bytes
+ * @param limits what to accept from the server
+ */
+public fun request_with(method: string, url: string, headers: Map<string, string>, body: u8[], limits: Limits): Result<Response, string> {
+    if url.starts_with("https://") {
+        return Err("https isn't supported yet");
+    }
+    if !url.starts_with("http://") || !token(method) {
+        return Err("bad URL");
+    }
+    let rest = url.slice(7, url.len);
+    let mut cut_at = rest.len;
+    let raw = rest.to_bytes();
+    for i in 0..raw.len {
+        if (raw[i] == 47 || raw[i] == 63) && i < cut_at {
+            cut_at = i;
+        }
+    }
+    let host = rest.slice(0, cut_at);
+    let path = if cut_at == rest.len { "/" } else if rest.slice(cut_at, cut_at + 1) == "?" { "/" + rest.slice(cut_at, rest.len) } else { rest.slice(cut_at, rest.len) };
+    if host.len == 0 || !visible(host) || !visible(path) {
+        return Err("bad URL");
+    }
+    let addr = if host.ends_with("]") || !host.contains(":") { host + ":80" } else { host };
+    let conn = net.connect_timeout(addr, limits.timeout_ms)?;
+    conn.set_timeout(limits.timeout_ms);
+    let mut head = "{method} {path} HTTP/1.1\r\nhost: {host}\r\ncontent-length: {body.len}\r\nconnection: close\r\n";
+    for (name, value) of headers {
+        let lname = lower(name);
+        if lname != "host" && lname != "content-length" && lname != "connection" && token(name) && clean(value) {
+            head = head + lname + ": " + value + "\r\n";
+        }
+    }
+    let sent = conn.write((head + "\r\n").to_bytes());
+    let result = match sent {
+        Ok(_) => {
+            match conn.write(body) {
+                Ok(_) => read_response(conn, method, limits),
+                Err(e) => Err(e),
+            }
+        }
+        Err(e) => Err(e),
+    };
+    conn.close();
+    result
+}
+
+fun read_response(conn: net.Conn, method: string, limits: Limits): Result<Response, string> {
+    let mut reader = Reader { conn: conn, buf: [], pos: 0, deadline: $os.now_ms() + limits.timeout_ms };
+    let mut status = 100;
+    let mut headers: Map<string, string> = #{};
+    // `100 Continue` and other 1xx responses come before the real one.
+    while status >= 100 && status < 200 {
+        let line = reader.line(limits.line, 400).map_err(failure)?.ok_or("malformed response")?;
+        let text = string_from_utf8(line).map_err(fun(_e: string): string = "malformed response")?;
+        let parts = text.split(" ");
+        if parts.len < 2 || !parts[0].starts_with("HTTP/1.") || parts[1].len != 3 {
+            return Err("malformed response");
+        }
+        status = digits(parts[1]).ok_or("malformed response")?;
+        headers = reader.headers(limits.headers, limits.header_count).map_err(failure)?;
+    }
+    let none = method == "HEAD" || status == 204 || status == 304;
+    let body = if none { [] } else { reader.body(headers, limits.body, true).map_err(failure)? };
+    Ok(Response { status: status, headers: headers, body: body })
+}
+
+fun failure(f: Fail): string {
+    match f {
+        Status(413) => "response too large",
+        Status(408) => "timed out",
+        Status(_) => "malformed response",
+        Gone(e) => e,
+    }
+}
+
