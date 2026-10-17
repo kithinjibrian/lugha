@@ -8330,3 +8330,26 @@ Branch: fix-map-insert-quadratic
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 247 — 2026-10-17 — A module's private imports aren't importable through it — closed
+Branch: fix-private-import-leak
+
+### WHAT WAS DONE
+- kivuli's report (their DECISION-011; lugha's DECISION-011 is unrelated): `import views { Fit }` compiled though `views` imports `Fit` without `public`. `check_named_imports` checked only the followed item's visibility; it now checks the other module's alias first (E0313), as spec §6 and `views.Fit` already required.
+
+### FILES CREATED OR MODIFIED
+- Modified: `src/check/named_imports.rs`, CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- `named_imports::tests::a_modules_private_imports_stay_its_own` (E0313; `public` re-export still fine). Narrow run: `--lib check::`, `--test modules`, fmt, clippy.
+
+### DECISIONS MADE
+- None (spec §6 already decides it).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.

@@ -32,6 +32,7 @@ Never deleted. Older entries are never modified.
 - An extern parameter with a function type is now a callback instead of E0409; E0409's message for a function an extern would return says so (milestone 88)
 
 ### Fixed
+- A module's private named imports could be imported through it: `import views { Fit }` compiled although `views` only imports `Fit` (no `public`); it is now E0313, as `views.Fit` already was (kivuli, session 247)
 - Inserting into a `Map` or `Set` was quadratic (8 000 inserts took ~2.4 s at `-O2`): the prelude passed the map by value into a function that changed it, so every insert copied its arrays. Growth and rebuilds now change the map in place (`$put`, `$rebuild`); 512 000 map and set inserts take ~0.1 s (kivuli, session 246)
 - Diagnostics and the editor (hover, completion, signature help) named prelude types by their internal key, `$prelude.Map<string, i64>`, `$prelude.ArrayIter<i64>`; they now show as written, `Map<string, i64>` (session 245)
 - VS Code highlighting: an import's module path and its `as` alias (`import kivuli;`, `import gtk.raw as r`) now get the namespace colour; extension 0.15.0 (session 242)
