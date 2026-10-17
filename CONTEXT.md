@@ -7983,3 +7983,8 @@ Branch: fix-doc-extern-type
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 232 — 2026-10-17 — Glob re-exports discovery (PRP-132) — open
+Branch: prp-132-glob_imports
