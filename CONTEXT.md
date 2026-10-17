@@ -8439,3 +8439,6 @@ Branch: prp-135-137-c_boundary
 
 ### STILL OPEN AT CLOSE
 - Nothing. lugha-wasmtime can switch to `ptr`/`mut`, arrays, unions and `CPtr` after reinstalling `lughac`.
+
+## SESSION 252 — 2026-10-17 — Propose PRP-138: nullable handle fields, plain-data unions — open
+Branch: main
