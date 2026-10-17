@@ -1,6 +1,6 @@
 ## FEATURE: Global constants — `const NAME: T = expr;` at the top level of a module; milestone 109 (v17).
 
-**Status:** proposed 2026-10-17 (session 260), after discovery in the same session (the user: "what about global const and statics"; Q1: "constants only").
+**Status:** approved 2026-10-17 (session 261); proposed in session 260, after discovery in the same session (the user: "what about global const and statics"; Q1: "constants only").
 
 ## OBJECTIVE
 ```lugha

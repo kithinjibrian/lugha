@@ -8539,3 +8539,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-141 awaits approval; `src/check/members.rs` is 503 lines.
+
+## SESSION 261 — 2026-10-17 — Global constants (milestone 109) — open
+Branch: prp-141-constants
