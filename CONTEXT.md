@@ -8167,3 +8167,26 @@ Branch: fix-check-cycle-loose
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 240 — 2026-10-17 — Struct literal fields wait for their siblings (kivuli) — closed
+Branch: fix-struct-field-inference
+
+### WHAT WAS DONE
+- kivuli's report: `App { init: (0, Cmd.none()), update: step }` was E0412 while the other field order checked. Struct literal fields already go through `infer`'s waiting order; the gap was that an associated function only its result types (`Cmd.none()`) wasn't recognised as waiting (PRP-127 had noted it as not covered). `siblings.rs`: `callee_signature` (functions and associated functions), used by `waiting_call` and `waiting_head`. Spec §4 (inference) says so.
+
+### FILES CREATED OR MODIFIED
+- New: `tests/programs/m96/struct_fields.{la,stdout,exit}`. Modified: `src/check/siblings.rs`, spec §4, CHANGELOG, CONTEXT.
+
+### TESTS WRITTEN
+- Program case (a, b, `Cmd.send`, unannotated `let`, nested literal); `siblings` unit test (pair with an associated call; E0412 kept). Targeted: `--lib`, `programs`, `test_runner`, `spec`, `lsp_hover`, `lsp_completion`, fmt, clippy.
+
+### DECISIONS MADE
+- A bug fix (milestone 96), no PRP.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- Nothing.

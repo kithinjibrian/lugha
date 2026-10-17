@@ -46,8 +46,8 @@ impl Checker {
         if !self.waiting_call(e) {
             return None;
         }
-        let ret = &self.functions.get(&self.callee_key(callee)?)?.ret;
-        match ret {
+        let (_, _, ret) = self.callee_signature(callee)?;
+        match &ret {
             Type::Struct(key, _) | Type::Enum(key, _) => Some(key.clone()),
             _ => None,
         }
@@ -103,23 +103,45 @@ impl Checker {
         let ExprKind::Call(callee, args) = &e.kind else {
             return false;
         };
-        let Some(key) = self.callee_key(callee) else {
+        let Some((generics, params, ret)) = self.callee_signature(callee) else {
             return false;
         };
-        let Some(sig) = self.functions.get(&key) else {
-            return false;
-        };
-        if args.len() != sig.params.len() {
+        if args.len() != params.len() {
             return false;
         }
-        sig.generics.iter().any(|g| {
-            mentions(&sig.ret, &g.name)
-                && sig
-                    .params
+        generics.iter().any(|g| {
+            mentions(&ret, g)
+                && params
                     .iter()
                     .zip(args)
-                    .all(|(p, a)| !mentions(p, &g.name) || self.waits(a))
+                    .all(|(p, a)| !mentions(p, g) || self.waits(a))
         })
+    }
+
+    /// The type parameters, parameter types and result of what `callee`
+    /// names: a function (`f`, `m.f`) or, since kivuli's `Cmd.none()`, an
+    /// associated function of a generic type (`T.f`), whose type parameters
+    /// are its `impl`'s and its own.
+    fn callee_signature(&self, callee: &Expr) -> Option<(Vec<String>, Vec<Type>, Type)> {
+        if let Some(sig) = self.callee_key(callee).and_then(|k| self.functions.get(&k)) {
+            let generics = sig.generics.iter().map(|g| g.name.clone()).collect();
+            return Some((generics, sig.params.clone(), sig.ret.clone()));
+        }
+        let ExprKind::Field(base, f) = &callee.kind else {
+            return None;
+        };
+        let ExprKind::Name(t) = &base.kind else {
+            return None;
+        };
+        if self.local(t).is_some() {
+            return None;
+        }
+        let m = self.methods.get(&self.key(t))?.get(&f.name)?;
+        if m.receiver.is_some() {
+            return None;
+        }
+        let generics = m.generics.iter().map(|g| g.name.clone()).collect();
+        Some((generics, m.params.clone(), m.ret.clone()))
     }
 }
 
@@ -265,6 +287,20 @@ mod tests {
         let found = errors(&src);
         assert_eq!(found.first().map(|(c, _)| *c), Some("E0412"), "{found:?}");
         let src = format!("{node}fun main() {{ println(leaf(\"x\").pad(1) == leaf(\"y\")); }}");
+        let found = errors(&src);
+        assert_eq!(found.first().map(|(c, _)| *c), Some("E0412"), "{found:?}");
+    }
+
+    #[test]
+    fn an_associated_function_only_its_result_types_waits_v17() {
+        let cmd = "enum Cmd<M> { Nothing, Send(M) }\n\
+            impl Cmd<M> { fun none(): Cmd<M> = Cmd.Nothing; }\n\
+            enum Ev { Go }\n";
+        ok(&format!(
+            "{cmd}fun pair<A>(a: A, b: A): A[] = [a, b];\n\
+             fun main() {{ let c: Cmd<Ev> = Cmd.Nothing; let xs = pair(Cmd.none(), c); }}"
+        ));
+        let src = format!("{cmd}fun main() {{ let c = Cmd.none(); }}");
         let found = errors(&src);
         assert_eq!(found.first().map(|(c, _)| *c), Some("E0412"), "{found:?}");
     }
