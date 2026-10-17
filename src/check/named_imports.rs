@@ -127,6 +127,15 @@ impl Checker {
             else {
                 continue; // a clash, reported when registered
             };
+            // A name the other module only imports for itself (no `public`) is
+            // its own, private to it: E0313, as `m.X` is (session 247).
+            if self.aliases.contains_key(&alias.target) {
+                let reported = self.diagnostics.len();
+                self.item_visible(&alias.target, item.name.span);
+                if self.diagnostics.len() > reported {
+                    continue;
+                }
+            }
             let target = self.follow(key);
             let exists = self.functions.contains_key(&target)
                 || self.structs.contains_key(&target)
@@ -230,6 +239,28 @@ mod tests {
 
     fn found(main: &str, shapes: &str) -> Vec<(&'static str, String)> {
         errors(&[("main.la", main), ("shapes.la", shapes), ("vec.la", VEC)])
+    }
+
+    #[test]
+    fn a_modules_private_imports_stay_its_own() {
+        // `shapes` imports `Vec2` for itself (no `public`): naming it through
+        // `shapes` is E0313, as `shapes.Vec2` already was.
+        let shapes = "import vec { Vec2 };\npublic fun origin(): Vec2 = Vec2 { x: 0, y: 0 };\n";
+        let found = errors(&[
+            ("main.la", "import shapes { Vec2 };\nfun main() {}"),
+            ("shapes.la", shapes),
+            ("vec.la", VEC),
+        ]);
+        assert_eq!(found, [("E0313", "Vec2".into())]);
+        // Re-exported with `public`, it is importable.
+        ok(&[
+            (
+                "main.la",
+                "import shapes { Vec2 };\nfun main() { let v = Vec2 { x: 1, y: 2 }; }",
+            ),
+            ("shapes.la", "public import vec { Vec2 };\n"),
+            ("vec.la", VEC),
+        ]);
     }
 
     #[test]
