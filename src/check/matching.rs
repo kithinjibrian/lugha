@@ -3,7 +3,7 @@
 //! (W0103). Patterns are typed in `patterns.rs`; coverage is `usefulness.rs`.
 
 use super::expr::Expect;
-use super::patterns::Pat;
+use super::patterns::{Bindings, Pat};
 use super::usefulness::show;
 use super::{Binding, Checker, Type, errors};
 use crate::ast::{Arm, Expr, Ident};
@@ -26,7 +26,7 @@ impl Checker {
         let mut result: Option<(Type, Span)> = None;
         // Arms that wait for a sibling's type (`[]`, kivuli), with their
         // bindings, checked once an arm fixes it.
-        let mut waiting: Vec<(&Arm, Vec<(Ident, Type, bool)>)> = Vec::new();
+        let mut waiting: Vec<(&Arm, Bindings)> = Vec::new();
         for arm in arms {
             let mut bindings = Vec::new();
             let before = self.diagnostics.len();
