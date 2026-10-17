@@ -174,7 +174,7 @@ lugha-wasmtime's probe found no way to start a NULL-able pointer field; session 
 
 107–113. **Nullable handle fields and plain-data unions** (milestone 106): `Option<H>` as an extern-struct field (NULL is `None`); union fields only plain data (no handles, `Option<H>` or `CPtr`, at any depth: E0437); spec §8 states `c_read`/`c_write` as the program's responsibility; tag `m106`.
 
-## Decisions behind milestone 107 (session 254; proposed)
+## Decisions behind milestone 107 (session 254; approved in session 255)
 
 The user: "add unit type" — a real type and value, and a warning for binding one. Details in PRP-139.
 

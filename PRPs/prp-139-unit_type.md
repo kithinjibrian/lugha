@@ -1,6 +1,6 @@
 ## FEATURE: The unit type `()` — a real type with one value, replacing `void`; milestone 107 (v17).
 
-**Status:** proposed 2026-10-17 (session 254), after discovery in the same session (the user: "add unit type"; Q1 "yes be a real type and value"; Q2 "warn").
+**Status:** approved 2026-10-17 (session 255: "build"); proposed in session 254, after discovery in the same session (the user: "add unit type"; Q1 "yes be a real type and value"; Q2 "warn").
 
 ## OBJECTIVE
 ```lugha
