@@ -108,6 +108,8 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
         }
     };
     let mut jobs = Vec::new();
+    // Files with errors: their tests never run, so the summary counts them.
+    let mut uncompiled = 0;
     for (i, file) in files.iter().enumerate() {
         // `./geo.la` from walking `.` reads, and reports, as `geo.la`.
         let file = file.strip_prefix(".").unwrap_or(file);
@@ -134,6 +136,7 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
             }
             Err(Failure::Program(source, diagnostics)) => {
                 out.diagnostics(&source, &diagnostics);
+                uncompiled += 1;
                 code = code.max(1);
             }
             Err(Failure::Internal(source, report)) => {
@@ -196,17 +199,9 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
             }
         }
     }
-    let total = passed + failed + skipped;
-    // The skipped count only when there are skips, so earlier output is unchanged.
-    let skips = match skipped {
-        0 => String::new(),
-        s => format!(", {s} skipped"),
-    };
-    let summary = match total {
-        _ if request.json => test_json::summary_line(passed, failed, skipped),
-        0 => "0 tests\n".to_string(),
-        1 => format!("\n1 test: {passed} passed, {failed} failed{skips}\n"),
-        n => format!("\n{n} tests: {passed} passed, {failed} failed{skips}\n"),
+    let summary = match request.json {
+        true => test_json::summary_line(passed, failed, skipped, uncompiled),
+        false => test_json::summary_text(passed, failed, skipped, uncompiled),
     };
     out.print(&summary);
     if failed > 0 {

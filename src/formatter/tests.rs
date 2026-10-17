@@ -43,8 +43,37 @@ fn blocks_indent_four_spaces_and_nest() {
 #[test]
 fn if_else_chains_keep_else_on_the_closing_line() {
     check(
-        "fun f(x:i64):i64{if x<0{1}else if x==0{2}else{3}}",
-        "fun f(x: i64): i64 {\n    if x < 0 {\n        1\n    } else if x == 0 {\n        2\n    } else {\n        3\n    }\n}\n",
+        "fun f(x:i64):i64{if x<0{print(1);1}else if x==0{2}else{3}}",
+        "fun f(x: i64): i64 {\n    if x < 0 {\n        print(1);\n        1\n    } else if x == 0 {\n        2\n    } else {\n        3\n    }\n}\n",
+    );
+}
+
+#[test]
+fn an_if_whose_branches_are_values_stays_on_one_line_when_it_fits() {
+    check(
+        "fun f(c:bool):i64{let y=if c{1}else{2};if c{y}else if d{2}else{3}}",
+        "fun f(c: bool): i64 {\n    let y = if c { 1 } else { 2 };\n    if c { y } else if d { 2 } else { 3 }\n}\n",
+    );
+    check(
+        "fun g(c:bool):string=if c{\"yes\"}else{\"no\"};",
+        "fun g(c: bool): string = if c { \"yes\" } else { \"no\" };\n",
+    );
+    // Too long for one line: every branch breaks, as before.
+    let long = "a_rather_long_name_for_a_value_here + another_long_name_to_add";
+    check(
+        &format!("fun h(c:bool):i64{{let y=if c{{{long}}}else{{{long}}};y}}"),
+        &format!(
+            "fun h(c: bool): i64 {{\n    let y = if c {{\n        {long}\n    }} else {{\n        {long}\n    }};\n    y\n}}\n"
+        ),
+    );
+    // Without `else`, with a statement, or with a comment: broken.
+    check(
+        "fun k(){if c{x();}}",
+        "fun k() {\n    if c {\n        x();\n    }\n}\n",
+    );
+    check(
+        "fun m():i64{if c{1 // one\n}else{2}}",
+        "fun m(): i64 {\n    if c {\n        1 // one\n    } else {\n        2\n    }\n}\n",
     );
 }
 

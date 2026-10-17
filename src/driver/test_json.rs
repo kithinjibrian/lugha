@@ -114,8 +114,41 @@ pub(super) fn result_line(r: &Result) -> String {
 }
 
 /// The `--json` summary line.
-pub(super) fn summary_line(passed: usize, failed: usize, skipped: usize) -> String {
-    format!("{{\"summary\":{{\"passed\":{passed},\"failed\":{failed},\"skipped\":{skipped}}}}}\n")
+pub(super) fn summary_line(
+    passed: usize,
+    failed: usize,
+    skipped: usize,
+    uncompiled: usize,
+) -> String {
+    format!(
+        "{{\"summary\":{{\"passed\":{passed},\"failed\":{failed},\"skipped\":{skipped},\"uncompiled\":{uncompiled}}}}}\n"
+    )
+}
+
+/// The human summary: `N tests: P passed, F failed`, then `, S skipped`
+/// (v17) and `, K files didn't compile` (v17) only when there are any, so
+/// a run with neither reads as before; a file that didn't compile has no
+/// tests to count, so files are counted.
+pub(super) fn summary_text(
+    passed: usize,
+    failed: usize,
+    skipped: usize,
+    uncompiled: usize,
+) -> String {
+    let mut extra = String::new();
+    if skipped > 0 {
+        extra.push_str(&format!(", {skipped} skipped"));
+    }
+    match uncompiled {
+        0 => {}
+        1 => extra.push_str(", 1 file didn't compile"),
+        k => extra.push_str(&format!(", {k} files didn't compile")),
+    }
+    match passed + failed + skipped {
+        0 => format!("0 tests{extra}\n"),
+        1 => format!("\n1 test: {passed} passed, {failed} failed{extra}\n"),
+        n => format!("\n{n} tests: {passed} passed, {failed} failed{extra}\n"),
+    }
 }
 
 /// The reason a test ended through `skip(reason)` (v17): exit code 77 *and*
@@ -209,9 +242,17 @@ mod tests {
         );
         assert_eq!(list_line(false, "m.t", "m.la", 2, 5), "test m.t m.la:2:5\n");
         assert_eq!(
-            summary_line(1, 0, 2),
-            "{\"summary\":{\"passed\":1,\"failed\":0,\"skipped\":2}}\n"
+            summary_line(1, 0, 2, 1),
+            "{\"summary\":{\"passed\":1,\"failed\":0,\"skipped\":2,\"uncompiled\":1}}\n"
         );
+        // Each count only when there is one, after the passed and failed ones.
+        assert_eq!(summary_text(0, 0, 0, 0), "0 tests\n");
+        assert_eq!(summary_text(1, 0, 0, 0), "\n1 test: 1 passed, 0 failed\n");
+        assert_eq!(
+            summary_text(1, 1, 1, 2),
+            "\n3 tests: 1 passed, 1 failed, 1 skipped, 2 files didn't compile\n"
+        );
+        assert_eq!(summary_text(0, 0, 0, 1), "0 tests, 1 file didn't compile\n");
         assert_eq!(
             skipped(Some(77), "x\nlugha-skip: no display\n"),
             Some("no display".into())

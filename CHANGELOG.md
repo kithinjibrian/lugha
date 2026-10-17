@@ -9,6 +9,8 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Changed
+- `lughac fmt` keeps an `if` with `else` whose branches are lone values on one line when it fits: `let y = if c { 1 } else { 2 };` (was five lines); chains break all or nothing (kivuli, session 235)
+- `lughac test`'s summary counts files that didn't compile: `1 test: 1 passed, 0 failed, 1 file didn't compile`, and `"uncompiled":K` in the `--json` summary (kivuli, session 235)
 - `lughac init --lib` writes the library as `src/lib.la` (its entry, with a module doc) and its example imports it as `import N;` (was `src/N.la` and `import N.N;`); E0312's help for `import N;` mentions the entry (milestone 99)
 - A panic inside a std module reports a line two later than before (`<std>/math.la:62:9` instead of `60:9`): the std headers became module doc comments (milestone 98)
 - `lughac check` no longer reports E0303 (only `build` and `run` do); `tests/programs/m3/e0303` moved to `tests/cli.rs`; `skip` is an intrinsic, so a function named `skip` is E0302; `--json`'s summary always carries `"skipped"` (v17, milestone 97)

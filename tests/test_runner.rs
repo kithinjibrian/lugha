@@ -154,7 +154,7 @@ fn a_file_that_does_not_compile_is_reported_and_the_rest_still_run() {
     );
     assert!(text(&out.stdout).contains("test good.fine ... ok"));
     assert!(
-        text(&out.stdout).ends_with("1 test: 1 passed, 0 failed\n"),
+        text(&out.stdout).ends_with("1 test: 1 passed, 0 failed, 1 file didn't compile\n"),
         "{}",
         text(&out.stdout)
     );
@@ -232,7 +232,7 @@ fn json_results_carry_status_message_location_and_output() {
     assert!(failed.contains("\"ms\":"), "{failed}");
     assert_eq!(
         lines[2],
-        "{\"summary\":{\"passed\":1,\"failed\":1,\"skipped\":0}}"
+        "{\"summary\":{\"passed\":1,\"failed\":1,\"skipped\":0,\"uncompiled\":0}}"
     );
     let out = lughac(&t.0, &["test", "--json", "--timeout", "1", "looping.la"]);
     assert!(

@@ -88,6 +88,8 @@ struct Printer<'a> {
     /// Printing a condition, where a struct literal needs parentheses
     /// (spec §3, E0205), as the parser's own flag.
     no_struct: bool,
+    /// Inside a broken `if` chain's `else`: its `else if` breaks too (v17).
+    in_broken_chain: bool,
 }
 
 impl<'a> Printer<'a> {
@@ -99,6 +101,7 @@ impl<'a> Printer<'a> {
             comments,
             claimed,
             no_struct: false,
+            in_broken_chain: false,
         }
     }
 
