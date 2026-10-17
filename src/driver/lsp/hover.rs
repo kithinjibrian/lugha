@@ -104,10 +104,11 @@ pub(super) fn answer(snapshot: &Snapshot, file: &Path, at: Position) -> Option<H
     }
     let (span, found) = best?;
     let (line, notes) = render(snapshot, &found)?;
-    let mut value = format!("```lugha\n{line}\n```");
+    // Prelude types as programs write them: `Map<K, V>` (v17).
+    let mut value = format!("```lugha\n{}\n```", crate::check::shown(&line));
     for note in notes {
         value.push_str("\n\n");
-        value.push_str(&note);
+        value.push_str(&crate::check::shown(&note));
     }
     let documented = match &found {
         Found::Name(Name::Function { decl, .. }) | Found::Type(decl, _) => Some(*decl),

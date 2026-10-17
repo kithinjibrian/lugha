@@ -441,7 +441,7 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 
 ### Milestone 101 — Maps and sets ✅
 - [x] (PRP-133) `Map<K, V>`, `Set<T>`, `#{ … }` literals, E0441/E0442/W0105, `Mapped`; tagged `m101`
-- [ ] Diagnostics print prelude types as `$prelude.Map<…>`/`$prelude.ArrayIter<…>`: show them without the prefix (found in milestone 101)
+- [x] Diagnostics print prelude types as `$prelude.Map<…>`/`$prelude.ArrayIter<…>`: show them without the prefix (found in milestone 101; done in session 245)
 
 ### Milestone 100 — Glob re-exports ✅
 - [x] (PRP-132) `public import m { * };`; E0201/E0314; completion of re-exports; tagged `m100`

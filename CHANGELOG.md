@@ -32,6 +32,7 @@ Never deleted. Older entries are never modified.
 - An extern parameter with a function type is now a callback instead of E0409; E0409's message for a function an extern would return says so (milestone 88)
 
 ### Fixed
+- Diagnostics and the editor (hover, completion, signature help) named prelude types by their internal key, `$prelude.Map<string, i64>`, `$prelude.ArrayIter<i64>`; they now show as written, `Map<string, i64>` (session 245)
 - VS Code highlighting: an import's module path and its `as` alias (`import kivuli;`, `import gtk.raw as r`) now get the namespace colour; extension 0.15.0 (session 242)
 - VS Code highlighting: names in an import's braces got no colour unless capitalised; a function there is now highlighted as a function (`import kivuli { text, column as col, View };`); extension 0.14.0 (session 241)
 - An associated function only its result can type (`Cmd.none()` for `fun none(): Cmd<M>`) didn't wait for its siblings, so `App { init: (0, Cmd.none()), update: step }` was E0412 while the reverse field order checked; struct literal fields now type each other in any order (kivuli, session 240)

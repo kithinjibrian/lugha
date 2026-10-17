@@ -437,7 +437,7 @@ fn item(label: &str, kind: Kind, detail: String) -> CompletionItem {
     CompletionItem {
         label: label.to_string(),
         kind: Some(kind),
-        detail: (!detail.is_empty()).then_some(detail),
+        detail: (!detail.is_empty()).then(|| crate::check::shown(&detail)),
         ..CompletionItem::default()
     }
 }
