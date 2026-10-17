@@ -7986,5 +7986,23 @@ Branch: fix-doc-extern-type
 
 ---
 
-## SESSION 232 — 2026-10-17 — Glob re-exports discovery (PRP-132) — open
+## SESSION 232 — 2026-10-17 — Glob re-exports discovery (PRP-132) — closed
 Branch: prp-132-glob_imports
+
+### WHAT WAS DONE
+- kivuli / lugha-gtk asked for glob re-exports. Discovery Q1–Q6 with the user (all recommended answers taken): `{ * }`, `public` only, `public` items, named re-exports chained, E0314 on clashes, `*` alone. PRP-132 written (milestone 100); draft decisions 58–66 and row 100 (proposed).
+
+### FILES CREATED OR MODIFIED
+- New: `PRPs/prp-132-glob_imports.md`. Modified: `docs/specs/Language v17 Draft.md`, CONTEXT.
+
+### TESTS WRITTEN
+- None (proposal).
+
+### DECISIONS MADE
+- Q1–Q6 (the user); 64–66 proposed for review.
+
+### PENDING DECISIONS OPENED
+- PRP-132 approval.
+
+### STILL OPEN AT CLOSE
+- PRP-132 awaits approval; build on branch `prp-132-glob_imports`.
