@@ -8121,3 +8121,8 @@ Branch: close-e0312-report
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 238 — 2026-10-17 — E0312 suggests a module beside the main file — open
+Branch: e0312-beside-hint
