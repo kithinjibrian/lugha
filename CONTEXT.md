@@ -8283,3 +8283,8 @@ Branch: prp-133-maps_and_sets
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+---
+
+## SESSION 245 — 2026-10-17 — Prelude types shown without `$prelude.` — open
+Branch: fix-prelude-type-names
