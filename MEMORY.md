@@ -2147,6 +2147,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-152 (session 286; approved and built 287, reviewed by the user before merging). `lugha_rt_crypto_hkdf` in `runtime/crypto.c`: `EVP_KDF_fetch("HKDF")`, digest SHA256, key/salt/info as octet strings (an empty array passed as a non-NULL pointer of length 0, since OpenSSL treats a NULL key as missing), output in an `OPENSSL_malloc` buffer copied out then `OPENSSL_clear_free`d. Length checked in Lugha (`BadLength`) and again in C. RFC 5869 A.1–A.3 pass in `tests/crypto.rs`.
 
+### 207. `net.resolve` and `tls.Options.address` — milestone 121 (PRP-153)
+
+**Decision:** as PRP-153 (session 289; approved and built 290). `lugha_rt_net_resolve(name, numeric)` in `runtime/net.c` (`getaddrinfo`, `SOCK_STREAM`, `inet_ntop`, newline-joined; `numeric` = `AI_NUMERICHOST` for the address check); `net.resolve` splits and drops repeats with a `Set`. `tls.connect_with` connects to `[ip]:port`/`ip:port` and still passes `host_of(addr)` as the name to verify; `http.exchange` takes the address (private `pinned` for `http://`); the resolver lives in its own fragment, `runtime/resolve.c` (net.c is at the 300-line fragment limit). Rapidkoi's two full `tls.Options` literals need `address` (or `..tls.options()`).
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

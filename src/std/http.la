@@ -274,7 +274,7 @@ public fun request(method: string, url: string, headers: Map<string, string>, bo
  * @param limits what to accept from the server
  */
 public fun request_with(method: string, url: string, headers: Map<string, string>, body: u8[], limits: Limits): Result<Response, string> =
-    exchange(method, url, headers, body, limits, "");
+    exchange(method, url, headers, body, limits, "", "");
 
 /**
  * A request trusting more certificates for `https://` (a private CA, a
@@ -291,7 +291,7 @@ public fun request_tls(method: string, url: string, headers: Map<string, string>
     if opts.timeout_ms > 0 {
         l.timeout_ms = opts.timeout_ms;
     }
-    exchange(method, url, headers, body, l, opts.ca_file)
+    exchange(method, url, headers, body, l, opts.ca_file, opts.address)
 }
 
 /**
@@ -310,11 +310,27 @@ public fun request_tls_with(method: string, url: string, headers: Map<string, st
     if opts.timeout_ms > 0 {
         l.timeout_ms = opts.timeout_ms;
     }
-    exchange(method, url, headers, body, l, opts.ca_file)
+    exchange(method, url, headers, body, l, opts.ca_file, opts.address)
+}
+
+/** `addr`, or `address` (an IP literal) at `addr`'s port, as `std.tls` connects. */
+fun pinned(addr: string, address: string): Result<string, string> {
+    if address == "" {
+        return Ok(addr);
+    }
+    let ip = match $os.net_resolve(address, 1) {
+        Ok(ip) => ip,
+        Err(_) => {
+            return Err("address must be an IP address: {address}");
+        }
+    };
+    let parts = addr.split(":");
+    let port = parts[parts.len - 1];
+    Ok(if ip.contains(":") { "[{ip}]:{port}" } else { "{ip}:{port}" })
 }
 
 /** One request on its own connection; `https://` verified (and `ca_file` trusted). */
-fun exchange(method: string, url: string, headers: Map<string, string>, body: u8[], limits: Limits, ca_file: string): Result<Response, string> {
+fun exchange(method: string, url: string, headers: Map<string, string>, body: u8[], limits: Limits, ca_file: string, address: string): Result<Response, string> {
     let secure = url.starts_with("https://");
     if !(secure || url.starts_with("http://")) || !token(method) {
         return Err("bad URL");
@@ -335,9 +351,9 @@ fun exchange(method: string, url: string, headers: Map<string, string>, body: u8
     let port = if secure { ":443" } else { ":80" };
     let addr = if host.ends_with("]") || !host.contains(":") { host + port } else { host };
     let conn = if secure {
-        Stream.Secure(tls.connect_with(addr, tls.Options { ca_file: ca_file, timeout_ms: limits.timeout_ms })?)
+        Stream.Secure(tls.connect_with(addr, tls.Options { ca_file: ca_file, timeout_ms: limits.timeout_ms, address: address })?)
     } else {
-        Stream.Plain(net.connect_timeout(addr, limits.timeout_ms)?)
+        Stream.Plain(net.connect_timeout(pinned(addr, address)?, limits.timeout_ms)?)
     };
     conn.set_timeout(limits.timeout_ms);
     let mut head = "{method} {path} HTTP/1.1\r\nhost: {host}\r\ncontent-length: {body.len}\r\nconnection: close\r\n";

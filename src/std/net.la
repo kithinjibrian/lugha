@@ -53,6 +53,24 @@ public fun connect_timeout(addr: string, ms: i64): Result<Conn, string> {
     Ok(Conn { fd: Ref.new(fd), timeout: Ref.new(0) })
 }
 
+/**
+ * Every address the system's resolver gives for a name, IPv4 and IPv6, as
+ * text (`"93.184.215.14"`, `"2606:4700::1"`), in its order, each once. An
+ * IP address gives itself. The lookup blocks the thread while it runs.
+ * @param name a host name or an IP address, without a port
+ * @returns the addresses, or `Err` with the resolver's reason
+ */
+public fun resolve(name: string): Result<string[], string> {
+    let mut out: string[] = [];
+    let mut seen: Set<string> = #{};
+    for a of $os.net_resolve(name, 0)?.split("\n") {
+        if seen.insert(a) {
+            out.push(a);
+        }
+    }
+    Ok(out)
+}
+
 impl Listener {
     /**
      * Waits for the next connection; only this green thread waits.

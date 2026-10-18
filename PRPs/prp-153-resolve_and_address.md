@@ -1,6 +1,6 @@
 ## FEATURE: `net.resolve` and `tls.Options.address` — resolve a name, then connect to a chosen address; milestone 121 (v17).
 
-**Status:** proposed 2026-10-19 (session 289), from the user's brief: Rapidkoi's PRP-013 refuses names that point to the local network, without DNS rebinding — it resolves a name once, checks every address, then connects to the address it checked (like curl's `--resolve`).
+**Status:** approved and built 2026-10-19 (session 290); proposed in session 289, from the user's brief: Rapidkoi's PRP-013 refuses names that point to the local network, without DNS rebinding — it resolves a name once, checks every address, then connects to the address it checked (like curl's `--resolve`).
 
 ## OBJECTIVE
 ```lugha
@@ -38,6 +38,9 @@ let res = http.request_tls_with("GET", "https://example.com/app.rkb", #{}, [], l
 - Decision 259; changes to verification (`SSL_set1_host`/SNI stay on the host name).
 ### New dependencies
 - none.
+
+## BUILT (session 290)
+- As planned. `std.http` checks the address for `http://` with its own private `pinned` (`std.tls`'s `at` is private). Tests: `tests/net.rs` `resolve_gives_every_address_once`, `tests/tls.rs` `an_address_is_connected_to_and_the_name_still_verified` (`wrong.example` fails with `hostname mismatch`), `tests/http.rs` `an_address_is_connected_to_with_the_url_host`.
 
 ## ERROR HANDLING REQUIREMENTS
 - `resolve`: `Err` with the resolver's reason, or for `""`/NUL. `address`: `Err("address must be an IP address: …")`. Connect and TLS errors as today.

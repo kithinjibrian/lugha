@@ -232,6 +232,42 @@ fun main() {{
     serving.join().unwrap();
 }
 
+#[test]
+fn an_address_is_connected_to_with_the_url_host() {
+    let raw = TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = raw.local_addr().unwrap().port();
+    let serving = std::thread::spawn(move || {
+        let (mut s, _) = raw.accept().unwrap();
+        let request = read_request(&mut s);
+        s.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok")
+            .unwrap();
+        request
+    });
+    let case = Case::new(&format!(
+        "import std.http;
+import std.tls;
+
+fun main() {{
+    let opts = tls.Options {{ address: \"127.0.0.1\", ..tls.options() }};
+    let res = http.request_tls_with(\"GET\", \"http://wrong.example:{port}/x\", #{{}}, [], http.limits(), opts).unwrap();
+    println(\"{{res.status}} {{res.text().unwrap()}}\");
+}}
+"
+    ));
+    let out = case.command().output().unwrap();
+    assert_eq!(
+        String::from_utf8_lossy(&out.stdout),
+        "200 ok\n",
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let request = serving.join().unwrap();
+    assert!(
+        request.contains(&format!("host: wrong.example:{port}\r\n")),
+        "{request}"
+    );
+}
+
 /// A whole request: its head, and the body its `content-length` gives, so
 /// closing afterwards never resets the connection under unread bytes.
 fn read_request(s: &mut TcpStream) -> String {

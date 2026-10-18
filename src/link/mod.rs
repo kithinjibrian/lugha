@@ -27,7 +27,7 @@ use crate::span::Span;
 
 /// The runtime's source files, in the order they are joined: the core first,
 /// since it holds every `#include`, then the fragments that rely on it.
-pub const RUNTIME_PARTS: [(&str, &str); 20] = [
+pub const RUNTIME_PARTS: [(&str, &str); 21] = [
     ("lugha_rt.c", include_str!("../../runtime/lugha_rt.c")),
     ("stack.c", include_str!("../../runtime/stack.c")),
     ("print.c", include_str!("../../runtime/print.c")),
@@ -48,10 +48,11 @@ pub const RUNTIME_PARTS: [(&str, &str); 20] = [
     ("actors.c", include_str!("../../runtime/actors.c")),
     ("cmem.c", include_str!("../../runtime/cmem.c")),
     ("net.c", include_str!("../../runtime/net.c")),
+    ("resolve.c", include_str!("../../runtime/resolve.c")),
 ];
 
 /// Every runtime function codegen may call; `lugha_rt.c` defines them all.
-pub const RUNTIME_SYMBOLS: [&str; 93] = [
+pub const RUNTIME_SYMBOLS: [&str; 94] = [
     "lugha_rt_init",
     "lugha_rt_read_line",
     "lugha_rt_read_file",
@@ -140,6 +141,7 @@ pub const RUNTIME_SYMBOLS: [&str; 93] = [
     "lugha_rt_actor_join",
     "lugha_rt_net_listen",
     "lugha_rt_net_connect",
+    "lugha_rt_net_resolve",
     "lugha_rt_net_accept",
     "lugha_rt_net_read",
     "lugha_rt_net_write",
@@ -170,6 +172,7 @@ pub const RUNTIME_SOURCE: &str = concat!(
     include_str!("../../runtime/actors.c"),
     include_str!("../../runtime/cmem.c"),
     include_str!("../../runtime/net.c"),
+    include_str!("../../runtime/resolve.c"),
 );
 
 /// Why linking failed.

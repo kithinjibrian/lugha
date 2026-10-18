@@ -248,3 +248,28 @@ fn main_alone_waits_for_a_client() {
     assert_eq!(back, "ping");
     assert!(child.wait().unwrap().success());
 }
+
+#[test]
+fn resolve_gives_every_address_once() {
+    Case::new(
+        "fun main() {
+    let local = net.resolve(\"localhost\").unwrap();
+    println(local.any(fun(a: string): bool = a == \"127.0.0.1\" || a == \"::1\"));
+    let mut once = true;
+    for i in 0..local.len {
+        for j in 0..i {
+            if local[i] == local[j] {
+                once = false;
+            }
+        }
+    }
+    println(once);
+    println(net.resolve(\"127.0.0.1\"));
+    println(net.resolve(\"::1\"));
+    println(net.resolve(\"\").is_err());
+    println(net.resolve(\"nothing.invalid\").is_err());
+}
+",
+    )
+    .runs("true\ntrue\nOk([\"127.0.0.1\"])\nOk([\"::1\"])\ntrue\ntrue\n");
+}
