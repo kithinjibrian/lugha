@@ -230,6 +230,12 @@ The user's follow-ups. Details in PRP-149 and PRP-150.
 
 237–240. **`and_then`** (milestone 118): on `Option` (`fun(T): Option<U>`) and `Result` (`fun(T): Result<U, E>`), in the prelude; tag `m118`.
 
+## Decisions behind milestone 119 (session 284; proposed)
+
+The user's brief: Rapidkoi's bundle fetch needs `Limits` and a test CA in one call. Details in PRP-151.
+
+241–244. **`http.request_tls_with`** (milestone 119): `Limits` as given plus `tls.Options` (`ca_file` trusted, a non-zero `timeout_ms` overriding); tag `m119`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
