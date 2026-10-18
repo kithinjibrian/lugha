@@ -1,6 +1,6 @@
 ## FEATURE: Octal integer literals `0o600`, and a warning for a leading zero that looks octal; milestone 117 (v17).
 
-**Status:** proposed 2026-10-18 (session 281), from the user's request ("Real 0o600 literals: today 0600 silently means six hundred"), after `fs.set_mode` (milestone 115).
+**Status:** approved 2026-10-18 (session 282); proposed in session 281, from the user's request ("Real 0o600 literals: today 0600 silently means six hundred"), after `fs.set_mode` (milestone 115).
 
 ## OBJECTIVE
 ```lugha
@@ -30,6 +30,10 @@ let y = 0600;                       // warning W0107: a leading zero doesn't mak
 - Making a leading zero an error; `0O`; octal floats or escapes.
 ### New dependencies
 - none.
+
+## BUILT (session 282)
+- As planned; malformed `0o` literals reuse the lexer's existing hex/binary errors (E0106 for no digits, the invalid-character and underscore errors).
+- Tests: lexer units (`0o600`, underscores, `0o0`, `u64::MAX`, five malformed forms; W0107 for `0600`, `007`, `00` with their help, none for `0`, `0.5`, `00.5`, `0x10`, `0b10`, `0o10`, `10`), `fs_time` (now `0o600`), VS Code `octal.la`, `explain` (W0107's page); `programs` and `spec` unchanged (no existing program warns).
 
 ## ERROR HANDLING REQUIREMENTS
 - E0102 for a malformed `0o` literal; W0107 for a leading zero.

@@ -1,6 +1,6 @@
 ## FEATURE: `and_then` on `Option` and `Result` — chain steps that may each fail; milestone 118 (v17).
 
-**Status:** proposed 2026-10-18 (session 281), from the user's request ("Option.and_then: from the TOML work"); `std.toml`'s first example wanted `toml.get(doc, "app.name").and_then(toml.as_text)`.
+**Status:** approved 2026-10-18 (session 282); proposed in session 281, from the user's request ("Option.and_then: from the TOML work"); `std.toml`'s first example wanted `toml.get(doc, "app.name").and_then(toml.as_text)`.
 
 ## OBJECTIVE
 ```lugha

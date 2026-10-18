@@ -2131,6 +2131,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-148 (the user, session 279; approved 280). `$os.sync` → `lugha_rt_sync` in `runtime/fs.c` (open read-only and close-on-exec, `fsync` retried on `EINTR`, closed on every path), the same signature-driven lowering as `rename`/`chmod`. Files and folders alike; the durable-save pattern is documented on `fs.sync` and in the spec.
 
+### 203. Octal literals — milestone 117 (PRP-149)
+
+**Decision:** as PRP-149 (session 281; approved 282). The lexer's `radix` reads `0o` (8) as it reads `0x`/`0b`; a decimal integer starting with `0` and longer than one character gets W0107 (a lexer warning, returned with the tokens) naming the `0o` spelling. A warning, not an error, so `007`-style programs keep compiling. `fs.set_mode`'s docs use `0o600`.
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

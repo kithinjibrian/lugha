@@ -9,6 +9,9 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- Octal literals, milestone 117 (PRP-149): `0o600` (underscores between digits, as `0x`/`0b`); a leading zero (`0600`, `007`) stays decimal and warns W0107 with the octal spelling; VS Code 0.20.0 highlights `0o…`
+
+### Added
 - `fs.sync(path)`, milestone 116 (PRP-148): `fsync(2)` on a file or folder, so a saved file (`write_file`, `sync`, `rename`, `sync` the folder) survives a power cut
 
 ### Added
