@@ -2127,6 +2127,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-147 (the user's brief, session 277; approved 278). `$os.rename`/`$os.chmod` (`runtime/fs.c`, NUL refused, mode 0–4095) and `$os.wall_ms` (`runtime/random.c`) go through `codegen/net.rs`'s signature-driven lowering (no value slot for the two `Result<i64>` ones); `flush` is an I/O intrinsic (`check/input.rs`, `codegen/io.rs`, `lugha_rt_flush` in `input.c`); `std.time` is Lugha over `$os.wall_ms` and the existing `$os.now_ms`. Lugha has no octal literals (`0600` is decimal): docs write 0600 as `0b110_000_000`. Lugha strings have no `\u` escape either (tests build a NUL path from bytes).
 
+### 202. `fs.sync` — milestone 116 (PRP-148)
+
+**Decision:** as PRP-148 (the user, session 279; approved 280). `$os.sync` → `lugha_rt_sync` in `runtime/fs.c` (open read-only and close-on-exec, `fsync` retried on `EINTR`, closed on every path), the same signature-driven lowering as `rename`/`chmod`. Files and folders alike; the durable-save pattern is documented on `fs.sync` and in the spec.
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

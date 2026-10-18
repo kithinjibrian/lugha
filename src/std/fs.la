@@ -100,3 +100,16 @@ public fun set_mode(path: string, mode: i64): Result<(), string> {
     $os.chmod(path, mode)?;
     Ok(())
 }
+
+/**
+ * Writes a file's data, or a folder's entries, out to the disk (`fsync`), so
+ * it survives a power cut. To save a file safely:
+ * `write_file("f.tmp", data)?; fs.sync("f.tmp")?; fs.rename("f.tmp", "f")?; fs.sync(".")?;`
+ * — the last call makes the rename itself durable.
+ * @param path a file or a folder
+ * @returns `Ok(())`, or `Err` with the system's message (then the data may not be on the disk)
+ */
+public fun sync(path: string): Result<(), string> {
+    $os.sync(path)?;
+    Ok(())
+}

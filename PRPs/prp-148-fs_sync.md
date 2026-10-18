@@ -1,6 +1,6 @@
 ## FEATURE: `fs.sync(path)` — flush a file's or folder's data to the disk, so a saved file survives a power cut; milestone 116 (v17).
 
-**Status:** proposed 2026-10-18 (session 279), from the user's request ("fs.sync"), the follow-up named when `fs.rename` shipped (milestone 115).
+**Status:** approved 2026-10-18 (session 280); proposed in session 279, from the user's request ("fs.sync"), the follow-up named when `fs.rename` shipped (milestone 115).
 
 ## OBJECTIVE
 ```lugha
@@ -32,6 +32,10 @@ After these four steps, a power cut leaves either the old `state` or the new one
 - Decision 228.
 ### New dependencies
 - none.
+
+## BUILT (session 280)
+- As planned. `open(O_RDONLY | O_CLOEXEC)` works for folders too, so no `O_DIRECTORY` retry was needed.
+- Tests: `tests/fs_time.rs` `sync_writes_files_and_folders_out` (file, folder, the four-step pattern, a missing path, a NUL byte; the runtime calls `fsync`).
 
 ## ERROR HANDLING REQUIREMENTS
 - `Err` with the system's message for a missing path or a failed `fsync`; `Err` for a NUL byte. Never a panic.

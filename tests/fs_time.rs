@@ -177,3 +177,28 @@ fn flush_is_a_built_in_name() {
         String::from_utf8_lossy(&out.stderr)
     );
 }
+
+#[test]
+fn sync_writes_files_and_folders_out() {
+    let t = Temp::new();
+    let out = t.run(
+        "import std.fs;
+
+fun main() {
+    write_file(\"state\", \"old\").unwrap();
+    write_file(\"state.tmp\", \"new\").unwrap();
+    println(fs.sync(\"state.tmp\"));
+    println(fs.rename(\"state.tmp\", \"state\"));
+    println(fs.sync(\".\"));
+    println(read_file(\"state\"));
+    println(fs.sync(\"missing\"));
+    println(fs.sync(string_from_utf8([97, 0, 98]).unwrap()));
+}
+",
+    );
+    assert_eq!(
+        out,
+        "Ok(())\nOk(())\nOk(())\nOk(\"new\")\nErr(\"No such file or directory\")\nErr(\"path contains a NUL byte\")\n"
+    );
+    assert!(lugha::link::RUNTIME_SOURCE.contains("result = fsync(fd);"));
+}
