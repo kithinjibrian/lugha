@@ -39,3 +39,11 @@ int64_t lugha_rt_now_ms(void) {
     clock_gettime(CLOCK_MONOTONIC, &t);
     return (int64_t)t.tv_sec * 1000 + t.tv_nsec / 1000000;
 }
+
+/* `$os.wall_ms()` (v17, milestone 115): milliseconds since 1970-01-01 UTC,
+ * from the system clock, which can be set (so this can jump). */
+int64_t lugha_rt_wall_ms(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_REALTIME, &t);
+    return (int64_t)t.tv_sec * 1000 + t.tv_nsec / 1000000;
+}

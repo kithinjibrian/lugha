@@ -10,7 +10,7 @@ use crate::format;
 
 /// The input and I/O intrinsics (v3, v4), checked here rather than in
 /// `call.rs` — except `eprint`/`eprintln`, which follow `print`'s rules.
-pub(super) const INPUT: [&str; 19] = [
+pub(super) const INPUT: [&str; 20] = [
     "args",
     "parse_i64",
     "parse_u64",
@@ -31,6 +31,8 @@ pub(super) const INPUT: [&str; 19] = [
     // v17, milestone 105: C memory.
     "c_read",
     "c_write",
+    // v17, milestone 115.
+    "flush",
     // v14: a `format` call reaching here has no literal template (E0432).
     "format",
 ];
@@ -73,6 +75,8 @@ impl Checker {
             // C memory (v17): copies only, through a `CPtr`.
             "c_read" => (vec![cptr(), Type::U64, Type::U64], bytes()),
             "c_write" => (vec![cptr(), Type::U64, bytes()], Type::Unit),
+            // Stdout's buffer, out now (v17).
+            "flush" => (Vec::new(), Type::Unit),
             // `exit` never returns (v4 draft §5).
             _ => (vec![Type::I32], Type::Never),
         };

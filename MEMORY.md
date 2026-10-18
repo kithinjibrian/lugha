@@ -2123,6 +2123,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-146 (the user's brief, session 275; approved 276). Pure Lugha in five std modules: `std.toml` (API, re-exports `std.$toml_value { * }`), `$toml_value` (types, `TomlError`, `Limits`, the internal `Oops`), `$toml_strings` (byte helpers, strings, escapes), `$toml_scan` (keys, numbers, date-times), `$toml_parse` (document, headers, arrays, inline tables, an arena of nodes and a tree of flags following `tomllib`'s `EXPLICIT_NEST`/`FROZEN` rules). toml-test runs through a decoder program built once (floats compared by bits, date-times normalised). Found on the way: the prelude's `join` was quadratic (fixed with `$string.from_bytes`), and reading `self.lists[l]` into a local made each `[[…]]` copy the list (read in place now). Lugha's `Option` has no `and_then`: callers use `?` inside a function returning `Option`.
 
+### 201. `fs.rename`, `fs.set_mode`, `flush`, `std.time` — milestone 115 (PRP-147)
+
+**Decision:** as PRP-147 (the user's brief, session 277; approved 278). `$os.rename`/`$os.chmod` (`runtime/fs.c`, NUL refused, mode 0–4095) and `$os.wall_ms` (`runtime/random.c`) go through `codegen/net.rs`'s signature-driven lowering (no value slot for the two `Result<i64>` ones); `flush` is an I/O intrinsic (`check/input.rs`, `codegen/io.rs`, `lugha_rt_flush` in `input.c`); `std.time` is Lugha over `$os.wall_ms` and the existing `$os.now_ms`. Lugha has no octal literals (`0600` is decimal): docs write 0600 as `0b110_000_000`. Lugha strings have no `\u` escape either (tests build a NUL path from bytes).
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

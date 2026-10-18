@@ -20,7 +20,11 @@ impl<'ctx> Lowerer<'ctx> {
         let bytes = Type::Array(Box::new(Type::U8));
         Ok(match op {
             // `std.net` (v17, milestone 110).
-            _ if op.starts_with("net_") || op.starts_with("tls_") || op.starts_with("crypto_") => {
+            _ if op.starts_with("net_")
+                || op.starts_with("tls_")
+                || op.starts_with("crypto_")
+                || matches!(op, "wall_ms" | "rename" | "chmod") =>
+            {
                 self.net_call(call, op, args)?
             }
             "seed" => self.os_seed(),

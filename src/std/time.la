@@ -1,0 +1,16 @@
+/**
+ * std.time: the clocks (v17). `now_ms` for timestamps, `monotonic_ms` for
+ * measuring how long something took. No time zones, no formatting.
+ */
+
+/**
+ * Milliseconds since 1970-01-01 00:00 UTC, from the system clock. It can
+ * jump when the clock is set: measure intervals with `monotonic_ms`.
+ */
+public fun now_ms(): i64 = $os.wall_ms();
+
+/**
+ * Milliseconds from an unspecified start that never goes back: subtract two
+ * readings to measure an interval.
+ */
+public fun monotonic_ms(): i64 = $os.now_ms();

@@ -30,6 +30,7 @@ pub const STD: &[(&str, &str)] = &[
     ("fs", include_str!("std/fs.la")),
     ("process", include_str!("std/process.la")),
     ("task", include_str!("std/task.la")),
+    ("time", include_str!("std/time.la")),
     ("net", include_str!("std/net.la")),
     ("tls", include_str!("std/tls.la")),
     ("crypto", include_str!("std/crypto.la")),

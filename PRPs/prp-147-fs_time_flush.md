@@ -1,6 +1,6 @@
 ## FEATURE: Four small std additions — `fs.rename`, `fs.set_mode`, `flush()` and `std.time`; milestone 115 (v17).
 
-**Status:** proposed 2026-10-18 (session 277), from the user's brief (session 277): Rapidkoi keeps data on disk safely (write a temporary file, then rename it over the old one) and keeps a secret key file private (mode 0600).
+**Status:** approved 2026-10-18 (session 278); proposed in session 277, from the user's brief (session 277): Rapidkoi keeps data on disk safely (write a temporary file, then rename it over the old one) and keeps a secret key file private (mode 0600).
 
 ## OBJECTIVE
 ```lugha
@@ -47,6 +47,10 @@ let stamp = time.now_ms();                      // milliseconds since 1970
 - Decision 221; a copy-then-delete fallback for cross-device renames; octal literals.
 ### New dependencies
 - none.
+
+## BUILT (session 278)
+- As planned.
+- Tests: `tests/fs_time.rs` (rename replacing a file, a missing source, a NUL byte; set_mode to 0600 read back by Rust, -1, 4096, a missing file; a cross-device rename from `/dev/shm`, which ran here; `flush` proven by the program still running when its unflushed-otherwise output arrives — checked to fail without `flush`; both clocks; E0302 for `fun flush`), the LSP intrinsics table test, `programs` (E0312's list with `std.time`).
 
 ## ERROR HANDLING REQUIREMENTS
 - `rename`, `set_mode`: `Err` with the system's message; `Err` for a NUL byte; `set_mode` `Err` for a mode outside 0–4095.

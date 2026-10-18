@@ -172,7 +172,7 @@ impl<'ctx> Lowerer<'ctx> {
             if ["args", "parse_f64"].contains(&name.as_str()) {
                 return self.input_intrinsic(name, args);
             }
-            const IO: [&str; 14] = [
+            const IO: [&str; 15] = [
                 "read_line",
                 "read_file",
                 "write_file",
@@ -187,6 +187,7 @@ impl<'ctx> Lowerer<'ctx> {
                 "string_from_utf8",
                 "c_read",
                 "c_write",
+                "flush",
             ];
             if IO.contains(&name.as_str()) {
                 return self.io_intrinsic(call, name, args);

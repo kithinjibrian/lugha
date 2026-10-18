@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–114 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–115 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–114):
+**Changes since v16** (milestones 91–115):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- Keeping data on disk (milestone 115): `fs.rename` (atomic within a file system), `fs.set_mode` (`chmod`), the `flush()` built-in, and `std.time` (`now_ms`, `monotonic_ms`).
 - `std.toml` (milestone 114; standard library): a read-only TOML 1.0 parser in Lugha with limits for hostile input; the prelude's `xs.join(sep)` is linear (it was quadratic).
 - `std.crypto` (milestone 113; standard library): SHA-256 (one-shot and streamed), Ed25519 keys, signing and verifying, secure random bytes and constant-time comparison, over the system's OpenSSL 3.
 - TLS (milestone 112; standard library, E0332): `std.tls` over the system's OpenSSL 3 with always-on verification, and `https://` in `std.http` (`serve_tls`, `request_tls`).
@@ -33,7 +34,7 @@ Oct 16, 2026 · @kithinji
 - A generic call only its result can type takes its type from its siblings: `assert_eq(text("hi"), expected)`, `text("hi") == expected` (milestone 96; section 4).
 - Packages and tests: `lughac test` and `lughac check` on a file in a package's `source` folder build it as that package's module (`glow.diff`), so modules importing each other can be tested, and its tests are named `glow.diff.name`; programs in a package's `test/`, `tests/` and `examples/` see its package-level items; `lughac check` takes a file without `main` as a library; `lugha.lock` sits beside the governing `lugha.toml`; and `skip(reason)` reports a test skipped (milestone 97; sections 6, 9).
 
-Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select`, `actor` or `const` as a name (keywords now), or declares a function named `skip` (an intrinsic since milestone 97, E0302), or names the iterator type `Map` (now `Mapped`, milestone 101; a program's own `Map` is fine). A module's own `Task` or `Chan` still means its own, as for `Ref`.
+Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select`, `actor` or `const` as a name (keywords now), or declares a function named `skip` (an intrinsic since milestone 97, E0302) or `flush` (one since milestone 115), or names the iterator type `Map` (now `Mapped`, milestone 101; a program's own `Map` is fine). A module's own `Task` or `Chan` still means its own, as for `Ref`.
 
 **Changes in v16 since v15** (milestones 67–90):
 - Shared boxes: `Ref<T>` is the one value that copies share. `Ref.new(v)`, `r.get()` (a copy), `r.set(v)`, `r.update(f)` and `r.is(s)` are its whole API. A closure may update a box it captured, and linked data can point at itself. Boxes aren't `Eq`, and print as `Ref(…)` when they cycle (sections 4, 7, 9).
@@ -1004,6 +1005,7 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 | `read_bytes(path)` | `string` | `Result<u8[], string>`: the whole file as bytes, or `Err` with the system's message (v14) |
 | `write_bytes(path, data)`, `append_bytes(path, data)` | `string`, `u8[]` | `Result<i64, string>`: like `write_file` and `append_file`, writing exactly `data` (v14) |
 | `read_stdin_bytes()` | Nothing | `u8[]`: everything left on stdin (v14) |
+| `flush()` | Nothing | `()`: what `print` wrote so far goes out now, so a long-running program's line shows at once (v17, milestone 115); a failure is ignored, as `print`'s are |
 | `string_from_utf8(data)` | `u8[]` | `Result<string, string>`: a string of exactly those bytes if they are valid UTF-8 (no overlong forms, surrogates, code points above U+10FFFF or truncated sequences), else `Err("invalid UTF-8 at byte N")` with the first bad sequence's offset; the only way from bytes to a `string` (v14) |
 | `c_read(p, offset, len)` | `CPtr`, `u64`, `u64` | `u8[]`: a copy of `len` bytes at `p + offset` in C's memory; a null `p` panics (v17, section 8) |
 | `c_write(p, offset, bytes)` | `CPtr`, `u64`, `u8[]` | `()`: copies `bytes` to `p + offset` in C's memory; a null `p` panics (v17, section 8) |
@@ -1114,7 +1116,7 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 - **Deadlock:** when no green thread can run, none is sleeping, none waits on a socket and one waits, the program panics with `panic: deadlock: every green thread is waiting` (no location), exit 101.
 - **Actors** (milestone 92) are green threads that take messages from an unbounded mailbox one at a time: messages from one caller in the order sent, from several in the order they arrive. A panic inside an actor's method prints its message, as any panic does, but ends only that actor: the caller waiting for that message's result, and every later caller, panics with ``actor `Counter` panicked`` at its call; a call to a stopped actor panics with ``actor `Counter` has stopped``. A stack overflow inside an actor still ends the program. Plain `spawn f()` threads keep the rule above. Actors waiting on each other are a deadlock.
 
-**The standard library** (v15). Version 15 has `std.math`, `std.random`, `std.env`, `std.fs` and `std.process`; version 17 adds `std.task`, `std.net`, `std.tls`, `std.crypto`, `std.http` and `std.toml`.
+**The standard library** (v15). Version 15 has `std.math`, `std.random`, `std.env`, `std.fs` and `std.process`; version 17 adds `std.task`, `std.time`, `std.net`, `std.tls`, `std.crypto`, `std.http` and `std.toml`.
 
 `std.math` (milestone 53). The float functions take and return any `T: Float` (`f32` or `f64`) and follow IEEE 754: they never panic, `sqrt(-1.0)` is `NaN`, `ln(0.0)` is `-inf` and `pow(0.0, -1.0)` is `inf`.
 
@@ -1165,6 +1167,8 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 | `make_dirs(path): Result<i64, string>` | `Ok(0)` after making the folder and any missing parents; already existing is fine |
 | `remove_file(path): Result<i64, string>` | `Ok(0)` after removing a file or symbolic link; a folder is `Err` |
 | `remove_dir(path): Result<i64, string>` | `Ok(0)` after removing an empty folder; a non-empty one is `Err` |
+| `rename(from, to): Result<(), string>` | `rename(2)` (v17, milestone 115): within one file system it replaces `to` in one step, so anyone opening `to` sees the old file or the new one, never neither; across file systems it is `Err` (`Invalid cross-device link`), never a copy. Write a new version beside the old, then rename it over, to save data safely |
+| `set_mode(path, mode: i64): Result<(), string>` | `chmod(2)` (v17, milestone 115), following symbolic links; `mode` from 0 to 4095 (`0o7777`), else `Err`. Lugha has no octal literals and a leading zero is still decimal (`0600` is six hundred): write 0600 as `0b110_000_000` or `0x180` |
 | `exists(path)`, `is_dir(path)`, `is_file(path)`: `bool` | whether something, a folder or a regular file is at `path`, following symbolic links; never an error |
 
 `std.process` (milestone 66). Runs another program and waits for it. **There is never a shell**: the command and each argument reach the program exactly as given (`posix_spawnp`), so `;`, `|`, `$( )`, quotes and globs in them mean nothing. A command without `/` is looked up on `PATH`, one with `/` is a path; whoever controls `PATH` chooses which program a bare name runs, so use a path containing `/` when that matters. The program inherits this one's environment unchanged and gets only stdin, stdout and stderr: every other descriptor is closed on exec. A NUL byte in the command or an argument is `Err` before anything starts. There is no timeout and no limit on output size.
@@ -1210,6 +1214,13 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 | --- | --- |
 | `sleep(ms: i64)` | pauses this green thread for at least `ms` milliseconds while the others run; `ms <= 0` is `yield_now()` |
 | `yield_now()` | lets every ready green thread run first, then goes on |
+
+`std.time` (v17, milestone 115). The clocks; no time zones, no formatting.
+
+| Function | Gives |
+| --- | --- |
+| `now_ms(): i64` | milliseconds since 1970-01-01 00:00 UTC, from the system clock (`CLOCK_REALTIME`); it can jump when the clock is set |
+| `monotonic_ms(): i64` | milliseconds from an unspecified start that never goes back (`CLOCK_MONOTONIC`): subtract two readings to measure an interval |
 
 `std.net` (v17, milestone 110). TCP sockets. Waiting pauses only the waiting green thread (above). Addresses are `"host:port"` or `"[v6]:port"`; port `0` listens on any free port. Names resolve through the system's resolver, which blocks the OS thread while it looks one up. Failures are `Err` with a reason (the system's message, `"closed"`, `"timed out"`); nothing here panics. `Listener` and `Conn` share their socket between copies, so closing one copy closes them all; closing twice is harmless; the collector never closes a socket, so an unclosed one stays open until the program exits.
 
@@ -3765,6 +3776,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 112 | TLS (v17) | `std.tls`, `https://`, E0332 | `tests/tls.rs` (done) |
 | 113 | `std.crypto` (v17) | SHA-256, Ed25519, random bytes, `equal` | `tests/crypto.rs` (done) |
 | 114 | `std.toml` (v17) | TOML 1.0 parser, limits, helpers | `tests/toml.rs` (toml-test v2.2.0) (done) |
+| 115 | `fs.rename`, `fs.set_mode`, `flush`, `std.time` (v17) | atomic renames, modes, flushing stdout, the clocks | `tests/fs_time.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
