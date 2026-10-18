@@ -8864,3 +8864,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-152 awaits approval.
+
+## SESSION 287 — 2026-10-18 — hkdf_sha256: build (m120) — open
+Branch: prp-152-hkdf_sha256
