@@ -198,6 +198,12 @@ HTTP/1.1 on `std.net`, written in Lugha. Details in PRP-143.
 
 167–180. **TLS** (milestone 112): `std.tls` (`connect`, `connect_with(opts)`, `listen(addr, cert, key)`, `Conn`/`Listener` shaped like `std.net`'s) and `https://` in `std.http` (`serve_tls`, `request_tls`); OpenSSL linked only into programs that load `std.tls` (E0332 when it's missing); always-on verification with the system roots and host names, `ca_file` to trust more, TLS 1.2+; non-blocking through `wait_fd`; no mutual TLS, pinning or verification bypass; tag `m112`. Needs the user's security review.
 
+## Decisions behind milestone 113 (session 272; proposed)
+
+The user's brief: hashing and signatures for Rapidkoi, over the OpenSSL `std.tls` already links. Details in PRP-145.
+
+181–197. **`std.crypto`** (milestone 113): `sha256` and a streaming `Sha256` (its OpenSSL state freed by a GC finalizer), Ed25519 keypair/public/sign/verify with raw 32/32/64-byte keys and signatures, `random_bytes` (≤ 1 MiB), constant-time `equal`; `CryptoError { BadLength, OpenSsl }`; nothing panics on input; C-side secrets wiped, Lugha-side copies documented as not; OpenSSL linked only into programs that load `std.crypto` or `std.tls`; no encryption, key exchange, key derivation or other algorithms; tag `m113`. Needs the user's security review before merging.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
