@@ -1,0 +1,137 @@
+/**
+ * std.crypto: SHA-256, Ed25519 signatures (RFC 8032), random bytes and
+ * constant-time comparison (v17), through the system's OpenSSL 3. Keys,
+ * signatures and digests are plain bytes: a 32-byte secret seed, a 32-byte
+ * public key, a 64-byte signature, a 32-byte digest. Nothing here panics on
+ * any input; mistakes come back as `CryptoError` (or `false`, from
+ * `ed25519_verify` and `equal`).
+ *
+ * Secrets: the C side wipes its own copies, and OpenSSL clears its key
+ * objects. A secret seed handed to your program, and every copy you make of
+ * it, lives in collected memory, which Lugha can't wipe yet.
+ *
+ * A program that uses this module is linked with OpenSSL (`libssl-dev` must
+ * be installed to build it).
+ */
+
+/** Why a cryptographic operation didn't happen. */
+public enum CryptoError {
+    /** What had the wrong length, the length wanted, the length given. */
+    BadLength(string, i64, i64),
+    /** OpenSSL failed, with its reason. */
+    OpenSsl(string),
+}
+
+impl CryptoError {
+    /** The error as a sentence. */
+    public fun message(self): string {
+        match self {
+            BadLength(what, wanted, given) => "{what}: wanted {wanted} bytes, got {given}",
+            OpenSsl(reason) => "OpenSSL: {reason}",
+        }
+    }
+}
+
+/**
+ * The SHA-256 digest of some bytes.
+ * @param bytes what to hash
+ * @returns 32 bytes
+ */
+public fun sha256(bytes: u8[]): u8[] = $os.crypto_sha256(bytes);
+
+/**
+ * A SHA-256 hash fed in pieces, so a large input needn't be one array:
+ * `Sha256.new()`, `update` as often as needed, then `finish`. Copies share
+ * one running hash. Nothing needs closing.
+ */
+public struct Sha256 {
+    state: CPtr,
+}
+
+impl Sha256 {
+    /** An empty hash. */
+    public fun new(): Sha256 = Sha256 { state: $os.crypto_sha256_new() };
+
+    /**
+     * Feeds more bytes.
+     * @param bytes the next piece
+     */
+    public fun update(self, bytes: u8[]) {
+        $os.crypto_sha256_update(self.state, bytes);
+    }
+
+    /**
+     * The digest of everything fed so far; the hash then starts over, empty.
+     * @returns 32 bytes
+     */
+    public fun finish(self): u8[] = $os.crypto_sha256_finish(self.state);
+}
+
+/**
+ * A new Ed25519 key pair from OpenSSL's random generator.
+ * @returns `(secret, key)`: the 32-byte secret seed and its 32-byte public key
+ */
+public fun ed25519_keypair(): Result<(u8[], u8[]), CryptoError> {
+    let secret = $os.crypto_seed().map_err(failed)?;
+    let key = ed25519_public(secret)?;
+    Ok((secret, key))
+}
+
+/**
+ * The public key of a secret seed.
+ * @param secret the 32-byte secret seed
+ * @returns the 32-byte public key
+ */
+public fun ed25519_public(secret: u8[]): Result<u8[], CryptoError> {
+    sized(secret, "secret key", 32)?;
+    $os.crypto_ed25519_public(secret).map_err(failed)
+}
+
+/**
+ * Signs a message (Ed25519 hashes it itself).
+ * @param secret the 32-byte secret seed
+ * @param message what to sign
+ * @returns the 64-byte signature
+ */
+public fun ed25519_sign(secret: u8[], message: u8[]): Result<u8[], CryptoError> {
+    sized(secret, "secret key", 32)?;
+    $os.crypto_ed25519_sign(secret, message).map_err(failed)
+}
+
+/**
+ * Whether `signature` is `key`'s signature of `message`: `false` for
+ * anything wrong, wrong lengths and malformed keys included.
+ * @param key the 32-byte public key
+ * @param message what was signed
+ * @param signature the 64-byte signature
+ */
+public fun ed25519_verify(key: u8[], message: u8[], signature: u8[]): bool {
+    if key.len != 32 || signature.len != 64 {
+        return false;
+    }
+    $os.crypto_ed25519_verify(key, message, signature) == 1
+}
+
+/**
+ * Bytes from OpenSSL's cryptographically secure random generator.
+ * @param n how many, from 0 to 1048576
+ */
+public fun random_bytes(n: i64): Result<u8[], CryptoError> {
+    if n < 0 || n > 1048576 {
+        return Err(CryptoError.BadLength("random bytes (at most)", 1048576, n));
+    }
+    $os.crypto_random(n).map_err(failed)
+}
+
+/**
+ * Whether two byte arrays are equal, in time that depends only on their
+ * length: for comparing secrets, digests and tags. `false` at once for
+ * different lengths.
+ */
+public fun equal(a: u8[], b: u8[]): bool = a.len == b.len && $os.crypto_equal(a, b) == 1;
+
+fun failed(reason: string): CryptoError = CryptoError.OpenSsl(reason);
+
+fun sized(bytes: u8[], what: string, wanted: i64): Result<(), CryptoError> {
+    if bytes.len == wanted { Ok(()) } else { Err(CryptoError.BadLength(what, wanted, bytes.len)) }
+}

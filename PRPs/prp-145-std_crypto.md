@@ -1,6 +1,6 @@
 ## FEATURE: `std.crypto` — SHA-256, Ed25519, secure random bytes and constant-time comparison over the system's OpenSSL 3; milestone 113 (v17).
 
-**Status:** proposed 2026-10-18 (session 272), from the user's brief (session 272). **Needs the user's security review before it merges** (cryptography).
+**Status:** approved 2026-10-18 (session 273; the security review comes before merging); proposed in session 272, from the user's brief (session 272). **Needs the user's security review before it merges** (cryptography).
 
 ## OBJECTIVE
 ```lugha
@@ -65,6 +65,12 @@ Rapidkoi signs app bundles with Ed25519 and names files by SHA-256 (its packagin
 - Decision 195; exposing any OpenSSL object or pointer to programs; claiming Lugha-side secrets are wiped.
 ### New dependencies
 - none (OpenSSL 3's `libcrypto`, already linked by `std.tls`).
+
+## BUILT (session 273)
+- As planned, with `Plan.crypto` beside `Plan.tls` (rather than one `Plan.openssl`): each says which runtime part to append, and either brings `-lcrypto`.
+- The expected Ed25519 vectors were checked against the `openssl` command as well as RFC 8032 (TEST 1's signature only through the library: the command can't sign an empty file).
+- The leak test was shown to fail with the finalizer removed (RSS over 50 MB) and pass with it.
+- Tests: `tests/crypto.rs` (SHA-256's four FIPS examples, streaming at every split and at chunk sizes 1/63/64/65/4096, `finish` restarting; the four RFC 8032 vectors with exact signatures and every rejection — changed message, signature bytes 0 and 63, wrong key, key lengths 31/33/0, signature lengths 63/65/0, an off-curve key; `BadLength` for 31- and 33-byte secrets; keypairs, `random_bytes` 0/1/32/1048576/1048577/-1, `equal`; abandoned hashers), link unit tests (crypto plans get `crypto.c` and `-lcrypto`, not `tls.c` or `-lssl`), `programs` (E0312's list), `explain` (E0332).
 
 ## ERROR HANDLING REQUIREMENTS
 - `CryptoError.BadLength(what, wanted, given)`: a secret seed or public key not 32 bytes (sign, public), `random_bytes` outside 0 … 1048576.

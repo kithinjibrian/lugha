@@ -2115,6 +2115,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-144 (discovery session 269: system OpenSSL 3, linked only into TLS programs; always verify, `ca_file` only; approved with the security review in 270). `runtime/tls.c` is not a `RUNTIME_PARTS` fragment: `src/link/runtime.rs` appends `TLS_SOURCE` to the runtime file and `link/mod.rs` adds `-lssl -lcrypto` when `Plan.tls` is set (the driver's `tls_import`: the program loads `std.tls`, span of the user's `std.tls`/`std.http` import for E0332). OpenSSL's `send` lacks `MSG_NOSIGNAL`, so SIGPIPE is blocked around each OpenSSL call and a raised one taken back (`tls_quiet`/`tls_loud`). `SSL_OP_IGNORE_UNEXPECTED_EOF`: a missing `close_notify` reads as EOF. `std.http` talks through `$http_wire.Stream { Plain, Secure }`.
 
+### 199. `std.crypto` — milestone 113 (PRP-145)
+
+**Decision:** as PRP-145 (the user's brief, session 272; approved 273; the user's security review before merging). Same pattern as `std.tls`: `runtime/crypto.c` appended by `src/link/runtime.rs` when `Plan.crypto` is set (the driver's `std_import`, generalised from `tls_import`), `-lcrypto` (TLS programs already get it), `$os.crypto_*` built-ins lowered by `codegen/net.rs`, which now lowers any non-`Result` built-in as a plain call. The streaming hasher is a `GC_MALLOC`ed holder of an `EVP_MD_CTX` with a Boehm finalizer (tested: 300 000 abandoned hashers stay under 50 MB; over it without the finalizer). Keypair seeds from `RAND_priv_bytes`, wiped from the stack. Vectors cross-checked with the `openssl` command.
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

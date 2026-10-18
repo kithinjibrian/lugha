@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–112 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–113 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–112):
+**Changes since v16** (milestones 91–113):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- `std.crypto` (milestone 113; standard library): SHA-256 (one-shot and streamed), Ed25519 keys, signing and verifying, secure random bytes and constant-time comparison, over the system's OpenSSL 3.
 - TLS (milestone 112; standard library, E0332): `std.tls` over the system's OpenSSL 3 with always-on verification, and `https://` in `std.http` (`serve_tls`, `request_tls`).
 - `std.http` (milestone 111; standard library): an HTTP/1.1 server with strict limits and a client, in Lugha over `std.net`; a literal `if` branch takes a typed sibling's type (`if c { b - 1 } else { 255 }` with `b: u8`).
 - `std.net` (milestone 110; sections 7, standard library): TCP listeners and connections whose waits pause only their green thread, through `epoll`; timeouts; no UDP yet.
@@ -1112,7 +1113,7 @@ A v0 program is a single `.la` file containing top-level items: functions, exter
 - **Deadlock:** when no green thread can run, none is sleeping, none waits on a socket and one waits, the program panics with `panic: deadlock: every green thread is waiting` (no location), exit 101.
 - **Actors** (milestone 92) are green threads that take messages from an unbounded mailbox one at a time: messages from one caller in the order sent, from several in the order they arrive. A panic inside an actor's method prints its message, as any panic does, but ends only that actor: the caller waiting for that message's result, and every later caller, panics with ``actor `Counter` panicked`` at its call; a call to a stopped actor panics with ``actor `Counter` has stopped``. A stack overflow inside an actor still ends the program. Plain `spawn f()` threads keep the rule above. Actors waiting on each other are a deadlock.
 
-**The standard library** (v15). Version 15 has `std.math`, `std.random`, `std.env`, `std.fs` and `std.process`; version 17 adds `std.task`, `std.net`, `std.tls` and `std.http`.
+**The standard library** (v15). Version 15 has `std.math`, `std.random`, `std.env`, `std.fs` and `std.process`; version 17 adds `std.task`, `std.net`, `std.tls`, `std.crypto` and `std.http`.
 
 `std.math` (milestone 53). The float functions take and return any `T: Float` (`f32` or `f64`) and follow IEEE 754: they never panic, `sqrt(-1.0)` is `NaN`, `ln(0.0)` is `-inf` and `pow(0.0, -1.0)` is `inf`.
 
@@ -1223,6 +1224,21 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 | `l.close()`, `c.close()` | closes the socket |
 
 `std.tls` (v17, milestone 112). TLS through the system's OpenSSL 3, linked only into programs that load `std.tls` (directly or through `std.http`); building one without `libssl-dev` is E0332. Certificates are always verified — the chain against the system's trusted roots and the host name (or IP address) — and nothing turns that off; `Options { ca_file, timeout_ms }` (`options()` for the defaults) adds a PEM file of certificates to trust. TLS 1.2 is the oldest version spoken. `connect(addr)`, `connect_with(addr, opts)` and `listen(addr, cert_file, key_file)` give a `Conn` or `Listener` with `std.net`'s methods and errors (`accept` runs the handshake, which only the accepting thread waits for; `close` sends `close_notify`); a verification failure is `Err("certificate verify failed: …")` with OpenSSL's reason. Waits park only their green thread. A peer closing without `close_notify` reads as the end of the stream. OpenSSL's objects live outside the collector and are freed by `close`. No client certificates, pinning or session resumption.
+
+`std.crypto` (v17, milestone 113). SHA-256, Ed25519 (RFC 8032), random bytes and constant-time comparison through the system's OpenSSL 3, linked only into programs that load `std.crypto` (`-lcrypto`; E0332 without `libssl-dev`). Keys, signatures and digests are plain bytes, and programs never see an OpenSSL object. Nothing panics on any input: mistakes are `CryptoError` (`BadLength(what, wanted, given)`, `OpenSsl(reason)`; `e.message()` reads one), or `false`.
+
+| Function | Gives |
+| --- | --- |
+| `sha256(bytes)` | the 32-byte digest |
+| `Sha256.new()`, `h.update(bytes)`, `h.finish()` | a hash fed in pieces; `finish` gives the digest and starts over; copies share one running hash; nothing needs closing (the collector frees OpenSSL's state) |
+| `ed25519_keypair(): Result<(u8[], u8[]), CryptoError>` | a 32-byte secret seed from OpenSSL's generator and its 32-byte public key |
+| `ed25519_public(secret)` | the public key of a 32-byte seed (`BadLength` otherwise) |
+| `ed25519_sign(secret, message)` | the 64-byte signature |
+| `ed25519_verify(key, message, signature): bool` | `true` only for a valid signature; `false` for anything else — wrong lengths, a malformed key — never an error |
+| `random_bytes(n)` | `n` bytes (0 to 1048576) from OpenSSL's secure generator |
+| `equal(a, b): bool` | the same bytes, compared in time that depends only on the length; `false` at once for different lengths |
+
+The C side wipes its own copies of secrets (`OPENSSL_cleanse`) and OpenSSL clears its key objects; a secret seed handed to the program, and every copy of it, lives in collected memory, which Lugha can't wipe yet. Not included: encryption, key exchange, key derivation and password hashing, HMAC, certificates, other algorithms.
 
 `std.http` (v17, milestone 111). HTTP/1.1 over `std.net`, written in Lugha: `http://`, and `https://` through `std.tls` (milestone 112). `Request` has `method`, `path` (before `?`, not decoded), `query` (after `?`, raw), `headers` (`Map<string, string>`, names in lower case, a repeated header's values joined with `", "`), `body: u8[]` and `peer`; `Response` has `status`, `headers` and `body`; both have `text()` (UTF-8) and `header(name)` (any case). `text(status, s)`, `json(status, s)` and `bytes(status, b)` make responses.
 - **Serving:** `serve(addr, handler: fun(Request): Response)` (or `serve_with(addr, limits, handler)`) serves forever, one green thread per connection, keeping HTTP/1.1 connections open between requests (HTTP/1.0 only when asked); it returns only when it can't listen. The server sets `content-length` and, when it closes, `connection: close`; a response header whose name isn't a token or whose value holds a control character is dropped, so no handler can inject lines. A handler's panic ends the program, as any green thread's does.
@@ -1696,7 +1712,7 @@ Name and type errors, reported by the checker:
 | E0329 | `pkg-config` failed for a `[link]` table (v16) | `pkg-config = ["gtk4"]` without `pkg-config` installed, or without gtk4; `pkg-config` giving `-Wl,-rpath,/x` |
 | E0330 | A `[link]` C file that doesn't compile (v16) | `c = ["shim.c"]` with a syntax error in `shim.c` |
 | E0331 | Linking failed with `[link]` input (v16) | `libs = ["raylib"]` with no raylib installed |
-| E0332 | TLS needs OpenSSL (v17) | building a program that loads `std.tls` (or `std.http`) on a machine without `libssl-dev` |
+| E0332 | A program needs OpenSSL, which isn't installed (v17) | building a program that loads `std.tls`, `std.http` or `std.crypto` on a machine without `libssl-dev` |
 | E0324 | A package version that doesn't meet a requirement, or a requirement on a package without a version (v11) | `geo = { path = "libs/geo", version = "1.2" }` when geo's `lugha.toml` says `version = "2.0.0"`, or nothing |
 | E0401 | Numeric literal of the wrong kind for its expected type | `x + 2.5` where `x` is `i32` |
 | E0402 | Integer literal out of range for its type | `let b: u8 = 256;`; `x + 300` in a `fun big<T: Num>` called at `u8` (v15) |
@@ -3744,6 +3760,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 110 | `std.net` (v17) | TCP, non-blocking sockets in the scheduler | `tests/net.rs` (done) |
 | 111 | `std.http` (v17) | HTTP/1.1 server and client, limits | `tests/http.rs` (done) |
 | 112 | TLS (v17) | `std.tls`, `https://`, E0332 | `tests/tls.rs` (done) |
+| 113 | `std.crypto` (v17) | SHA-256, Ed25519, random bytes, `equal` | `tests/crypto.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

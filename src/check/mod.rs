@@ -118,6 +118,7 @@ pub use modules::{Unit, check_modules, check_tests, qualify, symbol};
 pub use ordering::ORDERING;
 pub use partial::{Name, Partial, Target, check_partial};
 pub use refs::REF_NEW;
+pub use results::RESULT;
 pub use signatures::Sig;
 pub use slots::{indirect_slot, slot_names_variant};
 pub use templates::exact as template_exact;

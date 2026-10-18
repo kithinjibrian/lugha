@@ -2,7 +2,7 @@ use super::{Checker, Type, errors};
 use crate::ast::{Expr, ExprKind, Ident};
 
 /// The prelude's `Result`, by key.
-pub(super) const RESULT: &str = "$prelude.Result";
+pub const RESULT: &str = "$prelude.Result";
 
 impl Checker {
     /// `Ok(x)` or `Err(e)` without a prefix: the prelude's `Result`, built

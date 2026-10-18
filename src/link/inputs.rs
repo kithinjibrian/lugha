@@ -53,6 +53,9 @@ pub struct Plan {
     /// The import that brings in `std.tls` (v17), for E0332; `Some` adds
     /// the TLS runtime and `-lssl -lcrypto`.
     pub tls: Option<Span>,
+    /// The import that brings in `std.crypto` (v17, milestone 113), for
+    /// E0332; `Some` adds the crypto runtime and `-lcrypto`.
+    pub crypto: Option<Span>,
 }
 
 /// Runs `pkg-config` for some names: [`super::pkg_config::run`], or a fake in tests.

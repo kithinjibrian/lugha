@@ -9,6 +9,12 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `std.crypto`, milestone 113 (PRP-145): `sha256` and a streamed `Sha256` (OpenSSL's state freed by a collector finalizer), Ed25519 (`ed25519_keypair`, `ed25519_public`, `ed25519_sign`, `ed25519_verify`) with raw 32/32/64-byte keys and signatures, `random_bytes` (up to 1 MiB) and constant-time `equal`, over the system's OpenSSL 3; `CryptoError { BadLength, OpenSsl }`; nothing panics on input. OpenSSL's `libcrypto` is linked only into programs that load `std.crypto` (`runtime/crypto.c`)
+
+### Changed
+- E0332 reads "this program needs OpenSSL, which isn't installed" and covers `std.crypto` as well as `std.tls`
+
+### Added
 - TLS, milestone 112 (PRP-144): `std.tls` (`connect`, `connect_with(opts)`, `listen(addr, cert, key)`) over the system's OpenSSL 3, always verifying certificates (system roots, host names; `Options.ca_file` to trust more), TLS 1.2+, non-blocking through the scheduler; `https://` in `std.http` (`serve_tls`, `serve_tls_with`, `request_tls`). OpenSSL is linked only into programs that load `std.tls` (or `std.http`); E0332 when it isn't installed. `runtime/tls.c`, `src/link/runtime.rs`; CI installs `libssl-dev`
 
 ### Changed

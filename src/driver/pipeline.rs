@@ -268,7 +268,8 @@ pub(super) fn ir(front: &Front) -> Result<String, Failure> {
 pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Failure> {
     let mut plan = link::Plan::new(&front.links, &mut link::pkg_config::run)
         .map_err(|e| Failure::Program(front.source.clone(), vec![e.diagnostic()]))?;
-    plan.tls = tls_import(&front.modules);
+    plan.tls = std_import(&front.modules, "tls", &["tls", "http"]);
+    plan.crypto = std_import(&front.modules, "crypto", &["crypto"]);
     let temp = TempDir::new().map_err(|e| internal(&front.source, temp_error(e)))?;
     let object = temp.path.join("prog.o");
     codegen::emit_object_modules(
@@ -285,12 +286,12 @@ pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Fail
     })
 }
 
-/// The program's import that brings in `std.tls` (v17, milestone 112):
-/// `std.tls` itself, or `std.http`, which imports it for `https://`. Only
-/// such programs get TLS's runtime and OpenSSL on the link line.
-fn tls_import(modules: &[Module]) -> Option<crate::span::Span> {
-    let loads_tls = modules.iter().any(|m| m.path == ["std", "tls"]);
-    if !loads_tls {
+/// The program's import that brings in OpenSSL's `std.<module>` (v17):
+/// `None` unless the program loads it; else the first import of the
+/// program's own modules that leads there (one of `via`: `std.http` leads
+/// to `std.tls`). Only such programs get that runtime part and OpenSSL.
+fn std_import(modules: &[Module], module: &str, via: &[&str]) -> Option<crate::span::Span> {
+    if !modules.iter().any(|m| m.path == ["std", module]) {
         return None;
     }
     modules
@@ -300,7 +301,7 @@ fn tls_import(modules: &[Module]) -> Option<crate::span::Span> {
         .flat_map(|p| &p.imports)
         .find(|i| {
             let names: Vec<&str> = i.path.iter().map(|s| s.name.as_str()).collect();
-            matches!(names.as_slice(), ["std", "tls" | "http", ..])
+            names.len() >= 2 && names[0] == "std" && via.contains(&names[1])
         })
         .map(|i| i.span)
 }
