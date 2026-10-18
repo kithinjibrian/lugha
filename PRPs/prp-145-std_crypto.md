@@ -1,6 +1,6 @@
 ## FEATURE: `std.crypto` — SHA-256, Ed25519, secure random bytes and constant-time comparison over the system's OpenSSL 3; milestone 113 (v17).
 
-**Status:** approved 2026-10-18 (session 273; the security review comes before merging); proposed in session 272, from the user's brief (session 272). **Needs the user's security review before it merges** (cryptography).
+**Status:** approved 2026-10-18 (session 273), reviewed and merged (session 274); proposed in session 272, from the user's brief (session 272). **Needs the user's security review before it merges** (cryptography).
 
 ## OBJECTIVE
 ```lugha
