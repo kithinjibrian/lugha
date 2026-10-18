@@ -8828,3 +8828,6 @@ Branch: prp-150-and_then
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+## SESSION 284 — 2026-10-18 — request_tls_with: PRP — open
+Branch: main
