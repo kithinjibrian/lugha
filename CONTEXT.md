@@ -8816,3 +8816,6 @@ Branch: prp-149-octal
 
 ### STILL OPEN AT CLOSE
 - PRP-150 (`and_then`) next.
+
+## SESSION 283 — 2026-10-18 — and_then (milestone 118) — open
+Branch: prp-150-and_then
