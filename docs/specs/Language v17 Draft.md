@@ -242,6 +242,12 @@ The user's brief: Rapidkoi derives each app's Ed25519 seed from one master secre
 
 245–251. **`crypto.hkdf_sha256`** (milestone 120): RFC 5869 through OpenSSL's `EVP_KDF` "HKDF", lengths 1–8160 (`BadLength` otherwise), the C copies wiped; tag `m120` after the user's review.
 
+## Decisions behind milestone 121 (session 289; proposed)
+
+The user's brief: Rapidkoi's PRP-013 refuses names pointing to the local network without DNS rebinding. Details in PRP-153.
+
+252–261. **`net.resolve` and `tls.Options.address`** (milestone 121): every address a name resolves to; a connection to a chosen IP address that still verifies the name, in `std.tls` and `std.http`; tag `m121`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
