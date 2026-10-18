@@ -8755,3 +8755,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-147 awaits approval.
+
+## SESSION 278 — 2026-10-18 — fs.rename, fs.set_mode, flush, std.time (milestone 115) — open
+Branch: prp-147-fs_time_flush

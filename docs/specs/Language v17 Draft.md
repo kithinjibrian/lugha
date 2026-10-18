@@ -210,7 +210,7 @@ The user's brief: reading configuration files, first Rapidkoi's `rapidkoi.toml`.
 
 198–214. **`std.toml`** (milestone 114): a read-only TOML 1.0 parser in Lugha — `parse(text): Result<Map<string, Value>, TomlError>`, `Value { Text, Integer, Float, Boolean, OffsetDateTime, LocalDateTime, LocalDate, LocalTime, Array, Table }`, tables in file order, every definition rule, `TomlError { kind, detail, line, column }`, limits on size (1 MiB), depth (100) and values (1 000 000), overflow-checked integers, `get(table, "a.b")` and `as_*` helpers; tested against toml-test v2.2.0's TOML 1.0 cases (MIT, vendored); no writing, TOML 1.1, struct mapping or file reading; tag `m114`.
 
-## Decisions behind milestone 115 (session 277; proposed)
+## Decisions behind milestone 115 (session 277; approved in session 278)
 
 The user's brief: keeping data on disk safely and a key file private. Details in PRP-147.
 

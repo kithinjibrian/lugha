@@ -1,6 +1,6 @@
 ## FEATURE: Four small std additions — `fs.rename`, `fs.set_mode`, `flush()` and `std.time`; milestone 115 (v17).
 
-**Status:** proposed 2026-10-18 (session 277), from the user's brief (session 277): Rapidkoi keeps data on disk safely (write a temporary file, then rename it over the old one) and keeps a secret key file private (mode 0600).
+**Status:** approved 2026-10-18 (session 278); proposed in session 277, from the user's brief (session 277): Rapidkoi keeps data on disk safely (write a temporary file, then rename it over the old one) and keeps a secret key file private (mode 0600).
 
 ## OBJECTIVE
 ```lugha
