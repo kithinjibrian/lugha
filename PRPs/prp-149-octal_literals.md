@@ -1,6 +1,6 @@
 ## FEATURE: Octal integer literals `0o600`, and a warning for a leading zero that looks octal; milestone 117 (v17).
 
-**Status:** proposed 2026-10-18 (session 281), from the user's request ("Real 0o600 literals: today 0600 silently means six hundred"), after `fs.set_mode` (milestone 115).
+**Status:** approved 2026-10-18 (session 282); proposed in session 281, from the user's request ("Real 0o600 literals: today 0600 silently means six hundred"), after `fs.set_mode` (milestone 115).
 
 ## OBJECTIVE
 ```lugha

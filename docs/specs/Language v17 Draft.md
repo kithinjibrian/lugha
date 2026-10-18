@@ -222,7 +222,7 @@ The user: "fs.sync". Details in PRP-148.
 
 225–230. **`fs.sync`** (milestone 116): `fsync(2)` on a file or folder, so a written file (`sync` it) and a rename (`sync` its folder) survive a power cut; `Err` with the system's message; no `write_atomic` helper yet; tag `m116`.
 
-## Decisions behind milestones 117–118 (session 281; proposed)
+## Decisions behind milestones 117–118 (session 281; approved in session 282)
 
 The user's follow-ups. Details in PRP-149 and PRP-150.
 

@@ -8804,3 +8804,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-149 and PRP-150 await approval.
+
+## SESSION 282 — 2026-10-18 — Octal literals (milestone 117) — open
+Branch: prp-149-octal
