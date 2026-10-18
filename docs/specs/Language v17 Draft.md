@@ -236,6 +236,11 @@ The user's brief: Rapidkoi's bundle fetch needs `Limits` and a test CA in one ca
 
 241–244. **`http.request_tls_with`** (milestone 119): `Limits` as given plus `tls.Options` (`ca_file` trusted, a non-zero `timeout_ms` overriding); tag `m119`.
 
+## Decisions behind milestone 120 (session 286; proposed)
+
+The user's brief: Rapidkoi derives each app's Ed25519 seed from one master secret. Details in PRP-152.
+
+245–251. **`crypto.hkdf_sha256`** (milestone 120): RFC 5869 through OpenSSL's `EVP_KDF` "HKDF", lengths 1–8160 (`BadLength` otherwise), the C copies wiped; tag `m120` after the user's review.
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
