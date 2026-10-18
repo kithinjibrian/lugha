@@ -24,6 +24,8 @@ impl Lexer<'_> {
             (Some(b'0'), Some(b'x')) => Some(16),
             // Binary literals (v7): `0b1010`.
             (Some(b'0'), Some(b'b')) => Some(2),
+            // Octal literals (v17, milestone 117): `0o600`.
+            (Some(b'0'), Some(b'o')) => Some(8),
             _ => None,
         };
         if let Some(radix) = radix {
@@ -35,11 +37,15 @@ impl Lexer<'_> {
         }
     }
 
-    /// A hex (`radix` 16) or binary (2, v7) literal after its prefix.
+    /// A hex (`radix` 16), octal (8, v17) or binary (2, v7) literal after its prefix.
     fn radix(&mut self, start: usize, radix: u32) {
         let span = Span::new(start, self.pos);
         let body = &self.src[start + 2..self.pos];
-        let kind = if radix == 16 { "hex" } else { "binary" };
+        let kind = match radix {
+            16 => "hex",
+            8 => "octal",
+            _ => "binary",
+        };
         let diagnostic = if body.is_empty() {
             Diagnostic::error("E0106", format!("{kind} literal has no digits"), span)
         } else if let Some(c) = body.chars().find(|c| !c.is_digit(radix) && *c != '_') {
@@ -102,7 +108,13 @@ impl Lexer<'_> {
             misplaced_underscore(span)
         } else {
             match text.replace('_', "").parse::<u64>() {
-                Ok(value) => return self.push(TokenKind::Int(value), start),
+                Ok(value) => {
+                    // `0600` is six hundred, not octal (v17, milestone 117).
+                    if text.len() > 1 && text.starts_with('0') {
+                        self.diagnostics.push(leading_zero(text, value, span));
+                    }
+                    return self.push(TokenKind::Int(value), start);
+                }
                 Err(_) => too_large(span),
             }
         };
@@ -160,6 +172,18 @@ fn too_large(span: Span) -> Diagnostic {
         .with_help(format!("the largest integer literal is {}", u64::MAX))
 }
 
+/// W0107: a decimal literal written with a leading zero, which looks octal.
+fn leading_zero(text: &str, value: u64, span: Span) -> Diagnostic {
+    let digits = text.trim_start_matches(['0', '_']);
+    let octal = if digits.is_empty() { "0" } else { digits };
+    Diagnostic::warning(
+        "W0107",
+        format!("a leading zero doesn't make an octal number: this is {value}"),
+        span,
+    )
+    .with_help(format!("write `0o{octal}` for octal, or `{value}`"))
+}
+
 #[cfg(test)]
 mod tests {
     use crate::lexer::TokenKind::*;
@@ -183,6 +207,42 @@ mod tests {
             0,
         ];
         assert_eq!(kinds(src), expected.map(Int));
+    }
+
+    #[test]
+    fn octal_literals_v17() {
+        assert_eq!(
+            kinds("0o600 0o7_55 0o0 0o1777777777777777777777"),
+            [Int(0o600), Int(0o755), Int(0), Int(u64::MAX)]
+        );
+        for bad in ["0o", "0o8", "0o_7", "0o7_", "0o2000000000000000000000"] {
+            assert_eq!(errors(bad).len(), 1, "{bad}");
+        }
+        assert_eq!(errors("0o")[0].0, "E0106");
+    }
+
+    #[test]
+    fn a_leading_zero_warns_w0107() {
+        let warned = |src: &str| {
+            let (_, warnings) = lex(src).unwrap();
+            warnings
+                .iter()
+                .map(|d| (d.code, d.message.clone(), d.help.clone()))
+                .collect::<Vec<_>>()
+        };
+        let w = warned("0600");
+        assert_eq!(w[0].0, "W0107");
+        assert!(w[0].1.contains("this is 600"), "{w:?}");
+        assert_eq!(w[0].2.as_deref(), Some("write `0o600` for octal, or `600`"));
+        assert_eq!(warned("007")[0].0, "W0107");
+        assert_eq!(
+            warned("00")[0].2.as_deref(),
+            Some("write `0o0` for octal, or `0`")
+        );
+        for quiet in ["0", "0.5", "00.5", "0x10", "0b10", "0o10", "10"] {
+            assert!(warned(quiet).is_empty(), "{quiet}");
+        }
+        assert_eq!(kinds("0600"), [Int(600)]);
     }
 
     #[test]

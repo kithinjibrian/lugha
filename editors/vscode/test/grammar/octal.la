@@ -1,0 +1,4 @@
+// SYNTAX TEST "source.lugha" "octal literals"
+
+let mode = 0o600;
+//         ^^^^^ constant.numeric.octal.lugha

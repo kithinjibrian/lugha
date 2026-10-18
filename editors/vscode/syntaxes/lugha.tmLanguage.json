@@ -139,6 +139,7 @@
       "patterns": [
         { "name": "constant.numeric.hex.lugha", "match": "\\b0x[0-9a-fA-F](?:_?[0-9a-fA-F])*\\b" },
         { "name": "constant.numeric.binary.lugha", "match": "\\b0b[01](?:_?[01])*\\b" },
+        { "name": "constant.numeric.octal.lugha", "match": "\\b0o[0-7](?:_?[0-7])*\\b" },
         { "name": "constant.numeric.float.lugha", "match": "\\b[0-9]+\\.[0-9]+(?:[eE][+-]?[0-9]+)?\\b" },
         { "name": "constant.numeric.decimal.lugha", "match": "\\b[0-9](?:_?[0-9])*\\b" }
       ]

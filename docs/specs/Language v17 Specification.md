@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–116 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–117 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–116):
+**Changes since v16** (milestones 91–117):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- Octal literals (milestone 117; section 2): `0o600`; a leading zero (`0600`) stays decimal and warns W0107.
 - `fs.sync` (milestone 116): `fsync` on a file or folder, so a saved file and its rename survive a power cut.
 - Keeping data on disk (milestone 115): `fs.rename` (atomic within a file system), `fs.set_mode` (`chmod`), the `flush()` built-in, and `std.time` (`now_ms`, `monotonic_ms`).
 - `std.toml` (milestone 114; standard library): a read-only TOML 1.0 parser in Lugha with limits for hostile input; the prelude's `xs.join(sep)` is linear (it was quadratic).
@@ -264,7 +265,7 @@ Built-in type names are keywords, so they can't be shadowed by user structs. `Op
 
 | Kind | Examples | Notes |
 | --- | --- | --- |
-| Integer | `42`, `1_000_000`, `0xFF`, `0b1010` | Decimal, hex or binary (v7); `_` separators allowed between digits |
+| Integer | `42`, `1_000_000`, `0xFF`, `0b1010`, `0o600` | Decimal, hex, binary (v7) or octal (v17, milestone 117); `_` separators allowed between digits. A leading zero is still decimal (`0600` is six hundred) and warns W0107 |
 | Float | `3.14`, `2.0e-3` | Must have digits on both sides of the `.`; optional exponent |
 | String | `"hello\n"` | Double-quoted; escapes `\n` `\t` `\r` `\\` `\"` `\0` |
 | Boolean | `true`, `false` | Keywords |
@@ -1169,7 +1170,7 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 | `remove_file(path): Result<i64, string>` | `Ok(0)` after removing a file or symbolic link; a folder is `Err` |
 | `remove_dir(path): Result<i64, string>` | `Ok(0)` after removing an empty folder; a non-empty one is `Err` |
 | `rename(from, to): Result<(), string>` | `rename(2)` (v17, milestone 115): within one file system it replaces `to` in one step, so anyone opening `to` sees the old file or the new one, never neither; across file systems it is `Err` (`Invalid cross-device link`), never a copy. Write a new version beside the old, then rename it over, to save data safely |
-| `set_mode(path, mode: i64): Result<(), string>` | `chmod(2)` (v17, milestone 115), following symbolic links; `mode` from 0 to 4095 (`0o7777`), else `Err`. Lugha has no octal literals and a leading zero is still decimal (`0600` is six hundred): write 0600 as `0b110_000_000` or `0x180` |
+| `set_mode(path, mode: i64): Result<(), string>` | `chmod(2)` (v17, milestone 115), following symbolic links; `mode` from 0 to 4095 (`0o7777`), else `Err`. a leading zero is still decimal (`0600` is six hundred, W0107): write `0o600` |
 | `sync(path): Result<(), string>` | `fsync(2)` (v17, milestone 116): a file's data, or a folder's entries, written out to the disk so they survive a power cut; `Err` (the data may not be there) with the system's message. A file is saved durably with `write_file("f.tmp", data)`, `sync("f.tmp")`, `rename("f.tmp", "f")`, `sync(".")` — the last makes the rename durable |
 | `exists(path)`, `is_dir(path)`, `is_file(path)`: `bool` | whether something, a folder or a regular file is at `path`, following symbolic links; never an error |
 
@@ -1793,6 +1794,7 @@ Name and type errors, reported by the checker:
 | W0104 | `..base` that copies nothing (warning, v17) | `P { x: 1.0, y: 2.0, ..p }` |
 | W0105 | A key written twice in a `#{ … }` literal (warning, v17) | `#{"a": 1, "a": 2}`; `#{1, 1}` |
 | W0106 | A `let` holding `()` (warning, v17) | `let x = log();` where `log` has no return type; not `let x: () = log();`, `let x = ();` or `let _ = log();` |
+| W0107 | A leading zero that looks octal (warning, v17) | `0600`, `007` (decimal; write `0o600` for octal) |
 
 **JSON diagnostics.** With `--diagnostics=json`, the compiler writes one JSON object per line to stderr, one per diagnostic, and nothing else. Lines and columns are 1-based; columns and offsets count UTF-8 bytes. `label` is the text shown under the primary span, or `null`. `labels` holds secondary spans, and `help` is an optional suggestion. Internal errors have `"code":null`, and `"span":null` when they have no location. `"file"` is the file of the primary span: the main file as given on the command line, or a module's path relative to the main file's directory (`shapes/circle.la`); lines, columns and offsets are within that file. A label in a different file carries its own `"file"` key, which appears only then.
 
@@ -3780,6 +3782,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 114 | `std.toml` (v17) | TOML 1.0 parser, limits, helpers | `tests/toml.rs` (toml-test v2.2.0) (done) |
 | 115 | `fs.rename`, `fs.set_mode`, `flush`, `std.time` (v17) | atomic renames, modes, flushing stdout, the clocks | `tests/fs_time.rs` (done) |
 | 116 | `fs.sync` (v17) | `fsync` on files and folders | `tests/fs_time.rs` (done) |
+| 117 | Octal literals (v17) | `0o600`, W0107 | lexer units (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

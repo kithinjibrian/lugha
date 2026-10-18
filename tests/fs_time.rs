@@ -65,7 +65,7 @@ fun main() {
     println(fs.rename(\"missing\", \"x\"));
     println(fs.rename(string_from_utf8([97, 0, 98]).unwrap(), \"x\"));
     write_file(\"key\", \"secret\").unwrap();
-    println(fs.set_mode(\"key\", 0b110_000_000));
+    println(fs.set_mode(\"key\", 0o600));
     println(fs.set_mode(\"key\", -1));
     println(fs.set_mode(\"key\", 4096));
     println(fs.set_mode(\"nope\", 0b110_000_000));
