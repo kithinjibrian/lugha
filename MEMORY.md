@@ -2139,6 +2139,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-150 (session 281; approved 282, built 283). `option_and_then` and `result_and_then` at the end of `src/prelude/maps.la` (the last prelude file, so no earlier prelude line — and no panic location tests expect — moves), listed in `check/helpers.rs` and the completion candidates. To make untyped closures work (`fun(n) = Some(n > 1)`), `check/closures.rs` now treats an expected result that holds an unknown (`Error`) part as not known, inferring it from the body.
 
+### 205. `request_tls_with` — milestone 119 (PRP-151)
+
+**Decision:** as PRP-151 (session 284; approved and built 285). `request_tls_with` in `src/std/http.la` is `exchange(…, limits, opts.ca_file)` after `opts.timeout_ms > 0` replaces `limits.timeout_ms`; `request_tls` keeps its 16 MiB default. Tested in `tests/tls.rs` (17 MB body allowed and refused, untrusted CA, the timeout override).
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

@@ -230,7 +230,7 @@ The user's follow-ups. Details in PRP-149 and PRP-150.
 
 237–240. **`and_then`** (milestone 118): on `Option` (`fun(T): Option<U>`) and `Result` (`fun(T): Result<U, E>`), in the prelude; tag `m118`.
 
-## Decisions behind milestone 119 (session 284; proposed)
+## Decisions behind milestone 119 (session 284; approved and built session 285)
 
 The user's brief: Rapidkoi's bundle fetch needs `Limits` and a test CA in one call. Details in PRP-151.
 

@@ -259,3 +259,67 @@ fun main() {
         "200 secure POST /x\ncertificate verify failed: unable to get local issuer certificate\ntrue\n",
     );
 }
+
+#[test]
+fn request_tls_with_takes_limits_and_trust() {
+    let Some(case) = Case::new(
+        "import std.http;
+import std.task;
+import std.time;
+import std.tls;
+
+fun handle(req: http.Request): http.Response = http.bytes(200, [7 as u8; 17000000]);
+
+fun server(addr: string) {
+    http.serve_tls(addr, \"cert.pem\", \"key.pem\", handle).unwrap();
+}
+
+fun silent(l: tls.Listener) {
+    let c = l.accept().unwrap();
+    task.sleep(10000);
+    c.close();
+}
+
+fun fetch(url: string, body: i64, ca_file: string) {
+    let mut limits = http.limits();
+    limits.body = body;
+    let opts = tls.Options { ca_file: ca_file, ..tls.options() };
+    match http.request_tls_with(\"GET\", url, #{}, [], limits, opts) {
+        Ok(res) => println(\"{res.status} {res.body.len} {res.body[16999999]}\"),
+        Err(e) => println(e),
+    }
+}
+
+fun main() {
+    let probe = tls.listen(\"127.0.0.1:0\", \"cert.pem\", \"key.pem\").unwrap();
+    let addr = probe.addr();
+    probe.close();
+    spawn server(addr);
+    task.yield_now();
+    let url = \"https://localhost:{addr.split(\":\")[1]}/app.rkb\";
+    fetch(url, 33554432, \"ca.pem\");
+    fetch(url, 16777216, \"ca.pem\");
+    fetch(url, 33554432, \"\");
+
+    let quiet = tls.listen(\"127.0.0.1:0\", \"cert.pem\", \"key.pem\").unwrap();
+    let port = quiet.addr().split(\":\")[1];
+    spawn silent(quiet);
+    let mut limits = http.limits();
+    limits.timeout_ms = 60000;
+    let opts = tls.Options { ca_file: \"ca.pem\", timeout_ms: 200 };
+    let started = time.monotonic_ms();
+    match http.request_tls_with(\"GET\", \"https://localhost:{port}/\", #{}, [], limits, opts) {
+        Ok(_) => println(\"?\"),
+        Err(e) => println(e),
+    }
+    println(time.monotonic_ms() - started < 5000);
+}
+",
+    ) else {
+        return;
+    };
+    case.runs(
+        "200 17000000 7\nresponse too large\n\
+         certificate verify failed: unable to get local issuer certificate\ntimed out\ntrue\n",
+    );
+}

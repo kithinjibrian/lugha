@@ -9,6 +9,9 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `http.request_tls_with(method, url, headers, body, limits, opts)`, milestone 119 (PRP-151): a request with both `Limits` (used as given, so bodies past 16 MiB can be allowed) and `tls.Options` (`ca_file` trusted, a non-zero `timeout_ms` overriding the limits')
+
+### Added
 - `and_then`, milestone 118 (PRP-150): `o.and_then(f)` on `Option` (`f: fun(T): Option<U>`) and `r.and_then(f)` on `Result` (`f: fun(T): Result<U, E>`, an `Err` passed through), written in Lugha at the prelude's end; `toml.get(doc, "app.name").and_then(toml.as_text)` works
 
 ### Changed
