@@ -216,6 +216,12 @@ The user's brief: keeping data on disk safely and a key file private. Details in
 
 215–224. **`fs.rename`, `fs.set_mode`, `flush()`, `std.time`** (milestone 115): atomic `rename(2)` (cross-device is `Err`), `chmod(2)` with modes 0–4095 (no octal literals: `0b110_000_000` for 0600), a `flush()` built-in for stdout, and `std.time.now_ms`/`monotonic_ms`; nothing panics; no locking, other permission APIs, time zones or formatting; tag `m115`.
 
+## Decisions behind milestone 116 (session 279; proposed)
+
+The user: "fs.sync". Details in PRP-148.
+
+225–230. **`fs.sync`** (milestone 116): `fsync(2)` on a file or folder, so a written file (`sync` it) and a rename (`sync` its folder) survive a power cut; `Err` with the system's message; no `write_atomic` helper yet; tag `m116`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
