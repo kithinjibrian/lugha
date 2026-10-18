@@ -1,6 +1,6 @@
 ## FEATURE: `crypto.hkdf_sha256` — HKDF-SHA256 key derivation (RFC 5869) in `std.crypto`; milestone 120 (v17).
 
-**Status:** approved and built 2026-10-18 (session 287), awaiting the user's review before merging; proposed in session 286, from the user's brief: Rapidkoi derives each app's Ed25519 seed from one master secret — `hkdf_sha256(master, salt, "rapidkoi identity v1" ‖ app identity, 32)` — so one backup restores every app's key. Crypto: the user reviews it before it merges (security rule).
+**Status:** approved and built 2026-10-18 (session 287), reviewed by the user and merged; proposed in session 286, from the user's brief: Rapidkoi derives each app's Ed25519 seed from one master secret — `hkdf_sha256(master, salt, "rapidkoi identity v1" ‖ app identity, 32)` — so one backup restores every app's key. Crypto: the user reviews it before it merges (security rule).
 
 ## OBJECTIVE
 ```lugha
