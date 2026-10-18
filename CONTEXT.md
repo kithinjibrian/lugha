@@ -8876,3 +8876,6 @@ Branch: prp-152-hkdf_sha256
 
 ### STILL OPEN AT CLOSE
 - None: the user reviewed and said "merge"; merged (PR #81) and tagged `m120`.
+
+## SESSION 288 — 2026-10-18 — LSP: modules checked alone may be imported back (E0319 fix) — open
+Branch: fix-lsp-alone-cycle
