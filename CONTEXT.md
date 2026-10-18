@@ -8691,3 +8691,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-145 awaits approval.
+
+## SESSION 273 — 2026-10-18 — std.crypto (milestone 113) — open
+Branch: prp-145-std_crypto

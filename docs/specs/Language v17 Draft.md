@@ -198,7 +198,7 @@ HTTP/1.1 on `std.net`, written in Lugha. Details in PRP-143.
 
 167–180. **TLS** (milestone 112): `std.tls` (`connect`, `connect_with(opts)`, `listen(addr, cert, key)`, `Conn`/`Listener` shaped like `std.net`'s) and `https://` in `std.http` (`serve_tls`, `request_tls`); OpenSSL linked only into programs that load `std.tls` (E0332 when it's missing); always-on verification with the system roots and host names, `ca_file` to trust more, TLS 1.2+; non-blocking through `wait_fd`; no mutual TLS, pinning or verification bypass; tag `m112`. Needs the user's security review.
 
-## Decisions behind milestone 113 (session 272; proposed)
+## Decisions behind milestone 113 (session 272; approved in session 273)
 
 The user's brief: hashing and signatures for Rapidkoi, over the OpenSSL `std.tls` already links. Details in PRP-145.
 
