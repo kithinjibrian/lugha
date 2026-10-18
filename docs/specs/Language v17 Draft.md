@@ -204,6 +204,12 @@ The user's brief: hashing and signatures for Rapidkoi, over the OpenSSL `std.tls
 
 181–197. **`std.crypto`** (milestone 113): `sha256` and a streaming `Sha256` (its OpenSSL state freed by a GC finalizer), Ed25519 keypair/public/sign/verify with raw 32/32/64-byte keys and signatures, `random_bytes` (≤ 1 MiB), constant-time `equal`; `CryptoError { BadLength, OpenSsl }`; nothing panics on input; C-side secrets wiped, Lugha-side copies documented as not; OpenSSL linked only into programs that load `std.crypto` or `std.tls`; no encryption, key exchange, key derivation or other algorithms; tag `m113`. Needs the user's security review before merging.
 
+## Decisions behind milestone 114 (session 275; proposed)
+
+The user's brief: reading configuration files, first Rapidkoi's `rapidkoi.toml`. Details in PRP-146.
+
+198–214. **`std.toml`** (milestone 114): a read-only TOML 1.0 parser in Lugha — `parse(text): Result<Map<string, Value>, TomlError>`, `Value { Text, Integer, Float, Boolean, OffsetDateTime, LocalDateTime, LocalDate, LocalTime, Array, Table }`, tables in file order, every definition rule, `TomlError { kind, detail, line, column }`, limits on size (1 MiB), depth (100) and values (1 000 000), overflow-checked integers, `get(table, "a.b")` and `as_*` helpers; tested against toml-test v2.2.0's TOML 1.0 cases (MIT, vendored); no writing, TOML 1.1, struct mapping or file reading; tag `m114`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
