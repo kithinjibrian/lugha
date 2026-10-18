@@ -2,17 +2,18 @@
 
 Oct 16, 2026 · @kithinji
 
-**Status:** in progress (milestones 91–119 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
+**Status:** in progress (milestones 91–120 of v17). It is built from the approved plan, `Language v17 Draft.md`. This file describes exactly what `lughac` implements, and is what `lughac spec` prints. `Language v16 Specification.md` keeps v16 frozen.
 
 **v15.** This is v14 plus package layout, operator overloading, the standard library (`std.math`, `std.random`, `std.env`, `std.fs`, `std.process`), copy-on-write arrays, loop ownership, nested `mut self` calls, numbers as `T`, user-defined `Ord`, and format widths in characters (milestones 51–66).
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–119):
+**Changes since v16** (milestones 91–120):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- `crypto.hkdf_sha256`: HKDF-SHA256 key derivation, RFC 5869 (milestone 120).
 - `http.request_tls_with`: `Limits` and `tls.Options` in one request (milestone 119).
 - `and_then` on `Option` and `Result` (milestone 118); a closure whose expected result is only partly known (`Option<U>`) takes its result from its body.
 - Octal literals (milestone 117; section 2): `0o600`; a leading zero (`0600`) stays decimal and warns W0107.
@@ -1244,7 +1245,7 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 
 `std.tls` (v17, milestone 112). TLS through the system's OpenSSL 3, linked only into programs that load `std.tls` (directly or through `std.http`); building one without `libssl-dev` is E0332. Certificates are always verified — the chain against the system's trusted roots and the host name (or IP address) — and nothing turns that off; `Options { ca_file, timeout_ms }` (`options()` for the defaults) adds a PEM file of certificates to trust. TLS 1.2 is the oldest version spoken. `connect(addr)`, `connect_with(addr, opts)` and `listen(addr, cert_file, key_file)` give a `Conn` or `Listener` with `std.net`'s methods and errors (`accept` runs the handshake, which only the accepting thread waits for; `close` sends `close_notify`); a verification failure is `Err("certificate verify failed: …")` with OpenSSL's reason. Waits park only their green thread. A peer closing without `close_notify` reads as the end of the stream. OpenSSL's objects live outside the collector and are freed by `close`. No client certificates, pinning or session resumption.
 
-`std.crypto` (v17, milestone 113). SHA-256, Ed25519 (RFC 8032), random bytes and constant-time comparison through the system's OpenSSL 3, linked only into programs that load `std.crypto` (`-lcrypto`; E0332 without `libssl-dev`). Keys, signatures and digests are plain bytes, and programs never see an OpenSSL object. Nothing panics on any input: mistakes are `CryptoError` (`BadLength(what, wanted, given)`, `OpenSsl(reason)`; `e.message()` reads one), or `false`.
+`std.crypto` (v17, milestone 113). SHA-256, Ed25519 (RFC 8032), random bytes, constant-time comparison and HKDF-SHA256 (RFC 5869) through the system's OpenSSL 3, linked only into programs that load `std.crypto` (`-lcrypto`; E0332 without `libssl-dev`). Keys, signatures and digests are plain bytes, and programs never see an OpenSSL object. Nothing panics on any input: mistakes are `CryptoError` (`BadLength(what, wanted, given)`, `OpenSsl(reason)`; `e.message()` reads one), or `false`.
 
 | Function | Gives |
 | --- | --- |
@@ -1256,8 +1257,9 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 | `ed25519_verify(key, message, signature): bool` | `true` only for a valid signature; `false` for anything else — wrong lengths, a malformed key — never an error |
 | `random_bytes(n)` | `n` bytes (0 to 1048576) from OpenSSL's secure generator |
 | `equal(a, b): bool` | the same bytes, compared in time that depends only on the length; `false` at once for different lengths |
+| `hkdf_sha256(key, salt, info, length)` | `length` bytes (1 to 8160, `BadLength` otherwise) of key material derived by HKDF-SHA256, RFC 5869 (extract then expand; an empty salt is the RFC's default; milestone 120) |
 
-The C side wipes its own copies of secrets (`OPENSSL_cleanse`) and OpenSSL clears its key objects; a secret seed handed to the program, and every copy of it, lives in collected memory, which Lugha can't wipe yet. Not included: encryption, key exchange, key derivation and password hashing, HMAC, certificates, other algorithms.
+The C side wipes its own copies of secrets (`OPENSSL_cleanse`) and OpenSSL clears its key objects; a secret seed handed to the program, and every copy of it, lives in collected memory, which Lugha can't wipe yet. Not included: encryption, key exchange, password hashing, HMAC, certificates, other algorithms.
 
 `std.toml` (v17, milestone 114). A read-only TOML 1.0 parser written in Lugha, like Python's `tomllib`. `parse(text): Result<Map<string, Value>, TomlError>` gives the document's root table, its keys in the file's order; `parse_with(text, limits)` takes other `Limits` (`limits()`: `bytes` 1048576, `depth` 100 — arrays and inline tables nested, and a key's parts — and `values` 1000000). `Value` is `Text(string)`, `Integer(i64)`, `Float(f64)` (`inf`, `-inf`, `nan` included), `Boolean(bool)`, `OffsetDateTime(Date, Time, offset_minutes)`, `LocalDateTime(Date, Time)`, `LocalDate(Date)`, `LocalTime(Time)`, `Array(Value[])` and `Table(Map<string, Value>)`; `Date { year, month, day }` and `Time { hour, minute, second, nanosecond }` are checked (leap years, a leap second) with no time-zone arithmetic, and fractions past nanoseconds are truncated. The whole of TOML 1.0 is read — every key, string and number form, inline tables, arrays of tables, CRLF — with its rules against defining a key or table twice and extending an inline table or static array. Every mistake is a `TomlError { kind, detail, line, column }` (`kind`: `Syntax`, `Duplicate`, `Immutable`, `Overflow`, `BadValue`, `Limit`; line and column from 1, columns in characters) and `e.message()` reads `a key defined twice: app.name (line 7, column 1)`; nothing panics on any input, and integers past `i64` are `Overflow`. Helpers: `get(table, "a.b")` follows a dotted path (segments aren't parsed as TOML keys), and `as_text`, `as_i64`, `as_f64` (an integer too), `as_bool`, `as_array`, `as_table` and `as_date_time` give an `Option`: `toml.get(doc, "app.name").and_then(toml.as_text)`. No writing, TOML 1.1, struct mapping or file reading (pass `read_file`'s text). Its parts live in `std.$toml_value`, `std.$toml_strings`, `std.$toml_scan` and `std.$toml_parse`, which only bundled sources can import.
 
@@ -3789,6 +3791,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 117 | Octal literals (v17) | `0o600`, W0107 | lexer units (done) |
 | 118 | `and_then` (v17) | `Option.and_then`, `Result.and_then` | `tests/programs/m118` (done) |
 | 119 | `request_tls_with` (v17) | `http.request_tls_with`: limits and TLS options | `tests/tls.rs` (done) |
+| 120 | `hkdf_sha256` (v17) | `crypto.hkdf_sha256`: RFC 5869 key derivation | `tests/crypto.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

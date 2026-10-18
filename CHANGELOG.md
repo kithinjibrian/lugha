@@ -9,6 +9,9 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `crypto.hkdf_sha256(key, salt, info, length)`, milestone 120 (PRP-152): HKDF-SHA256 (RFC 5869, extract then expand) through OpenSSL's `EVP_KDF`, lengths 1 to 8160 (`BadLength` otherwise), the C side's copy of the output wiped
+
+### Added
 - `http.request_tls_with(method, url, headers, body, limits, opts)`, milestone 119 (PRP-151): a request with both `Limits` (used as given, so bodies past 16 MiB can be allowed) and `tls.Options` (`ca_file` trusted, a non-zero `timeout_ms` overriding the limits')
 
 ### Added

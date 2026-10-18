@@ -130,6 +130,22 @@ public fun random_bytes(n: i64): Result<u8[], CryptoError> {
  */
 public fun equal(a: u8[], b: u8[]): bool = a.len == b.len && $os.crypto_equal(a, b) == 1;
 
+/**
+ * HKDF-SHA256 (RFC 5869): extract then expand, deriving `length` bytes of
+ * key material from `key`. Different `info` gives independent keys from
+ * one secret.
+ * @param key the input key material (a secret)
+ * @param salt optional randomness; empty means RFC 5869's default
+ * @param info what the key is for; may be empty
+ * @param length how many bytes, from 1 to 8160 (255 × 32)
+ */
+public fun hkdf_sha256(key: u8[], salt: u8[], info: u8[], length: i64): Result<u8[], CryptoError> {
+    if length < 1 || length > 8160 {
+        return Err(CryptoError.BadLength("HKDF length (from 1 to)", 8160, length));
+    }
+    $os.crypto_hkdf(key, salt, info, length).map_err(failed)
+}
+
 fun failed(reason: string): CryptoError = CryptoError.OpenSsl(reason);
 
 fun sized(bytes: u8[], what: string, wanted: i64): Result<(), CryptoError> {

@@ -28,7 +28,7 @@ pub const TLS_SYMBOLS: [&str; 9] = [
 pub const CRYPTO_SOURCE: &str = include_str!("../../runtime/crypto.c");
 
 /// Every function codegen calls in [`CRYPTO_SOURCE`].
-pub const CRYPTO_SYMBOLS: [&str; 10] = [
+pub const CRYPTO_SYMBOLS: [&str; 11] = [
     "lugha_rt_crypto_sha256",
     "lugha_rt_crypto_sha256_new",
     "lugha_rt_crypto_sha256_update",
@@ -39,6 +39,7 @@ pub const CRYPTO_SYMBOLS: [&str; 10] = [
     "lugha_rt_crypto_ed25519_verify",
     "lugha_rt_crypto_random",
     "lugha_rt_crypto_equal",
+    "lugha_rt_crypto_hkdf",
 ];
 
 /// True if `cc`'s complaint is OpenSSL's absence: its headers or libraries.

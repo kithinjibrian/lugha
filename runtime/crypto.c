@@ -1,6 +1,6 @@
 /*
  * crypto.c — `std.crypto`'s built-ins (v17, milestone 113): SHA-256,
- * Ed25519, random bytes and constant-time comparison, through the system's
+ * Ed25519, random bytes, constant-time comparison and HKDF (milestone 120), through the system's
  * OpenSSL 3. Appended to the runtime only for programs that load
  * `std.crypto` (they link -lcrypto); every other program never sees it.
  *
@@ -11,12 +11,14 @@
  * here too, though `std.crypto` checks them first.
  *
  * Secrets: the seed this file makes is wiped from its stack buffer with
- * `OPENSSL_cleanse`, and OpenSSL clears its key objects when they are freed.
+ * `OPENSSL_cleanse`, derived keys are wiped from their buffer, and OpenSSL clears its key objects when they are freed.
  * The bytes handed to Lugha live in collected memory, which isn't wiped.
  */
 #include <openssl/crypto.h>
 #include <openssl/err.h>
+#include <openssl/core_names.h>
 #include <openssl/evp.h>
+#include <openssl/kdf.h>
 #include <openssl/rand.h>
 
 enum {
@@ -24,6 +26,7 @@ enum {
     CRYPTO_SIGNATURE = 64,
     CRYPTO_DIGEST = 32,
     CRYPTO_MAX_RANDOM = 1048576,
+    CRYPTO_MAX_HKDF = 255 * CRYPTO_DIGEST,
 };
 
 /* OpenSSL's reason for the last failure (the queue then cleared), or `fallback`. */
@@ -225,4 +228,46 @@ int64_t lugha_rt_crypto_equal(const LughaArray *a, const LughaArray *b) {
         return 0;
     }
     return CRYPTO_memcmp(a->elems, b->elems, (size_t)a->len) == 0;
+}
+
+/* An array's bytes as an OpenSSL octet-string parameter. An empty array
+ * still gets a non-NULL pointer: OpenSSL treats a NULL key as missing. */
+static OSSL_PARAM crypto_octets(const char *name, const LughaArray *bytes) {
+    static unsigned char none[1];
+    void *data = bytes->len > 0 ? bytes->elems : none;
+    return OSSL_PARAM_construct_octet_string(name, data, (size_t)bytes->len);
+}
+
+/* `$os.crypto_hkdf(key, salt, info, length)`: RFC 5869's extract then
+ * expand with SHA-256 (OpenSSL's default HKDF mode), `length` bytes (1 to
+ * 8160). An empty salt is RFC 5869's default, a hash-length of zeros. */
+int32_t lugha_rt_crypto_hkdf(const LughaArray *key, const LughaArray *salt,
+                             const LughaArray *info, int64_t length, LughaArray **out,
+                             LughaString **error) {
+    if (length < 1 || length > CRYPTO_MAX_HKDF) {
+        return net_error(error, "HKDF length must be from 1 to 8160");
+    }
+    ERR_clear_error();
+    EVP_KDF *kdf = EVP_KDF_fetch(NULL, "HKDF", NULL);
+    EVP_KDF_CTX *ctx = kdf == NULL ? NULL : EVP_KDF_CTX_new(kdf);
+    // The context holds its own reference to the algorithm.
+    EVP_KDF_free(kdf);
+    // OpenSSL's buffer rather than the collector's, so it can be wiped
+    // (`OPENSSL_clear_free`) once copied out.
+    unsigned char *okm = ctx == NULL ? NULL : OPENSSL_malloc((size_t)length);
+    OSSL_PARAM params[] = {
+        OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, "SHA256", 0),
+        crypto_octets(OSSL_KDF_PARAM_KEY, key),
+        crypto_octets(OSSL_KDF_PARAM_SALT, salt),
+        crypto_octets(OSSL_KDF_PARAM_INFO, info),
+        OSSL_PARAM_construct_end(),
+    };
+    int ok = okm != NULL && EVP_KDF_derive(ctx, okm, (size_t)length, params) == 1;
+    // Freeing the context clears OpenSSL's copies of the key, salt and info.
+    EVP_KDF_CTX_free(ctx);
+    if (ok) {
+        *out = bytes_of(okm, length);
+    }
+    OPENSSL_clear_free(okm, (size_t)length);
+    return ok ? 1 : crypto_error(error, "key derivation failed");
 }

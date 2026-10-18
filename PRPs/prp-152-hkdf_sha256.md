@@ -1,6 +1,6 @@
 ## FEATURE: `crypto.hkdf_sha256` — HKDF-SHA256 key derivation (RFC 5869) in `std.crypto`; milestone 120 (v17).
 
-**Status:** proposed 2026-10-18 (session 286), from the user's brief: Rapidkoi derives each app's Ed25519 seed from one master secret — `hkdf_sha256(master, salt, "rapidkoi identity v1" ‖ app identity, 32)` — so one backup restores every app's key. Crypto: the user reviews it before it merges (security rule).
+**Status:** approved and built 2026-10-18 (session 287), awaiting the user's review before merging; proposed in session 286, from the user's brief: Rapidkoi derives each app's Ed25519 seed from one master secret — `hkdf_sha256(master, salt, "rapidkoi identity v1" ‖ app identity, 32)` — so one backup restores every app's key. Crypto: the user reviews it before it merges (security rule).
 
 ## OBJECTIVE
 ```lugha
@@ -34,6 +34,9 @@ let public = crypto.ed25519_public(seed)?;
 - Decision 249; `unsafe` Rust; new crates.
 ### New dependencies
 - none (OpenSSL's `libcrypto` is already linked for `std.crypto`).
+
+## BUILT (session 287)
+- As planned. An empty key, salt or info goes to OpenSSL as a non-NULL pointer of length 0 (a NULL key would be "missing"); the output buffer is OpenSSL's (`OPENSSL_malloc`), wiped and freed with `OPENSSL_clear_free` after the copy. Tests: `tests/crypto.rs` `hkdf_sha256_matches_rfc_5869_and_checks_lengths`.
 
 ## ERROR HANDLING REQUIREMENTS
 - `BadLength` for a length outside 1–8160; `OpenSsl(reason)` if OpenSSL fails; nothing panics.
