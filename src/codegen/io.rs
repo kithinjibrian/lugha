@@ -83,6 +83,11 @@ impl<'ctx> Lowerer<'ctx> {
                     }
                 }
             }
+            "flush" => {
+                let flush = self.runtime("lugha_rt_flush", &[], None);
+                self.builder.build_call(flush, &[], "").expect(POSITIONED);
+                Ok(Value::Void)
+            }
             "c_write" => {
                 let cptr = Type::Handle("CPtr".to_string());
                 let bytes = Type::Array(Box::new(Type::U8));

@@ -45,6 +45,10 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         "seed" => (Vec::new(), Type::U64),
         // A monotonic clock in milliseconds, for `std.http`'s deadlines (v17, milestone 111).
         "now_ms" => (Vec::new(), Type::I64),
+        // `std.time` and `std.fs` (v17, milestone 115).
+        "wall_ms" => (Vec::new(), Type::I64),
+        "rename" => (vec![Type::String, Type::String], result(Type::I64)),
+        "chmod" => (vec![Type::String, Type::I64], result(Type::I64)),
         "env" => (vec![Type::String], Type::Option(Box::new(bytes()))),
         "cwd" => (Vec::new(), result(bytes())),
         // v16, milestone 68: `std.env.set_current_dir`.

@@ -48,6 +48,10 @@ let stamp = time.now_ms();                      // milliseconds since 1970
 ### New dependencies
 - none.
 
+## BUILT (session 278)
+- As planned.
+- Tests: `tests/fs_time.rs` (rename replacing a file, a missing source, a NUL byte; set_mode to 0600 read back by Rust, -1, 4096, a missing file; a cross-device rename from `/dev/shm`, which ran here; `flush` proven by the program still running when its unflushed-otherwise output arrives — checked to fail without `flush`; both clocks; E0302 for `fun flush`), the LSP intrinsics table test, `programs` (E0312's list with `std.time`).
+
 ## ERROR HANDLING REQUIREMENTS
 - `rename`, `set_mode`: `Err` with the system's message; `Err` for a NUL byte; `set_mode` `Err` for a mode outside 0–4095.
 - `flush`, `now_ms`, `monotonic_ms`: no errors.

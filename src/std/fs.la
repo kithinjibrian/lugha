@@ -71,3 +71,32 @@ public fun is_dir(path: string): bool = $os.stat_kind(path) == 2;
 
 /** Whether `path` is a regular file. */
 public fun is_file(path: string): bool = $os.stat_kind(path) == 1;
+
+/**
+ * Renames `from` to `to`, replacing `to` if it exists: in one step, so
+ * anyone opening `to` sees the old file or the new one, never neither. Only
+ * within one file system: a move to another is `Err` (`Invalid cross-device
+ * link`), never a copy. Write a new version beside the old, then rename it
+ * over, to save data safely.
+ * @param from the file to move
+ * @param to its new name
+ * @returns `Ok(())`, or `Err` with the system's message
+ */
+public fun rename(from: string, to: string): Result<(), string> {
+    $os.rename(from, to)?;
+    Ok(())
+}
+
+/**
+ * Sets a file's permission bits (`chmod`), following symbolic links. Lugha
+ * has no octal literals and a leading zero is still decimal (`0600` is six
+ * hundred), so write 0600 as `0b110_000_000` — each three binary digits one
+ * octal digit — or `0x180`.
+ * @param path the file
+ * @param mode from 0 to 4095 (0o7777): permissions, plus setuid, setgid and sticky
+ * @returns `Ok(())`, or `Err` with the reason
+ */
+public fun set_mode(path: string, mode: i64): Result<(), string> {
+    $os.chmod(path, mode)?;
+    Ok(())
+}

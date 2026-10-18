@@ -193,3 +193,9 @@ void lugha_rt_exit(int32_t code) {
     fflush(stdout);
     exit(code);
 }
+
+/* `flush()` (v17, milestone 115): what `print` wrote so far, out now. A
+ * failure is ignored, as `print`'s are. */
+void lugha_rt_flush(void) {
+    fflush(stdout);
+}

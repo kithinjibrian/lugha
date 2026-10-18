@@ -9,6 +9,12 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- Milestone 115 (PRP-147): `fs.rename(from, to)` (`rename(2)`: atomic within a file system, `Err` across devices), `fs.set_mode(path, mode)` (`chmod(2)`, modes 0–4095), the `flush()` built-in (stdout's buffer out now), and `std.time` (`now_ms` from the system clock, `monotonic_ms` for intervals)
+
+### Changed
+- `flush` is a built-in name: a program's own `fun flush` is E0302
+
+### Added
 - `std.toml`, milestone 114 (PRP-146): a read-only TOML 1.0 parser written in Lugha — `parse`, `parse_with`, `Value` (with the four date-time kinds), tables in file order, every definition rule, `TomlError { kind, detail, line, column }`, limits on size, depth and values, overflow-checked integers, `get` and `as_*` helpers; passes toml-test v2.2.0's 679 TOML 1.0 cases (vendored in `tests/fixtures/toml-test`, MIT)
 
 ### Fixed

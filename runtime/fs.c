@@ -103,3 +103,24 @@ int64_t lugha_rt_stat_kind(const LughaString *path) {
     }
     return S_ISDIR(info.st_mode) ? 2 : 3;
 }
+
+/* `$os.rename(from, to)` (v17, milestone 115): `rename(2)`, which replaces
+ * `to` atomically on one file system and refuses a move across devices. */
+int32_t lugha_rt_rename(const LughaString *from, const LughaString *to, LughaString **error) {
+    if (fs_has_nul(from) || fs_has_nul(to)) {
+        return fs_fail(error, "path contains a NUL byte");
+    }
+    return rename(from->bytes, to->bytes) == 0 ? 1 : fs_fail(error, strerror(errno));
+}
+
+/* `$os.chmod(path, mode)` (v17, milestone 115): `chmod(2)`, links followed;
+ * `mode` only the permission, setuid, setgid and sticky bits. */
+int32_t lugha_rt_chmod(const LughaString *path, int64_t mode, LughaString **error) {
+    if (fs_has_nul(path)) {
+        return fs_fail(error, "path contains a NUL byte");
+    }
+    if (mode < 0 || mode > 07777) {
+        return fs_fail(error, "mode must be from 0 to 4095 (0o7777)");
+    }
+    return chmod(path->bytes, (mode_t)mode) == 0 ? 1 : fs_fail(error, strerror(errno));
+}
