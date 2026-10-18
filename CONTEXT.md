@@ -8900,3 +8900,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-153 awaits approval.
+
+## SESSION 290 — 2026-10-19 — net.resolve and tls address: build (m121) — open
+Branch: prp-153-resolve_and_address
