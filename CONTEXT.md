@@ -8840,3 +8840,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-151 awaits approval.
+
+## SESSION 285 — 2026-10-18 — request_tls_with: build (m119) — open
+Branch: prp-151-request_tls_with
