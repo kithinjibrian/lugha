@@ -28,8 +28,23 @@ pub(super) fn helper_function(receiver: &Type, method: &str) -> Option<String> {
         "to_upper",
         "to_lower",
     ];
-    const OPTION: [&str; 5] = ["unwrap_or", "ok_or", "map", "is_some", "is_none"];
-    const RESULTS: [&str; 6] = ["unwrap_or", "ok", "map", "map_err", "is_ok", "is_err"];
+    const OPTION: [&str; 6] = [
+        "unwrap_or",
+        "ok_or",
+        "map",
+        "is_some",
+        "is_none",
+        "and_then",
+    ];
+    const RESULTS: [&str; 7] = [
+        "unwrap_or",
+        "ok",
+        "map",
+        "map_err",
+        "is_ok",
+        "is_err",
+        "and_then",
+    ];
     let name = match receiver {
         Type::Array(e) if method == "join" && **e == Type::String => "str_join".to_string(),
         // The iterator sources (v10).
@@ -223,5 +238,30 @@ mod tests {
         ok("fun map(x: i64): i64 = x;\nfun filter() {}\nfun main() { let n = map(1); filter(); }");
         let src = "fun main() { let xs = [1]; let a = map(xs, fun(x: i64): i64 = x); }";
         assert_eq!(errors(src)[0].0, "E0301");
+    }
+
+    #[test]
+    fn and_then_chains_steps_that_may_fail_v17() {
+        use crate::check::Type;
+        use crate::check::test_util::{errors, let_type};
+        let src = "fun half(n: i64): Option<i64> = if n % 2 == 0 { Some(n / 2) } else { None };\n\
+                   fun parse(s: string): Result<i64, string> = parse_i64(s).ok_or(\"bad\");\n\
+                   fun main() {\n\
+                       let a = Some(8).and_then(half);\n\
+                       let b = Some(8).and_then(fun(n) = Some(n > 1));\n\
+                       let r: Result<string, string> = Ok(\"4\");\n\
+                       let c = r.and_then(parse);\n\
+                   }";
+        assert_eq!(let_type(src, "a"), Type::Option(Box::new(Type::I64)));
+        assert_eq!(let_type(src, "b"), Type::Option(Box::new(Type::Bool)));
+        assert_eq!(let_type(src, "c").to_string(), "Result<i64, string>");
+        assert_eq!(
+            errors("fun main() { let a = Some(1).and_then(fun(n: i64): i64 = n); }")[0].0,
+            "E0403"
+        );
+        assert_eq!(
+            errors("fun f(n: i64): Result<i64, i64> = Ok(n);\nfun main() { let r: Result<i64, string> = Ok(1); let c = r.and_then(f); }")[0].0,
+            "E0403"
+        );
     }
 }

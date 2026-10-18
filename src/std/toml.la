@@ -44,7 +44,7 @@ public fun get(table: Map<string, Value>, path: string): Option<Value> {
     Some(here)
 }
 
-/** The string, if `v` is one. */
+/** The string, if `v` is one: `toml.get(doc, "app.name").and_then(toml.as_text)`. */
 public fun as_text(v: Value): Option<string> = match v { Text(s) => Some(s), _ => None };
 
 /** The integer, if `v` is one. */

@@ -2135,6 +2135,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-149 (session 281; approved 282). The lexer's `radix` reads `0o` (8) as it reads `0x`/`0b`; a decimal integer starting with `0` and longer than one character gets W0107 (a lexer warning, returned with the tokens) naming the `0o` spelling. A warning, not an error, so `007`-style programs keep compiling. `fs.set_mode`'s docs use `0o600`.
 
+### 204. `and_then` — milestone 118 (PRP-150)
+
+**Decision:** as PRP-150 (session 281; approved 282, built 283). `option_and_then` and `result_and_then` at the end of `src/prelude/maps.la` (the last prelude file, so no earlier prelude line — and no panic location tests expect — moves), listed in `check/helpers.rs` and the completion candidates. To make untyped closures work (`fun(n) = Some(n > 1)`), `check/closures.rs` now treats an expected result that holds an unknown (`Error`) part as not known, inferring it from the body.
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

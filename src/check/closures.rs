@@ -42,7 +42,9 @@ impl Checker {
         }
         let ret = match (&c.ret, &expected) {
             (Some(t), _) => Some(self.resolve(t)),
-            (None, Some((_, r))) if *r != Type::Error => Some(r.clone()),
+            // A result only partly known (`Option<U>` with `U` still to infer,
+            // as `and_then` passes it, v17) is inferred from the body too.
+            (None, Some((_, r))) if !unknown(r) => Some(r.clone()),
             _ => None,
         };
         let saved = (self.ret.clone(), self.loops, self.dead);
@@ -110,6 +112,22 @@ impl Checker {
         }
         self.report(errors::cannot_infer_return(span));
         true
+    }
+}
+
+/// True if `ty` is, or holds, the "not known yet" `Error` a generic call's
+/// hint puts where a type parameter isn't bound.
+fn unknown(ty: &Type) -> bool {
+    match ty {
+        Type::Error => true,
+        Type::Array(t) | Type::Option(t) | Type::Ref(t) | Type::Task(t) | Type::Chan(t) => {
+            unknown(t)
+        }
+        Type::Struct(_, args) | Type::Enum(_, args) | Type::Interface(_, args) => {
+            args.iter().any(unknown)
+        }
+        Type::Fun(ps, r) => ps.iter().any(unknown) || unknown(r),
+        _ => false,
     }
 }
 
