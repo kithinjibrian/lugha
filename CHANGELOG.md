@@ -9,6 +9,12 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `and_then`, milestone 118 (PRP-150): `o.and_then(f)` on `Option` (`f: fun(T): Option<U>`) and `r.and_then(f)` on `Result` (`f: fun(T): Result<U, E>`, an `Err` passed through), written in Lugha at the prelude's end; `toml.get(doc, "app.name").and_then(toml.as_text)` works
+
+### Changed
+- A closure whose expected result is only partly known (`Option<U>` with `U` still to infer) now takes its result type from its body, as one with a wholly unknown result did: `Some(3).and_then(fun(n) = Some(n * 10))` needs no annotation
+
+### Added
 - Octal literals, milestone 117 (PRP-149): `0o600` (underscores between digits, as `0x`/`0b`); a leading zero (`0600`, `007`) stays decimal and warns W0107 with the octal spelling; VS Code 0.20.0 highlights `0o…`
 
 ### Added

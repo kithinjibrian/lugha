@@ -26,6 +26,10 @@ let port = read_file("port").and_then(fun(t: string): Result<i64, string> = pars
 ### New dependencies
 - none.
 
+## BUILT (session 283)
+- As planned, plus one checker change the untyped-closure case needed: `check/closures.rs` used an expected result type unless it was wholly unknown, so `Option<unknown>` rejected the body's `Option<bool>`; a partly unknown expected result is now inferred from the body, as `map`'s wholly unknown one always was. Every suite stayed green (lib, `programs`, `spec`, `codegen`).
+- Tests: checker units in `check/helpers.rs` (both, with a named function and an untyped closure; E0403 for a non-`Option` result and for a different error type), `tests/programs/m118/and_then.la` (chains, `None`/`Err` passed through, `std.toml`).
+
 ## ERROR HANDLING REQUIREMENTS
 - Type errors as for `map`: `f` returning another type than `Option<U>` / `Result<U, E>` with the same `E` is E0403.
 

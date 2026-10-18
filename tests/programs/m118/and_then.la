@@ -1,0 +1,26 @@
+// `and_then` on `Option` and `Result` (v17, milestone 118).
+import std.toml;
+
+fun half(n: i64): Option<i64> = if n % 2 == 0 { Some(n / 2) } else { None };
+
+fun number(s: string): Result<i64, string> = match parse_i64(s.trim()) {
+    Some(n) => Ok(n),
+    None => Err("not a number: {s}"),
+};
+
+fun main() {
+    println(Some(12).and_then(half).and_then(half));
+    println(Some(6).and_then(half).and_then(half));
+    let none: Option<i64> = None;
+    println(none.and_then(half));
+    println(Some(3).and_then(fun(n) = Some(n * 10)));
+    let good: Result<string, string> = Ok(" 42 ");
+    let bad: Result<string, string> = Ok("x");
+    let failed: Result<string, string> = Err("no file");
+    println(good.and_then(number));
+    println(bad.and_then(number));
+    println(failed.and_then(number));
+    let doc = toml.parse("[app]\nname = \"koi\"\nport = 80").unwrap();
+    println(toml.get(doc, "app.name").and_then(toml.as_text));
+    println(toml.get(doc, "app.port").and_then(toml.as_text));
+}

@@ -54,7 +54,7 @@ pub(super) const CANDIDATES: [&str; 47] = [
 ];
 
 /// More helper names, kept apart so each list stays readable.
-pub(super) const MORE_CANDIDATES: [&str; 18] = [
+pub(super) const MORE_CANDIDATES: [&str; 19] = [
     "is_none",
     "ok",
     "map_err",
@@ -75,4 +75,6 @@ pub(super) const MORE_CANDIDATES: [&str; 18] = [
     "close",
     // A float's bits (v17, milestone 108).
     "to_bits",
+    // `Option` and `Result` (v17, milestone 118).
+    "and_then",
 ];
