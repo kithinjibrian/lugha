@@ -8888,3 +8888,6 @@ Branch: fix-lsp-alone-cycle
 
 ### STILL OPEN AT CLOSE
 - None.
+
+## SESSION 289 — 2026-10-19 — net.resolve and tls address: PRP — open
+Branch: main
