@@ -2143,6 +2143,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-151 (session 284; approved and built 285). `request_tls_with` in `src/std/http.la` is `exchange(…, limits, opts.ca_file)` after `opts.timeout_ms > 0` replaces `limits.timeout_ms`; `request_tls` keeps its 16 MiB default. Tested in `tests/tls.rs` (17 MB body allowed and refused, untrusted CA, the timeout override).
 
+### 206. `hkdf_sha256` — milestone 120 (PRP-152)
+
+**Decision:** as PRP-152 (session 286; approved and built 287, reviewed by the user before merging). `lugha_rt_crypto_hkdf` in `runtime/crypto.c`: `EVP_KDF_fetch("HKDF")`, digest SHA256, key/salt/info as octet strings (an empty array passed as a non-NULL pointer of length 0, since OpenSSL treats a NULL key as missing), output in an `OPENSSL_malloc` buffer copied out then `OPENSSL_clear_free`d. Length checked in Lugha (`BadLength`) and again in C. RFC 5869 A.1–A.3 pass in `tests/crypto.rs`.
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

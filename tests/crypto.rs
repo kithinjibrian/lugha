@@ -251,3 +251,48 @@ fun main() {
 ");
     assert_eq!(out, "true\n");
 }
+
+#[test]
+fn hkdf_sha256_matches_rfc_5869_and_checks_lengths() {
+    let out = run("fun span(from: i64, to: i64): u8[] {
+    let mut out: u8[] = [];
+    for i in from..to {
+        out.push(i as u8);
+    }
+    out
+}
+
+fun derive(key: u8[], salt: u8[], info: u8[], length: i64): string {
+    match crypto.hkdf_sha256(key, salt, info, length) {
+        Ok(okm) => hex(okm),
+        Err(e) => e.message(),
+    }
+}
+
+fun main() {
+    let ikm = [11 as u8; 22];
+    println(derive(ikm, span(0, 13), span(240, 250), 42));
+    println(derive(span(0, 80), span(96, 176), span(176, 256), 82));
+    println(derive(ikm, [], [], 42));
+    println(derive(ikm, [], span(240, 250), 32) == derive(ikm, [0 as u8; 32], span(240, 250), 32));
+    let longest = crypto.hkdf_sha256(ikm, [], [], 8160).unwrap();
+    for n of [1, 32, 42, 8160] {
+        let okm = crypto.hkdf_sha256(ikm, [], [], n).unwrap();
+        println(\"{okm.len} {hex(okm) == hex(longest).slice(0, 2 * n)}\");
+    }
+    println(derive(ikm, [], [], 0));
+    println(derive(ikm, [], [], 8161));
+}
+");
+    assert_eq!(
+        out,
+        "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865\n\
+         b11e398dc80327a1c8e7f78c596a49344f012eda2d4efad8a050cc4c19afa97c\
+         59045a99cac7827271cb41c65e590e09da3275600c2f09b8367793a9aca3db71\
+         cc30c58179ec3e87c14c01d5c1f3434f1d87\n\
+         8da4e775a563c18f715f802a063c5a31b8a11f5c5ee1879ec3454e5f3c738d2d9d201395faa4b61a96c8\n\
+         true\n1 true\n32 true\n42 true\n8160 true\n\
+         HKDF length (from 1 to): wanted 8160 bytes, got 0\n\
+         HKDF length (from 1 to): wanted 8160 bytes, got 8161\n"
+    );
+}

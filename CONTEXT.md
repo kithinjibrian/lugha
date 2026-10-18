@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**PRP-152 proposed (milestone 120, `hkdf_sha256`), awaiting approval.** **v17: milestones 91–119 done** (`m119` request_tls_with; `m118` and_then; `m117` octal literals; `m116` fs.sync; `m115` fs.rename, fs.set_mode, flush, std.time; `m114` std.toml; `m113` std.crypto; `m112` TLS; `m111` std.http; `m110` std.net; `m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**PRP-152 (milestone 120, `hkdf_sha256`) built on branch `prp-152-hkdf_sha256`, PR open, awaiting the user's crypto review; merge then tag `m120`.** **v17: milestones 91–119 done** (`m119` request_tls_with; `m118` and_then; `m117` octal literals; `m116` fs.sync; `m115` fs.rename, fs.set_mode, flush, std.time; `m114` std.toml; `m113` std.crypto; `m112` TLS; `m111` std.http; `m110` std.net; `m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -8864,3 +8864,15 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-152 awaits approval.
+
+## SESSION 287 — 2026-10-18 — hkdf_sha256: build (m120) — closed
+Branch: prp-152-hkdf_sha256
+
+### DONE
+- PRP-152 approved and built: `crypto.hkdf_sha256` (`runtime/crypto.c`, `$os.crypto_hkdf`, `src/std/crypto.la`), RFC 5869 A.1–A.3 and length tests in `tests/crypto.rs`, spec, CHANGELOG. PR opened, not merged.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user's crypto review of the PR; then merge and tag `m120`.

@@ -119,6 +119,7 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         "crypto_ed25519_verify" => (vec![bytes(), bytes(), bytes()], Type::I64),
         "crypto_random" => (vec![Type::I64], result(bytes())),
         "crypto_equal" => (vec![bytes(), bytes()], Type::I64),
+        "crypto_hkdf" => (vec![bytes(), bytes(), bytes(), Type::I64], result(bytes())),
         _ => return None,
     })
 }
