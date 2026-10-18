@@ -1,0 +1,79 @@
+/**
+ * std.toml: a read-only TOML 1.0 parser (v17), like Python's `tomllib`.
+ * `parse(text)` gives the document's root table, its keys in the file's
+ * order. Configuration files come from anywhere, so the text is read within
+ * limits — its size, nesting depth and count of values (`Limits`) — and
+ * every mistake, contradiction or overflow is a `TomlError` with its line
+ * and column; nothing panics on any input. To read a file, pass
+ * `read_file(path)`'s text.
+ */
+public import std.$toml_value { * };
+import std.$toml_parse { parse_document };
+
+/**
+ * Parses a TOML 1.0 document with the default limits.
+ * @param text the document
+ * @returns its root table, or the first mistake in it
+ */
+public fun parse(text: string): Result<Map<string, Value>, TomlError> = parse_document(text, limits());
+
+/**
+ * `parse` with other limits.
+ * @param text the document
+ * @param limits what to accept
+ */
+public fun parse_with(text: string, limits: Limits): Result<Map<string, Value>, TomlError> = parse_document(text, limits);
+
+/**
+ * The value at a dotted path through nested tables: `get(doc, "app.name")`.
+ * Path segments aren't parsed as TOML keys: reach a key holding a dot
+ * through the maps themselves.
+ * @param table where to start
+ * @param path keys joined with `.`
+ */
+public fun get(table: Map<string, Value>, path: string): Option<Value> {
+    let mut here = Value.Table(table);
+    for key of path.split(".") {
+        here = match here {
+            Table(t) => t.get(key)?,
+            _ => {
+                return None;
+            }
+        };
+    }
+    Some(here)
+}
+
+/** The string, if `v` is one. */
+public fun as_text(v: Value): Option<string> = match v { Text(s) => Some(s), _ => None };
+
+/** The integer, if `v` is one. */
+public fun as_i64(v: Value): Option<i64> = match v { Integer(n) => Some(n), _ => None };
+
+/** The float, if `v` is one or an integer (widened). */
+public fun as_f64(v: Value): Option<f64> = match v {
+    Float(x) => Some(x),
+    Integer(n) => Some(n as f64),
+    _ => None,
+};
+
+/** The boolean, if `v` is one. */
+public fun as_bool(v: Value): Option<bool> = match v { Boolean(b) => Some(b), _ => None };
+
+/** The array's values, if `v` is an array. */
+public fun as_array(v: Value): Option<Value[]> = match v { Array(xs) => Some(xs), _ => None };
+
+/** The table, if `v` is one. */
+public fun as_table(v: Value): Option<Map<string, Value>> = match v { Table(t) => Some(t), _ => None };
+
+/**
+ * Any of the four date-time kinds as its parts: the date, the time and the
+ * offset in minutes, each there only if written.
+ */
+public fun as_date_time(v: Value): Option<(Option<Date>, Option<Time>, Option<i64>)> = match v {
+    OffsetDateTime(d, t, o) => Some((Some(d), Some(t), Some(o))),
+    LocalDateTime(d, t) => Some((Some(d), Some(t), None)),
+    LocalDate(d) => Some((Some(d), None, None)),
+    LocalTime(t) => Some((None, Some(t), None)),
+    _ => None,
+};

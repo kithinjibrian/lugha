@@ -1,0 +1,343 @@
+/**
+ * std.$toml_scan: TOML's tokens (v17) — keys, strings, numbers and
+ * date-times — read from a text's bytes. Every function takes the bytes and
+ * a position and gives the value and the position after it, or an `Oops` at
+ * the byte where the text went wrong. Nothing here indexes past the end or
+ * overflows. Bundled sources only; see `std.toml`.
+ */
+import std.$toml_value { Date, ErrorKind, Oops, Time, Value, oops };
+import std.$toml_strings {
+    at, bare, control, cut, digit, hex_digit, scan_basic, scan_literal, skip_ws, syntax, text, ws,
+};
+
+/** A comment at `i` (`#`), to its line's end; control characters refused. */
+fun skip_comment(b: u8[], i: i64): Result<i64, Oops> {
+    let mut j = i + 1;
+    while j < b.len && b[j] != 10 {
+        if b[j] == 13 && at(b, j + 1) == 10 {
+            return Ok(j);
+        }
+        if control(b[j]) {
+            return Err(syntax("a control character in a comment", j));
+        }
+        j += 1;
+    }
+    Ok(j)
+}
+
+/** A line end at `i` (`LF` or `CRLF`), or the end of the text. */
+fun line_end(b: u8[], i: i64): Result<i64, Oops> {
+    if i >= b.len {
+        return Ok(i);
+    }
+    if b[i] == 10 {
+        return Ok(i + 1);
+    }
+    if b[i] == 13 && at(b, i + 1) == 10 {
+        return Ok(i + 2);
+    }
+    Err(syntax("expected the end of the line", i))
+}
+
+/** A key, dotted or not, at `i`: its parts. */
+fun scan_key(b: u8[], i: i64, depth: i64): Result<(string[], i64), Oops> {
+    let mut parts: string[] = [];
+    let mut j = i;
+    while true {
+        if parts.len >= depth {
+            return Err(oops(ErrorKind.Limit, "a key with more than {depth} parts", j));
+        }
+        let (part, next) = simple_key(b, j)?;
+        parts.push(part);
+        j = skip_ws(b, next);
+        if at(b, j) != 46 {
+            return Ok((parts, j));
+        }
+        j = skip_ws(b, j + 1);
+    }
+    Ok((parts, j))
+}
+
+fun simple_key(b: u8[], i: i64): Result<(string, i64), Oops> {
+    let c = at(b, i);
+    if c == 34 {
+        if at(b, i + 1) == 34 && at(b, i + 2) == 34 {
+            return Err(syntax("a multi-line string can't be a key", i));
+        }
+        return scan_basic(b, i);
+    }
+    if c == 39 {
+        if at(b, i + 1) == 39 && at(b, i + 2) == 39 {
+            return Err(syntax("a multi-line string can't be a key", i));
+        }
+        return scan_literal(b, i);
+    }
+    let mut j = i;
+    while j < b.len && bare(b[j]) {
+        j += 1;
+    }
+    if j == i {
+        return Err(syntax("expected a key", i));
+    }
+    Ok((text(cut(b, i, j)), j))
+}
+
+fun word(b: u8[], i: i64, w: string): bool {
+    let wb = w.to_bytes();
+    for k in 0..wb.len {
+        if at(b, i + k) != wb[k] {
+            return false;
+        }
+    }
+    !bare(at(b, i + wb.len))
+}
+
+fun token_char(c: u8): bool = bare(c) || c == 43 || c == 46 || c == 58;
+
+/** A boolean, number or date-time at `i`. */
+fun scan_scalar(b: u8[], i: i64): Result<(Value, i64), Oops> {
+    if word(b, i, "true") {
+        return Ok((Value.Boolean(true), i + 4));
+    }
+    if word(b, i, "false") {
+        return Ok((Value.Boolean(false), i + 5));
+    }
+    let mut j = i;
+    while j < b.len && token_char(b[j]) {
+        j += 1;
+    }
+    // `1979-05-27 07:32:00`: a space may join a date and its time.
+    if j - i == 10 && at(b, j) == 32 && digit(at(b, j + 1)) && at(b, i + 4) == 45 {
+        j += 1;
+        while j < b.len && token_char(b[j]) {
+            j += 1;
+        }
+    }
+    if j == i {
+        return Err(syntax("expected a value", i));
+    }
+    let t = cut(b, i, j);
+    let value = if at(t, 4) == 45 || at(t, 2) == 58 {
+        date_time(t, i)?
+    } else {
+        number(t, i)?
+    };
+    Ok((value, j))
+}
+
+/** An integer or float token (starting at byte `i` of the text). */
+fun number(t: u8[], i: i64): Result<Value, Oops> {
+    let neg = t[0] == 45;
+    let signed = neg || t[0] == 43;
+    let body = if signed { cut(t, 1, t.len) } else { t };
+    let s = text(body);
+    if s == "inf" || s == "nan" {
+        let zero = 0.0;
+        let v = if s == "nan" { zero / zero } else { 1.0 / zero };
+        return Ok(Value.Float(if neg && s == "inf" { -v } else { v }));
+    }
+    if body.len > 2 && body[0] == 48 && (body[1] == 120 || body[1] == 111 || body[1] == 98) {
+        if signed {
+            return Err(syntax("a sign before a 0x, 0o or 0b integer", i));
+        }
+        let radix = if body[1] == 120 { 16 } else if body[1] == 111 { 8 } else { 2 };
+        return based(cut(body, 2, body.len), radix, i);
+    }
+    let mut float = false;
+    for c of body {
+        if c == 46 || c == 101 || c == 69 {
+            float = true;
+        }
+    }
+    if float {
+        return floating(body, neg, i);
+    }
+    let digits = plain_digits(body, 10, i)?;
+    if digits.len > 1 && digits[0] == 48 {
+        return Err(syntax("a leading zero in an integer", i));
+    }
+    let mut magnitude: u64 = 0;
+    for d of digits {
+        let next = match magnitude.checked_mul(10) {
+            Some(m) => m.checked_add((d - 48) as u64),
+            None => None,
+        };
+        magnitude = match next {
+            Some(m) => m,
+            None => {
+                return Err(oops(ErrorKind.Overflow, "an integer too large for i64: {text(t)}", i));
+            }
+        };
+    }
+    let limit: u64 = 9223372036854775807;
+    if neg && magnitude == limit + 1 {
+        return Ok(Value.Integer(i64.MIN));
+    }
+    if magnitude > limit {
+        return Err(oops(ErrorKind.Overflow, "an integer too large for i64: {text(t)}", i));
+    }
+    Ok(Value.Integer(if neg { -(magnitude as i64) } else { magnitude as i64 }))
+}
+
+/** `t`'s digits of `radix`, with underscores only between digits. */
+fun plain_digits(t: u8[], radix: i64, i: i64): Result<u8[], Oops> {
+    let mut out: u8[] = [];
+    for k in 0..t.len {
+        let c = t[k];
+        if c == 95 {
+            let before = k > 0 && hex_digit(t[k - 1]) >= 0 && hex_digit(t[k - 1]) < radix;
+            let after = k + 1 < t.len && hex_digit(t[k + 1]) >= 0 && hex_digit(t[k + 1]) < radix;
+            if !before || !after {
+                return Err(syntax("an underscore must be between digits", i));
+            }
+        } else if hex_digit(c) >= 0 && hex_digit(c) < radix && !(radix == 10 && !digit(c)) {
+            out.push(c);
+        } else {
+            return Err(syntax("not a number: {text(t)}", i));
+        }
+    }
+    if out.len == 0 {
+        return Err(syntax("not a number: {text(t)}", i));
+    }
+    Ok(out)
+}
+
+fun based(t: u8[], radix: i64, i: i64): Result<Value, Oops> {
+    let digits = plain_digits(t, radix, i)?;
+    let mut n = 0;
+    for c of digits {
+        let d = hex_digit(c);
+        if n > (9223372036854775807 - d) / radix {
+            return Err(oops(ErrorKind.Overflow, "an integer too large for i64", i));
+        }
+        n = n * radix + d;
+    }
+    Ok(Value.Integer(n))
+}
+
+/** A float: an integer part, then `.digits`, an exponent, or both. */
+fun floating(body: u8[], neg: bool, i: i64): Result<Value, Oops> {
+    let mut clean: u8[] = [];
+    let mut k = 0;
+    let int_part = section(body, k, i)?;
+    if int_part.len > 1 && int_part[0] == 48 {
+        return Err(syntax("a leading zero in a float", i));
+    }
+    k = k + span(body, k);
+    for c of int_part {
+        clean.push(c);
+    }
+    if at(body, k) == 46 {
+        clean.push(46);
+        let frac = section(body, k + 1, i)?;
+        k = k + 1 + span(body, k + 1);
+        for c of frac {
+            clean.push(c);
+        }
+    }
+    if at(body, k) == 101 || at(body, k) == 69 {
+        clean.push(101);
+        k += 1;
+        if at(body, k) == 43 || at(body, k) == 45 {
+            clean.push(body[k]);
+            k += 1;
+        }
+        let exp = section(body, k, i)?;
+        k = k + span(body, k);
+        for c of exp {
+            clean.push(c);
+        }
+    }
+    if k != body.len {
+        return Err(syntax("not a float: {text(body)}", i));
+    }
+    match parse_f64(text(clean)) {
+        Some(v) => Ok(Value.Float(if neg { -v } else { v })),
+        None => Err(syntax("not a float: {text(body)}", i)),
+    }
+}
+
+/** How many digit-or-underscore bytes start at `k`. */
+fun span(b: u8[], k: i64): i64 {
+    let mut j = k;
+    while j < b.len && (digit(b[j]) || b[j] == 95) {
+        j += 1;
+    }
+    j - k
+}
+
+fun section(b: u8[], k: i64, i: i64): Result<u8[], Oops> = plain_digits(cut(b, k, k + span(b, k)), 10, i);
+
+fun two(t: u8[], k: i64): i64 = if digit(at(t, k)) && digit(at(t, k + 1)) { ((t[k] - 48) as i64) * 10 + (t[k + 1] - 48) as i64 } else { -1 };
+
+fun bad_time(i: i64): Oops = oops(ErrorKind.BadValue, "an invalid date or time", i);
+
+/** A date-time, date or time token. */
+fun date_time(t: u8[], i: i64): Result<Value, Oops> {
+    if at(t, 2) == 58 {
+        let (time, end) = clock(t, 0, i)?;
+        if end != t.len {
+            return Err(bad_time(i));
+        }
+        return Ok(Value.LocalTime(time));
+    }
+    let year = two(t, 0) * 100 + two(t, 2);
+    let (month, day) = (two(t, 5), two(t, 8));
+    if two(t, 0) < 0 || two(t, 2) < 0 || at(t, 7) != 45 || month < 1 || month > 12 || day < 1 || day > days_in(year, month) {
+        return Err(bad_time(i));
+    }
+    let date = Date { year: year, month: month, day: day };
+    if t.len == 10 {
+        return Ok(Value.LocalDate(date));
+    }
+    let sep = at(t, 10);
+    if sep != 84 && sep != 116 && sep != 32 {
+        return Err(bad_time(i));
+    }
+    let (time, end) = clock(t, 11, i)?;
+    if end == t.len {
+        return Ok(Value.LocalDateTime(date, time));
+    }
+    let z = t[end];
+    if (z == 90 || z == 122) && end + 1 == t.len {
+        return Ok(Value.OffsetDateTime(date, time, 0));
+    }
+    let (oh, om) = (two(t, end + 1), two(t, end + 4));
+    if (z == 43 || z == 45) && end + 6 == t.len && at(t, end + 3) == 58 && oh >= 0 && oh < 24 && om >= 0 && om < 60 {
+        let offset = oh * 60 + om;
+        return Ok(Value.OffsetDateTime(date, time, if z == 45 { -offset } else { offset }));
+    }
+    Err(bad_time(i))
+}
+
+/** `HH:MM:SS(.fraction)` at `k`: the time and the position after it. */
+fun clock(t: u8[], k: i64, i: i64): Result<(Time, i64), Oops> {
+    let (h, m, s) = (two(t, k), two(t, k + 3), two(t, k + 6));
+    if h < 0 || h > 23 || m < 0 || m > 59 || s < 0 || s > 60 || at(t, k + 2) != 58 || at(t, k + 5) != 58 {
+        return Err(bad_time(i));
+    }
+    let mut j = k + 8;
+    let mut nanos = 0;
+    if at(t, j) == 46 {
+        j += 1;
+        let start = j;
+        let mut scale = 100000000;
+        while digit(at(t, j)) {
+            nanos = nanos + ((t[j] - 48) as i64) * scale;
+            scale = scale / 10;
+            j += 1;
+        }
+        if j == start {
+            return Err(bad_time(i));
+        }
+    }
+    Ok((Time { hour: h, minute: m, second: s, nanosecond: nanos }, j))
+}
+
+fun days_in(year: i64, month: i64): i64 {
+    if month == 2 {
+        let leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+        return if leap { 29 } else { 28 };
+    }
+    if month == 4 || month == 6 || month == 9 || month == 11 { 30 } else { 31 }
+}

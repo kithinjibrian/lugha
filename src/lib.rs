@@ -34,8 +34,14 @@ pub const STD: &[(&str, &str)] = &[
     ("tls", include_str!("std/tls.la")),
     ("crypto", include_str!("std/crypto.la")),
     ("http", include_str!("std/http.la")),
+    ("toml", include_str!("std/toml.la")),
     // Internal to `std.http`: a `$` name no program can write.
     ("$http_wire", include_str!("std/http_wire.la")),
+    // Internal to `std.toml`.
+    ("$toml_value", include_str!("std/toml_value.la")),
+    ("$toml_strings", include_str!("std/toml_strings.la")),
+    ("$toml_scan", include_str!("std/toml_scan.la")),
+    ("$toml_parse", include_str!("std/toml_parse.la")),
 ];
 
 /// The prelude: the array helpers, written in Lugha and loaded with every

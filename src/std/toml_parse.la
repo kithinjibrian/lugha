@@ -1,0 +1,457 @@
+/**
+ * std.$toml_parse: a TOML 1.0 document's structure (v17) — lines, headers,
+ * arrays, inline tables and the rules against defining anything twice — over
+ * `std.$toml_scan`'s tokens. Tables are built in an arena of nodes and turned
+ * into `Value`s at the end; the definition rules follow CPython's `tomllib`
+ * (flags per key path: defined by a header, or frozen as an inline table or
+ * array). Bundled sources only; see `std.toml`.
+ */
+import std.$toml_value { ErrorKind, Limits, Oops, TomlError, Value, oops };
+import std.$toml_scan { line_end, scan_key, scan_scalar, skip_comment };
+import std.$toml_strings { at, scan_basic, scan_literal, scan_multi, skip_ws };
+
+/** A key holding a value, a table (a node), or an array of tables (a list). */
+enum Slot {
+    Val(Value),
+    Nest(i64),
+    List(i64),
+}
+
+struct Node {
+    entries: Map<string, Slot>,
+}
+
+/** A key path's flags (`EXPLICIT`, `FROZEN`), for itself and, `recursive`, everything under it. */
+struct Flag {
+    own: i64,
+    recursive: i64,
+    kids: Map<string, i64>,
+}
+
+/** Defined by a `[header]`, or a table dotted keys opened in an earlier section. */
+const EXPLICIT: i64 = 1;
+/** An inline table or array: nothing may be added inside. */
+const FROZEN: i64 = 2;
+
+struct Parser {
+    b: u8[],
+    pos: i64,
+    limits: Limits,
+    values: i64,
+    nodes: Node[],
+    lists: i64[][],
+    flags: Flag[],
+    pending: string[][],
+    header: string[],
+}
+
+/** The root table of `text`, or the first mistake in it. */
+fun parse_document(text: string, limits: Limits): Result<Map<string, Value>, TomlError> {
+    let b = text.to_bytes();
+    if b.len > limits.bytes {
+        return Err(TomlError { kind: ErrorKind.Limit, detail: "a text larger than {limits.bytes} bytes", line: 1, column: 1 });
+    }
+    let root = Flag { own: 0, recursive: 0, kids: #{} };
+    let mut p = Parser {
+        b: b,
+        pos: 0,
+        limits: limits,
+        values: 0,
+        nodes: [Node { entries: #{} }],
+        lists: [],
+        flags: [root],
+        pending: [],
+        header: [],
+    };
+    match p.document() {
+        Ok(_) => Ok(p.table(0)),
+        Err(o) => Err(locate(p.b, o)),
+    }
+}
+
+/** `o` with the line and column of its byte (columns count characters). */
+fun locate(b: u8[], o: Oops): TomlError {
+    let mut line = 1;
+    let mut column = 1;
+    let end = if o.at < b.len { o.at } else { b.len };
+    for k in 0..end {
+        if b[k] == 10 {
+            line += 1;
+            column = 1;
+        } else if b[k] < 128 || b[k] >= 192 {
+            column += 1;
+        }
+    }
+    TomlError { kind: o.kind, detail: o.detail, line: line, column: column }
+}
+
+fun dotted(path: string[]): string = path.join(".");
+
+impl Parser {
+    fun document(mut self): Result<(), Oops> {
+        // A byte order mark may open the text.
+        if at(self.b, 0) == 239 && at(self.b, 1) == 187 && at(self.b, 2) == 191 {
+            self.pos = 3;
+        }
+        while self.pos < self.b.len {
+            self.pos = skip_ws(self.b, self.pos);
+            let c = at(self.b, self.pos);
+            if c == 91 {
+                self.header_line()?;
+                self.rest_of_line()?;
+            } else if c != 35 && c != 10 && c != 13 && self.pos < self.b.len {
+                self.key_value_line()?;
+                self.rest_of_line()?;
+            } else {
+                self.rest_of_line()?;
+            }
+        }
+        Ok(())
+    }
+
+    /** Spaces, a comment, then the line's end. */
+    fun rest_of_line(mut self): Result<(), Oops> {
+        self.pos = skip_ws(self.b, self.pos);
+        if at(self.b, self.pos) == 35 {
+            self.pos = skip_comment(self.b, self.pos)?;
+        }
+        self.pos = line_end(self.b, self.pos)?;
+        Ok(())
+    }
+
+    fun count(mut self, at_byte: i64): Result<(), Oops> {
+        self.values += 1;
+        if self.values > self.limits.values {
+            return Err(oops(ErrorKind.Limit, "more than {self.limits.values} values", at_byte));
+        }
+        Ok(())
+    }
+
+    /** `[table]` or `[[array.of.tables]]`. */
+    fun header_line(mut self): Result<(), Oops> {
+        let start = self.pos;
+        let double = at(self.b, start + 1) == 91;
+        let open = if double { start + 2 } else { start + 1 };
+        let (key, after) = scan_key(self.b, skip_ws(self.b, open), self.limits.depth)?;
+        let close = after;
+        if at(self.b, close) != 93 || (double && at(self.b, close + 1) != 93) {
+            return Err(oops(ErrorKind.Syntax, if double { "expected ']]' closing the header" } else { "expected ']' closing the header" }, close));
+        }
+        self.pos = if double { close + 2 } else { close + 1 };
+        self.count(start)?;
+        self.finalize_pending();
+        if double {
+            if self.flag_is(key, FROZEN) {
+                return Err(oops(ErrorKind.Immutable, "an array that isn't an array of tables extended: {dotted(key)}", start));
+            }
+            self.flag_unset_all(key);
+            self.flag_set(key, EXPLICIT, false);
+            if !self.append_to_list(key) {
+                return Err(oops(ErrorKind.Duplicate, "a key defined twice: {dotted(key)}", start));
+            }
+        } else {
+            if self.flag_is(key, EXPLICIT) || self.flag_is(key, FROZEN) {
+                return Err(oops(ErrorKind.Duplicate, "a table defined twice: {dotted(key)}", start));
+            }
+            self.flag_set(key, EXPLICIT, false);
+            if self.nest(key) < 0 {
+                return Err(oops(ErrorKind.Duplicate, "a key defined twice: {dotted(key)}", start));
+            }
+        }
+        self.header = key;
+        Ok(())
+    }
+
+    /** `key = value` in the current section. */
+    fun key_value_line(mut self): Result<(), Oops> {
+        let start = self.pos;
+        let (key, after) = scan_key(self.b, start, self.limits.depth)?;
+        if at(self.b, after) != 61 {
+            return Err(oops(ErrorKind.Syntax, "expected '=' after a key", after));
+        }
+        self.pos = skip_ws(self.b, after + 1);
+        let value = self.value(0)?;
+        let mut full = self.header;
+        for part of key {
+            full.push(part);
+        }
+        let stem = key[key.len - 1];
+        let mut parent = self.header;
+        for i in 0..key.len - 1 {
+            parent.push(key[i]);
+            // A table dotted keys open can't be one a header defined, nor be
+            // reopened by a later section.
+            if self.flag_is(parent, EXPLICIT) {
+                return Err(oops(ErrorKind.Duplicate, "a table defined twice: {dotted(parent)}", start));
+            }
+            self.pending.push(parent);
+        }
+        if self.flag_is(parent, FROZEN) {
+            return Err(oops(ErrorKind.Immutable, "an inline table extended: {dotted(parent)}", start));
+        }
+        let node = self.nest(parent);
+        if node < 0 {
+            return Err(oops(ErrorKind.Duplicate, "a key defined twice: {dotted(parent)}", start));
+        }
+        if self.nodes[node].entries.has(stem) {
+            return Err(oops(ErrorKind.Duplicate, "a key defined twice: {dotted(full)}", start));
+        }
+        match value {
+            Table(_) | Array(_) => self.flag_set(full, FROZEN, true),
+            _ => {}
+        }
+        self.nodes[node].entries[stem] = Slot.Val(value);
+        Ok(())
+    }
+
+    /** A value at `pos`, `depth` arrays and inline tables in. */
+    fun value(mut self, depth: i64): Result<Value, Oops> {
+        let start = self.pos;
+        self.count(start)?;
+        let c = at(self.b, start);
+        if c == 34 || c == 39 {
+            let multi = at(self.b, start + 1) == c && at(self.b, start + 2) == c;
+            let (text, next) = if multi {
+                scan_multi(self.b, start, c)?
+            } else if c == 34 {
+                scan_basic(self.b, start)?
+            } else {
+                scan_literal(self.b, start)?
+            };
+            self.pos = next;
+            return Ok(Value.Text(text));
+        }
+        if c == 91 || c == 123 {
+            if depth >= self.limits.depth {
+                return Err(oops(ErrorKind.Limit, "nesting deeper than {self.limits.depth}", start));
+            }
+            return if c == 91 { self.array(depth + 1) } else { self.inline(depth + 1) };
+        }
+        let (v, next) = scan_scalar(self.b, start)?;
+        self.pos = next;
+        Ok(v)
+    }
+
+    /** Spaces, line ends and comments inside an array. */
+    fun blank(mut self): Result<(), Oops> {
+        while true {
+            self.pos = skip_ws(self.b, self.pos);
+            let c = at(self.b, self.pos);
+            if c == 35 {
+                self.pos = skip_comment(self.b, self.pos)?;
+            } else if c == 10 || c == 13 {
+                self.pos = line_end(self.b, self.pos)?;
+            } else {
+                return Ok(());
+            }
+        }
+        Ok(())
+    }
+
+    fun array(mut self, depth: i64): Result<Value, Oops> {
+        let start = self.pos;
+        self.pos += 1;
+        let mut items: Value[] = [];
+        while true {
+            self.blank()?;
+            if at(self.b, self.pos) == 93 {
+                self.pos += 1;
+                return Ok(Value.Array(items));
+            }
+            if self.pos >= self.b.len {
+                return Err(oops(ErrorKind.Syntax, "an array without its closing ']'", start));
+            }
+            items.push(self.value(depth)?);
+            self.blank()?;
+            let c = at(self.b, self.pos);
+            if c == 44 {
+                self.pos += 1;
+            } else if c != 93 {
+                return Err(oops(ErrorKind.Syntax, "expected ',' or ']' in an array", self.pos));
+            }
+        }
+        Ok(Value.Array(items))
+    }
+
+    /** `{ key = value, … }` on one line: its keys go in a fresh node. */
+    fun inline(mut self, depth: i64): Result<Value, Oops> {
+        let start = self.pos;
+        self.pos = skip_ws(self.b, self.pos + 1);
+        let root = self.new_node();
+        if at(self.b, self.pos) == 125 {
+            self.pos += 1;
+            return Ok(Value.Table(self.table(root)));
+        }
+        while true {
+            let key_at = self.pos;
+            let (key, after) = scan_key(self.b, self.pos, self.limits.depth)?;
+            if at(self.b, after) != 61 {
+                return Err(oops(ErrorKind.Syntax, "expected '=' after a key", after));
+            }
+            self.pos = skip_ws(self.b, after + 1);
+            let value = self.value(depth)?;
+            let mut node = root;
+            for i in 0..key.len - 1 {
+                node = match self.nodes[node].entries.get(key[i]) {
+                    None => {
+                        let n = self.new_node();
+                        self.nodes[node].entries[key[i]] = Slot.Nest(n);
+                        n
+                    }
+                    Some(Nest(n)) => n,
+                    Some(_) => {
+                        return Err(oops(ErrorKind.Immutable, "an inline table extended: {key[i]}", key_at));
+                    }
+                };
+            }
+            let stem = key[key.len - 1];
+            if self.nodes[node].entries.has(stem) {
+                return Err(oops(ErrorKind.Duplicate, "a key defined twice: {dotted(key)}", key_at));
+            }
+            self.nodes[node].entries[stem] = Slot.Val(value);
+            self.pos = skip_ws(self.b, self.pos);
+            let c = at(self.b, self.pos);
+            if c == 125 {
+                self.pos += 1;
+                return Ok(Value.Table(self.table(root)));
+            }
+            if c != 44 {
+                return Err(oops(ErrorKind.Syntax, "expected ',' or '}}' in an inline table", if self.pos < self.b.len { self.pos } else { start }));
+            }
+            self.pos = skip_ws(self.b, self.pos + 1);
+            if at(self.b, self.pos) == 125 {
+                return Err(oops(ErrorKind.Syntax, "a trailing comma in an inline table", self.pos));
+            }
+        }
+        Ok(Value.Table(self.table(root)))
+    }
+
+    fun new_node(mut self): i64 {
+        self.nodes.push(Node { entries: #{} });
+        self.nodes.len - 1
+    }
+
+    /** The table at `key`, made (with its parents) as needed; an array of
+     * tables means its last table; -1 when a value is in the way. */
+    fun nest(mut self, key: string[]): i64 {
+        let mut node = 0;
+        for k of key {
+            node = match self.nodes[node].entries.get(k) {
+                None => {
+                    let n = self.new_node();
+                    self.nodes[node].entries[k] = Slot.Nest(n);
+                    n
+                }
+                Some(Nest(n)) => n,
+                // Read in place: a copy of the list would make the next
+                // `[[…]]` copy all of it.
+                Some(List(l)) => self.lists[l][self.lists[l].len - 1],
+                Some(Val(_)) => {
+                    return -1;
+                }
+            };
+        }
+        node
+    }
+
+    /** A new table at the end of the array of tables at `key`; `false` when something else is there. */
+    fun append_to_list(mut self, key: string[]): bool {
+        let mut parent_key: string[] = [];
+        for i in 0..key.len - 1 {
+            parent_key.push(key[i]);
+        }
+        let parent = self.nest(parent_key);
+        if parent < 0 {
+            return false;
+        }
+        let stem = key[key.len - 1];
+        let table = self.new_node();
+        match self.nodes[parent].entries.get(stem) {
+            None => {
+                self.lists.push([table]);
+                self.nodes[parent].entries[stem] = Slot.List(self.lists.len - 1);
+                true
+            }
+            Some(List(l)) => {
+                self.lists[l].push(table);
+                true
+            }
+            Some(_) => false,
+        }
+    }
+
+    /** Node `n` as a `Value` table (its depth is bounded by the keys' limit). */
+    fun table(self, n: i64): Map<string, Value> {
+        let mut out: Map<string, Value> = #{};
+        for (k, slot) of self.nodes[n].entries {
+            out[k] = match slot {
+                Val(v) => v,
+                Nest(c) => Value.Table(self.table(c)),
+                List(l) => Value.Array(self.lists[l].map(fun(c: i64): Value = Value.Table(self.table(c)))),
+            };
+        }
+        out
+    }
+
+    fun finalize_pending(mut self) {
+        let pending = self.pending;
+        self.pending = [];
+        for key of pending {
+            self.flag_set(key, EXPLICIT, false);
+        }
+    }
+
+    fun flag_is(self, key: string[], flag: i64): bool {
+        let mut f = 0;
+        for k of key {
+            if self.flags[f].recursive & flag != 0 {
+                return true;
+            }
+            f = match self.flags[f].kids.get(k) {
+                Some(next) => next,
+                None => {
+                    return false;
+                }
+            };
+        }
+        (self.flags[f].own | self.flags[f].recursive) & flag != 0
+    }
+
+    fun flag_set(mut self, key: string[], flag: i64, recursive: bool) {
+        let mut f = 0;
+        for k of key {
+            f = match self.flags[f].kids.get(k) {
+                Some(next) => next,
+                None => {
+                    self.flags.push(Flag { own: 0, recursive: 0, kids: #{} });
+                    let n = self.flags.len - 1;
+                    self.flags[f].kids[k] = n;
+                    n
+                }
+            };
+        }
+        if recursive {
+            self.flags[f].recursive = self.flags[f].recursive | flag;
+        } else {
+            self.flags[f].own = self.flags[f].own | flag;
+        }
+    }
+
+    /** Forgets every flag at and under `key`: a new table in an array of tables starts clean. */
+    fun flag_unset_all(mut self, key: string[]) {
+        let mut f = 0;
+        for i in 0..key.len {
+            let next = match self.flags[f].kids.get(key[i]) {
+                Some(next) => next,
+                None => {
+                    return;
+                }
+            };
+            if i == key.len - 1 {
+                self.flags[f].kids.remove(key[i]);
+                return;
+            }
+            f = next;
+        }
+    }
+}

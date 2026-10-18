@@ -216,14 +216,14 @@ fun str_ends_with(s: string, p: string): bool = p.len <= s.len && str_at(s, s.le
 
 /** The strings of `xs` with `sep` between each two: `xs.join(", ")`. */
 fun str_join(xs: string[], sep: string): string {
-    let mut out = "";
+    let mut out: u8[] = [];
     for i in 0..xs.len {
-        if i > 0 {
-            out = out + sep;
+        let piece = if i > 0 { sep + xs[i] } else { xs[i] };
+        for b of piece.to_bytes() {
+            out.push(b);
         }
-        out = out + xs[i];
     }
-    out
+    $string.from_bytes(out)
 }
 
 // ---- Option and Result (v4 draft §4) ----

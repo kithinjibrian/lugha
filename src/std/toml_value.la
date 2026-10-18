@@ -1,0 +1,94 @@
+/**
+ * std.$toml_value: TOML's values, errors and limits (v17), re-exported by
+ * `std.toml` — see there. Bundled sources only.
+ */
+
+/** A TOML value. */
+public enum Value {
+    /** A string. */
+    Text(string),
+    /** An integer: TOML's are exactly `i64`'s. */
+    Integer(i64),
+    /** A float, `inf`, `-inf` and `nan` included. */
+    Float(f64),
+    /** `true` or `false`. */
+    Boolean(bool),
+    /** A date and time with an offset: the offset in minutes east of UTC (`Z` is 0). */
+    OffsetDateTime(Date, Time, i64),
+    /** A date and time without an offset. */
+    LocalDateTime(Date, Time),
+    /** A date. */
+    LocalDate(Date),
+    /** A time of day. */
+    LocalTime(Time),
+    /** An array; its values may be of any kinds. */
+    Array(Value[]),
+    /** A table, its keys in the file's order. */
+    Table(Map<string, Value>),
+}
+
+/** A calendar date, as written: no time-zone arithmetic. */
+public struct Date {
+    public year: i64,
+    public month: i64,
+    public day: i64,
+}
+
+/** A time of day; `nanosecond` keeps up to 9 digits of the written fraction. */
+public struct Time {
+    public hour: i64,
+    public minute: i64,
+    public second: i64,
+    public nanosecond: i64,
+}
+
+/** What kind of mistake a `TomlError` is. */
+public enum ErrorKind {
+    /** Not TOML. */
+    Syntax,
+    /** A key or table defined twice. */
+    Duplicate,
+    /** An inline table or a static array extended. */
+    Immutable,
+    /** An integer past `i64`. */
+    Overflow,
+    /** An invalid date, time or escape. */
+    BadValue,
+    /** A limit passed: the text's size, the nesting depth or the count of values. */
+    Limit,
+}
+
+/** Why a text isn't (acceptable) TOML, and where: line and column from 1, columns in characters. */
+public struct TomlError {
+    public kind: ErrorKind,
+    public detail: string,
+    public line: i64,
+    public column: i64,
+}
+
+impl TomlError {
+    /** The error as a sentence: `a key defined twice: app.name (line 7, column 1)`. */
+    public fun message(self): string = "{self.detail} (line {self.line}, column {self.column})";
+}
+
+/** How much `parse_with` accepts (`limits()` gives the defaults). */
+public struct Limits {
+    /** The text's size in bytes (1048576). */
+    public bytes: i64,
+    /** Arrays and inline tables nested in each other, and the parts of a key (100). */
+    public depth: i64,
+    /** Every value and table made (1000000). */
+    public values: i64,
+}
+
+/** The default limits. */
+public fun limits(): Limits = Limits { bytes: 1048576, depth: 100, values: 1000000 };
+
+/** A mistake at byte `at`, before its line and column are counted. */
+struct Oops {
+    kind: ErrorKind,
+    detail: string,
+    at: i64,
+}
+
+fun oops(kind: ErrorKind, detail: string, at: i64): Oops = Oops { kind: kind, detail: detail, at: at };
