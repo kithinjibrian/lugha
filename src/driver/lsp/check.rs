@@ -32,7 +32,8 @@ pub(super) struct Outcome {
     pub snapshot: Option<Snapshot>,
 }
 
-/// Checks `main` with `docs`' unsaved text, dropping E0303 when `alone`.
+/// Checks `main` with `docs`' unsaved text; when `alone`, as a module
+/// (others may import it) and dropping E0303.
 pub(super) fn check(main: &Path, docs: &Documents, alone: bool) -> Outcome {
     check_with(main, alone, || {
         let mut read = |file: &Path| docs.read(file);
@@ -41,7 +42,9 @@ pub(super) fn check(main: &Path, docs: &Documents, alone: bool) -> Outcome {
             offline: true,
             update: false,
         };
-        pipeline::front_partial(main, mode, &mut read)
+        // A module checked alone is loaded as a module, as `lughac check`
+        // loads it, so a module importing it back isn't E0319.
+        pipeline::front_partial(main, mode, &mut read, alone)
     })
 }
 
@@ -190,6 +193,24 @@ mod tests {
         };
         assert_eq!(codes(false), ["E0303", "E0403"]);
         assert_eq!(codes(true), ["E0403"]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_module_checked_alone_may_be_imported_back() {
+        let dir = temp(
+            "cycle",
+            &[
+                (
+                    "a.la",
+                    "import b;\npublic fun fa(): i64 = 1;\npublic fun ga(): i64 = b.fb();\n",
+                ),
+                ("b.la", "import a;\npublic fun fb(): i64 = a.fa();\n"),
+            ],
+        );
+        let outcome = check(&dir.join("a.la"), &Documents::default(), true);
+        assert_eq!(outcome.files[&dir.join("a.la")], []);
+        assert_eq!(outcome.files[&dir.join("b.la")], []);
         let _ = std::fs::remove_dir_all(&dir);
     }
 

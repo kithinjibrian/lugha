@@ -8877,5 +8877,14 @@ Branch: prp-152-hkdf_sha256
 ### STILL OPEN AT CLOSE
 - None: the user reviewed and said "merge"; merged (PR #81) and tagged `m120`.
 
-## SESSION 288 — 2026-10-18 — LSP: modules checked alone may be imported back (E0319 fix) — open
+## SESSION 288 — 2026-10-18 — LSP: modules checked alone may be imported back (E0319 fix) — closed
 Branch: fix-lsp-alone-cycle
+
+### DONE
+- The user's report: in VS Code, two modules importing each other showed E0319. Cause: a module with no main reaching it was checked alone as a main file (`front_partial` with `as_module` false). Now `front_partial` takes `as_module`, true for alone checks, as `lughac check` does. Test: `check.rs` `a_module_checked_alone_may_be_imported_back`. A bug fix: no PRP.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- None.

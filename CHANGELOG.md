@@ -8,6 +8,9 @@ Never deleted. Older entries are never modified.
 
 ## [Unreleased]
 
+### Fixed
+- The language server no longer reports E0319 ("the main file can't be imported") for two modules importing each other: a module checked alone, with no main reaching it, is now loaded as a module, as `lughac check` loads it
+
 ### Added
 - `crypto.hkdf_sha256(key, salt, info, length)`, milestone 120 (PRP-152): HKDF-SHA256 (RFC 5869, extract then expand) through OpenSSL's `EVP_KDF`, lengths 1 to 8160 (`BadLength` otherwise), the C side's copy of the output wiped
 

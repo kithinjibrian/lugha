@@ -159,13 +159,15 @@ pub(super) struct PartialFront {
 
 /// Reads through `read` (never writing `lugha.lock`), lexes, parses and
 /// checks `path` for the language server, keeping the checker's findings
-/// even when the program has errors (v16 draft decision 20).
+/// even when the program has errors (v16 draft decision 20). `as_module`
+/// loads it as a module, so other modules may import it.
 pub(super) fn front_partial(
     path: &Path,
     mode: Mode,
     read: &mut modules::Read<'_>,
+    as_module: bool,
 ) -> Result<PartialFront, Failure> {
-    let (source, loaded) = loaded_with(path, mode, read, (false, true, false))?;
+    let (source, loaded) = loaded_with(path, mode, read, (false, true, as_module))?;
     // A module that didn't lex has no program: nothing to check.
     if loaded.modules.iter().any(|m| m.program.is_none()) {
         return Err(Failure::Program(source, loaded.diagnostics));
