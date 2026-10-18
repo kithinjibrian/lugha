@@ -1,6 +1,6 @@
 ## FEATURE: `http.request_tls_with` — one request with both `Limits` and `tls.Options`; milestone 119 (v17).
 
-**Status:** proposed 2026-10-18 (session 284), from the user's brief: Rapidkoi fetches app bundles (up to 32 MB, 30 s) with `request_with`; its tests must also trust a test CA, which only `request_tls` accepts — and that one is capped at 16 MB with no `Limits`.
+**Status:** approved and built 2026-10-18 (session 285); proposed in session 284, from the user's brief: Rapidkoi fetches app bundles (up to 32 MB, 30 s) with `request_with`; its tests must also trust a test CA, which only `request_tls` accepts — and that one is capped at 16 MB with no `Limits`.
 
 ## OBJECTIVE
 ```lugha
@@ -28,6 +28,9 @@ let res = http.request_tls_with("GET", "https://localhost:8443/app.rkb", #{}, []
 - Changes to `request_tls`'s defaults or to `std.tls`.
 ### New dependencies
 - none.
+
+## BUILT (session 285)
+- As planned. Tests: `tests/tls.rs` `request_tls_with_takes_limits_and_trust` (a 17 000 000-byte body arrives with a 32 MiB limit, is `response too large` at 16 MiB, `certificate verify failed` without `ca_file`; `opts.timeout_ms = 200` beats `limits.timeout_ms = 60000` against a server that never answers).
 
 ## ERROR HANDLING REQUIREMENTS
 - As `request_with`/`request_tls`: `Err` with the reason (`"response too large"`, `"timed out"`, `"certificate verify failed: …"`).

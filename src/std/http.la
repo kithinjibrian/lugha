@@ -294,6 +294,25 @@ public fun request_tls(method: string, url: string, headers: Map<string, string>
     exchange(method, url, headers, body, l, opts.ca_file)
 }
 
+/**
+ * A request with both `limits`, used as given, and `opts`: `opts.ca_file`
+ * trusted for `https://`, and `opts.timeout_ms`, when not 0, in place of
+ * `limits.timeout_ms`.
+ * @param method `GET`, `PUT`, …
+ * @param url `https://host[:port]/path?query` (or `http://`)
+ * @param headers extra headers
+ * @param body the bytes
+ * @param limits what to accept from the server
+ * @param opts what to trust
+ */
+public fun request_tls_with(method: string, url: string, headers: Map<string, string>, body: u8[], limits: Limits, opts: tls.Options): Result<Response, string> {
+    let mut l = limits;
+    if opts.timeout_ms > 0 {
+        l.timeout_ms = opts.timeout_ms;
+    }
+    exchange(method, url, headers, body, l, opts.ca_file)
+}
+
 /** One request on its own connection; `https://` verified (and `ca_file` trusted). */
 fun exchange(method: string, url: string, headers: Map<string, string>, body: u8[], limits: Limits, ca_file: string): Result<Response, string> {
     let secure = url.starts_with("https://");
