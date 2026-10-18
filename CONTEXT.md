@@ -8852,3 +8852,6 @@ Branch: prp-151-request_tls_with
 
 ### STILL OPEN AT CLOSE
 - The preemption fix (allocation charge or a timer) awaits the user's choice.
+
+## SESSION 286 — 2026-10-18 — hkdf_sha256: PRP — open
+Branch: main
