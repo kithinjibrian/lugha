@@ -8768,3 +8768,6 @@ Branch: prp-147-fs_time_flush
 
 ### STILL OPEN AT CLOSE
 - Candidates: `fs.sync` (durability across power loss), `0o` octal literals, `Option.and_then`.
+
+## SESSION 279 — 2026-10-18 — fs.sync: PRP — open
+Branch: main
