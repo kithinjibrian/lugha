@@ -8,6 +8,12 @@ Never deleted. Older entries are never modified.
 
 ## [Unreleased]
 
+### Added
+- `net.resolve(name)` and `tls.Options.address`, milestone 121 (PRP-153): every address a name resolves to (IPv4 and IPv6, resolver order, each once), and a connection to a chosen IP address that keeps the host name for SNI and the certificate check, in `tls.connect_with` and `http.request_tls`/`request_tls_with` (`https://` and `http://`, the URL's host in `host`), like curl's `--resolve`
+
+### Changed
+- `tls.Options` has a third field, `address`: a literal naming every field without `..tls.options()` must name it too
+
 ### Fixed
 - The language server no longer reports E0319 ("the main file can't be imported") for two modules importing each other: a module checked alone, with no main reaching it, is now loaded as a module, as `lughac check` loads it
 

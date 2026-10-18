@@ -306,7 +306,7 @@ fun main() {
     spawn silent(quiet);
     let mut limits = http.limits();
     limits.timeout_ms = 60000;
-    let opts = tls.Options { ca_file: \"ca.pem\", timeout_ms: 200 };
+    let opts = tls.Options { ca_file: \"ca.pem\", timeout_ms: 200, address: \"\" };
     let started = time.monotonic_ms();
     match http.request_tls_with(\"GET\", \"https://localhost:{port}/\", #{}, [], limits, opts) {
         Ok(_) => println(\"?\"),
@@ -321,5 +321,52 @@ fun main() {
     case.runs(
         "200 17000000 7\nresponse too large\n\
          certificate verify failed: unable to get local issuer certificate\ntimed out\ntrue\n",
+    );
+}
+
+#[test]
+fn an_address_is_connected_to_and_the_name_still_verified() {
+    let Some(case) = Case::new(
+        "import std.http;
+import std.task;
+import std.tls;
+
+fun handle(req: http.Request): http.Response = http.text(200, \"pinned {req.path}\");
+
+fun server(addr: string) {
+    http.serve_tls(addr, \"cert.pem\", \"key.pem\", handle).unwrap();
+}
+
+fun fetch(url: string, address: string) {
+    let opts = tls.Options { ca_file: \"ca.pem\", address: address, ..tls.options() };
+    match http.request_tls_with(\"GET\", url, #{}, [], http.limits(), opts) {
+        Ok(res) => println(\"{res.status} {res.text().unwrap()}\"),
+        Err(e) => println(e),
+    }
+}
+
+fun main() {
+    let probe = tls.listen(\"127.0.0.1:0\", \"cert.pem\", \"key.pem\").unwrap();
+    let addr = probe.addr();
+    probe.close();
+    spawn server(addr);
+    task.yield_now();
+    let port = addr.split(\":\")[1];
+    fetch(\"https://localhost:{port}/a\", \"127.0.0.1\");
+    fetch(\"https://wrong.example:{port}/b\", \"127.0.0.1\");
+    fetch(\"https://localhost:{port}/c\", \"localhost\");
+    let opts = tls.Options { ca_file: \"ca.pem\", address: \"127.0.0.1\", ..tls.options() };
+    let c = tls.connect_with(\"localhost:{port}\", opts).unwrap();
+    c.close();
+    println(tls.connect_with(\"wrong.example:{port}\", opts).is_err());
+}
+",
+    ) else {
+        return;
+    };
+    case.runs(
+        "200 pinned /a\n\
+         certificate verify failed: hostname mismatch\n\
+         address must be an IP address: localhost\ntrue\n",
     );
 }

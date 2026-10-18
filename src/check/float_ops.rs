@@ -90,6 +90,7 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         "net_write" => (vec![Type::I64, bytes(), Type::I64], result(Type::I64)),
         "net_close" => (vec![Type::I64], Type::Unit),
         "net_name" => (vec![Type::I64, Type::I64], result(Type::String)),
+        "net_resolve" => (vec![Type::String, Type::I64], result(Type::String)),
         // `std.tls` (v17, milestone 112): connections and listeners as `i64` handles.
         "tls_connect" => (
             vec![Type::String, Type::String, Type::String, Type::I64],

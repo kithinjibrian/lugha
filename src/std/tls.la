@@ -16,10 +16,16 @@ public struct Options {
     public ca_file: string,
     /** Milliseconds a connect, read or write may wait; `0` waits forever. */
     public timeout_ms: i64,
+    /**
+     * An IP address to connect to instead of resolving the host (`""`
+     * resolves it, like curl's `--resolve`); the certificate must still
+     * name the host.
+     */
+    public address: string,
 }
 
 /** The defaults: the system's roots only, no timeout. */
-public fun options(): Options = Options { ca_file: "", timeout_ms: 0 };
+public fun options(): Options = Options { ca_file: "", timeout_ms: 0, address: "" };
 
 /** An encrypted connection. */
 public struct Conn {
@@ -41,12 +47,14 @@ public struct Listener {
 public fun connect(addr: string): Result<Conn, string> = connect_with(addr, options());
 
 /**
- * `connect` with options: certificates to trust, a timeout.
+ * `connect` with options: certificates to trust, a timeout, an address to
+ * connect to (`addr`'s host still verified).
  * @param addr host:port
  * @param opts what to trust and how long to wait
  */
 public fun connect_with(addr: string, opts: Options): Result<Conn, string> {
-    let h = $os.tls_connect(addr, host_of(addr), opts.ca_file, opts.timeout_ms)?;
+    let target = if opts.address == "" { addr } else { at(opts.address, port_of(addr))? };
+    let h = $os.tls_connect(target, host_of(addr), opts.ca_file, opts.timeout_ms)?;
     Ok(Conn { h: Ref.new(h), timeout: Ref.new(opts.timeout_ms) })
 }
 
@@ -62,6 +70,23 @@ public fun listen(addr: string, cert_file: string, key_file: string): Result<Lis
 }
 
 /** The host a certificate must name: `addr` without its port and brackets. */
+/** `address`, which must be an IP literal, at `port`: `[v6]:port` for IPv6. */
+fun at(address: string, port: string): Result<string, string> {
+    let ip = match $os.net_resolve(address, 1) {
+        Ok(ip) => ip,
+        Err(_) => {
+            return Err("address must be an IP address: {address}");
+        }
+    };
+    Ok(if ip.contains(":") { "[{ip}]:{port}" } else { "{ip}:{port}" })
+}
+
+/** What follows `addr`'s last `:`; `""` with none. */
+fun port_of(addr: string): string {
+    let parts = addr.split(":");
+    if parts.len < 2 { "" } else { parts[parts.len - 1] }
+}
+
 fun host_of(addr: string): string {
     let mut colon = -1;
     let raw = addr.to_bytes();
