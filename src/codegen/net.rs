@@ -18,7 +18,6 @@ impl<'ctx> Lowerer<'ctx> {
         op: &str,
         args: &[Expr],
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
-        let bytes = Type::Array(Box::new(Type::U8));
         let name = format!("lugha_rt_{op}");
         // The arguments, by the built-in's parameter types.
         let (params, _) = crate::check::os_signature(op).expect("checked: a known built-in");
@@ -26,10 +25,12 @@ impl<'ctx> Lowerer<'ctx> {
         for (arg, ty) in args.iter().zip(&params) {
             values.push(self.get(arg, ty)?);
         }
-        // A close (`()`) or a socket number (`i64`): a plain call (v17).
+        // Anything but a `Result` is a plain call (v17): a close (`()`), a
+        // socket number or flag (`i64`), a digest (`u8[]`), a hasher (`CPtr`).
         let (_, ret) = crate::check::os_signature(op).expect("checked: a known built-in");
-        if matches!(ret, Type::Unit | Type::I64) {
-            let returns = (ret == Type::I64).then_some(Type::I64);
+        let is_result = matches!(&ret, Type::Enum(k, _) if k == crate::check::RESULT);
+        if !is_result {
+            let returns = (ret != Type::Unit).then(|| ret.clone());
             let function = self.runtime(&name, &params, returns);
             let values: Vec<_> = values.iter().map(|v| (*v).into()).collect();
             let site = self
@@ -44,10 +45,9 @@ impl<'ctx> Lowerer<'ctx> {
             });
         }
         // What `Ok` holds: a handle, bytes, a name, or the `0` of a write.
-        let held = match op {
-            "net_read" | "tls_read" => bytes,
-            "net_name" => Type::String,
-            _ => Type::I64,
+        let held = match &ret {
+            Type::Enum(_, parts) => parts[0].clone(),
+            _ => unreachable!("a `Result`, just checked"),
         };
         let (out, error) = (self.out_slot(&held), self.out_slot(&Type::String));
         let mut types = params.clone();

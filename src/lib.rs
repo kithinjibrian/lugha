@@ -32,6 +32,7 @@ pub const STD: &[(&str, &str)] = &[
     ("task", include_str!("std/task.la")),
     ("net", include_str!("std/net.la")),
     ("tls", include_str!("std/tls.la")),
+    ("crypto", include_str!("std/crypto.la")),
     ("http", include_str!("std/http.la")),
     // Internal to `std.http`: a `$` name no program can write.
     ("$http_wire", include_str!("std/http_wire.la")),

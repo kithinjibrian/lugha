@@ -98,6 +98,21 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         "tls_write" => (vec![Type::I64, bytes(), Type::I64], result(Type::I64)),
         "tls_close" | "tls_close_listener" => (vec![Type::I64], Type::Unit),
         "tls_fd" | "tls_listener_fd" => (vec![Type::I64], Type::I64),
+        // `std.crypto` (v17, milestone 113): bytes in, bytes out; a running
+        // hash as an opaque `CPtr`; flags as `i64`.
+        "crypto_sha256" => (vec![bytes()], bytes()),
+        "crypto_sha256_new" => (Vec::new(), Type::Handle(super::input::CPTR.to_string())),
+        "crypto_sha256_update" => (
+            vec![Type::Handle(super::input::CPTR.to_string()), bytes()],
+            Type::Unit,
+        ),
+        "crypto_sha256_finish" => (vec![Type::Handle(super::input::CPTR.to_string())], bytes()),
+        "crypto_seed" => (Vec::new(), result(bytes())),
+        "crypto_ed25519_public" => (vec![bytes()], result(bytes())),
+        "crypto_ed25519_sign" => (vec![bytes(), bytes()], result(bytes())),
+        "crypto_ed25519_verify" => (vec![bytes(), bytes(), bytes()], Type::I64),
+        "crypto_random" => (vec![Type::I64], result(bytes())),
+        "crypto_equal" => (vec![bytes(), bytes()], Type::I64),
         _ => return None,
     })
 }

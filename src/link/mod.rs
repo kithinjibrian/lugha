@@ -189,7 +189,7 @@ pub enum LinkError {
     /// Linking failed with `[link]` input (v16): E0331 at its first line.
     #[error("linking failed:\n{stderr}")]
     Libraries { span: Span, stderr: String },
-    /// A TLS program, and no OpenSSL to build it with (v17): E0332 at its import.
+    /// A TLS or crypto program, and no OpenSSL to build it with (v17): E0332 at its import.
     #[error("OpenSSL is missing")]
     Tls { span: Span },
 }
@@ -224,10 +224,12 @@ impl LinkError {
                 )
             }
             LinkError::Tls { span } => Some(
-                Diagnostic::error("E0332", "TLS needs OpenSSL, which isn't installed", *span)
-                    .with_help(
-                        "install OpenSSL's development files: `sudo apt install libssl-dev`",
-                    ),
+                Diagnostic::error(
+                    "E0332",
+                    "this program needs OpenSSL, which isn't installed",
+                    *span,
+                )
+                .with_help("install OpenSSL's development files: `sudo apt install libssl-dev`"),
             ),
             LinkError::CcNotFound | LinkError::Io(_) | LinkError::Failed { .. } => None,
         }
@@ -274,7 +276,8 @@ pub fn link_with(
     output: &Path,
 ) -> Result<(), LinkError> {
     let shims = c_files::compile(&plan.c_files, temp)?;
-    let runtime = runtime::RuntimeFile::write(plan.tls.is_some()).map_err(LinkError::Io)?;
+    let runtime = runtime::RuntimeFile::write(plan.tls.is_some(), plan.crypto.is_some())
+        .map_err(LinkError::Io)?;
     let result = Command::new("cc")
         .args(args(objects, &shims, &runtime.0, plan, output))
         .output();
@@ -287,8 +290,8 @@ pub fn link_with(
         return Ok(());
     }
     let stderr = String::from_utf8_lossy(&out.stderr).into_owned();
-    // A TLS program on a machine without OpenSSL's headers or libraries (v17).
-    if let Some(span) = plan.tls
+    // A TLS or crypto program on a machine without OpenSSL's headers or libraries (v17).
+    if let Some(span) = plan.tls.or(plan.crypto)
         && runtime::missing_openssl(&stderr)
     {
         return Err(LinkError::Tls { span });
@@ -318,6 +321,8 @@ fn args(
     args.extend(["-lgc", "-lm"].map(OsString::from));
     if plan.tls.is_some() {
         args.extend(["-lssl", "-lcrypto"].map(OsString::from));
+    } else if plan.crypto.is_some() {
+        args.push(OsString::from("-lcrypto"));
     }
     args.extend(plan.link_args());
     args.push(OsString::from("-o"));

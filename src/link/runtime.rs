@@ -1,6 +1,8 @@
 //! The runtime source each program is linked with, written to a temp file:
-//! [`super::RUNTIME_SOURCE`], and [`TLS_SOURCE`] after it for a program that
-//! loads `std.tls` (v17, milestone 112), which also links `-lssl -lcrypto`.
+//! [`super::RUNTIME_SOURCE`], then [`TLS_SOURCE`] for a program that loads
+//! `std.tls` (v17, milestone 112, linking `-lssl -lcrypto`) and
+//! [`CRYPTO_SOURCE`] for one that loads `std.crypto` (milestone 113,
+//! `-lcrypto`).
 
 use std::io;
 use std::path::PathBuf;
@@ -22,6 +24,23 @@ pub const TLS_SYMBOLS: [&str; 9] = [
     "lugha_rt_tls_listener_fd",
 ];
 
+/// `runtime/crypto.c`: `std.crypto` over OpenSSL, only for programs that use it.
+pub const CRYPTO_SOURCE: &str = include_str!("../../runtime/crypto.c");
+
+/// Every function codegen calls in [`CRYPTO_SOURCE`].
+pub const CRYPTO_SYMBOLS: [&str; 10] = [
+    "lugha_rt_crypto_sha256",
+    "lugha_rt_crypto_sha256_new",
+    "lugha_rt_crypto_sha256_update",
+    "lugha_rt_crypto_sha256_finish",
+    "lugha_rt_crypto_seed",
+    "lugha_rt_crypto_ed25519_public",
+    "lugha_rt_crypto_ed25519_sign",
+    "lugha_rt_crypto_ed25519_verify",
+    "lugha_rt_crypto_random",
+    "lugha_rt_crypto_equal",
+];
+
 /// True if `cc`'s complaint is OpenSSL's absence: its headers or libraries.
 pub fn missing_openssl(stderr: &str) -> bool {
     stderr.contains("openssl/") || stderr.contains("-lssl") || stderr.contains("-lcrypto")
@@ -31,8 +50,8 @@ pub fn missing_openssl(stderr: &str) -> bool {
 pub(super) struct RuntimeFile(pub PathBuf);
 
 impl RuntimeFile {
-    /// Writes the runtime, with TLS's part when `tls`.
-    pub(super) fn write(tls: bool) -> io::Result<Self> {
+    /// Writes the runtime, with TLS's part when `tls` and crypto's when `crypto`.
+    pub(super) fn write(tls: bool, crypto: bool) -> io::Result<Self> {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
         let path = std::env::temp_dir().join(format!("lughac-rt-{}-{n}.c", std::process::id()));
@@ -44,6 +63,9 @@ impl RuntimeFile {
         io::Write::write_all(&mut file, super::RUNTIME_SOURCE.as_bytes())?;
         if tls {
             io::Write::write_all(&mut file, TLS_SOURCE.as_bytes())?;
+        }
+        if crypto {
+            io::Write::write_all(&mut file, CRYPTO_SOURCE.as_bytes())?;
         }
         Ok(RuntimeFile(path))
     }
@@ -58,7 +80,9 @@ impl Drop for RuntimeFile {
 
 #[cfg(test)]
 mod tests {
-    use super::{RuntimeFile, TLS_SOURCE, TLS_SYMBOLS, missing_openssl};
+    use super::{
+        CRYPTO_SOURCE, CRYPTO_SYMBOLS, RuntimeFile, TLS_SOURCE, TLS_SYMBOLS, missing_openssl,
+    };
 
     #[test]
     fn the_tls_part_defines_its_symbols_and_only_tls_programs_get_it() {
@@ -69,18 +93,21 @@ mod tests {
             );
         }
         assert!(!super::super::RUNTIME_SOURCE.contains("openssl"));
-        let plain = RuntimeFile::write(false).unwrap();
-        assert!(
-            !std::fs::read_to_string(&plain.0)
-                .unwrap()
-                .contains("openssl")
-        );
-        let tls = RuntimeFile::write(true).unwrap();
-        assert!(
-            std::fs::read_to_string(&tls.0)
-                .unwrap()
-                .contains("#include <openssl/ssl.h>")
-        );
+        for name in CRYPTO_SYMBOLS {
+            assert!(
+                CRYPTO_SOURCE.contains(&format!("{name}(")),
+                "crypto.c lacks {name}"
+            );
+        }
+        let read = |tls, crypto| {
+            let file = RuntimeFile::write(tls, crypto).unwrap();
+            std::fs::read_to_string(&file.0).unwrap()
+        };
+        assert!(!read(false, false).contains("openssl"));
+        let tls = read(true, false);
+        assert!(tls.contains("#include <openssl/ssl.h>") && !tls.contains("openssl/rand.h"));
+        let crypto = read(false, true);
+        assert!(crypto.contains("#include <openssl/rand.h>") && !crypto.contains("openssl/ssl.h"));
     }
 
     #[test]
@@ -104,6 +131,9 @@ mod tests {
                 .any(|a| a == "-lssl")
         };
         assert!(!has_ssl(&plan));
+        plan.crypto = Some(crate::span::Span::new(0, 1));
+        let args = super::super::args(&[], &[], Path::new("rt.c"), &plan, Path::new("out"));
+        assert!(args.iter().any(|a| a == "-lcrypto") && !has_ssl(&plan));
         plan.tls = Some(crate::span::Span::new(0, 1));
         assert!(has_ssl(&plan));
         let d = super::super::LinkError::Tls {
