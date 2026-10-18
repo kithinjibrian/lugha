@@ -52,7 +52,7 @@ impl<'ctx> Lowerer<'ctx> {
         let (out, error) = (self.out_slot(&held), self.out_slot(&Type::String));
         let mut types = params.clone();
         // These report only success: no value slot.
-        if !matches!(op, "net_write" | "tls_write" | "rename" | "chmod") {
+        if !matches!(op, "net_write" | "tls_write" | "rename" | "chmod" | "sync") {
             types.push(Type::String);
             values.push(out.into());
         }

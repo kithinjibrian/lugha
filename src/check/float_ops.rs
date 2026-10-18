@@ -49,6 +49,8 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         "wall_ms" => (Vec::new(), Type::I64),
         "rename" => (vec![Type::String, Type::String], result(Type::I64)),
         "chmod" => (vec![Type::String, Type::I64], result(Type::I64)),
+        // v17, milestone 116.
+        "sync" => (vec![Type::String], result(Type::I64)),
         "env" => (vec![Type::String], Type::Option(Box::new(bytes()))),
         "cwd" => (Vec::new(), result(bytes())),
         // v16, milestone 68: `std.env.set_current_dir`.

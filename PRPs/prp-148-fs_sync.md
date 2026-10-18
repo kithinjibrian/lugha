@@ -33,6 +33,10 @@ After these four steps, a power cut leaves either the old `state` or the new one
 ### New dependencies
 - none.
 
+## BUILT (session 280)
+- As planned. `open(O_RDONLY | O_CLOEXEC)` works for folders too, so no `O_DIRECTORY` retry was needed.
+- Tests: `tests/fs_time.rs` `sync_writes_files_and_folders_out` (file, folder, the four-step pattern, a missing path, a NUL byte; the runtime calls `fsync`).
+
 ## ERROR HANDLING REQUIREMENTS
 - `Err` with the system's message for a missing path or a failed `fsync`; `Err` for a NUL byte. Never a panic.
 

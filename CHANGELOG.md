@@ -9,6 +9,9 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `fs.sync(path)`, milestone 116 (PRP-148): `fsync(2)` on a file or folder, so a saved file (`write_file`, `sync`, `rename`, `sync` the folder) survives a power cut
+
+### Added
 - Milestone 115 (PRP-147): `fs.rename(from, to)` (`rename(2)`: atomic within a file system, `Err` across devices), `fs.set_mode(path, mode)` (`chmod(2)`, modes 0–4095), the `flush()` built-in (stdout's buffer out now), and `std.time` (`now_ms` from the system clock, `monotonic_ms` for intervals)
 
 ### Changed

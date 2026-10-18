@@ -124,3 +124,23 @@ int32_t lugha_rt_chmod(const LughaString *path, int64_t mode, LughaString **erro
     }
     return chmod(path->bytes, (mode_t)mode) == 0 ? 1 : fs_fail(error, strerror(errno));
 }
+
+/* `$os.sync(path)` (v17, milestone 116): `fsync(2)` on a file or folder, so
+ * its data (or, for a folder, its entries: a rename) reaches the disk. Opened
+ * read-only and closed on every path; `EINTR` retries. */
+int32_t lugha_rt_sync(const LughaString *path, LughaString **error) {
+    if (fs_has_nul(path)) {
+        return fs_fail(error, "path contains a NUL byte");
+    }
+    int fd = open(path->bytes, O_RDONLY | O_CLOEXEC);
+    if (fd < 0) {
+        return fs_fail(error, strerror(errno));
+    }
+    int result;
+    do {
+        result = fsync(fd);
+    } while (result != 0 && errno == EINTR);
+    int saved = errno;
+    close(fd);
+    return result == 0 ? 1 : fs_fail(error, strerror(saved));
+}
