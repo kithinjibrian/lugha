@@ -8678,3 +8678,6 @@ Branch: link-size
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+## SESSION 272 — 2026-10-18 — std.crypto: PRP — open
+Branch: main
