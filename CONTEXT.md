@@ -8716,3 +8716,6 @@ Branch: prp-145-std_crypto
 
 ### STILL OPEN AT CLOSE
 - Nothing.
+
+## SESSION 275 — 2026-10-18 — std.toml: PRP — open
+Branch: main
