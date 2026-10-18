@@ -1,6 +1,6 @@
 ## FEATURE: `fs.sync(path)` — flush a file's or folder's data to the disk, so a saved file survives a power cut; milestone 116 (v17).
 
-**Status:** proposed 2026-10-18 (session 279), from the user's request ("fs.sync"), the follow-up named when `fs.rename` shipped (milestone 115).
+**Status:** approved 2026-10-18 (session 280); proposed in session 279, from the user's request ("fs.sync"), the follow-up named when `fs.rename` shipped (milestone 115).
 
 ## OBJECTIVE
 ```lugha
