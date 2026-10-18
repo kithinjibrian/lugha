@@ -8704,3 +8704,6 @@ Branch: prp-145-std_crypto
 
 ### STILL OPEN AT CLOSE
 - The user's security review of PR (std.crypto); after it: merge, tag `m113`, reinstall.
+
+## SESSION 274 — 2026-10-18 — Merge std.crypto after review — open
+Branch: prp-145-std_crypto
