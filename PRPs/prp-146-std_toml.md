@@ -1,6 +1,6 @@
 ## FEATURE: `std.toml` — a read-only TOML 1.0 parser written in Lugha, safe on hostile input; milestone 114 (v17).
 
-**Status:** proposed 2026-10-18 (session 275), from the user's brief (session 275).
+**Status:** approved 2026-10-18 (session 276); proposed in session 275, from the user's brief (session 275).
 
 ## OBJECTIVE
 ```lugha
@@ -60,6 +60,13 @@ Programs read configuration files — first Rapidkoi's `rapidkoi.toml` — with 
 - Decision 207; any compiler, runtime or `std.http` change; recursion not bounded by the depth limit.
 ### New dependencies
 - none.
+
+## BUILT (session 276)
+- As planned, in five files: the PRP's three, plus `std.$toml_strings` (strings and shared byte helpers), split from the scanner under the 500-line rule.
+- The OBJECTIVE's `.and_then(toml.as_text)` doesn't exist (Lugha's `Option` has no `and_then`, and adding one is outside this PRP); the documented form is `toml.as_text(toml.get(doc, "app.name")?)` inside a function returning `Option`.
+- Fixed on the way: the prelude's `xs.join(sep)` was quadratic (it concatenated strings in a loop); it now collects bytes and builds the string once with `$string.from_bytes`. Found because the big-document test spent its time joining the input.
+- toml-test v2.2.0: all 679 TOML 1.0 cases (205 valid, 474 invalid) pass; the invalid UTF-8 cases are rejected before `parse` (a `string` can't hold them).
+- Tests: `tests/toml.rs` (the suite; limits at and past each bound; hostile: 100 000 `[`, integers past `i64`, a 1 MB string; 70 000 keys and 80 000 `[[a]]` tables in linear time; error kinds, lines and columns including the brief's example, CRLF and a multi-byte character; every helper).
 
 ## ERROR HANDLING REQUIREMENTS
 - `TomlError` with `ErrorKind` (decision 203) for every malformed, contradictory or over-limit input, with its 1-based line and column; never a panic.

@@ -2119,6 +2119,10 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-145 (the user's brief, session 272; approved 273; the user's security review before merging). Same pattern as `std.tls`: `runtime/crypto.c` appended by `src/link/runtime.rs` when `Plan.crypto` is set (the driver's `std_import`, generalised from `tls_import`), `-lcrypto` (TLS programs already get it), `$os.crypto_*` built-ins lowered by `codegen/net.rs`, which now lowers any non-`Result` built-in as a plain call. The streaming hasher is a `GC_MALLOC`ed holder of an `EVP_MD_CTX` with a Boehm finalizer (tested: 300 000 abandoned hashers stay under 50 MB; over it without the finalizer). Keypair seeds from `RAND_priv_bytes`, wiped from the stack. Vectors cross-checked with the `openssl` command.
 
+### 200. `std.toml` — milestone 114 (PRP-146)
+
+**Decision:** as PRP-146 (the user's brief, session 275; approved 276). Pure Lugha in five std modules: `std.toml` (API, re-exports `std.$toml_value { * }`), `$toml_value` (types, `TomlError`, `Limits`, the internal `Oops`), `$toml_strings` (byte helpers, strings, escapes), `$toml_scan` (keys, numbers, date-times), `$toml_parse` (document, headers, arrays, inline tables, an arena of nodes and a tree of flags following `tomllib`'s `EXPLICIT_NEST`/`FROZEN` rules). toml-test runs through a decoder program built once (floats compared by bits, date-times normalised). Found on the way: the prelude's `join` was quadratic (fixed with `$string.from_bytes`), and reading `self.lists[l]` into a local made each `[[…]]` copy the list (read in place now). Lugha's `Option` has no `and_then`: callers use `?` inside a function returning `Option`.
+
 ### Fully Working
 - **Milestone 102 complete**: PRP-134 `out` parameters
 - **Milestone 101 complete**: PRP-133 maps and sets

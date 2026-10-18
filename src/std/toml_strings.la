@@ -1,0 +1,223 @@
+/**
+ * std.$toml_strings: TOML's strings (v17) — basic, literal and both
+ * multi-line kinds, with every escape — and the byte helpers the other TOML
+ * modules share. Each scanner takes the text's bytes and a position and gives
+ * the string and the position after it, or an `Oops` where the text went
+ * wrong. Bundled sources only; see `std.toml`.
+ */
+import std.$toml_value { ErrorKind, Oops, oops };
+
+fun ws(c: u8): bool = c == 32 || c == 9;
+
+fun digit(c: u8): bool = c >= 48 && c <= 57;
+
+fun hex_digit(c: u8): i64 {
+    if digit(c) {
+        return (c - 48) as i64;
+    }
+    if c >= 97 && c <= 102 {
+        return (c - 87) as i64;
+    }
+    if c >= 65 && c <= 70 {
+        return (c - 55) as i64;
+    }
+    -1
+}
+
+/** A control character TOML refuses (a tab is fine). */
+fun control(c: u8): bool = (c < 32 && c != 9) || c == 127;
+
+fun bare(c: u8): bool = digit(c) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c == 95 || c == 45;
+
+fun at(b: u8[], i: i64): u8 = if i >= 0 && i < b.len { b[i] } else { 0 };
+
+fun syntax(detail: string, i: i64): Oops = oops(ErrorKind.Syntax, detail, i);
+
+fun text(bytes: u8[]): string = string_from_utf8(bytes).unwrap_or("");
+
+/** Spaces and tabs from `i`. */
+fun skip_ws(b: u8[], i: i64): i64 {
+    let mut j = i;
+    while j < b.len && ws(b[j]) {
+        j += 1;
+    }
+    j
+}
+
+fun cut(b: u8[], from: i64, to: i64): u8[] {
+    let mut out: u8[] = [];
+    for k in from..to {
+        out.push(b[k]);
+    }
+    out
+}
+
+/** `"…"` at `i`, escapes decoded. */
+fun scan_basic(b: u8[], i: i64): Result<(string, i64), Oops> {
+    let mut out: u8[] = [];
+    let mut j = i + 1;
+    while true {
+        if j >= b.len || b[j] == 10 || (b[j] == 13 && at(b, j + 1) == 10) {
+            return Err(syntax("a string without its closing quote", i));
+        }
+        let c = b[j];
+        if c == 34 {
+            return Ok((text(out), j + 1));
+        }
+        if c == 92 {
+            let (grown, next) = escape(b, j, out)?;
+            out = grown;
+            j = next;
+        } else if control(c) {
+            return Err(syntax("a control character in a string", j));
+        } else {
+            out.push(c);
+            j += 1;
+        }
+    }
+    Ok(("", j))
+}
+
+/** `'…'` at `i`: no escapes. */
+fun scan_literal(b: u8[], i: i64): Result<(string, i64), Oops> {
+    let mut j = i + 1;
+    while true {
+        if j >= b.len || b[j] == 10 || (b[j] == 13 && at(b, j + 1) == 10) {
+            return Err(syntax("a string without its closing quote", i));
+        }
+        if b[j] == 39 {
+            return Ok((text(cut(b, i + 1, j)), j + 1));
+        }
+        if control(b[j]) {
+            return Err(syntax("a control character in a string", j));
+        }
+        j += 1;
+    }
+    Ok(("", j))
+}
+
+/** `"""…"""` (`quote` 34) or `'''…'''` (39) at `i`: a newline right after the
+ * opening is dropped; in a basic one, escapes and line-ending backslashes. */
+fun scan_multi(b: u8[], i: i64, quote: u8): Result<(string, i64), Oops> {
+    let mut out: u8[] = [];
+    let mut j = i + 3;
+    if at(b, j) == 10 {
+        j += 1;
+    } else if at(b, j) == 13 && at(b, j + 1) == 10 {
+        j += 2;
+    }
+    while true {
+        if j >= b.len {
+            return Err(syntax("a multi-line string without its closing quotes", i));
+        }
+        let c = b[j];
+        if c == quote && at(b, j + 1) == quote && at(b, j + 2) == quote {
+            // Up to two quotes may come right before the closing three.
+            let mut n = 3;
+            while at(b, j + n) == quote {
+                n += 1;
+            }
+            if n > 5 {
+                return Err(syntax("too many quotes closing a multi-line string", j));
+            }
+            for _ in 0..n - 3 {
+                out.push(quote);
+            }
+            return Ok((text(out), j + n));
+        }
+        if c == 92 && quote == 34 {
+            if line_ending_backslash(b, j) {
+                j = skip_blank(b, j + 1);
+            } else {
+                let (grown, next) = escape(b, j, out)?;
+                out = grown;
+                j = next;
+            }
+        } else if c == 13 && at(b, j + 1) == 10 {
+            out.push(13);
+            out.push(10);
+            j += 2;
+        } else if c == 10 {
+            out.push(10);
+            j += 1;
+        } else if control(c) {
+            return Err(syntax("a control character in a string", j));
+        } else {
+            out.push(c);
+            j += 1;
+        }
+    }
+    Ok(("", j))
+}
+
+/** A backslash at `i` followed by spaces and a line end. */
+fun line_ending_backslash(b: u8[], i: i64): bool {
+    let j = skip_ws(b, i + 1);
+    at(b, j) == 10 || (at(b, j) == 13 && at(b, j + 1) == 10)
+}
+
+/** Whitespace and line ends from `i`. */
+fun skip_blank(b: u8[], i: i64): i64 {
+    let mut j = i;
+    while j < b.len && (ws(b[j]) || b[j] == 10 || (b[j] == 13 && at(b, j + 1) == 10)) {
+        j += 1;
+    }
+    j
+}
+
+/** An escape at `i` (its backslash), appended to `out`; the position after it. */
+fun escape(b: u8[], i: i64, out: u8[]): Result<(u8[], i64), Oops> {
+    let mut out = out;
+    let c = at(b, i + 1);
+    let simple = match c {
+        98 => 8,
+        116 => 9,
+        110 => 10,
+        102 => 12,
+        114 => 13,
+        34 => 34,
+        92 => 92,
+        _ => 0,
+    };
+    if simple != 0 {
+        out.push(simple as u8);
+        return Ok((out, i + 2));
+    }
+    let width = if c == 117 { 4 } else if c == 85 { 8 } else { 0 };
+    if width == 0 {
+        return Err(oops(ErrorKind.BadValue, "an unknown escape", i));
+    }
+    let mut code = 0;
+    for k in 0..width {
+        let d = hex_digit(at(b, i + 2 + k));
+        if d < 0 {
+            return Err(oops(ErrorKind.BadValue, "a \\u escape needs {width} hex digits", i));
+        }
+        code = code * 16 + d;
+    }
+    if (code >= 55296 && code <= 57343) || code > 1114111 {
+        return Err(oops(ErrorKind.BadValue, "an escape that isn't a Unicode scalar value", i));
+    }
+    Ok((encode(code, out), i + 2 + width))
+}
+
+/** `out` with `code`'s UTF-8 bytes appended. */
+fun encode(code: i64, out: u8[]): u8[] {
+    let mut out = out;
+    if code < 128 {
+        out.push(code as u8);
+    } else if code < 2048 {
+        out.push((192 + code / 64) as u8);
+        out.push((128 + code % 64) as u8);
+    } else if code < 65536 {
+        out.push((224 + code / 4096) as u8);
+        out.push((128 + code / 64 % 64) as u8);
+        out.push((128 + code % 64) as u8);
+    } else {
+        out.push((240 + code / 262144) as u8);
+        out.push((128 + code / 4096 % 64) as u8);
+        out.push((128 + code / 64 % 64) as u8);
+        out.push((128 + code % 64) as u8);
+    }
+    out
+}

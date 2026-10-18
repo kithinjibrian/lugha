@@ -9,6 +9,12 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `std.toml`, milestone 114 (PRP-146): a read-only TOML 1.0 parser written in Lugha — `parse`, `parse_with`, `Value` (with the four date-time kinds), tables in file order, every definition rule, `TomlError { kind, detail, line, column }`, limits on size, depth and values, overflow-checked integers, `get` and `as_*` helpers; passes toml-test v2.2.0's 679 TOML 1.0 cases (vendored in `tests/fixtures/toml-test`, MIT)
+
+### Fixed
+- The prelude's `xs.join(sep)` took quadratic time (40 000 short strings: 10 s); it now collects bytes once (160 000 strings: 0.07 s)
+
+### Added
 - `std.crypto`, milestone 113 (PRP-145): `sha256` and a streamed `Sha256` (OpenSSL's state freed by a collector finalizer), Ed25519 (`ed25519_keypair`, `ed25519_public`, `ed25519_sign`, `ed25519_verify`) with raw 32/32/64-byte keys and signatures, `random_bytes` (up to 1 MiB) and constant-time `equal`, over the system's OpenSSL 3; `CryptoError { BadLength, OpenSsl }`; nothing panics on input. OpenSSL's `libcrypto` is linked only into programs that load `std.crypto` (`runtime/crypto.c`)
 
 ### Changed
