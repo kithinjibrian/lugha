@@ -8792,3 +8792,6 @@ Branch: prp-148-fs_sync
 
 ### STILL OPEN AT CLOSE
 - Candidates: `fs.write_atomic`, `0o` octal literals, `Option.and_then`.
+
+## SESSION 281 — 2026-10-18 — octal literals and and_then: PRPs — open
+Branch: main
