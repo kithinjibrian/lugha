@@ -8729,3 +8729,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-146 awaits approval.
+
+## SESSION 276 — 2026-10-18 — std.toml (milestone 114) — open
+Branch: prp-146-std_toml

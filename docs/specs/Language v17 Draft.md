@@ -204,7 +204,7 @@ The user's brief: hashing and signatures for Rapidkoi, over the OpenSSL `std.tls
 
 181–197. **`std.crypto`** (milestone 113): `sha256` and a streaming `Sha256` (its OpenSSL state freed by a GC finalizer), Ed25519 keypair/public/sign/verify with raw 32/32/64-byte keys and signatures, `random_bytes` (≤ 1 MiB), constant-time `equal`; `CryptoError { BadLength, OpenSsl }`; nothing panics on input; C-side secrets wiped, Lugha-side copies documented as not; OpenSSL linked only into programs that load `std.crypto` or `std.tls`; no encryption, key exchange, key derivation or other algorithms; tag `m113`. Needs the user's security review before merging.
 
-## Decisions behind milestone 114 (session 275; proposed)
+## Decisions behind milestone 114 (session 275; approved in session 276)
 
 The user's brief: reading configuration files, first Rapidkoi's `rapidkoi.toml`. Details in PRP-146.
 

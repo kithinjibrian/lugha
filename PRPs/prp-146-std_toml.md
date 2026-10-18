@@ -1,6 +1,6 @@
 ## FEATURE: `std.toml` — a read-only TOML 1.0 parser written in Lugha, safe on hostile input; milestone 114 (v17).
 
-**Status:** proposed 2026-10-18 (session 275), from the user's brief (session 275).
+**Status:** approved 2026-10-18 (session 276); proposed in session 275, from the user's brief (session 275).
 
 ## OBJECTIVE
 ```lugha
