@@ -8925,5 +8925,15 @@ Branch: fix-struct-update-interface
 ### STILL OPEN AT CLOSE
 - The user reinstalls (`cargo install --path . --locked`) after the merge; kivuli then retries its PRP-016 tests.
 
-## SESSION 292 — 2026-10-20 — Array concat: discovery — open
+## SESSION 292 — 2026-10-20 — Array concat: discovery and PRP — closed
 Branch: main
+
+### DONE
+- Merged session 291's fix (PR #84, run by the user).
+- Discovery for array concatenation: `xs + ys` (not a method), `T[]` satisfies `Add` like `string`, `+=` for arrays and strings (`s += t` was E0404). PRP-154 written (milestone 122, draft decisions 262–268).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-154 awaits approval.
