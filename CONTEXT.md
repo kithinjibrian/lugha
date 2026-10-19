@@ -8912,3 +8912,15 @@ Branch: prp-153-resolve_and_address
 
 ### STILL OPEN AT CLOSE
 - Rapidkoi (read-only here) must add `address` to its two `tls.Options` literals.
+
+## SESSION 291 — 2026-10-19 — Struct update literals convert to interfaces — closed
+Branch: fix-struct-update-interface
+
+### DONE
+- Bug fix (no PRP): `S { f: e, ..base }` where an interface is expected was E0403; `struct_literal`'s `..base` branch now leaves an expected interface to `convert` (E0422 when the struct doesn't satisfy it; E0403 kept for other types). Tests: two in `src/check/struct_literal.rs`, `tests/programs/m93/update_interface` (conversion in `let`, arrays, arguments, returns, `mut self` on a copy built from the base). CHANGELOG.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user reinstalls (`cargo install --path . --locked`) after the merge; kivuli then retries its PRP-016 tests.

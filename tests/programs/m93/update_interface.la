@@ -1,0 +1,35 @@
+// A struct update literal converts to an interface value where one is expected.
+interface Shape {
+    fun area(self): i64;
+    fun grow(mut self, k: i64);
+}
+
+struct Sq {
+    side: i64,
+    tag: i64,
+}
+
+impl Sq {
+    fun base(): Sq = Sq { side: 1, tag: 0 };
+    fun area(self): i64 = self.side * self.side;
+    fun grow(mut self, k: i64) {
+        self.side *= k;
+    }
+}
+
+fun twice(s: Shape): i64 = s.area() * 2;
+
+fun made(b: Sq): Shape = Sq { side: 5, ..b };
+
+fun main() {
+    let plain: Shape = Sq { side: 2, tag: 0 };
+    let call: Shape = Sq.base();
+    let updated: Shape = Sq { side: 3, ..Sq.base() };
+    let listed: Shape[] = [Sq { side: 4, ..Sq.base() }];
+    println("{plain.area()} {call.area()} {updated.area()} {listed[0].area()}");
+    let b = Sq { side: 1, tag: 7 };
+    let mut grown: Shape = Sq { side: 2, ..b };
+    grown.grow(10);
+    println("{grown.area()} {b.side} {b.tag}");
+    println("{twice(Sq { side: 3, ..b })} {made(b).area()}");
+}
