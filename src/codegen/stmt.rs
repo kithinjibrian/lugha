@@ -116,6 +116,15 @@ impl<'ctx> Lowerer<'ctx> {
                 let name = super::arith::method_of(op).expect("compound operators are arithmetic");
                 self.operator_on(place, (current, &ty), name, std::slice::from_ref(value))?
             }
+            // `s += t` and `xs += ys` join (v17, milestone 122).
+            Some(BinOp::Add) if matches!(ty, Type::String | Type::Array(_)) => {
+                let current = self.place_read(place, &plan);
+                let rhs = self.get(value, &ty)?;
+                match ty {
+                    Type::String => self.string_binary(BinOp::Add, current, rhs),
+                    _ => self.join_arrays(current, rhs, &ty),
+                }
+            }
             Some(op) => {
                 // `x op= e` reads `x` once, then evaluates `e` (spec §5).
                 // Compound operators need a numeric type, which has no `bool` widening.

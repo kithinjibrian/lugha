@@ -35,6 +35,11 @@ impl Checker {
         // `&=` and the other bit forms need an integer (v7).
         let fits = match op {
             AssignOp::Assign => true,
+            // `s += t` and `xs += ys` join (v17, milestone 122).
+            AssignOp::Add if matches!(target, Type::String | Type::Array(_)) => {
+                self.concat_used(place, &target);
+                true
+            }
             AssignOp::Add | AssignOp::Sub | AssignOp::Mul | AssignOp::Div | AssignOp::Rem => {
                 target.is_numeric()
             }

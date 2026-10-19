@@ -24,6 +24,17 @@ fun map<T, U>(xs: T[], f: fun(T): U): U[] {
 }
 
 /**
+ * A new array of `a`'s elements, then `b`'s: `a + b` (v17, milestone 122).
+ */
+fun $concat<T>(a: T[], b: T[]): T[] {
+    let mut out = a;
+    for x of b {
+        out.push(x);
+    }
+    out
+}
+
+/**
  * A new array of the elements `keep` accepts, in order: `xs.filter(keep)`.
  * @param keep true for an element to keep
  */

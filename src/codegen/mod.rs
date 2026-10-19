@@ -18,6 +18,7 @@ mod callbacks;
 mod cast;
 mod channels;
 mod closures;
+mod concat;
 mod conditional;
 mod construct;
 mod consts;

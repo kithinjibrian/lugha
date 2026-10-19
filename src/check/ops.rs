@@ -58,8 +58,8 @@ impl Checker {
         };
         let allowed = l == r
             && match op {
-                // Strings join with `+` (spec §4).
-                BinOp::Add if l == Type::String => true,
+                // Strings join with `+` (spec §4), and arrays (v17, milestone 122).
+                BinOp::Add if matches!(l, Type::String | Type::Array(_)) => true,
                 // Every type has deep equality, numbers and strings are
                 // ordered, and a parameter has what its bounds give (v2 draft §4).
                 BinOp::Eq | BinOp::Ne => self.eq_ok(&l),
@@ -70,6 +70,9 @@ impl Checker {
             };
         if allowed && matches!(op, BinOp::Eq | BinOp::Ne) {
             self.equality_used(expr, &l);
+        }
+        if allowed && op == BinOp::Add {
+            self.concat_used(expr, &l);
         }
         if !allowed && l != Type::Never {
             let ord = !matches!(op, BinOp::Eq | BinOp::Ne);
@@ -189,8 +192,12 @@ impl Checker {
 /// pass; with `any`, every type does, except to a numeric literal: `true + 1`
 /// and `"a" == 1` are operator errors (E0404), not literal errors.
 fn from_operand(ty: &Type, span: Span, to: &Expr, any: bool) -> Option<Expect> {
-    let passes =
-        ty.is_numeric() || (any && !is_literal(to) && !matches!(ty, Type::Error | Type::Never));
+    // An array types a `[]` or `[1]` across `+` (v17); another array is E0404, not E0403 inside it.
+    let passes = ty.is_numeric()
+        || (matches!(ty, Type::Array(_))
+            && matches!(to.kind, ExprKind::Array(_) | ExprKind::Repeat(..))
+            && defers(to))
+        || (any && !is_literal(to) && !matches!(ty, Type::Error | Type::Never));
     passes.then(|| Expect::because(ty.clone(), span, format!("this operand is {ty}")))
 }
 

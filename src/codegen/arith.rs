@@ -35,6 +35,9 @@ impl<'ctx> Lowerer<'ctx> {
         if ty == Type::String {
             return Ok(self.string_binary(op, a, b));
         }
+        if op == BinOp::Add && matches!(ty, Type::Array(_)) {
+            return Ok(self.join_arrays(a, b, &ty));
+        }
         let composite = matches!(
             ty,
             Type::Struct(_, _)
