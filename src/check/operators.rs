@@ -4,7 +4,7 @@
 //! method qualifies by its shape: a plain `self`, one parameter (none for
 //! `neg`) and a result. The call is checked as a method call whose id is
 //! the operator expression's, so instances and bound uses work unchanged.
-//! The numbers (and `string`, for `Add`) satisfy the prelude's operator
+//! The numbers (and `string` and arrays, for `Add`) satisfy the prelude's operator
 //! bounds as built-ins.
 
 use super::iterators::is_operator_bound;
@@ -64,7 +64,8 @@ impl Checker {
                 false => Some(vec!["only `f32` and `f64` are `Float`".to_string()]),
             };
         }
-        if arg.is_numeric() || (name == "Add" && *arg == Type::String) {
+        // Strings and (v17, milestone 122) arrays join with `+`.
+        if arg.is_numeric() || (name == "Add" && matches!(arg, Type::String | Type::Array(_))) {
             return Some(Vec::new());
         }
         let parameter = matches!(arg, Type::Param(p) if self.has_num(p));

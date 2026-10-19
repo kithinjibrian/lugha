@@ -1,0 +1,6 @@
+// Arrays join only with arrays of the same type.
+fun main() {
+    let xs = [1, 2];
+    let names = ["a"];
+    println(xs + names);
+}

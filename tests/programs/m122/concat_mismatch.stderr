@@ -1,0 +1,7 @@
+error[E0404]: cannot apply `+` to i64[] and string[]
+  --> tests/programs/m122/concat_mismatch.la:5:13
+  |
+5 |     println(xs + names);
+  |             ^^^^^^^^^^
+
+For more about E0404, run `lughac explain E0404`.

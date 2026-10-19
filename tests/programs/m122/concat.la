@@ -1,0 +1,42 @@
+// `xs + ys` joins arrays, `+=` joins arrays and strings, `T[]` is `Add` (v17, milestone 122).
+struct P {
+    name: string,
+    tags: string[],
+}
+
+fun both<T: Add>(a: T, b: T): T = a + b;
+
+// A program's own `concat` is unaffected.
+fun concat(a: i64, b: i64): i64 = a * 10 + b;
+
+fun main() {
+    let xs = [1, 2];
+    let ys = [3];
+    let zs = xs + ys;
+    println("{zs} {xs} {ys}");
+    println("{xs + []} {[] + ys} {[0] + xs + ys + [4, 5]}");
+    let small: u8[] = [1] + [255];
+    println(small);
+    let mut log: string[] = [];
+    for i in 0..3 {
+        log += ["step {i}"];
+    }
+    println(log);
+    let mut twice = xs;
+    twice += twice;
+    println("{twice} {xs}");
+    // Joined elements are copies: changing one side's inner array later changes nothing joined.
+    let mut grid = [[1], [2]];
+    let joined = grid + [[3]];
+    grid[0].push(9);
+    println("{joined} {grid}");
+    let mut people = [P { name: "a", tags: ["x"] }];
+    let more = people + [P { name: "b", tags: [] }];
+    people[0].tags += ["y"];
+    println("{more[0].tags} {people[0].tags} {more.len}");
+    let mut s = "lu";
+    s += "gha";
+    println(s);
+    let ab = both("a", "b");
+    println("{both([1], [2, 3])} {ab} {both(1, 2)} {concat(4, 2)}");
+}

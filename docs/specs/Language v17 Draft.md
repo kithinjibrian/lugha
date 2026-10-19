@@ -248,6 +248,12 @@ The user's brief: Rapidkoi's PRP-013 refuses names pointing to the local network
 
 252–261. **`net.resolve` and `tls.Options.address`** (milestone 121): every address a name resolves to; a connection to a chosen IP address that still verifies the name, in `std.tls` and `std.http`; tag `m121`.
 
+## Decisions behind milestone 122 (session 292; approved and built session 293)
+
+The user's brief: "add a concat method to arrays"; discovery chose the operator. Details in PRP-154.
+
+262–268. **Joining arrays** (milestone 122): `xs + ys` on two arrays of one type is a new array (E0404 otherwise), lowered to the prelude's `$concat`; `T[]` satisfies `Add`, and a `T: Add` instance at an array type joins; `+=` joins arrays and strings; no `concat` method, no `xs + element`; tag `m122`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.

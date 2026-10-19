@@ -90,6 +90,12 @@ impl Checker {
         name: &str,
     ) -> Option<Instance> {
         let concrete = subst(&Type::Param(param.to_string()), generics, args);
+        // `a + b` through `T: Add` at an array joins them (v17, milestone 122).
+        if name == "add"
+            && let Some(target) = super::concat::concat_target(&concrete)
+        {
+            return Some(target);
+        }
         if let Some(default) = self.default_target(generics, args, param, name, &concrete) {
             return Some(default);
         }
