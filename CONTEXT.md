@@ -8912,3 +8912,6 @@ Branch: prp-153-resolve_and_address
 
 ### STILL OPEN AT CLOSE
 - Rapidkoi (read-only here) must add `address` to its two `tls.Options` literals.
+
+## SESSION 291 — 2026-10-19 — Struct update literals convert to interfaces — open
+Branch: fix-struct-update-interface
