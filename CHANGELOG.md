@@ -15,6 +15,7 @@ Never deleted. Older entries are never modified.
 - `tls.Options` has a third field, `address`: a literal naming every field without `..tls.options()` must name it too
 
 ### Fixed
+- A struct update literal (`S { f: e, ..base }`) converts to an interface value where one is expected, as a plain struct literal does (it was E0403)
 - The language server no longer reports E0319 ("the main file can't be imported") for two modules importing each other: a module checked alone, with no main reaching it, is now loaded as a module, as `lughac check` loads it
 
 ### Added

@@ -1,6 +1,7 @@
 //! Struct literals (spec §4; v2 draft §5): `S { f: e, … }` and, from
 //! another module, `m.S { … }`, which needs every field visible (E0313).
 
+use super::applied::Applied;
 use super::expr::Expect;
 use super::generics::{params, subst};
 use super::{Checker, Type, errors};
@@ -117,10 +118,11 @@ impl Checker {
             }
         }
         // With a base, its type is the literal's: checked against what's expected here.
+        // An expected interface is `convert`'s to judge (in `expr`), as for any value.
         if let Some(args) = base_args {
             let found = subst(&ty, &generics, &args);
             return match expect {
-                Some(want) if !found.fits(&want.ty) => {
+                Some(want) if !found.fits(&want.ty) && Applied::of(&want.ty).is_none() => {
                     self.report(errors::mismatch(
                         want.ty.clone(),
                         found,
@@ -245,6 +247,65 @@ mod tests {
                 "{POINT}fun main() {{ let p = P {{ x: 0.0, y: 0.0 }}; let q = P {{ x: 1.0, x: 2.0, ..p }}; }}"
             )),
             [("E0414", "x")]
+        );
+    }
+
+    const SQ: &str = "interface Shape { fun area(self): i64; }\n\
+        struct Sq { side: i64, tag: i64 }\n\
+        impl Sq { fun base(): Sq = Sq { side: 1, tag: 0 }; fun area(self): i64 = self.side * self.side; }\n\
+        struct Box { w: i64 }\n";
+
+    #[test]
+    fn a_literal_with_a_base_converts_to_an_interface_v17() {
+        use crate::check::Type;
+        use crate::check::test_util::{let_type, ok};
+        let shape = Type::Interface("Shape".into(), Vec::new());
+        let src = format!(
+            "{SQ}fun main() {{ let s: Shape = Sq {{ side: 3, ..Sq.base() }}; let t = s; }}"
+        );
+        assert_eq!(let_type(&src, "t"), shape);
+        // Arguments, array elements, arrays passed to methods, returns.
+        ok(&format!(
+            "{SQ}fun f(s: Shape): i64 = s.area();\n\
+             struct Node {{ n: i64 }}\n\
+             impl Node {{ fun all(self, xs: Shape[]): i64 = xs[0].area(); }}\n\
+             fun g(b: Sq): Shape = Sq {{ side: 2, ..b }};\n\
+             fun main() {{\n\
+               println(f(Sq {{ side: 3, ..Sq.base() }}));\n\
+               let xs: Shape[] = [Sq {{ side: 4, ..Sq.base() }}];\n\
+               let node = Node {{ n: 0 }};\n\
+               println(node.all([Sq {{ side: 5, ..Sq.base() }}]));\n\
+               println(g(Sq.base()).area() + xs[0].area());\n\
+             }}"
+        ));
+        // Generic: the base fixes the type arguments, then the value converts.
+        ok("interface Named { fun name(self): string; }\n\
+            struct W<T> { v: T, n: string }\n\
+            impl W<T> { fun name(self): string = self.n; }\n\
+            fun main() { let w = W { v: 1, n: \"a\" }; let s: Named = W { n: \"b\", ..w }; println(s.name()); }");
+    }
+
+    #[test]
+    fn a_base_literal_still_must_fit_what_is_expected_v17() {
+        // A struct without the interface's items: E0422, as for a plain literal.
+        assert_eq!(
+            errors(&format!(
+                "{SQ}fun main() {{ let s: Shape = Box {{ w: 1 }}; }}"
+            )),
+            [("E0422", "Box { w: 1 }")]
+        );
+        assert_eq!(
+            errors(&format!(
+                "{SQ}fun main() {{ let b = Box {{ w: 1 }}; let s: Shape = Box {{ ..b }}; }}"
+            )),
+            [("E0422", "Box { ..b }")]
+        );
+        // Another struct expected: still E0403.
+        assert_eq!(
+            errors(&format!(
+                "{SQ}fun main() {{ let p: Box = Sq {{ side: 3, ..Sq.base() }}; }}"
+            )),
+            [("E0403", "Sq { side: 3, ..Sq.base() }")]
         );
     }
 
