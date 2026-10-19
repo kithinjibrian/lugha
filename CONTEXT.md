@@ -8937,3 +8937,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-154 awaits approval.
+
+## SESSION 293 — 2026-10-20 — Array concatenation: build (m122) — open
+Branch: prp-154-array_concat
