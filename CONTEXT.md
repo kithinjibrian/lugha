@@ -8924,3 +8924,6 @@ Branch: fix-struct-update-interface
 
 ### STILL OPEN AT CLOSE
 - The user reinstalls (`cargo install --path . --locked`) after the merge; kivuli then retries its PRP-016 tests.
+
+## SESSION 292 — 2026-10-20 — Array concat: discovery — open
+Branch: main
