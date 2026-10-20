@@ -8978,3 +8978,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-156 awaits approval. Later candidates: aggregates through memory in codegen (most of every build's time), caching compiled C objects (needs the user's security review of `src/link/`).
+
+## SESSION 297 — 2026-10-20 — Structs and enums through memory: discovery — open
+Branch: main
