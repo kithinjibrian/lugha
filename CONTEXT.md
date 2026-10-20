@@ -8992,5 +8992,15 @@ Branch: main
 ### STILL OPEN AT CLOSE
 - PRP-157 awaits approval. PRP-156 held on its branch.
 
-## SESSION 298 — 2026-10-20 — Struct returns through a hidden pointer: build (m125) — open
+## SESSION 298 — 2026-10-20 — Struct returns through a hidden pointer: build (m125) — closed
 Branch: prp-157-struct_returns
+
+### DONE
+- PRP-157 built on `prp-157-struct_returns`: `codegen/sret.rs`, one pass after lowering — every Lugha function returning a struct takes `ptr sret(T)` first and returns `void`; calls (direct, and every indirect call returning a struct) pass an entry-block slot and load from it; `main`, `lugha_cb_`, `lugha_cfn_` and calls to declarations untouched; the old function stays as an unused declaration `lugha_old_<name>` (deleting needs `unsafe`). Tests: `codegen::sret` (4), `tests/codegen.rs` `aggregate_results_survive_every_kind_of_call_v17` (-O0 and -O2), 7 IR-text tests updated to the new form. Full `cargo test --no-fail-fast` passes; fmt, clippy clean.
+- Measured (kivuli, same load): backgrounds build 12.42 s → 10.01 s, `llc` 9.55 s → 7.77 s, `test diff.la` 12.80 s → 10.68 s. Correction: "didn't lower all arguments" is entry-block only, not whole-function (my session-296/297 reading was wrong); the remaining cost is 1253 aggregate stores, 370 loads, 151 insert/extractvalue — step 2.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PR awaits the user's merge; tag `m125` after. Step 2 (aggregates through memory inside bodies) is the next PRP if the user wants it. PRP-156 held.

@@ -173,3 +173,47 @@ fn runtime_compiles_without_warnings() {
         String::from_utf8_lossy(&out.stderr)
     );
 }
+
+/// Struct, enum, `Option`, tuple and function results through every kind of
+/// call return through a hidden pointer (v17, milestone 125): the program's
+/// exit code is a checksum of them all, the same at -O0 and -O2.
+#[test]
+fn aggregate_results_survive_every_kind_of_call_v17() {
+    let src = "struct P { x: i64, y: i64 }
+enum E { A(i64), B(P), C }
+interface Make { fun make(self, n: i64): P; }
+struct M { k: i64 }
+impl M { fun make(self, n: i64): P = P { x: n * self.k, y: 1 }; }
+impl P {
+    fun flip(self): P = P { x: self.y, y: self.x };
+    fun add(self, o: P): P = P { x: self.x + o.x, y: self.y + o.y };
+}
+fun direct(n: i64): P = P { x: n, y: n + 1 };
+fun e(n: i64): E = if n > 0 { E.B(direct(n)) } else { E.C };
+fun o(n: i64): Option<P> = if n > 2 { Some(direct(n)) } else { None };
+fun t(n: i64): (P, i64) = (direct(n), n);
+fun adder(k: i64): fun(i64): P = fun(n: i64): P = P { x: n + k, y: 0 };
+fun through(m: Make, n: i64): P = m.make(n);
+fun early(n: i64): P {
+    if n == 0 { return P { x: 100, y: 0 }; }
+    direct(n).flip()
+}
+fun main(): i32 {
+    let a = direct(1);
+    let b = a.flip();
+    let c = a + b;
+    let d = match e(2) { B(p) => p.x, A(n) => n, C => 0 };
+    let f = match o(3) { Some(p) => p.y, None => 0 };
+    let (g, h) = t(4);
+    let add5 = adder(5);
+    let i = add5(1);
+    let j = through(M { k: 3 }, 2);
+    let k = early(0);
+    let l = early(7);
+    let sum = a.x + b.x + c.x + c.y + d + f + g.x + h + i.x + j.x + k.x + l.x;
+    sum as i32
+}
+";
+    // 1 + 2 + 3 + 3 + 2 + 4 + 4 + 4 + 6 + 6 + 100 + 8
+    assert_eq!(run(src).code(), Some(143));
+}

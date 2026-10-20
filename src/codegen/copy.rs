@@ -284,11 +284,11 @@ mod tests {
                    fun main() { let w = Wrap { data: [1] }; let w2 = w; let p = P { x: 1 }; let q = p; println(w.data[0]); }";
         let ir = ir(src);
         assert!(
-            ir.contains("define internal %Wrap @lugha_copy_4Wrap(%Wrap"),
+            ir.contains("define internal void @lugha_copy_4Wrap(ptr sret(%Wrap) %result, %Wrap"),
             "{ir}"
         );
         assert!(
-            body(&ir, "main").contains("call %Wrap @lugha_copy_4Wrap("),
+            body(&ir, "main").contains("call void @lugha_copy_4Wrap(ptr sret(%Wrap)"),
             "{ir}"
         );
         assert!(
@@ -303,7 +303,7 @@ mod tests {
                    fun main() { let n = Node { value: 1, kids: [] }; let m = n; let o = n; }";
         let ir = ir(src);
         assert_eq!(
-            ir.matches("define internal %Node @lugha_copy_4Node(")
+            ir.matches("define internal void @lugha_copy_4Node(")
                 .count(),
             1,
             "{ir}"

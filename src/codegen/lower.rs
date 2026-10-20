@@ -244,6 +244,8 @@ pub(super) fn lower<'ctx>(
             lowerer.c_main(user_main);
         }
     }
+    // Struct results through a hidden pointer (v17, milestone 125).
+    super::sret::results_through_pointers(context, &lowerer.module);
     lowerer
         .module
         .verify()
