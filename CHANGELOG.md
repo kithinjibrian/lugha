@@ -13,6 +13,7 @@ Never deleted. Older entries are never modified.
 - `net.resolve(name)` and `tls.Options.address`, milestone 121 (PRP-153): every address a name resolves to (IPv4 and IPv6, resolver order, each once), and a connection to a chosen IP address that keeps the host name for SNI and the certificate check, in `tls.connect_with` and `http.request_tls`/`request_tls_with` (`https://` and `http://`, the URL's host in `host`), like curl's `--resolve`
 
 ### Changed
+- A method may share its name with a field (`p.name` is the field, `p.name()` the method) or, when it takes `self`, with a variant (milestone 123, PRP-155); E0310 remains for a field holding a function, an associated function named like a variant, and two methods of one name
 - `s += t` on strings is accepted (it was E0404)
 - `tls.Options` has a third field, `address`: a literal naming every field without `..tls.options()` must name it too
 

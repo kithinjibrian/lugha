@@ -1,0 +1,10 @@
+// A method may not share its name with a field holding a function: `q.area(5)` could call either.
+struct Q {
+    area: fun(i64): i64,
+}
+
+impl Q {
+    fun area(self, x: i64): i64 = x + 1000;
+}
+
+fun main() {}

@@ -212,3 +212,65 @@ fn a_std_function_lists_its_uses_and_nothing_under_the_cursor_is_null() {
     assert_eq!(refs(&mut s, &uri, (1, 0), true), None);
     assert_eq!(s.finish(), Some(0));
 }
+
+const SHARED: &str = "struct P { name: string }
+impl P { fun name(self): string = \"Dr. {self.name}\"; }
+enum Shape { Circle(f64), Dot }
+impl Shape { fun Circle(self): bool = match self { Circle(_) => true, Dot => false }; }
+fun main() {
+    let p = P { name: \"Ada\" };
+    println(p.name);
+    println(p.name());
+    let s = Shape.Circle(1.0);
+    println(s.Circle());
+}
+";
+
+#[test]
+fn a_field_and_a_method_of_one_name_are_two_members_v17() {
+    let t = Temp::with(&[("main.la", SHARED)]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, SHARED);
+    s.expect(&uri, &[]);
+    let m = |context: &str, word: &str| at("main.la", SHARED, context, word);
+    let sorted = |mut v: Vec<(String, u32, u32)>| {
+        v.sort();
+        Some(v)
+    };
+    let field = sorted(vec![
+        m("{ name: string", "name"),
+        m("self.name}", "name"),
+        m("{ name: \"Ada", "name"),
+        m("p.name);", "name"),
+    ]);
+    assert_eq!(
+        refs(&mut s, &uri, pos(SHARED, "p.name);", "name"), true),
+        field
+    );
+    let method = sorted(vec![m("fun name", "name"), m("p.name()", "name")]);
+    assert_eq!(
+        refs(&mut s, &uri, pos(SHARED, "p.name()", "name"), true),
+        method
+    );
+    let variant = sorted(vec![
+        m("{ Circle(f64)", "Circle"),
+        m("{ Circle(_)", "Circle"),
+        m("Shape.Circle(1.0)", "Circle"),
+    ]);
+    assert_eq!(
+        refs(
+            &mut s,
+            &uri,
+            pos(SHARED, "Shape.Circle(1.0)", "Circle"),
+            true
+        ),
+        variant
+    );
+    let self_method = sorted(vec![m("fun Circle", "Circle"), m("s.Circle()", "Circle")]);
+    assert_eq!(
+        refs(&mut s, &uri, pos(SHARED, "s.Circle()", "Circle"), true),
+        self_method
+    );
+    assert_eq!(s.finish(), Some(0));
+}

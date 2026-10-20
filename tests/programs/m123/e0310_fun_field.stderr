@@ -1,0 +1,9 @@
+error[E0310]: `Q` already has a field `area` holding a function
+  --> tests/programs/m123/e0310_fun_field.la:7:9
+  |
+7 |     fun area(self, x: i64): i64 = x + 1000;
+  |         ^^^^
+  |
+  = help: a call `….area(…)` would mean either; give the method a different name
+
+For more about E0310, run `lughac explain E0310`.

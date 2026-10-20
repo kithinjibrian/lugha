@@ -124,10 +124,18 @@ pub(in crate::check) fn method_named_like(
 ) -> Diagnostic {
     Diagnostic::error(
         "E0310",
-        format!("`{ty}` already has a {what} called `{name}`"),
+        match what {
+            "variant" => format!("`{ty}` already has a variant called `{name}`"),
+            _ => format!("`{ty}` already has a field `{name}` holding a function"),
+        },
         span,
     )
-    .with_help("give the method a different name")
+    .with_help(match what {
+        "variant" => format!(
+            "`{ty}.{name}(…)` would mean either; give the function a `self` or a different name"
+        ),
+        _ => format!("a call `….{name}(…)` would mean either; give the method a different name"),
+    })
 }
 
 /// E0313: another module's `private` item, method or field (v2 draft §6).

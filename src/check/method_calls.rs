@@ -53,8 +53,12 @@ impl Checker {
         }
         if let Some(ty) = self.type_named_by(base) {
             let method = self.method(&ty, &name.name);
-            if method.is_none() && matches!(ty, Type::Enum(_, _)) {
-                return None; // `E.V(..)`: a variant, or E0415 from construction
+            // `E.V(..)`: a variant, or E0415 from construction. A `self` method
+            // may share a variant's name (v17, milestone 123); the path is the variant's.
+            if matches!(ty, Type::Enum(_, _))
+                && (method.is_none() || self.has_variant(&ty, &name.name))
+            {
+                return None;
             }
             self.record(base, Type::Unit);
             self.record(callee, Type::Unit);

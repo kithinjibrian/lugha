@@ -84,6 +84,10 @@ impl Checker {
             return Some(self.function_value(expr, &key, expect));
         }
         let owner = self.type_named_by(base)?;
+        // `E.V` is the variant even beside a `self` method `V` (v17, milestone 123).
+        if self.has_variant(&owner, &name.name) {
+            return None;
+        }
         let method = self.method(&owner, &name.name)?;
         self.record(base, Type::Unit);
         if method.receiver.is_some() {

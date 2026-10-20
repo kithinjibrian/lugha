@@ -1,0 +1,48 @@
+// A field and a method, or a variant and a `self` method, may share a name (v17, milestone 123).
+interface Named {
+    fun name(self): string;
+}
+
+struct P {
+    name: string,
+    area: fun(i64): i64,
+    count: i64,
+}
+
+impl P {
+    fun name(self): string = "Dr. {self.name}";
+    fun count(mut self) {
+        self.count += 1;
+    }
+}
+
+enum Shape {
+    Circle(f64),
+    Square(f64),
+}
+
+impl Shape {
+    fun Circle(self): bool = match self {
+        Circle(_) => true,
+        _ => false,
+    };
+}
+
+fun greet(n: Named): string = "hello, {n.name()}";
+
+fun main() {
+    let mut p = P { name: "Ada", area: fun(x) = x * 2, count: 0 };
+    println(p.name);
+    println(p.name());
+    println(p.area(5));
+    println((p.area)(6));
+    p.count();
+    p.count();
+    println(p.count);
+    println(greet(p));
+    let s = Shape.Circle(1.0);
+    let q = Shape.Square(2.0);
+    println("{s.Circle()} {q.Circle()}");
+    let make = Shape.Circle;
+    println(make(3.0));
+}
