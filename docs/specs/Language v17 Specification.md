@@ -8,11 +8,12 @@ Oct 16, 2026 · @kithinji
 
 **v16.** This is v15 plus shared boxes (`Ref<T>`), block and doc comments, the editor tooling (`lughac lsp`, `fmt`, `test`, `explain`, `init`) and C interop (linking C libraries, callbacks and handles, strings from C, C structs by value) (milestones 67–90).
 
-**Changes since v16** (milestones 91–122):
+**Changes since v16** (milestones 91–123):
 - Green threads: `spawn f(x)` runs a call concurrently and gives a `Task<T>` (a plain `Task` for a call that returns nothing) whose `join()` waits for the result. `Chan<T>` carries values between green threads: `Chan.new()` (unbuffered) or `Chan.buffered(n)`, `send`, `recv` (an `Option`, `None` once closed), `try_recv`, `close`, `is`. `select` waits on several channels at once, with an `after(ms)` timeout or a `default` that never waits. `std.task` has `sleep(ms)` and `yield_now()`. Every function stays an ordinary function: there is no `async` and no `await`, so nothing is coloured. All green threads share the program's one OS thread; a panic in any of them ends the program, as does `main` returning, and a deadlock is a panic (sections 2–9).
 - Actors: `actor Counter { count: i64, fun add(mut self, n: i64) { … } fun get(self): i64 = … }` declares state and methods together; `spawn Counter { count: 0 }` starts one and gives a handle of type `Counter`. A method call on the handle is a message, handled one at a time: one with a result waits for it, one without is queued. `stop()`, `join(): Option<string>` and `is` are every handle's; a panic ends only its actor (`join` gives the message, callers waiting panic in turn); fields are private, and nothing that may hold a `Ref` crosses an actor's boundary (E0439) (milestone 92; sections 2–9).
 - Struct update syntax: `Model { count: m.count + 1, ..m }` takes every field not written from `m` (milestone 93; sections 3, 4, 5).
 - Variants as functions: `Msg.Named` is a `fun(string): Msg` when not called, and so are `Some`, `Ok` and `Err` — `input(name, Msg.Named)`, `xs.map(Some)` (milestone 94; sections 4, 9).
+- Shared names: a method may be named like a field (`p.name` vs `p.name()`) or, with `self`, like a variant, where uses tell them apart; E0310 remains for a function-holding field, an associated function named like a variant, and two methods (milestone 123; section 4).
 - Joining arrays: `xs + ys` is a new array of `xs`'s elements then `ys`'s, `xs += ys` and `s += t` join in place of `a = a + b`, and arrays satisfy `Add` (milestone 122; section 4).
 - `net.resolve` and `tls.Options.address` (milestone 121): every address a name resolves to, and a connection to a chosen IP address that still verifies the name (in `std.tls` and `std.http`), against DNS rebinding.
 - `crypto.hkdf_sha256`: HKDF-SHA256 key derivation, RFC 5869 (milestone 120).
@@ -688,7 +689,7 @@ Equality costs time proportional to the values compared. `f64` keeps IEEE semant
 
 **Names of types.** A local — a `let`, a parameter, a `for` variable or a `match` binding — may not be named like a struct, an enum or `Option` (E0311). So a name before `.` is always unambiguous: a type, meaning a variant or associated function follows, or a local, meaning a field or method follows.
 
-**Methods.** An `impl T { … }` block attaches functions to a struct or enum `T` declared anywhere in the file; a type may have several `impl` blocks, and no `impl` may target a built-in type (E0305). Method names are unique per type and may not repeat a field or variant name (E0310).
+**Methods.** An `impl T { … }` block attaches functions to a struct or enum `T` declared anywhere in the file; a type may have several `impl` blocks, and no `impl` may target a built-in type (E0305). Method names are unique per type (E0310). Two members of a type may share a name only when every use shows which one is meant (v17, milestone 123): a method may be named like a field (`p.name` is the field, `p.name()` the method) unless the field's declared type is a function type, since `q.area(5)` could then call either; and a method with `self` may be named like a variant (`Shape.Circle(1.0)`, and `Shape.Circle` as a value, are always the variant; `s.Circle()` the method), but an associated function may not. The pairs that can't be told apart are E0310.
 
 - **`self` methods.** A method whose first parameter is `self` is called on a value: `v.len_sq()`. `self` is an immutable, borrowed parameter of type `T`: storing or returning it copies it, like any parameter.
 - **`mut self` methods.** A method whose first parameter is `mut self` changes the caller's value in place: `v.scale(2.0)`. The receiver must be a place whose root is `let mut` (E0501), not inside a string (E0506), and not an array being iterated (E0507); it may be a variable, a field or an element (`r.min.shift(1.0)`, `ps[1].scale(2.0)`). Inside, `self`, its fields and its elements can be assigned, and `self` can be replaced whole.
@@ -1719,7 +1720,7 @@ Name and type errors, reported by the checker:
 | E0307 | Struct contains itself | `struct A { b: B }` with `struct B { a: A }` — hold it in an array instead (`A[]`) |
 | E0308 | Field declared twice | `struct P { x: i64, x: f64 }` |
 | E0309 | Variant declared twice | `enum E { A, B, A }` |
-| E0310 | Method declared twice, or named like a field or variant | `impl P { fun x(self) {} }` where `P` has a field `x` |
+| E0310 | Method declared twice, or named like a member it can't be told from | `impl Q { fun area(self) {} }` where `Q`'s field `area` holds a function |
 | E0311 | A local named like a type or an imported module | `let Shape = 3;`, `fun f(Point: i64)` |
 | E0312 | Module not found | `import shapes.cirlce;` with no `shapes/cirlce.la` (v2); `import std.maths;` (v15); `import geo;` when package `geo` has no `lib.la`, and `import geo.lib;` when it has (v17) |
 | E0313 | An item, method or field not visible here | another module's `private` item: `range.helper()`, `r.lo`, `range.Range { lo: 1, hi: 5 }` (v2); another package's item without `public` (v8); `shapes.Vec2` when `shapes` imported `Vec2` without `public` (v11); `shapes.vec.helper()` through a re-exported module when `helper` isn't `public` (v14) |
@@ -3798,6 +3799,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 119 | `request_tls_with` (v17) | `http.request_tls_with`: limits and TLS options | `tests/tls.rs` (done) |
 | 120 | `hkdf_sha256` (v17) | `crypto.hkdf_sha256`: RFC 5869 key derivation | `tests/crypto.rs` (done) |
 | 122 | Joining arrays (v17) | `xs + ys`, `xs += ys`, `s += t`, arrays satisfy `Add` | `tests/programs/m122` (done) |
+| 123 | Shared member names (v17) | a method named like a field or, with `self`, a variant; E0310 reworded | `tests/programs/m123` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

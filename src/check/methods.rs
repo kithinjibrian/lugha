@@ -64,7 +64,7 @@ impl Checker {
                     self.report(errors::duplicate_method(name, owner, f.name.span, first));
                     continue;
                 }
-                if let Some(what) = self.member_named(&ty, name) {
+                if let Some(what) = self.member_named(&ty, name, f.receiver.is_some()) {
                     self.report(errors::method_named_like(name, what, owner, f.name.span));
                     continue;
                 }
@@ -141,15 +141,24 @@ impl Checker {
         }
     }
 
-    /// "field" or "variant" if `ty` already has a member called `name` (E0310).
-    fn member_named(&self, ty: &Type, name: &str) -> Option<&'static str> {
+    /// The member of `ty` a method `name` would clash with (E0310): one
+    /// written the same way at a use (v17, milestone 123). `p.f` and
+    /// `p.f()` differ, but not for a field holding a function; `E.V(…)`
+    /// and `e.V()` differ, but not for an associated function.
+    fn member_named(&self, ty: &Type, name: &str, has_self: bool) -> Option<&'static str> {
         match ty {
-            Type::Struct(s, _) if self.struct_field(s, name).is_some() => Some("field"),
-            Type::Enum(e, _) if self.enums[e].variants.iter().any(|(v, _)| v == name) => {
-                Some("variant")
+            Type::Struct(s, _) if matches!(self.struct_field(s, name), Some(Type::Fun(..))) => {
+                Some("field")
             }
+            Type::Enum(..) if !has_self && self.has_variant(ty, name) => Some("variant"),
             _ => None,
         }
+    }
+
+    /// True if `ty` is an enum with a variant called `name`.
+    pub(super) fn has_variant(&self, ty: &Type, name: &str) -> bool {
+        matches!(ty, Type::Enum(e, _)
+            if self.enums.get(e).is_some_and(|i| i.variants.iter().any(|(v, _)| v == name)))
     }
 
     pub(super) fn method(&self, ty: &Type, name: &str) -> Option<Method> {
@@ -203,14 +212,56 @@ mod tests {
         );
         assert_eq!(errors(&twice), [("E0310", "f")]);
         assert_eq!(
-            errors(&format!(
-                "{V}impl V {{ fun x(self) {{}} }}\nfun main() {{}}"
-            )),
-            [("E0310", "x")]
-        );
-        assert_eq!(
             errors("enum E { A }\nimpl E { fun A() {} }\nfun main() {}"),
             [("E0310", "A")]
+        );
+    }
+
+    #[test]
+    fn a_field_and_a_method_may_share_a_name_v17() {
+        let src = format!(
+            "{V}impl V {{ fun x(self): string = \"x is {{self.x}}\"; fun y(mut self) {{ self.y += 1.0; }} }}\n\
+             fun main() {{ let mut v = V {{ x: 1.0, y: 2.0 }}; let a = v.x; let b = v.x(); v.y(); let c = v.y; }}"
+        );
+        assert_eq!(let_type(&src, "a"), Type::F64);
+        assert_eq!(let_type(&src, "b"), Type::String);
+        assert_eq!(let_type(&src, "c"), Type::F64);
+        // Generic, and a field of type `T`, which isn't a function field.
+        ok(
+            "struct B<T> { v: T }\nimpl B<T> { fun v(self): T = self.v; }\n\
+            fun main() { let b = B { v: 1 }; let n: i64 = b.v + b.v(); }",
+        );
+    }
+
+    #[test]
+    fn a_function_field_and_a_method_are_e0310_v17() {
+        let found = errors(
+            "struct Q { area: fun(i64): i64 }\nimpl Q { fun area(self, x: i64): i64 = x; }\nfun main() {}",
+        );
+        assert_eq!(found, [("E0310", "area")]);
+        let d = crate::check::test_util::diagnostics(
+            "struct Q { area: fun(i64): i64 }\nimpl Q { fun area(self): i64 = 1; }\nfun main() {}",
+        );
+        assert!(d[0].message.contains("holding a function"), "{d:?}");
+        // A function field alone is still called as `q.area(5)`.
+        ok("struct Q { area: fun(i64): i64 }\n\
+            fun main() { let q = Q { area: fun(x) = x * 2 }; let n: i64 = q.area(5); }");
+    }
+
+    #[test]
+    fn a_variant_and_a_self_method_may_share_a_name_v17() {
+        let src = "enum S { Circle(f64), Square(f64) }\n\
+            impl S { fun Circle(self): bool = match self { Circle(_) => true, _ => false }; }\n\
+            fun main() { let s = S.Circle(1.0); let b = s.Circle(); let f = S.Circle; let t = f(2.0); }";
+        assert_eq!(let_type(src, "s"), Type::Enum("S".into(), Vec::new()));
+        assert_eq!(let_type(src, "b"), Type::Bool);
+        assert_eq!(let_type(src, "t"), Type::Enum("S".into(), Vec::new()));
+        // An associated function named like a variant stays E0310.
+        assert_eq!(
+            errors(
+                "enum S { Circle(f64) }\nimpl S { fun Circle(r: f64): S = S.Circle(r); }\nfun main() {}"
+            ),
+            [("E0310", "Circle")]
         );
     }
 }

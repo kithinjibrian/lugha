@@ -1,9 +1,9 @@
-error[E0310]: `P` already has a field called `x`
-  --> tests/programs/m7/e0310.la:4:9
+error[E0310]: method `get` is declared twice for `P`
+  --> tests/programs/m7/e0310.la:5:9
   |
-4 |     fun x(self): i64 = 1;
-  |         ^
-  |
-  = help: give the method a different name
+4 |     fun get(self): i64 = 1;
+  |         --- first declared here
+5 |     fun get(self): i64 = 2;
+  |         ^^^
 
 For more about E0310, run `lughac explain E0310`.

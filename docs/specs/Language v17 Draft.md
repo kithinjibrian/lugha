@@ -254,6 +254,12 @@ The user's brief: "add a concat method to arrays"; discovery chose the operator.
 
 262–268. **Joining arrays** (milestone 122): `xs + ys` on two arrays of one type is a new array (E0404 otherwise), lowered to the prelude's `$concat`; `T[]` satisfies `Add`, and a `T: Add` instance at an array type joins; `+=` joins arrays and strings; no `concat` method, no `xs + element`; tag `m122`.
 
+## Decisions behind milestone 123 (approved and built session 294)
+
+The user's brief: allow a struct field and a method of the same name. Rust (checked with rustc 1.99.0) accepts every pair but silently prefers the method over a function field and the variant over an associated function; the user chose a principle instead. Details in PRP-155.
+
+269–275. **Shared member names** (milestone 123): two members may share a name only when every use shows which one is meant — a field and a method (`p.name`, `p.name()`) unless the field holds a function; a variant and a `self` method (`Shape.Circle(…)`, `s.Circle()`) but not an associated function; E0310 for the rest, reworded; tag `m123`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
