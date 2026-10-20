@@ -9095,3 +9095,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-159 awaits approval and security review.
+
+## SESSION 305 — 2026-10-20 — C object cache: build (m127) — open
+Branch: prp-159-c_object_cache
