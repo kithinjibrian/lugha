@@ -221,7 +221,7 @@ mod tests {
         );
         let main = body(&ir, "main");
         assert!(
-            main.contains("call %\"Option<string>\" %"),
+            main.contains("call void %") && main.contains("sret(%\"Option<string>\")"),
             "a dynamic call at the substituted signature: {main}"
         );
     }

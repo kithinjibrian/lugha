@@ -198,7 +198,9 @@ mod tests {
         ));
         let main = body(&ir, "main");
         assert!(
-            main.contains("call %\"Option<i64>\" @lugha_fn_Count.next(ptr %iter"),
+            main.contains(
+                "call void @lugha_fn_Count.next(ptr sret(%\"Option<i64>\") %result, ptr %iter"
+            ),
             "{main}"
         );
     }
@@ -209,7 +211,10 @@ mod tests {
             "{COUNT}fun main() {{ let s: Source<i64> = Count {{ n: 1 }}; for n of s {{ println(n); }} }}"
         ));
         let main = body(&ir, "main");
-        assert!(main.contains("call %\"Option<i64>\" %slot"), "{main}");
+        assert!(
+            main.contains("call void %slot(ptr sret(%\"Option<i64>\")"),
+            "{main}"
+        );
     }
 
     #[test]

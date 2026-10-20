@@ -260,6 +260,12 @@ The user's brief: allow a struct field and a method of the same name. Rust (chec
 
 269–275. **Shared member names** (milestone 123): two members may share a name only when every use shows which one is meant — a field and a method (`p.name`, `p.name()`) unless the field holds a function; a variant and a `self` method (`Shape.Circle(…)`, `s.Circle()`) but not an associated function; E0310 for the rest, reworded; tag `m123`.
 
+## Decisions behind milestone 125 (session 297; approved and built session 298)
+
+The user's report: "lughac test is slow"; measured in sessions 296–297: 90% of `llc -O0` time is the DAG instruction selector, because functions returning structs (and whole-value struct operations) can't use the fast one. Details in PRP-157.
+
+285–292. **Struct results through a pointer** (milestone 125): every Lugha function returning a struct, enum, `Option`, tuple or function value takes a hidden first `ptr sret(T)` and returns `void`, done as one pass over the lowered module (`codegen/sret.rs`); calls pass an entry-block slot; C-facing functions and calls into C unchanged; measured before and after; tag `m125`. Whole-value loads, stores, `insertvalue` and `extractvalue` inside bodies are the next step.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.

@@ -2,6 +2,18 @@
 
 **Status:** proposed 2026-10-20 (session 297). Cause, from session 296's measurements: at `-O0`, LLVM's fast instruction selector can't handle first-class aggregates, so 538 of 571 functions of kivuli's `examples/backgrounds.la` fall back to the DAG selector, 90% of `llc`'s time; those run at 161 µs per instruction against 4.6 µs on the fast path (estimate: ~7.5 s of instruction selection → ~0.2–1 s once aggregates go through memory). 280 of the 538 fall back *for the whole function* because they return (or take) an aggregate by value. Discovery: (1) staged — this PRP is returns only, measured, before whole-value loads/stores/`insertvalue`/`extractvalue` inside bodies (a later PRP, only if this one shows the gain); (2) done = behaviour unchanged, fallback-for-arguments gone, timings recorded, no fixed threshold; (3) PRP-156 parked on its branch, re-measured after this work.
 
+## RESULT (session 298)
+Built as one pass over the lowered module (`codegen/sret.rs`) rather than in each of the ~20 places that define or call functions; the old function is left as an unused, unnamed declaration because deleting a function is `unsafe` in inkwell. Full `cargo test` passes. Measured on kivuli, same machine and load (decision 291):
+
+| | before | after |
+| --- | --- | --- |
+| `lughac build examples/backgrounds.la` | 12.42 s | 10.01 s |
+| `llc -O0` total / DAG instruction selection | 9.55 s / 8.39 s | 7.77 s / 6.68 s |
+| `lughac test test/diff.la` | 12.80 s | 10.68 s |
+| fast-isel misses: `ret` / `store` / `load` of aggregates | 430 / 829 / 364 | 0 / 1253 / 370 |
+
+The acceptance criterion "no *didn't lower all arguments*" was a misreading (session 298): that remark only moves the entry block's argument lowering to the DAG selector, and `sret`, `i1` and struct arguments all trigger it; dropping `sret` changes nothing measurable (8.18 s vs 8.09 s). Blocks fall back per instruction: each struct `ret` became a struct `store` into the slot, so the same blocks still fall back. The remaining gain is step 2 (whole-value `store`/`load`/`insertvalue`/`extractvalue` through memory).
+
 ## OBJECTIVE
 No change a program can see. In the IR, `define %P @lugha_fn_f(...)` becomes `define void @lugha_fn_f(ptr sret(%P) %out, ...)`, and every caller passes the address of a slot of its own. On kivuli's `examples/backgrounds.la`, `llc -O0 -fast-isel-report-on-fallback -pass-remarks-missed=sdagisel` reports no "didn't lower all arguments" (280 today).
 
@@ -51,7 +63,7 @@ No change a program can see. In the IR, `define %P @lugha_fn_f(...)` becomes `de
 - Branch to return to: `main`; the work lives on `prp-157-struct_returns` until merged.
 
 ## ACCEPTANCE CRITERIA
-- [ ] No fallback "didn't lower all arguments" on kivuli's `examples/backgrounds.la`
+- [x] ~~No fallback "didn't lower all arguments"~~ (a misreading, see RESULT); struct `ret`s gone (430 → 0), timings recorded
 - [ ] Full `cargo test` passes; clippy and fmt pass; no file over 500 lines
 - [ ] Timings before/after recorded; spec §9, Draft, CHANGELOG updated
 

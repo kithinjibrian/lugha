@@ -298,7 +298,10 @@ mod tests {
             "{V}fun main() {{ let v = V.new(1.0, 2.0); let n = v.len_sq(); }}"
         ));
         assert!(ir.contains("define double @lugha_fn_V.len_sq(ptr"), "{ir}");
-        assert!(ir.contains("call %V @lugha_fn_V.new(double"), "{ir}");
+        assert!(
+            ir.contains("call void @lugha_fn_V.new(ptr sret(%V) %result, double"),
+            "{ir}"
+        );
     }
 
     #[test]

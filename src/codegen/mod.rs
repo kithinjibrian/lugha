@@ -66,6 +66,7 @@ mod runtime;
 mod scope;
 mod show;
 mod show_iface;
+mod sret;
 mod stmt;
 mod structs;
 mod swap;
