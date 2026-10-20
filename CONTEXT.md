@@ -9044,3 +9044,6 @@ Branch: prp-158-split_structs
 
 ### STILL OPEN AT CLOSE
 - PR awaits the user's merge and review of the one `unsafe` block (`src/codegen/rebuild.rs`); tag `m126` after. PRP-156 (shared test builds) held: re-measure now that codegen is cheap.
+
+## SESSION 302 — 2026-10-20 — split.rs over 500 lines: move the big-struct path out — open
+Branch: split-big-structs-file
