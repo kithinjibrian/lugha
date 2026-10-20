@@ -9031,3 +9031,6 @@ Branch: prp-158-split_structs
 
 ### STILL OPEN AT CLOSE
 - The two decisions above.
+
+## SESSION 301 — 2026-10-20 — Split struct values: big structs through memory, zeroext, file split (m126) — open
+Branch: prp-158-split_structs
