@@ -9018,5 +9018,16 @@ Branch: main
 ### STILL OPEN AT CLOSE
 - PRP-158 awaits approval.
 
-## SESSION 300 — 2026-10-20 — Split struct values: build (m126) — open
+## SESSION 300 — 2026-10-20 — Split struct values: built, measured, awaiting decisions — closed
 Branch: prp-158-split_structs
+
+### DONE
+- PRP-158 built on `prp-158-split_structs` (not merged, no PR): `codegen/rebuild.rs` (shared rebuild + the approved `unsafe { old.delete() }`; step 1's `lugha_old_` leftovers gone), `codegen/split.rs` (body pass: leaves, RPO, `phi`s, rebuild at C edges; overflow intrinsics' `extractvalue`s left as written), `codegen/split_params.rs` (struct parameters as leaves). Tests: `codegen::split` (5), `tests/codegen.rs` `split_struct_values_behave_as_whole_ones_v17`; 6 IR-text tests updated (two `body` helpers now find the `define` line: rewritten functions move to the module's end). Full `cargo test --no-fail-fast` passed; fmt, clippy clean.
+- Measured on kivuli `backgrounds.la`: no gain at the PRP's cap of 64 leaves (llc 8.27 s → 8.20 s; build 10.6 s → 10.0 s), because kivuli's big types have 300–608 leaves (`View<()>` ~300, enum payload words) and stay whole. Cap 1024 (experiment, reverted): llc 4.7 s but IR 167 MB vs 10 MB and the build slower (11.5 s). Of 895 whole-struct loads left at cap 64: 531 only stored (copies), 180 only fields read. Separately, 177 `ret i1` misses: FastISel needs `zeroext` on `i1` results.
+- `split.rs` is 682 lines (over 500): a split is proposed to the user, not done.
+
+### PENDING DECISIONS OPENED
+- None in DECISIONS.md; the user decides in chat: (1) the `split.rs` split, (2) extending PRP-158 with big structs through memory for copies and field reads (decision 301 excluded memory lowering) and `zeroext` on `i1` results, or merging as is.
+
+### STILL OPEN AT CLOSE
+- The two decisions above.

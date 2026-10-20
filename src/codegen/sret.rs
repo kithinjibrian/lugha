@@ -11,7 +11,7 @@
 use inkwell::attributes::{Attribute, AttributeLoc};
 use inkwell::builder::Builder;
 use inkwell::context::Context;
-use inkwell::module::{Linkage, Module};
+use inkwell::module::Module;
 use inkwell::types::{AnyType, BasicMetadataTypeEnum, BasicTypeEnum, StructType};
 use inkwell::values::{
     BasicMetadataValueEnum, BasicValueEnum, CallSiteValue, FunctionValue, InstructionOpcode,
@@ -19,6 +19,7 @@ use inkwell::values::{
 };
 
 use super::lower::POSITIONED;
+use super::rebuild::rebuild;
 
 /// Rewrites `module`'s struct results to go through a hidden pointer.
 pub(super) fn results_through_pointers<'ctx>(context: &'ctx Context, module: &Module<'ctx>) {
@@ -133,9 +134,8 @@ fn rewrite_call<'ctx>(
 }
 
 /// `function`, returning a struct: a new function taking `ptr sret(T)`
-/// first, with the old body moved in, its parameters one place along, and
-/// each `ret v` a store into the slot and `ret void`. The old function is
-/// left as an unused declaration (deleting a function is `unsafe` in inkwell).
+/// first, with the old body moved in (`rebuild.rs`), its parameters one
+/// place along, and each `ret v` a store into the slot and `ret void`.
 fn rewrite_definition<'ctx>(
     context: &'ctx Context,
     module: &Module<'ctx>,
@@ -147,38 +147,16 @@ fn rewrite_definition<'ctx>(
     let mut params: Vec<BasicMetadataTypeEnum> = vec![context.ptr_type(Default::default()).into()];
     params.extend(fn_type.get_param_types());
     let new_type = context.void_type().fn_type(&params, fn_type.is_var_arg());
-    let name = old.get_name().to_string_lossy().into_owned();
-    old.as_global_value().set_name(&format!("lugha_old_{name}"));
-    let linkage = old.get_linkage();
-    let new = module.add_function(&name, new_type, Some(linkage));
+    let moved: Vec<Option<u32>> = (1..=old.count_params()).map(Some).collect();
+    let new = rebuild(
+        context,
+        module,
+        builder,
+        (old, new_type),
+        &moved,
+        |_, new| new.get_param_iter().skip(1).collect(),
+    );
     new.add_attribute(AttributeLoc::Param(0), sret(context, ty));
-    for attribute in old.attributes(AttributeLoc::Function) {
-        new.add_attribute(AttributeLoc::Function, attribute);
-    }
-    for i in 0..old.count_params() {
-        for attribute in old.attributes(AttributeLoc::Param(i)) {
-            new.add_attribute(AttributeLoc::Param(i + 1), attribute);
-        }
-    }
-    // The body moves block by block behind a placeholder, then the placeholder goes.
-    let anchor = context.append_basic_block(new, "anchor");
-    let mut last = anchor;
-    for block in old.get_basic_blocks() {
-        block
-            .move_after(last)
-            .expect("both blocks are in functions");
-        last = block;
-    }
-    anchor
-        .remove_from_function()
-        .expect("the placeholder is in the new function");
-    for (i, param) in old.get_param_iter().enumerate() {
-        let replacement = new
-            .get_nth_param(i as u32 + 1)
-            .expect("the new function has every old parameter");
-        replacement.set_name(&param.get_name().to_string_lossy());
-        replace_uses(param, replacement);
-    }
     let out = new
         .get_first_param()
         .expect("the result slot is the first parameter")
@@ -197,32 +175,6 @@ fn rewrite_definition<'ctx>(
             builder.build_return(None).expect(POSITIONED);
             ret.erase_from_basic_block();
         }
-    }
-    // Function values, tables and wrappers now name the new function.
-    old.replace_all_uses_with(new);
-    old.set_linkage(Linkage::External);
-}
-
-/// Every use of `old` becomes a use of `new`, a value of the same type.
-fn replace_uses<'ctx>(old: BasicValueEnum<'ctx>, new: BasicValueEnum<'ctx>) {
-    match (old, new) {
-        (BasicValueEnum::IntValue(o), BasicValueEnum::IntValue(n)) => o.replace_all_uses_with(n),
-        (BasicValueEnum::FloatValue(o), BasicValueEnum::FloatValue(n)) => {
-            o.replace_all_uses_with(n)
-        }
-        (BasicValueEnum::PointerValue(o), BasicValueEnum::PointerValue(n)) => {
-            o.replace_all_uses_with(n)
-        }
-        (BasicValueEnum::StructValue(o), BasicValueEnum::StructValue(n)) => {
-            o.replace_all_uses_with(n)
-        }
-        (BasicValueEnum::ArrayValue(o), BasicValueEnum::ArrayValue(n)) => {
-            o.replace_all_uses_with(n)
-        }
-        (BasicValueEnum::VectorValue(o), BasicValueEnum::VectorValue(n)) => {
-            o.replace_all_uses_with(n)
-        }
-        _ => unreachable!("a parameter keeps its type"),
     }
 }
 

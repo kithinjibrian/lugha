@@ -234,7 +234,15 @@ pub(super) mod tests {
         impl Square { fun area(self): f64 = self.side; fun grow(mut self, k: f64) { self.side *= k; } }\n";
 
     pub(in crate::codegen) fn body<'a>(ir: &'a str, function: &str) -> &'a str {
-        let start = &ir[ir.find(&format!("@lugha_fn_{function}(")).unwrap()..];
+        // The definition, wherever it is: rewritten functions move to the
+        // module's end (milestones 125–126), after their callers.
+        let call = format!("@lugha_fn_{function}(");
+        let header = ir
+            .match_indices("define ")
+            .map(|(at, _)| at)
+            .find(|&at| ir[at..].lines().next().is_some_and(|l| l.contains(&call)))
+            .unwrap_or_else(|| panic!("{function} is not defined: {ir}"));
+        let start = &ir[header..];
         &start[..start.find("\n}").unwrap()]
     }
 
