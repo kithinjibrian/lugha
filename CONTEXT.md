@@ -8964,3 +8964,6 @@ Branch: prp-155-field_method_names
 
 ### STILL OPEN AT CLOSE
 - The PR awaits the user's merge; tag `m123` after it.
+
+## SESSION 295 — 2026-10-20 — Faster lughac test: discovery — open
+Branch: main
