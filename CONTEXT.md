@@ -9045,5 +9045,14 @@ Branch: prp-158-split_structs
 ### STILL OPEN AT CLOSE
 - PR awaits the user's merge and review of the one `unsafe` block (`src/codegen/rebuild.rs`); tag `m126` after. PRP-156 (shared test builds) held: re-measure now that codegen is cheap.
 
-## SESSION 302 — 2026-10-20 — split.rs over 500 lines: move the big-struct path out — open
+## SESSION 302 — 2026-10-20 — split.rs over 500 lines: move the big-struct path out — closed
 Branch: split-big-structs-file
+
+### DONE
+- Merged PR #88, tagged `m126` (run by the user). `split.rs` had grown to 524 lines after session 301's big-struct code (over the 500 limit, missed before the PR); the user approved moving it out: `src/codegen/split_big.rs` (child module of `split` via `#[path]`: `big_load`, `is_big`, `field_type`, `users_of`, `nothing_written_between`). `split.rs` 383 lines, `split_big.rs` 160. Pure move: `codegen` units, `tests/codegen.rs`, `programs` pass; fmt, clippy clean.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The PR awaits the user's merge. PRP-156 held: re-measure now that codegen is cheap.
