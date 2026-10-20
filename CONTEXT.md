@@ -9017,3 +9017,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-158 awaits approval.
+
+## SESSION 300 — 2026-10-20 — Split struct values: build (m126) — open
+Branch: prp-158-split_structs
