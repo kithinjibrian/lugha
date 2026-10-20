@@ -2,6 +2,9 @@
 
 **Status:** proposed 2026-10-20 (session 304), following milestones 124–126 (faster `-O0` builds and tests). After them, `cc` is most of a kivuli build: lugha-gtk's five `[link]` C files take ~2.8 s and the runtime another ~0.3 s of `examples/backgrounds.la`'s 4.1 s, recompiled on every `build`, `run` and `test`. Discovery: (1) cache both the runtime and `[link]` C files; (2) an entry is stale when the C file's bytes, its flags, the compiler, lughac's version or any header it read changes; (3) no new crate — exact comparison of source and flags, FNV-1a fingerprints for headers; (4) under the cache root git packages use, no eviction. **Changes how `src/link/` runs `cc` on a package's input: needs the user's security review (CLAUDE.md anti-pattern 5).**
 
+## RESULT (session 305)
+Built in `src/link/object_cache.rs` (+ `object_cache_tests.rs`), `c_files.rs`, `runtime.rs` (the runtime's own `cc -c`). Added while building: the object's own fingerprint is checked on a hit (a damaged `object.o` is a miss), and header fingerprints are taken once per build (5 entries × ~300 GTK headers made the check take 0.8 s; now 0.13 s). Measured on kivuli: warm `lughac build examples/backgrounds.la` 4.5–5.0 s → 2.5 s, `examples/hello.la` 4.3 s → 2.6 s, `lughac test test/diff.la` 4.9 s → 3.2 s; whole `lughac test test/` unchanged (~120 s: since milestone 124 a folder is one build, so its C files compiled once per run anyway). A warm build runs `cc --version` and the link only.
+
 ## OBJECTIVE
 The second `lughac build` of kivuli's example runs no `cc -c` at all: the runtime and lugha-gtk's C files come from `~/.cache/lugha/objects/`, and only the link runs. Editing a C file, a header it includes (GTK's included), its flags or the compiler recompiles exactly that file. Builds behave as before in every other way.
 

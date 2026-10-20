@@ -277,6 +277,12 @@ Step 2 of aggregates through memory. Details in PRP-158. Splitting alone measure
 
 293–306. **Struct values split into fields** (milestone 126): every struct value of ≤ 64 leaves becomes its leaves (`codegen/split.rs`, `split_leaves.rs`), struct parameters too (`split_params.rs`); bigger structs copied by `memcpy` and read field by field when those are their only uses; `bool` results `zeroext`; leftover declarations deleted (`rebuild.rs`, one approved `unsafe`); tag `m126`.
 
+## Decisions behind milestone 127 (session 304; approved and built session 305)
+
+After milestones 124–126, `cc` was most of a kivuli build: lugha-gtk's five `[link]` C files (~2.8 s) and the runtime. Details in PRP-159.
+
+307–316. **The C object cache** (milestone 127): `[link]` C files' and the runtime's objects kept in `<cache root>/objects/<key>/`, reused when source, flags, compiler, lughac version, object and every `cc -MD` header are unchanged (exact comparison, FNV-1a fingerprints, no new crate); never a build failure; no eviction; tag `m127`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.

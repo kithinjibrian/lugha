@@ -5,8 +5,13 @@
 //! `-lcrypto`).
 
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+use super::LinkError;
+use super::object_cache::Cache;
+use crate::span::Span;
 
 /// `runtime/tls.c`: `std.tls` over OpenSSL, only for programs that use it.
 pub const TLS_SOURCE: &str = include_str!("../../runtime/tls.c");
@@ -69,6 +74,89 @@ impl RuntimeFile {
             io::Write::write_all(&mut file, CRYPTO_SOURCE.as_bytes())?;
         }
         Ok(RuntimeFile(path))
+    }
+}
+
+/// The runtime compiled to an object (v17, milestone 127): the cache's, or
+/// one compiled beside its source; the temporary files go on drop.
+pub(super) struct RuntimeObject {
+    pub path: PathBuf,
+    _source: RuntimeFile,
+    temp: [PathBuf; 2],
+}
+
+impl Drop for RuntimeObject {
+    fn drop(&mut self) {
+        for file in &self.temp {
+            // Best effort: a leftover temp file is harmless and must not hide the result.
+            let _ = std::fs::remove_file(file);
+        }
+    }
+}
+
+/// The runtime's object, with TLS's part when `tls` and crypto's when
+/// `crypto`: from `cache` when it has a fresh one, else `cc -c` of the
+/// runtime alone, with no other flags. `openssl` is where a TLS or crypto
+/// program asked for OpenSSL, for E0332.
+///
+/// # Errors
+///
+/// [`LinkError::Tls`] when the compile fails for OpenSSL's headers,
+/// [`LinkError::Failed`] for any other failure, and [`LinkError::CcNotFound`]
+/// or [`LinkError::Io`] when `cc` or the source file can't be used.
+pub(super) fn compile(
+    (tls, crypto): (bool, bool),
+    cache: &Cache,
+    openssl: Option<Span>,
+) -> Result<RuntimeObject, LinkError> {
+    let source = RuntimeFile::write(tls, crypto).map_err(LinkError::Io)?;
+    let object = source.0.with_extension("o");
+    let temp = [object.clone(), object.with_extension("d")];
+    let mut text = super::RUNTIME_SOURCE.as_bytes().to_vec();
+    if tls {
+        text.extend_from_slice(TLS_SOURCE.as_bytes());
+    }
+    if crypto {
+        text.extend_from_slice(CRYPTO_SOURCE.as_bytes());
+    }
+    let compile = |extra: &[std::ffi::OsString]| run(&source.0, extra, &object, openssl);
+    let path = cache.object("runtime", &text, &[], &object, compile)?;
+    Ok(RuntimeObject {
+        path,
+        _source: source,
+        temp,
+    })
+}
+
+/// `cc -c source extra -o object`.
+fn run(
+    source: &Path,
+    extra: &[std::ffi::OsString],
+    object: &Path,
+    openssl: Option<Span>,
+) -> Result<(), LinkError> {
+    let result = Command::new("cc")
+        .arg("-c")
+        .arg(source)
+        .args(extra)
+        .arg("-o")
+        .arg(object)
+        .output();
+    let out = match result {
+        Ok(out) => out,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Err(LinkError::CcNotFound),
+        Err(e) => return Err(LinkError::Io(e)),
+    };
+    if out.status.success() {
+        return Ok(());
+    }
+    let stderr = String::from_utf8_lossy(&out.stderr).into_owned();
+    match openssl {
+        Some(span) if missing_openssl(&stderr) => Err(LinkError::Tls { span }),
+        _ => Err(LinkError::Failed {
+            status: out.status.code(),
+            stderr,
+        }),
     }
 }
 
