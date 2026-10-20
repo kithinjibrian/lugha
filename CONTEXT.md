@@ -9082,3 +9082,6 @@ Branch: prp-156-shared_test_builds
 
 ### STILL OPEN AT CLOSE
 - The PR awaits the user's merge; tag `m124` after it.
+
+## SESSION 304 — 2026-10-20 — C object cache: discovery — open
+Branch: main
