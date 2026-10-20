@@ -9005,5 +9005,15 @@ Branch: prp-157-struct_returns
 ### STILL OPEN AT CLOSE
 - PR awaits the user's merge; tag `m125` after. Step 2 (aggregates through memory inside bodies) is the next PRP if the user wants it. PRP-156 held.
 
-## SESSION 299 — 2026-10-20 — Aggregates through memory in bodies (step 2): discovery — open
+## SESSION 299 — 2026-10-20 — Split struct values (step 2): discovery and PRP — closed
 Branch: main
+
+### DONE
+- Merged PR #87, tagged `m125` (run by the user).
+- Discovery for step 2: split struct values into fields as a pass (not memory slots, not a codegen rewrite); struct parameters split too; always, at -O0 and -O2; done = no fast-selector miss on a struct-typed instruction in kivuli's backgrounds example + full suite + timings; the user approved one `unsafe { old.delete() }` for rewritten functions' leftover declarations (reviewed in the PR). PRP-158 written (milestone 126, draft decisions 293–303).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-158 awaits approval.
