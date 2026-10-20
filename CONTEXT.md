@@ -9004,3 +9004,6 @@ Branch: prp-157-struct_returns
 
 ### STILL OPEN AT CLOSE
 - PR awaits the user's merge; tag `m125` after. Step 2 (aggregates through memory inside bodies) is the next PRP if the user wants it. PRP-156 held.
+
+## SESSION 299 — 2026-10-20 — Aggregates through memory in bodies (step 2): discovery — open
+Branch: main
