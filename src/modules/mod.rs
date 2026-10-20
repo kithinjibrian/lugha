@@ -27,6 +27,8 @@ mod parse;
 pub(crate) mod paths;
 mod resolve;
 #[cfg(test)]
+mod roots_tests;
+#[cfg(test)]
 mod std_tests;
 #[cfg(test)]
 mod tests;
@@ -142,11 +144,32 @@ pub enum LoadError {
 /// assert_eq!(loaded.modules.len(), 1);
 /// ```
 pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, LoadError> {
+    load_all(&[main.to_path_buf()], read, env)
+}
+
+/// [`load`] for several roots in one folder, loaded as one program (v17,
+/// milestone 124): `lughac test` builds a package folder's test files
+/// together. With more than one, each root is a module from the start —
+/// its package's module inside the `source` folder, else the one named by
+/// its stem (`diff.la` → `diff`, or `$test<n>` when the stem is no name) —
+/// so a root another imports keeps one name. The roots come first in
+/// [`Loaded::modules`], in order.
+///
+/// # Errors
+///
+/// As [`load`].
+pub fn load_all(roots: &[PathBuf], read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, LoadError> {
+    let main = roots.first().expect("a load has a root").as_path();
     let root = main.parent().unwrap_or(Path::new("")).to_path_buf();
-    let as_module = env
-        .as_module
-        .then(|| layout::module_path(main, read, &env))
-        .flatten();
+    let as_modules: Vec<_> = roots
+        .iter()
+        .map(|r| {
+            env.as_module
+                .then(|| layout::module_path(r, read, &env))
+                .flatten()
+        })
+        .collect();
+    let several = roots.len() > 1;
     let manifest_folder = layout::manifest_folder(&root, read, &env);
     let mut loaded = Loaded {
         modules: Vec::new(),
@@ -160,13 +183,29 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
     let mut packages = packages::Packages::new(root.clone(), manifest_folder, env.fetcher);
     // Every file ever queued, with its module path, so each is read once
     // whoever imports it, and only under one name (E0328, v15).
-    let mut seen: Vec<(PathBuf, Vec<String>)> = vec![(paths::normalized(main), Vec::new())];
-    // A module to read, its package, and the import that asked for it (`None` for main).
+    // Several roots are named before any import can reach one of them.
+    let mut seen: Vec<(PathBuf, Vec<String>)> = roots
+        .iter()
+        .zip(&as_modules)
+        .enumerate()
+        .map(|(i, (r, own))| {
+            let path = match own {
+                _ if !several => Vec::new(),
+                Some((_, path)) => path.clone(),
+                None => vec![stem_name(r).unwrap_or_else(|| format!("$test{i}"))],
+            };
+            (paths::normalized(r), path)
+        })
+        .collect();
+    // A module to read, its package, and the import that asked for it (`None` for a root).
     type Pending = (Vec<String>, PathBuf, Option<String>, Option<Span>);
-    let mut queue: VecDeque<Pending> = VecDeque::new();
-    queue.push_back((Vec::new(), main.to_path_buf(), None, None));
+    let mut queue: VecDeque<Pending> = roots
+        .iter()
+        .zip(&seen)
+        .map(|(r, (_, path))| (path.clone(), r.to_path_buf(), None, None))
+        .collect();
     // The main file was loaded as a module (`check`/`test`): no E0319.
-    let mut entry_is_module = false;
+    let mut entry_is_module = several;
     while let Some((path, file, mut package, asked_by)) = queue.pop_front() {
         // A `std` module is embedded in `lughac`, never read from disk (v15).
         let embedded = (package.as_deref() == Some(packages::STD))
@@ -210,18 +249,23 @@ pub fn load(main: &Path, read: &mut Read<'_>, env: LoadEnv) -> Result<Loaded, Lo
         packages.read_manifest(&package, read, &mut base, &mut loaded)?;
         // A package's file under `test`/`check` is its module (v17 draft
         // decision 43): imported by a hidden entry, so cycles through it hold.
-        if let Some((name, path)) = &as_module
-            && asked_by.is_none()
+        let at_root = asked_by
+            .is_none()
+            .then(|| roots.iter().position(|r| *r == module.file))
+            .flatten();
+        if let Some(i) = at_root
+            && let Some((name, path)) = &as_modules[i]
             && packages.own.as_ref() == Some(name)
         {
             module.path = path.clone();
             module.package = Some(name.clone());
             package = Some(name.clone());
-            seen[0].1 = path.clone();
+            seen[i].1 = path.clone();
             // Its imports resolve as the package's: the names its manifest lists.
             packages.read_manifest(&package, read, &mut base, &mut loaded)?;
             entry_is_module = true;
-        } else if env.as_module
+        } else if !several
+            && env.as_module
             && asked_by.is_none()
             && let Some(name) = library_name(&module, main)
         {
@@ -288,12 +332,17 @@ fn library_name(module: &Module, main: &Path) -> Option<String> {
         .items
         .iter()
         .any(|i| matches!(i, crate::ast::Item::Fun(f) if f.name.name == "main"));
-    let stem = main.file_stem()?.to_str()?;
+    (!has_main).then(|| stem_name(main)).flatten()
+}
+
+/// `file`'s stem when it can name a module: `diff.la` → `diff`.
+fn stem_name(file: &Path) -> Option<String> {
+    let stem = file.file_stem()?.to_str()?;
     let mut chars = stem.chars();
     let first = chars.next()?;
     let ident = (first.is_ascii_alphabetic() || first == '_')
         && chars.all(|c| c.is_ascii_alphanumeric() || c == '_');
-    (!has_main && ident).then(|| stem.to_string())
+    ident.then(|| stem.to_string())
 }
 
 /// The prelude's module path. `$` can't start a module name, so no file clashes.

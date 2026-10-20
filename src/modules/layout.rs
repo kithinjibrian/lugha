@@ -99,6 +99,16 @@ pub(super) fn manifest_folder(root: &Path, read: &mut Read<'_>, env: &LoadEnv) -
     }
 }
 
+/// True if a `lugha.toml` governs files in `folder`, found as [`load`]
+/// finds it: `lughac test` builds such a folder's test files together
+/// (v17, milestone 124).
+///
+/// [`load`]: super::load
+pub fn has_manifest(folder: &Path, read: &mut Read<'_>, env: &LoadEnv) -> bool {
+    let found = manifest_folder(folder, read, env);
+    exists(read, &found.join(MANIFEST))
+}
+
 /// E0327 at `at`: the package listed as `key` declares `name`.
 pub(super) fn misnamed(key: &str, name: &str, at: Span) -> Diagnostic {
     Diagnostic::error(

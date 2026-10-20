@@ -19,6 +19,7 @@ mod pipeline;
 mod render;
 mod source;
 mod test;
+mod test_build;
 mod test_json;
 mod update;
 

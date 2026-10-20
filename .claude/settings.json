@@ -12,5 +12,11 @@
       "Read(./LICENSE)",
       "Edit(./LICENSE)"
     ]
+  },
+    "attribution": {
+    "coAuthoredBy": false,
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
   }
 }

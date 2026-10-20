@@ -8979,5 +8979,15 @@ Branch: main
 ### STILL OPEN AT CLOSE
 - PRP-156 awaits approval. Later candidates: aggregates through memory in codegen (most of every build's time), caching compiled C objects (needs the user's security review of `src/link/`).
 
-## SESSION 296 — 2026-10-20 — Shared test builds: build (m124) — open
+## SESSION 296 — 2026-10-20 — Shared test builds: built, measured, held — closed
 Branch: prp-156-shared_test_builds
+
+### DONE
+- PRP-156 built on `prp-156-shared_test_builds` (not merged): `modules::load_all`, `check_test_roots`, `pipeline::front_test_roots`, `driver/test_build.rs` (groups by package and folder — narrowed from "by package" with the user's approval), tests (`src/modules/roots_tests.rs`, `check::modules::root_tests`, `tests/test_groups.rs`); spec, Draft, CHANGELOG, CLAUDE.md updated. fmt, clippy, `--lib`, `test_runner`, `cli`, `modules`, `package_layout`, `link_libs`, `init`, `test_groups` pass.
+- Measured on kivuli `test/` (46 files, same machine): old 669 s, new 652 s — no gain. 16 files: old 254 s, new 104 s. Cause: kivuli's generic code is instantiated per test file's `Msg` (`diff_inside<diff/Msg>`, …), so most LLVM work is per file anyway, and the combined build grows faster than linearly (8→16 files: object emission 46 s → 188 s; IR lowering 2.6 s → 6.7 s); 88–90% of LLVM time is the DAG instruction selector (aggregates). kivuli's `test/palettes.la` has 2 failures on its own branch with the old lughac too.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The user decides what to do with PRP-156 (see the options given in chat): parallel per-file builds, aggregates through memory in codegen, or finding the combined build's superlinear growth.

@@ -260,6 +260,12 @@ The user's brief: allow a struct field and a method of the same name. Rust (chec
 
 269–275. **Shared member names** (milestone 123): two members may share a name only when every use shows which one is meant — a field and a method (`p.name`, `p.name()`) unless the field holds a function; a variant and a `self` method (`Shape.Circle(…)`, `s.Circle()`) but not an associated function; E0310 for the rest, reworded; tag `m123`.
 
+## Decisions behind milestone 124 (session 295; approved and built session 296)
+
+The user's report: "lughac test is slow" — kivuli's 46 test files were 46 builds of the whole package. Details in PRP-156.
+
+276–284. **Shared test builds** (milestone 124): the test files of one folder under a `lugha.toml` are one program of several roots (`modules::load_all`), each the module named by its stem; checked together, or each alone to find a broken file; one executable; `--filter` builds only matching files; a panicking constant fails every test of its executable; tag `m124`. Grouping narrowed from "by package" to "by package and folder" in session 296 (the user's choice).
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
