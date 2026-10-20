@@ -17,11 +17,9 @@ use std::time::{Duration, Instant};
 
 use super::Output;
 use super::fmt::{display, la_files};
-use super::pipeline::{self, Failure, TempDir};
-use super::test_json;
-use crate::codegen::OptLevel;
+use super::pipeline::{Failure, TempDir};
+use super::{test_build, test_json};
 use crate::lexer::{self, TokenKind};
-use crate::modules::fetch::Mode;
 
 /// What `lughac test` was asked to run.
 pub(super) struct Request<'a> {
@@ -107,44 +105,58 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
             return 2;
         }
     };
-    let mut jobs = Vec::new();
-    // Files with errors: their tests never run, so the summary counts them.
-    let mut uncompiled = 0;
-    for (i, file) in files.iter().enumerate() {
+    // The files to build: those holding tests, and with filters only those
+    // holding a test they select, found by parsing (v17, milestone 124).
+    let mut selected: Vec<PathBuf> = Vec::new();
+    for file in &files {
         // `./geo.la` from walking `.` reads, and reports, as `geo.la`.
         let file = file.strip_prefix(".").unwrap_or(file);
         match std::fs::read_to_string(file) {
-            Ok(text) if !has_tests(&text) => continue,
-            Ok(_) => {}
+            Ok(text) if !has_tests(&text) || !selects(request, file, &text) => continue,
+            Ok(_) => selected.push(file.to_path_buf()),
             Err(error) => {
                 out.error(&format!("cannot read `{}`: {error}", display(file)));
                 code = 2;
-                continue;
             }
         }
-        let exe = temp.path.join(format!("test{i}"));
-        match build(file, &exe) {
-            Ok(tests) => {
-                let module = test_json::module_name(file);
-                jobs.extend(tests.into_iter().map(|(test, line, _)| Job {
+    }
+    let mut jobs = Vec::new();
+    // Files with errors: their tests never run, so the summary counts them.
+    let mut uncompiled = 0;
+    for (g, members) in test_build::groups(&selected).iter().enumerate() {
+        let exe = temp.path.join(format!("test{g}"));
+        let result = test_build::build_group(&selected, members, &exe);
+        for (failure, files) in result.failures {
+            uncompiled += files;
+            match failure {
+                Failure::Program(source, diagnostics) => {
+                    out.diagnostics(&source, &diagnostics);
+                    code = code.max(1);
+                }
+                Failure::Internal(source, report) => {
+                    out.report(&source, &report);
+                    code = 2;
+                }
+            }
+        }
+        for (i, tests) in result.built {
+            let file = &selected[i];
+            let module = test_json::module_name(file);
+            jobs.extend(tests.into_iter().map(|(test, line, _)| {
+                let job = Job {
                     name: format!("{module}.{}", test_json::bare(&test)),
                     test,
                     exe: exe.clone(),
                     file: display(file),
                     line,
-                }));
-            }
-            Err(Failure::Program(source, diagnostics)) => {
-                out.diagnostics(&source, &diagnostics);
-                uncompiled += 1;
-                code = code.max(1);
-            }
-            Err(Failure::Internal(source, report)) => {
-                out.report(&source, &report);
-                code = 2;
-            }
+                };
+                (i, job)
+            }));
         }
     }
+    // In file order, whatever the groups: a stable sort keeps declaration order.
+    jobs.sort_by_key(|(i, _)| *i);
+    let mut jobs: Vec<Job> = jobs.into_iter().map(|(_, job)| job).collect();
     jobs.retain(|j| request.wants(&j.name));
     let (mut passed, mut failed, mut skipped) = (0, 0, 0);
     // `--json` reports each test as it finishes, for an editor's live view.
@@ -208,6 +220,20 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
         code = code.max(1);
     }
     code
+}
+
+/// Whether `file` holds a test `request` wants: with no filters every
+/// file does; a file that doesn't parse is kept, so its errors show.
+fn selects(request: &Request, file: &Path, text: &str) -> bool {
+    if request.filters.is_empty() {
+        return true;
+    }
+    let module = test_json::module_name(file);
+    test_json::listed(text).is_none_or(|tests| {
+        tests
+            .iter()
+            .any(|(test, _, _)| request.wants(&format!("{module}.{test}")))
+    })
 }
 
 /// Whether `text` holds `@test`, as tokens; a file that doesn't lex but
@@ -284,37 +310,6 @@ fn json_result(job: &Job, outcome: &Outcome, took: Duration, timeout: Duration) 
         output,
         ms: took.as_millis(),
     }))
-}
-
-/// Checks `file` for tests and builds its test executable at `exe`; returns
-/// its tests in declaration order, each with its name's line and column.
-fn build(file: &Path, exe: &Path) -> Result<Vec<(String, usize, usize)>, Failure> {
-    let mode = Mode {
-        offline: false,
-        update: false,
-    };
-    let front = pipeline::front_tests(file, mode)?;
-    let tests = front
-        .checked
-        .as_ref()
-        .and_then(|c| c.tests.clone())
-        .unwrap_or_default();
-    if !tests.is_empty() {
-        pipeline::build(&front, OptLevel::O0, exe)?;
-    }
-    // Positions from the main file's own text (offset 0 in the source map).
-    let text = &front.source.main().text;
-    let positions = test_json::listed(text).unwrap_or_default();
-    Ok(tests
-        .into_iter()
-        .map(|t| {
-            let (line, col) = positions
-                .iter()
-                .find(|(n, _, _)| n == test_json::bare(&t))
-                .map_or((1, 1), |(_, l, c)| (*l, *c));
-            (t, line, col)
-        })
-        .collect())
 }
 
 /// Runs every job, up to one per CPU at a time, telling `done` about each

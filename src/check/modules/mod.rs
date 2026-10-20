@@ -29,7 +29,7 @@ pub struct Unit<'a> {
 ///
 /// Every diagnostic found (errors and warnings) when there is at least one error.
 pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
-    check_with(units, false)
+    check_with(units, None)
 }
 
 /// [`check_modules`] for `lughac test` (v16, milestone 84): the main file
@@ -39,11 +39,28 @@ pub fn check_modules(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<D
 ///
 /// As [`check_modules`].
 pub fn check_tests(units: &[Unit]) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
-    check_with(units, true)
+    check_test_roots(units, 1)
 }
 
-fn check_with(units: &[Unit], tests: bool) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
-    let (checker, monos, layouts, used) = run_with(units, tests);
+/// [`check_tests`] for a program of several roots, the first `roots`
+/// units (v17, milestone 124): every root's tests are listed, in order.
+///
+/// # Errors
+///
+/// As [`check_modules`].
+pub fn check_test_roots(
+    units: &[Unit],
+    roots: usize,
+) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
+    check_with(units, Some(roots))
+}
+
+/// Checks `units`; with `tests`, lists the tests of that many first units.
+fn check_with(
+    units: &[Unit],
+    tests: Option<usize>,
+) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagnostic>> {
+    let (checker, monos, layouts, used) = run_with(units, tests.is_some());
     if checker
         .diagnostics
         .iter()
@@ -89,12 +106,19 @@ fn check_with(units: &[Unit], tests: bool) -> Result<(Checked, Vec<Diagnostic>),
                 .map(|k| (k.clone(), checker.consts[k].ty.clone()))
                 .collect(),
             const_uses: checker.const_uses,
-            tests: tests.then(|| {
+            tests: tests.map(|roots| {
                 // Qualified, so a package's module keeps its tests' keys (v17).
-                units.first().map_or_else(Vec::new, |u| {
-                    let tests = super::test_fns::tests_of(u.program);
-                    tests.iter().map(|t| qualify(u.path, t)).collect()
-                })
+                units
+                    .iter()
+                    .take(roots)
+                    .flat_map(|u| {
+                        let tests = super::test_fns::tests_of(u.program);
+                        tests
+                            .into_iter()
+                            .map(|t| qualify(u.path, &t))
+                            .collect::<Vec<_>>()
+                    })
+                    .collect()
             }),
         },
         checker.diagnostics,
@@ -328,5 +352,49 @@ mod tests {
             qualify(&["shapes".into(), "circle".into()], "Circle"),
             "shapes.circle.Circle"
         );
+    }
+}
+
+#[cfg(test)]
+mod root_tests {
+    use std::path::{Path, PathBuf};
+
+    use super::{Unit, check_test_roots};
+    use crate::modules::layout::LoadEnv;
+
+    #[test]
+    fn every_roots_tests_are_listed_by_their_modules_v17() {
+        let files = [
+            (
+                "a.la",
+                "fun helper(): i64 = 1;\n@test fun works() { assert(helper() == 1); }\n",
+            ),
+            (
+                "b.la",
+                "fun helper(): i64 = 2;\n@test fun works() {}\n@test fun more() {}\n",
+            ),
+        ];
+        let mut read = |path: &Path| match files.iter().find(|(n, _)| Path::new(n) == path) {
+            Some((_, src)) => Ok(src.as_bytes().to_vec()),
+            None => Err(std::io::Error::from(std::io::ErrorKind::NotFound)),
+        };
+        let roots = [PathBuf::from("a.la"), PathBuf::from("b.la")];
+        let env = LoadEnv {
+            as_module: true,
+            ..LoadEnv::plain()
+        };
+        let loaded = crate::modules::load_all(&roots, &mut read, env).expect("readable");
+        let units: Vec<Unit> = loaded
+            .modules
+            .iter()
+            .map(|m| Unit {
+                path: &m.path,
+                program: m.program.as_ref().expect("parsed"),
+                imports: &m.imports,
+                package: m.package.as_deref(),
+            })
+            .collect();
+        let (checked, _) = check_test_roots(&units, 2).unwrap_or_else(|e| panic!("{e:?}"));
+        assert_eq!(checked.tests.unwrap(), ["a.works", "b.works", "b.more"]);
     }
 }

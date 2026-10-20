@@ -61,15 +61,27 @@ pub(super) fn loaded_with(
     path: &Path,
     mode: Mode,
     read: &mut modules::Read<'_>,
+    flags: (bool, bool, bool),
+) -> Result<(Source, Loaded), Failure> {
+    loaded_all(&[path.to_path_buf()], mode, read, flags)
+}
+
+/// [`loaded_with`] for several roots in one folder, loaded as one program
+/// (v17, milestone 124: a package folder's test files).
+fn loaded_all(
+    paths: &[PathBuf],
+    mode: Mode,
+    read: &mut modules::Read<'_>,
     (write_lock, partial, as_module): (bool, bool, bool),
 ) -> Result<(Source, Loaded), Failure> {
+    let path = paths.first().expect("a load has a root").as_path();
     let name = path.display().to_string();
     let env = modules::layout::LoadEnv {
         partial,
         as_module,
         ..update::env(mode)
     };
-    match modules::load(path, read, env) {
+    match modules::load_all(paths, read, env) {
         Ok(loaded) => {
             let root = path.parent().unwrap_or(Path::new(""));
             let source = Source::of(&name, root, &loaded);
@@ -112,7 +124,7 @@ fn parse_loaded((source, loaded): (Source, Loaded)) -> Result<Front, Failure> {
 
 /// Reads, lexes, parses and type-checks `path` (spec §9 stages 1–3).
 pub(super) fn front(path: &Path, mode: Mode) -> Result<Front, Failure> {
-    check_parsed(parsed(path, mode)?, false)
+    check_parsed(parsed(path, mode)?, None)
 }
 
 /// [`parsed`] for `lughac test` and `lughac check`: a file in its package's
@@ -125,7 +137,15 @@ fn parsed_module(path: &Path, mode: Mode) -> Result<Front, Failure> {
 /// [`front`] for `lughac test` (milestone 84): no `main` needed, and the
 /// checker lists the file's tests.
 pub(super) fn front_tests(path: &Path, mode: Mode) -> Result<Front, Failure> {
-    check_parsed(parsed_module(path, mode)?, true)
+    check_parsed(parsed_module(path, mode)?, Some(1))
+}
+
+/// [`front_tests`] for several test files of one package folder, checked
+/// and listed as one program (v17, milestone 124).
+pub(super) fn front_test_roots(paths: &[PathBuf], mode: Mode) -> Result<Front, Failure> {
+    let mut read = |file: &Path| std::fs::read(file);
+    let loaded = loaded_all(paths, mode, &mut read, (true, false, true))?;
+    check_parsed(parse_loaded(loaded)?, Some(paths.len()))
 }
 
 /// [`front`] for `lughac check` (v17, milestone 97): a file that declares
@@ -142,7 +162,7 @@ pub(super) fn front_check(path: &Path, mode: Mode) -> Result<Front, Failure> {
                 .iter()
                 .any(|i| matches!(i, ast::Item::Fun(f) if f.name.name == "main"))
         });
-    check_parsed(front, library)
+    check_parsed(front, library.then_some(1))
 }
 
 /// A program checked for the language server: what the checker found,
@@ -214,7 +234,8 @@ pub(super) fn front_partial(
     })
 }
 
-fn check_parsed(mut front: Front, tests: bool) -> Result<Front, Failure> {
+/// Checks a parsed program; `tests` lists the tests of that many first modules.
+fn check_parsed(mut front: Front, tests: Option<usize>) -> Result<Front, Failure> {
     // The prelude's array helpers (v3) are checked and compiled with every program.
     let mut prelude_errors = Vec::new();
     // Past every file loaded, manifests too: a link diagnostic (v16) points
@@ -231,10 +252,9 @@ fn check_parsed(mut front: Front, tests: bool) -> Result<Front, Failure> {
     front.source.add("<prelude>", prelude.base, &prelude.text);
     let start = prelude.base;
     let units = units(&front.modules);
-    let result = if tests {
-        check::check_tests(&units)
-    } else {
-        check::check_modules(&units)
+    let result = match tests {
+        Some(roots) => check::check_test_roots(&units, roots),
+        None => check::check_modules(&units),
     };
     match result {
         Ok((checked, warnings)) if prelude_errors.is_empty() => {
