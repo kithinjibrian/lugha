@@ -8991,3 +8991,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-157 awaits approval. PRP-156 held on its branch.
+
+## SESSION 298 — 2026-10-20 — Struct returns through a hidden pointer: build (m125) — open
+Branch: prp-157-struct_returns
