@@ -212,7 +212,8 @@ mod tests {
             1,
             "{ir}"
         );
-        assert!(ir.contains("{ ptr @lugha_ref_double, ptr null }"), "{ir}");
+        // The pair is split into its fields (milestone 126): the code pointer is the wrapper.
+        assert!(ir.contains("ptr @lugha_ref_double"), "{ir}");
         assert!(ir.contains("@\"lugha_ref_max<i64>\""), "{ir}");
     }
 

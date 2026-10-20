@@ -173,3 +173,86 @@ fn runtime_compiles_without_warnings() {
         String::from_utf8_lossy(&out.stderr)
     );
 }
+
+/// Struct, enum, `Option`, tuple and function results through every kind of
+/// call return through a hidden pointer (v17, milestone 125): the program's
+/// exit code is a checksum of them all, the same at -O0 and -O2.
+#[test]
+fn aggregate_results_survive_every_kind_of_call_v17() {
+    let src = "struct P { x: i64, y: i64 }
+enum E { A(i64), B(P), C }
+interface Make { fun make(self, n: i64): P; }
+struct M { k: i64 }
+impl M { fun make(self, n: i64): P = P { x: n * self.k, y: 1 }; }
+impl P {
+    fun flip(self): P = P { x: self.y, y: self.x };
+    fun add(self, o: P): P = P { x: self.x + o.x, y: self.y + o.y };
+}
+fun direct(n: i64): P = P { x: n, y: n + 1 };
+fun e(n: i64): E = if n > 0 { E.B(direct(n)) } else { E.C };
+fun o(n: i64): Option<P> = if n > 2 { Some(direct(n)) } else { None };
+fun t(n: i64): (P, i64) = (direct(n), n);
+fun adder(k: i64): fun(i64): P = fun(n: i64): P = P { x: n + k, y: 0 };
+fun through(m: Make, n: i64): P = m.make(n);
+fun early(n: i64): P {
+    if n == 0 { return P { x: 100, y: 0 }; }
+    direct(n).flip()
+}
+fun main(): i32 {
+    let a = direct(1);
+    let b = a.flip();
+    let c = a + b;
+    let d = match e(2) { B(p) => p.x, A(n) => n, C => 0 };
+    let f = match o(3) { Some(p) => p.y, None => 0 };
+    let (g, h) = t(4);
+    let add5 = adder(5);
+    let i = add5(1);
+    let j = through(M { k: 3 }, 2);
+    let k = early(0);
+    let l = early(7);
+    let sum = a.x + b.x + c.x + c.y + d + f + g.x + h + i.x + j.x + k.x + l.x;
+    sum as i32
+}
+";
+    // 1 + 2 + 3 + 3 + 2 + 4 + 4 + 4 + 6 + 6 + 100 + 8
+    assert_eq!(run(src).code(), Some(143));
+}
+
+/// Struct values split into fields (v17, milestone 126): joins from `if`
+/// and `match`, a loop carrying a struct, nested structs, enum payloads,
+/// and struct, function and interface values passed as arguments, all
+/// agreeing at -O0 and -O2.
+#[test]
+fn split_struct_values_behave_as_whole_ones_v17() {
+    let src = "struct In { a: i64, b: bool }
+struct Out { i: In, n: i64 }
+enum Shape { Dot, Box(i64, i64), Ring(In) }
+interface Area { fun area(self): i64; }
+struct Sq { s: i64 }
+impl Sq { fun area(self): i64 = self.s * self.s; }
+fun pick(c: bool, x: Out, y: Out): Out = if c { x } else { y };
+fun size(s: Shape): i64 = match s { Dot => 1, Box(w, h) => w * h, Ring(i) => if i.b { i.a } else { 0 } };
+fun twice(f: fun(i64): i64, n: i64): i64 = f(f(n));
+fun area_of(a: Area): i64 = a.area();
+fun same(p: Out, q: Out): bool = p == q;
+fun main(): i32 {
+    let x = Out { i: In { a: 2, b: true }, n: 3 };
+    let y = Out { i: In { a: 5, b: false }, n: 7 };
+    let mut acc = Out { i: In { a: 0, b: false }, n: 0 };
+    for k in 0..4 {
+        let p = pick(k % 2 == 0, x, y);
+        acc = Out { i: In { a: acc.i.a + p.i.a, b: p.i.b }, n: acc.n + p.n };
+    }
+    let shapes = [Shape.Dot, Shape.Box(3, 4), Shape.Ring(In { a: 9, b: true })];
+    let mut total = 0;
+    for s of shapes { total += size(s); }
+    let add3 = fun(n: i64): i64 = n + 3;
+    let eq = if same(x, x) && !same(x, y) { 1 } else { 0 };
+    let r = acc.i.a + acc.n + total + twice(add3, 1) + area_of(Sq { s: 4 }) + eq;
+    r as i32
+}
+";
+    // acc: a = 2+5+2+5 = 14, n = 3+7+3+7 = 20; total = 1 + 12 + 9 = 22;
+    // twice = 7; area = 16; eq = 1.
+    assert_eq!(run(src).code(), Some(14 + 20 + 22 + 7 + 16 + 1));
+}

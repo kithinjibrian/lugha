@@ -72,11 +72,11 @@ mod tests {
             fun main() { let b = drop(Count { n: 1 }); }",
         );
         assert!(
-            ir.contains("define i1 @\"lugha_fn_Source<i64>.skip<Count>\"(ptr"),
+            ir.contains("define zeroext i1 @\"lugha_fn_Source<i64>.skip<Count>\"(ptr"),
             "{ir}"
         );
         assert!(
-            ir.contains("call i1 @\"lugha_fn_Source<i64>.skip<Count>\""),
+            ir.contains("call zeroext i1 @\"lugha_fn_Source<i64>.skip<Count>\""),
             "{ir}"
         );
     }

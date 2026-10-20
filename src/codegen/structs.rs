@@ -276,15 +276,12 @@ mod tests {
                      fun main() { let p = P { y: 1.0, x: 2.0 }; let f = F { on: true }; let b = f.on; }");
         assert!(ir.contains("%P = type { double, double }"), "{ir}");
         assert!(ir.contains("%F = type { i8 }"), "{ir}");
-        // Constant fields fold; `y` is given first but stored in declaration order.
-        assert!(
-            ir.contains("store %P { double 2.000000e+00, double 1.000000e+00 }"),
-            "{ir}"
-        );
-        assert!(
-            ir.contains("extractvalue %F") && ir.contains("trunc i8"),
-            "{ir}"
-        );
+        // Constant fields fold; `y` is given first but stored in declaration
+        // order, one field at a time since milestone 126.
+        let x = ir.find("store double 2.000000e+00").expect("x stored");
+        let y = ir.find("store double 1.000000e+00").expect("y stored");
+        assert!(x < y, "{ir}");
+        assert!(ir.contains("trunc i8"), "{ir}");
     }
 
     #[test]

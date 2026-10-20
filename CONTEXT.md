@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**v17: milestones 91–123 done** (`m123` shared member names — a method named like a field or, with `self`, a variant (PRP-155); `m122` joining arrays — `xs + ys`, `+=` on arrays and strings, arrays satisfy `Add` (PRP-154); `m121` net.resolve and tls address — Rapidkoi's two full `tls.Options` literals need `address`; `m120` hkdf_sha256, reviewed by the user; `m119` request_tls_with; `m118` and_then; `m117` octal literals; `m116` fs.sync; `m115` fs.rename, fs.set_mode, flush, std.time; `m114` std.toml; `m113` std.crypto; `m112` TLS; `m111` std.http; `m110` std.net; `m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**v17: milestones 91–123, 125–126 done** (`m126` struct values split into fields and `m125` struct results through a pointer — `-O0` builds ~3× faster, PRP-157/158; `m123` shared member names — a method named like a field or, with `self`, a variant (PRP-155); `m122` joining arrays — `xs + ys`, `+=` on arrays and strings, arrays satisfy `Add` (PRP-154); `m121` net.resolve and tls address — Rapidkoi's two full `tls.Options` literals need `address`; `m120` hkdf_sha256, reviewed by the user; `m119` request_tls_with; `m118` and_then; `m117` octal literals; `m116` fs.sync; `m115` fs.rename, fs.set_mode, flush, std.time; `m114` std.toml; `m113` std.crypto; `m112` TLS; `m111` std.http; `m110` std.net; `m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -8991,3 +8991,84 @@ Branch: prp-156-shared_test_builds
 
 ### STILL OPEN AT CLOSE
 - The user decides what to do with PRP-156 (see the options given in chat): parallel per-file builds, aggregates through memory in codegen, or finding the combined build's superlinear growth.
+
+## SESSION 297 — 2026-10-20 — Structs and enums through memory: measurement, discovery, PRP — closed
+Branch: main
+
+### DONE
+- Measured option 2 (aggregates through memory) on kivuli `examples/backgrounds.la` IR: fast-path functions 4.6 µs/instr, the same forced through the DAG selector 16.2 µs/instr, today's fallback functions 161 µs/instr (538 of 571; 280 fall back whole-function for aggregate results/arguments). Estimate: instruction selection ~7.5 s → ~0.2–1 s.
+- Discovery: staged (returns first, measured), done = behaviour unchanged + fallbacks for arguments gone + timings recorded, PRP-156 parked (marked held). PRP-157 written (milestone 125, draft decisions 285–292).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-157 awaits approval. PRP-156 held on its branch.
+
+## SESSION 298 — 2026-10-20 — Struct returns through a hidden pointer: build (m125) — closed
+Branch: prp-157-struct_returns
+
+### DONE
+- PRP-157 built on `prp-157-struct_returns`: `codegen/sret.rs`, one pass after lowering — every Lugha function returning a struct takes `ptr sret(T)` first and returns `void`; calls (direct, and every indirect call returning a struct) pass an entry-block slot and load from it; `main`, `lugha_cb_`, `lugha_cfn_` and calls to declarations untouched; the old function stays as an unused declaration `lugha_old_<name>` (deleting needs `unsafe`). Tests: `codegen::sret` (4), `tests/codegen.rs` `aggregate_results_survive_every_kind_of_call_v17` (-O0 and -O2), 7 IR-text tests updated to the new form. Full `cargo test --no-fail-fast` passes; fmt, clippy clean.
+- Measured (kivuli, same load): backgrounds build 12.42 s → 10.01 s, `llc` 9.55 s → 7.77 s, `test diff.la` 12.80 s → 10.68 s. Correction: "didn't lower all arguments" is entry-block only, not whole-function (my session-296/297 reading was wrong); the remaining cost is 1253 aggregate stores, 370 loads, 151 insert/extractvalue — step 2.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PR awaits the user's merge; tag `m125` after. Step 2 (aggregates through memory inside bodies) is the next PRP if the user wants it. PRP-156 held.
+
+## SESSION 299 — 2026-10-20 — Split struct values (step 2): discovery and PRP — closed
+Branch: main
+
+### DONE
+- Merged PR #87, tagged `m125` (run by the user).
+- Discovery for step 2: split struct values into fields as a pass (not memory slots, not a codegen rewrite); struct parameters split too; always, at -O0 and -O2; done = no fast-selector miss on a struct-typed instruction in kivuli's backgrounds example + full suite + timings; the user approved one `unsafe { old.delete() }` for rewritten functions' leftover declarations (reviewed in the PR). PRP-158 written (milestone 126, draft decisions 293–303).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-158 awaits approval.
+
+## SESSION 300 — 2026-10-20 — Split struct values: built, measured, awaiting decisions — closed
+Branch: prp-158-split_structs
+
+### DONE
+- PRP-158 built on `prp-158-split_structs` (not merged, no PR): `codegen/rebuild.rs` (shared rebuild + the approved `unsafe { old.delete() }`; step 1's `lugha_old_` leftovers gone), `codegen/split.rs` (body pass: leaves, RPO, `phi`s, rebuild at C edges; overflow intrinsics' `extractvalue`s left as written), `codegen/split_params.rs` (struct parameters as leaves). Tests: `codegen::split` (5), `tests/codegen.rs` `split_struct_values_behave_as_whole_ones_v17`; 6 IR-text tests updated (two `body` helpers now find the `define` line: rewritten functions move to the module's end). Full `cargo test --no-fail-fast` passed; fmt, clippy clean.
+- Measured on kivuli `backgrounds.la`: no gain at the PRP's cap of 64 leaves (llc 8.27 s → 8.20 s; build 10.6 s → 10.0 s), because kivuli's big types have 300–608 leaves (`View<()>` ~300, enum payload words) and stay whole. Cap 1024 (experiment, reverted): llc 4.7 s but IR 167 MB vs 10 MB and the build slower (11.5 s). Of 895 whole-struct loads left at cap 64: 531 only stored (copies), 180 only fields read. Separately, 177 `ret i1` misses: FastISel needs `zeroext` on `i1` results.
+- `split.rs` is 682 lines (over 500): a split is proposed to the user, not done.
+
+### PENDING DECISIONS OPENED
+- None in DECISIONS.md; the user decides in chat: (1) the `split.rs` split, (2) extending PRP-158 with big structs through memory for copies and field reads (decision 301 excluded memory lowering) and `zeroext` on `i1` results, or merging as is.
+
+### STILL OPEN AT CLOSE
+- The two decisions above.
+
+## SESSION 301 — 2026-10-20 — Split struct values: big structs through memory, zeroext, file split (m126) — closed
+Branch: prp-158-split_structs
+
+### DONE
+- The user chose to extend PRP-158 ("extend a") and approved the file split. Done: `split.rs` → `split.rs` + `split_leaves.rs` + `split_tests.rs`; decisions 304–306 added to the PRP: big structs (> 64 leaves) copied by `memcpy` (once into a private slot, or straight to a single following `store` with nothing written between) and read field by field; `zeroext` on Lugha `bool` results and calls. Tests: two more in `codegen::split`; 4 IR-text tests updated (`zeroext`). Full `cargo test --no-fail-fast` passed; fmt, clippy clean.
+- Measured (kivuli, same machine): backgrounds build 12.4 s → 4.1 s, `llc` 9.5 s → 1.45 s, `test diff.la` 13.0 s → 4.6 s, whole `test/` 686 s → 231 s; 163 programs identical at -O2, run times unchanged at -O2 and -O0. kivuli's 3 failing tests and its 1 uncompiled file (`test/checkboxes_ui.la`, untracked, on its branch `prp-036-ui-checkbox`) are the same with the old lughac.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PR awaits the user's merge and review of the one `unsafe` block (`src/codegen/rebuild.rs`); tag `m126` after. PRP-156 (shared test builds) held: re-measure now that codegen is cheap.
+
+## SESSION 302 — 2026-10-20 — split.rs over 500 lines: move the big-struct path out — closed
+Branch: split-big-structs-file
+
+### DONE
+- Merged PR #88, tagged `m126` (run by the user). `split.rs` had grown to 524 lines after session 301's big-struct code (over the 500 limit, missed before the PR); the user approved moving it out: `src/codegen/split_big.rs` (child module of `split` via `#[path]`: `big_load`, `is_big`, `field_type`, `users_of`, `nothing_written_between`). `split.rs` 383 lines, `split_big.rs` 160. Pure move: `codegen` units, `tests/codegen.rs`, `programs` pass; fmt, clippy clean.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The PR awaits the user's merge. PRP-156 held: re-measure now that codegen is cheap.
+
+## SESSION 303 — 2026-10-20 — Shared test builds: re-measured after m125–126 — open
+Branch: prp-156-shared_test_builds

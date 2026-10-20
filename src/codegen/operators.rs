@@ -113,7 +113,8 @@ mod tests {
         ));
         let main = &ir[ir.find("define void @lugha_fn_main").unwrap()..];
         assert_eq!(
-            main.matches("call %Vec2 @lugha_fn_Vec2.add(").count(),
+            main.matches("call void @lugha_fn_Vec2.add(ptr sret(%Vec2)")
+                .count(),
             2,
             "{ir}"
         );

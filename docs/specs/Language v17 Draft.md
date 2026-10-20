@@ -265,6 +265,17 @@ The user's brief: allow a struct field and a method of the same name. Rust (chec
 The user's report: "lughac test is slow" — kivuli's 46 test files were 46 builds of the whole package. Details in PRP-156.
 
 276–284. **Shared test builds** (milestone 124): the test files of one folder under a `lugha.toml` are one program of several roots (`modules::load_all`), each the module named by its stem; checked together, or each alone to find a broken file; one executable; `--filter` builds only matching files; a panicking constant fails every test of its executable; tag `m124`. Grouping narrowed from "by package" to "by package and folder" in session 296 (the user's choice).
+## Decisions behind milestone 125 (session 297; approved and built session 298)
+
+The user's report: "lughac test is slow"; measured in sessions 296–297: 90% of `llc -O0` time is the DAG instruction selector, because functions returning structs (and whole-value struct operations) can't use the fast one. Details in PRP-157.
+
+285–292. **Struct results through a pointer** (milestone 125): every Lugha function returning a struct, enum, `Option`, tuple or function value takes a hidden first `ptr sret(T)` and returns `void`, done as one pass over the lowered module (`codegen/sret.rs`); calls pass an entry-block slot; C-facing functions and calls into C unchanged; measured before and after; tag `m125`. Whole-value loads, stores, `insertvalue` and `extractvalue` inside bodies are the next step.
+
+## Decisions behind milestone 126 (session 299; approved session 300, extended and built session 301)
+
+Step 2 of aggregates through memory. Details in PRP-158. Splitting alone measured no gain on kivuli (its big types have 300–608 leaves); the user extended the PRP (decisions 304–306).
+
+293–306. **Struct values split into fields** (milestone 126): every struct value of ≤ 64 leaves becomes its leaves (`codegen/split.rs`, `split_leaves.rs`), struct parameters too (`split_params.rs`); bigger structs copied by `memcpy` and read field by field when those are their only uses; `bool` results `zeroext`; leftover declarations deleted (`rebuild.rs`, one approved `unsafe`); tag `m126`.
 
 ## Changes by section
 
