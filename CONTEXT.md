@@ -8978,3 +8978,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-156 awaits approval. Later candidates: aggregates through memory in codegen (most of every build's time), caching compiled C objects (needs the user's security review of `src/link/`).
+
+## SESSION 296 — 2026-10-20 — Shared test builds: build (m124) — open
+Branch: prp-156-shared_test_builds
