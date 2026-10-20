@@ -9083,5 +9083,15 @@ Branch: prp-156-shared_test_builds
 ### STILL OPEN AT CLOSE
 - The PR awaits the user's merge; tag `m124` after it.
 
-## SESSION 304 — 2026-10-20 — C object cache: discovery — open
+## SESSION 304 — 2026-10-20 — C object cache: discovery and PRP — closed
 Branch: main
+
+### DONE
+- Measured: in kivuli's `examples/backgrounds.la` build (4.1 s), lugha-gtk's five `[link]` C files take ~2.8 s of `cc -c` and the runtime ~0.3 s more.
+- Discovery: cache the runtime and `[link]` C files; staleness by source bytes, flags, `cc --version`, lughac's version and every header (`cc -MD`); no new crate (exact comparison + FNV-1a header fingerprints); under the git cache's root (`objects/`), no eviction. PRP-159 written (milestone 127, draft decisions 307–316); it needs the user's security review of `src/link/`.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-159 awaits approval and security review.
