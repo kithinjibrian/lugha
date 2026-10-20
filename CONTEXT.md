@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**v17: milestones 91–126 done** (`m124` one `lughac test` build per package folder (PRP-156, merged after m126); `m126` struct values split into fields and `m125` struct results through a pointer — `-O0` builds ~3× faster, PRP-157/158; `m123` shared member names — a method named like a field or, with `self`, a variant (PRP-155); `m122` joining arrays — `xs + ys`, `+=` on arrays and strings, arrays satisfy `Add` (PRP-154); `m121` net.resolve and tls address — Rapidkoi's two full `tls.Options` literals need `address`; `m120` hkdf_sha256, reviewed by the user; `m119` request_tls_with; `m118` and_then; `m117` octal literals; `m116` fs.sync; `m115` fs.rename, fs.set_mode, flush, std.time; `m114` std.toml; `m113` std.crypto; `m112` TLS; `m111` std.http; `m110` std.net; `m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**v17: milestones 91–127 done** (`m127` the C object cache (PRP-159); `m124` one `lughac test` build per package folder (PRP-156, merged after m126); `m126` struct values split into fields and `m125` struct results through a pointer — `-O0` builds ~3× faster, PRP-157/158; `m123` shared member names — a method named like a field or, with `self`, a variant (PRP-155); `m122` joining arrays — `xs + ys`, `+=` on arrays and strings, arrays satisfy `Add` (PRP-154); `m121` net.resolve and tls address — Rapidkoi's two full `tls.Options` literals need `address`; `m120` hkdf_sha256, reviewed by the user; `m119` request_tls_with; `m118` and_then; `m117` octal literals; `m116` fs.sync; `m115` fs.rename, fs.set_mode, flush, std.time; `m114` std.toml; `m113` std.crypto; `m112` TLS; `m111` std.http; `m110` std.net; `m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -9095,3 +9095,17 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-159 awaits approval and security review.
+
+## SESSION 305 — 2026-10-20 — C object cache: build (m127) — closed
+Branch: prp-159-c_object_cache
+
+### DONE
+- PRP-159 built on `prp-159-c_object_cache`: `src/link/object_cache.rs` (+ tests), `c_files.rs` through the cache, `runtime.rs` compiling the runtime alone (cached), `mod.rs` linking objects. Added: object fingerprint check on a hit; header fingerprints memoised per build. Tests: 6 unit, `tests/c_cache.rs` (5, a logging `cc` on `PATH`). Full `cargo test --no-fail-fast` passed; fmt, clippy clean. `src/link/mod.rs` is at 498 lines.
+- Measured on kivuli: warm builds 4.5–5.0 s → 2.5 s; `test diff.la` 4.9 s → 3.2 s; whole `test/` unchanged (~120 s, one build per folder already).
+- Note: test suites running with the real `$HOME` fill `~/.cache/lugha/objects` (a few runtime entries, KBs).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PR awaits the user's merge; tag `m127` after it.

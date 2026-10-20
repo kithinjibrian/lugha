@@ -14,6 +14,7 @@ Never deleted. Older entries are never modified.
 - `net.resolve(name)` and `tls.Options.address`, milestone 121 (PRP-153): every address a name resolves to (IPv4 and IPv6, resolver order, each once), and a connection to a chosen IP address that keeps the host name for SNI and the certificate check, in `tls.connect_with` and `http.request_tls`/`request_tls_with` (`https://` and `http://`, the URL's host in `host`), like curl's `--resolve`
 
 ### Changed
+- `[link]` C files and the runtime are compiled once and reused from `~/.cache/lugha/objects/` until their source, flags, compiler or headers change (milestone 127, PRP-159): a warm kivuli build takes 2.5 s instead of 4.5 s
 - Much faster builds at `-O0` (`build`, `run`, `test`): struct values are split into their fields, big ones copied by `memcpy`, `bool` results marked `zeroext`, so LLVM's fast instruction selector handles almost every function (milestone 126, PRP-158; kivuli's example builds in 4 s instead of 12); programs behave as before
 - Faster builds: Lugha functions return structs, enums, `Option`s and tuples through a hidden result pointer, so LLVM's fast instruction selector handles them at `-O0` (milestone 125, PRP-157); programs behave as before
 - A method may share its name with a field (`p.name` is the field, `p.name()` the method) or, when it takes `self`, with a variant (milestone 123, PRP-155); E0310 remains for a field holding a function, an associated function named like a variant, and two methods of one name

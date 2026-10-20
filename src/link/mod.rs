@@ -13,6 +13,7 @@
 
 pub mod c_files;
 pub mod inputs;
+mod object_cache;
 pub mod pkg_config;
 pub mod runtime;
 
@@ -283,11 +284,13 @@ pub fn link_with(
     temp: &Path,
     output: &Path,
 ) -> Result<(), LinkError> {
-    let shims = c_files::compile(&plan.c_files, temp)?;
-    let runtime = runtime::RuntimeFile::write(plan.tls.is_some(), plan.crypto.is_some())
-        .map_err(LinkError::Io)?;
+    // Compiled C objects are kept between builds (v17, milestone 127).
+    let cache = object_cache::Cache::open();
+    let shims = c_files::compile(&plan.c_files, temp, &cache)?;
+    let variant = (plan.tls.is_some(), plan.crypto.is_some());
+    let runtime = runtime::compile(variant, &cache, plan.tls.or(plan.crypto))?;
     let result = Command::new("cc")
-        .args(args(objects, &shims, &runtime.0, plan, output))
+        .args(args(objects, &shims, &runtime.path, plan, output))
         .output();
     let out = match result {
         Ok(out) => out,
