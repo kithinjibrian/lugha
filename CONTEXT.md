@@ -8979,5 +8979,15 @@ Branch: main
 ### STILL OPEN AT CLOSE
 - PRP-156 awaits approval. Later candidates: aggregates through memory in codegen (most of every build's time), caching compiled C objects (needs the user's security review of `src/link/`).
 
-## SESSION 297 — 2026-10-20 — Structs and enums through memory: discovery — open
+## SESSION 297 — 2026-10-20 — Structs and enums through memory: measurement, discovery, PRP — closed
 Branch: main
+
+### DONE
+- Measured option 2 (aggregates through memory) on kivuli `examples/backgrounds.la` IR: fast-path functions 4.6 µs/instr, the same forced through the DAG selector 16.2 µs/instr, today's fallback functions 161 µs/instr (538 of 571; 280 fall back whole-function for aggregate results/arguments). Estimate: instruction selection ~7.5 s → ~0.2–1 s.
+- Discovery: staged (returns first, measured), done = behaviour unchanged + fallbacks for arguments gone + timings recorded, PRP-156 parked (marked held). PRP-157 written (milestone 125, draft decisions 285–292).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-157 awaits approval. PRP-156 held on its branch.
