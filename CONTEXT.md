@@ -8965,5 +8965,16 @@ Branch: prp-155-field_method_names
 ### STILL OPEN AT CLOSE
 - The PR awaits the user's merge; tag `m123` after it.
 
-## SESSION 295 — 2026-10-20 — Faster lughac test: discovery — open
+## SESSION 295 — 2026-10-20 — Faster lughac test: discovery and PRP — closed
 Branch: main
+
+### DONE
+- Merged PR #86 and tagged `m123` (run by the user).
+- Measured why `lughac test` is slow (kivuli `test/diff.la`: 13 s; ~9 s LLVM machine code, 88% in the DAG instruction selector because 538/571 functions fall back from FastISel on first-class aggregates; ~2.4 s `cc`; every file rebuilds the library, files built serially). Three fixes named: one build per package (chosen first), aggregates through memory, a C object cache.
+- Discovery for shared test builds: one executable per package; a broken file reported alone, the rest built; `--filter` builds only matching files; constants' panics shared, documented. PRP-156 written (milestone 124, draft decisions 276–284).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-156 awaits approval. Later candidates: aggregates through memory in codegen (most of every build's time), caching compiled C objects (needs the user's security review of `src/link/`).
