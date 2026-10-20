@@ -8951,3 +8951,6 @@ Branch: prp-154-array_concat
 ### STILL OPEN AT CLOSE
 - The PR awaits the user's merge (the auto-mode classifier blocks `gh pr merge` here); tag `m122` after it.
 - The spec's milestones table has no row 121 (left by session 290); not fixed here.
+
+## SESSION 294 — 2026-10-20 — Fields and methods sharing a name: PRP and build (m123) — open
+Branch: prp-155-field_method_names
