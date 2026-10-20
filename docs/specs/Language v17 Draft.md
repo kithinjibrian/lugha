@@ -266,6 +266,12 @@ The user's report: "lughac test is slow"; measured in sessions 296–297: 90% of
 
 285–292. **Struct results through a pointer** (milestone 125): every Lugha function returning a struct, enum, `Option`, tuple or function value takes a hidden first `ptr sret(T)` and returns `void`, done as one pass over the lowered module (`codegen/sret.rs`); calls pass an entry-block slot; C-facing functions and calls into C unchanged; measured before and after; tag `m125`. Whole-value loads, stores, `insertvalue` and `extractvalue` inside bodies are the next step.
 
+## Decisions behind milestone 126 (session 299; approved session 300, extended and built session 301)
+
+Step 2 of aggregates through memory. Details in PRP-158. Splitting alone measured no gain on kivuli (its big types have 300–608 leaves); the user extended the PRP (decisions 304–306).
+
+293–306. **Struct values split into fields** (milestone 126): every struct value of ≤ 64 leaves becomes its leaves (`codegen/split.rs`, `split_leaves.rs`), struct parameters too (`split_params.rs`); bigger structs copied by `memcpy` and read field by field when those are their only uses; `bool` results `zeroext`; leftover declarations deleted (`rebuild.rs`, one approved `unsafe`); tag `m126`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.

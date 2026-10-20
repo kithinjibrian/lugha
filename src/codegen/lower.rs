@@ -246,6 +246,8 @@ pub(super) fn lower<'ctx>(
     }
     // Struct results through a hidden pointer (v17, milestone 125).
     super::sret::results_through_pointers(context, &lowerer.module);
+    // Struct values split into their fields (v17, milestone 126).
+    super::split::split_structs(context, &lowerer.module);
     lowerer
         .module
         .verify()
