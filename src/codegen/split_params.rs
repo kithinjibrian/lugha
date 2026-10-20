@@ -6,7 +6,7 @@
 //! with `insertvalue`s; the body pass (`split.rs`) then folds both away.
 //! Entries C calls and calls into C keep C's convention.
 
-use inkwell::attributes::AttributeLoc;
+use inkwell::attributes::{Attribute, AttributeLoc};
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
@@ -18,7 +18,7 @@ use inkwell::values::{
 
 use super::lower::POSITIONED;
 use super::rebuild::{rebuild, replace_uses};
-use super::split::{extract, insert, leaf_types};
+use super::split_leaves::{extract, insert, leaf_types};
 
 /// Splits every Lugha function's struct parameters, and its calls' arguments.
 pub(super) fn split_params<'ctx>(context: &'ctx Context, module: &Module<'ctx>) {
@@ -38,13 +38,52 @@ pub(super) fn split_params<'ctx>(context: &'ctx Context, module: &Module<'ctx>) 
     for function in targets {
         rewrite_definition(context, module, &builder, function);
     }
+    bool_results(context, module);
+}
+
+/// Marks every Lugha function's `bool` (`i1`) result `zeroext`, at its
+/// definition and every call (decision 305): the fast selector returns an
+/// `i1` only when told how it is widened. Externs keep C's own marks.
+fn bool_results<'ctx>(context: &'ctx Context, module: &Module<'ctx>) {
+    let kind = Attribute::get_named_enum_kind_id("zeroext");
+    let zeroext = context.create_enum_attribute(kind, 0);
+    let is_bool = |t: Option<BasicTypeEnum>| matches!(t, Some(BasicTypeEnum::IntType(i)) if i.get_bit_width() == 1);
+    let defined: Vec<FunctionValue> = module
+        .get_functions()
+        .filter(|f| lugha_defined(*f) && is_bool(f.get_type().get_return_type()))
+        .collect();
+    for f in &defined {
+        f.add_attribute(AttributeLoc::Return, zeroext);
+    }
+    for function in module.get_functions() {
+        for block in function.get_basic_blocks() {
+            for inst in block.get_instructions() {
+                let Ok(site) = CallSiteValue::try_from(inst) else {
+                    continue;
+                };
+                if !is_bool(site.get_called_fn_type().get_return_type()) {
+                    continue;
+                }
+                // Direct calls of Lugha functions, and every indirect call (always Lugha's).
+                match site.get_called_fn_value() {
+                    Some(callee) if !defined.contains(&callee) => {}
+                    _ => site.add_attribute(AttributeLoc::Return, zeroext),
+                }
+            }
+        }
+    }
+}
+
+/// True for a function defined here that isn't an entry C calls.
+fn lugha_defined(f: FunctionValue<'_>) -> bool {
+    let name = f.get_name().to_string_lossy();
+    let c_entry = name == "main" || name.starts_with("lugha_cb_") || name.starts_with("lugha_cfn_");
+    f.count_basic_blocks() > 0 && !c_entry
 }
 
 /// True for a Lugha function defined here taking a struct by value.
 fn rewritten(f: FunctionValue<'_>) -> bool {
-    let name = f.get_name().to_string_lossy();
-    let c_entry = name == "main" || name.starts_with("lugha_cb_") || name.starts_with("lugha_cfn_");
-    f.count_basic_blocks() > 0 && !c_entry && splits(f.get_type())
+    lugha_defined(f) && splits(f.get_type())
 }
 
 /// True if a function of type `ty` has a struct parameter to split.

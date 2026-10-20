@@ -68,6 +68,7 @@ mod scope;
 mod show;
 mod show_iface;
 mod split;
+mod split_leaves;
 mod split_params;
 mod sret;
 mod stmt;

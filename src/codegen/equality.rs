@@ -247,18 +247,26 @@ mod tests {
         let ir = ir("struct P { xs: i64[], s: string, ok: bool, f: f64 }\n\
              fun main() { let p = P { xs: [1], s: \"a\", ok: true, f: 1.5 }; let a = p == p; let b = p != p; }");
         assert_eq!(
-            ir.matches("define internal i1 @lugha_eq_1P(").count(),
+            ir.matches("define internal zeroext i1 @lugha_eq_1P(")
+                .count(),
             1,
             "{ir}"
         );
         let main = body(&ir, "lugha_fn_main");
-        assert_eq!(main.matches("call i1 @lugha_eq_1P(").count(), 2, "{ir}");
+        assert_eq!(
+            main.matches("call zeroext i1 @lugha_eq_1P(").count(),
+            2,
+            "{ir}"
+        );
         assert!(
             main.contains("xor i1") || main.contains("icmp eq i1"),
             "!= negates: {ir}"
         );
         let helper = body(&ir, "lugha_eq_1P");
-        assert!(helper.contains("call i1 @lugha_eq_i64_arr("), "{ir}");
+        assert!(
+            helper.contains("call zeroext i1 @lugha_eq_i64_arr("),
+            "{ir}"
+        );
         assert!(
             helper.contains("@lugha_rt_str_eq(") && helper.contains("fcmp oeq"),
             "{ir}"
@@ -279,11 +287,11 @@ mod tests {
         let ir = ir("enum L { N, C(i64, L) }\n\
              fun main() { let l = L.C(1, L.N); let e = l == l; let o: Option<L> = None; let f = o == None; }");
         assert!(
-            body(&ir, "lugha_eq_1L").contains("call i1 @lugha_eq_1L("),
+            body(&ir, "lugha_eq_1L").contains("call zeroext i1 @lugha_eq_1L("),
             "{ir}"
         );
         assert!(
-            body(&ir, "lugha_eq_1L_opt").contains("call i1 @lugha_eq_1L("),
+            body(&ir, "lugha_eq_1L_opt").contains("call zeroext i1 @lugha_eq_1L("),
             "{ir}"
         );
         assert!(body(&ir, "lugha_eq_1L").contains("switch i32"), "{ir}");

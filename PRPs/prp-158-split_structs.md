@@ -2,6 +2,19 @@
 
 **Status:** proposed 2026-10-20 (session 299), following PRP-157 (milestone 125). After step 1, kivuli's `examples/backgrounds.la` still spends ~86% of `llc -O0` in the DAG instruction selector: its IR holds 3,603 struct `load`s, 2,855 `store`s, 860 `insertvalue`, 1,590 `extractvalue`, 62 `phi`, 13 `select`, 136 calls passing a struct and 66 functions taking one. The fast selector gives up on a block at its first such instruction. Discovery: (1) split struct values into fields, as a pass after lowering; (2) struct parameters split too; (3) always, at `-O0` and `-O2`; (4) done = no fast-selector miss on a struct-typed instruction in kivuli's example, full suite unchanged, timings recorded; (5) one approved `unsafe` delete of rewritten functions' leftover declarations (step 1's too).
 
+## RESULT (sessions 300–301)
+Built in `codegen/split.rs`, `split_leaves.rs`, `split_params.rs`, `split_tests.rs` and `rebuild.rs` (the approved `unsafe` delete). At the original cap of 64 leaves alone it measured no gain on kivuli (big types of 300–608 leaves stayed whole; a cap of 1024 grew the IR 16× and slowed the build), so decisions 304–306 were added. Measured on kivuli, same machine:
+
+| | before m125 | m125 (step 1) | m126 |
+| --- | --- | --- | --- |
+| `lughac build examples/backgrounds.la` | 12.4 s | 10.0 s | **4.1 s** |
+| `llc -O0` (DAG selection share) | 9.5 s (88%) | 8.2 s (86%) | **1.45 s** (76%) |
+| `lughac test test/diff.la` | 13.0 s | 10.6 s | **4.6 s** |
+| `lughac test test/` (345 tests) | 686 s | — | **231 s** |
+| fast-selector misses | 2,489 | 1,000 | 393 |
+
+The IR stays 10.5 MB. 163 test programs give identical output at `-O2`, with run times unchanged at `-O2` (0.59 s vs 0.56 s) and `-O0` (0.66 s vs 0.66 s). The 393 misses left: whole stores of big structs built field by field (58), `extractvalue`/`load` of values the memory path doesn't cover, and `br i1` (14).
+
 ## OBJECTIVE
 No change a program can see. In the IR, `%v = load %P, ptr %p` becomes one `load` per field through `getelementptr`, `insertvalue`/`extractvalue` disappear (fields are picked directly), and `define i1 @lugha_eq_P(%P %a, %P %b)` becomes `define i1 @lugha_eq_P(i64 %a.0, i64 %a.1, i64 %b.0, i64 %b.1)`. On kivuli's `examples/backgrounds.la`, `llc -O0 -pass-remarks-missed=sdagisel` reports no miss on a struct-typed `load`, `store`, `insertvalue`, `extractvalue`, `phi`, `select`, `ret` or call argument.
 
@@ -20,7 +33,10 @@ No change a program can see. In the IR, `%v = load %P, ptr %p` becomes one `load
 298. **Edges with C**: where a struct value must stay whole — passed to or returned from a declaration (C), returned by a C-facing function, or of a type over 64 leaves — it is rebuilt from its leaves with `insertvalue` just before that use, and a whole struct coming back from C is split with `extractvalue` right after the call. These are the only struct instructions left.
 299. **Always** (Q3): the pass runs for `-O0` and `-O2` builds alike; LLVM's SROA does the same splitting at `-O2`, so optimised code should not change. Spec programs' `-O2` run times are recorded before and after.
 300. **Leftovers** (Q5, approved): a rewritten function's old version is deleted with one `unsafe { old.delete() }`, after its blocks moved and `replace_all_uses_with` redirected every use, with a `// SAFETY:` comment stating that and a `debug_assert!` that it has no uses. Step 1's `lugha_old_` declarations go the same way; the rename to `lugha_old_` stays only until the delete.
-301. **Not**: memory-slot (`memcpy`) lowering, changes inside `codegen/` lowering code beyond calling the pass, the C ABI, a new calling convention for C, `byval`.
+301. **Not**: memory-slot (`memcpy`) lowering beyond decision 304, changes inside `codegen/` lowering code beyond calling the pass, the C ABI, a new calling convention for C, `byval`.
+304. **Big structs** (added in session 301, the user's choice "extend a", after kivuli measured no gain: its big types have 300–608 leaves, and splitting them grew the IR 16×): a whole-struct `load` of a type over [`MAX_LEAVES`] whose every use is a `store` of it or an `extractvalue` from it goes through memory — copied once into a fresh entry-block slot by `llvm.memcpy` (or, for a single `store` in the same block with no write between, straight from source to destination), each `store` a `memcpy` from the slot, each field read a load of just that field from the slot. Any other use leaves the load whole.
+305. **`bool` results**: a Lugha function returning `i1` (and every call of it) marks the result `zeroext`, which the fast selector needs to return one (177 misses in kivuli's example).
+306. **Files** (session 301, the user's approval): `split.rs` (the pass), `split_leaves.rs` (leaves, paths, block order, alignment), `split_tests.rs` (its tests, by `#[path]`).
 302. **Measurement** (Q4): on kivuli `examples/backgrounds.la` and `test/diff.la`, before and after: `lughac build`/`test` wall time, `llc -O0 -time-passes` (total and DAG selection), fast-selector misses by kind; recorded in the PRP and CONTEXT.md.
 303. **Docs**: spec §9's lowering notes; Draft; CHANGELOG (Changed: faster builds); CLAUDE.md tree. **Success**: milestone 126, tag `m126`.
 
