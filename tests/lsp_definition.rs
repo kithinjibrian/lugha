@@ -346,3 +346,18 @@ fn glob_re_exported_names_hover_complete_and_go_to_their_declarations() {
     }
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn an_included_path_goes_to_its_file_v17() {
+    let program = "fun main() {\n    print(include_str(\"notes/a.txt\"));\n}\n";
+    let t = Temp::with(&[("main.la", program), ("notes/a.txt", "hi\n")]);
+    let uri = t.uri("main.la");
+    let mut server = Server::start(&t, json!({}));
+    server.open(&uri, program);
+    server.expect(&uri, &[]);
+    let found = jump(&mut server, &uri, (1, 25));
+    let target = found["uri"].as_str().unwrap_or_default();
+    assert!(target.ends_with("/notes/a.txt"), "{found}");
+    assert_eq!(found["range"]["start"]["line"], 0, "{found}");
+    assert_eq!(server.finish(), Some(0));
+}

@@ -21,6 +21,29 @@ pub struct Unit<'a> {
     pub imports: &'a [Vec<String>],
     /// The module's package (v8, `Module::package`); `None` for the root.
     pub package: Option<&'a str>,
+    /// Its file and package folder, for `include_bytes`/`include_str`
+    /// (v17, milestone 128); `None` for bundled and in-memory sources.
+    pub origin: Option<Origin<'a>>,
+}
+
+/// Where a module's file is, and the folder its includes must stay in.
+#[derive(Debug, Clone, Copy)]
+pub struct Origin<'a> {
+    /// The module's `.la` file: include paths are relative to its folder.
+    pub file: &'a std::path::Path,
+    /// Its package's folder (`Module::folder`).
+    pub folder: &'a std::path::Path,
+}
+
+impl<'a> Origin<'a> {
+    /// The origin of a loaded module; `None` for one with no package folder.
+    pub fn of(module: &'a crate::modules::Module) -> Option<Origin<'a>> {
+        let folder = module.folder.as_deref()?;
+        Some(Origin {
+            file: &module.file,
+            folder,
+        })
+    }
 }
 
 /// Type-checks a whole program of modules, the main file first.
@@ -106,6 +129,7 @@ fn check_with(
                 .map(|k| (k.clone(), checker.consts[k].ty.clone()))
                 .collect(),
             const_uses: checker.const_uses,
+            includes: checker.includes,
             tests: tests.map(|roots| {
                 // Qualified, so a package's module keeps its tests' keys (v17).
                 units
@@ -223,6 +247,9 @@ impl Checker {
     fn enter(&mut self, unit: &Unit) {
         self.module = unit.path.to_vec();
         self.package = unit.package.map(str::to_string);
+        self.origin = unit
+            .origin
+            .map(|o| (o.file.to_path_buf(), o.folder.to_path_buf()));
         self.imports = unit
             .program
             .imports
@@ -293,6 +320,7 @@ pub(crate) mod test_util {
                 program: m.program.as_ref().expect("parsed"),
                 imports: &m.imports,
                 package: m.package.as_deref(),
+                origin: super::Origin::of(m),
             })
             .collect();
         check_modules(&units)
@@ -392,6 +420,7 @@ mod root_tests {
                 program: m.program.as_ref().expect("parsed"),
                 imports: &m.imports,
                 package: m.package.as_deref(),
+                origin: super::Origin::of(m),
             })
             .collect();
         let (checked, _) = check_test_roots(&units, 2).unwrap_or_else(|e| panic!("{e:?}"));

@@ -1,0 +1,28 @@
+// include_bytes and include_str (milestone 128): a file's contents built into the program.
+import art.logo;
+
+const BLOB: u8[] = include_bytes("data/blob.bin");
+const HELLO: string = include_str("./data/hello.txt");
+const FIRST: u8 = include_bytes("data/blob.bin")[1];
+
+fun main() {
+    println(BLOB.len);
+    println(BLOB[0]);
+    println(BLOB[255]);
+    println(FIRST);
+    print(HELLO);
+    println(HELLO.len);
+    // A copy is its own array: writing it leaves the constant as it was.
+    let mut b = BLOB;
+    b[0] = 9;
+    b.push(7);
+    println("{b[0]} {b.len} {BLOB[0]} {BLOB.len}");
+    let mut c = include_bytes("data/blob.bin");
+    c.pop();
+    println(c.len);
+    // In any expression, not only a constant.
+    println(include_bytes("data/empty.txt").len);
+    println("[{include_str("data/empty.txt")}]");
+    println(logo.svg());
+    println(logo.SIZE);
+}

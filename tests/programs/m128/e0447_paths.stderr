@@ -1,0 +1,65 @@
+error[E0447]: `include_str` expects one string literal path
+  --> tests/programs/m128/e0447_paths.la:5:25
+  |
+5 |     let a = include_str(PATH);
+  |                         ^^^^
+  |
+  = help: write the path itself: `include_str("data/file.bin")`
+
+error[E0447]: can't include ``: the path is empty
+  --> tests/programs/m128/e0447_paths.la:6:25
+  |
+6 |     let b = include_str("");
+  |                         ^^
+  |
+  = help: an included file is named by a string literal relative to this file, with `/`, and stays inside the package's folder
+
+error[E0447]: can't include `/etc/hostname`: the path is absolute; write it relative to this file
+  --> tests/programs/m128/e0447_paths.la:7:27
+  |
+7 |     let c = include_bytes("/etc/hostname");
+  |                           ^^^^^^^^^^^^^^^
+  |
+  = help: an included file is named by a string literal relative to this file, with `/`, and stays inside the package's folder
+
+error[E0447]: can't include `files\ok.txt`: paths separate folders with `/`, not `\`
+  --> tests/programs/m128/e0447_paths.la:8:27
+  |
+8 |     let d = include_bytes("files\\ok.txt");
+  |                           ^^^^^^^^^^^^^^^
+  |
+  = help: an included file is named by a string literal relative to this file, with `/`, and stays inside the package's folder
+
+error[E0447]: can't include `../m109/constants.la`: it leads outside the package's folder
+  --> tests/programs/m128/e0447_paths.la:9:25
+  |
+9 |     let e = include_str("../m109/constants.la");
+  |                         ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: an included file is named by a string literal relative to this file, with `/`, and stays inside the package's folder
+
+error[E0447]: can't include `files/missing.txt`: no such file
+   --> tests/programs/m128/e0447_paths.la:10:25
+   |
+10 |     let f = include_str("files/missing.txt");
+   |                         ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: an included file is named by a string literal relative to this file, with `/`, and stays inside the package's folder
+
+error[E0447]: can't include `files`: it is not a file
+   --> tests/programs/m128/e0447_paths.la:11:27
+   |
+11 |     let g = include_bytes("files");
+   |                           ^^^^^^^
+   |
+   = help: an included file is named by a string literal relative to this file, with `/`, and stays inside the package's folder
+
+error[E0447]: `include_str` expects one string literal path
+   --> tests/programs/m128/e0447_paths.la:12:13
+   |
+12 |     let h = include_str("files/ok.txt", "x");
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: write the path itself: `include_str("data/file.bin")`
+
+For more about E0447, run `lughac explain E0447`.

@@ -65,6 +65,8 @@ pub(super) fn at(snapshot: &Snapshot, file: &Path, offset: usize) -> Option<(Pla
 pub(super) fn key(snapshot: &Snapshot, target: &Target) -> Option<Key> {
     match target {
         Target::Module(path) => Some(Key::Module(path.clone())),
+        // An included file has no references to find (v17).
+        Target::File(_) => None,
         Target::Decl(span) => {
             let file = snapshot.source.file_at(span.start);
             let name = match file_path(file, &snapshot.root) {

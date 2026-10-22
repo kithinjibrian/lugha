@@ -283,6 +283,12 @@ After milestones 124–126, `cc` was most of a kivuli build: lugha-gtk's five `[
 
 307–316. **The C object cache** (milestone 127): `[link]` C files' and the runtime's objects kept in `<cache root>/objects/<key>/`, reused when source, flags, compiler, lughac version, object and every `cc -MD` header are unchanged (exact comparison, FNV-1a fingerprints, no new crate); never a build failure; no eviction; tag `m127`.
 
+## Decisions behind milestone 128 (session 306; approved and built session 307)
+
+Rapidkoi ships its signed new-tab bundle inside its binary, and its icons as text; until now only by pasting bytes into source. Details in PRP-160.
+
+317–326. **Included files** (milestone 128): `include_bytes(path): u8[]` and `include_str(path): string`, a string-literal path relative to the naming file, constant expressions usable anywhere; the file inside the package's folder after links are resolved, a regular file of at most 16 MiB (E0447), `include_str` UTF-8 (E0448); read once by the checker (so `check` and the language server report errors), the bytes handed to codegen; private read-only globals, the `u8[]` one born shared, and in programs with includes a copy site's shared mark of an already-shared array goes to a sink word; hover shows the size, go-to-definition opens the file; the names reserved (E0302); tag `m128`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.

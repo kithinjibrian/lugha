@@ -31,7 +31,35 @@ impl<'ctx> Lowerer<'ctx> {
             .builder
             .build_or(cap, shared_bit, "shared")
             .expect(POSITIONED);
+        // An included `u8[]` (v17) is read-only and born shared: a store to
+        // an array already marked goes to a sink instead. Only programs with
+        // includes pay for the select.
+        let at = if self.includes.is_empty() {
+            at
+        } else {
+            let was = self
+                .builder
+                .build_int_compare(IntPredicate::EQ, cap, marked, "was_shared")
+                .expect(POSITIONED);
+            let sink = self.cow_sink().as_pointer_value();
+            self.builder
+                .build_select(was, sink, at, "mark_at")
+                .expect(POSITIONED)
+                .into_pointer_value()
+        };
         self.builder.build_store(at, marked).expect(POSITIONED);
+    }
+
+    /// `lugha_cow_sink`, a private word no one reads.
+    fn cow_sink(&self) -> inkwell::values::GlobalValue<'ctx> {
+        const SINK: &str = "lugha_cow_sink";
+        self.module.get_global(SINK).unwrap_or_else(|| {
+            let i64_type = self.context.i64_type();
+            let global = self.module.add_global(i64_type, None, SINK);
+            global.set_initializer(&i64_type.const_zero());
+            global.set_linkage(inkwell::module::Linkage::Private);
+            global
+        })
     }
 
     /// The array in `slot` (an array of type `ty`), made unique first: if it

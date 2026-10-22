@@ -60,6 +60,9 @@ pub struct Module {
     pub program: Option<Program>,
     /// Its package; `None` for the root package (v8).
     pub package: Option<String>,
+    /// The folder `include_bytes`/`include_str` paths must stay in: its
+    /// package's folder (v17, milestone 128); `None` for bundled sources.
+    pub folder: Option<PathBuf>,
     /// Each import's module path, in order, as resolved through the
     /// manifests (v8): a package's own `import util.x;` is `geo.util.x`.
     pub imports: Vec<Vec<String>>,
@@ -276,6 +279,7 @@ pub fn load_all(roots: &[PathBuf], read: &mut Read<'_>, env: LoadEnv) -> Result<
             seen[0].1 = vec![name];
             entry_is_module = true;
         }
+        module.folder = packages.boundary(&package);
         if let Some(program) = &module.program {
             next_id = program.expr_count;
             for import in &program.imports {

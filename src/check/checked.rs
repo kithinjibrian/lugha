@@ -49,6 +49,9 @@ pub struct Checked {
     pub consts: Vec<(String, Type)>,
     /// Every name (or `m.NAME`) that reads a constant, with its key.
     pub const_uses: HashMap<ExprId, String>,
+    /// Every `include_bytes`/`include_str` call, with the file's contents
+    /// (v17, milestone 128).
+    pub includes: HashMap<ExprId, super::Included>,
     /// Expressions converted to an interface value, with the interface type
     /// (v5); the expression's own type stays in `types`.
     pub conversions: HashMap<ExprId, Type>,

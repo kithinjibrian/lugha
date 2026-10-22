@@ -189,15 +189,12 @@ impl<'a> Here<'a> {
             let end = self.base + dot;
             // A module or type name written just before the dot.
             let named = partial.definitions.iter().filter(|(s, _)| s.end == end);
-            if let Some(target) = smallest(named.map(|(s, t)| (*s, t))) {
-                match target {
-                    Target::Module(path) => return Some(Receiver::Module(path.clone())),
-                    Target::Decl(decl) => {
-                        if let Some(key) = self.type_at(*decl) {
-                            return Some(Receiver::Members(check::type_members(partial, &key)));
-                        }
-                    }
+            match smallest(named.map(|(s, t)| (*s, t))) {
+                Some(Target::Module(path)) => return Some(Receiver::Module(path.clone())),
+                Some(Target::Decl(decl)) if let Some(key) = self.type_at(*decl) => {
+                    return Some(Receiver::Members(check::type_members(partial, &key)));
                 }
+                _ => {}
             }
             // An expression ending at the dot, typed by that check.
             let typed = partial.spans.iter().enumerate().filter_map(|(id, span)| {

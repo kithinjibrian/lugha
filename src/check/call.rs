@@ -129,6 +129,9 @@ impl Checker {
         if super::test_fns::ASSERTIONS.contains(&name) {
             return self.assertion(call, name, args);
         }
+        if super::includes::INCLUDES.contains(&name) {
+            return self.include(call, name, args);
+        }
         // `eprint`/`eprintln` follow the `print`/`println` rules below (v4).
         if super::input::INPUT.contains(&name) && !name.starts_with("eprint") {
             return self.input_intrinsic(call, name, args);

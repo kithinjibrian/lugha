@@ -165,6 +165,10 @@ impl<'ctx> Lowerer<'ctx> {
             let ExprKind::Name(name) = &callee.kind else {
                 unreachable!("checked: E0406 rejects non-name callees")
             };
+            // A file's contents, read by the checker (v17, milestone 128).
+            if self.includes.contains_key(&call.id) {
+                return Ok(Value::Val(self.included(call).into()));
+            }
             // Written in Lugha in the prelude (v15, milestone 62).
             if let Some(helper) = crate::check::prelude_helper(name) {
                 return self.prelude_intrinsic(helper, args);

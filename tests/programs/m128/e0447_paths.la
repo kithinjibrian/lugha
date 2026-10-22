@@ -1,0 +1,14 @@
+// Each path that can't be included (E0447).
+const PATH: string = "files/ok.txt";
+
+fun main() {
+    let a = include_str(PATH);
+    let b = include_str("");
+    let c = include_bytes("/etc/hostname");
+    let d = include_bytes("files\\ok.txt");
+    let e = include_str("../m109/constants.la");
+    let f = include_str("files/missing.txt");
+    let g = include_bytes("files");
+    let h = include_str("files/ok.txt", "x");
+    let i = include_str("files/ok.txt");
+}

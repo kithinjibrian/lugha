@@ -351,3 +351,23 @@ fn a_constant_shows_its_declaration_v17() {
     assert_eq!(found["range"]["start"]["line"], 0, "{found}");
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn an_included_file_shows_its_size_v17() {
+    let program = "const LOGO: u8[] = include_bytes(\"art/logo.svg\");\n\nfun main() {\n    println(LOGO.len);\n}\n";
+    let t = Temp::with(&[("main.la", program), ("art/logo.svg", "<svg/>")]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, program);
+    s.expect(&uri, &[]);
+    assert_eq!(
+        hover_at(&mut s, &uri, pos(program, "\"art/logo.svg\"", "logo")),
+        code("\"art/logo.svg\"", &["included: 6 bytes"])
+    );
+    // The call itself is its type.
+    assert_eq!(
+        hover_at(&mut s, &uri, pos(program, "include_bytes", "bytes")),
+        code("u8[]", &[])
+    );
+    assert_eq!(s.finish(), Some(0));
+}

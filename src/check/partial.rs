@@ -27,6 +27,13 @@ pub enum Name {
     Field { name: String, ty: Type },
     /// A constant at its declaration or a use (v17, milestone 109).
     Const { name: String, ty: Type, decl: Span },
+    /// The path of an `include_bytes`/`include_str` call: the file and its
+    /// size in bytes (v17, milestone 128); `shown` is its path in its package.
+    Included {
+        file: std::path::PathBuf,
+        shown: String,
+        size: usize,
+    },
 }
 
 /// Where a written name is defined (v16 draft decision 23).
@@ -36,6 +43,8 @@ pub enum Target {
     Decl(Span),
     /// The module with this path, as in `import geo;` or `geo.f`.
     Module(Vec<String>),
+    /// A file an `include_bytes`/`include_str` path names (v17, milestone 128).
+    File(std::path::PathBuf),
 }
 
 /// The checker's findings for a whole program, errors or not.

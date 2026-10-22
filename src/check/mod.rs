@@ -48,6 +48,7 @@ mod iface_calls;
 mod iface_tables;
 mod iface_values;
 mod impl_bounds;
+mod includes;
 mod infer;
 mod input;
 mod instances;
@@ -111,12 +112,13 @@ pub use float_bits::{bits_of, from_bits};
 pub use float_ops::{float_op, os_op, os_signature, string_op};
 pub use hashing::hash_op;
 pub use iface_tables::{InterfaceMethod, InterfaceShape};
+pub use includes::{Included, MAX_INCLUDE};
 pub use input::prelude_helper;
 pub use instances::Instance;
 pub use iterators::Iteration;
 pub use layouts::UNION_MARK;
 pub use members::{Detail, Member, MemberKind, TypeMembers, type_members, value_members};
-pub use modules::{Unit, check_modules, check_test_roots, check_tests, qualify, symbol};
+pub use modules::{Origin, Unit, check_modules, check_test_roots, check_tests, qualify, symbol};
 pub use ordering::ORDERING;
 pub use partial::{Name, Partial, Target, check_partial};
 pub use refs::REF_NEW;
@@ -134,7 +136,10 @@ use crate::span::Span;
 /// Every intrinsic's name (`println`, `read_line`, …): names a program may
 /// call that no source declares, for the language server's completion.
 pub fn intrinsics() -> impl Iterator<Item = &'static str> {
-    env::INTRINSICS.into_iter().chain(input::INPUT)
+    env::INTRINSICS
+        .into_iter()
+        .chain(input::INPUT)
+        .chain(includes::INCLUDES)
 }
 
 /// Type-checks `program`, a program of one file, returning the type table
@@ -149,6 +154,7 @@ pub fn check(program: &Program) -> Result<(Checked, Vec<Diagnostic>), Vec<Diagno
         program,
         imports: &[],
         package: None,
+        origin: None,
     }])
 }
 
@@ -179,6 +185,9 @@ impl Checker {
             mentions: HashMap::new(),
             module: Vec::new(),
             package: None,
+            origin: None,
+            includes: HashMap::new(),
+            include_reads: HashMap::new(),
             imports: HashMap::new(),
             privacy: visibility::Privacy::default(),
             aliases: named_imports::Aliases::new(),
@@ -288,6 +297,12 @@ pub(super) struct Checker {
     module: Vec<String>,
     /// Its package; `None` for the root package (v8).
     package: Option<String>,
+    /// Its file and package folder, for includes (v17, milestone 128).
+    origin: Option<(std::path::PathBuf, std::path::PathBuf)>,
+    /// See `Checked::includes`.
+    includes: HashMap<ExprId, Included>,
+    /// The files included so far, read once each.
+    include_reads: includes::Reads,
     /// The current module's imports: last segment → module path.
     imports: HashMap<String, Vec<String>>,
     /// Who declares what, and what is `private`.

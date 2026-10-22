@@ -2,6 +2,9 @@
 
 **Status:** proposed 2026-10-22 (session 306), from Rapidkoi's request (its session 157, DECISION-038): ship the signed new-tab bundle (`newtab.rkb`, tens of KB) inside `./main`, and later its SVG icons, without pasting bytes into source files. Discovery: (1) two built-ins usable anywhere, constant expressions; (2) paths stay inside the package's folder, symlinks resolved; (3) two codes, E0447 (can't include) and E0448 (not UTF-8), 16 MiB cap; (4) stored as read-only globals, `u8[]` marked shared; (5) read by the checker, so `check` and the language server report errors; hover shows the size, go-to-definition opens the file.
 
+## RESULT (session 307)
+Approved by the user (session 307) and built: `src/check/includes.rs` (paths, reading, E0447/E0448, the hover record), `src/codegen/includes.rs` (the globals), `Module::folder` and `check::Origin` (each module's package folder), `Name::Included`/`Target::File` for the language server. One change from decision 322: every copy site writes the shared flag into an array's header, which would fault on a read-only global; so in programs with includes a copy site stores to a private sink word (`lugha_cow_sink`) when the flag is already set — programs without includes get the same IR as before. Tests: `tests/programs/m128/` (a directory case and three rejected programs), `tests/includes.rs` (9), unit tests, hover and definition tests; `--lib`, `programs`, `includes`, `cli`, `modules`, `explain`, `fmt_corpus`, `codegen`, `spec`, the `lsp*` suites pass; fmt and clippy clean. The full `cargo test` wasn't run.
+
 ## OBJECTIVE
 A program writes `const NEWTAB: u8[] = include_bytes("../../apps/newtab.rkb");` and the binary carries the file's bytes in read-only data, with no startup cost. A path that is empty, absolute, outside the package, missing, not a regular file or over 16 MiB is E0447 at the literal; `include_str` on bytes that aren't UTF-8 is E0448. Editing the file and rebuilding picks up the new bytes.
 
