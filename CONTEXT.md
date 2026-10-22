@@ -9121,3 +9121,6 @@ Branch: main
 
 ### STILL OPEN AT CLOSE
 - PRP-160 awaits approval and the user's look at its security note (reading files a package names).
+
+## SESSION 307 — 2026-10-22 — include_bytes and include_str: build (m128) — open
+Branch: prp-160-include_files
