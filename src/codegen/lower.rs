@@ -69,6 +69,10 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) variant_values: HashMap<ExprId, (Type, String)>,
     /// Names reading a constant (`Checked::const_uses`, v17).
     pub(super) const_uses: HashMap<ExprId, String>,
+    /// Every include call's bytes (`Checked::includes`, v17).
+    pub(super) includes: HashMap<ExprId, crate::check::Included>,
+    /// The global of each included `u8[]`, by its bytes' address (v17).
+    pub(super) include_globals: HashMap<usize, inkwell::values::PointerValue<'ctx>>,
     /// Every constant's global and type (v17).
     pub(super) const_globals: HashMap<String, (inkwell::values::GlobalValue<'ctx>, Type)>,
     /// `lugha_const_init`, if the program has constants (v17).
@@ -177,6 +181,8 @@ pub(super) fn lower<'ctx>(
         variant_values: checked.variant_values.clone(),
         const_uses: checked.const_uses.clone(),
         const_globals: HashMap::new(),
+        includes: checked.includes.clone(),
+        include_globals: HashMap::new(),
         const_init: None,
         conversions: checked.conversions.clone(),
         interfaces: checked.interfaces.clone(),

@@ -1,0 +1,7 @@
+error[E0302]: `include_str` is the name of a built-in function
+  --> tests/programs/m128/e0302_include_name.la:2:5
+  |
+2 | fun include_str(path: string): string = path;
+  |     ^^^^^^^^^^^
+
+For more about E0302, run `lughac explain E0302`.

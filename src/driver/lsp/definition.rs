@@ -18,6 +18,11 @@ pub(super) fn answer(snapshot: &Snapshot, file: &Path, at: Position) -> Option<L
     let target = innermost(&snapshot.partial.definitions, offset)?;
     match target {
         Target::Decl(span) => locate(snapshot, *span),
+        // An include's path: the file it names, from the top (v17).
+        Target::File(path) => Some(Location {
+            uri: uri(path)?,
+            range: Range::default(),
+        }),
         Target::Module(path) => {
             let module = snapshot.modules.iter().find(|m| m.path == *path)?;
             let file = snapshot.source.file_at(module.base);

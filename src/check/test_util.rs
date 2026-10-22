@@ -18,6 +18,7 @@ fn with_units<R>(program: &Program, f: impl FnOnce(&[Unit]) -> R) -> R {
         text: " ".repeat(1 << 16),
         program: Some(program.clone()),
         package: None,
+        folder: None,
         imports: Vec::new(),
     };
     let mut modules = vec![main];
@@ -34,6 +35,7 @@ fn with_units<R>(program: &Program, f: impl FnOnce(&[Unit]) -> R) -> R {
             program: m.program.as_ref().expect("both parsed"),
             imports: &m.imports,
             package: m.package.as_deref(),
+            origin: super::Origin::of(m),
         })
         .collect();
     f(&units)

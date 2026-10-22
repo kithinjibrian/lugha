@@ -82,6 +82,8 @@ pub(super) fn answer(snapshot: &Snapshot, file: &Path, at: Position) -> Option<H
         match t {
             check::Target::Decl(d) => types.push((*s, *d)),
             check::Target::Module(path) => modules.push((*s, path)),
+            // Its name answers: `Name::Included` at the same span.
+            check::Target::File(_) => {}
         }
     }
     modules.sort_by_key(|(s, _)| (s.end - s.start, s.start));
@@ -205,6 +207,10 @@ fn render(snapshot: &Snapshot, found: &Found) -> Option<(String, Vec<String>)> {
         }
         Found::Name(Name::Field { name, ty }) => (format!("{name}: {ty}"), Vec::new()),
         Found::Name(Name::Const { name, ty, .. }) => (format!("const {name}: {ty}"), Vec::new()),
+        Found::Name(Name::Included { shown, size, .. }) => (
+            format!("\"{shown}\""),
+            vec![format!("included: {size} bytes")],
+        ),
         Found::Name(Name::Function { decl, call }) => {
             let (header, name) = declaration(snapshot, *decl)?;
             let notes = call

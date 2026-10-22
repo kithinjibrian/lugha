@@ -125,12 +125,20 @@ impl Checker {
                     .iter()
                     .find_map(|(_, x)| self.non_constant(x, deps))
             }
+            // A file's contents (v17, milestone 128): its path is checked as it is read.
+            ExprKind::Call(callee, _) if self.is_include(e, callee) => None,
             // `Some(x)`, `Ok(x)`, `Err(x)`, `E.V(x)`: constructors only.
             ExprKind::Call(callee, args) if self.constructor(e, callee) => {
                 args.iter().find_map(|x| self.non_constant(x, deps))
             }
             _ => Some(e.span),
         }
+    }
+
+    /// True if `callee` (of `call`) is `include_bytes` or `include_str`.
+    fn is_include(&self, call: &Expr, callee: &Expr) -> bool {
+        matches!(&callee.kind, ExprKind::Name(n) if super::includes::INCLUDES.contains(&n.as_str()))
+            && !self.callees.contains_key(&call.id)
     }
 
     /// True if `callee` (of `call`) builds a variant rather than calling.

@@ -1,0 +1,9 @@
+error[E0448]: `files/latin1.txt` is not UTF-8: byte 3 is 0xE9
+  --> tests/programs/m128/e0448_not_utf8.la:4:28
+  |
+4 |     let text = include_str("files/latin1.txt");
+  |                            ^^^^^^^^^^^^^^^^^^
+  |
+  = help: `include_bytes` takes any bytes; `string_from_utf8` can check them at run time
+
+For more about E0448, run `lughac explain E0448`.

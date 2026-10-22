@@ -41,6 +41,7 @@ mod hashing;
 mod heap;
 mod hoist;
 mod hoist_scan;
+mod includes;
 mod input;
 mod instances;
 mod int_checked;
@@ -166,6 +167,7 @@ pub fn emit_ir(
             program,
             imports: &[],
             package: None,
+            origin: None,
         }],
         checked,
         &[single(source)],
@@ -215,6 +217,7 @@ pub fn emit_object(
         program,
         imports: &[],
         package: None,
+        origin: None,
     }];
     emit_object_modules(&units, checked, &[single(source)], opt, path)
 }
@@ -299,6 +302,7 @@ pub(crate) mod test_util {
             program: &program,
             imports: &[],
             package: None,
+            origin: None,
         };
         let (checked, _) = check::check_tests(&[unit]).unwrap_or_else(|e| panic!("{src:?}: {e:?}"));
         let source = super::SourceInfo {

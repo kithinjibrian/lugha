@@ -106,3 +106,37 @@ pub(in crate::check) fn assign_const(name: &str, span: Span) -> Diagnostic {
     )
     .with_help(format!("copy it first: `let mut x = {name};`"))
 }
+
+/// A path `include_bytes`/`include_str` can't include, and why (milestone 128).
+pub(in crate::check) fn cant_include(path: &str, why: &str, span: Span) -> Diagnostic {
+    Diagnostic::error("E0447", format!("can't include `{path}`: {why}"), span).with_help(
+        "an included file is named by a string literal relative to this file, with `/`, and stays inside the package's folder",
+    )
+}
+
+/// `include_bytes`/`include_str` without one string literal (milestone 128).
+pub(in crate::check) fn include_literal(name: &str, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0447",
+        format!("`{name}` expects one string literal path"),
+        span,
+    )
+    .with_help(format!(
+        "write the path itself: `{name}(\"data/file.bin\")`"
+    ))
+}
+
+/// `include_str` of bytes that aren't UTF-8 (milestone 128).
+pub(in crate::check) fn include_not_utf8(
+    path: &str,
+    at: usize,
+    byte: u8,
+    span: Span,
+) -> Diagnostic {
+    Diagnostic::error(
+        "E0448",
+        format!("`{path}` is not UTF-8: byte {at} is 0x{byte:02X}"),
+        span,
+    )
+    .with_help("`include_bytes` takes any bytes; `string_from_utf8` can check them at run time")
+}

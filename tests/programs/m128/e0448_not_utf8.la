@@ -1,0 +1,5 @@
+// include_str needs UTF-8 (E0448); include_bytes takes anything.
+fun main() {
+    let bytes = include_bytes("files/latin1.txt");
+    let text = include_str("files/latin1.txt");
+}

@@ -81,6 +81,17 @@ impl Packages {
         }
     }
 
+    /// The folder `package`'s files may include from (v17, milestone 128):
+    /// its manifest's folder, the root's for `None` and the package the
+    /// root's manifest names; `None` for `std`, which is embedded.
+    pub(super) fn boundary(&self, package: &Option<String>) -> Option<PathBuf> {
+        match package {
+            None => Some(self.manifest_folder.clone()),
+            Some(name) if self.own.as_ref() == Some(name) => Some(self.manifest_folder.clone()),
+            Some(name) => self.folders.get(name).cloned(),
+        }
+    }
+
     /// Where `package`'s modules start: the main file's folder for `None`,
     /// else the package's folder and its `source` (v15).
     fn module_root(&self, package: &Option<String>) -> PathBuf {

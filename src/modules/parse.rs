@@ -37,6 +37,7 @@ pub(super) fn parse_module(
                 text,
                 program: None,
                 package: None,
+                folder: None,
                 imports: Vec::new(),
             };
         }
@@ -86,6 +87,7 @@ pub(super) fn parse_module(
         text,
         program,
         package: None,
+        folder: None,
         imports: Vec::new(),
     }
 }

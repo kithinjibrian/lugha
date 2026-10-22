@@ -18,7 +18,7 @@ use crate::span::Span;
 
 /// The intrinsics' call forms as spec §5's table writes them; a test keeps
 /// it equal to `check::intrinsics()` and to the spec.
-const INTRINSIC_SIGNATURES: [(&str, &str); 25] = [
+const INTRINSIC_SIGNATURES: [(&str, &str); 27] = [
     ("print", "print(x)"),
     ("println", "println(x)"),
     ("panic", "panic(msg)"),
@@ -43,6 +43,8 @@ const INTRINSIC_SIGNATURES: [(&str, &str); 25] = [
     ("c_read", "c_read(p, offset, len)"),
     ("c_write", "c_write(p, offset, bytes)"),
     ("flush", "flush()"),
+    ("include_bytes", "include_bytes(path)"),
+    ("include_str", "include_str(path)"),
     ("format", "format(template, …)"),
 ];
 

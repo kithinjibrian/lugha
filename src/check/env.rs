@@ -14,6 +14,7 @@ pub(super) fn is_intrinsic(name: &str) -> bool {
     INTRINSICS.contains(&name)
         || super::input::INPUT.contains(&name)
         || super::test_fns::ASSERTIONS.contains(&name)
+        || super::includes::INCLUDES.contains(&name)
 }
 
 /// True if `symbol` is a C identifier lughac may call: not one of its own (`lugha_…`).
