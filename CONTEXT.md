@@ -9109,3 +9109,6 @@ Branch: prp-159-c_object_cache
 
 ### STILL OPEN AT CLOSE
 - PR awaits the user's merge; tag `m127` after it.
+
+## SESSION 306 — 2026-10-22 — Embedded files: discovery — open
+Branch: main
