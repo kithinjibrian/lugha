@@ -9135,3 +9135,6 @@ Branch: prp-160-include_files
 
 ### STILL OPEN AT CLOSE
 - The PR awaits the user's merge; tag `m128` after it.
+
+## SESSION 308 — 2026-10-24 — lughac init test folder: discovery and PRP — open
+Branch: prp-161-init_test_folder
