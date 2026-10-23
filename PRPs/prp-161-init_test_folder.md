@@ -1,6 +1,6 @@
 ## FEATURE: `lughac init` also writes a `test/` folder holding one passing test, for programs and libraries; milestone 129 (v17).
 
-**Status:** proposed 2026-10-24 (session 308), from the user's side request ("for lugha init add test folder"). Discovery: (1) one real test in both layouts — a library's tests its `greet`; a program's greeting moves into its own module, `src/greeting.la`, since a test can't import `src/main.la` (`main` outside the main file is E0304, tried in session 308); (2) the closing hint gains a second line, `test it with: lughac test …`.
+**Status:** approved 2026-10-24 ("build", session 309); proposed 2026-10-24 (session 308), from the user's side request ("for lugha init add test folder"). Discovery: (1) one real test in both layouts — a library's tests its `greet`; a program's greeting moves into its own module, `src/greeting.la`, since a test can't import `src/main.la` (`main` outside the main file is E0304, tried in session 308); (2) the closing hint gains a second line, `test it with: lughac test …`.
 
 ## OBJECTIVE
 `lughac init oyster && lughac test oyster` passes one test straight away, and `lughac run oyster/src/main.la` still prints the greeting. The same holds for `--lib`. Every written file is already formatted (`lughac fmt --check` lists nothing). As before, nothing is overwritten.
