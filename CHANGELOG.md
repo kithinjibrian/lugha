@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `lughac init` writes a `test/` folder with one passing test (milestone 129, PRP-161): `test/greeting_test.la` for a program, whose greeting moves to `src/greeting.la` (it now prints `Hello, world, from N!`), and `test/N_test.la` for a library; a second hint line, `test it with: lughac test …`; every file `lughac fmt`-clean, none overwritten
 - `include_bytes("path")` and `include_str("path")` build a file's contents into the program (milestone 128, PRP-160): constant expressions, the file inside the package's folder and at most 16 MiB (E0447), `include_str` UTF-8 (E0448), stored read-only with nothing copied at startup; hover shows the file's size and go-to-definition opens it
 - `lughac test` builds the test files of one package folder into one executable instead of one per file (milestone 124, PRP-156); `--filter` builds only the files it selects
 - Joining arrays, milestone 122 (PRP-154): `xs + ys` is a new array of `xs`'s elements then `ys`'s (E0404 for arrays of different types), `xs += ys` and `s += t` join, and arrays satisfy `Add`, so a `T: Add` function takes arrays

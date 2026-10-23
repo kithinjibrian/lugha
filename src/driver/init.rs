@@ -78,12 +78,18 @@ fn create(request: &Request, stdout: &mut dyn Write) -> Result<(), InitError> {
         "src/main.la".to_string()
     };
     let mut files = vec![("lugha.toml".to_string(), manifest(&name))];
+    // Each layout ships one passing test in `test/` (PRP-161). A program's
+    // greeting lives in its own module, since a test can't import the file
+    // holding `main` (E0304).
     if request.lib {
         files.push((main, library(&name)));
         files.push(("examples/hello.la".to_string(), example(&name)));
+        files.push((format!("test/{name}_test.la"), library_test(&name)));
         files.push((".gitignore".to_string(), gitignore("hello")));
     } else {
         files.push((main, program(&name)));
+        files.push(("src/greeting.la".to_string(), greeting(&name)));
+        files.push(("test/greeting_test.la".to_string(), program_test(&name)));
         files.push((".gitignore".to_string(), gitignore("main")));
     }
     for (rel, text) in &files {
@@ -125,6 +131,10 @@ fn create(request: &Request, stdout: &mut dyn Write) -> Result<(), InitError> {
         ("run it with", folder.join("src/main.la"))
     };
     let _ = writeln!(stdout, "{what}: lughac run {}", file.display());
+    let _ = match request.folder {
+        Some(f) => writeln!(stdout, "test it with: lughac test {}", f.display()),
+        None => writeln!(stdout, "test it with: lughac test"),
+    };
     Ok(())
 }
 
@@ -196,8 +206,38 @@ fn manifest(name: &str) -> String {
 fn program(name: &str) -> String {
     format!(
         "// {name}: a Lugha program. Run it with `lughac run src/main.la`.\n\
+         import greeting;\n\
          \n\
-         fun main() {{\n    println(\"Hello from {name}!\");\n}}\n"
+         fun main() {{\n    println(greeting.hello(\"world\"));\n}}\n"
+    )
+}
+
+fn greeting(name: &str) -> String {
+    format!(
+        "// Returns the greeting `main` prints; test/greeting_test.la checks it.\n\
+         fun hello(who: string): string = \"Hello, {{who}}, from {name}!\";\n"
+    )
+}
+
+fn program_test(name: &str) -> String {
+    format!(
+        "// Tests for {name}. Run them with `lughac test`.\n\
+         import {name}.greeting;\n\
+         \n\
+         @test\n\
+         fun greets() {{\n    \
+         assert_eq(greeting.hello(\"world\"), \"Hello, world, from {name}!\");\n}}\n"
+    )
+}
+
+fn library_test(name: &str) -> String {
+    format!(
+        "// Tests for {name}. Run them with `lughac test`.\n\
+         import {name};\n\
+         \n\
+         @test\n\
+         fun greets() {{\n    \
+         assert_eq({name}.greet(\"world\"), \"Hello, world, from {name}!\");\n}}\n"
     )
 }
 

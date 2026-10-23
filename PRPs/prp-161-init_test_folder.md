@@ -2,6 +2,9 @@
 
 **Status:** approved 2026-10-24 ("build", session 309); proposed 2026-10-24 (session 308), from the user's side request ("for lugha init add test folder"). Discovery: (1) one real test in both layouts — a library's tests its `greet`; a program's greeting moves into its own module, `src/greeting.la`, since a test can't import `src/main.la` (`main` outside the main file is E0304, tried in session 308); (2) the closing hint gains a second line, `test it with: lughac test …`.
 
+## RESULT (session 309)
+Approved ("build") and built as proposed: `src/driver/init.rs` writes `src/greeting.la` and `test/greeting_test.la` for a program, `test/N_test.la` for a library, and the `test it with:` line. Tests first in `tests/init.rs` (each layout tested and fmt-checked, the current folder, `--name`, a kept test file). fmt, clippy, `--lib`, `init`, `spec`, `cli` and `explain` pass; the full `cargo test` wasn't run.
+
 ## OBJECTIVE
 `lughac init oyster && lughac test oyster` passes one test straight away, and `lughac run oyster/src/main.la` still prints the greeting. The same holds for `--lib`. Every written file is already formatted (`lughac fmt --check` lists nothing). As before, nothing is overwritten.
 

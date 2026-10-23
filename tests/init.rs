@@ -1,5 +1,6 @@
 //! `lughac init` end to end (PRP-098, milestone 69): the program and library
-//! layouts are created, then checked and run; each refusal; kept files.
+//! layouts are created, then checked, run and tested (PRP-161, milestone
+//! 129: a `test/` folder); each refusal; kept files.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -69,12 +70,21 @@ fn a_program_is_created_checked_and_run() {
         text(&out.stdout),
         "created oyster/lugha.toml\n\
          created oyster/src/main.la\n\
+         created oyster/src/greeting.la\n\
+         created oyster/test/greeting_test.la\n\
          created oyster/.gitignore\n\
-         run it with: lughac run oyster/src/main.la\n"
+         run it with: lughac run oyster/src/main.la\n\
+         test it with: lughac test oyster\n"
     );
     assert_eq!(
         files(&t.0.join("oyster")),
-        [".gitignore", "lugha.toml", "src/main.la"]
+        [
+            ".gitignore",
+            "lugha.toml",
+            "src/greeting.la",
+            "src/main.la",
+            "test/greeting_test.la"
+        ]
     );
     let manifest = std::fs::read_to_string(t.0.join("oyster/lugha.toml")).unwrap();
     assert!(
@@ -87,11 +97,27 @@ fn a_program_is_created_checked_and_run() {
     let run = lughac(&t.0, &t.0, &["run", "oyster/src/main.la"]);
     assert_eq!(
         text(&run.stdout),
-        "Hello from oyster!\n",
+        "Hello, world, from oyster!\n",
         "{}",
         text(&run.stderr)
     );
     assert_eq!(run.status.code(), Some(0));
+    passes_its_test_and_is_formatted(&t, "oyster");
+}
+
+/// `lughac test` on the new package runs its one test, and `lughac fmt`
+/// would change none of the files `init` wrote.
+fn passes_its_test_and_is_formatted(t: &Temp, folder: &str) {
+    let test = lughac(&t.0, &t.0, &["test", folder]);
+    assert_eq!(test.status.code(), Some(0), "{}", text(&test.stderr));
+    assert!(
+        text(&test.stdout).contains("1 test: 1 passed, 0 failed"),
+        "{}",
+        text(&test.stdout)
+    );
+    let fmt = lughac(&t.0, &t.0, &["fmt", "--check", folder]);
+    assert_eq!(fmt.status.code(), Some(0), "{}", text(&fmt.stdout));
+    assert_eq!(text(&fmt.stdout), "");
 }
 
 #[test]
@@ -104,8 +130,10 @@ fn a_library_is_created_and_its_example_runs() {
         "created shapes/lugha.toml\n\
          created shapes/src/lib.la\n\
          created shapes/examples/hello.la\n\
+         created shapes/test/shapes_test.la\n\
          created shapes/.gitignore\n\
-         run the example with: lughac run shapes/examples/hello.la\n"
+         run the example with: lughac run shapes/examples/hello.la\n\
+         test it with: lughac test shapes\n"
     );
     assert_eq!(
         files(&t.0.join("shapes")),
@@ -113,7 +141,8 @@ fn a_library_is_created_and_its_example_runs() {
             ".gitignore",
             "examples/hello.la",
             "lugha.toml",
-            "src/lib.la"
+            "src/lib.la",
+            "test/shapes_test.la"
         ]
     );
     let run = lughac(&t.0, &t.0, &["run", "shapes/examples/hello.la"]);
@@ -138,6 +167,10 @@ fn a_library_is_created_and_its_example_runs() {
     assert!(example.contains("import shapes;\n"), "{example}");
     let alone = lughac(&t.0.join("shapes"), &t.0, &["check", "src/lib.la"]);
     assert_eq!(text(&alone.stderr), "");
+    passes_its_test_and_is_formatted(&t, "shapes");
+    // From inside the package, with no path.
+    let inside = lughac(&t.0.join("shapes"), &t.0, &["test"]);
+    assert_eq!(inside.status.code(), Some(0), "{}", text(&inside.stderr));
 }
 
 #[test]
@@ -151,9 +184,14 @@ fn the_current_folder_gives_the_name() {
         text(&out.stdout),
         "created lugha.toml\n\
          created src/main.la\n\
+         created src/greeting.la\n\
+         created test/greeting_test.la\n\
          created .gitignore\n\
-         run it with: lughac run src/main.la\n"
+         run it with: lughac run src/main.la\n\
+         test it with: lughac test\n"
     );
+    let test = lughac(&dir, &t.0, &["test"]);
+    assert_eq!(test.status.code(), Some(0), "{}", text(&test.stderr));
     let manifest = std::fs::read_to_string(dir.join("lugha.toml")).unwrap();
     assert!(manifest.contains("name = \"glowworm\""), "{manifest}");
     // `.` names the same folder.
@@ -176,7 +214,7 @@ fn name_overrides_the_folder() {
     let run = lughac(&t.0, &t.0, &["run", "my-shell/src/main.la"]);
     assert_eq!(
         text(&run.stdout),
-        "Hello from my_shell!\n",
+        "Hello, world, from my_shell!\n",
         "{}",
         text(&run.stderr)
     );
@@ -189,6 +227,9 @@ fn name_overrides_the_folder() {
         "{}",
         text(&run.stderr)
     );
+    // The library's test is named after the package, not the folder.
+    assert!(t.0.join("geo-lib/test/geo_test.la").is_file());
+    passes_its_test_and_is_formatted(&t, "geo-lib");
 }
 
 #[test]
@@ -254,14 +295,23 @@ fn existing_files_are_kept_byte_for_byte() {
         "fun main() { println(\"mine\"); }\n",
     )
     .unwrap();
+    std::fs::create_dir(dir.join("test")).unwrap();
+    std::fs::write(dir.join("test/greeting_test.la"), "// mine\n").unwrap();
     let out = lughac(&t.0, &t.0, &["init", "tool"]);
     assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
     assert_eq!(
         text(&out.stdout),
         "created tool/lugha.toml\n\
          kept    tool/src/main.la (already exists)\n\
+         created tool/src/greeting.la\n\
+         kept    tool/test/greeting_test.la (already exists)\n\
          kept    tool/.gitignore (already exists)\n\
-         run it with: lughac run tool/src/main.la\n"
+         run it with: lughac run tool/src/main.la\n\
+         test it with: lughac test tool\n"
+    );
+    assert_eq!(
+        std::fs::read_to_string(dir.join("test/greeting_test.la")).unwrap(),
+        "// mine\n"
     );
     assert_eq!(
         std::fs::read_to_string(dir.join(".gitignore")).unwrap(),
