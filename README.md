@@ -133,9 +133,10 @@ cargo install --path .         # or put lughac on your PATH
 Start a project with `lughac init`:
 
 ```sh
-lughac init oyster                 # a program: lugha.toml, src/main.la, .gitignore
-lughac run oyster/src/main.la      # Hello from oyster!
-lughac init shapes --lib           # a library: src/shapes.la and examples/hello.la
+lughac init oyster                 # a program: lugha.toml, src/main.la, src/greeting.la, test/, .gitignore
+lughac run oyster/src/main.la      # Hello, world, from oyster!
+lughac test oyster                 # its one test passes
+lughac init shapes --lib           # a library: src/lib.la, examples/hello.la and test/
 lughac run shapes/examples/hello.la
 ```
 

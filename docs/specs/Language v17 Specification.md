@@ -43,6 +43,7 @@ Oct 16, 2026 · @kithinji
 - `lughac fmt` hugs a call's trailing array or struct literal (`column([` … `])`) and keeps a function's header whole while its body breaks (milestone 95; section 9).
 - A generic call only its result can type takes its type from its siblings: `assert_eq(text("hi"), expected)`, `text("hi") == expected` (milestone 96; section 4).
 - Packages and tests: `lughac test` and `lughac check` on a file in a package's `source` folder build it as that package's module (`glow.diff`), so modules importing each other can be tested, and its tests are named `glow.diff.name`; programs in a package's `test/`, `tests/` and `examples/` see its package-level items; `lughac check` takes a file without `main` as a library; `lugha.lock` sits beside the governing `lugha.toml`; and `skip(reason)` reports a test skipped (milestone 97; sections 6, 9).
+- `lughac init` writes a `test/` folder with one passing test, and a program's greeting in its own module, `src/greeting.la` (milestone 129; section 9).
 
 Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select`, `actor` or `const` as a name (keywords now), or declares a function named `skip` (an intrinsic since milestone 97, E0302), `flush` (one since milestone 115) or `include_bytes`/`include_str` (since milestone 128), or names the iterator type `Map` (now `Mapped`, milestone 101; a program's own `Map` is fine). A module's own `Task` or `Chan` still means its own, as for `Ref`. Within v17, a `tls.Options { … }` literal naming every field without `..base` needs `address` since milestone 121 (`..tls.options()` keeps it short).
 
@@ -1636,12 +1637,14 @@ Exit codes: 0 on success, 1 when the program has errors, 2 for bad command-line 
 | File | Program | Library (`--lib`) |
 | --- | --- | --- |
 | `lugha.toml` | `[package]` with `name = "N"`, `version = "0.1.0"`, `source = "src"` | the same |
-| `src/main.la` | `fun main()` printing `Hello from N!` | — |
+| `src/main.la` | `import greeting;` and `fun main()` printing `greeting.hello("world")` (v17, milestone 129; `Hello from N!` before) | — |
+| `src/greeting.la` | `fun hello(who: string): string`, giving `Hello, <who>, from N!` (v17) | — |
 | `src/lib.la` | — | the entry (v17; `src/N.la` before), with a module doc and `public fun greet(who: string): string`, giving `Hello, <who>, from N!` |
 | `examples/hello.la` | — | `import N;` (v17; `import N.N;` before) and a `main` printing `N.greet("world")`, runnable at once through the implicit package (section 6) |
+| `test/greeting_test.la`, `test/N_test.la` | `import N.greeting;` and a `@test fun greets()` checking `greeting.hello("world")` (v17) | `import N;` and a `@test fun greets()` checking `N.greet("world")` (v17) |
 | `.gitignore` | `/main`, the executable `lughac build src/main.la` writes | `/hello` |
 
-It prints `created <path>` for each file and then how to run the result.
+It prints `created <path>` for each file, then how to run the result and (v17, milestone 129) how to test it: `test it with: lughac test <folder>`, or `lughac test` for the current folder. `lughac test` passes at once, and `lughac fmt` changes none of the files.
 - **The name** is `--name`, else the folder's last component once `.` and `..` are resolved (`lughac init` in `~/oyster` makes `oyster`). It must be an identifier that is neither a keyword nor `std`; otherwise it is exit 2 with a suggestion: `` `my-shell` isn't a valid package name `` and help `` try `lughac init my-shell --name my_shell` ``.
 - **Nothing is overwritten.** A `lugha.toml` already in the folder stops `init` before it writes anything (exit 2). Any other file that exists is kept, reported as `kept <path> (already exists)`, and `init` still succeeds.
 - An I/O failure is exit 2 with the system's message; files written before it stay. `init` runs no `git`, uses no network and never asks a question.
@@ -3816,6 +3819,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 126 | Struct values split into fields (v17) | fields for small structs, `memcpy` and field loads for big ones, `zeroext` `bool` results; no language change | `tests/codegen.rs`, codegen units (done) |
 | 127 | The C object cache (v17) | `[link]` C files' and the runtime's objects kept between builds | `tests/c_cache.rs` (done) |
 | 128 | Included files (v17) | `include_bytes`, `include_str`, E0447, E0448 | `tests/programs/m128/`, `tests/includes.rs` (done) |
+| 129 | A test folder from `lughac init` (v17) | `test/` with one passing test in both layouts, `src/greeting.la` for a program | `tests/init.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

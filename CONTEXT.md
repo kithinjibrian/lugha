@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**v17: milestones 91–128 done** (`m128` included files (PRP-160, pending merge); `m127` the C object cache (PRP-159); `m124` one `lughac test` build per package folder (PRP-156, merged after m126); `m126` struct values split into fields and `m125` struct results through a pointer — `-O0` builds ~3× faster, PRP-157/158; `m123` shared member names — a method named like a field or, with `self`, a variant (PRP-155); `m122` joining arrays — `xs + ys`, `+=` on arrays and strings, arrays satisfy `Add` (PRP-154); `m121` net.resolve and tls address — Rapidkoi's two full `tls.Options` literals need `address`; `m120` hkdf_sha256, reviewed by the user; `m119` request_tls_with; `m118` and_then; `m117` octal literals; `m116` fs.sync; `m115` fs.rename, fs.set_mode, flush, std.time; `m114` std.toml; `m113` std.crypto; `m112` TLS; `m111` std.http; `m110` std.net; `m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. **PRP-160 built** (milestone 128, Rapidkoi's request): `include_bytes`/`include_str` on `prp-160-include_files`; merge, then tag `m128`; Rapidkoi can then move its new tab and icons over after reinstalling `lughac`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**v17: milestones 91–129 done** (`m129` a test folder from `lughac init` (PRP-161, pending merge); `m128` included files (PRP-160); `m127` the C object cache (PRP-159); `m124` one `lughac test` build per package folder (PRP-156, merged after m126); `m126` struct values split into fields and `m125` struct results through a pointer — `-O0` builds ~3× faster, PRP-157/158; `m123` shared member names — a method named like a field or, with `self`, a variant (PRP-155); `m122` joining arrays — `xs + ys`, `+=` on arrays and strings, arrays satisfy `Add` (PRP-154); `m121` net.resolve and tls address — Rapidkoi's two full `tls.Options` literals need `address`; `m120` hkdf_sha256, reviewed by the user; `m119` request_tls_with; `m118` and_then; `m117` octal literals; `m116` fs.sync; `m115` fs.rename, fs.set_mode, flush, std.time; `m114` std.toml; `m113` std.crypto; `m112` TLS; `m111` std.http; `m110` std.net; `m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. **PRP-160 built** (milestone 128, Rapidkoi's request): `include_bytes`/`include_str` on `prp-160-include_files`; merge, then tag `m128`; Rapidkoi can then move its new tab and icons over after reinstalling `lughac`. **PRP-161 built** (milestone 129, session 309): `lughac init` writes `test/` with one passing test (a program's greeting moves to `src/greeting.la`); on `prp-161-init_test_folder`; merge, then tag `m129`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -9135,3 +9135,28 @@ Branch: prp-160-include_files
 
 ### STILL OPEN AT CLOSE
 - The PR awaits the user's merge; tag `m128` after it.
+
+## SESSION 308 — 2026-10-24 — lughac init test folder: discovery and PRP — closed
+Branch: prp-161-init_test_folder
+
+### DONE
+- The user's side request: `lughac init` adds a test folder. Discovery (2 questions, both the recommended answer): one real test in both layouts; a second hint line `test it with: lughac test …`. Tried in the scratchpad: a test can't import `src/main.la` (E0304), so a program's greeting moves to `src/greeting.la`, which `test/greeting_test.la` imports as `N.greeting`; it passes and is fmt-clean. PRP-161 written (milestone 129).
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-161 awaits approval.
+
+## SESSION 309 — 2026-10-24 — lughac init test folder: build (m129) — closed
+Branch: prp-161-init_test_folder
+
+### DONE
+- PRP-161 approved ("build") and built (milestone 129): `lughac init` writes `test/greeting_test.la` plus `src/greeting.la` for a program (it now prints `Hello, world, from N!`) and `test/N_test.la` for a library, then `test it with: lughac test …`. Spec §0/§9/§11 (row 129), README, CHANGELOG, CLAUDE.md updated.
+- Tests first: `tests/init.rs` (each layout's test passes and is fmt-clean, the current folder, `--name`, a kept test file). fmt, clippy, `--lib`, `init`, `spec`, `cli`, `explain` pass; full `cargo test` not run.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The PR awaits the user's merge; tag `m129` after it.
