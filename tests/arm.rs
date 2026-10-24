@@ -17,7 +17,7 @@ use c_shapes::{DECLS, PROGRAMS, SIDE};
 const TARGET: &str = "aarch64-unknown-linux-gnu";
 
 /// A cross-section of the language: each a `tests/programs/` case stem.
-const CASES: [&str; 18] = [
+const CASES: [&str; 22] = [
     "m1/arith",
     "m1/div_zero",
     "m7/methods",
@@ -36,6 +36,10 @@ const CASES: [&str; 18] = [
     "m92/bank",
     "m92/many_actors",
     "m131/spawned_alloc",
+    "m135/deep_match",
+    "m135/arm_results",
+    "m135/big_frame_overflow",
+    "m135/green_big_frame_overflow",
 ];
 
 /// An empty temporary folder, removed on drop.

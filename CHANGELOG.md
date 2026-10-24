@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- Running out of stack always panics with `stack overflow` (milestone 135, PRP-167): every function probes its stack a page at a time, so a frame bigger than the guard area no longer crashes with a segfault, on the main stack or in a green thread
 - Extern structs by value on ARM64 (milestone 134, PRP-166): to and from C, and through callbacks, as AAPCS64 passes them — floating-point aggregates in FP registers, other structs up to 16 bytes in one or two general registers, bigger ones by a caller-made copy or `x8`; `--emit=ir` follows `--target`; E0449 retired
 - Linux on ARM64 (milestone 133, PRP-165): `lughac build --target aarch64-unknown-linux-gnu` writes an ARM64 executable, green threads, actors and the collector included (an AArch64 stack switch in the runtime), compiled with `aarch64-linux-gnu-gcc` unless `$LUGHA_CC` is set; an extern struct by value to or from C is E0449 there until ARM's struct rules land; `--cpu` with it is exit 2
 - `$LUGHA_CC` chooses the C compiler (milestone 132, PRP-164): `LUGHA_CC=clang`, `LUGHA_CC="zig cc"`; used for the runtime, the collector, `[link]` C files and the link, split on spaces and never run through a shell; cached objects are kept per compiler; a missing one is exit 2 naming it
@@ -21,6 +22,7 @@ Never deleted. Older entries are never modified.
 - `net.resolve(name)` and `tls.Options.address`, milestone 121 (PRP-153): every address a name resolves to (IPv4 and IPv6, resolver order, each once), and a connection to a chosen IP address that keeps the host name for SNI and the certificate check, in `tls.connect_with` and `http.request_tls`/`request_tls_with` (`https://` and `http://`, the URL's host in `host`), like curl's `--resolve`
 
 ### Changed
+- Much smaller stack frames (milestone 135, PRP-167): stack slots are shared between match arms, branches and blocks that never run together, so a function's frame is its largest arm, not all of them; kivuli's `resolve` went from 276 KB to 8 KB at `-O0` (122 KB to 6.3 KB at `-O2`)
 - `[link]` C files and the runtime are compiled once and reused from `~/.cache/lugha/objects/` until their source, flags, compiler or headers change (milestone 127, PRP-159): a warm kivuli build takes 2.5 s instead of 4.5 s
 - Much faster builds at `-O0` (`build`, `run`, `test`): struct values are split into their fields, big ones copied by `memcpy`, `bool` results marked `zeroext`, so LLVM's fast instruction selector handles almost every function (milestone 126, PRP-158; kivuli's example builds in 4 s instead of 12); programs behave as before
 - Faster builds: Lugha functions return structs, enums, `Option`s and tuples through a hidden result pointer, so LLVM's fast instruction selector handles them at `-O0` (milestone 125, PRP-157); programs behave as before
