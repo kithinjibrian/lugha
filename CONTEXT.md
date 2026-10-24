@@ -9289,3 +9289,6 @@ Branch: prp-166-arm_structs
 
 ### STILL OPEN AT CLOSE
 - The PR awaits the user's merge; tag `m134` after it. Next: B3 (`run`/`test` with `--target` through qemu), `[build]` in `lugha.toml`.
+
+## SESSION 320 — 2026-10-24 — Small stack frames: discovery — open
+Branch: prp-167-small_frames
