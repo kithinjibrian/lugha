@@ -5,6 +5,26 @@
 2. With no `$LUGHA_CC`, the ARM target's compiler is `aarch64-linux-gnu-gcc`.
 3. Only `build` takes `--target`; `run` and `test` wait for a later step.
 
+## RESULT (session 317)
+Built as proposed, with these differences:
+- **The fragment cap:** `runtime/tasks.c` grew to 344 lines. The user raised the runtime fragment cap from 300 to 500, matching the FILE SIZE RULE (`src/link/mod.rs`'s test).
+- **Where `Target` lives:** in `src/codegen/targets.rs`, with `by_value_errors`, so codegen's `mod.rs` stays small.
+- **Compiler choice:** `link` doesn't depend on codegen. `Compiler::from_env_or(fallback)` takes the target's default name from the driver, and `link_with` takes the compiler.
+- **The `--cpu` conflict:** it is a clap `ArgumentConflict` error rendered after parsing (exit 2).
+- **A bug found by the tests:** `ptr p: P` first counted as by value. The checker records only parameters without a pointer mode.
+- **The missing-compiler message:** `CcNotFound` names `aarch64-linux-gnu-gcc` but doesn't add the `apt install` hint; the README has it.
+
+What was built:
+- The AArch64 switch in `runtime/tasks.c`: x19–x28, x29, x30, d8–d15 and FPCR in a 176-byte frame. The first frame in `spawn.c`. Other architectures are `#error`.
+- `Checked::c_by_value`, recorded in `check/env.rs` (externs) and `check/callbacks.rs` (callbacks).
+- `--target` on `build`, and `docs/errors/E0449.md`.
+
+Tests:
+- Before the Rust changes, `tests/tasks_runtime.rs`'s 17 harness cases were cross-built, and their output and exit codes under qemu matched x86-64 exactly: rounding mode, overflow, the collector, preemption, actors, 10 000 threads.
+- `tests/arm.rs`: 18 `tests/programs` cases built for ARM match their expectation files under qemu, and E0449 appears for by-value only.
+- Codegen, compiler and targets units, and `tests/cli.rs`.
+- The full `cargo test` passes (51 test binaries); fmt and clippy clean.
+
 ## OBJECTIVE
 On an x86-64 Linux machine with `gcc-aarch64-linux-gnu` installed, `lughac build app.la --target aarch64-unknown-linux-gnu` writes `app`, an ARM64 Linux executable. It prints the same output and exits with the same code under `qemu-aarch64 -L /usr/aarch64-linux-gnu` (or on a real ARM machine) as the x86-64 build does. That includes green threads, channels, actors, panics (exit 101) and the stack-overflow panic.
 

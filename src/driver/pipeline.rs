@@ -15,7 +15,7 @@ use super::source::Source;
 use super::update;
 use crate::ast;
 use crate::check::{self, Checked};
-use crate::codegen::{self, CodegenError, Cpu, OptLevel};
+use crate::codegen::{self, CodegenError, Cpu, OptLevel, Target};
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::link;
 use crate::modules::fetch::Mode;
@@ -284,10 +284,26 @@ pub(super) fn ir(front: &Front) -> Result<String, Failure> {
         .map_err(|e| codegen_failure(&front.source, e))
 }
 
-/// Compiles and links `front` at `opt` for `cpu` into the executable `exe`, with what its
-/// `[link]` tables add (v16): `pkg-config` runs first, so its failures
-/// come before codegen's work.
-pub(super) fn build(front: &Front, (opt, cpu): (OptLevel, Cpu), exe: &Path) -> Result<(), Failure> {
+/// Compiles and links `front` at `opt` for `cpu` on `target` into the executable `exe`,
+/// with what its `[link]` tables add (v16): `pkg-config` runs first, so its
+/// failures come before codegen's work. A target without C's struct rules
+/// refuses extern structs by value first (E0449, v17).
+pub(super) fn build(
+    front: &Front,
+    (opt, cpu, target): (OptLevel, Cpu, Target),
+    exe: &Path,
+) -> Result<(), Failure> {
+    let refused = codegen::by_value_errors(target, &checked(front).c_by_value);
+    if !refused.is_empty() {
+        return Err(Failure::Program(front.source.clone(), refused));
+    }
+    // The target's own compiler unless `$LUGHA_CC` names one (milestone 133).
+    let fallback = match target {
+        Target::X86_64Linux => "cc",
+        Target::Aarch64Linux => "aarch64-linux-gnu-gcc",
+    };
+    let cc = link::compiler::Compiler::from_env_or(fallback)
+        .map_err(|e| internal(&front.source, e.to_string()))?;
     let mut plan = link::Plan::new(&front.links, &mut link::pkg_config::run)
         .map_err(|e| Failure::Program(front.source.clone(), vec![e.diagnostic()]))?;
     plan.tls = std_import(&front.modules, "tls", &["tls", "http"]);
@@ -299,11 +315,11 @@ pub(super) fn build(front: &Front, (opt, cpu): (OptLevel, Cpu), exe: &Path) -> R
         checked(front),
         &sources(front),
         opt,
-        cpu,
+        (cpu, target),
         &object,
     )
     .map_err(|e| codegen_failure(&front.source, e))?;
-    link::link_with(&[&object], &plan, &temp.path, exe).map_err(|e| match e.diagnostic() {
+    link::link_with(&[&object], &plan, (&temp.path, cc), exe).map_err(|e| match e.diagnostic() {
         Some(d) => Failure::Program(front.source.clone(), vec![d]),
         None => internal(&front.source, e.to_string()),
     })
@@ -333,7 +349,11 @@ fn std_import(modules: &[Module], module: &str, via: &[&str]) -> Option<crate::s
 /// streams, passing `args` to the program.
 ///
 /// Returns the program's exit code, or 128 + N if signal N killed it, as a shell reports it.
-pub(super) fn run(front: &Front, code: (OptLevel, Cpu), args: &[String]) -> Result<u8, Failure> {
+pub(super) fn run(
+    front: &Front,
+    code: (OptLevel, Cpu, Target),
+    args: &[String],
+) -> Result<u8, Failure> {
     let temp = TempDir::new().map_err(|e| internal(&front.source, temp_error(e)))?;
     let exe = temp.path.join("prog");
     build(front, code, &exe)?;

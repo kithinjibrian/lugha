@@ -6,7 +6,7 @@ use std::path::Path;
 use super::pipeline::{self, Failure, Front};
 use super::source::line_col;
 use super::{Emit, Output};
-use crate::codegen::{Cpu, OptLevel};
+use crate::codegen::{Cpu, OptLevel, Target};
 use crate::modules::fetch::Mode;
 use crate::parser::sexp;
 
@@ -15,7 +15,7 @@ pub(super) fn build(
     file: &Path,
     output: Option<&Path>,
     emit: Option<Emit>,
-    (code, mode): ((OptLevel, Cpu), Mode),
+    (code, mode): ((OptLevel, Cpu, Target), Mode),
 ) -> Result<u8, Failure> {
     if let Some(Emit::Tokens) = emit {
         return tokens(out, file, mode);

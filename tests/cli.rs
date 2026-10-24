@@ -475,3 +475,36 @@ fn a_missing_lugha_cc_is_exit_2_and_never_reaches_a_shell_v17() {
     let out = build("   ");
     assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
 }
+
+#[test]
+fn target_takes_two_triples_and_only_build_takes_it_v17() {
+    let dir = TempDir::with(&[("arith.la", ARITH.as_bytes())]);
+    let unknown = lughac(&dir.0, &["build", "arith.la", "--target=sparc-sun-solaris"]);
+    assert_eq!(unknown.status.code(), Some(2));
+    let stderr = text(&unknown.stderr);
+    for name in ["x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"] {
+        assert!(stderr.contains(name), "{stderr}");
+    }
+    let host = lughac(
+        &dir.0,
+        &["build", "arith.la", "--target", "x86_64-unknown-linux-gnu"],
+    );
+    assert_eq!(host.status.code(), Some(0), "{}", text(&host.stderr));
+    let cpu = lughac(
+        &dir.0,
+        &[
+            "build",
+            "arith.la",
+            "--target",
+            "aarch64-unknown-linux-gnu",
+            "--cpu=native",
+        ],
+    );
+    assert_eq!(cpu.status.code(), Some(2));
+    assert!(text(&cpu.stderr).contains("--cpu"), "{}", text(&cpu.stderr));
+    let run = lughac(
+        &dir.0,
+        &["run", "arith.la", "--target", "aarch64-unknown-linux-gnu"],
+    );
+    assert_eq!(run.status.code(), Some(2), "run takes no --target yet");
+}

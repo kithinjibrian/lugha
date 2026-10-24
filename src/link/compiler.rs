@@ -37,13 +37,18 @@ impl Compiler {
     /// [`LinkError::BadCompiler`] when `$LUGHA_CC` isn't UTF-8, since its
     /// words couldn't be split reliably.
     pub fn from_env() -> Result<Compiler, LinkError> {
-        match std::env::var_os("LUGHA_CC") {
-            None => Ok(Compiler::default()),
-            Some(value) => match value.to_str() {
-                Some(text) => Ok(Compiler::from_words(text)),
-                None => Err(LinkError::BadCompiler),
-            },
-        }
+        Compiler::from_env_or("cc")
+    }
+
+    /// The compiler `$LUGHA_CC` names, or the program `fallback` when it is
+    /// unset or blank: a target's own compiler (`aarch64-linux-gnu-gcc`,
+    /// v17, milestone 133).
+    ///
+    /// # Errors
+    ///
+    /// As [`Compiler::from_env`].
+    pub fn from_env_or(fallback: &str) -> Result<Compiler, LinkError> {
+        choose(std::env::var_os("LUGHA_CC").as_deref(), fallback)
     }
 
     /// The compiler `text` names: its first space-separated word is the
@@ -89,9 +94,46 @@ impl Compiler {
     }
 }
 
+/// The compiler a `$LUGHA_CC` of `value` names, or `fallback` when it is
+/// unset or blank.
+fn choose(value: Option<&std::ffi::OsStr>, fallback: &str) -> Result<Compiler, LinkError> {
+    let fallback = || Compiler {
+        program: OsString::from(fallback),
+        ..Compiler::default()
+    };
+    match value.map(|v| v.to_str()) {
+        None => Ok(fallback()),
+        Some(Some(text)) if text.trim_matches(' ').is_empty() => Ok(fallback()),
+        Some(Some(text)) => Ok(Compiler::from_words(text)),
+        Some(None) => Err(LinkError::BadCompiler),
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::Compiler;
+    use super::{Compiler, choose};
+    use std::ffi::OsStr;
+
+    #[test]
+    fn a_target_s_compiler_is_the_fallback_and_lugha_cc_wins_v17() {
+        let arm = "aarch64-linux-gnu-gcc";
+        assert_eq!(choose(None, arm).unwrap().words(), arm);
+        assert_eq!(choose(Some(OsStr::new("  ")), arm).unwrap().words(), arm);
+        assert_eq!(choose(None, arm).unwrap().name(), "`aarch64-linux-gnu-gcc`");
+        let zig = choose(Some(OsStr::new("zig cc -target aarch64-linux-gnu")), arm).unwrap();
+        assert_eq!(zig.words(), "zig cc -target aarch64-linux-gnu");
+        assert_eq!(choose(None, "cc").unwrap(), Compiler::default());
+    }
+
+    #[test]
+    fn a_lugha_cc_that_isnt_utf8_is_refused_v17() {
+        use std::os::unix::ffi::OsStrExt;
+        let bad = OsStr::from_bytes(b"cc\xff");
+        assert!(matches!(
+            choose(Some(bad), "cc"),
+            Err(super::LinkError::BadCompiler)
+        ));
+    }
 
     fn parts(text: &str) -> (String, Vec<String>) {
         let c = Compiler::from_words(text);
