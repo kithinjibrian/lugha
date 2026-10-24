@@ -485,7 +485,7 @@ Today every binary is for Linux on this machine's exact x86-64 CPU. The four iss
 - [x] **A3a — Choosing the C compiler** (milestone 132, done session 315): `$LUGHA_CC`, words split on spaces, no shell, for every compile and the link; the cache keyed per compiler. (A3's other parts moved to B0: nothing here can test them without an ARM toolchain.)
 - [x] **B0 — Choosing a target** (milestone 133, done session 317; `[build]` in `lugha.toml` still to do) (2, prepares 3 and 4): `--target <triple>`, LLVM initialised for it, sizes from LLVM's data layout (`split_leaves.rs`'s `byte_size`), the C calling rules behind one interface (x86-64 the only one), `[build] cpu`/`target` in `lugha.toml` (the program's own manifest only, the flag wins). Needs an ARM toolchain and qemu installed (`gcc-aarch64-linux-gnu`, `qemu-user`) or `zig`.
 - [x] **B1 — ARM green threads** (milestone 133, done session 317) (1): `tasks.c`'s switch in AArch64 assembly.
-- [ ] **B2 — ARM C calling rules** (3): AAPCS64 — float-struct registers, ≤16 bytes in registers, larger by reference.
+- [x] **B2 — ARM C calling rules** (milestone 134, done session 319) (3): AAPCS64 — float-struct registers, ≤16 bytes in registers, larger by reference.
 - [ ] **B3 — Building and testing for Linux ARM** (4): cross-linking, the test programs under `qemu-aarch64`, ARM CI.
 - [ ] **C1 — Runtime split by OS:** shared, POSIX and per-OS files (event waiting behind `lugha_rt_poll_*`).
 - [ ] **C2 — Mac runtime:** `kqueue` for `net.c`; `spawn.c`'s `MAP_STACK`, `random.c`'s `getrandom`.

@@ -41,10 +41,6 @@ pub struct Checked {
     pub uses_tasks: bool,
     /// How each extern with callbacks passes its parameters to C, by key (v16, milestone 88).
     pub c_params: super::CParams,
-    /// Where an extern struct crosses to or from C by value — an extern's
-    /// parameter or result, or a callback's — for E0449 on targets whose C
-    /// struct rules lughac lacks (v17, milestone 133).
-    pub c_by_value: Vec<crate::span::Span>,
     /// Variants used as function values (v17, milestone 94): the enum type they
     /// build, type arguments filled in, and the variant's name.
     pub variant_values: HashMap<ExprId, (Type, String)>,

@@ -47,7 +47,7 @@ Oct 16, 2026 · @kithinji
 - Executables run on any x86-64 CPU: lughac builds for the baseline `x86-64` level, and `--cpu=x86-64-v2|x86-64-v3|x86-64-v4|native` on `build`, `run` and `test` chooses a newer level or this machine's own CPU (milestone 130; section 9).
 - The collector is built into lughac: bdwgc 8.2.12 is compiled once from embedded source and linked into every program statically, so neither lughac nor its programs need the system's `libgc` (milestone 131; sections 7, 9).
 - `$LUGHA_CC` chooses the C compiler: `LUGHA_CC=clang` or `LUGHA_CC="zig cc"` (a program and its first arguments, split on spaces, never run by a shell) compiles the runtime, the collector and `[link]` C files and links; unset or blank is `cc` (milestone 132; section 9).
-- Linux on ARM64: `lughac build --target aarch64-unknown-linux-gnu` writes an ARM64 executable (green threads, actors and the collector included), compiled and linked with `aarch64-linux-gnu-gcc` unless `$LUGHA_CC` names another; an extern struct by value to or from C is E0449 there (milestone 133; sections 8, 9).
+- Linux on ARM64: `lughac build --target aarch64-unknown-linux-gnu` writes an ARM64 executable (green threads, actors and the collector included), compiled and linked with `aarch64-linux-gnu-gcc` unless `$LUGHA_CC` names another; extern structs cross to C by value there as AAPCS64 passes them (milestones 133–134; sections 8, 9).
 
 Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select`, `actor` or `const` as a name (keywords now), or declares a function named `skip` (an intrinsic since milestone 97, E0302), `flush` (one since milestone 115) or `include_bytes`/`include_str` (since milestone 128), or names the iterator type `Map` (now `Mapped`, milestone 101; a program's own `Map` is fine). A module's own `Task` or `Chan` still means its own, as for `Ref`. Within v17, a `tls.Options { … }` literal naming every field without `..base` needs `address` since milestone 121 (`..tls.options()` keeps it short).
 
@@ -1437,7 +1437,7 @@ The compiler adjusts the string pointer at each call site. C code receives an or
 
 **Arrays in callbacks** (v17, milestone 105). In a callback's parameters, `T[]` is C's `const T *, size_t` (two C parameters): the callback gets a copy of the elements. `Ref<T[]>` is C's `T *, size_t`: the callback gets a box holding a copy, and when it returns the box's elements are copied back to C — no more than C gave, so a longer array is cut and a shorter one leaves the rest as it was. `T` is what an extern array's elements may be.
 
-**Passing structs** (v16, milestone 90). An extern struct goes to and from C — as an extern's parameter or result, or a callback's — the way the x86-64 System V ABI passes it, which is how a C compiler passes it. On `aarch64-unknown-linux-gnu` (v17, milestone 133) lughac doesn't implement ARM's rules for this yet, so each such place is E0449 there, found when building; by pointer (`ptr`, `mut`, `out`) it works on both targets:
+**Passing structs** (v16, milestone 90). An extern struct goes to and from C — as an extern's parameter or result, or a callback's — the way the target's C calling convention passes it, which is how a C compiler passes it. On `aarch64-unknown-linux-gnu` (v17, milestone 134) that is AAPCS64: a struct of 1 to 4 scalars all `f32` or all `f64` (nested structs flattened) goes in consecutive floating-point registers; any other of up to 16 bytes in one or two general registers; a bigger argument in a copy the caller makes, passed by pointer, and a bigger result through the pointer in `x8`. On x86-64, System V's rules:
 - **Over 16 bytes:** in memory. An argument is a copy C receives on the stack (LLVM `byval`); a result is written through a hidden pointer the caller passes first (`sret`).
 - **16 bytes or less:** split into eightbytes. One holding only `f32`/`f64` fields goes in an SSE register, any other in an integer register. A struct whose eightbytes don't all fit the registers still free at its argument goes in memory as a whole.
 - **What travels** (as clang lowers it): one LLVM value per eightbyte, `i<n>` for the bytes holding data, `float`, `<2 x float>` or `double`; with two eightbytes the low one fills its eight bytes.
@@ -1634,7 +1634,7 @@ The C `main(argc, argv)` emitted by the compiler calls `lugha_rt_init(argc, argv
 | `--diagnostics=human\|json` | Diagnostic format for `build`, `run` and `check`; `human` is the default |
 | `-O0` / `-O2` | Optimization level; `-O0` is the default |
 | `--cpu=LEVEL` | On `build`, `run` and `test` (v17, milestone 130): the x86-64 level the program's code is built for, one of `x86-64` (the default: every 64-bit Intel and AMD CPU), `x86-64-v2`, `x86-64-v3`, `x86-64-v4` or `native` (this machine's own CPU and features; the executable may not run on another). Any other value is exit 2. The runtime and `[link]` C files are compiled by `cc` at its default either way. Before v17 every build used `native` |
-| `--target=TRIPLE` | On `build` only (v17, milestone 133): the platform the executable is for, `x86_64-unknown-linux-gnu` (the default) or `aarch64-unknown-linux-gnu` (Linux on ARM64, the baseline ARMv8-A; `--cpu` with it is exit 2). The C compiler is then `cc` or `aarch64-linux-gnu-gcc`, unless `$LUGHA_CC` names one (section 8). Any other value is exit 2. On ARM64 an extern struct can't cross to C by value (E0449) |
+| `--target=TRIPLE` | On `build` only (v17, milestone 133): the platform the executable is for, `x86_64-unknown-linux-gnu` (the default) or `aarch64-unknown-linux-gnu` (Linux on ARM64, the baseline ARMv8-A; `--cpu` with it is exit 2). The C compiler is then `cc` or `aarch64-linux-gnu-gcc`, unless `$LUGHA_CC` names one (section 8). Any other value is exit 2. |
 
 Exit codes: 0 on success, 1 when the program has errors, 2 for bad command-line usage or an internal compiler error.
 
@@ -1801,7 +1801,7 @@ Name and type errors, reported by the checker:
 | E0446 | A constant that depends on itself (v17) | `const A: i64 = B; const B: i64 = A;` |
 | E0447 | A file that can't be included (v17) | `include_bytes("../../secret")` leaving the package; a missing file; one over 16 MiB; `include_str(PATH)` |
 | E0448 | `include_str` of a file that isn't UTF-8 (v17) | `include_str("logo.png")` |
-| E0449 | An extern struct crosses to C by value on a target without C's struct rules (v17) | `extern fun area(r: Rect): f64;` built for `aarch64-unknown-linux-gnu` |
+| E0449 | Retired in v17 (was: an extern struct by value on ARM64, milestone 133, before its rules landed in 134); never reported, never reused | |
 | E0437 | A malformed `extern struct` (v16) | `extern struct S { s: string }`; a field of an array, a plain struct, an enum, `Option` (other than of a handle, v17) or a function type; a handle, `Option` of one or `CPtr` in an `extern union`, at any depth (v17); `extern struct S<T> { … }`; `extern struct S {}` |
 | E0433 | A pattern that must match every value but might not (v14) | `let (1, x) = t;`, `let Some(n) = o;` without `else`, `for (Some(a), b) of …` |
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
@@ -3831,6 +3831,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 131 | The collector built in (v17) | bdwgc 8.2.12 compiled from embedded source, linked statically; no `-lgc` | `tests/programs/m131/`, `tests/c_cache.rs`, `tests/cli.rs`, `tests/tasks_runtime.rs` (done) |
 | 132 | Choosing the C compiler (v17) | `$LUGHA_CC` for every C compile and the link | `src/link/compiler.rs`, `tests/c_cache.rs`, `tests/cli.rs` (done) |
 | 133 | Linux on ARM64 (v17) | `--target aarch64-unknown-linux-gnu`, the AArch64 stack switch, E0449 | `tests/arm.rs` under qemu, `tests/cli.rs` (done) |
+| 134 | ARM64 struct passing (v17) | extern structs to and from C by value as AAPCS64 passes them; E0449 retired | `tests/arm.rs` (the `extern_structs` shapes against `aarch64-linux-gnu-gcc`), `src/codegen/c_abi_arm.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

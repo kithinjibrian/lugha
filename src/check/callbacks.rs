@@ -186,9 +186,6 @@ impl Checker {
                     };
                     let element_ok =
                         counted.is_some_and(|e| crosses_into_callback(e, &self.c_structs));
-                    if matches!(&ty, Type::Struct(key, _) if self.c_structs.contains(key)) {
-                        self.c_by_value.push(p.span);
-                    }
                     if !element_ok && !crosses_from_c(&ty, &self.c_structs) {
                         self.report(errors::callback_type(p.span));
                     }
@@ -207,9 +204,6 @@ impl Checker {
             }
             Some(r) => {
                 let ty = self.resolve(r);
-                if matches!(&ty, Type::Struct(key, _) if self.c_structs.contains(key)) {
-                    self.c_by_value.push(r.span);
-                }
                 if !crosses_into_callback(&ty, &self.c_structs) {
                     self.report(errors::callback_type(r.span));
                 }

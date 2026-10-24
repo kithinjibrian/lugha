@@ -7,7 +7,8 @@
 //! nothing past the struct's own bytes is touched. A struct in memory is a
 //! `byval` pointer; a result in memory comes back through a hidden `sret`
 //! pointer, the first parameter. Signatures without structs never come here,
-//! so their IR is unchanged.
+//! so their IR is unchanged. On AArch64 (v17, milestone 134) the pieces are
+//! AAPCS64's (`c_abi_arm`) and a big argument is a plain pointer to a copy.
 
 use inkwell::attributes::{Attribute, AttributeLoc};
 use inkwell::types::{
@@ -34,18 +35,20 @@ pub(super) enum CKind {
 
 /// How one parameter travels.
 #[derive(Debug, Clone)]
-enum Arg<'ctx> {
+pub(super) enum Arg<'ctx> {
     /// One LLVM parameter; the Lugha type when it has one, for C's extensions.
     One(BasicTypeEnum<'ctx>, Option<Type>),
     /// An extern struct in registers: one LLVM parameter per piece.
     Split(Type, Vec<BasicTypeEnum<'ctx>>),
     /// An extern struct in memory: a `byval` pointer.
     ByVal(Type),
+    /// An extern struct in memory on AArch64: a plain pointer to a copy (v17).
+    Indirect(Type),
 }
 
 /// How the result travels.
 #[derive(Debug, Clone)]
-enum Ret<'ctx> {
+pub(super) enum Ret<'ctx> {
     Void,
     One(BasicTypeEnum<'ctx>, Type),
     /// An extern struct in registers: its piece, or a pair of pieces.
@@ -72,7 +75,7 @@ pub(super) fn has_struct(kinds: &[CKind], ret: &Type) -> bool {
 }
 
 impl<'ctx> Lowerer<'ctx> {
-    fn piece_type(&self, piece: Piece) -> BasicTypeEnum<'ctx> {
+    pub(super) fn piece_type(&self, piece: Piece) -> BasicTypeEnum<'ctx> {
         match piece {
             Piece::Int(bits) => {
                 let bits = std::num::NonZeroU32::new(bits).expect("a piece holds data");
@@ -93,6 +96,9 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// The lowered signature of a C function taking `kinds` and returning `ret`.
     pub(super) fn c_sig(&self, kinds: &[CKind], ret: &Type) -> CSig<'ctx> {
+        if self.target == super::Target::Aarch64Linux {
+            return self.c_sig_arm(kinds, ret);
+        }
         let classified = |ty: &Type| classify(ty, &self.structs, &self.enums);
         let ret = match ret {
             Type::Unit => Ret::Void,
@@ -121,6 +127,12 @@ impl<'ctx> Lowerer<'ctx> {
                 }
             })
             .collect();
+        self.c_sig_of(args, ret)
+    }
+
+    /// The function type of a signature whose parameters and result are laid out.
+    pub(super) fn c_sig_of(&self, args: Vec<Arg<'ctx>>, ret: Ret<'ctx>) -> CSig<'ctx> {
+        let ptr: BasicTypeEnum = self.context.ptr_type(Default::default()).into();
         let mut params: Vec<BasicMetadataTypeEnum> = Vec::new();
         if let Ret::Memory(_) = ret {
             params.push(ptr.into());
@@ -131,7 +143,7 @@ impl<'ctx> Lowerer<'ctx> {
                 Arg::Split(_, pieces) => {
                     params.extend(pieces.iter().map(|p| BasicMetadataTypeEnum::from(*p)))
                 }
-                Arg::ByVal(_) => params.push(ptr.into()),
+                Arg::ByVal(_) | Arg::Indirect(_) => params.push(ptr.into()),
             }
         }
         let fn_type = match &ret {
@@ -191,6 +203,7 @@ impl<'ctx> Lowerer<'ctx> {
                     add(AttributeLoc::Param(index), align);
                     index += 1;
                 }
+                Arg::Indirect(_) => index += 1,
             }
         }
         if let Ret::One(_, ty) = &sig.ret
@@ -204,6 +217,29 @@ impl<'ctx> Lowerer<'ctx> {
         llvm_type(self.context, ty).into_struct_type()
     }
 
+    /// A slot for an extern struct of type `ty` moving to or from `pieces`:
+    /// the struct's own, unless the pieces span more bytes (AAPCS64's `i64`
+    /// for a 4-byte struct, milestone 134), when it is that many bytes, so
+    /// no load or store passes the slot's end. On x86-64 pieces never do.
+    fn c_slot(&self, ty: &Type, pieces: &[BasicTypeEnum<'ctx>]) -> PointerValue<'ctx> {
+        let (size, _) = super::structs::layout(ty, &self.structs, &self.enums);
+        let spans: u64 = pieces.iter().map(|p| piece_bytes(*p)).sum();
+        if spans <= size {
+            return self.entry_alloca(ty, "c.struct");
+        }
+        let words = u32::try_from(spans.div_ceil(8)).expect("two words at most");
+        let function = self.function.expect("a C call is inside a function");
+        let entry = function.get_first_basic_block().expect("an entry block");
+        let builder = self.context.create_builder();
+        match entry.get_first_instruction() {
+            Some(first) => builder.position_before(&first),
+            None => builder.position_at_end(entry),
+        }
+        builder
+            .build_alloca(self.context.i64_type().array_type(words), "c.struct")
+            .expect(POSITIONED)
+    }
+
     /// Stores `value` of extern struct type `ty` and loads it back as `pieces`.
     fn split_pieces(
         &mut self,
@@ -211,7 +247,7 @@ impl<'ctx> Lowerer<'ctx> {
         ty: &Type,
         pieces: &[BasicTypeEnum<'ctx>],
     ) -> Vec<BasicValueEnum<'ctx>> {
-        let slot = self.entry_alloca(ty, "c.struct");
+        let slot = self.c_slot(ty, pieces);
         self.builder.build_store(slot, value).expect(POSITIONED);
         let pair = self.context.struct_type(pieces, false);
         pieces
@@ -242,7 +278,7 @@ impl<'ctx> Lowerer<'ctx> {
         ty: &Type,
         pieces: &[BasicTypeEnum<'ctx>],
     ) -> BasicValueEnum<'ctx> {
-        let slot = self.entry_alloca(ty, "c.struct");
+        let slot = self.c_slot(ty, pieces);
         let pair = self.context.struct_type(pieces, false);
         for (i, value) in values.iter().enumerate() {
             let at = self
@@ -286,8 +322,9 @@ impl<'ctx> Lowerer<'ctx> {
                         .into_iter()
                         .map(BasicMetadataValueEnum::from),
                 ),
-                Arg::ByVal(ty) => {
-                    // C gets its own copy: `byval` copies from this slot.
+                // C gets its own copy: `byval` copies from this slot, and
+                // on AArch64 the slot is the copy C reads (milestone 134).
+                Arg::ByVal(ty) | Arg::Indirect(ty) => {
                     let slot = self.entry_alloca(ty, "c.byval");
                     self.builder.build_store(slot, value).expect(POSITIONED);
                     args.push(slot.into());
@@ -360,7 +397,8 @@ impl<'ctx> Lowerer<'ctx> {
                         .collect();
                     self.join_pieces(&parts, ty, pieces)
                 }
-                Arg::ByVal(ty) => {
+                // Copied out of C's memory, so the callback never writes it.
+                Arg::ByVal(ty) | Arg::Indirect(ty) => {
                     let from = incoming
                         .next()
                         .expect("the byval pointer")
@@ -414,5 +452,22 @@ impl<'ctx> Lowerer<'ctx> {
             (_, None) => self.builder.build_return(None),
         }
         .expect(POSITIONED);
+    }
+}
+
+/// The bytes a piece occupies: an integer's, a float's, a vector's or an array's.
+fn piece_bytes(piece: BasicTypeEnum<'_>) -> u64 {
+    match piece {
+        BasicTypeEnum::IntType(i) => u64::from(i.get_bit_width()).div_ceil(8),
+        BasicTypeEnum::FloatType(f) => {
+            if f == f.get_context().f32_type() {
+                4
+            } else {
+                8
+            }
+        }
+        BasicTypeEnum::VectorType(v) => u64::from(v.get_size()) * 4,
+        BasicTypeEnum::ArrayType(a) => u64::from(a.len()) * piece_bytes(a.get_element_type()),
+        other => unreachable!("a C piece is a number or an array of them, not {other:?}"),
     }
 }

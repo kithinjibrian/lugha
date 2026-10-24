@@ -169,7 +169,6 @@ impl Checker {
             enums: HashMap::new(),
             handles: HashMap::new(),
             c_params: HashMap::new(),
-            c_by_value: Vec::new(),
             variant_values: HashMap::new(),
             consts: HashMap::new(),
             const_uses: HashMap::new(),
@@ -267,8 +266,6 @@ pub(super) struct Checker {
     handles: HashMap<String, Span>,
     /// See `Checked::c_params`.
     c_params: callbacks::CParams,
-    /// See `Checked::c_by_value`.
-    c_by_value: Vec<Span>,
     /// See `Checked::variant_values`.
     variant_values: HashMap<ExprId, (Type, String)>,
     /// Every constant by key (v17, milestone 109).

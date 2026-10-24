@@ -43,7 +43,13 @@ pub(super) enum Passing {
 }
 
 /// Every scalar of `ty` with its byte offset, nested structs flattened.
-fn scalars(ty: &Type, base: u64, structs: &Structs, enums: &Enums, out: &mut Vec<(u64, Type)>) {
+pub(super) fn scalars(
+    ty: &Type,
+    base: u64,
+    structs: &Structs,
+    enums: &Enums,
+    out: &mut Vec<(u64, Type)>,
+) {
     match ty {
         Type::Struct(..) => {
             let mut offset = 0u64;

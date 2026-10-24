@@ -2,6 +2,22 @@
 
 **Status:** approved 2026-10-24 ("build", session 319); proposed 2026-10-24 (session 318). Discovery: (1) the rules are verified against a real C compiler. `tests/extern_structs.rs`'s shapes move to `tests/common/` and also run in `tests/arm.rs`, with the C side built by `aarch64-linux-gnu-gcc` and the program run under qemu. The design follows AAPCS64 (Arm's "Procedure Call Standard for the Arm 64-bit Architecture") the way clang lowers it, so it was stated rather than asked.
 
+## RESULT (session 319)
+Built as proposed.
+- `src/codegen/c_abi_arm.rs` (156 lines): `classify_arm`, plus the ARM signature (`c_sig_arm`, `arm_piece`), moved there to keep `c_calls.rs` under 500 lines (473).
+- `c_calls.rs`:
+  - `Arg::Indirect`;
+  - the shared tail `c_sig_of`;
+  - `c_slot`: a slot as wide as ARM's pieces when they span more bytes than the struct (`i64` for a 4-byte struct). On x86-64 pieces never do, so its IR is unchanged.
+- The target reaches lowering through `Lowerer::target`. `emit_ir_for` sits beside the unchanged `emit_ir_modules`, and `--emit=ir` follows `--target`.
+- E0449 is retired: `by_value_errors` and `Checked::c_by_value` are removed, and its page says retired.
+- The shapes moved to `tests/common/c_shapes.rs`, and `tests/extern_structs.rs` uses them unchanged.
+
+Tests:
+- Classifier and IR units (ARM: `[2 x float]`, a plain `ptr` for 24 bytes, `sret`, `i64` for 4 bytes; x86-64 as before).
+- `tests/arm.rs` runs all three shape programs (each shape, big structs and full registers, callbacks both ways) against `aarch64-linux-gnu-gcc`'s C under qemu at -O0 and -O2, matching x86-64.
+- The full `cargo test` passes (51 test binaries); fmt and clippy clean.
+
 ## OBJECTIVE
 Every program `tests/extern_structs.rs` runs on x86-64 builds with `--target aarch64-unknown-linux-gnu` and prints the same numbers under qemu as on x86-64. That covers each shape as an argument and as a result, big structs, full registers, and callbacks taking and returning structs. E0449 is retired: no target refuses extern structs by value any more.
 
