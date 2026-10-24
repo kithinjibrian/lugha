@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `--cpu` on `build`, `run` and `test` (milestone 130, PRP-162): `x86-64` (the default), `x86-64-v2`, `x86-64-v3`, `x86-64-v4` or `native`; anything else is exit 2
 - `lughac init` writes a `test/` folder with one passing test (milestone 129, PRP-161): `test/greeting_test.la` for a program, whose greeting moves to `src/greeting.la` (it now prints `Hello, world, from N!`), and `test/N_test.la` for a library; a second hint line, `test it with: lughac test …`; every file `lughac fmt`-clean, none overwritten
 - `include_bytes("path")` and `include_str("path")` build a file's contents into the program (milestone 128, PRP-160): constant expressions, the file inside the package's folder and at most 16 MiB (E0447), `include_str` UTF-8 (E0448), stored read-only with nothing copied at startup; hover shows the file's size and go-to-definition opens it
 - `lughac test` builds the test files of one package folder into one executable instead of one per file (milestone 124, PRP-156); `--filter` builds only the files it selects
@@ -24,6 +25,7 @@ Never deleted. Older entries are never modified.
 - `tls.Options` has a third field, `address`: a literal naming every field without `..tls.options()` must name it too
 
 ### Fixed
+- Executables run on any x86-64 CPU (milestone 130, PRP-162): lughac built for this machine's exact CPU and features, so an `-O2` binary could die with an illegal instruction on an older PC; the baseline is now the default and `--cpu=native` gives the old behaviour
 - A struct update literal (`S { f: e, ..base }`) converts to an interface value where one is expected, as a plain struct literal does (it was E0403)
 - The language server no longer reports E0319 ("the main file can't be imported") for two modules importing each other: a module checked alone, with no main reaching it, is now loaded as a module, as `lughac check` loads it
 

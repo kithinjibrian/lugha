@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use lugha::codegen::{self, OptLevel};
+use lugha::codegen::{self, Cpu, OptLevel};
 use lugha::link::{self, LinkError};
 use lugha::{check, lexer, parser};
 
@@ -47,11 +47,56 @@ fn build_and_run(src: &str, opt: OptLevel) -> ExitStatus {
             text: src,
         },
         opt,
+        Cpu::default(),
         &object,
     )
     .unwrap_or_else(|e| panic!("{src}: {e}"));
     link::link(&[&object], &exe).unwrap_or_else(|e| panic!("{src}: {e}"));
     Command::new(&exe).status().expect("built program runs")
+}
+
+/// The object file `src` makes at -O2 for `cpu`, and the exit code of the
+/// program linked from it.
+fn object_and_exit(src: &str, cpu: Cpu) -> (Vec<u8>, Option<i32>) {
+    let (tokens, _) = lexer::lex(src).expect("lexes");
+    let (program, _) = parser::parse(&tokens).expect("parses");
+    let (checked, _) = check::check(&program).unwrap_or_else(|e| panic!("{src}: {e:?}"));
+    let dir = TempDir::new();
+    let (object, exe) = (dir.0.join("prog.o"), dir.0.join("prog"));
+    let source = codegen::SourceInfo {
+        name: "test.la",
+        text: src,
+    };
+    codegen::emit_object(&program, &checked, &source, OptLevel::O2, cpu, &object)
+        .unwrap_or_else(|e| panic!("{src}: {e}"));
+    link::link(&[&object], &exe).unwrap_or_else(|e| panic!("{src}: {e}"));
+    let status = Command::new(&exe).status().expect("built program runs");
+    (
+        std::fs::read(&object).expect("object is readable"),
+        status.code(),
+    )
+}
+
+/// True if `code` holds a `popcnt`: `F3`, an optional REX prefix, `0F B8`.
+fn has_popcnt(code: &[u8]) -> bool {
+    let plain = code.windows(3).any(|w| w == [0xF3, 0x0F, 0xB8]);
+    let rex = code
+        .windows(4)
+        .any(|w| w[0] == 0xF3 && (0x40..=0x4F).contains(&w[1]) && w[2..] == [0x0F, 0xB8]);
+    plain || rex
+}
+
+#[test]
+fn the_default_cpu_is_baseline_x86_64_and_cpu_levels_add_instructions_v17() {
+    // `args()` keeps the value unknown until the program runs, so LLVM
+    // can't fold the count away: 12345 has six bits set.
+    let src = "fun main(): i32 { let x = args().len as u64 * 12345; x.count_ones() as i32 }\n";
+    let (baseline, code) = object_and_exit(src, Cpu::default());
+    assert_eq!(code, Some(6));
+    assert!(!has_popcnt(&baseline), "baseline x86-64 has no popcnt");
+    let (v2, code) = object_and_exit(src, Cpu::V2);
+    assert_eq!(code, Some(6));
+    assert!(has_popcnt(&v2), "x86-64-v2 counts bits with popcnt");
 }
 
 /// Runs `src` at -O0 and -O2, asserts both agree, and returns the status.

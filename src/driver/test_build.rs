@@ -12,7 +12,7 @@ use super::pipeline::{self, Failure};
 use super::render::Report;
 use super::source::Source;
 use super::{test_json, update};
-use crate::codegen::OptLevel;
+use crate::codegen::{Cpu, OptLevel};
 use crate::modules::{self, fetch::Mode};
 
 /// A test of a built executable: its key (what `LUGHA_TEST` names), and
@@ -53,14 +53,19 @@ pub(super) fn groups(files: &[PathBuf]) -> Vec<Vec<usize>> {
 }
 
 /// Checks and builds the files `members` of `files` into the executable
-/// `exe`, reporting a broken file alone (decision 278).
-pub(super) fn build_group(files: &[PathBuf], members: &[usize], exe: &Path) -> GroupResult {
+/// `exe` for `cpu`, reporting a broken file alone (decision 278).
+pub(super) fn build_group(
+    files: &[PathBuf],
+    members: &[usize],
+    exe: &Path,
+    cpu: Cpu,
+) -> GroupResult {
     let mut result = GroupResult {
         built: Vec::new(),
         failures: Vec::new(),
     };
     if let [only] = members {
-        match build(&files[*only], exe) {
+        match build(&files[*only], exe, cpu) {
             Ok(tests) => result.built.push((*only, tests)),
             Err(failure) => result.failures.push(counted(failure, 1)),
         }
@@ -70,7 +75,7 @@ pub(super) fn build_group(files: &[PathBuf], members: &[usize], exe: &Path) -> G
     let front = match pipeline::front_test_roots(&paths, MODE) {
         Ok(front) => front,
         Err(Failure::Program(source, diagnostics)) => {
-            return apart(files, members, exe, (source, diagnostics));
+            return apart(files, members, (exe, cpu), (source, diagnostics));
         }
         Err(failure) => {
             result.failures.push((failure, 0));
@@ -83,7 +88,7 @@ pub(super) fn build_group(files: &[PathBuf], members: &[usize], exe: &Path) -> G
         .and_then(|c| c.tests.clone())
         .unwrap_or_default();
     if !keys.is_empty()
-        && let Err(failure) = pipeline::build(&front, OptLevel::O0, exe)
+        && let Err(failure) = pipeline::build(&front, (OptLevel::O0, cpu), exe)
     {
         result.failures.push(counted(failure, members.len()));
         return result;
@@ -107,7 +112,7 @@ pub(super) fn build_group(files: &[PathBuf], members: &[usize], exe: &Path) -> G
 fn apart(
     files: &[PathBuf],
     members: &[usize],
-    exe: &Path,
+    (exe, cpu): (&Path, Cpu),
     (source, diagnostics): (Source, Vec<crate::diagnostic::Diagnostic>),
 ) -> GroupResult {
     let mut failures = Vec::new();
@@ -135,7 +140,7 @@ fn apart(
             built: Vec::new(),
             failures: Vec::new(),
         },
-        false => build_group(files, &good, exe),
+        false => build_group(files, &good, exe, cpu),
     };
     failures.append(&mut result.failures);
     result.failures = failures;
@@ -152,7 +157,7 @@ fn counted(failure: Failure, files: usize) -> (Failure, usize) {
 
 /// Checks `file` for tests and builds its test executable at `exe`; returns
 /// its tests in declaration order, each with its name's line and column.
-fn build(file: &Path, exe: &Path) -> Result<Vec<Listed>, Failure> {
+fn build(file: &Path, exe: &Path, cpu: Cpu) -> Result<Vec<Listed>, Failure> {
     let front = pipeline::front_tests(file, MODE)?;
     let tests = front
         .checked
@@ -160,7 +165,7 @@ fn build(file: &Path, exe: &Path) -> Result<Vec<Listed>, Failure> {
         .and_then(|c| c.tests.clone())
         .unwrap_or_default();
     if !tests.is_empty() {
-        pipeline::build(&front, OptLevel::O0, exe)?;
+        pipeline::build(&front, (OptLevel::O0, cpu), exe)?;
     }
     // Positions from the main file's own text (offset 0 in the source map).
     let text = &front.source.main().text;

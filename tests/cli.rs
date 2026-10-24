@@ -402,3 +402,32 @@ fn check_takes_a_loose_library_file_in_a_cycle_as_a_module() {
         text(&main.stderr)
     );
 }
+
+#[test]
+fn cpu_chooses_the_level_and_an_unknown_one_is_exit_2_v17() {
+    let dir = TempDir::with(&[("arith.la", ARITH.as_bytes())]);
+    let native = lughac(&dir.0, &["build", "arith.la", "--cpu=native", "-O2"]);
+    assert_eq!(native.status.code(), Some(0), "{}", text(&native.stderr));
+    let status = Command::new(dir.0.join("arith"))
+        .status()
+        .expect("binary runs");
+    assert_eq!(status.code(), Some(14));
+    // v3 needs AVX2; a host without it runs v2 instead.
+    let cpuinfo = std::fs::read_to_string("/proc/cpuinfo").unwrap_or_default();
+    let level = if cpuinfo.contains(" avx2") {
+        "x86-64-v3"
+    } else {
+        "x86-64-v2"
+    };
+    let run = lughac(&dir.0, &["run", "arith.la", "--cpu", level]);
+    assert_eq!(run.status.code(), Some(14), "{}", text(&run.stderr));
+    let base = lughac(&dir.0, &["build", "arith.la", "--cpu=x86-64", "-o", "base"]);
+    assert_eq!(base.status.code(), Some(0), "{}", text(&base.stderr));
+    let unknown = lughac(&dir.0, &["build", "arith.la", "--cpu=zen4", "-o", "zen"]);
+    assert_eq!(unknown.status.code(), Some(2));
+    let stderr = text(&unknown.stderr);
+    for name in ["x86-64", "x86-64-v2", "x86-64-v3", "x86-64-v4", "native"] {
+        assert!(stderr.contains(name), "{stderr}");
+    }
+    assert!(!dir.0.join("zen").exists());
+}

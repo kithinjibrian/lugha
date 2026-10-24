@@ -15,6 +15,8 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
+use crate::codegen::Cpu;
+
 use super::Output;
 use super::fmt::{display, la_files};
 use super::pipeline::{Failure, TempDir};
@@ -33,6 +35,8 @@ pub(super) struct Request<'a> {
     pub list: bool,
     /// `--json`: one JSON object per line, for tools (milestone 85).
     pub json: bool,
+    /// `--cpu`: the level the test executables are built for (milestone 130).
+    pub cpu: Cpu,
 }
 
 impl Request<'_> {
@@ -125,7 +129,7 @@ pub(super) fn test(request: &Request, out: &mut Output) -> u8 {
     let mut uncompiled = 0;
     for (g, members) in test_build::groups(&selected).iter().enumerate() {
         let exe = temp.path.join(format!("test{g}"));
-        let result = test_build::build_group(&selected, members, &exe);
+        let result = test_build::build_group(&selected, members, &exe, request.cpu);
         for (failure, files) in result.failures {
             uncompiled += files;
             match failure {

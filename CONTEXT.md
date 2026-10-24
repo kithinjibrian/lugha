@@ -7074,7 +7074,7 @@ Branch: main
 
 ## NEXT SESSION START POINT
 
-**v17: milestones 91–129 done** (`m129` a test folder from `lughac init` (PRP-161, pending merge); `m128` included files (PRP-160); `m127` the C object cache (PRP-159); `m124` one `lughac test` build per package folder (PRP-156, merged after m126); `m126` struct values split into fields and `m125` struct results through a pointer — `-O0` builds ~3× faster, PRP-157/158; `m123` shared member names — a method named like a field or, with `self`, a variant (PRP-155); `m122` joining arrays — `xs + ys`, `+=` on arrays and strings, arrays satisfy `Add` (PRP-154); `m121` net.resolve and tls address — Rapidkoi's two full `tls.Options` literals need `address`; `m120` hkdf_sha256, reviewed by the user; `m119` request_tls_with; `m118` and_then; `m117` octal literals; `m116` fs.sync; `m115` fs.rename, fs.set_mode, flush, std.time; `m114` std.toml; `m113` std.crypto; `m112` TLS; `m111` std.http; `m110` std.net; `m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. **PRP-160 built** (milestone 128, Rapidkoi's request): `include_bytes`/`include_str` on `prp-160-include_files`; merge, then tag `m128`; Rapidkoi can then move its new tab and icons over after reinstalling `lughac`. **PRP-161 built** (milestone 129, session 309): `lughac init` writes `test/` with one passing test (a program's greeting moves to `src/greeting.la`); on `prp-161-init_test_folder`; merge, then tag `m129`. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
+**v17: milestones 91–130 done** (`m130` portable x86-64 executables (PRP-162, pending merge); `m129` a test folder from `lughac init` (PRP-161); `m128` included files (PRP-160); `m127` the C object cache (PRP-159); `m124` one `lughac test` build per package folder (PRP-156, merged after m126); `m126` struct values split into fields and `m125` struct results through a pointer — `-O0` builds ~3× faster, PRP-157/158; `m123` shared member names — a method named like a field or, with `self`, a variant (PRP-155); `m122` joining arrays — `xs + ys`, `+=` on arrays and strings, arrays satisfy `Add` (PRP-154); `m121` net.resolve and tls address — Rapidkoi's two full `tls.Options` literals need `address`; `m120` hkdf_sha256, reviewed by the user; `m119` request_tls_with; `m118` and_then; `m117` octal literals; `m116` fs.sync; `m115` fs.rename, fs.set_mode, flush, std.time; `m114` std.toml; `m113` std.crypto; `m112` TLS; `m111` std.http; `m110` std.net; `m109` global constants; `m108` float bits; `m107` the unit type `()`; `m106` nullable handle fields and plain-data unions; `m103`–`m105` pointers at the C boundary: `ptr`/`mut`, arrays and `extern union`, `CPtr` with `c_read`/`c_write` and callback arrays — lugha-wasmtime's list is covered; `m102` `out` parameters, `m101` maps and sets, `m100` glob re-exports, `m99` package entry modules, `m98` module doc comments; tags `m91` green threads, `m92` actors, `m93` struct update, `m94` variants as functions, `m95` fmt hugging, `m96` inference from siblings, `m97` packages and tests; PRP-122–128). VS Code extension 0.18.0. PRP-129: GTK's SSE cflags accepted. kivuli (another session) can drop its workarounds for quirks 2–8 after reinstalling `lughac`. **PRP-160 built** (milestone 128, Rapidkoi's request): `include_bytes`/`include_str` on `prp-160-include_files`; merge, then tag `m128`; Rapidkoi can then move its new tab and icons over after reinstalling `lughac`. **PRP-161 done** (milestone 129, tag `m129`): `lughac init` writes `test/` with one passing test (a program's greeting moves to `src/greeting.la`). **Portability roadmap** (session 310, TODO.md): A1 portable x86-64 binaries, A2 the GC built in, A3 `--target`, then Linux ARM, Mac, Windows, wasm. **PRP-162 built** (milestone 130, roadmap A1, session 311): baseline `x86-64` by default, `--cpu=x86-64|x86-64-v2|v3|v4|native` on `build`/`run`/`test`; on `prp-162-portable_cpu`; merge, then tag `m130`. Next on the roadmap: A2 (the GC built in, needs the user's security review); `[build] cpu` in `lugha.toml` deferred to A3. Next candidates (TODO's v17 section): built-in supervisors, generic actors, non-blocking I/O, several OS threads.
 
 **v16: milestones 67–90 complete** (tags `m67` shared boxes, `m68` changing directory, `m69` `lughac init`, `m70`–`m79` the language server and the extension, `m80` `lughac fmt`, `m81` formatting in the editor, `m82` more quick fixes, `m83` Find References and Rename, `m84` `lughac test`, `m85` tests in the editor, `m86` `lughac explain`, `m87` linking C libraries, `m88` callbacks and handles, `m89` strings from C, `m90` C structs by value).
 
@@ -9160,3 +9160,29 @@ Branch: prp-161-init_test_folder
 
 ### STILL OPEN AT CLOSE
 - The PR awaits the user's merge; tag `m129` after it.
+
+## SESSION 310 — 2026-10-24 — Portability roadmap and portable x86-64 binaries: discovery — closed
+Branch: prp-162-portable_cpu
+
+### DONE
+- Discussed portability with the user: four issues (runtime C code, the host-only LLVM target, x86-64-only C calling rules, linking with this machine's libraries); the language itself is portable. Roadmap written to TODO.md ("Portability roadmap": A1–A3, Linux ARM, Mac, Windows, wasm).
+- A1 discovery (3 questions, all the recommended answer): baseline `x86-64` default; `--cpu` takes `x86-64`, `x86-64-v2`, `-v3`, `-v4` or `native`; only LLVM's code changes, not the runtime's. PRP-162 written (milestone 130). Found: `host_machine` uses the host CPU and features, so `-O2` binaries may not run on older x86-64 PCs.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- PRP-162 awaits approval.
+
+## SESSION 311 — 2026-10-24 — Portable x86-64 binaries: build (m130) — closed
+Branch: prp-162-portable_cpu
+
+### DONE
+- PRP-162 approved ("build"; the user asked why the flag isn't in `lugha.toml`: the CPU is a deployment choice, so `[build] cpu` is deferred to A3) and built (milestone 130): `codegen::Cpu`, `target_machine(opt, cpu)`, `--cpu` on `build`/`run`/`test`. Spec §0/§9/§11 (row 130), README, CHANGELOG (Added and Fixed), CLAUDE.md, TODO (A1 ticked) updated.
+- Tests first: codegen units, `tests/codegen.rs` (no `popcnt` at baseline, one at v2), `tests/cli.rs`, `tests/test_runner.rs`. Targeted suites pass (see the PRP's RESULT); full `cargo test` not run.
+
+### PENDING DECISIONS OPENED
+- None.
+
+### STILL OPEN AT CLOSE
+- The PR awaits the user's merge; tag `m130` after it.

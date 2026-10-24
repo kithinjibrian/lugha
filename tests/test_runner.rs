@@ -406,3 +406,17 @@ fn a_loose_library_file_in_a_cycle_is_tested_as_a_module() {
         text(&out.stdout)
     );
 }
+
+#[test]
+fn cpu_reaches_the_test_build_v17() {
+    let t = Temp::with(&[("geo.la", "@test\nfun ok() {\n    assert_eq(1 + 1, 2);\n}\n")]);
+    let out = lughac(&t.0, &["test", "--cpu=native"]);
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    assert!(
+        text(&out.stdout).contains("1 passed"),
+        "{}",
+        text(&out.stdout)
+    );
+    let bad = lughac(&t.0, &["test", "--cpu=pentium"]);
+    assert_eq!(bad.status.code(), Some(2));
+}
