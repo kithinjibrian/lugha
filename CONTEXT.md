@@ -9302,3 +9302,6 @@ Branch: prp-167-small_frames
 
 ### STILL OPEN AT CLOSE
 - PRP-167 awaits approval (including its spec §7 text).
+
+## SESSION 321 — 2026-10-24 — Small stack frames: build (m135) — open
+Branch: prp-167-small_frames
