@@ -1,6 +1,6 @@
 ## FEATURE: Extern structs go to and from C by value on ARM64 as AAPCS64 passes them, lifting E0449; milestone 134 (v17), portability roadmap step B2.
 
-**Status:** proposed 2026-10-24 (session 318). Discovery: (1) the rules are verified against a real C compiler. `tests/extern_structs.rs`'s shapes move to `tests/common/` and also run in `tests/arm.rs`, with the C side built by `aarch64-linux-gnu-gcc` and the program run under qemu. The design follows AAPCS64 (Arm's "Procedure Call Standard for the Arm 64-bit Architecture") the way clang lowers it, so it was stated rather than asked.
+**Status:** approved 2026-10-24 ("build", session 319); proposed 2026-10-24 (session 318). Discovery: (1) the rules are verified against a real C compiler. `tests/extern_structs.rs`'s shapes move to `tests/common/` and also run in `tests/arm.rs`, with the C side built by `aarch64-linux-gnu-gcc` and the program run under qemu. The design follows AAPCS64 (Arm's "Procedure Call Standard for the Arm 64-bit Architecture") the way clang lowers it, so it was stated rather than asked.
 
 ## OBJECTIVE
 Every program `tests/extern_structs.rs` runs on x86-64 builds with `--target aarch64-unknown-linux-gnu` and prints the same numbers under qemu as on x86-64. That covers each shape as an argument and as a result, big structs, full registers, and callbacks taking and returning structs. E0449 is retired: no target refuses extern structs by value any more.

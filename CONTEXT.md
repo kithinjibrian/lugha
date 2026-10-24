@@ -9276,3 +9276,6 @@ Branch: prp-166-arm_structs
 
 ### STILL OPEN AT CLOSE
 - PRP-166 awaits approval.
+
+## SESSION 319 — 2026-10-24 — ARM struct rules: build (m134) — open
+Branch: prp-166-arm_structs
