@@ -26,8 +26,9 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+/* bdwgc's own layout (milestone 131): lughac passes `-isystem` its include folder. */
 #include <gc.h>
-#include <gc/gc_mark.h>
+#include <gc_mark.h>
 #include <poll.h>
 #include <pthread.h>
 #include <signal.h>

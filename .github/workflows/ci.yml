@@ -27,12 +27,13 @@ jobs:
     steps:
       - name: Install system packages
         # llvm-21-dev: inkwell's LLVM (DECISION-005, linked dynamically).
-        # libgc-dev and build-essential: `cc … -lgc -lm` links every test program.
+        # build-essential: `cc` compiles the runtime and the bundled collector
+        # (no libgc-dev: milestone 131) and links every test program.
         # curl and ca-certificates: rustup's installer. git: a real checkout.
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            llvm-21-dev libgc-dev build-essential curl ca-certificates git libssl-dev openssl
+            llvm-21-dev build-essential curl ca-certificates git libssl-dev openssl
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

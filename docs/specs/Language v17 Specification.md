@@ -45,6 +45,7 @@ Oct 16, 2026 · @kithinji
 - Packages and tests: `lughac test` and `lughac check` on a file in a package's `source` folder build it as that package's module (`glow.diff`), so modules importing each other can be tested, and its tests are named `glow.diff.name`; programs in a package's `test/`, `tests/` and `examples/` see its package-level items; `lughac check` takes a file without `main` as a library; `lugha.lock` sits beside the governing `lugha.toml`; and `skip(reason)` reports a test skipped (milestone 97; sections 6, 9).
 - `lughac init` writes a `test/` folder with one passing test, and a program's greeting in its own module, `src/greeting.la` (milestone 129; section 9).
 - Executables run on any x86-64 CPU: lughac builds for the baseline `x86-64` level, and `--cpu=x86-64-v2|x86-64-v3|x86-64-v4|native` on `build`, `run` and `test` chooses a newer level or this machine's own CPU (milestone 130; section 9).
+- The collector is built into lughac: bdwgc 8.2.12 is compiled once from embedded source and linked into every program statically, so neither lughac nor its programs need the system's `libgc` (milestone 131; sections 7, 9).
 
 Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select`, `actor` or `const` as a name (keywords now), or declares a function named `skip` (an intrinsic since milestone 97, E0302), `flush` (one since milestone 115) or `include_bytes`/`include_str` (since milestone 128), or names the iterator type `Map` (now `Mapped`, milestone 101; a program's own `Map` is fine). A module's own `Task` or `Chan` still means its own, as for `Ref`. Within v17, a `tls.Options { … }` literal naming every field without `..base` needs `address` since milestone 121 (`..tls.options()` keeps it short).
 
@@ -1339,7 +1340,7 @@ This rejects a few correct programs, such as a function whose only exit is a `re
 
 ## 7. Memory model
 
-Value types live on the stack; strings and arrays live on a garbage-collected heap managed by the Boehm-Demers-Weiser conservative collector. Programs never free memory explicitly.
+Value types live on the stack; strings and arrays live on a garbage-collected heap managed by the Boehm-Demers-Weiser conservative collector. Programs never free memory explicitly. Since v17 (milestone 131) the collector is bdwgc 8.2.12, whose source lughac carries: it is compiled once, without OS-thread support (a program runs on one OS thread), and linked into every program statically, so a program doesn't need `libgc` installed to run.
 
 **Stack.** Every local variable and parameter gets an `alloca` in its function's entry block, including struct values. LLVM's `mem2reg` pass promotes these to registers. Struct parameters are passed as a pointer to the caller's storage (section 9); a Lugha function returning a struct, enum, `Option`, tuple or function value takes a hidden first parameter `ptr sret(T)`, the address of a slot in its caller's entry block, stores its result there and returns `void` (v17, milestone 125: at `-O0` LLVM's fast instruction selector can't lower a struct returned as a value). Inside a function, struct values are split into their fields (milestone 126): a struct `load` or `store` is one per field, field reads and literals use the fields directly, a struct parameter is one parameter per field, and a struct with more than 64 fields (enum payload words counted) is copied by `memcpy` and its fields read from memory; a `bool` result is marked `zeroext`. Functions C calls (`main`, callback entries) and calls into C keep the platform convention (section 8).
 
@@ -1540,7 +1541,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 3. **Check.** Resolve names, compute a type for every expression, check every rule in sections 4–6. Output: the AST plus a side table mapping each expression to its type.
 4. **Lower.** Typed AST → LLVM IR via inkwell, one LLVM function per Lugha function. Run `module.verify()` afterwards; a verifier failure is a compiler bug, not a user error.
 5. **Optimize and emit.** Run LLVM's pass pipeline (`default<O0>` or `default<O2>`), then write an object file with `TargetMachine`.
-6. **Link.** Invoke the system C compiler, which also compiles the runtime: `cc prog.o lugha_rt.c -lgc -lm -o prog`. The runtime source is embedded in `lughac` and written to a private temporary file for each build. With `[link]` tables (v16, section 8), their C files are compiled first, each on its own, and their objects follow `prog.o`; their `-L` folders, libraries and `-pthread` follow `-lm`.
+6. **Link.** Invoke the system C compiler, which also compiles the runtime and the collector: `cc prog.o lugha_rt.o gc.o -lm -o prog`. The runtime source is embedded in `lughac` and written to a private temporary file for each build; the collector's (v17, milestone 131) to the cache's `gc/` folder, and both objects are kept between builds. With `[link]` tables (v16, section 8), their C files are compiled first, each on its own, and their objects follow `prog.o`; their `-L` folders, libraries and `-pthread` follow `-lm`.
 
 **Lowering notes.** These are the places where Lugha semantics need specific IR:
 
@@ -3823,6 +3824,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 128 | Included files (v17) | `include_bytes`, `include_str`, E0447, E0448 | `tests/programs/m128/`, `tests/includes.rs` (done) |
 | 129 | A test folder from `lughac init` (v17) | `test/` with one passing test in both layouts, `src/greeting.la` for a program | `tests/init.rs` (done) |
 | 130 | Portable x86-64 executables (v17) | the baseline `x86-64` by default, `--cpu` | `tests/codegen.rs` (no `popcnt` by default), `tests/cli.rs`, `tests/test_runner.rs` (done) |
+| 131 | The collector built in (v17) | bdwgc 8.2.12 compiled from embedded source, linked statically; no `-lgc` | `tests/programs/m131/`, `tests/c_cache.rs`, `tests/cli.rs`, `tests/tasks_runtime.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

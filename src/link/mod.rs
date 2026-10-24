@@ -2,16 +2,16 @@
 //! compiler, compiling the runtime in the same step (spec §9 stage 6,
 //! DECISION-009).
 //!
-//! Runs `cc <objects> <tmp>/lugha_rt.c -lgc -lm -o <output>` directly, never
-//! through a shell. The runtime source is embedded in lughac, so linking
-//! works from any directory with no install layout. It is kept as three
-//! files under `runtime/` and joined here into that one `lugha_rt.c`.
+//! Runs `cc <objects> <runtime.o> <gc.o> -lm -o <output>` directly, never through a
+//! shell. The runtime's files under `runtime/` and the collector's (`gc`) are embedded,
+//! so linking works from any directory with no install layout.
 //!
 //! v16 (milestone 87, PRP-117): the `[link]` tables of `lugha.toml` add C
 //! files, compiled first (`c_files`), and folders and libraries after
 //! `-lm` (`inputs`), some from `pkg-config` (`pkg_config`).
 
 pub mod c_files;
+pub mod gc;
 pub mod inputs;
 mod object_cache;
 pub mod pkg_config;
@@ -288,9 +288,11 @@ pub fn link_with(
     let cache = object_cache::Cache::open();
     let shims = c_files::compile(&plan.c_files, temp, &cache)?;
     let variant = (plan.tls.is_some(), plan.crypto.is_some());
-    let runtime = runtime::compile(variant, &cache, plan.tls.or(plan.crypto))?;
+    let gc = gc::compile(&cache)?;
+    let runtime = runtime::compile(variant, &cache, plan.tls.or(plan.crypto), &gc.include)?;
+    let linked = [runtime.path.as_path(), gc.object.as_path()];
     let result = Command::new("cc")
-        .args(args(objects, &shims, &runtime.path, plan, output))
+        .args(args(objects, &shims, &linked, plan, output))
         .output();
     let out = match result {
         Ok(out) => out,
@@ -316,20 +318,20 @@ pub fn link_with(
     }
 }
 
-/// `cc`'s arguments: objects, C objects, the runtime, `-lgc -lm`, the
+/// `cc`'s arguments: objects, C objects, the runtime and the collector, `-lm`, the
 /// plan's folders and libraries, the output. Libraries go after every
 /// object, as a static link needs.
 fn args(
     objects: &[&Path],
     shims: &[PathBuf],
-    runtime: &Path,
+    runtime: &[&Path],
     plan: &Plan,
     output: &Path,
 ) -> Vec<OsString> {
     let mut args: Vec<OsString> = objects.iter().map(|o| o.as_os_str().to_owned()).collect();
     args.extend(shims.iter().map(|o| o.as_os_str().to_owned()));
-    args.push(runtime.as_os_str().to_owned());
-    args.extend(["-lgc", "-lm"].map(OsString::from));
+    args.extend(runtime.iter().map(|o| o.as_os_str().to_owned()));
+    args.push(OsString::from("-lm"));
     if plan.tls.is_some() {
         args.extend(["-lssl", "-lcrypto"].map(OsString::from));
     } else if plan.crypto.is_some() {
@@ -368,19 +370,19 @@ mod tests {
     }
 
     #[test]
-    fn a_build_without_link_tables_links_as_before_v16() {
+    fn a_build_without_link_tables_links_the_runtime_and_collector_v17() {
         use std::path::Path;
         let plan = super::Plan::default();
         let args = super::args(
             &[Path::new("prog.o")],
             &[],
-            Path::new("/t/rt.c"),
+            &[Path::new("/t/rt.o"), Path::new("/t/gc.o")],
             &plan,
             Path::new("out"),
         );
         assert_eq!(
             strings(&args),
-            ["prog.o", "/t/rt.c", "-lgc", "-lm", "-o", "out"]
+            ["prog.o", "/t/rt.o", "/t/gc.o", "-lm", "-o", "out"]
         );
     }
 
@@ -405,14 +407,14 @@ mod tests {
         let args = super::args(
             &objects,
             &shims,
-            Path::new("/t/rt.c"),
+            &[Path::new("/t/rt.o"), Path::new("/t/gc.o")],
             &plan,
             Path::new("out"),
         );
         assert_eq!(
             strings(&args),
             [
-                "prog.o", "/t/c0.o", "/t/rt.c", "-lgc", "-lm", "-lz", "-o", "out"
+                "prog.o", "/t/c0.o", "/t/rt.o", "/t/gc.o", "-lm", "-lz", "-o", "out"
             ]
         );
     }

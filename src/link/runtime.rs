@@ -96,7 +96,8 @@ impl Drop for RuntimeObject {
 
 /// The runtime's object, with TLS's part when `tls` and crypto's when
 /// `crypto`: from `cache` when it has a fresh one, else `cc -c` of the
-/// runtime alone, with no other flags. `openssl` is where a TLS or crypto
+/// runtime alone, with only `-isystem gc_include` (milestone 131): the
+/// bundled collector's headers, whose warnings aren't the runtime's. `openssl` is where a TLS or crypto
 /// program asked for OpenSSL, for E0332.
 ///
 /// # Errors
@@ -108,6 +109,7 @@ pub(super) fn compile(
     (tls, crypto): (bool, bool),
     cache: &Cache,
     openssl: Option<Span>,
+    gc_include: &Path,
 ) -> Result<RuntimeObject, LinkError> {
     let source = RuntimeFile::write(tls, crypto).map_err(LinkError::Io)?;
     let object = source.0.with_extension("o");
@@ -119,8 +121,12 @@ pub(super) fn compile(
     if crypto {
         text.extend_from_slice(CRYPTO_SOURCE.as_bytes());
     }
-    let compile = |extra: &[std::ffi::OsString]| run(&source.0, extra, &object, openssl);
-    let path = cache.object("runtime", &text, &[], &object, compile)?;
+    let flags = [std::ffi::OsString::from("-isystem"), gc_include.into()];
+    let compile = |extra: &[std::ffi::OsString]| {
+        let all: Vec<std::ffi::OsString> = flags.iter().chain(extra).cloned().collect();
+        run(&source.0, &all, &object, openssl)
+    };
+    let path = cache.object("runtime", &text, &flags, &object, compile)?;
     Ok(RuntimeObject {
         path,
         _source: source,
@@ -128,7 +134,7 @@ pub(super) fn compile(
     })
 }
 
-/// `cc -c source extra -o object`.
+/// `cc -c source flags -o object`.
 fn run(
     source: &Path,
     extra: &[std::ffi::OsString],
@@ -215,13 +221,13 @@ mod tests {
         use std::path::Path;
         let mut plan = super::super::Plan::default();
         let has_ssl = |plan: &super::super::Plan| {
-            super::super::args(&[], &[], Path::new("rt.c"), plan, Path::new("out"))
+            super::super::args(&[], &[], &[Path::new("rt.o")], plan, Path::new("out"))
                 .iter()
                 .any(|a| a == "-lssl")
         };
         assert!(!has_ssl(&plan));
         plan.crypto = Some(crate::span::Span::new(0, 1));
-        let args = super::super::args(&[], &[], Path::new("rt.c"), &plan, Path::new("out"));
+        let args = super::super::args(&[], &[], &[Path::new("rt.o")], &plan, Path::new("out"));
         assert!(args.iter().any(|a| a == "-lcrypto") && !has_ssl(&plan));
         plan.tls = Some(crate::span::Span::new(0, 1));
         assert!(has_ssl(&plan));
