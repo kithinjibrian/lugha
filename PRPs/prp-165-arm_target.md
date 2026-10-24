@@ -1,6 +1,6 @@
 ## FEATURE: `lughac build --target aarch64-unknown-linux-gnu` writes a Linux ARM64 executable, green threads included; milestone 133 (v17), portability roadmap steps B0 and B1.
 
-**Status:** proposed 2026-10-24 (session 316). Discovery:
+**Status:** approved 2026-10-24 ("build", session 317); proposed 2026-10-24 (session 316). Discovery:
 1. One milestone covers "hello from ARM": `--target`, LLVM for ARM, sizes from LLVM, and the ARM stack switch. Extern structs passed by value to or from C on ARM are a compile error until B2, never miscompiled.
 2. With no `$LUGHA_CC`, the ARM target's compiler is `aarch64-linux-gnu-gcc`.
 3. Only `build` takes `--target`; `run` and `test` wait for a later step.

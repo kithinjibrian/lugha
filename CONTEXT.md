@@ -9251,3 +9251,6 @@ Branch: prp-165-arm_target
 
 ### STILL OPEN AT CLOSE
 - PRP-165 awaits approval.
+
+## SESSION 317 — 2026-10-24 — Linux on ARM: build (m133) — open
+Branch: prp-165-arm_target
