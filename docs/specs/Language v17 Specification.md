@@ -44,6 +44,7 @@ Oct 16, 2026 · @kithinji
 - A generic call only its result can type takes its type from its siblings: `assert_eq(text("hi"), expected)`, `text("hi") == expected` (milestone 96; section 4).
 - Packages and tests: `lughac test` and `lughac check` on a file in a package's `source` folder build it as that package's module (`glow.diff`), so modules importing each other can be tested, and its tests are named `glow.diff.name`; programs in a package's `test/`, `tests/` and `examples/` see its package-level items; `lughac check` takes a file without `main` as a library; `lugha.lock` sits beside the governing `lugha.toml`; and `skip(reason)` reports a test skipped (milestone 97; sections 6, 9).
 - `lughac init` writes a `test/` folder with one passing test, and a program's greeting in its own module, `src/greeting.la` (milestone 129; section 9).
+- Executables run on any x86-64 CPU: lughac builds for the baseline `x86-64` level, and `--cpu=x86-64-v2|x86-64-v3|x86-64-v4|native` on `build`, `run` and `test` chooses a newer level or this machine's own CPU (milestone 130; section 9).
 
 Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select`, `actor` or `const` as a name (keywords now), or declares a function named `skip` (an intrinsic since milestone 97, E0302), `flush` (one since milestone 115) or `include_bytes`/`include_str` (since milestone 128), or names the iterator type `Map` (now `Mapped`, milestone 101; a program's own `Map` is fine). A module's own `Task` or `Chan` still means its own, as for `Ref`. Within v17, a `tls.Options { … }` literal naming every field without `..base` needs `address` since milestone 121 (`..tls.options()` keeps it short).
 
@@ -1629,6 +1630,7 @@ The C `main(argc, argv)` emitted by the compiler calls `lugha_rt_init(argc, argv
 | `lughac build --emit=tokens\|ast\|ir prog.la` | Print an intermediate stage and stop; with several modules, `tokens` and `ast` print each after a `; module <name>` line (`main` for the main file) |
 | `--diagnostics=human\|json` | Diagnostic format for `build`, `run` and `check`; `human` is the default |
 | `-O0` / `-O2` | Optimization level; `-O0` is the default |
+| `--cpu=LEVEL` | On `build`, `run` and `test` (v17, milestone 130): the x86-64 level the program's code is built for, one of `x86-64` (the default: every 64-bit Intel and AMD CPU), `x86-64-v2`, `x86-64-v3`, `x86-64-v4` or `native` (this machine's own CPU and features; the executable may not run on another). Any other value is exit 2. The runtime and `[link]` C files are compiled by `cc` at its default either way. Before v17 every build used `native` |
 
 Exit codes: 0 on success, 1 when the program has errors, 2 for bad command-line usage or an internal compiler error.
 
@@ -3820,6 +3822,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 127 | The C object cache (v17) | `[link]` C files' and the runtime's objects kept between builds | `tests/c_cache.rs` (done) |
 | 128 | Included files (v17) | `include_bytes`, `include_str`, E0447, E0448 | `tests/programs/m128/`, `tests/includes.rs` (done) |
 | 129 | A test folder from `lughac init` (v17) | `test/` with one passing test in both layouts, `src/greeting.la` for a program | `tests/init.rs` (done) |
+| 130 | Portable x86-64 executables (v17) | the baseline `x86-64` by default, `--cpu` | `tests/codegen.rs` (no `popcnt` by default), `tests/cli.rs`, `tests/test_runner.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

@@ -33,7 +33,7 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use self::pipeline::Failure;
 use self::render::Report;
 use self::source::Source;
-use crate::codegen::OptLevel;
+use crate::codegen::{Cpu, OptLevel};
 use crate::diagnostic::Diagnostic;
 use crate::modules::fetch::Mode;
 
@@ -88,7 +88,7 @@ where
             file,
             output.as_deref(),
             *emit,
-            (options.opt, options.mode()),
+            ((options.opt, options.cpu.into()), options.mode()),
         ),
         Command::Run {
             file,
@@ -96,7 +96,7 @@ where
             args,
         } => pipeline::front(file, options.mode()).and_then(|front| {
             out.diagnostics(&front.source, &front.warnings);
-            pipeline::run(&front, options.opt, args)
+            pipeline::run(&front, (options.opt, options.cpu.into()), args)
         }),
         Command::Check { file, offline, .. } => pipeline::front_check(file, offline_mode(*offline))
             .map(|front| {
@@ -115,6 +115,7 @@ where
             timeout,
             list,
             json,
+            cpu,
         } => Ok(test::test(
             &test::Request {
                 paths,
@@ -123,6 +124,7 @@ where
                 timeout: std::time::Duration::from_secs(*timeout),
                 list: *list,
                 json: *json,
+                cpu: (*cpu).into(),
             },
             &mut out,
         )),
@@ -230,6 +232,9 @@ enum Command {
         /// One JSON object per line, for tools such as editors
         #[arg(long)]
         json: bool,
+        /// The x86-64 level the test executables are built for (v17)
+        #[arg(long, value_enum, default_value = "x86-64")]
+        cpu: CpuLevel,
     },
     /// Explain an error or warning code, or list every code (v16)
     Explain {
@@ -311,6 +316,9 @@ struct Options {
     /// Optimisation level: 0 or 2
     #[arg(short = 'O', value_name = "LEVEL", default_value = "0", value_parser = opt_level)]
     opt: OptLevel,
+    /// The x86-64 level the executable is built for; `native` runs only on CPUs like this one (v17)
+    #[arg(long, value_enum, default_value = "x86-64")]
+    cpu: CpuLevel,
     /// Run no `git`: every git package must be locked and cached (v14)
     #[arg(long)]
     offline: bool,
@@ -334,6 +342,33 @@ fn offline_mode(offline: bool) -> Mode {
 enum Format {
     Human,
     Json,
+}
+
+/// `--cpu`'s values (v17, milestone 130): a fixed list, since LLVM only
+/// warns about a CPU name it doesn't know and builds generic code.
+#[derive(Clone, Copy, ValueEnum)]
+enum CpuLevel {
+    #[value(name = "x86-64")]
+    X86_64,
+    #[value(name = "x86-64-v2")]
+    V2,
+    #[value(name = "x86-64-v3")]
+    V3,
+    #[value(name = "x86-64-v4")]
+    V4,
+    Native,
+}
+
+impl From<CpuLevel> for Cpu {
+    fn from(level: CpuLevel) -> Cpu {
+        match level {
+            CpuLevel::X86_64 => Cpu::X86_64,
+            CpuLevel::V2 => Cpu::V2,
+            CpuLevel::V3 => Cpu::V3,
+            CpuLevel::V4 => Cpu::V4,
+            CpuLevel::Native => Cpu::Native,
+        }
+    }
 }
 
 #[derive(Clone, Copy, ValueEnum)]

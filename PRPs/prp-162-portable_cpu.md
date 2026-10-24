@@ -2,6 +2,9 @@
 
 **Status:** approved 2026-10-24 ("build", session 311; `[build] cpu` in `lugha.toml` deferred to A3); proposed 2026-10-24 (session 310), the first step of the portability roadmap (TODO.md, "Portability roadmap"). Discovery: (1) the default is the baseline `x86-64`, as Rust, Go, gcc and clang default to; (2) `--cpu` takes a fixed list, `x86-64`, `x86-64-v2`, `x86-64-v3`, `x86-64-v4` or `native`, anything else being exit 2; (3) it changes only LLVM's code for the program, so the runtime and `[link]` C files stay at `cc`'s default.
 
+## RESULT (session 311)
+Built as proposed: `codegen::Cpu` (`X86_64` default, `V2`, `V3`, `V4`, `Native`) and `target_machine(opt, cpu)` in `src/codegen/mod.rs`. `emit_object*` take a `Cpu`. The driver's `CpuLevel` value enum is on `build`/`run` (`Options`) and `test`, and is threaded through `pipeline::build`/`run` and `test_build`. Tests first: codegen unit tests (each level's LLVM CPU, `native` = host), `tests/codegen.rs` (a `count_ones` program has no `popcnt` by default and has one at `x86-64-v2`, same exit code), `tests/cli.rs` and `tests/test_runner.rs` (the flag, exit 2 for an unknown value). fmt, clippy, `--lib`, `codegen`, `cli`, `test_runner`, `test_groups`, `spec`, `programs`, `extern_structs`, `callbacks`, `c_memory`, `tasks_runtime` pass; the full `cargo test` wasn't run.
+
 ## OBJECTIVE
 Today `host_machine` (`src/codegen/mod.rs`) builds for this machine's exact CPU and features (`get_host_cpu_name`, `get_host_cpu_features`). At `-O2` LLVM may then use instructions such as AVX-512, so a binary built here can die with an illegal instruction on an older x86-64 PC. After this change `lughac build app.la` produces code any x86-64 CPU runs, and `lughac build app.la --cpu=native` gives today's behaviour on request. The same applies to `run` and `test`.
 

@@ -139,6 +139,25 @@ pub enum OptLevel {
     O2,
 }
 
+/// The x86-64 CPU level the program's code is built for (v17, milestone
+/// 130). Only LLVM's code for the program follows it; the runtime and
+/// `[link]` C files keep `cc`'s default, which is the baseline too.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Cpu {
+    /// `x86-64`: every 64-bit Intel and AMD CPU. The default, so a binary
+    /// runs on machines other than the one that built it.
+    #[default]
+    X86_64,
+    /// `x86-64-v2`: adds SSE4.2 and `popcnt` (CPUs from about 2009).
+    V2,
+    /// `x86-64-v3`: adds AVX2 and FMA (about 2015).
+    V3,
+    /// `x86-64-v4`: adds AVX-512.
+    V4,
+    /// This machine's own CPU and features; the binary may not run elsewhere.
+    Native,
+}
+
 /// Why codegen could not produce output. None of these are the user's
 /// mistake, so the driver reports them with exit code 2.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -199,7 +218,8 @@ fn single<'a>(source: &SourceInfo<'a>) -> ModuleSource<'a> {
     }
 }
 
-/// Lowers a checked `program`, optimises it at `opt`, and writes a native object file to `path`.
+/// Lowers a checked `program`, optimises it at `opt` for `cpu`, and writes a
+/// native object file to `path`.
 ///
 /// # Errors
 ///
@@ -210,6 +230,7 @@ pub fn emit_object(
     checked: &Checked,
     source: &SourceInfo,
     opt: OptLevel,
+    cpu: Cpu,
     path: &Path,
 ) -> Result<(), CodegenError> {
     let units = [Unit {
@@ -219,7 +240,7 @@ pub fn emit_object(
         package: None,
         origin: None,
     }];
-    emit_object_modules(&units, checked, &[single(source)], opt, path)
+    emit_object_modules(&units, checked, &[single(source)], opt, cpu, path)
 }
 
 /// [`emit_object`] for a program of several modules, the main file first.
@@ -232,11 +253,12 @@ pub fn emit_object_modules(
     checked: &Checked,
     sources: &[ModuleSource],
     opt: OptLevel,
+    cpu: Cpu,
     path: &Path,
 ) -> Result<(), CodegenError> {
     let context = Context::create();
     let module = lower::lower(&context, units, checked, sources)?;
-    let machine = host_machine(opt)?;
+    let machine = target_machine(opt, cpu)?;
     module.set_triple(&machine.get_triple());
     module.set_data_layout(&machine.get_target_data().get_data_layout());
     let pipeline = match opt {
@@ -252,9 +274,10 @@ pub fn emit_object_modules(
         .map_err(emit_error)
 }
 
-/// A target machine for the host, producing position-independent code
-/// because Ubuntu's `cc` links PIE executables by default.
-fn host_machine(opt: OptLevel) -> Result<TargetMachine, CodegenError> {
+/// A target machine for the host's triple at `cpu`'s level, producing
+/// position-independent code because Ubuntu's `cc` links PIE executables
+/// by default.
+fn target_machine(opt: OptLevel, cpu: Cpu) -> Result<TargetMachine, CodegenError> {
     Target::initialize_native(&InitializationConfig::default()).map_err(CodegenError::Emit)?;
     let triple = TargetMachine::get_default_triple();
     let target = Target::from_triple(&triple).map_err(|e| CodegenError::Emit(e.to_string()))?;
@@ -262,8 +285,18 @@ fn host_machine(opt: OptLevel) -> Result<TargetMachine, CodegenError> {
         OptLevel::O0 => OptimizationLevel::None,
         OptLevel::O2 => OptimizationLevel::Default,
     };
-    let cpu = TargetMachine::get_host_cpu_name().to_string();
-    let features = TargetMachine::get_host_cpu_features().to_string();
+    // A level is a CPU name whose features LLVM knows; only `native` adds
+    // the host's own, as every build did before milestone 130.
+    let (cpu, features) = match cpu {
+        Cpu::X86_64 => ("x86-64".to_string(), String::new()),
+        Cpu::V2 => ("x86-64-v2".to_string(), String::new()),
+        Cpu::V3 => ("x86-64-v3".to_string(), String::new()),
+        Cpu::V4 => ("x86-64-v4".to_string(), String::new()),
+        Cpu::Native => (
+            TargetMachine::get_host_cpu_name().to_string(),
+            TargetMachine::get_host_cpu_features().to_string(),
+        ),
+    };
     target
         .create_target_machine(
             &triple,
@@ -310,5 +343,37 @@ pub(crate) mod test_util {
             text: src,
         };
         emit_ir(&program, &checked, &source).unwrap_or_else(|e| panic!("{src:?}: {e}"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Cpu, OptLevel, TargetMachine, target_machine};
+
+    #[test]
+    fn each_level_is_its_llvm_cpu_with_no_extra_features() {
+        for (cpu, name) in [
+            (Cpu::default(), "x86-64"),
+            (Cpu::V2, "x86-64-v2"),
+            (Cpu::V3, "x86-64-v3"),
+            (Cpu::V4, "x86-64-v4"),
+        ] {
+            let machine = target_machine(OptLevel::O2, cpu).expect("x86-64 is a target");
+            assert_eq!(machine.get_cpu().to_string(), name);
+            assert_eq!(machine.get_feature_string().to_string_lossy(), "");
+        }
+    }
+
+    #[test]
+    fn native_is_the_hosts_cpu_and_features() {
+        let machine = target_machine(OptLevel::O0, Cpu::Native).expect("the host is a target");
+        assert_eq!(
+            machine.get_cpu().to_string(),
+            TargetMachine::get_host_cpu_name().to_string()
+        );
+        assert_eq!(
+            machine.get_feature_string().to_string_lossy(),
+            TargetMachine::get_host_cpu_features().to_string()
+        );
     }
 }

@@ -480,7 +480,7 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 
 Today every binary is for Linux on this machine's exact x86-64 CPU. The four issues: (1) runtime C code that only builds on Linux/x86-64 (`tasks.c`'s assembly switch, `net.c`'s `epoll`, …); (2) codegen always targets the host triple, CPU and features (`src/codegen/mod.rs`, `host_machine`); (3) the C calling rules for extern structs are x86-64 System V only (`c_abi.rs`, `c_calls.rs`, sizes in `split_leaves.rs`); (4) linking uses this machine's `cc`, `libgc` and libc. The language itself is portable.
 
-- [ ] **A1 — Portable x86-64 binaries** (fixes part of 2): a baseline x86-64 CPU by default, `--cpu=native` to opt back in; today a binary can crash with an illegal instruction on an older PC. Small; v17. PRP-162.
+- [x] **A1 — Portable x86-64 binaries** (milestone 130, done session 311) (fixes part of 2): a baseline x86-64 CPU by default, `--cpu=native` to opt back in; today a binary can crash with an illegal instruction on an older PC. Small; v17. PRP-162.
 - [ ] **A2 — Garbage collector built in** (part of 4): Boehm's source inside lughac, compiled and cached like the runtime, linked statically; no `libgc` needed to run programs or `libgc-dev` to use lughac. Needs the user's security review (third-party C).
 - [ ] **A3 — Choosing a target** (2, prepares 3 and 4): `--target <triple>`, the C compiler per target (`$LUGHA_CC`), sizes from LLVM's data layout, the C calling rules behind one interface (x86-64 the only one). Needs the user's security review (how `cc` runs).
 - [ ] **B1 — ARM green threads** (1): `tasks.c`'s switch in AArch64 assembly.

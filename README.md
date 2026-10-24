@@ -157,7 +157,7 @@ It never overwrites a file; the package name is the folder's unless `--name` giv
 | `--offline` | On `build`, `run` and `check`: never run `git`; git packages must be locked and cached |
 | `lughac build --emit=tokens\|ast\|ir prog.la` | Print an intermediate stage and stop |
 
-`build`, `run` and `check` take `--diagnostics=human|json` (human is the default). `build` and `run` take `-O0` (default) or `-O2`.
+`build`, `run` and `check` take `--diagnostics=human|json` (human is the default). `build` and `run` take `-O0` (default) or `-O2`. `build`, `run` and `test` take `--cpu=x86-64|x86-64-v2|x86-64-v3|x86-64-v4|native`: by default executables run on any x86-64 CPU, and `native` builds for this machine's own (v17).
 
 Exit codes:
 - **0** — success.

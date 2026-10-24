@@ -15,7 +15,7 @@ use super::source::Source;
 use super::update;
 use crate::ast;
 use crate::check::{self, Checked};
-use crate::codegen::{self, CodegenError, OptLevel};
+use crate::codegen::{self, CodegenError, Cpu, OptLevel};
 use crate::diagnostic::{Diagnostic, Severity};
 use crate::link;
 use crate::modules::fetch::Mode;
@@ -284,10 +284,10 @@ pub(super) fn ir(front: &Front) -> Result<String, Failure> {
         .map_err(|e| codegen_failure(&front.source, e))
 }
 
-/// Compiles and links `front` into the executable `exe`, with what its
+/// Compiles and links `front` at `opt` for `cpu` into the executable `exe`, with what its
 /// `[link]` tables add (v16): `pkg-config` runs first, so its failures
 /// come before codegen's work.
-pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Failure> {
+pub(super) fn build(front: &Front, (opt, cpu): (OptLevel, Cpu), exe: &Path) -> Result<(), Failure> {
     let mut plan = link::Plan::new(&front.links, &mut link::pkg_config::run)
         .map_err(|e| Failure::Program(front.source.clone(), vec![e.diagnostic()]))?;
     plan.tls = std_import(&front.modules, "tls", &["tls", "http"]);
@@ -299,6 +299,7 @@ pub(super) fn build(front: &Front, opt: OptLevel, exe: &Path) -> Result<(), Fail
         checked(front),
         &sources(front),
         opt,
+        cpu,
         &object,
     )
     .map_err(|e| codegen_failure(&front.source, e))?;
@@ -332,10 +333,10 @@ fn std_import(modules: &[Module], module: &str, via: &[&str]) -> Option<crate::s
 /// streams, passing `args` to the program.
 ///
 /// Returns the program's exit code, or 128 + N if signal N killed it, as a shell reports it.
-pub(super) fn run(front: &Front, opt: OptLevel, args: &[String]) -> Result<u8, Failure> {
+pub(super) fn run(front: &Front, code: (OptLevel, Cpu), args: &[String]) -> Result<u8, Failure> {
     let temp = TempDir::new().map_err(|e| internal(&front.source, temp_error(e)))?;
     let exe = temp.path.join("prog");
-    build(front, opt, &exe)?;
+    build(front, code, &exe)?;
     let status = Command::new(&exe).args(args).status().map_err(|e| {
         internal(
             &front.source,
