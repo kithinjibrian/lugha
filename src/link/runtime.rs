@@ -6,10 +6,10 @@
 
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use super::LinkError;
+use super::compiler::Compiler;
 use super::object_cache::Cache;
 use crate::span::Span;
 
@@ -124,7 +124,7 @@ pub(super) fn compile(
     let flags = [std::ffi::OsString::from("-isystem"), gc_include.into()];
     let compile = |extra: &[std::ffi::OsString]| {
         let all: Vec<std::ffi::OsString> = flags.iter().chain(extra).cloned().collect();
-        run(&source.0, &all, &object, openssl)
+        run(cache.cc(), &source.0, &all, &object, openssl)
     };
     let path = cache.object("runtime", &text, &flags, &object, compile)?;
     Ok(RuntimeObject {
@@ -134,14 +134,16 @@ pub(super) fn compile(
     })
 }
 
-/// `cc -c source flags -o object`.
+/// `cc -c source flags -o object`, `cc` being the build's compiler.
 fn run(
+    cc: &Compiler,
     source: &Path,
     extra: &[std::ffi::OsString],
     object: &Path,
     openssl: Option<Span>,
 ) -> Result<(), LinkError> {
-    let result = Command::new("cc")
+    let result = cc
+        .command()
         .arg("-c")
         .arg(source)
         .args(extra)
@@ -150,7 +152,9 @@ fn run(
         .output();
     let out = match result {
         Ok(out) => out,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Err(LinkError::CcNotFound),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => {
+            return Err(LinkError::CcNotFound(cc.name()));
+        }
         Err(e) => return Err(LinkError::Io(e)),
     };
     if out.status.success() {

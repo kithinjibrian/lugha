@@ -482,7 +482,8 @@ Today every binary is for Linux on this machine's exact x86-64 CPU. The four iss
 
 - [x] **A1 — Portable x86-64 binaries** (milestone 130, done session 311) (fixes part of 2): a baseline x86-64 CPU by default, `--cpu=native` to opt back in; today a binary can crash with an illegal instruction on an older PC. Small; v17. PRP-162.
 - [x] **A2 — Garbage collector built in** (milestone 131, done session 313) (part of 4): Boehm's source inside lughac, compiled and cached like the runtime, linked statically; no `libgc` needed to run programs or `libgc-dev` to use lughac. Needs the user's security review (third-party C).
-- [ ] **A3 — Choosing a target** (2, prepares 3 and 4): `--target <triple>`, the C compiler per target (`$LUGHA_CC`), sizes from LLVM's data layout, the C calling rules behind one interface (x86-64 the only one). Needs the user's security review (how `cc` runs).
+- [x] **A3a — Choosing the C compiler** (milestone 132, done session 315): `$LUGHA_CC`, words split on spaces, no shell, for every compile and the link; the cache keyed per compiler. (A3's other parts moved to B0: nothing here can test them without an ARM toolchain.)
+- [ ] **B0 — Choosing a target** (2, prepares 3 and 4): `--target <triple>`, LLVM initialised for it, sizes from LLVM's data layout (`split_leaves.rs`'s `byte_size`), the C calling rules behind one interface (x86-64 the only one), `[build] cpu`/`target` in `lugha.toml` (the program's own manifest only, the flag wins). Needs an ARM toolchain and qemu installed (`gcc-aarch64-linux-gnu`, `qemu-user`) or `zig`.
 - [ ] **B1 — ARM green threads** (1): `tasks.c`'s switch in AArch64 assembly.
 - [ ] **B2 — ARM C calling rules** (3): AAPCS64 — float-struct registers, ≤16 bytes in registers, larger by reference.
 - [ ] **B3 — Building and testing for Linux ARM** (4): cross-linking, the test programs under `qemu-aarch64`, ARM CI.

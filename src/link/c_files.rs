@@ -6,9 +6,9 @@
 
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use super::LinkError;
+use super::compiler::Compiler;
 use super::inputs::CFile;
 use super::object_cache::Cache;
 
@@ -31,9 +31,9 @@ pub(super) fn compile(
         // An unreadable file isn't cached: `cc` then says what is wrong with it.
         let found = match std::fs::read(&c.file) {
             Ok(source) => cache.object("c", &source, &c.flags, &object, |extra| {
-                one(c, extra, &object)
+                one(cache.cc(), c, extra, &object)
             }),
-            Err(_) => one(c, &[], &object).map(|()| object.clone()),
+            Err(_) => one(cache.cc(), c, &[], &object).map(|()| object.clone()),
         }?;
         objects.push(found);
     }
@@ -41,9 +41,15 @@ pub(super) fn compile(
 }
 
 /// `cc -c` of `c` into `object`, with `extra` arguments (the cache's
-/// dependency file).
-fn one(c: &CFile, extra: &[std::ffi::OsString], object: &Path) -> Result<(), LinkError> {
-    let result = Command::new("cc")
+/// dependency file), `cc` being the build's compiler.
+fn one(
+    cc: &Compiler,
+    c: &CFile,
+    extra: &[std::ffi::OsString],
+    object: &Path,
+) -> Result<(), LinkError> {
+    let result = cc
+        .command()
         .arg("-c")
         .arg(&c.file)
         .args(&c.flags)
@@ -53,7 +59,9 @@ fn one(c: &CFile, extra: &[std::ffi::OsString], object: &Path) -> Result<(), Lin
         .output();
     let out = match result {
         Ok(out) => out,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Err(LinkError::CcNotFound),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => {
+            return Err(LinkError::CcNotFound(cc.name()));
+        }
         Err(e) => return Err(LinkError::Io(e)),
     };
     if !out.status.success() {

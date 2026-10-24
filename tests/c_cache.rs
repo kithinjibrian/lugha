@@ -267,3 +267,71 @@ fn the_collectors_sources_are_restored_when_changed_v17() {
         "#error tampered\n"
     );
 }
+
+/// A compiler wrapper at `bin/<name>` that logs its arguments to
+/// `<name>.log`, checks its first one is `extra-word`, and runs the real `cc`.
+fn wrapper(p: &Project, name: &str) -> String {
+    let real = std::fs::read_to_string(p.0.join("bin/cc")).unwrap();
+    let real = real
+        .lines()
+        .find_map(|l| l.strip_prefix("exec \""))
+        .and_then(|l| l.split('"').next())
+        .expect("the logging cc names the real one")
+        .to_string();
+    let body = format!(
+        "#!/bin/sh\necho \"$@\" >> \"{log}\"\n[ \"$1\" = extra-word ] || exit 9\nshift\nexec \"{real}\" \"$@\"\n",
+        log = p.0.join(format!("{name}.log")).display()
+    );
+    p.write(&format!("bin/{name}"), &body);
+    let path = p.0.join(format!("bin/{name}"));
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+    format!("{} extra-word", path.display())
+}
+
+#[test]
+fn lugha_cc_runs_every_compile_and_the_link_and_keys_the_cache_v17() {
+    let p = Project::new();
+    let cache = p.0.join("cache");
+    let first = wrapper(&p, "first");
+    let (out, plain) = p.run_with("main.la", &cache, &[("LUGHA_CC", &first)]);
+    assert_eq!(
+        stdout(&out),
+        "42\n",
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(plain.is_empty(), "the plain `cc` ran: {plain:?}");
+    let log = std::fs::read_to_string(p.0.join("first.log")).unwrap();
+    let compiles = log
+        .lines()
+        .filter(|l| l.starts_with("extra-word -c "))
+        .count();
+    assert_eq!(compiles, 3, "shim, collector, runtime: {log}");
+    assert!(
+        log.lines()
+            .any(|l| l.contains(" -o ") && !l.contains(" -c ")),
+        "the link: {log}"
+    );
+    // Another compiler recompiles all three; the first one's entries stay.
+    let second = wrapper(&p, "second");
+    p.run_with("main.la", &cache, &[("LUGHA_CC", &second)]);
+    let log = std::fs::read_to_string(p.0.join("second.log")).unwrap();
+    assert_eq!(
+        log.lines()
+            .filter(|l| l.starts_with("extra-word -c "))
+            .count(),
+        3,
+        "{log}"
+    );
+    let _ = std::fs::remove_file(p.0.join("first.log"));
+    let (out, _) = p.run_with("main.la", &cache, &[("LUGHA_CC", &first)]);
+    assert_eq!(stdout(&out), "42\n");
+    let log = std::fs::read_to_string(p.0.join("first.log")).unwrap();
+    assert_eq!(
+        log.lines()
+            .filter(|l| l.starts_with("extra-word -c "))
+            .count(),
+        0,
+        "{log}"
+    );
+}

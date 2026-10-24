@@ -11,6 +11,8 @@
 //! `-lm` (`inputs`), some from `pkg-config` (`pkg_config`).
 
 pub mod c_files;
+pub mod compiler;
+mod errors;
 pub mod gc;
 pub mod inputs;
 mod object_cache;
@@ -20,11 +22,9 @@ pub mod runtime;
 use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
+pub use self::errors::LinkError;
 pub use self::inputs::{Plan, PlanError};
-use crate::diagnostic::Diagnostic;
-use crate::span::Span;
 
 /// The runtime's source files, in the order they are joined: the core first,
 /// since it holds every `#include`, then the fragments that rely on it.
@@ -176,94 +176,11 @@ pub const RUNTIME_SOURCE: &str = concat!(
     include_str!("../../runtime/resolve.c"),
 );
 
-/// Why linking failed.
-#[derive(Debug, thiserror::Error)]
-pub enum LinkError {
-    /// No `cc` on `PATH`.
-    #[error("C compiler `cc` not found; install gcc or clang")]
-    CcNotFound,
-    /// `cc` could not be started, or the runtime source could not be written.
-    #[error("could not run `cc`: {0}")]
-    Io(std::io::Error),
-    /// `cc` ran and reported an error.
-    #[error("`cc` failed ({}):\n{stderr}", exit_text(*.status))]
-    Failed { status: Option<i32>, stderr: String },
-    /// A `[link]` C file doesn't compile (v16): E0330 at its `c` line.
-    #[error("`{}` doesn't compile:\n{stderr}", file.display())]
-    CFile {
-        span: Span,
-        file: PathBuf,
-        stderr: String,
-    },
-    /// Linking failed with `[link]` input (v16): E0331 at its first line.
-    #[error("linking failed:\n{stderr}")]
-    Libraries { span: Span, stderr: String },
-    /// A TLS or crypto program, and no OpenSSL to build it with (v17): E0332 at its import.
-    #[error("OpenSSL is missing")]
-    Tls { span: Span },
-}
-
-impl LinkError {
-    /// The diagnostic for a failure the program's `[link]` tables caused
-    /// (E0330, E0331); `None` for lughac's own, an internal error.
-    pub fn diagnostic(&self) -> Option<Diagnostic> {
-        match self {
-            LinkError::CFile { span, file, stderr } => Some(
-                Diagnostic::error(
-                    "E0330",
-                    format!("the C file `{}` doesn't compile", file.display()),
-                    *span,
-                )
-                .with_help(format!("the C compiler said:\n{}", stderr.trim_end())),
-            ),
-            LinkError::Libraries { span, stderr } => {
-                // The advice follows what the linker said, not a guess.
-                let advice = if stderr.contains("multiple definition") {
-                    "\na symbol is defined twice: keep it in one C file or library"
-                } else if stderr.contains("cannot find -l") {
-                    "\ninstall the missing library, or add the folder holding it to `paths`"
-                } else if stderr.contains("undefined reference") {
-                    "\nadd the library or C file that defines it to `libs` or `c`"
-                } else {
-                    ""
-                };
-                Some(
-                    Diagnostic::error("E0331", "linking failed", *span)
-                        .with_help(format!("the linker said:\n{}{advice}", stderr.trim_end())),
-                )
-            }
-            LinkError::Tls { span } => Some(
-                Diagnostic::error(
-                    "E0332",
-                    "this program needs OpenSSL, which isn't installed",
-                    *span,
-                )
-                .with_help("install OpenSSL's development files: `sudo apt install libssl-dev`"),
-            ),
-            LinkError::CcNotFound | LinkError::Io(_) | LinkError::Failed { .. } => None,
-        }
-    }
-}
-
-impl PlanError {
-    /// E0329 at the `pkg-config` line.
-    pub fn diagnostic(&self) -> Diagnostic {
-        Diagnostic::error("E0329", "pkg-config failed", self.span).with_help(self.message.clone())
-    }
-}
-
-fn exit_text(status: Option<i32>) -> String {
-    status.map_or_else(
-        || "killed by a signal".to_string(),
-        |code| format!("exit code {code}"),
-    )
-}
-
 /// Links `objects` and the runtime into the executable `output`.
 ///
 /// # Errors
 ///
-/// [`LinkError::CcNotFound`] if there is no `cc`, [`LinkError::Io`] if it
+/// [`LinkError::CcNotFound`] if there is no C compiler (`cc` or `$LUGHA_CC`), [`LinkError::Io`] if it
 /// can't be started or the runtime can't be written to the temp dir,
 /// [`LinkError::Failed`] with `cc`'s stderr if it fails.
 pub fn link(objects: &[&Path], output: &Path) -> Result<(), LinkError> {
@@ -285,18 +202,22 @@ pub fn link_with(
     output: &Path,
 ) -> Result<(), LinkError> {
     // Compiled C objects are kept between builds (v17, milestone 127).
-    let cache = object_cache::Cache::open();
+    let cache = object_cache::Cache::open(compiler::Compiler::from_env()?);
     let shims = c_files::compile(&plan.c_files, temp, &cache)?;
     let variant = (plan.tls.is_some(), plan.crypto.is_some());
     let gc = gc::compile(&cache)?;
     let runtime = runtime::compile(variant, &cache, plan.tls.or(plan.crypto), &gc.include)?;
     let linked = [runtime.path.as_path(), gc.object.as_path()];
-    let result = Command::new("cc")
+    let result = cache
+        .cc()
+        .command()
         .args(args(objects, &shims, &linked, plan, output))
         .output();
     let out = match result {
         Ok(out) => out,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Err(LinkError::CcNotFound),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => {
+            return Err(LinkError::CcNotFound(cache.cc().name()));
+        }
         Err(e) => return Err(LinkError::Io(e)),
     };
     if out.status.success() {
@@ -456,7 +377,7 @@ mod tests {
             stderr: String::new(),
         };
         assert!(ours.diagnostic().is_none());
-        assert!(LinkError::CcNotFound.diagnostic().is_none());
+        assert!(LinkError::CcNotFound("`cc`".into()).diagnostic().is_none());
     }
 
     #[test]

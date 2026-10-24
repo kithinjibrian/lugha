@@ -46,6 +46,7 @@ Oct 16, 2026 · @kithinji
 - `lughac init` writes a `test/` folder with one passing test, and a program's greeting in its own module, `src/greeting.la` (milestone 129; section 9).
 - Executables run on any x86-64 CPU: lughac builds for the baseline `x86-64` level, and `--cpu=x86-64-v2|x86-64-v3|x86-64-v4|native` on `build`, `run` and `test` chooses a newer level or this machine's own CPU (milestone 130; section 9).
 - The collector is built into lughac: bdwgc 8.2.12 is compiled once from embedded source and linked into every program statically, so neither lughac nor its programs need the system's `libgc` (milestone 131; sections 7, 9).
+- `$LUGHA_CC` chooses the C compiler: `LUGHA_CC=clang` or `LUGHA_CC="zig cc"` (a program and its first arguments, split on spaces, never run by a shell) compiles the runtime, the collector and `[link]` C files and links; unset or blank is `cc` (milestone 132; section 9).
 
 Every valid v16 program is a valid v17 one, unless it uses `spawn`, `select`, `actor` or `const` as a name (keywords now), or declares a function named `skip` (an intrinsic since milestone 97, E0302), `flush` (one since milestone 115) or `include_bytes`/`include_str` (since milestone 128), or names the iterator type `Map` (now `Mapped`, milestone 101; a program's own `Map` is fine). A module's own `Task` or `Chan` still means its own, as for `Ref`. Within v17, a `tls.Options { … }` literal naming every field without `..base` needs `address` since milestone 121 (`..tls.options()` keeps it short).
 
@@ -1541,7 +1542,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 3. **Check.** Resolve names, compute a type for every expression, check every rule in sections 4–6. Output: the AST plus a side table mapping each expression to its type.
 4. **Lower.** Typed AST → LLVM IR via inkwell, one LLVM function per Lugha function. Run `module.verify()` afterwards; a verifier failure is a compiler bug, not a user error.
 5. **Optimize and emit.** Run LLVM's pass pipeline (`default<O0>` or `default<O2>`), then write an object file with `TargetMachine`.
-6. **Link.** Invoke the system C compiler, which also compiles the runtime and the collector: `cc prog.o lugha_rt.o gc.o -lm -o prog`. The runtime source is embedded in `lughac` and written to a private temporary file for each build; the collector's (v17, milestone 131) to the cache's `gc/` folder, and both objects are kept between builds. With `[link]` tables (v16, section 8), their C files are compiled first, each on its own, and their objects follow `prog.o`; their `-L` folders, libraries and `-pthread` follow `-lm`.
+6. **Link.** Invoke the system C compiler, which also compiles the runtime and the collector: `cc prog.o lugha_rt.o gc.o -lm -o prog`. The compiler is `cc`, or (v17, milestone 132) what `$LUGHA_CC` names: its first space-separated word is the program and the rest go before lughac's arguments (`LUGHA_CC="zig cc"` runs `zig cc -c …`). It runs from an argument list, never a shell, so quotes and `$` are ordinary characters. A compiler that isn't there is exit 2 naming it; a `$LUGHA_CC` that isn't UTF-8 is exit 2. Cached objects are kept per compiler (its words and `--version`). The runtime source is embedded in `lughac` and written to a private temporary file for each build; the collector's (v17, milestone 131) to the cache's `gc/` folder, and both objects are kept between builds. With `[link]` tables (v16, section 8), their C files are compiled first, each on its own, and their objects follow `prog.o`; their `-L` folders, libraries and `-pthread` follow `-lm`.
 
 **Lowering notes.** These are the places where Lugha semantics need specific IR:
 
@@ -3825,6 +3826,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 129 | A test folder from `lughac init` (v17) | `test/` with one passing test in both layouts, `src/greeting.la` for a program | `tests/init.rs` (done) |
 | 130 | Portable x86-64 executables (v17) | the baseline `x86-64` by default, `--cpu` | `tests/codegen.rs` (no `popcnt` by default), `tests/cli.rs`, `tests/test_runner.rs` (done) |
 | 131 | The collector built in (v17) | bdwgc 8.2.12 compiled from embedded source, linked statically; no `-lgc` | `tests/programs/m131/`, `tests/c_cache.rs`, `tests/cli.rs`, `tests/tasks_runtime.rs` (done) |
+| 132 | Choosing the C compiler (v17) | `$LUGHA_CC` for every C compile and the link | `src/link/compiler.rs`, `tests/c_cache.rs`, `tests/cli.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
