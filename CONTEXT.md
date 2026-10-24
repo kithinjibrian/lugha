@@ -9199,3 +9199,6 @@ Branch: prp-163-bundled_gc
 
 ### STILL OPEN AT CLOSE
 - PRP-163 awaits approval and the user's security review.
+
+## SESSION 313 — 2026-10-24 — The garbage collector built in: build (m131) — open
+Branch: prp-163-bundled_gc

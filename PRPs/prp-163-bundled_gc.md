@@ -1,6 +1,6 @@
 ## FEATURE: lughac carries the Boehm collector's source and compiles it into every program, so neither lughac's users nor its programs need the system's `libgc`; milestone 131 (v17), portability roadmap step A2.
 
-**Status:** proposed 2026-10-24 (session 312). **Needs the user's security review**: it adds about 1.3 MB of third-party C (bdwgc 8.2.12) that lughac compiles and links into every program. Discovery: (1) the source is vendored unmodified in `third_party/bdwgc/` and embedded like the runtime; (2) it is built without OS-thread support; (3) there is no fallback to the system's `libgc`.
+**Status:** approved 2026-10-24 ("build", session 313; the SHA-256 check stays on the acceptance list for the user before merging); proposed 2026-10-24 (session 312). **Needs the user's security review**: it adds about 1.3 MB of third-party C (bdwgc 8.2.12) that lughac compiles and links into every program. Discovery: (1) the source is vendored unmodified in `third_party/bdwgc/` and embedded like the runtime; (2) it is built without OS-thread support; (3) there is no fallback to the system's `libgc`.
 
 ## OBJECTIVE
 Today every program is linked with `-lgc`. That needs `libgc-dev` wherever lughac runs, and `libgc.so` wherever the program runs. A cross build (roadmap stages B–D) would also need a `libgc` built for the target, which is the hardest part to find. After this change lughac compiles the collector from source once, caches the object, and links it in statically. `ldd ./prog` no longer lists `libgc`, and lughac works on a machine without `libgc-dev`.
