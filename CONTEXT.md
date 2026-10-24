@@ -9173,3 +9173,6 @@ Branch: prp-162-portable_cpu
 
 ### STILL OPEN AT CLOSE
 - PRP-162 awaits approval.
+
+## SESSION 311 — 2026-10-24 — Portable x86-64 binaries: build (m130) — open
+Branch: prp-162-portable_cpu
