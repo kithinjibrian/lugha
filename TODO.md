@@ -476,6 +476,24 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 - [ ] Non-blocking input and output (a waiting read pauses only its green thread); green threads on several OS threads.
 - [ ] `probe-stack` on functions of programs that spawn, so a frame over 64 KiB can't skip a green stack's guard (PRP-122 BUILT notes).
 
+## Portability roadmap (session 310) — one platform at a time
+
+Today every binary is for Linux on this machine's exact x86-64 CPU. The four issues: (1) runtime C code that only builds on Linux/x86-64 (`tasks.c`'s assembly switch, `net.c`'s `epoll`, …); (2) codegen always targets the host triple, CPU and features (`src/codegen/mod.rs`, `host_machine`); (3) the C calling rules for extern structs are x86-64 System V only (`c_abi.rs`, `c_calls.rs`, sizes in `split_leaves.rs`); (4) linking uses this machine's `cc`, `libgc` and libc. The language itself is portable.
+
+- [ ] **A1 — Portable x86-64 binaries** (fixes part of 2): a baseline x86-64 CPU by default, `--cpu=native` to opt back in; today a binary can crash with an illegal instruction on an older PC. Small; v17. PRP-162.
+- [ ] **A2 — Garbage collector built in** (part of 4): Boehm's source inside lughac, compiled and cached like the runtime, linked statically; no `libgc` needed to run programs or `libgc-dev` to use lughac. Needs the user's security review (third-party C).
+- [ ] **A3 — Choosing a target** (2, prepares 3 and 4): `--target <triple>`, the C compiler per target (`$LUGHA_CC`), sizes from LLVM's data layout, the C calling rules behind one interface (x86-64 the only one). Needs the user's security review (how `cc` runs).
+- [ ] **B1 — ARM green threads** (1): `tasks.c`'s switch in AArch64 assembly.
+- [ ] **B2 — ARM C calling rules** (3): AAPCS64 — float-struct registers, ≤16 bytes in registers, larger by reference.
+- [ ] **B3 — Building and testing for Linux ARM** (4): cross-linking, the test programs under `qemu-aarch64`, ARM CI.
+- [ ] **C1 — Runtime split by OS:** shared, POSIX and per-OS files (event waiting behind `lugha_rt_poll_*`).
+- [ ] **C2 — Mac runtime:** `kqueue` for `net.c`; `spawn.c`'s `MAP_STACK`, `random.c`'s `getrandom`.
+- [ ] **C3 — Mac calling rules and linking:** Apple's AArch64 differences (variadics), Mach-O, signing; built and tested on a Mac runner.
+- [ ] **D1–D3 — Windows:** runtime (files, processes, env, stack overflow), sockets, Windows x64 calling rules, `.exe` linking with MinGW first. Large.
+- [ ] **E — WebAssembly (wasm32-wasi):** decisions first (garbage collector, green threads or none, which std modules exist). Large.
+
+Stages B–E are probably v18 milestones (a `Language v18 Draft.md`); A1 is a fix that ships in v17.
+
 ## Editor support
 
 - [x] **VS Code extension** — highlighting and `lughac check` diagnostics on open/save (PRP-099, `editors/vscode/`).
