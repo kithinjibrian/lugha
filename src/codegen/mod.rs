@@ -35,6 +35,7 @@ mod expr;
 mod externs;
 mod float_ops;
 mod format;
+mod frames;
 mod fun_values;
 mod function;
 mod growth;

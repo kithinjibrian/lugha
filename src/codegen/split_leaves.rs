@@ -136,7 +136,7 @@ pub(super) fn order(function: FunctionValue<'_>) -> Vec<BasicBlock<'_>> {
 }
 
 /// The blocks `block`'s terminator may branch to, in reverse order (popped last first).
-fn successors(block: BasicBlock<'_>) -> Vec<BasicBlock<'_>> {
+pub(super) fn successors(block: BasicBlock<'_>) -> Vec<BasicBlock<'_>> {
     let Some(term) = block.get_terminator() else {
         return Vec::new();
     };

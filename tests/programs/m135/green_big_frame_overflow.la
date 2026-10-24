@@ -1,0 +1,345 @@
+// The same 200 KB frames in a green thread (PRP-167): the probes reach its
+// guard pages page by page instead of stepping over them.
+struct Big {
+    g0: i64,
+    g1: i64,
+    g2: i64,
+    g3: i64,
+    g4: i64,
+    g5: i64,
+    g6: i64,
+    g7: i64,
+    g8: i64,
+    g9: i64,
+    g10: i64,
+    g11: i64,
+    g12: i64,
+    g13: i64,
+    g14: i64,
+    g15: i64,
+    g16: i64,
+    g17: i64,
+    g18: i64,
+    g19: i64,
+    g20: i64,
+    g21: i64,
+    g22: i64,
+    g23: i64,
+    g24: i64,
+    g25: i64,
+    g26: i64,
+    g27: i64,
+    g28: i64,
+    g29: i64,
+    g30: i64,
+    g31: i64,
+    g32: i64,
+    g33: i64,
+    g34: i64,
+    g35: i64,
+    g36: i64,
+    g37: i64,
+    g38: i64,
+    g39: i64,
+    g40: i64,
+    g41: i64,
+    g42: i64,
+    g43: i64,
+    g44: i64,
+    g45: i64,
+    g46: i64,
+    g47: i64,
+    g48: i64,
+    g49: i64,
+    g50: i64,
+    g51: i64,
+    g52: i64,
+    g53: i64,
+    g54: i64,
+    g55: i64,
+    g56: i64,
+    g57: i64,
+    g58: i64,
+    g59: i64,
+    g60: i64,
+    g61: i64,
+    g62: i64,
+    g63: i64,
+    g64: i64,
+    g65: i64,
+    g66: i64,
+    g67: i64,
+    g68: i64,
+    g69: i64,
+    g70: i64,
+    g71: i64,
+    g72: i64,
+    g73: i64,
+    g74: i64,
+    g75: i64,
+    g76: i64,
+    g77: i64,
+    g78: i64,
+    g79: i64,
+    g80: i64,
+    g81: i64,
+    g82: i64,
+    g83: i64,
+    g84: i64,
+    g85: i64,
+    g86: i64,
+    g87: i64,
+    g88: i64,
+    g89: i64,
+    g90: i64,
+    g91: i64,
+    g92: i64,
+    g93: i64,
+    g94: i64,
+    g95: i64,
+    g96: i64,
+    g97: i64,
+    g98: i64,
+    g99: i64,
+    g100: i64,
+    g101: i64,
+    g102: i64,
+    g103: i64,
+    g104: i64,
+    g105: i64,
+    g106: i64,
+    g107: i64,
+    g108: i64,
+    g109: i64,
+    g110: i64,
+    g111: i64,
+    g112: i64,
+    g113: i64,
+    g114: i64,
+    g115: i64,
+    g116: i64,
+    g117: i64,
+    g118: i64,
+    g119: i64,
+    g120: i64,
+    g121: i64,
+    g122: i64,
+    g123: i64,
+    g124: i64,
+    g125: i64,
+    g126: i64,
+    g127: i64,
+}
+
+fun big(n: i64): Big = Big { g0: n, g1: n, g2: n, g3: n, g4: n, g5: n, g6: n, g7: n, g8: n, g9: n, g10: n, g11: n, g12: n, g13: n, g14: n, g15: n, g16: n, g17: n, g18: n, g19: n, g20: n, g21: n, g22: n, g23: n, g24: n, g25: n, g26: n, g27: n, g28: n, g29: n, g30: n, g31: n, g32: n, g33: n, g34: n, g35: n, g36: n, g37: n, g38: n, g39: n, g40: n, g41: n, g42: n, g43: n, g44: n, g45: n, g46: n, g47: n, g48: n, g49: n, g50: n, g51: n, g52: n, g53: n, g54: n, g55: n, g56: n, g57: n, g58: n, g59: n, g60: n, g61: n, g62: n, g63: n, g64: n, g65: n, g66: n, g67: n, g68: n, g69: n, g70: n, g71: n, g72: n, g73: n, g74: n, g75: n, g76: n, g77: n, g78: n, g79: n, g80: n, g81: n, g82: n, g83: n, g84: n, g85: n, g86: n, g87: n, g88: n, g89: n, g90: n, g91: n, g92: n, g93: n, g94: n, g95: n, g96: n, g97: n, g98: n, g99: n, g100: n, g101: n, g102: n, g103: n, g104: n, g105: n, g106: n, g107: n, g108: n, g109: n, g110: n, g111: n, g112: n, g113: n, g114: n, g115: n, g116: n, g117: n, g118: n, g119: n, g120: n, g121: n, g122: n, g123: n, g124: n, g125: n, g126: n, g127: n };
+
+// 200 KB of values live across the recursive call: no slot can be shared.
+fun deep(n: i64): i64 {
+    let a0 = big(n + 0);
+    let a1 = big(n + 1);
+    let a2 = big(n + 2);
+    let a3 = big(n + 3);
+    let a4 = big(n + 4);
+    let a5 = big(n + 5);
+    let a6 = big(n + 6);
+    let a7 = big(n + 7);
+    let a8 = big(n + 8);
+    let a9 = big(n + 9);
+    let a10 = big(n + 10);
+    let a11 = big(n + 11);
+    let a12 = big(n + 12);
+    let a13 = big(n + 13);
+    let a14 = big(n + 14);
+    let a15 = big(n + 15);
+    let a16 = big(n + 16);
+    let a17 = big(n + 17);
+    let a18 = big(n + 18);
+    let a19 = big(n + 19);
+    let a20 = big(n + 20);
+    let a21 = big(n + 21);
+    let a22 = big(n + 22);
+    let a23 = big(n + 23);
+    let a24 = big(n + 24);
+    let a25 = big(n + 25);
+    let a26 = big(n + 26);
+    let a27 = big(n + 27);
+    let a28 = big(n + 28);
+    let a29 = big(n + 29);
+    let a30 = big(n + 30);
+    let a31 = big(n + 31);
+    let a32 = big(n + 32);
+    let a33 = big(n + 33);
+    let a34 = big(n + 34);
+    let a35 = big(n + 35);
+    let a36 = big(n + 36);
+    let a37 = big(n + 37);
+    let a38 = big(n + 38);
+    let a39 = big(n + 39);
+    let a40 = big(n + 40);
+    let a41 = big(n + 41);
+    let a42 = big(n + 42);
+    let a43 = big(n + 43);
+    let a44 = big(n + 44);
+    let a45 = big(n + 45);
+    let a46 = big(n + 46);
+    let a47 = big(n + 47);
+    let a48 = big(n + 48);
+    let a49 = big(n + 49);
+    let a50 = big(n + 50);
+    let a51 = big(n + 51);
+    let a52 = big(n + 52);
+    let a53 = big(n + 53);
+    let a54 = big(n + 54);
+    let a55 = big(n + 55);
+    let a56 = big(n + 56);
+    let a57 = big(n + 57);
+    let a58 = big(n + 58);
+    let a59 = big(n + 59);
+    let a60 = big(n + 60);
+    let a61 = big(n + 61);
+    let a62 = big(n + 62);
+    let a63 = big(n + 63);
+    let a64 = big(n + 64);
+    let a65 = big(n + 65);
+    let a66 = big(n + 66);
+    let a67 = big(n + 67);
+    let a68 = big(n + 68);
+    let a69 = big(n + 69);
+    let a70 = big(n + 70);
+    let a71 = big(n + 71);
+    let a72 = big(n + 72);
+    let a73 = big(n + 73);
+    let a74 = big(n + 74);
+    let a75 = big(n + 75);
+    let a76 = big(n + 76);
+    let a77 = big(n + 77);
+    let a78 = big(n + 78);
+    let a79 = big(n + 79);
+    let a80 = big(n + 80);
+    let a81 = big(n + 81);
+    let a82 = big(n + 82);
+    let a83 = big(n + 83);
+    let a84 = big(n + 84);
+    let a85 = big(n + 85);
+    let a86 = big(n + 86);
+    let a87 = big(n + 87);
+    let a88 = big(n + 88);
+    let a89 = big(n + 89);
+    let a90 = big(n + 90);
+    let a91 = big(n + 91);
+    let a92 = big(n + 92);
+    let a93 = big(n + 93);
+    let a94 = big(n + 94);
+    let a95 = big(n + 95);
+    let a96 = big(n + 96);
+    let a97 = big(n + 97);
+    let a98 = big(n + 98);
+    let a99 = big(n + 99);
+    let a100 = big(n + 100);
+    let a101 = big(n + 101);
+    let a102 = big(n + 102);
+    let a103 = big(n + 103);
+    let a104 = big(n + 104);
+    let a105 = big(n + 105);
+    let a106 = big(n + 106);
+    let a107 = big(n + 107);
+    let a108 = big(n + 108);
+    let a109 = big(n + 109);
+    let a110 = big(n + 110);
+    let a111 = big(n + 111);
+    let a112 = big(n + 112);
+    let a113 = big(n + 113);
+    let a114 = big(n + 114);
+    let a115 = big(n + 115);
+    let a116 = big(n + 116);
+    let a117 = big(n + 117);
+    let a118 = big(n + 118);
+    let a119 = big(n + 119);
+    let a120 = big(n + 120);
+    let a121 = big(n + 121);
+    let a122 = big(n + 122);
+    let a123 = big(n + 123);
+    let a124 = big(n + 124);
+    let a125 = big(n + 125);
+    let a126 = big(n + 126);
+    let a127 = big(n + 127);
+    let a128 = big(n + 128);
+    let a129 = big(n + 129);
+    let a130 = big(n + 130);
+    let a131 = big(n + 131);
+    let a132 = big(n + 132);
+    let a133 = big(n + 133);
+    let a134 = big(n + 134);
+    let a135 = big(n + 135);
+    let a136 = big(n + 136);
+    let a137 = big(n + 137);
+    let a138 = big(n + 138);
+    let a139 = big(n + 139);
+    let a140 = big(n + 140);
+    let a141 = big(n + 141);
+    let a142 = big(n + 142);
+    let a143 = big(n + 143);
+    let a144 = big(n + 144);
+    let a145 = big(n + 145);
+    let a146 = big(n + 146);
+    let a147 = big(n + 147);
+    let a148 = big(n + 148);
+    let a149 = big(n + 149);
+    let a150 = big(n + 150);
+    let a151 = big(n + 151);
+    let a152 = big(n + 152);
+    let a153 = big(n + 153);
+    let a154 = big(n + 154);
+    let a155 = big(n + 155);
+    let a156 = big(n + 156);
+    let a157 = big(n + 157);
+    let a158 = big(n + 158);
+    let a159 = big(n + 159);
+    let a160 = big(n + 160);
+    let a161 = big(n + 161);
+    let a162 = big(n + 162);
+    let a163 = big(n + 163);
+    let a164 = big(n + 164);
+    let a165 = big(n + 165);
+    let a166 = big(n + 166);
+    let a167 = big(n + 167);
+    let a168 = big(n + 168);
+    let a169 = big(n + 169);
+    let a170 = big(n + 170);
+    let a171 = big(n + 171);
+    let a172 = big(n + 172);
+    let a173 = big(n + 173);
+    let a174 = big(n + 174);
+    let a175 = big(n + 175);
+    let a176 = big(n + 176);
+    let a177 = big(n + 177);
+    let a178 = big(n + 178);
+    let a179 = big(n + 179);
+    let a180 = big(n + 180);
+    let a181 = big(n + 181);
+    let a182 = big(n + 182);
+    let a183 = big(n + 183);
+    let a184 = big(n + 184);
+    let a185 = big(n + 185);
+    let a186 = big(n + 186);
+    let a187 = big(n + 187);
+    let a188 = big(n + 188);
+    let a189 = big(n + 189);
+    let a190 = big(n + 190);
+    let a191 = big(n + 191);
+    let a192 = big(n + 192);
+    let a193 = big(n + 193);
+    let a194 = big(n + 194);
+    let a195 = big(n + 195);
+    let a196 = big(n + 196);
+    let a197 = big(n + 197);
+    let a198 = big(n + 198);
+    let a199 = big(n + 199);
+    let r = deep(n + 1);
+    r + a0.g0 + a1.g1 + a2.g2 + a3.g3 + a4.g4 + a5.g5 + a6.g6 + a7.g7 + a8.g8 + a9.g9 + a10.g10 + a11.g11 + a12.g12 + a13.g13 + a14.g14 + a15.g15 + a16.g16 + a17.g17 + a18.g18 + a19.g19 + a20.g20 + a21.g21 + a22.g22 + a23.g23 + a24.g24 + a25.g25 + a26.g26 + a27.g27 + a28.g28 + a29.g29 + a30.g30 + a31.g31 + a32.g32 + a33.g33 + a34.g34 + a35.g35 + a36.g36 + a37.g37 + a38.g38 + a39.g39 + a40.g40 + a41.g41 + a42.g42 + a43.g43 + a44.g44 + a45.g45 + a46.g46 + a47.g47 + a48.g48 + a49.g49 + a50.g50 + a51.g51 + a52.g52 + a53.g53 + a54.g54 + a55.g55 + a56.g56 + a57.g57 + a58.g58 + a59.g59 + a60.g60 + a61.g61 + a62.g62 + a63.g63 + a64.g64 + a65.g65 + a66.g66 + a67.g67 + a68.g68 + a69.g69 + a70.g70 + a71.g71 + a72.g72 + a73.g73 + a74.g74 + a75.g75 + a76.g76 + a77.g77 + a78.g78 + a79.g79 + a80.g80 + a81.g81 + a82.g82 + a83.g83 + a84.g84 + a85.g85 + a86.g86 + a87.g87 + a88.g88 + a89.g89 + a90.g90 + a91.g91 + a92.g92 + a93.g93 + a94.g94 + a95.g95 + a96.g96 + a97.g97 + a98.g98 + a99.g99 + a100.g100 + a101.g101 + a102.g102 + a103.g103 + a104.g104 + a105.g105 + a106.g106 + a107.g107 + a108.g108 + a109.g109 + a110.g110 + a111.g111 + a112.g112 + a113.g113 + a114.g114 + a115.g115 + a116.g116 + a117.g117 + a118.g118 + a119.g119 + a120.g120 + a121.g121 + a122.g122 + a123.g123 + a124.g124 + a125.g125 + a126.g126 + a127.g127 + a128.g0 + a129.g1 + a130.g2 + a131.g3 + a132.g4 + a133.g5 + a134.g6 + a135.g7 + a136.g8 + a137.g9 + a138.g10 + a139.g11 + a140.g12 + a141.g13 + a142.g14 + a143.g15 + a144.g16 + a145.g17 + a146.g18 + a147.g19 + a148.g20 + a149.g21 + a150.g22 + a151.g23 + a152.g24 + a153.g25 + a154.g26 + a155.g27 + a156.g28 + a157.g29 + a158.g30 + a159.g31 + a160.g32 + a161.g33 + a162.g34 + a163.g35 + a164.g36 + a165.g37 + a166.g38 + a167.g39 + a168.g40 + a169.g41 + a170.g42 + a171.g43 + a172.g44 + a173.g45 + a174.g46 + a175.g47 + a176.g48 + a177.g49 + a178.g50 + a179.g51 + a180.g52 + a181.g53 + a182.g54 + a183.g55 + a184.g56 + a185.g57 + a186.g58 + a187.g59 + a188.g60 + a189.g61 + a190.g62 + a191.g63 + a192.g64 + a193.g65 + a194.g66 + a195.g67 + a196.g68 + a197.g69 + a198.g70 + a199.g71
+}
+
+fun main() {
+    let t = spawn deep(0);
+    println(t.join());
+}

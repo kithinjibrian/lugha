@@ -1,8 +1,29 @@
 ## FEATURE: A function's stack slots are shared between match arms, branches and blocks that never run together, and every function probes its stack, so deep recursion through big values fits the stack or panics with `stack overflow`, never a segfault; milestone 135 (v17).
 
-**Status:** proposed 2026-10-24 (session 320). Requested by Rapidkoi (its DECISION-059, 2026-10-24): drawing Notes 0.3.0 segfaults in kivuli's `view/lazies/resolve`, whose frame is 276 KB at -O0 (122 KB at -O2). Discovery:
+**Status:** approved 2026-10-24 ("build", session 321); proposed 2026-10-24 (session 320). Requested by Rapidkoi (its DECISION-059, 2026-10-24): drawing Notes 0.3.0 segfaults in kivuli's `view/lazies/resolve`, whose frame is 276 KB at -O0 (122 KB at -O2). Discovery:
 1. Fix it in lughac rather than kivuli. The cause is general (any enum holding a big struct, matched over many arms), and kivuli has no clean workaround: there is no `Box<T>`, and `Ref<T>` is shared and not `Eq`.
 2. Scope: slot sharing plus stack probes. Storing large enum payloads behind a pointer is left out, and becomes a possible PRP-168 decided from measurements taken after this one.
+
+## RESULT (session 321)
+Built, with one change of approach: slots are shared by one pass over each lowered function (`src/codegen/frames.rs`, after `sret.rs` and `split.rs`), not by a pool in `scope.rs` during lowering. Half of each arm's slots are made by those later passes (`sret`'s `result` slots, `split_big.rs`'s `copy` slots), which a lowering-time pool never sees.
+- **How sharing works:**
+  - A slot's *live blocks* are the blocks using its address (through GEPs), plus every block on a path from one use to another, loops included.
+  - Two entry-block slots of the same struct or array type share one `alloca` (keeping the larger alignment) when their live blocks are disjoint.
+  - A slot whose address is stored, or flows into a `phi`, `select` or anything other than a load, store, GEP or call, keeps its own slot.
+  - Scalars aren't shared. This covers the PRP's "never pooled" list: arrays and aliases are pointer-typed slots, and an escaping address keeps its slot.
+- **Probes:** `"probe-stack"="inline-asm"` on every function the module defines, on both targets.
+- **Measured** (`sub …, %rsp` in the prologue, summed over the probe steps):
+
+| function | -O0 before | -O0 after | -O2 before | -O2 after |
+|---|---|---|---|---|
+| kivuli `resolve<()>` (`examples/backgrounds.la`) | 276 KB (0x43688) | 8.0 KB (0x1f48) | 122 KB | 6.3 KB (0x18c8) |
+| kivuli `resolve_children<()>` | 10 KB | 10.6 KB (0x2968) | 7.6 KB | 7.8 KB (0x1e88) |
+| the 12-arm toy's `walk` | 94 KB (0x16fc8) | 11.3 KB (0x2c28) | 26 KB (0x6568) | 3.9 KB (0xf30) |
+
+  At 64 levels with two `resolve` frames and one `resolve_children` per level, that is about 1.7 MB at -O0. Boxing large payloads (a possible PRP-168) isn't needed for Rapidkoi's depth.
+- **Tests:**
+  - 11 unit tests in `frames.rs`: hand-written IR for arms, one block, live across, loops, GEPs, escapes, types and scalars, alignment, probes; plus the 12-arm match at ≤ 8 `%V` slots on x86-64 and ARM64.
+  - `tests/programs/m135/`: `deep_match`, `arm_results` (checked against a Python model), `big_frame_overflow`, `green_big_frame_overflow`. With the pass switched off, `deep_match` overflows, the green overflow segfaults (exit 139), and `big_frame_overflow` (200 KB frames) segfaults.
 
 ## OBJECTIVE
 A function's frame costs its largest arm or branch, not the sum of all of them, at -O0 and -O2 alike. kivuli's `resolve` frame falls from 276 KB to an estimated ~40 KB at -O0, so a 64-deep Rapidkoi screen fits the main thread's 8 MB stack. Recursion that does run out of stack prints `panic: stack overflow` and exits 101, however large its frames, on the main stack and on green threads. Lugha programs and their output don't change.
