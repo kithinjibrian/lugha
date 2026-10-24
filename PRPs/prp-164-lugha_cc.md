@@ -2,6 +2,24 @@
 
 **Status:** approved 2026-10-24 ("build", session 315); proposed 2026-10-24 (session 314). **Needs the user's security review**: it changes how `cc` runs (CLAUDE.md anti-pattern 5, PRP-117). Discovery: (1) A3 is split. This PRP is only the compiler choice; `--target`, LLVM's sizes per target and the C calling rules behind one interface move into stage B (a new step B0), where an ARM toolchain and qemu make them testable. (2) The variable is `LUGHA_CC`, holding words: a program and its first arguments, split on spaces, never run through a shell.
 
+## RESULT (session 315)
+Built as proposed. Two notes:
+- **The cache key holds the words too:** `Cache.compiler` is now the compiler's words plus its `--version`. `zig cc -target a` and `zig cc -target b` print one version but make different objects, so `--version` alone wasn't enough, as the PRP had assumed.
+- **Where the compiler lives:** the build's `Compiler` is held by the `Cache`, which every compile site already gets, so no new parameters cross the module.
+
+What was built:
+- `LinkError` moved to `src/link/errors.rs` first, in its own commit (`mod.rs` was at 500 lines, now 421).
+- `src/link/compiler.rs`: `Compiler::from_env`, `from_words`, `command`, `words` and `name`.
+- `LinkError::CcNotFound(name)` and `LinkError::BadCompiler`.
+
+Tests (written before the implementation, though not run red first):
+- `compiler.rs` units.
+- `tests/c_cache.rs`: every compile and the link go through a wrapper with its extra word first; another wrapper recompiles all three objects; switching back hits the cache.
+- `tests/cli.rs`: a missing compiler is exit 2 naming it; `true; touch hacked` creates no file; blank means `cc`.
+- The `[link]` C file path is covered by `c_cache`'s project, which has one, rather than a separate `link_libs` case.
+
+fmt and clippy clean. `--lib`, `c_cache`, `cli`, `link_libs`, `codegen`, `programs`, `callbacks`, `tls`, `c_strings`, `extern_structs`, `tasks_runtime`, `spec`, `explain` and `fmt_corpus` pass.
+
 ## OBJECTIVE
 `LUGHA_CC=clang lughac build app.la` builds with clang, and `LUGHA_CC="zig cc"` with zig, everywhere lughac runs a C compiler today. Unset or empty means `cc`, exactly as now. Switching compilers recompiles the cached objects, because the cache key already includes the compiler's `--version` text, which now comes from the chosen compiler. This is the hook stage B's cross builds use: `LUGHA_CC="zig cc -target aarch64-linux-gnu"`.
 

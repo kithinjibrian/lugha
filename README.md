@@ -111,7 +111,7 @@ Everything is a value: assigning an array, struct or enum gives you your own cop
 
 - **Rust** via [rustup](https://rustup.rs). The toolchain version is pinned in `rust-toolchain.toml`, and rustup installs it on first build.
 - **LLVM 21** development files. It must be major version 21, and it is linked dynamically.
-- A **C compiler** (`cc`). `lughac` compiles the runtime and its built-in garbage collector (bdwgc, `third_party/bdwgc/`) with it, and links every program with it.
+- A **C compiler** (`cc`). `lughac` compiles the runtime and its built-in garbage collector (bdwgc, `third_party/bdwgc/`) with it, and links every program with it. To use another, set `LUGHA_CC`: `LUGHA_CC=clang` or `LUGHA_CC="zig cc"`. Its words are split on spaces and run without a shell, so a compiler whose path holds a space needs a small wrapper script.
 - **git**, only for programs whose `lugha.toml` lists git packages (v14).
 - **pkg-config** (or `pkgconf`), only for programs whose `lugha.toml` has `pkg-config` under `[link]` (v16), plus the development files of the C libraries a program links.
 

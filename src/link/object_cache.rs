@@ -13,17 +13,19 @@ use std::collections::HashMap;
 use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use super::LinkError;
+use super::compiler::Compiler;
 
 /// The object cache of one build.
 pub(super) struct Cache {
     /// `<root>/objects`, or `None` when nothing is cached.
     objects: Option<PathBuf>,
-    /// `cc --version`'s output.
+    /// The compiler's words and its `--version` output (v17, milestone 132).
     compiler: String,
+    /// The C compiler this build runs (`$LUGHA_CC` or `cc`).
+    cc: Compiler,
     /// Header fingerprints already taken in this build.
     prints: Fingerprints,
 }
@@ -46,29 +48,39 @@ impl Fingerprints {
 }
 
 impl Cache {
-    /// The cache under the user's cache root, or one that caches nothing
-    /// when there is no root or `cc --version` doesn't run.
-    pub(super) fn open() -> Cache {
+    /// The cache under the user's cache root for objects `cc` compiles, or
+    /// one that caches nothing when there is no root or `cc --version`
+    /// doesn't run.
+    pub(super) fn open(cc: Compiler) -> Cache {
         let objects =
             crate::modules::cache::root(|n| std::env::var_os(n)).map(|r| r.join("objects"));
-        let compiler = Command::new("cc")
+        // The words count too: `zig cc` for two targets prints one version.
+        let compiler = cc
+            .command()
             .arg("--version")
             .output()
             .ok()
             .filter(|o| o.status.success())
-            .map(|o| String::from_utf8_lossy(&o.stdout).into_owned());
+            .map(|o| format!("{}\n{}", cc.words(), String::from_utf8_lossy(&o.stdout)));
         match compiler {
             Some(compiler) => Cache {
                 objects,
                 compiler,
+                cc,
                 prints: Fingerprints::default(),
             },
             None => Cache {
                 objects: None,
                 compiler: String::new(),
+                cc,
                 prints: Fingerprints::default(),
             },
         }
+    }
+
+    /// The C compiler this build runs.
+    pub(super) fn cc(&self) -> &Compiler {
+        &self.cc
     }
 
     /// The cache's root (`<root>` above), when it has one: the bundled

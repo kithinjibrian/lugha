@@ -9,10 +9,10 @@
 use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use super::LinkError;
+use super::compiler::Compiler;
 use super::object_cache::{Cache, fnv1a};
 
 /// The bdwgc release vendored in `third_party/bdwgc/` (see its `VERSION`).
@@ -241,9 +241,9 @@ impl Drop for Bundled {
 ///
 /// # Errors
 ///
-/// As [`compile`].
+/// As [`compile`], and [`LinkError::BadCompiler`] for a `$LUGHA_CC` that isn't UTF-8.
 pub fn bundled() -> Result<Bundled, LinkError> {
-    compile(&Cache::open())
+    compile(&Cache::open(Compiler::from_env()?))
 }
 
 /// The collector's object from `cache` when it has a fresh one, else
@@ -272,7 +272,7 @@ pub(super) fn compile(cache: &Cache) -> Result<Bundled, LinkError> {
     let temp = vec![temp_object.clone(), temp_object.with_extension("d")];
     let entry = dir.join("extra/gc.c");
     let object = cache.object("gc", &source(), &flags, &temp_object, |extra| {
-        run(&entry, &flags, extra, &temp_object)
+        run(cache.cc(), &entry, &flags, extra, &temp_object)
     })?;
     Ok(Bundled {
         object,
@@ -312,14 +312,16 @@ fn restore(dir: &Path) -> io::Result<()> {
     Ok(())
 }
 
-/// `cc -c entry flags extra -o object`.
+/// `cc -c entry flags extra -o object`, `cc` being the build's compiler.
 fn run(
+    cc: &Compiler,
     entry: &Path,
     flags: &[OsString],
     extra: &[OsString],
     object: &Path,
 ) -> Result<(), LinkError> {
-    let result = Command::new("cc")
+    let result = cc
+        .command()
         .arg("-c")
         .arg(entry)
         .args(flags)
@@ -329,7 +331,9 @@ fn run(
         .output();
     let out = match result {
         Ok(out) => out,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Err(LinkError::CcNotFound),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => {
+            return Err(LinkError::CcNotFound(cc.name()));
+        }
         Err(e) => return Err(LinkError::Io(e)),
     };
     if out.status.success() {

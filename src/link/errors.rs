@@ -11,9 +11,12 @@ use crate::span::Span;
 /// Why linking failed.
 #[derive(Debug, thiserror::Error)]
 pub enum LinkError {
-    /// No `cc` on `PATH`.
-    #[error("C compiler `cc` not found; install gcc or clang")]
-    CcNotFound,
+    /// The C compiler isn't there: `cc`, or what `$LUGHA_CC` names (v17), as messages name it.
+    #[error("C compiler {0} not found; install gcc or clang, or set $LUGHA_CC")]
+    CcNotFound(String),
+    /// `$LUGHA_CC` isn't UTF-8, so its words can't be split (v17, milestone 132).
+    #[error("$LUGHA_CC isn't UTF-8")]
+    BadCompiler,
     /// `cc` could not be started, or the runtime source could not be written.
     #[error("could not run `cc`: {0}")]
     Io(std::io::Error),
@@ -72,7 +75,10 @@ impl LinkError {
                 )
                 .with_help("install OpenSSL's development files: `sudo apt install libssl-dev`"),
             ),
-            LinkError::CcNotFound | LinkError::Io(_) | LinkError::Failed { .. } => None,
+            LinkError::CcNotFound(_)
+            | LinkError::BadCompiler
+            | LinkError::Io(_)
+            | LinkError::Failed { .. } => None,
         }
     }
 }

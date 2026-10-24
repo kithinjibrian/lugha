@@ -11,6 +11,7 @@
 //! `-lm` (`inputs`), some from `pkg-config` (`pkg_config`).
 
 pub mod c_files;
+pub mod compiler;
 mod errors;
 pub mod gc;
 pub mod inputs;
@@ -21,7 +22,6 @@ pub mod runtime;
 use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 pub use self::errors::LinkError;
 pub use self::inputs::{Plan, PlanError};
@@ -180,7 +180,7 @@ pub const RUNTIME_SOURCE: &str = concat!(
 ///
 /// # Errors
 ///
-/// [`LinkError::CcNotFound`] if there is no `cc`, [`LinkError::Io`] if it
+/// [`LinkError::CcNotFound`] if there is no C compiler (`cc` or `$LUGHA_CC`), [`LinkError::Io`] if it
 /// can't be started or the runtime can't be written to the temp dir,
 /// [`LinkError::Failed`] with `cc`'s stderr if it fails.
 pub fn link(objects: &[&Path], output: &Path) -> Result<(), LinkError> {
@@ -202,18 +202,22 @@ pub fn link_with(
     output: &Path,
 ) -> Result<(), LinkError> {
     // Compiled C objects are kept between builds (v17, milestone 127).
-    let cache = object_cache::Cache::open();
+    let cache = object_cache::Cache::open(compiler::Compiler::from_env()?);
     let shims = c_files::compile(&plan.c_files, temp, &cache)?;
     let variant = (plan.tls.is_some(), plan.crypto.is_some());
     let gc = gc::compile(&cache)?;
     let runtime = runtime::compile(variant, &cache, plan.tls.or(plan.crypto), &gc.include)?;
     let linked = [runtime.path.as_path(), gc.object.as_path()];
-    let result = Command::new("cc")
+    let result = cache
+        .cc()
+        .command()
         .args(args(objects, &shims, &linked, plan, output))
         .output();
     let out = match result {
         Ok(out) => out,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Err(LinkError::CcNotFound),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => {
+            return Err(LinkError::CcNotFound(cache.cc().name()));
+        }
         Err(e) => return Err(LinkError::Io(e)),
     };
     if out.status.success() {
@@ -373,7 +377,7 @@ mod tests {
             stderr: String::new(),
         };
         assert!(ours.diagnostic().is_none());
-        assert!(LinkError::CcNotFound.diagnostic().is_none());
+        assert!(LinkError::CcNotFound("`cc`".into()).diagnostic().is_none());
     }
 
     #[test]

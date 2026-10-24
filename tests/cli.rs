@@ -448,3 +448,30 @@ fn programs_carry_the_collector_and_need_no_libgc_v17() {
         "the collector is linked in"
     );
 }
+
+#[test]
+fn a_missing_lugha_cc_is_exit_2_and_never_reaches_a_shell_v17() {
+    let dir = TempDir::with(&[("arith.la", ARITH.as_bytes())]);
+    let build = |cc: &str| {
+        Command::new(env!("CARGO_BIN_EXE_lughac"))
+            .args(["build", "arith.la"])
+            .current_dir(&dir.0)
+            .env("LUGHA_CC", cc)
+            .output()
+            .expect("lughac runs")
+    };
+    let out = build("no-such-compiler -O1");
+    assert_eq!(out.status.code(), Some(2));
+    let stderr = text(&out.stderr);
+    assert!(
+        stderr.contains("`no-such-compiler -O1` (from $LUGHA_CC) not found"),
+        "{stderr}"
+    );
+    // `true;` is a program name like any other: there is no shell to run `touch`.
+    let out = build("true; touch hacked");
+    assert_eq!(out.status.code(), Some(2), "{}", text(&out.stderr));
+    assert!(!dir.0.join("hacked").exists());
+    // Empty means `cc`, as when unset.
+    let out = build("   ");
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+}
