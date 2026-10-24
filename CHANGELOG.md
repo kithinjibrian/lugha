@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- The garbage collector is built in (milestone 131, PRP-163): lughac carries bdwgc 8.2.12's source (`third_party/bdwgc/`), compiles it once into the C object cache and links it into every program statically. Programs no longer need `libgc.so`, and lughac no longer needs `libgc-dev`
 - `--cpu` on `build`, `run` and `test` (milestone 130, PRP-162): `x86-64` (the default), `x86-64-v2`, `x86-64-v3`, `x86-64-v4` or `native`; anything else is exit 2
 - `lughac init` writes a `test/` folder with one passing test (milestone 129, PRP-161): `test/greeting_test.la` for a program, whose greeting moves to `src/greeting.la` (it now prints `Hello, world, from N!`), and `test/N_test.la` for a library; a second hint line, `test it with: lughac test …`; every file `lughac fmt`-clean, none overwritten
 - `include_bytes("path")` and `include_str("path")` build a file's contents into the program (milestone 128, PRP-160): constant expressions, the file inside the package's folder and at most 16 MiB (E0447), `include_str` UTF-8 (E0448), stored read-only with nothing copied at startup; hover shows the file's size and go-to-definition opens it

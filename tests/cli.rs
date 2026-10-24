@@ -431,3 +431,20 @@ fn cpu_chooses_the_level_and_an_unknown_one_is_exit_2_v17() {
     }
     assert!(!dir.0.join("zen").exists());
 }
+
+#[test]
+fn programs_carry_the_collector_and_need_no_libgc_v17() {
+    let dir = TempDir::with(&[("arith.la", ARITH.as_bytes())]);
+    let out = lughac(&dir.0, &["build", "arith.la"]);
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    // A shared library the program needs is named in its dynamic section.
+    let binary = std::fs::read(dir.0.join("arith")).expect("built");
+    assert!(
+        !binary.windows(8).any(|w| w == b"libgc.so"),
+        "the program links libgc.so"
+    );
+    assert!(
+        binary.windows(8).any(|w| w == b"GC_init\0"),
+        "the collector is linked in"
+    );
+}

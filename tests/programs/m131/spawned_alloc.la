@@ -1,0 +1,16 @@
+// Two green threads allocate while `main` waits (milestone 131): the
+// bundled collector clears only a little stack below each, so a 1 MiB
+// green thread's stack doesn't overflow (PRP-163).
+fun fill(n: i64): i64 {
+    let mut xs: i64[] = [];
+    for i in 0..n {
+        xs.push(i);
+    }
+    xs.len
+}
+
+fun main() {
+    let a = spawn fill(300000);
+    let b = spawn fill(200000);
+    println(a.join() + b.join());
+}

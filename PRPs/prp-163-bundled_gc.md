@@ -2,6 +2,17 @@
 
 **Status:** approved 2026-10-24 ("build", session 313; the SHA-256 check stays on the acceptance list for the user before merging); proposed 2026-10-24 (session 312). **Needs the user's security review**: it adds about 1.3 MB of third-party C (bdwgc 8.2.12) that lughac compiles and links into every program. Discovery: (1) the source is vendored unmodified in `third_party/bdwgc/` and embedded like the runtime; (2) it is built without OS-thread support; (3) there is no fallback to the system's `libgc`.
 
+## RESULT (session 313)
+Built as proposed.
+- `third_party/bdwgc/`: 51 files, byte-identical to the release, plus `VERSION`.
+- `src/link/gc.rs`: `GC_FILES` (50 embedded files), `GC_FLAGS`, `compile`, and `bundled()` for harnesses. Sources are restored byte for byte into `<cache root>/gc/8.2.12-<hash>/` (a temp folder when that can't be written).
+- The runtime compiles with `-isystem` that include folder, so bdwgc's header warnings aren't the runtime's (`-Werror` test). `lugha_rt.c` includes `<gc_mark.h>`.
+- The link step passes the runtime and collector objects, then `-lm`.
+- `src/link/mod.rs` is at exactly 500 lines: the next change there needs a split.
+- Tests first: `gc.rs` units, the `args` units, `tests/programs/m131/` (the overflowing program, now `500000`), `tests/cli.rs` (no `libgc.so`, `GC_init` linked in), `tests/c_cache.rs` (three compiles then none, tampered sources restored without a recompile), `tests/tasks_runtime.rs` and the warnings test on the bundled headers.
+- fmt and clippy clean. The full `cargo test` passes (50 test binaries). A fresh cache shows no `/usr/include/gc` header recorded and `ldd` lists no `libgc`.
+- Not done here: running without `libgc-dev` installed. CI, which no longer installs it, is that check.
+
 ## OBJECTIVE
 Today every program is linked with `-lgc`. That needs `libgc-dev` wherever lughac runs, and `libgc.so` wherever the program runs. A cross build (roadmap stages B–D) would also need a `libgc` built for the target, which is the hardest part to find. After this change lughac compiles the collector from source once, caches the object, and links it in statically. `ldd ./prog` no longer lists `libgc`, and lughac works on a machine without `libgc-dev`.
 

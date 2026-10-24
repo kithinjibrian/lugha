@@ -71,6 +71,12 @@ impl Cache {
         }
     }
 
+    /// The cache's root (`<root>` above), when it has one: the bundled
+    /// collector's sources live in its `gc/` (milestone 131).
+    pub(super) fn root(&self) -> Option<&Path> {
+        self.objects.as_deref().and_then(Path::parent)
+    }
+
     /// The object for `source` (of `kind`, `"runtime"` or `"c"`) compiled
     /// with `flags`: the cache's when it has a fresh one; else `compile`
     /// builds `temp_object` (given extra arguments for the dependency file),

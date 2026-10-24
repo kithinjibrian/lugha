@@ -205,8 +205,11 @@ fn runtime_compiles_without_warnings() {
     let dir = TempDir::new();
     let source = dir.0.join("lugha_rt.c");
     std::fs::write(&source, lugha::link::RUNTIME_SOURCE).expect("temp dir is writable");
+    // The bundled collector's headers, as lughac passes them (milestone 131).
+    let gc = lugha::link::gc::bundled().expect("the collector compiles");
     let out = Command::new("cc")
-        .args(["-std=c11", "-Wall", "-Wextra", "-Werror", "-c"])
+        .args(["-std=c11", "-Wall", "-Wextra", "-Werror", "-c", "-isystem"])
+        .arg(&gc.include)
         .arg(&source)
         .arg("-o")
         .arg(dir.0.join("lugha_rt.o"))

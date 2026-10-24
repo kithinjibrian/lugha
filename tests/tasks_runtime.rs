@@ -209,10 +209,13 @@ int main(int argc, char **argv) {
 }
 "#;
 
-/// Builds the runtime and the harness once for every test.
+/// Builds the runtime and the harness once for every test, with the
+/// bundled collector (milestone 131).
 fn harness() -> &'static PathBuf {
     static BUILT: OnceLock<PathBuf> = OnceLock::new();
+    static GC: OnceLock<lugha::link::gc::Bundled> = OnceLock::new();
     BUILT.get_or_init(|| {
+        let gc = GC.get_or_init(|| lugha::link::gc::bundled().expect("the collector compiles"));
         let dir = std::env::temp_dir().join(format!("lugha-tasks-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("temp dir is writable");
         std::fs::write(dir.join("lugha_rt.c"), lugha::link::RUNTIME_SOURCE).expect("writable");
@@ -222,10 +225,12 @@ fn harness() -> &'static PathBuf {
         // holds the runtime to that, and GCC's -O2 flow analysis warns on
         // code unrelated to green threads.
         let out = Command::new("cc")
-            .args(["-std=c11", "-O2"])
+            .args(["-std=c11", "-O2", "-isystem"])
+            .arg(&gc.include)
             .arg(dir.join("harness.c"))
             .arg(dir.join("lugha_rt.c"))
-            .args(["-lgc", "-lm", "-o"])
+            .arg(&gc.object)
+            .args(["-lm", "-o"])
             .arg(&exe)
             .output()
             .expect("cc runs");
