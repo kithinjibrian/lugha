@@ -277,26 +277,21 @@ fn prelude_failure(source: &Source, errors: &[Diagnostic]) -> Failure {
     internal(source, format!("the prelude doesn't check: {first}"))
 }
 
-/// The program's LLVM IR, for `--emit=ir`.
-pub(super) fn ir(front: &Front) -> Result<String, Failure> {
+/// The program's LLVM IR for `target`, for `--emit=ir`.
+pub(super) fn ir(front: &Front, target: Target) -> Result<String, Failure> {
     let units = units(&front.modules);
-    codegen::emit_ir_modules(&units, checked(front), &sources(front))
+    codegen::emit_ir_for(&units, checked(front), &sources(front), target)
         .map_err(|e| codegen_failure(&front.source, e))
 }
 
 /// Compiles and links `front` at `opt` for `cpu` on `target` into the executable `exe`,
 /// with what its `[link]` tables add (v16): `pkg-config` runs first, so its
-/// failures come before codegen's work. A target without C's struct rules
-/// refuses extern structs by value first (E0449, v17).
+/// failures come before codegen's work.
 pub(super) fn build(
     front: &Front,
     (opt, cpu, target): (OptLevel, Cpu, Target),
     exe: &Path,
 ) -> Result<(), Failure> {
-    let refused = codegen::by_value_errors(target, &checked(front).c_by_value);
-    if !refused.is_empty() {
-        return Err(Failure::Program(front.source.clone(), refused));
-    }
     // The target's own compiler unless `$LUGHA_CC` names one (milestone 133).
     let fallback = match target {
         Target::X86_64Linux => "cc",

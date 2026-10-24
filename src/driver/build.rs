@@ -35,7 +35,7 @@ pub(super) fn build(
                 out.print(&format!("{}\n", sexp::program(program)));
             }
         }
-        Some(Emit::Ir) => out.print(&pipeline::ir(&front)?),
+        Some(Emit::Ir) => out.print(&pipeline::ir(&front, code.2)?),
         Some(Emit::Tokens) => unreachable!("handled above"),
         None => {
             let exe = output.map_or_else(|| pipeline::default_output(file), Path::to_path_buf);

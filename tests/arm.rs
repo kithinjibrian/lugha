@@ -1,13 +1,18 @@
 //! Linux on ARM64 (v17, milestone 133, PRP-165): programs from
 //! `tests/programs/` built with `--target aarch64-unknown-linux-gnu` and run
 //! under `qemu-aarch64` match their expectation files, green threads,
-//! actors, panics and the collector included; extern structs by value are
-//! E0449 there. Without `aarch64-linux-gnu-gcc` and `qemu-aarch64` each test
+//! actors, panics and the collector included; and `extern struct`s cross to
+//! C by value as AAPCS64 passes them (milestone 134), against C compiled by
+//! `aarch64-linux-gnu-gcc`. Without `aarch64-linux-gnu-gcc` and `qemu-aarch64` each test
 //! prints a note and passes, as on a machine that can't build for ARM.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+#[path = "common/c_shapes.rs"]
+mod c_shapes;
+use c_shapes::{DECLS, PROGRAMS, SIDE};
 
 const TARGET: &str = "aarch64-unknown-linux-gnu";
 
@@ -146,38 +151,44 @@ fn programs_run_on_arm_as_they_do_on_x86_64_v17() {
     }
 }
 
-const BY_VALUE: &str = "extern struct P { x: i64, y: i64 }
-extern fun sum(p: P): i64;
-extern fun make(x: i64): P;
-fun main() { println(sum(make(1))); }
-";
-
-const BY_POINTER: &str = "extern struct P { x: i64, y: i64 }
-extern fun sum(ptr p: P): i64;
-fun main() { let p = P { x: 1, y: 2 }; println(sum(ptr p)); }
-";
+/// Builds `main` (after `DECLS`) with the shapes' C side in `side.c` for
+/// ARM — the C compiled by `aarch64-linux-gnu-gcc` — and runs it at -O0 and
+/// -O2 under qemu, checking it prints `prints`.
+fn runs_on_arm(name: &str, main: &str, prints: &str) {
+    let t = Temp::new();
+    std::fs::write(t.0.join("main.la"), [DECLS, main].concat()).unwrap();
+    std::fs::write(t.0.join("side.c"), SIDE).unwrap();
+    std::fs::write(t.0.join("lugha.toml"), "[link]\nc = [\"side.c\"]\n").unwrap();
+    for opt in ["-O0", "-O2"] {
+        let built = Command::new(env!("CARGO_BIN_EXE_lughac"))
+            .args(["build", "main.la", "--target", TARGET, opt, "-o", "prog"])
+            .current_dir(&t.0)
+            .env("HOME", &t.0)
+            .env_remove("LUGHA_CC")
+            .output()
+            .expect("lughac runs");
+        assert_eq!(
+            built.status.code(),
+            Some(0),
+            "{name} {opt}: {}",
+            text(&built.stderr)
+        );
+        let out = qemu(&t.0.join("prog"));
+        assert_eq!(
+            (out.status.code(), text(&out.stdout)),
+            (Some(0), prints.to_string()),
+            "{name} {opt}: {}",
+            text(&out.stderr)
+        );
+    }
+}
 
 #[test]
-fn extern_structs_by_value_are_e0449_on_arm_only_v17() {
-    let t = Temp::new();
-    std::fs::write(t.0.join("value.la"), BY_VALUE).unwrap();
-    std::fs::write(t.0.join("pointer.la"), BY_POINTER).unwrap();
-    let arm = lughac(&t.0, &["build", "value.la", "--target", TARGET]);
-    assert_eq!(arm.status.code(), Some(1), "{}", text(&arm.stderr));
-    let stderr = text(&arm.stderr);
-    assert_eq!(stderr.matches("error[E0449]").count(), 2, "{stderr}");
-    // Checked before anything is compiled, so it needs no cross compiler.
-    let check = lughac(&t.0, &["check", "value.la"]);
-    assert_eq!(check.status.code(), Some(0), "{}", text(&check.stderr));
+fn extern_structs_cross_to_c_by_value_on_arm_v17() {
     if !can_build_for_arm("extern_structs_by_value") {
         return;
     }
-    // By pointer it links on ARM; the missing C function is the only problem.
-    let pointer = lughac(&t.0, &["build", "pointer.la", "--target", TARGET]);
-    let stderr = text(&pointer.stderr);
-    assert!(!stderr.contains("E0449"), "{stderr}");
-    assert!(
-        stderr.contains("sum"),
-        "an undefined `sum`, nothing else: {stderr}"
-    );
+    for (name, main, prints) in PROGRAMS {
+        runs_on_arm(name, main, prints);
+    }
 }

@@ -12,6 +12,7 @@ mod array;
 mod assertions;
 mod bits;
 mod c_abi;
+mod c_abi_arm;
 mod c_arrays;
 mod c_calls;
 mod callbacks;
@@ -83,7 +84,7 @@ mod unwrap;
 mod upcast;
 mod value;
 
-pub use self::targets::{Target, by_value_errors};
+pub use self::targets::Target;
 
 use std::path::Path;
 
@@ -208,8 +209,23 @@ pub fn emit_ir_modules(
     checked: &Checked,
     sources: &[ModuleSource],
 ) -> Result<String, CodegenError> {
+    emit_ir_for(units, checked, sources, Target::default())
+}
+
+/// [`emit_ir_modules`] for `target` (v17, milestone 134): extern structs
+/// cross to C by that target's rules.
+///
+/// # Errors
+///
+/// As [`emit_ir`].
+pub fn emit_ir_for(
+    units: &[Unit],
+    checked: &Checked,
+    sources: &[ModuleSource],
+    target: Target,
+) -> Result<String, CodegenError> {
     let context = Context::create();
-    let module = lower::lower(&context, units, checked, sources)?;
+    let module = lower::lower(&context, units, checked, (sources, target))?;
     Ok(module.print_to_string().to_string())
 }
 
@@ -261,7 +277,7 @@ pub fn emit_object_modules(
     path: &Path,
 ) -> Result<(), CodegenError> {
     let context = Context::create();
-    let module = lower::lower(&context, units, checked, sources)?;
+    let module = lower::lower(&context, units, checked, (sources, target))?;
     let machine = target_machine(opt, cpu, target)?;
     module.set_triple(&machine.get_triple());
     module.set_data_layout(&machine.get_target_data().get_data_layout());
@@ -341,6 +357,27 @@ pub(crate) mod test_util {
             text: src,
         };
         emit_ir(&program, &checked, &source).unwrap_or_else(|e| panic!("{src:?}: {e}"))
+    }
+
+    /// The IR for `src` lowered for `target` (v17, milestone 134).
+    pub fn ir_for(src: &str, target: super::Target) -> String {
+        let (tokens, _) = lexer::lex(src).expect("test source lexes");
+        let (program, _) = parser::parse(&tokens).expect("test source parses");
+        let (checked, _) = check::check(&program).unwrap_or_else(|e| panic!("{src:?}: {e:?}"));
+        let unit = check::Unit {
+            path: &[],
+            program: &program,
+            imports: &[],
+            package: None,
+            origin: None,
+        };
+        let source = super::ModuleSource {
+            name: "test.la",
+            base: 0,
+            text: src,
+        };
+        super::emit_ir_for(&[unit], &checked, &[source], target)
+            .unwrap_or_else(|e| panic!("{src:?}: {e}"))
     }
 
     /// The IR of `src` built for `lughac test` (milestone 84).

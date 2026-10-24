@@ -129,7 +129,7 @@ lughac build app.la --target aarch64-unknown-linux-gnu
 qemu-aarch64 -L /usr/aarch64-linux-gnu ./app      # or copy ./app to an ARM machine
 ```
 
-On ARM an extern struct can't yet cross to C by value (E0449); pass it by `ptr`. A `[link]` table using `pkg-config` needs `$PKG_CONFIG` pointed at the ARM libraries' files.
+Extern structs cross to C by value on ARM as on x86-64 (each by its own C rules). A `[link]` table using `pkg-config` needs `$PKG_CONFIG` pointed at the ARM libraries' files.
 
 ## Build and install
 

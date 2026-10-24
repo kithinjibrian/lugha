@@ -22,6 +22,8 @@ pub(super) const POSITIONED: &str = "builder is positioned in a block";
 
 /// Lowering state for one module.
 pub(super) struct Lowerer<'ctx> {
+    /// The platform: how extern structs cross to C depends on it (v17, milestone 134).
+    pub(super) target: super::Target,
     /// `out` arguments of the extern call being lowered (v17, milestone 102).
     pub(super) outs: Vec<super::out_params::OutSlot<'ctx>>,
     pub(super) context: &'ctx Context,
@@ -149,14 +151,15 @@ impl OwnedSource {
     }
 }
 
-/// Lowers a checked program of modules into one verified LLVM module.
+/// Lowers a checked program of modules into one verified LLVM module for `target`.
 pub(super) fn lower<'ctx>(
     context: &'ctx Context,
     units: &[Unit],
     checked: &Checked,
-    sources: &[ModuleSource],
+    (sources, target): (&[ModuleSource], super::Target),
 ) -> Result<Module<'ctx>, CodegenError> {
     let mut lowerer = Lowerer {
+        target,
         context,
         module: context.create_module("lugha"),
         builder: context.create_builder(),
