@@ -9160,3 +9160,6 @@ Branch: prp-161-init_test_folder
 
 ### STILL OPEN AT CLOSE
 - The PR awaits the user's merge; tag `m129` after it.
+
+## SESSION 310 — 2026-10-24 — Portability roadmap and portable x86-64 binaries: discovery — open
+Branch: prp-162-portable_cpu
