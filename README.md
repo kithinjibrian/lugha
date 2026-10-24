@@ -121,6 +121,16 @@ On Ubuntu 26.04:
 sudo apt install llvm-21-dev build-essential libssl-dev   # libssl-dev only for programs using TLS (std.tls, std.http)
 ```
 
+To build for Linux on ARM64 (v17), install the cross compiler, and qemu to run the result here:
+
+```sh
+sudo apt install gcc-aarch64-linux-gnu qemu-user
+lughac build app.la --target aarch64-unknown-linux-gnu
+qemu-aarch64 -L /usr/aarch64-linux-gnu ./app      # or copy ./app to an ARM machine
+```
+
+On ARM an extern struct can't yet cross to C by value (E0449); pass it by `ptr`. A `[link]` table using `pkg-config` needs `$PKG_CONFIG` pointed at the ARM libraries' files.
+
 ## Build and install
 
 ```sh

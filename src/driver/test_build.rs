@@ -12,7 +12,7 @@ use super::pipeline::{self, Failure};
 use super::render::Report;
 use super::source::Source;
 use super::{test_json, update};
-use crate::codegen::{Cpu, OptLevel};
+use crate::codegen::{Cpu, OptLevel, Target};
 use crate::modules::{self, fetch::Mode};
 
 /// A test of a built executable: its key (what `LUGHA_TEST` names), and
@@ -88,7 +88,7 @@ pub(super) fn build_group(
         .and_then(|c| c.tests.clone())
         .unwrap_or_default();
     if !keys.is_empty()
-        && let Err(failure) = pipeline::build(&front, (OptLevel::O0, cpu), exe)
+        && let Err(failure) = pipeline::build(&front, (OptLevel::O0, cpu, Target::default()), exe)
     {
         result.failures.push(counted(failure, members.len()));
         return result;
@@ -165,7 +165,7 @@ fn build(file: &Path, exe: &Path, cpu: Cpu) -> Result<Vec<Listed>, Failure> {
         .and_then(|c| c.tests.clone())
         .unwrap_or_default();
     if !tests.is_empty() {
-        pipeline::build(&front, (OptLevel::O0, cpu), exe)?;
+        pipeline::build(&front, (OptLevel::O0, cpu, Target::default()), exe)?;
     }
     // Positions from the main file's own text (offset 0 in the source map).
     let text = &front.source.main().text;

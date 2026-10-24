@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- Linux on ARM64 (milestone 133, PRP-165): `lughac build --target aarch64-unknown-linux-gnu` writes an ARM64 executable, green threads, actors and the collector included (an AArch64 stack switch in the runtime), compiled with `aarch64-linux-gnu-gcc` unless `$LUGHA_CC` is set; an extern struct by value to or from C is E0449 there until ARM's struct rules land; `--cpu` with it is exit 2
 - `$LUGHA_CC` chooses the C compiler (milestone 132, PRP-164): `LUGHA_CC=clang`, `LUGHA_CC="zig cc"`; used for the runtime, the collector, `[link]` C files and the link, split on spaces and never run through a shell; cached objects are kept per compiler; a missing one is exit 2 naming it
 - The garbage collector is built in (milestone 131, PRP-163): lughac carries bdwgc 8.2.12's source (`third_party/bdwgc/`), compiles it once into the C object cache and links it into every program statically. Programs no longer need `libgc.so`, and lughac no longer needs `libgc-dev`
 - `--cpu` on `build`, `run` and `test` (milestone 130, PRP-162): `x86-64` (the default), `x86-64-v2`, `x86-64-v3`, `x86-64-v4` or `native`; anything else is exit 2

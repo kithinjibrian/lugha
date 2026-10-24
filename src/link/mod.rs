@@ -184,11 +184,13 @@ pub const RUNTIME_SOURCE: &str = concat!(
 /// can't be started or the runtime can't be written to the temp dir,
 /// [`LinkError::Failed`] with `cc`'s stderr if it fails.
 pub fn link(objects: &[&Path], output: &Path) -> Result<(), LinkError> {
-    link_with(objects, &Plan::default(), Path::new(""), output)
+    let cc = compiler::Compiler::from_env()?;
+    link_with(objects, &Plan::default(), (Path::new(""), cc), output)
 }
 
 /// Links `objects`, the C files of `plan` compiled into `temp`, and the
-/// runtime into `output`, with `plan`'s folders and libraries (v16).
+/// runtime into `output` with the compiler `cc` (v17, milestone 133: the
+/// target's), with `plan`'s folders and libraries (v16).
 ///
 /// # Errors
 ///
@@ -198,11 +200,11 @@ pub fn link(objects: &[&Path], output: &Path) -> Result<(), LinkError> {
 pub fn link_with(
     objects: &[&Path],
     plan: &Plan,
-    temp: &Path,
+    (temp, cc): (&Path, compiler::Compiler),
     output: &Path,
 ) -> Result<(), LinkError> {
     // Compiled C objects are kept between builds (v17, milestone 127).
-    let cache = object_cache::Cache::open(compiler::Compiler::from_env()?);
+    let cache = object_cache::Cache::open(cc);
     let shims = c_files::compile(&plan.c_files, temp, &cache)?;
     let variant = (plan.tls.is_some(), plan.crypto.is_some());
     let gc = gc::compile(&cache)?;
@@ -384,7 +386,8 @@ mod tests {
     fn fragments_rely_on_the_core_and_stay_small() {
         for (i, (name, src)) in RUNTIME_PARTS.iter().enumerate() {
             assert!(!src.trim().is_empty(), "{name} is empty");
-            assert!(src.lines().count() <= 300, "{name} is over 300 lines");
+            // The FILE SIZE RULE's 500 (the user, session 317; 300 before).
+            assert!(src.lines().count() <= 500, "{name} is over 500 lines");
             let includes = src.lines().any(|l| l.starts_with("#include"));
             assert_eq!(includes, i == 0, "{name}: only the core has #include lines");
         }

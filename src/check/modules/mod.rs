@@ -122,6 +122,7 @@ fn check_with(
             captures: checker.captures,
             uses_tasks: checker.uses_tasks,
             c_params: checker.c_params,
+            c_by_value: checker.c_by_value,
             variant_values: checker.variant_values,
             consts: checker
                 .const_order

@@ -79,6 +79,7 @@ LughaTask *lugha_rt_task_spawn(void (*entry)(void *, void *, void *), void *code
     f->env = env;
     f->task = task;
     f->wake_at = -1;
+#if defined(__x86_64__)
     /* The first switch pops these: MXCSR and x87 defaults, r15…rbp, then
      * returns into lugha_rt_task_boot with %rsp 16-aligned for its call. */
     uint64_t *frame = (uint64_t *)(f->top - 16) - 8;
@@ -90,6 +91,15 @@ LughaTask *lugha_rt_task_spawn(void (*entry)(void *, void *, void *), void *code
     frame[5] = 0;                    /* rbx */
     frame[6] = 0;                    /* rbp */
     frame[7] = (uint64_t)(uintptr_t)lugha_rt_task_boot;
+#else
+    /* AArch64 (milestone 133): the switch's 176-byte frame, all zero (FPCR 0
+     * is round-to-nearest, no traps) but x19 = the fiber and x30 = boot, the
+     * address its `ret` takes; `sp` ends at `top`, 16-byte aligned. */
+    uint64_t *frame = (uint64_t *)(f->top - 176);
+    memset(frame, 0, 176);
+    frame[0] = (uint64_t)(uintptr_t)f;                   /* x19 */
+    frame[11] = (uint64_t)(uintptr_t)lugha_rt_task_boot; /* x30 */
+#endif
     f->sp = frame;
     f->next_live = live;
     live->prev_live = f;

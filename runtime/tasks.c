@@ -87,9 +87,10 @@ static GC_push_other_roots_proc next_push;
 void lugha_rt_task_swap(void **save, void *load);
 void lugha_rt_task_boot(void);
 
+#if defined(__x86_64__)
 /* Saves the callee-saved registers, MXCSR and the x87 control word on the
  * old stack, switches stacks, and restores them from the new one (x86-64
- * System V, lughac's one platform). */
+ * System V). */
 __asm__(".text\n"
         ".globl lugha_rt_task_swap\n"
         ".type lugha_rt_task_swap, @function\n"
@@ -124,6 +125,57 @@ __asm__(".text\n"
         "    call lugha_rt_task_fiber_main\n"
         "    ud2\n"
         ".size lugha_rt_task_boot, .-lugha_rt_task_boot\n");
+#elif defined(__aarch64__)
+/* The same for AArch64 (v17, milestone 133): AAPCS64's callee-saved
+ * registers — x19–x28, the frame pointer x29, the link register x30 and
+ * d8–d15 (the low halves of v8–v15) — and FPCR, the rounding mode, in a
+ * 176-byte frame, so `sp` stays 16-byte aligned as AAPCS64 requires. */
+__asm__(".text\n"
+        ".globl lugha_rt_task_swap\n"
+        ".type lugha_rt_task_swap, %function\n"
+        "lugha_rt_task_swap:\n"
+        "    sub sp, sp, #176\n"
+        "    stp x19, x20, [sp, #0]\n"
+        "    stp x21, x22, [sp, #16]\n"
+        "    stp x23, x24, [sp, #32]\n"
+        "    stp x25, x26, [sp, #48]\n"
+        "    stp x27, x28, [sp, #64]\n"
+        "    stp x29, x30, [sp, #80]\n"
+        "    stp d8, d9, [sp, #96]\n"
+        "    stp d10, d11, [sp, #112]\n"
+        "    stp d12, d13, [sp, #128]\n"
+        "    stp d14, d15, [sp, #144]\n"
+        "    mrs x9, fpcr\n"
+        "    str x9, [sp, #160]\n"
+        "    mov x9, sp\n"
+        "    str x9, [x0]\n"
+        "    mov sp, x1\n"
+        "    ldr x9, [sp, #160]\n"
+        "    msr fpcr, x9\n"
+        "    ldp x19, x20, [sp, #0]\n"
+        "    ldp x21, x22, [sp, #16]\n"
+        "    ldp x23, x24, [sp, #32]\n"
+        "    ldp x25, x26, [sp, #48]\n"
+        "    ldp x27, x28, [sp, #64]\n"
+        "    ldp x29, x30, [sp, #80]\n"
+        "    ldp d8, d9, [sp, #96]\n"
+        "    ldp d10, d11, [sp, #112]\n"
+        "    ldp d12, d13, [sp, #128]\n"
+        "    ldp d14, d15, [sp, #144]\n"
+        "    add sp, sp, #176\n"
+        "    ret\n"
+        ".size lugha_rt_task_swap, .-lugha_rt_task_swap\n"
+        /* A new fiber's first `ret` lands here, its fiber in x19. */
+        ".globl lugha_rt_task_boot\n"
+        ".type lugha_rt_task_boot, %function\n"
+        "lugha_rt_task_boot:\n"
+        "    mov x0, x19\n"
+        "    bl lugha_rt_task_fiber_main\n"
+        "    brk #0\n"
+        ".size lugha_rt_task_boot, .-lugha_rt_task_boot\n");
+#else
+#error "green threads need a stack switch for this architecture (x86-64 and AArch64 have one)"
+#endif
 
 static int64_t now_ns(void) {
     struct timespec t;

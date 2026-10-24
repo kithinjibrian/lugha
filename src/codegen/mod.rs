@@ -75,6 +75,7 @@ mod sret;
 mod stmt;
 mod structs;
 mod swap;
+mod targets;
 mod tasks;
 mod test_main;
 mod tuples;
@@ -82,13 +83,16 @@ mod unwrap;
 mod upcast;
 mod value;
 
+pub use self::targets::{Target, by_value_errors};
+
 use std::path::Path;
 
 use inkwell::OptimizationLevel;
 use inkwell::context::Context;
 use inkwell::passes::PassBuilderOptions;
 use inkwell::targets::{
-    CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine,
+    CodeModel, FileType, InitializationConfig, RelocMode, Target as LlvmTarget, TargetMachine,
+    TargetTriple,
 };
 
 use crate::ast::Program;
@@ -218,8 +222,8 @@ fn single<'a>(source: &SourceInfo<'a>) -> ModuleSource<'a> {
     }
 }
 
-/// Lowers a checked `program`, optimises it at `opt` for `cpu`, and writes a
-/// native object file to `path`.
+/// Lowers a checked `program`, optimises it at `opt` for `cpu` on `target`,
+/// and writes a native object file to `path`.
 ///
 /// # Errors
 ///
@@ -230,7 +234,7 @@ pub fn emit_object(
     checked: &Checked,
     source: &SourceInfo,
     opt: OptLevel,
-    cpu: Cpu,
+    (cpu, target): (Cpu, Target),
     path: &Path,
 ) -> Result<(), CodegenError> {
     let units = [Unit {
@@ -240,7 +244,7 @@ pub fn emit_object(
         package: None,
         origin: None,
     }];
-    emit_object_modules(&units, checked, &[single(source)], opt, cpu, path)
+    emit_object_modules(&units, checked, &[single(source)], opt, (cpu, target), path)
 }
 
 /// [`emit_object`] for a program of several modules, the main file first.
@@ -253,12 +257,12 @@ pub fn emit_object_modules(
     checked: &Checked,
     sources: &[ModuleSource],
     opt: OptLevel,
-    cpu: Cpu,
+    (cpu, target): (Cpu, Target),
     path: &Path,
 ) -> Result<(), CodegenError> {
     let context = Context::create();
     let module = lower::lower(&context, units, checked, sources)?;
-    let machine = target_machine(opt, cpu)?;
+    let machine = target_machine(opt, cpu, target)?;
     module.set_triple(&machine.get_triple());
     module.set_data_layout(&machine.get_target_data().get_data_layout());
     let pipeline = match opt {
@@ -274,30 +278,36 @@ pub fn emit_object_modules(
         .map_err(emit_error)
 }
 
-/// A target machine for the host's triple at `cpu`'s level, producing
-/// position-independent code because Ubuntu's `cc` links PIE executables
-/// by default.
-fn target_machine(opt: OptLevel, cpu: Cpu) -> Result<TargetMachine, CodegenError> {
-    Target::initialize_native(&InitializationConfig::default()).map_err(CodegenError::Emit)?;
-    let triple = TargetMachine::get_default_triple();
-    let target = Target::from_triple(&triple).map_err(|e| CodegenError::Emit(e.to_string()))?;
+/// A target machine for `target` at `cpu`'s level (x86-64; ARM builds for
+/// its baseline, ARMv8-A), producing position-independent code because
+/// Ubuntu's `cc` links PIE executables by default.
+fn target_machine(opt: OptLevel, cpu: Cpu, target: Target) -> Result<TargetMachine, CodegenError> {
+    let config = InitializationConfig::default();
+    match target {
+        Target::X86_64Linux => LlvmTarget::initialize_x86(&config),
+        Target::Aarch64Linux => LlvmTarget::initialize_aarch64(&config),
+    }
+    let triple = TargetTriple::create(target.triple());
+    let llvm = LlvmTarget::from_triple(&triple).map_err(|e| CodegenError::Emit(e.to_string()))?;
     let level = match opt {
         OptLevel::O0 => OptimizationLevel::None,
         OptLevel::O2 => OptimizationLevel::Default,
     };
     // A level is a CPU name whose features LLVM knows; only `native` adds
     // the host's own, as every build did before milestone 130.
-    let (cpu, features) = match cpu {
-        Cpu::X86_64 => ("x86-64".to_string(), String::new()),
-        Cpu::V2 => ("x86-64-v2".to_string(), String::new()),
-        Cpu::V3 => ("x86-64-v3".to_string(), String::new()),
-        Cpu::V4 => ("x86-64-v4".to_string(), String::new()),
-        Cpu::Native => (
+    let (cpu, features) = match (target, cpu) {
+        // The driver refuses `--cpu` for ARM, so only the default reaches here.
+        (Target::Aarch64Linux, _) => ("generic".to_string(), String::new()),
+        (_, Cpu::X86_64) => ("x86-64".to_string(), String::new()),
+        (_, Cpu::V2) => ("x86-64-v2".to_string(), String::new()),
+        (_, Cpu::V3) => ("x86-64-v3".to_string(), String::new()),
+        (_, Cpu::V4) => ("x86-64-v4".to_string(), String::new()),
+        (_, Cpu::Native) => (
             TargetMachine::get_host_cpu_name().to_string(),
             TargetMachine::get_host_cpu_features().to_string(),
         ),
     };
-    target
+    let machine = llvm
         .create_target_machine(
             &triple,
             &cpu,
@@ -306,7 +316,14 @@ fn target_machine(opt: OptLevel, cpu: Cpu) -> Result<TargetMachine, CodegenError
             RelocMode::PIC,
             CodeModel::Default,
         )
-        .ok_or_else(|| CodegenError::Emit(format!("LLVM has no target machine for {triple}")))
+        .ok_or_else(|| CodegenError::Emit(format!("LLVM has no target machine for {triple}")))?;
+    // Codegen's scalar sizes (`split_leaves::byte_size`) assume 8-byte pointers.
+    assert_eq!(
+        machine.get_target_data().get_pointer_byte_size(None),
+        8,
+        "every target lughac knows is LP64"
+    );
+    Ok(machine)
 }
 
 #[cfg(test)]
@@ -348,7 +365,7 @@ pub(crate) mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use super::{Cpu, OptLevel, TargetMachine, target_machine};
+    use super::{Cpu, OptLevel, Target, TargetMachine, target_machine};
 
     #[test]
     fn each_level_is_its_llvm_cpu_with_no_extra_features() {
@@ -358,7 +375,8 @@ mod tests {
             (Cpu::V3, "x86-64-v3"),
             (Cpu::V4, "x86-64-v4"),
         ] {
-            let machine = target_machine(OptLevel::O2, cpu).expect("x86-64 is a target");
+            let machine =
+                target_machine(OptLevel::O2, cpu, Target::default()).expect("x86-64 is a target");
             assert_eq!(machine.get_cpu().to_string(), name);
             assert_eq!(machine.get_feature_string().to_string_lossy(), "");
         }
@@ -366,7 +384,8 @@ mod tests {
 
     #[test]
     fn native_is_the_hosts_cpu_and_features() {
-        let machine = target_machine(OptLevel::O0, Cpu::Native).expect("the host is a target");
+        let machine = target_machine(OptLevel::O0, Cpu::Native, Target::default())
+            .expect("the host is a target");
         assert_eq!(
             machine.get_cpu().to_string(),
             TargetMachine::get_host_cpu_name().to_string()
@@ -375,5 +394,19 @@ mod tests {
             machine.get_feature_string().to_string_lossy(),
             TargetMachine::get_host_cpu_features().to_string()
         );
+    }
+
+    #[test]
+    fn each_target_has_its_triple_and_arm_builds_for_generic_v17() {
+        assert_eq!(Target::default(), Target::X86_64Linux);
+        for target in [Target::X86_64Linux, Target::Aarch64Linux] {
+            let machine = target_machine(OptLevel::O2, Cpu::default(), target).expect("a target");
+            assert_eq!(
+                machine.get_triple().as_str().to_string_lossy(),
+                target.triple()
+            );
+        }
+        let arm = target_machine(OptLevel::O0, Cpu::default(), Target::Aarch64Linux).unwrap();
+        assert_eq!(arm.get_cpu().to_string(), "generic");
     }
 }

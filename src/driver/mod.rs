@@ -33,7 +33,7 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use self::pipeline::Failure;
 use self::render::Report;
 use self::source::Source;
-use crate::codegen::{Cpu, OptLevel};
+use crate::codegen::{Cpu, OptLevel, Target};
 use crate::diagnostic::Diagnostic;
 use crate::modules::fetch::Mode;
 
@@ -71,6 +71,20 @@ where
             return u8::try_from(error.exit_code()).unwrap_or(2);
         }
     };
+    // `--cpu` names x86-64 levels only (v17, milestone 133): a usage error, as clap's are.
+    if let Command::Build {
+        target: Some(TargetArg::Aarch64),
+        options,
+        ..
+    } = &cli.command
+        && options.cpu.is_some()
+    {
+        let message = "`--cpu` takes x86-64 levels; aarch64 builds for the baseline ARMv8-A";
+        let error = <Cli as clap::CommandFactory>::command()
+            .error(clap::error::ErrorKind::ArgumentConflict, message);
+        let _ = write!(stderr, "{}", error.render());
+        return 2;
+    }
     let format = cli.command.format();
     let mut out = Output {
         stdout,
@@ -82,21 +96,30 @@ where
             file,
             output,
             emit,
+            target,
             options,
-        } => build::build(
-            &mut out,
-            file,
-            output.as_deref(),
-            *emit,
-            ((options.opt, options.cpu.into()), options.mode()),
-        ),
+        } => {
+            let target = target.map_or(Target::default(), Into::into);
+            let code = (options.opt, options.cpu(), target);
+            build::build(
+                &mut out,
+                file,
+                output.as_deref(),
+                *emit,
+                (code, options.mode()),
+            )
+        }
         Command::Run {
             file,
             options,
             args,
         } => pipeline::front(file, options.mode()).and_then(|front| {
             out.diagnostics(&front.source, &front.warnings);
-            pipeline::run(&front, (options.opt, options.cpu.into()), args)
+            pipeline::run(
+                &front,
+                (options.opt, options.cpu(), Target::default()),
+                args,
+            )
         }),
         Command::Check { file, offline, .. } => pipeline::front_check(file, offline_mode(*offline))
             .map(|front| {
@@ -173,6 +196,9 @@ enum Command {
         /// Print one intermediate stage to stdout and stop
         #[arg(long, value_enum)]
         emit: Option<Emit>,
+        /// The platform to build for (v17) [default: x86_64-unknown-linux-gnu]
+        #[arg(long, value_enum)]
+        target: Option<TargetArg>,
         #[command(flatten)]
         options: Options,
     },
@@ -317,8 +343,8 @@ struct Options {
     #[arg(short = 'O', value_name = "LEVEL", default_value = "0", value_parser = opt_level)]
     opt: OptLevel,
     /// The x86-64 level the executable is built for; `native` runs only on CPUs like this one (v17)
-    #[arg(long, value_enum, default_value = "x86-64")]
-    cpu: CpuLevel,
+    #[arg(long, value_enum)]
+    cpu: Option<CpuLevel>,
     /// Run no `git`: every git package must be locked and cached (v14)
     #[arg(long)]
     offline: bool,
@@ -357,6 +383,31 @@ enum CpuLevel {
     #[value(name = "x86-64-v4")]
     V4,
     Native,
+}
+
+impl Options {
+    /// `--cpu`, or the baseline when it isn't given.
+    fn cpu(&self) -> Cpu {
+        self.cpu.map_or(Cpu::default(), Into::into)
+    }
+}
+
+/// `--target`'s values (v17, milestone 133).
+#[derive(Clone, Copy, ValueEnum)]
+enum TargetArg {
+    #[value(name = "x86_64-unknown-linux-gnu")]
+    X86_64,
+    #[value(name = "aarch64-unknown-linux-gnu")]
+    Aarch64,
+}
+
+impl From<TargetArg> for Target {
+    fn from(target: TargetArg) -> Target {
+        match target {
+            TargetArg::X86_64 => Target::X86_64Linux,
+            TargetArg::Aarch64 => Target::Aarch64Linux,
+        }
+    }
 }
 
 impl From<CpuLevel> for Cpu {

@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use lugha::codegen::{self, Cpu, OptLevel};
+use lugha::codegen::{self, Cpu, OptLevel, Target};
 use lugha::link::{self, LinkError};
 use lugha::{check, lexer, parser};
 
@@ -47,7 +47,7 @@ fn build_and_run(src: &str, opt: OptLevel) -> ExitStatus {
             text: src,
         },
         opt,
-        Cpu::default(),
+        (Cpu::default(), Target::default()),
         &object,
     )
     .unwrap_or_else(|e| panic!("{src}: {e}"));
@@ -67,8 +67,15 @@ fn object_and_exit(src: &str, cpu: Cpu) -> (Vec<u8>, Option<i32>) {
         name: "test.la",
         text: src,
     };
-    codegen::emit_object(&program, &checked, &source, OptLevel::O2, cpu, &object)
-        .unwrap_or_else(|e| panic!("{src}: {e}"));
+    codegen::emit_object(
+        &program,
+        &checked,
+        &source,
+        OptLevel::O2,
+        (cpu, Target::default()),
+        &object,
+    )
+    .unwrap_or_else(|e| panic!("{src}: {e}"));
     link::link(&[&object], &exe).unwrap_or_else(|e| panic!("{src}: {e}"));
     let status = Command::new(&exe).status().expect("built program runs");
     (
