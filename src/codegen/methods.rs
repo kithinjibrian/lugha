@@ -310,10 +310,10 @@ mod tests {
             "{V}fun main() {{ let mut v = V.new(1.0, 2.0); v.scale(2.0); }}"
         ));
         let main = &ir[ir.find("define void @lugha_fn_main").unwrap()..];
-        assert!(
-            main.contains("call void @lugha_fn_V.scale(ptr %v, double"),
-            "{ir}"
-        );
+        // `v`'s own slot, under whatever name slot sharing left it (PRP-168),
+        // never a copy made for the call.
+        assert!(main.contains("call void @lugha_fn_V.scale(ptr %"), "{ir}");
+        assert!(!main.contains("%arg"), "{ir}");
     }
 
     #[test]

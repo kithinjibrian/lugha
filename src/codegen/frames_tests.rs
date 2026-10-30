@@ -90,7 +90,8 @@ end:
 }
 
 #[test]
-fn slots_used_in_one_block_stay_apart() {
+fn slots_used_one_after_another_in_a_block_are_shared() {
+    // `a` is finished at the first call, before `b` is first used (PRP-168).
     let ir = format!(
         "{HEAD}define void @f() {{
 entry:
@@ -101,7 +102,118 @@ entry:
   ret void
 }}"
     );
+    assert_eq!(slots(&run(&ir), "%Big"), 1);
+}
+
+#[test]
+fn a_copy_from_one_slot_into_another_keeps_them_apart() {
+    let ir = format!(
+        "{HEAD}declare void @llvm.memcpy.p0.p0.i64(ptr, ptr, i64, i1)
+define void @f() {{
+entry:
+  %a = alloca %Big
+  %b = alloca %Big
+  call void @use(ptr %a)
+  call void @llvm.memcpy.p0.p0.i64(ptr %b, ptr %a, i64 256, i1 false)
+  call void @use(ptr %b)
+  ret void
+}}"
+    );
     assert_eq!(slots(&run(&ir), "%Big"), 2);
+}
+
+#[test]
+fn interleaved_uses_in_a_block_keep_slots_apart() {
+    let ir = format!(
+        "{HEAD}define void @f() {{
+entry:
+  %a = alloca %Big
+  %b = alloca %Big
+  store %Big zeroinitializer, ptr %a
+  call void @use(ptr %b)
+  call void @use(ptr %a)
+  ret void
+}}"
+    );
+    assert_eq!(slots(&run(&ir), "%Big"), 2);
+}
+
+#[test]
+fn a_slot_live_into_a_block_conflicts_with_one_used_early_in_it() {
+    // `a` is filled in `entry` and read late in `next`, where `b` comes and
+    // goes first: `a` holds its value from `next`'s start.
+    let ir = format!(
+        "{HEAD}define void @f() {{
+entry:
+  %a = alloca %Big
+  %b = alloca %Big
+  store %Big zeroinitializer, ptr %a
+  br label %next
+next:
+  call void @use(ptr %b)
+  call void @use(ptr %a)
+  ret void
+}}"
+    );
+    assert_eq!(slots(&run(&ir), "%Big"), 2);
+}
+
+#[test]
+fn a_slot_live_out_of_a_block_conflicts_with_one_used_late_in_it() {
+    // `a` is filled early in `entry` and read in `next`: `b`, used after
+    // `a`'s fill but in the same block, would overwrite it.
+    let ir = format!(
+        "{HEAD}define void @f() {{
+entry:
+  %a = alloca %Big
+  %b = alloca %Big
+  store %Big zeroinitializer, ptr %a
+  call void @use(ptr %b)
+  br label %next
+next:
+  call void @use(ptr %a)
+  ret void
+}}"
+    );
+    assert_eq!(slots(&run(&ir), "%Big"), 2);
+}
+
+#[test]
+fn a_load_through_an_element_address_extends_a_slots_range() {
+    // The GEP comes before `b`'s use, the load through it after.
+    let ir = format!(
+        "{HEAD}define i64 @f() {{
+entry:
+  %a = alloca %Big
+  %b = alloca %Big
+  %at = getelementptr %Big, ptr %a, i32 0, i32 0, i32 3
+  store i64 7, ptr %at
+  call void @use(ptr %b)
+  %v = load i64, ptr %at
+  ret i64 %v
+}}"
+    );
+    assert_eq!(slots(&run(&ir), "%Big"), 2);
+}
+
+#[test]
+fn slots_finished_and_started_around_a_branch_are_shared() {
+    // `a` ends early in `entry`; `b` starts late in `entry` and is read in
+    // `next`.
+    let ir = format!(
+        "{HEAD}define void @f() {{
+entry:
+  %a = alloca %Big
+  %b = alloca %Big
+  call void @use(ptr %a)
+  store %Big zeroinitializer, ptr %b
+  br label %next
+next:
+  call void @use(ptr %b)
+  ret void
+}}"
+    );
+    assert_eq!(slots(&run(&ir), "%Big"), 1);
 }
 
 #[test]

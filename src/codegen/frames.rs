@@ -1,7 +1,8 @@
 //! Small stack frames (v17, milestone 135, PRP-167). Every function's
-//! struct and array slots are shared: two slots of one type whose live
-//! blocks never meet become one, so a frame costs its largest match arm or
-//! branch, not the sum of them all. At `-O0` (and for `--emit=ir`) that
+//! struct and array slots are shared: two slots of one type that never hold
+//! a needed value at the same point — per block, down to the instruction
+//! (milestone 136, PRP-168) — become one, so a frame costs its largest
+//! match arm or branch, not the sum of them all. At `-O0` (and for `--emit=ir`) that
 //! happens once a module is lowered — results through pointers (`sret.rs`),
 //! structs split (`split.rs`); at `-O2` after LLVM's optimiser, which
 //! works much harder on merged slots and removes many slots itself. And
@@ -67,8 +68,37 @@ impl Blocks {
         self.0.iter_mut().zip(&other.0).for_each(|(a, b)| *a &= b);
     }
 
-    fn union(&mut self, other: &Blocks) {
-        self.0.iter_mut().zip(&other.0).for_each(|(a, b)| *a |= b);
+    fn contains(&self, i: usize) -> bool {
+        self.0[i / 64] & (1u64 << (i % 64)) != 0
+    }
+
+    fn members(&self) -> impl Iterator<Item = usize> + '_ {
+        (0..self.0.len() * 64).filter(|i| self.contains(*i))
+    }
+}
+
+/// Where a slot may hold a value someone will still read: per block, the
+/// first and last instruction positions, both included (PRP-168).
+type Ranges = Vec<(usize, u32, u32)>;
+
+/// The ranges a shared slot covers so far, per block.
+#[derive(Default)]
+struct Taken(HashMap<usize, Vec<(u32, u32)>>);
+
+impl Taken {
+    /// True if any of `ranges` overlaps a range taken in its block.
+    fn meets(&self, ranges: &Ranges) -> bool {
+        ranges.iter().any(|(b, start, end)| {
+            self.0
+                .get(b)
+                .is_some_and(|taken| taken.iter().any(|(s, e)| s <= end && start <= e))
+        })
+    }
+
+    fn add(&mut self, ranges: Ranges) {
+        for (b, start, end) in ranges {
+            self.0.entry(b).or_default().push((start, end));
+        }
     }
 }
 
@@ -77,6 +107,9 @@ struct Graph<'ctx> {
     index: HashMap<BasicBlock<'ctx>, usize>,
     succs: Vec<Vec<usize>>,
     preds: Vec<Vec<usize>>,
+    /// Each instruction's position in its block, and each block's length.
+    position: HashMap<InstructionValue<'ctx>, u32>,
+    len: Vec<u32>,
 }
 
 impl<'ctx> Graph<'ctx> {
@@ -86,17 +119,27 @@ impl<'ctx> Graph<'ctx> {
             blocks.iter().enumerate().map(|(i, b)| (*b, i)).collect();
         let mut succs = vec![Vec::new(); blocks.len()];
         let mut preds = vec![Vec::new(); blocks.len()];
+        let mut position = HashMap::new();
+        let mut len = Vec::with_capacity(blocks.len());
         for (i, block) in blocks.iter().enumerate() {
             for s in successors(*block) {
                 let j = index[&s];
                 succs[i].push(j);
                 preds[j].push(i);
             }
+            let mut n = 0;
+            for (at, inst) in block.get_instructions().enumerate() {
+                position.insert(inst, at as u32);
+                n = at as u32;
+            }
+            len.push(n);
         }
         Graph {
             index,
             succs,
             preds,
+            position,
+            len,
         }
     }
 
@@ -127,6 +170,40 @@ impl<'ctx> Graph<'ctx> {
         }
         live
     }
+
+    /// [`Graph::live`] down to the instruction, for a slot used at `uses`
+    /// (block, position). A block between uses holds the value throughout.
+    /// In a block using the slot, it is held from the block's start if the
+    /// block is reached from a use (a value may come in), else from its
+    /// first use there; and to the block's end if it reaches a use (the
+    /// value may be read later), else to its last use there.
+    fn ranges(&self, uses: &[(usize, u32)]) -> Ranges {
+        let blocks: Vec<usize> = uses.iter().map(|(b, _)| *b).collect();
+        let reached = self.reach(&blocks, &self.succs);
+        let reaching = self.reach(&blocks, &self.preds);
+        let mut between = reached.clone();
+        between.intersect(&reaching);
+        let mut out: Ranges = between
+            .members()
+            .filter(|b| !blocks.contains(b))
+            .map(|b| (b, 0, self.len[b]))
+            .collect();
+        let mut used: Vec<usize> = blocks.clone();
+        used.sort_unstable();
+        used.dedup();
+        for b in used {
+            let at = uses.iter().filter(|(ub, _)| *ub == b).map(|(_, p)| *p);
+            let (first, last) = at.fold((u32::MAX, 0), |(f, l), p| (f.min(p), l.max(p)));
+            let start = if reached.contains(b) { 0 } else { first };
+            let end = if reaching.contains(b) {
+                self.len[b]
+            } else {
+                last
+            };
+            out.push((b, start, end));
+        }
+        out
+    }
 }
 
 /// True if `call` is `llvm.lifetime.start` or `llvm.lifetime.end`.
@@ -148,8 +225,8 @@ fn share_slots(function: FunctionValue<'_>) {
     };
     let graph = Graph::new(function);
     phi::merge_phi_groups(function, &graph);
-    // Per type: the shared slots so far, each with its live blocks.
-    let mut shared: Vec<(BasicTypeEnum, Vec<(InstructionValue, Blocks)>)> = Vec::new();
+    // Per type: the shared slots so far, each with the ranges it covers.
+    let mut shared: Vec<(BasicTypeEnum, Vec<(InstructionValue, Taken)>)> = Vec::new();
     let slots: Vec<InstructionValue> = entry
         .get_instructions()
         .filter(|i| i.get_opcode() == InstructionOpcode::Alloca)
@@ -164,10 +241,10 @@ fn share_slots(function: FunctionValue<'_>) {
         ) {
             continue;
         }
-        let Some(uses) = use_blocks(slot, &graph, None) else {
+        let Some(uses) = uses_of(slot, &graph, None) else {
             continue;
         };
-        let live = graph.live(&uses);
+        let live = graph.ranges(&uses);
         let group = match shared.iter_mut().find(|(t, _)| *t == ty) {
             Some((_, group)) => group,
             None => {
@@ -184,22 +261,26 @@ fn share_slots(function: FunctionValue<'_>) {
                 }
                 slot.replace_all_uses_with(into);
                 slot.erase_from_basic_block();
-                taken.union(&live);
+                taken.add(live);
             }
-            None => group.push((slot, live)),
+            None => {
+                let mut taken = Taken::default();
+                taken.add(live);
+                group.push((slot, taken));
+            }
         }
     }
 }
 
-/// The blocks using `slot`'s address, through element addresses, apart from
-/// the instruction `skip`; `None` if the address is stored or flows anywhere
-/// else.
-fn use_blocks<'ctx>(
+/// The places (block, position) using `slot`'s address, through element
+/// addresses, apart from the instruction `skip`; `None` if the address is
+/// stored or flows anywhere else.
+fn uses_of<'ctx>(
     slot: InstructionValue<'ctx>,
     graph: &Graph<'ctx>,
     skip: Option<InstructionValue<'ctx>>,
-) -> Option<Vec<usize>> {
-    let mut blocks: Vec<usize> = Vec::new();
+) -> Option<Vec<(usize, u32)>> {
+    let mut places: Vec<(usize, u32)> = Vec::new();
     let mut pending = vec![slot];
     while let Some(address) = pending.pop() {
         let mut next = address.get_first_use();
@@ -231,10 +312,28 @@ fn use_blocks<'ctx>(
                 InstructionOpcode::GetElementPtr => pending.push(user),
                 _ => return None,
             }
-            blocks.push(graph.index[&user.get_parent()?]);
+            let at = *graph
+                .position
+                .get(&user)
+                .expect("every instruction is numbered");
+            places.push((graph.index[&user.get_parent()?], at));
         }
     }
-    Some(blocks)
+    Some(places)
+}
+
+/// The blocks using `slot`'s address, as [`uses_of`] finds them.
+fn use_blocks<'ctx>(
+    slot: InstructionValue<'ctx>,
+    graph: &Graph<'ctx>,
+    skip: Option<InstructionValue<'ctx>>,
+) -> Option<Vec<usize>> {
+    Some(
+        uses_of(slot, graph, skip)?
+            .into_iter()
+            .map(|(b, _)| b)
+            .collect(),
+    )
 }
 
 #[path = "frames_phi.rs"]
