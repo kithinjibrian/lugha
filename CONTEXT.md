@@ -9317,3 +9317,6 @@ Branch: prp-167-small_frames
 
 ### STILL OPEN AT CLOSE
 - The PR awaits the user's merge; tag `m135` after it. Rapidkoi and kivuli need a reinstalled `lughac`; Rapidkoi's Notes check is by hand (needs a display).
+
+## SESSION 322 — 2026-10-30 — Small stack frames: benchmark — open
+Branch: bench-m135
