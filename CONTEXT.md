@@ -9329,3 +9329,6 @@ Branch: bench-m135
 
 ### STILL OPEN AT CLOSE
 - The user's go-ahead for the -O2 fix (share after `run_passes` at -O2; unchanged at -O0).
+
+## SESSION 323 — 2026-10-30 — Small stack frames: share after -O2 — open
+Branch: bench-m135
