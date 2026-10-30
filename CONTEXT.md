@@ -9371,3 +9371,6 @@ Branch: prp-168-big_values
 
 ### STILL OPEN AT CLOSE
 - PRP-168 awaits approval.
+
+## SESSION 326 — 2026-10-30 — Finer liveness: build (m136) — open
+Branch: prp-168-big_values
