@@ -149,3 +149,39 @@ Approved ("yes make the fix") and built:
 | kivuli `backgrounds.la` -O0 | 4.04 s | 4.08 s | **3.73 s** |
 
   Frames with the fix: `resolve` 6.5 KB (-O0) / 6.8 KB (-O2), `resolve_children` 10.4 / 7.6 KB, `walk` 9.2 / 3.0 KB.
+
+## PHI GROUPS AND CORRECTED FRAME SIZES (session 324)
+- **Measurement error:** from session 321 on, frame sizes were read by adding the prologue's `sub $N,%rsp`s. For a frame of many pages, LLVM's stack probe is a loop (`sub $L,%r11`, then `sub $0x1000,%rsp` until `%rsp` reaches `%r11`), and that sum counted one 4 KB step instead of `L`. So **every large frame above was undercounted**, `resolve` most of all. The corrected script adds the loop's bound.
+- **`phi` groups (the user chose "merge phi groups"):**
+  - After -O2, LLVM merges the arms' tails into one block that picks among the arms' `copy` slots through a `phi`, and `use_blocks` saw those slots as escaping.
+  - `frames_phi.rs` merges the slots one `phi` picks from when each slot's own live blocks (its uses, plus the block the `phi` takes it from) meet no other's, nor the blocks from the `phi` to its last use. The `phi` is then replaced by the merged slot.
+  - Unit tests: merged; kept apart when a slot is used after the `phi`; kept apart when one slot is written on the path to another's pick; other pointers and other types left alone.
+  - `frames.rs` was split per the user: tests in `frames_tests.rs`, the `phi` rule in `frames_phi.rs`.
+- **Corrected frames** (kivuli `examples/backgrounds.la`, and `match_heavy`):
+
+| function | before m135 | m135 | fix |
+|---|---|---|---|
+| `resolve<()>` -O0 | 313.4 KB | 66.5 KB | 66.5 KB |
+| `resolve<()>` -O2 | 124.9 KB | 40.8 KB | **30.5 KB** |
+| `resolve_children<()>` -O0 / -O2 | 10.4 / 7.6 KB | 10.4 / 7.6 KB | 10.4 / 7.6 KB |
+| `walk` -O0 / -O2 | 87.1 / 25.4 KB | 9.2 / 4.0 KB | 9.2 / 3.0 KB |
+| `build` -O0 / -O2 | 67.6 / 12.2 KB | 10.0 / 1.8 KB | 10.0 / **1.0** KB |
+
+  `deep_match` at 1500 levels now runs at -O2 (`tests/codegen.rs`).
+- **Not yet enough for Rapidkoi at -O0.** A screen level costs two `resolve` frames and one `resolve_children`, about 143 KB at -O0, so 8 MB holds about 57 levels, not 64. -O2, at about 69 KB a level, holds about 118.
+  - After sharing, `resolve`'s IR keeps only about 35 KB of slots: eleven `View`s and two `Option<View>`s.
+  - The rest of the 66.5 KB is LLVM's -O0 spill area for whole 2.6 KB struct values left in the IR (a `phi` or `select` of a `View`, which `split_big.rs` leaves whole). Shrinking that, or boxing large payloads (PRP-168), is the next step, and needs its own PRP.
+- **Benchmark** (old, m135 and the fix alternating; load average 6–10, so absolute times are higher than in the tables above):
+
+| | before m135 | m135 | fix |
+|---|---|---|---|
+| build `match_heavy` -O2 | 0.273 s | 1.535 s | **0.269 s** |
+| build `match_heavy` -O0 | 0.157 s | 0.151 s | 0.146 s |
+| build `toml_big` -O2 / -O0 | 2.94 / 0.27 s | 2.82 / 0.26 s | 2.83 / 0.28 s |
+| build kivuli -O0 | 7.04 s | 5.96 s | 6.52 s |
+| build kivuli -O2 | 58.0 s | 86.1 s | **56.6 s** |
+| run `match_heavy` -O0 / -O2 | 0.220 / 0.095 s | 0.159 / 0.088 s | 0.156 / **0.076** s |
+| run `structs` -O0 / -O2 | 0.154 / 0.083 s | 0.150 / 0.083 s | 0.149 / 0.084 s |
+| run `toml_big` -O0 / -O2 | 1.87 / 1.53 s | 1.81 / 1.74 s | 1.85 / **1.16** s |
+
+  -O2 builds are back to the old speed; runtime is the same or faster. `tests/toml.rs`'s 20-second linear-time test once took 23.8 s in a full parallel run at load 6.5. Run alone it takes 8.8 s, as before.
