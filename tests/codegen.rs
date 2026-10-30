@@ -311,3 +311,12 @@ fun main(): i32 {
     // twice = 7; area = 16; eq = 1.
     assert_eq!(run(src).code(), Some(14 + 20 + 22 + 7 + 16 + 1));
 }
+
+#[test]
+fn optimised_frames_share_their_slots_v17() {
+    // 1500 levels of the 12-arm match fit the stack only if -O2 shares the
+    // arms' slots too: without sharing, each `walk` frame is ~26 KB and the
+    // recursion overflows 8 MB (PRP-167).
+    let src = include_str!("programs/m135/deep_match.la").replace("build(400)", "build(1500)");
+    assert_eq!(build_and_run(&src, OptLevel::O2).code(), Some(0));
+}

@@ -115,3 +115,73 @@ A function's frame costs its largest arm or branch, not the sum of all of them, 
 - `cargo test`
 - `objdump -d` on the toy and on kivuli's example: `sub $N,%rsp` in `resolve`/`walk`.
 - Rapidkoi's `./main rapidkoi://notes.dafifi.net`, rebuilt with the new lughac (the user, by hand; it needs a display).
+
+## BENCHMARK (session 322)
+`m135`'s release `lughac` against the one before it (`e9420c8`), medians of 10 runs (runtime) and 5 builds (3 for kivuli). The programs were `match_heavy` (12 arms building 1 KB values, 40 deep, 3000 times), `fib(32)` and `structs` (small structs through matches, 3 million times).
+
+| | old | m135 |
+|---|---|---|
+| `match_heavy` run, -O0 | 0.253 s | **0.159 s** |
+| `match_heavy` run, -O2 | 0.091 s | 0.087 s |
+| `fib` run, -O0 / -O2 | 0.027 / 0.014 s | 0.029 / 0.014 s |
+| `structs` run, -O0 / -O2 | 0.149 / 0.085 s | 0.146 / 0.084 s |
+| kivuli `backgrounds.la` build, -O0 | 5.6 s | **5.0 s** |
+| kivuli `backgrounds.la` build, -O2 | 33.0 s | **50.4 s** (regression) |
+| `match_heavy` build, -O2 | 0.23 s | **0.67 s** (regression) |
+
+Runtime is the same or better, and -O0 builds are faster. **-O2 builds are slower, and the slot sharing is the cause.** Switching each part off in turn: without sharing, `match_heavy` builds at -O2 in 0.23–0.25 s; without probes, it still takes 0.58–1.46 s. LLVM's -O2 optimizer works harder on the merged slots.
+
+**Tried, not committed:** at -O2, sharing slots after LLVM's optimizer instead of before it. `match_heavy` then builds in 0.23–0.25 s and kivuli in 35–37 s. Frames stay small: `walk` 3 KB (was 3.9 KB with sharing before the optimizer), `resolve` 6.8 KB, `resolve_children` 7.6 KB. -O0 keeps sharing right after lowering, as now.
+
+## FIX (session 323)
+Approved ("yes make the fix") and built:
+- **When slots are shared:** `frames.rs` now has `probe_stacks`, called by `lower`, and `share_all_slots`. `emit_object_modules` calls `share_all_slots` before `run_passes` at -O0 and after them at -O2; `--emit=ir` shares right after lowering.
+- **Lifetime markers:** after -O2's inlining, a slot with `llvm.lifetime` markers is never shared. LLVM's own stack colouring merges such slots by their markers, so merging one with another slot here would leave markers that no longer cover every use.
+- **Tests:**
+  - a frames unit test for the lifetime-marker rule;
+  - `tests/codegen.rs` `optimised_frames_share_their_slots_v17`: `deep_match` at 1500 levels, built at -O2. It overflows without sharing at -O2.
+- **Measured** (old, m135 and the fix alternating under the same load; medians):
+
+| build | before m135 | m135 | fix |
+|---|---|---|---|
+| `match_heavy` -O2 | 0.24 s | 0.61 s | **0.24 s** |
+| kivuli `backgrounds.la` -O2 | 36.2 s | 57.4 s | **28.8 s** |
+| kivuli `backgrounds.la` -O0 | 4.04 s | 4.08 s | **3.73 s** |
+
+  Frames with the fix: `resolve` 6.5 KB (-O0) / 6.8 KB (-O2), `resolve_children` 10.4 / 7.6 KB, `walk` 9.2 / 3.0 KB.
+
+## PHI GROUPS AND CORRECTED FRAME SIZES (session 324)
+- **Measurement error:** from session 321 on, frame sizes were read by adding the prologue's `sub $N,%rsp`s. For a frame of many pages, LLVM's stack probe is a loop (`sub $L,%r11`, then `sub $0x1000,%rsp` until `%rsp` reaches `%r11`), and that sum counted one 4 KB step instead of `L`. So **every large frame above was undercounted**, `resolve` most of all. The corrected script adds the loop's bound.
+- **`phi` groups (the user chose "merge phi groups"):**
+  - After -O2, LLVM merges the arms' tails into one block that picks among the arms' `copy` slots through a `phi`, and `use_blocks` saw those slots as escaping.
+  - `frames_phi.rs` merges the slots one `phi` picks from when each slot's own live blocks (its uses, plus the block the `phi` takes it from) meet no other's, nor the blocks from the `phi` to its last use. The `phi` is then replaced by the merged slot.
+  - Unit tests: merged; kept apart when a slot is used after the `phi`; kept apart when one slot is written on the path to another's pick; other pointers and other types left alone.
+  - `frames.rs` was split per the user: tests in `frames_tests.rs`, the `phi` rule in `frames_phi.rs`.
+- **Corrected frames** (kivuli `examples/backgrounds.la`, and `match_heavy`):
+
+| function | before m135 | m135 | fix |
+|---|---|---|---|
+| `resolve<()>` -O0 | 313.4 KB | 66.5 KB | 66.5 KB |
+| `resolve<()>` -O2 | 124.9 KB | 40.8 KB | **30.5 KB** |
+| `resolve_children<()>` -O0 / -O2 | 10.4 / 7.6 KB | 10.4 / 7.6 KB | 10.4 / 7.6 KB |
+| `walk` -O0 / -O2 | 87.1 / 25.4 KB | 9.2 / 4.0 KB | 9.2 / 3.0 KB |
+| `build` -O0 / -O2 | 67.6 / 12.2 KB | 10.0 / 1.8 KB | 10.0 / **1.0** KB |
+
+  `deep_match` at 1500 levels now runs at -O2 (`tests/codegen.rs`).
+- **Not yet enough for Rapidkoi at -O0.** A screen level costs two `resolve` frames and one `resolve_children`, about 143 KB at -O0, so 8 MB holds about 57 levels, not 64. -O2, at about 69 KB a level, holds about 118.
+  - After sharing, `resolve`'s IR keeps only about 35 KB of slots: eleven `View`s and two `Option<View>`s.
+  - The rest of the 66.5 KB is LLVM's -O0 spill area for whole 2.6 KB struct values left in the IR (a `phi` or `select` of a `View`, which `split_big.rs` leaves whole). Shrinking that, or boxing large payloads (PRP-168), is the next step, and needs its own PRP.
+- **Benchmark** (old, m135 and the fix alternating; load average 6–10, so absolute times are higher than in the tables above):
+
+| | before m135 | m135 | fix |
+|---|---|---|---|
+| build `match_heavy` -O2 | 0.273 s | 1.535 s | **0.269 s** |
+| build `match_heavy` -O0 | 0.157 s | 0.151 s | 0.146 s |
+| build `toml_big` -O2 / -O0 | 2.94 / 0.27 s | 2.82 / 0.26 s | 2.83 / 0.28 s |
+| build kivuli -O0 | 7.04 s | 5.96 s | 6.52 s |
+| build kivuli -O2 | 58.0 s | 86.1 s | **56.6 s** |
+| run `match_heavy` -O0 / -O2 | 0.220 / 0.095 s | 0.159 / 0.088 s | 0.156 / **0.076** s |
+| run `structs` -O0 / -O2 | 0.154 / 0.083 s | 0.150 / 0.083 s | 0.149 / 0.084 s |
+| run `toml_big` -O0 / -O2 | 1.87 / 1.53 s | 1.81 / 1.74 s | 1.85 / **1.16** s |
+
+  -O2 builds are back to the old speed; runtime is the same or faster. `tests/toml.rs`'s 20-second linear-time test once took 23.8 s in a full parallel run at load 6.5. Run alone it takes 8.8 s, as before.

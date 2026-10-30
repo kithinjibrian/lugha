@@ -257,8 +257,9 @@ pub(super) fn lower<'ctx>(
     super::sret::results_through_pointers(context, &lowerer.module);
     // Struct values split into their fields (v17, milestone 126).
     super::split::split_structs(context, &lowerer.module);
-    // Shared slots and stack probes (v17, milestone 135).
-    super::frames::small_frames(context, &lowerer.module);
+    // Stack probes (v17, milestone 135); the caller shares slots, before or
+    // after optimising (`frames.rs`).
+    super::frames::probe_stacks(context, &lowerer.module);
     lowerer
         .module
         .verify()

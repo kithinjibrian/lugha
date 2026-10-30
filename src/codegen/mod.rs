@@ -227,6 +227,7 @@ pub fn emit_ir_for(
 ) -> Result<String, CodegenError> {
     let context = Context::create();
     let module = lower::lower(&context, units, checked, (sources, target))?;
+    frames::share_all_slots(&module);
     Ok(module.print_to_string().to_string())
 }
 
@@ -287,9 +288,18 @@ pub fn emit_object_modules(
         OptLevel::O2 => "default<O2>",
     };
     let emit_error = |e: inkwell::support::LLVMString| CodegenError::Emit(e.to_string());
+    // Slots are shared before -O0's passes but after -O2's: the optimiser
+    // works far harder on merged slots (kivuli's build: 33 s → 50 s), and
+    // removes many slots itself (PRP-167).
+    if opt == OptLevel::O0 {
+        frames::share_all_slots(&module);
+    }
     module
         .run_passes(pipeline, &machine, PassBuilderOptions::create())
         .map_err(emit_error)?;
+    if opt == OptLevel::O2 {
+        frames::share_all_slots(&module);
+    }
     machine
         .write_to_file(&module, FileType::Object, path)
         .map_err(emit_error)
