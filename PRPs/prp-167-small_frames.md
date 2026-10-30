@@ -115,3 +115,20 @@ A function's frame costs its largest arm or branch, not the sum of all of them, 
 - `cargo test`
 - `objdump -d` on the toy and on kivuli's example: `sub $N,%rsp` in `resolve`/`walk`.
 - Rapidkoi's `./main rapidkoi://notes.dafifi.net`, rebuilt with the new lughac (the user, by hand; it needs a display).
+
+## BENCHMARK (session 322)
+`m135`'s release `lughac` against the one before it (`e9420c8`), medians of 10 runs (runtime) and 5 builds (3 for kivuli). The programs were `match_heavy` (12 arms building 1 KB values, 40 deep, 3000 times), `fib(32)` and `structs` (small structs through matches, 3 million times).
+
+| | old | m135 |
+|---|---|---|
+| `match_heavy` run, -O0 | 0.253 s | **0.159 s** |
+| `match_heavy` run, -O2 | 0.091 s | 0.087 s |
+| `fib` run, -O0 / -O2 | 0.027 / 0.014 s | 0.029 / 0.014 s |
+| `structs` run, -O0 / -O2 | 0.149 / 0.085 s | 0.146 / 0.084 s |
+| kivuli `backgrounds.la` build, -O0 | 5.6 s | **5.0 s** |
+| kivuli `backgrounds.la` build, -O2 | 33.0 s | **50.4 s** (regression) |
+| `match_heavy` build, -O2 | 0.23 s | **0.67 s** (regression) |
+
+Runtime is the same or better, and -O0 builds are faster. **-O2 builds are slower, and the slot sharing is the cause.** Switching each part off in turn: without sharing, `match_heavy` builds at -O2 in 0.23–0.25 s; without probes, it still takes 0.58–1.46 s. LLVM's -O2 optimizer works harder on the merged slots.
+
+**Tried, not committed:** at -O2, sharing slots after LLVM's optimizer instead of before it. `match_heavy` then builds in 0.23–0.25 s and kivuli in 35–37 s. Frames stay small: `walk` 3 KB (was 3.9 KB with sharing before the optimizer), `resolve` 6.8 KB, `resolve_children` 7.6 KB. -O0 keeps sharing right after lowering, as now. Awaiting the user's go-ahead.
