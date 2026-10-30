@@ -9343,3 +9343,6 @@ Branch: bench-m135
 
 ### STILL OPEN AT CLOSE
 - The two answers above; then finish the fix, rerun the benchmark, merge `bench-m135`.
+
+## SESSION 324 — 2026-10-30 — Small stack frames: phi groups — open
+Branch: bench-m135
