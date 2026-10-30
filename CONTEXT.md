@@ -9358,3 +9358,6 @@ Branch: bench-m135
 
 ### STILL OPEN AT CLOSE
 - Merge `bench-m135`. Rapidkoi's 64 levels need ~9 MB at -O0 (about 57 fit in 8 MB): the remaining -O0 cost is LLVM's spill area for whole big struct values. TODO item added; it needs a PRP (split those values, or PRP-168 boxing).
+
+## SESSION 325 — 2026-10-30 — Big values at -O0: discovery — open
+Branch: prp-168-big_values
