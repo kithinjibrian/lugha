@@ -3833,6 +3833,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 133 | Linux on ARM64 (v17) | `--target aarch64-unknown-linux-gnu`, the AArch64 stack switch, E0449 | `tests/arm.rs` under qemu, `tests/cli.rs` (done) |
 | 134 | ARM64 struct passing (v17) | extern structs to and from C by value as AAPCS64 passes them; E0449 retired | `tests/arm.rs` (the `extern_structs` shapes against `aarch64-linux-gnu-gcc`), `src/codegen/c_abi_arm.rs` (done) |
 | 135 | Small stack frames (v17) | stack slots shared between match arms, branches and blocks; stack probes, so any overflow panics | `tests/programs/m135/`, `src/codegen/frames.rs` (done) |
+| 136 | Finer slot sharing (v17) | slots used one after another inside a block share | `tests/programs/m136/`, `src/codegen/frames.rs` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

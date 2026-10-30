@@ -22,6 +22,7 @@ Never deleted. Older entries are never modified.
 - `net.resolve(name)` and `tls.Options.address`, milestone 121 (PRP-153): every address a name resolves to (IPv4 and IPv6, resolver order, each once), and a connection to a chosen IP address that keeps the host name for SNI and the certificate check, in `tls.connect_with` and `http.request_tls`/`request_tls_with` (`https://` and `http://`, the URL's host in `host`), like curl's `--resolve`
 
 ### Changed
+- Smaller stack frames again (milestone 136, PRP-168): stack slots used one after another inside the same block now share, not only slots of different arms; kivuli's `resolve` falls from 66.5 KB to 41.1 KB at `-O0` (30.5 KB to 25.5 KB at `-O2`), so a 64-deep Rapidkoi screen fits in about 5.8 MB
 - Much smaller stack frames (milestone 135, PRP-167): stack slots are shared between match arms, branches and blocks that never run together, so a function's frame is its largest arm, not all of them; kivuli's `resolve` went from 313 KB to 66.5 KB at `-O0` and from 125 KB to 30.5 KB at `-O2`
 - `-O2` builds share stack slots after LLVM's optimiser rather than before it, including slots LLVM joins through a `phi` (PRP-167, sessions 323–324): m135 had made kivuli's `-O2` build about 50% slower; it is back to its old time, with smaller frames
 - `[link]` C files and the runtime are compiled once and reused from `~/.cache/lugha/objects/` until their source, flags, compiler or headers change (milestone 127, PRP-159): a warm kivuli build takes 2.5 s instead of 4.5 s

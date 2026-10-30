@@ -1,6 +1,43 @@
 ## FEATURE: Stack slots used one after another inside the same block share one slot, so kivuli's `resolve` fits a 64-deep Rapidkoi screen at -O0; milestone 136 (v17).
 
-**Status:** proposed 2026-10-30 (session 325). It follows PRP-167, whose corrected measurements (session 324) left `resolve` at 66.5 KB at -O0, about 57 levels in 8 MB rather than Rapidkoi's 64. Discovery: (1) the approach is finer liveness in `frames.rs`, tracking positions inside a block. Not chosen: copy reduction in lowering, and boxing large payloads.
+**Status:** approved 2026-10-30 ("build", session 326); proposed 2026-10-30 (session 325). It follows PRP-167, whose corrected measurements (session 324) left `resolve` at 66.5 KB at -O0, about 57 levels in 8 MB rather than Rapidkoi's 64. Discovery: (1) the approach is finer liveness in `frames.rs`, tracking positions inside a block. Not chosen: copy reduction in lowering, and boxing large payloads.
+
+## RESULT (session 326)
+Built as proposed, inside `frames.rs` (344 lines, so no `frames_live.rs`):
+- `Graph` numbers instructions per block.
+- `uses_of` returns (block, position) for every user, through GEPs.
+- `Graph::ranges` builds per-block ranges by the rules above.
+- `Taken` holds a shared slot's ranges and checks overlap with closed intervals.
+- `frames_phi.rs` keeps block-level liveness, through `use_blocks`.
+
+**Frames** (probe loops counted):
+
+| function | before (m135 fix) | PRP-168 |
+|---|---|---|
+| kivuli `resolve<()>` -O0 | 66.5 KB | **41.1 KB** |
+| kivuli `resolve<()>` -O2 | 30.5 KB | **25.5 KB** |
+| kivuli `resolve_children<()>` -O0 / -O2 | 10.4 / 7.6 KB | 10.4 / 7.6 KB |
+| `match_heavy` `walk` -O0 | 9.2 KB | **4.2 KB** |
+| `match_heavy` `sum` -O0 | 5.4 KB | **4.3 KB** |
+| the Popover-shaped `walk` -O0 | 21.6 KB | **9.3 KB** |
+
+A 64-deep Rapidkoi screen at -O0 now needs about 64 × (2 × 41.1 + 10.4) KB ≈ 5.8 MB of the 8 MB stack.
+
+**Timings** (`main` at `5d2f400` against this branch, taking turns; medians):
+
+| | main | PRP-168 |
+|---|---|---|
+| build kivuli -O0 | 4.94 s | 3.95 s |
+| build kivuli -O2 | 19.3 s | 19.15 s |
+| build `match_heavy` -O0 / -O2 | 0.106 / 0.190 s | 0.104 / 0.188 s |
+| run `match_heavy` -O0 / -O2 | 0.146 / 0.067 s | **0.113** / 0.067 s |
+
+**Tests:**
+- 7 new frames unit tests. `slots_used_in_one_block_stay_apart` became `slots_used_one_after_another_in_a_block_are_shared`.
+- `tests/programs/m136/sequential_values` (checked by hand).
+- `m136/popover_depth`: 600 levels at -O0, which overflows with per-block sharing. It went in `tests/programs/` rather than `tests/codegen.rs`, because that runner builds at -O0 and a test there is just files. Both m136 cases are also in `tests/arm.rs`.
+- Two lib tests asserted slot names (`%v`, `%arg`) that sharing now changes. `methods.rs` and `structs.rs` now check the intent: the caller's own slot with no `%arg` copy, and a constant field GEP.
+- Full `cargo test`: 51 binaries, all passing after those two fixes (lib rerun: 930 passed). fmt and clippy are clean.
 
 ## OBJECTIVE
 A function's frame keeps a big slot only while some value in it may still be read, down to the instruction, not the whole block. kivuli's `resolve<()>` falls below 53 KB at -O0, so a 64-deep screen (two `resolve` frames and one `resolve_children` per level) fits the main thread's 8 MB with room to spare. Nothing visible changes: same output, same build times (±5%), -O2 frames no larger than today.

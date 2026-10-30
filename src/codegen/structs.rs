@@ -289,14 +289,17 @@ mod tests {
         let ir = ir("struct P { x: f64, y: f64 }\nfun getx(p: P): f64 = p.x;\n\
                      fun main() { let mut p = P { x: 1.0, y: 2.0 }; p.y = 3.0; let x = getx(p); }");
         assert!(ir.contains("define double @lugha_fn_getx(ptr"), "{ir}");
-        assert!(
-            ir.contains("getelementptr inbounds nuw %P, ptr %p, i32 0, i32 1")
-                || ir.contains("getelementptr inbounds %P, ptr %p, i32 0, i32 1"),
-            "{ir}"
-        );
+        // Slot names are whatever slot sharing left (PRP-168): `p` and the
+        // argument's slot may be one.
         let main = &ir[ir.find("define void @lugha_fn_main").unwrap()..];
         assert!(
-            main.contains("alloca %P") && main.contains("call double @lugha_fn_getx(ptr %arg"),
+            main.lines()
+                .any(|l| l.contains("getelementptr inbounds nuw %P, ptr %")
+                    && l.ends_with("i32 0, i32 1")),
+            "{ir}"
+        );
+        assert!(
+            main.contains("alloca %P") && main.contains("call double @lugha_fn_getx(ptr %"),
             "{ir}"
         );
     }
