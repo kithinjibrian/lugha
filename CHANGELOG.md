@@ -23,6 +23,7 @@ Never deleted. Older entries are never modified.
 
 ### Changed
 - Much smaller stack frames (milestone 135, PRP-167): stack slots are shared between match arms, branches and blocks that never run together, so a function's frame is its largest arm, not all of them; kivuli's `resolve` went from 276 KB to 8 KB at `-O0` (122 KB to 6.3 KB at `-O2`)
+- `-O2` builds share stack slots after LLVM's optimiser rather than before it (PRP-167, session 323): m135 had made kivuli's `-O2` build 60% slower; it is now about 20% faster than before m135
 - `[link]` C files and the runtime are compiled once and reused from `~/.cache/lugha/objects/` until their source, flags, compiler or headers change (milestone 127, PRP-159): a warm kivuli build takes 2.5 s instead of 4.5 s
 - Much faster builds at `-O0` (`build`, `run`, `test`): struct values are split into their fields, big ones copied by `memcpy`, `bool` results marked `zeroext`, so LLVM's fast instruction selector handles almost every function (milestone 126, PRP-158; kivuli's example builds in 4 s instead of 12); programs behave as before
 - Faster builds: Lugha functions return structs, enums, `Option`s and tuples through a hidden result pointer, so LLVM's fast instruction selector handles them at `-O0` (milestone 125, PRP-157); programs behave as before

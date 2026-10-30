@@ -1,8 +1,10 @@
-//! Small stack frames (v17, milestone 135, PRP-167). Once a module is
-//! lowered — results through pointers (`sret.rs`), structs split
-//! (`split.rs`) — every function's struct and array slots are shared: two
-//! slots of one type whose live blocks never meet become one, so a frame
-//! costs its largest match arm or branch, not the sum of them all. And
+//! Small stack frames (v17, milestone 135, PRP-167). Every function's
+//! struct and array slots are shared: two slots of one type whose live
+//! blocks never meet become one, so a frame costs its largest match arm or
+//! branch, not the sum of them all. At `-O0` (and for `--emit=ir`) that
+//! happens once a module is lowered — results through pointers (`sret.rs`),
+//! structs split (`split.rs`); at `-O2` after LLVM's optimiser, which
+//! works much harder on merged slots and removes many slots itself. And
 //! every function probes its stack a page at a time as it enters, so a
 //! frame of any size reaches the guard area before the memory past it, and
 //! running out of stack panics instead of crashing (spec §7).
@@ -15,20 +17,29 @@ use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::types::BasicTypeEnum;
 use inkwell::values::{
-    AnyValueEnum, BasicValue, FunctionValue, InstructionOpcode, InstructionValue,
+    AnyValueEnum, BasicValue, CallSiteValue, FunctionValue, InstructionOpcode, InstructionValue,
 };
 
 use super::split_leaves::successors;
 
-/// Shares slots and adds stack probes in every function `module` defines.
-pub(super) fn small_frames<'ctx>(context: &'ctx Context, module: &Module<'ctx>) {
+/// Adds stack probes to every function `module` defines.
+pub(super) fn probe_stacks<'ctx>(context: &'ctx Context, module: &Module<'ctx>) {
     let probe = context.create_string_attribute("probe-stack", "inline-asm");
-    for function in module.get_functions() {
-        if function.count_basic_blocks() == 0 {
-            continue;
-        }
-        share_slots(function);
+    for function in module
+        .get_functions()
+        .filter(|f| f.count_basic_blocks() > 0)
+    {
         function.add_attribute(AttributeLoc::Function, probe);
+    }
+}
+
+/// Shares slots in every function `module` defines.
+pub(super) fn share_all_slots(module: &Module<'_>) {
+    for function in module
+        .get_functions()
+        .filter(|f| f.count_basic_blocks() > 0)
+    {
+        share_slots(function);
     }
 }
 
@@ -118,10 +129,19 @@ impl<'ctx> Graph<'ctx> {
     }
 }
 
+/// True if `call` is `llvm.lifetime.start` or `llvm.lifetime.end`.
+fn lifetime_marker(call: InstructionValue<'_>) -> bool {
+    CallSiteValue::try_from(call)
+        .ok()
+        .and_then(|site| site.get_called_fn_value())
+        .is_some_and(|f| f.get_name().to_bytes().starts_with(b"llvm.lifetime."))
+}
+
 /// Shares `function`'s struct and array slots whose live blocks never meet.
 /// Only entry-block slots qualify whose address is used just by loads,
-/// stores to it, element addresses and calls: one stored or merged into
-/// another pointer may be read anywhere, so it keeps its own slot.
+/// stores to it, element addresses and calls other than lifetime markers:
+/// one stored or merged into another pointer may be read anywhere, so it
+/// keeps its own slot.
 fn share_slots(function: FunctionValue<'_>) {
     let Some(entry) = function.get_first_basic_block() else {
         return;
@@ -186,7 +206,12 @@ fn use_blocks(slot: InstructionValue<'_>, graph: &Graph<'_>) -> Option<Vec<usize
                     .and_then(|b| b.as_instruction_value())?,
             };
             match user.get_opcode() {
-                InstructionOpcode::Load | InstructionOpcode::Call => {}
+                InstructionOpcode::Load => {}
+                // LLVM's stack colouring merges a slot with lifetime markers
+                // (from -O2's inlining) by them: merged with another here,
+                // its markers would no longer cover every use.
+                InstructionOpcode::Call if lifetime_marker(user) => return None,
+                InstructionOpcode::Call => {}
                 // Stored *to*, not stored as a value somewhere.
                 InstructionOpcode::Store => {
                     let value = user.get_operand(0).and_then(|o| o.value())?;
@@ -209,7 +234,7 @@ mod tests {
     use inkwell::memory_buffer::MemoryBuffer;
     use inkwell::module::Module;
 
-    use super::small_frames;
+    use super::{probe_stacks, share_all_slots};
     use crate::codegen::Target;
     use crate::codegen::test_util::{ir, ir_for};
 
@@ -220,7 +245,8 @@ mod tests {
         let module: Module = context
             .create_module_from_ir(buffer)
             .expect("the test's IR parses");
-        small_frames(&context, &module);
+        share_all_slots(&module);
+        probe_stacks(&context, &module);
         module.verify().expect("the module verifies");
         module.print_to_string().to_string()
     }
@@ -433,6 +459,33 @@ end:
             ),
             (1, 1, 2)
         );
+    }
+
+    #[test]
+    fn slots_with_lifetime_markers_are_left_to_llvm() {
+        // After -O2's inlining: LLVM's own stack colouring merges these by
+        // their markers, which must keep describing every use of the slot.
+        let ir = format!(
+            "{HEAD}declare void @llvm.lifetime.start.p0(i64, ptr)
+declare void @llvm.lifetime.end.p0(i64, ptr)
+define void @f(i1 %c) {{
+entry:
+  %a = alloca %Big
+  %b = alloca %Big
+  br i1 %c, label %one, label %two
+one:
+  call void @llvm.lifetime.start.p0(i64 256, ptr %a)
+  call void @use(ptr %a)
+  call void @llvm.lifetime.end.p0(i64 256, ptr %a)
+  br label %end
+two:
+  call void @use(ptr %b)
+  br label %end
+end:
+  ret void
+}}"
+        );
+        assert_eq!(slots(&run(&ir), "%Big"), 2);
     }
 
     #[test]

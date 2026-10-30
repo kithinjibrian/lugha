@@ -131,4 +131,21 @@ A function's frame costs its largest arm or branch, not the sum of all of them, 
 
 Runtime is the same or better, and -O0 builds are faster. **-O2 builds are slower, and the slot sharing is the cause.** Switching each part off in turn: without sharing, `match_heavy` builds at -O2 in 0.23–0.25 s; without probes, it still takes 0.58–1.46 s. LLVM's -O2 optimizer works harder on the merged slots.
 
-**Tried, not committed:** at -O2, sharing slots after LLVM's optimizer instead of before it. `match_heavy` then builds in 0.23–0.25 s and kivuli in 35–37 s. Frames stay small: `walk` 3 KB (was 3.9 KB with sharing before the optimizer), `resolve` 6.8 KB, `resolve_children` 7.6 KB. -O0 keeps sharing right after lowering, as now. Awaiting the user's go-ahead.
+**Tried, not committed:** at -O2, sharing slots after LLVM's optimizer instead of before it. `match_heavy` then builds in 0.23–0.25 s and kivuli in 35–37 s. Frames stay small: `walk` 3 KB (was 3.9 KB with sharing before the optimizer), `resolve` 6.8 KB, `resolve_children` 7.6 KB. -O0 keeps sharing right after lowering, as now.
+
+## FIX (session 323)
+Approved ("yes make the fix") and built:
+- **When slots are shared:** `frames.rs` now has `probe_stacks`, called by `lower`, and `share_all_slots`. `emit_object_modules` calls `share_all_slots` before `run_passes` at -O0 and after them at -O2; `--emit=ir` shares right after lowering.
+- **Lifetime markers:** after -O2's inlining, a slot with `llvm.lifetime` markers is never shared. LLVM's own stack colouring merges such slots by their markers, so merging one with another slot here would leave markers that no longer cover every use.
+- **Tests:**
+  - a frames unit test for the lifetime-marker rule;
+  - `tests/codegen.rs` `optimised_frames_share_their_slots_v17`: `deep_match` at 1500 levels, built at -O2. It overflows without sharing at -O2.
+- **Measured** (old, m135 and the fix alternating under the same load; medians):
+
+| build | before m135 | m135 | fix |
+|---|---|---|---|
+| `match_heavy` -O2 | 0.24 s | 0.61 s | **0.24 s** |
+| kivuli `backgrounds.la` -O2 | 36.2 s | 57.4 s | **28.8 s** |
+| kivuli `backgrounds.la` -O0 | 4.04 s | 4.08 s | **3.73 s** |
+
+  Frames with the fix: `resolve` 6.5 KB (-O0) / 6.8 KB (-O2), `resolve_children` 10.4 / 7.6 KB, `walk` 9.2 / 3.0 KB.
