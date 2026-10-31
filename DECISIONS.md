@@ -2194,7 +2194,7 @@ Derive blocks as built: `$derive[<params>] I for X { items }` (`Item::Derive`; `
 
 As built: `check/purity.rs`. Each body records its `effects` and the constants it `reads` by owner; a constant's value is checked under owner `$const.<key>`. `used` keeps plain calls in `Checker.calls` (purity only) beside `uses` (monomorphization); `Checker::targets` (from `monomorphize`) with `every` also follows plain methods through a bound. After every body, `order_consts` walks each constant breadth first from its owner: the first effect is E0445 with the path (`` `load` calls `read_file`, which reads files ``, shortened past 6 names), and every constant read on the way becomes a dependency, so E0446 shows cycles through functions (`A calls `f`, which reads A`). Codegen is unchanged: `lugha_const_init` already compiled values as expressions, and the `$const.` owners are monomorphization roots.
 
-Known gap: a printing site or `==` reaches a type's own non-generic `show`/`eq` only for monomorphization's lists (`show_instances`, `eq_instances`), so a constant whose interpolation calls a user `show` that prints isn't caught. That code only runs earlier than it would in `main`; nothing unsafe follows.
+Printing sites and `==` reach a type's own plain `show`/`eq` too (`show_instances`/`eq_instances` with `every`, as `targets`), so a constant interpolating a value whose `show` prints is E0445 (a chore after milestone 147).
 
 **Why:** the discovery's answers (2026-10-31): startup, not build time; any pure expression, not a list; purity inferred; dependencies through calls; generics judged per use.
 

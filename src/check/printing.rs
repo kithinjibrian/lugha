@@ -61,20 +61,22 @@ impl Checker {
 
     /// The generic `show` instances printing a value of concrete type `ty`
     /// reaches: its own, or else those inside its fields, payloads,
-    /// elements, and the values converted to an interface it is.
-    pub(super) fn show_instances(&self, ty: &Type) -> Vec<Instance> {
+    /// elements, and the values converted to an interface it is. With
+    /// `every`, a plain (non-generic) `show` too, for the purity of
+    /// constants (milestone 147): it is compiled anyway, but runs.
+    pub(super) fn show_instances(&self, ty: &Type, every: bool) -> Vec<Instance> {
         let mut found = Vec::new();
-        self.reach(ty, &mut HashSet::new(), &mut found);
+        self.reach(ty, every, &mut HashSet::new(), &mut found);
         found
     }
 
-    fn reach(&self, ty: &Type, seen: &mut HashSet<Type>, found: &mut Vec<Instance>) {
+    fn reach(&self, ty: &Type, every: bool, seen: &mut HashSet<Type>, found: &mut Vec<Instance>) {
         if plain(ty) || !seen.insert(ty.clone()) {
             return;
         }
         match ty {
             Type::Array(inner) | Type::Option(inner) | Type::Ref(inner) => {
-                self.reach(inner, seen, found)
+                self.reach(inner, every, seen, found)
             }
             // `<task>` and `<chan>` print nothing inside (v17).
             Type::Task(_) | Type::Chan(_) | Type::Actor(_) => {}
@@ -82,7 +84,7 @@ impl Checker {
                 if let Some(m) = self.own_show(key) {
                     // A std type's `show` compiles only when listed, generic
                     // or not (lazy std, milestone 60; v17, milestone 140).
-                    if !args.is_empty() || super::instances::lazy_key(&m.key) {
+                    if every || !args.is_empty() || super::instances::lazy_key(&m.key) {
                         found.push(Instance {
                             key: m.key.clone(),
                             args: args.clone(),
@@ -102,7 +104,7 @@ impl Checker {
                     parts.extend(payloads);
                 }
                 for part in &parts {
-                    self.reach(part, seen, found);
+                    self.reach(part, every, seen, found);
                 }
             }
             Type::Interface(key, _) => {
@@ -112,7 +114,7 @@ impl Checker {
                     };
                     let source = self.types.get(id.0 as usize).cloned().flatten();
                     if let Some(source) = source.filter(|_| k == key) {
-                        self.reach(&source, seen, found);
+                        self.reach(&source, every, seen, found);
                     }
                 }
             }
