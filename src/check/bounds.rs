@@ -27,6 +27,14 @@ impl Checker {
                 return false;
             }
             for interface in &g.bounds.interfaces {
+                // `json.Json` is met by a type's structure, not an `impl`
+                // (v17, milestone 139): E0450 names the part that isn't data.
+                if interface.key == super::json::BOUND {
+                    if !self.meets_json(arg, span) {
+                        return false;
+                    }
+                    continue;
+                }
                 // Only the numbers are `Num`, and only `f32`/`f64` are
                 // `Float`: E0419, like `Ord` (v15).
                 let builtin = interface.key.strip_prefix("$prelude.");

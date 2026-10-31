@@ -1,0 +1,19 @@
+import std.json;
+
+struct Job { name: string, run: fun(): () }
+interface Shape { fun area(self): f64; }
+struct Holder { shapes: Shape[] }
+enum Slot { Empty, Boxed(Ref<i64>) }
+
+fun anything<T>(x: T): json.Value = json.encode(x);
+
+fun main() {
+    let job = Job { name: "a", run: fun() {} };
+    let a = json.encode(job);
+    let b = json.encode(fun(x: i64): i64 = x);
+    let h = Holder { shapes: [] };
+    let c = json.encode(h);
+    let d = json.encode([Slot.Empty]);
+    let flags: Map<bool, i64> = #{true: 1};
+    let e = json.encode(flags);
+}

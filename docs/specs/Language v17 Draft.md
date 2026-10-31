@@ -301,6 +301,12 @@ After discovery in session 329, revised in session 330. Details in PRP-170.
 
 344–351. **JSON in `std.http`** (milestone 138): `Request.json()`/`Response.json()` parse a body with `json.parse`, no `Content-Type` check, non-UTF-8 a `Syntax` error; `http.json(status, v: json.Value)` replaces `json(status, text)`, a 500 `text/plain` reply for NaN or an infinity; `post_json(url, v): Result<Response, string>`; no `request_json` or `_with`/`_tls` variants; tag `m138`.
 
+### JSON and structs (milestones 139–140)
+
+After discovery (PRP-171): JSON for any data type, the per-type code written by the compiler.
+
+352–360. **`json.encode`** (milestone 139): `encode<T: json.Json>(x: T): Value`; `json.Json` a built-in bound met structurally (E0450 naming the path otherwise); externally tagged enums, `None`/`Some` as `null`/the value, maps with string or integer keys, all fields; `u64` past `i64.MAX` a `Float`; walkers per struct, enum and tuple (`lugha_json_enc_<type>`) and Lugha helpers in `std.$json_derive`; tag `m139`. **`json.decode`** (milestone 140) follows in the same PRP.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.

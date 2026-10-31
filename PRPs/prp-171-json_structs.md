@@ -1,6 +1,6 @@
 ## FEATURE: `json.encode(x)` and `json.decode(v)` for any data type, the per-type code written by the compiler; milestones 139 (encode) and 140 (decode), v17.
 
-**Status:** proposed 2026-10-31, after discovery (5 questions, each answered with the recommended option): (1) built in for any type, no annotation, as printing, `==` and hashing are; (2) enums externally tagged, `Option` as `null`/the value; (3) decoding ignores unknown keys, fills a missing `Option` field with `None`, and is strict on types, with errors naming a path; (4) data types only, everything else a compile error (E0450), maps with string or integer keys; (5) one PRP, built and tagged as two milestones.
+**Status:** approved 2026-10-31 ("build"); proposed 2026-10-31, after discovery (5 questions, each answered with the recommended option): (1) built in for any type, no annotation, as printing, `==` and hashing are; (2) enums externally tagged, `Option` as `null`/the value; (3) decoding ignores unknown keys, fills a missing `Option` field with `None`, and is strict on types, with errors naming a path; (4) data types only, everything else a compile error (E0450), maps with string or integer keys; (5) one PRP, built and tagged as two milestones.
 
 ## OBJECTIVE
 ```lugha
@@ -58,6 +58,11 @@ Programs turn their own structs and enums into JSON and back — an HTTP handler
 - Explicit type arguments (`json.decode<Person>(v)`): a separate language feature.
 - Implicit conversions anywhere else, or changing how `Value`, `parse` or `stringify` behave.
 - Encoding interface values by their dynamic type (they're E0450).
+
+## BUILT — milestone 139
+- `json.Json` is an empty `public interface Json {}` in `std.$json_value`; `meets_bounds` treats it structurally (`check/json.rs`, E0450 with a path such as `shapes[]` or `[].Boxed.0`).
+- Smaller than planned: arrays, `Option`s, maps and sets are generic Lugha helpers in `std.$json_derive` (`$enc_array<T>` …) that call `$json.encode` again at their element type, so monomorphisation reaches every nested type; codegen (`codegen/json_encode.rs`, 255 lines) writes walkers only for structs, enums and tuples and calls the scalar helpers. Maps, sets and `Option`s are passed to the helpers as a pointer to a copy, as every Lugha call passes aggregates.
+- Tests: `tests/programs/m139/encode.la` (every shape, recursive and generic types, `-O2` checked by hand), `not_data.la` (six E0450s); unit tests for the helper choice; `tests/json.rs` checks a parse-only program has no encoder.
 
 ## DESIGN
 - **New diagnostic E0450** (checker range): a type that isn't JSON-able where `Json` is required, with the path to the first bad part and a note for maps with other key types. Page `docs/errors/E0450.md`.

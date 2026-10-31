@@ -131,6 +131,10 @@ impl Checker {
             ExprKind::Call(callee, args) if let Some(op) = super::hashing::hash_op(callee) => {
                 self.hash_call(expr, (callee, op), args)
             }
+            // `$json.encode(x)` in std.json (v17, milestone 139).
+            ExprKind::Call(callee, args) if super::json::json_op(callee).is_some() => {
+                self.json_call(expr, callee, args)
+            }
             ExprKind::Call(callee, args) if let Some(op) = super::float_ops::os_op(callee) => {
                 self.os_call(expr, (callee, op), args)
             }
