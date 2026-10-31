@@ -7,7 +7,13 @@
  *
  * A panic in a handler ends the whole program, as any green thread's panic
  * does: return `http.text(500, …)` for failures instead.
+ *
+ * JSON (milestone 138): `req.json()` and `resp.json()` parse a body,
+ * `http.json(status, v)` answers with a `json.Value`, `http.post_json(url, v)`
+ * sends one.
  */
+// Named `js` here: `json` is this module's response builder.
+import std.json as js;
 import std.net;
 import std.tls;
 import std.$http_wire { Fail, Head, Reader, Stream, clean, digits, lower, reason, token, visible };
@@ -73,14 +79,21 @@ public fun text(status: i64, text: string): Response = Response {
 };
 
 /**
- * An `application/json` response of JSON text you give; nothing is checked.
+ * An `application/json` response of `v`, written compactly. If `v` holds NaN
+ * or an infinity, which JSON can't hold, the reply is a `text/plain` 500
+ * saying so instead. JSON text in hand: `http.json(200, json.parse(text)?)`.
  * @param status the status code
- * @param json the body
+ * @param v the body's value
  */
-public fun json(status: i64, json: string): Response = Response {
-    status: status,
-    headers: #{"content-type": "application/json"},
-    body: json.to_bytes(),
+public fun json(status: i64, v: js.Value): Response = match js.stringify(v) {
+    Ok(t) => Response { status: status, headers: #{"content-type": "application/json"}, body: t.to_bytes() },
+    Err(e) => text(500, e.detail),
+};
+
+/** `body` parsed as JSON, whatever its content type; non-UTF-8 is a `Syntax` error. */
+fun json_body(body: u8[]): Result<js.Value, js.JsonError> = match string_from_utf8(body) {
+    Ok(t) => js.parse(t),
+    Err(_) => Err(js.JsonError { kind: js.ErrorKind.Syntax, detail: "a body that isn't UTF-8", line: 1, column: 1 }),
 };
 
 /**
@@ -100,6 +113,9 @@ impl Request {
 
     /** A header's value by name, in any case. */
     public fun header(self, name: string): Option<string> = self.headers.get(lower(name));
+
+    /** The body parsed as JSON (`json.parse`'s limits), whatever its `content-type`. */
+    public fun json(self): Result<js.Value, js.JsonError> = json_body(self.body);
 }
 
 impl Response {
@@ -108,6 +124,9 @@ impl Response {
 
     /** A header's value by name, in any case. */
     public fun header(self, name: string): Option<string> = self.headers.get(lower(name));
+
+    /** The body parsed as JSON (`json.parse`'s limits), whatever its `content-type`. */
+    public fun json(self): Result<js.Value, js.JsonError> = json_body(self.body);
 }
 
 /**
@@ -251,6 +270,16 @@ public fun get(url: string): Result<Response, string> = request("GET", url, #{},
  */
 public fun post(url: string, content_type: string, body: u8[]): Result<Response, string> =
     request("POST", url, #{"content-type": content_type}, body);
+
+/**
+ * `POST url` with `v` as a compact `application/json` body.
+ * @param url `http://` or `https://`, as `post` takes
+ * @param v the body's value; NaN or an infinity in it is an `Err` before connecting
+ */
+public fun post_json(url: string, v: js.Value): Result<Response, string> = match js.stringify(v) {
+    Ok(t) => post(url, "application/json", t.to_bytes()),
+    Err(e) => Err(e.message()),
+};
 
 /**
  * Any request, with the default limits (response bodies up to 16777216 bytes).

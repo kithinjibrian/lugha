@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- JSON in `std.http` (milestone 138, PRP-170): `req.json()` and `resp.json()` parse a body (whatever its content type), `http.post_json(url, v)` posts a `json.Value`
 - `std.json` (milestone 137, PRP-169): strict RFC 8259 JSON — `json.parse(text)` to a `Value` (exact `i64` integers, keys in order), `json.stringify(v)`/`json.pretty(v)` back, `get`/`at`/`as_*` helpers; duplicate keys, lone surrogates and numbers past `f64` are errors with a line and column, NaN and infinities can't be written, and size, depth and value-count limits hold against hostile input; all of JSONTestSuite's parsing cases pass
 - Running out of stack always panics with `stack overflow` (milestone 135, PRP-167): every function probes its stack a page at a time, so a frame bigger than the guard area no longer crashes with a segfault, on the main stack or in a green thread
 - Extern structs by value on ARM64 (milestone 134, PRP-166): to and from C, and through callbacks, as AAPCS64 passes them — floating-point aggregates in FP registers, other structs up to 16 bytes in one or two general registers, bigger ones by a caller-made copy or `x8`; `--emit=ir` follows `--target`; E0449 retired
@@ -23,6 +24,7 @@ Never deleted. Older entries are never modified.
 - `net.resolve(name)` and `tls.Options.address`, milestone 121 (PRP-153): every address a name resolves to (IPv4 and IPv6, resolver order, each once), and a connection to a chosen IP address that keeps the host name for SNI and the certificate check, in `tls.connect_with` and `http.request_tls`/`request_tls_with` (`https://` and `http://`, the URL's host in `host`), like curl's `--resolve`
 
 ### Changed
+- **Breaking:** `http.json(status, v)` takes a `json.Value` instead of JSON text (milestone 138, PRP-170), so there is one way to answer with JSON; a value holding NaN or an infinity answers a `text/plain` 500. Text in hand: `http.json(status, json.parse(text)?)`. A string argument is now a type error
 - Smaller stack frames again (milestone 136, PRP-168): stack slots used one after another inside the same block now share, not only slots of different arms; kivuli's `resolve` falls from 66.5 KB to 41.1 KB at `-O0` (30.5 KB to 25.5 KB at `-O2`), so a 64-deep Rapidkoi screen fits in about 5.8 MB
 - Much smaller stack frames (milestone 135, PRP-167): stack slots are shared between match arms, branches and blocks that never run together, so a function's frame is its largest arm, not all of them; kivuli's `resolve` went from 313 KB to 66.5 KB at `-O0` and from 125 KB to 30.5 KB at `-O2`
 - `-O2` builds share stack slots after LLVM's optimiser rather than before it, including slots LLVM joins through a `phi` (PRP-167, sessions 323–324): m135 had made kivuli's `-O2` build about 50% slower; it is back to its old time, with smaller frames

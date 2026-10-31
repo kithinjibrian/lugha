@@ -295,6 +295,12 @@ JSON for programs behind `std.http`, after discovery in session 327. Details in 
 
 327–343. **`std.json`** (milestone 137): strict RFC 8259 `parse`/`parse_with` to `Value { Null, Bool, Integer(i64), Float(f64), Text, Array, Object(Map) }` (exact integers, keys in order); duplicate keys, lone surrogates, a BOM and numbers past `f64` refused; `JsonError { kind, detail, line, column }`; limits on size (1 MiB), depth (100) and values (1 000 000); `stringify`/`pretty` returning `Result`, `NotFinite` for NaN and infinities; `get`, `at`, `as_*`, `is_null`; tested against JSONTestSuite (MIT, vendored); no struct mapping, JSON5, streaming or `std.http` change; tag `m137`.
 
+### JSON in `std.http` (milestone 138)
+
+After discovery in session 329, revised in session 330. Details in PRP-170.
+
+344–351. **JSON in `std.http`** (milestone 138): `Request.json()`/`Response.json()` parse a body with `json.parse`, no `Content-Type` check, non-UTF-8 a `Syntax` error; `http.json(status, v: json.Value)` replaces `json(status, text)`, a 500 `text/plain` reply for NaN or an infinity; `post_json(url, v): Result<Response, string>`; no `request_json` or `_with`/`_tls` variants; tag `m138`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
