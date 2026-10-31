@@ -18,6 +18,27 @@ use super::{Checker, SELF, Type, errors};
 use crate::ast::{DeriveDecl, DeriveTarget, Item, Program};
 use crate::span::Span;
 
+/// The prelude's `$Hash`, which `Eq` brings with it (v17, milestone 143).
+pub(super) const HASH: &str = "$prelude.$Hash";
+
+/// True if a parameter with `bounds` has `==`, and so `$Hash`'s items:
+/// `Eq`, or `Num`/`Float`, which give `==` too.
+pub(super) fn implies_hash(bounds: &Bounds) -> bool {
+    bounds.eq
+        || bounds
+            .interfaces
+            .iter()
+            .any(|a| a.key == "$prelude.Num" || a.key == "$prelude.Float")
+}
+
+/// `$Hash` as a bound.
+pub(super) fn hash_bound() -> Applied {
+    Applied {
+        key: HASH.to_string(),
+        args: Vec::new(),
+    }
+}
+
 /// What a block covers.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Covers {
@@ -29,6 +50,8 @@ pub enum Covers {
     Enum,
     /// Every tuple whose elements meet the interface.
     Tuple,
+    /// Every `extern type` handle, `CPtr` included (v17, milestone 143).
+    Handle,
 }
 
 /// One `derive` block.
@@ -95,6 +118,7 @@ impl Derives {
             Type::Struct(..) if elements(ty).is_some() => Covers::Tuple,
             Type::Struct(key, _) if !holds_union(key) => Covers::Struct,
             Type::Enum(..) => Covers::Enum,
+            Type::Handle(_) => Covers::Handle,
             _ => return None,
         };
         let b = mine().find(|b| b.covers == kind)?;
@@ -119,6 +143,7 @@ impl Derives {
                 Covers::Struct => "structs".to_string(),
                 Covers::Enum => "enums".to_string(),
                 Covers::Tuple => "tuples".to_string(),
+                Covers::Handle => "handles".to_string(),
             })
             .collect()
     }
@@ -190,6 +215,7 @@ fn block_type(covers: &Covers) -> String {
         Covers::Struct => "struct".into(),
         Covers::Enum => "enum".into(),
         Covers::Tuple => "tuple".into(),
+        Covers::Handle => "handle".into(),
     }
 }
 
@@ -199,6 +225,7 @@ fn label(covers: &Covers) -> String {
         Covers::Struct => "struct".into(),
         Covers::Enum => "enum".into(),
         Covers::Tuple => "tuple".into(),
+        Covers::Handle => "handle".into(),
         Covers::Type(Type::Array(_)) => "array".into(),
         Covers::Type(Type::Option(_)) => "option".into(),
         Covers::Type(Type::Unit) => "unit".into(),
@@ -275,6 +302,7 @@ impl Checker {
                 let covers = match kind {
                     DeriveTarget::Struct => Covers::Struct,
                     DeriveTarget::Enum => Covers::Enum,
+                    DeriveTarget::Handle => Covers::Handle,
                     _ => Covers::Tuple,
                 };
                 (generics, covers)

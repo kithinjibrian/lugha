@@ -12,7 +12,12 @@
 //!   name and its payloads through `f(ctx, name, payload)`;
 //! - `derive.variants()`: `(string, i64)[]`, each variant's name and payload count;
 //! - `derive.build_variant(name, ctx, f)`: `Option<Result<Self, E>>`,
-//!   `None` for an unknown name, else the variant built as `build` does.
+//!   `None` for an unknown name, else the variant built as `build` does;
+//! - `derive.fold(x, init, f)` (v17, milestone 143): `init`'s type `A`,
+//!   threaded through `f(acc, name, field): A` per field (an enum's: the
+//!   payloads of the variant at hand, named by the variant), nothing allocated;
+//! - `derive.index(x)`: an enum value's variant position, an `i64`;
+//! - `derive.address(x)`: in a `for handle` block, the handle's address, a `u64`.
 
 use super::derive::Covers;
 use super::expr::Expect;
@@ -23,7 +28,16 @@ use super::{Checker, SELF, Type, errors};
 use crate::ast::{Expr, ExprKind};
 
 /// The intrinsics' names, after `derive.`.
-pub const DERIVE_OPS: [&str; 5] = ["fields", "build", "variant", "variants", "build_variant"];
+pub const DERIVE_OPS: [&str; 8] = [
+    "fields",
+    "build",
+    "variant",
+    "variants",
+    "build_variant",
+    "fold",
+    "index",
+    "address",
+];
 
 /// The intrinsic `callee` would name: `fields` for `derive.fields`.
 /// Whether it does depends on scope (`Checker::is_intrinsic`).
@@ -36,7 +50,7 @@ pub fn derive_op(callee: &Expr) -> Option<&str> {
 fn shape(op: &str) -> (Vec<Type>, bool) {
     let field = Type::Param("F".into());
     match op {
-        "fields" | "variant" => (vec![Type::String, field], false),
+        "fields" | "variant" | "fold" => (vec![Type::String, field], false),
         _ => (vec![Type::String, Type::I64, Type::I64], true),
     }
 }
@@ -89,11 +103,12 @@ impl Checker {
             .clone()
             .ok_or("is used outside a derive block")?;
         let me = Type::Param(SELF.to_string());
-        let on_enum = matches!(op, "variant" | "variants" | "build_variant");
-        let fits = match block.covers {
-            Covers::Enum => on_enum,
-            Covers::Struct | Covers::Tuple => !on_enum,
-            Covers::Type(_) => false,
+        let fits = match (&block.covers, op) {
+            (_, "fold") => matches!(block.covers, Covers::Struct | Covers::Tuple | Covers::Enum),
+            (Covers::Enum, o) => matches!(o, "variant" | "variants" | "build_variant" | "index"),
+            (Covers::Struct | Covers::Tuple, o) => matches!(o, "fields" | "build"),
+            (Covers::Handle, o) => o == "address",
+            (Covers::Type(_), _) => false,
         };
         if !fits {
             return Err(format!(
@@ -103,6 +118,7 @@ impl Checker {
         }
         let count = match op {
             "variants" => 0,
+            "index" | "address" => 1,
             "build" => 2,
             _ => 3,
         };
@@ -113,9 +129,14 @@ impl Checker {
             let pair = self.tuple_type(vec![Type::String, Type::I64]);
             return Ok(Type::Array(Box::new(pair)));
         }
+        // A variant's position, or a handle's address (v17, milestone 143).
+        if op == "index" || op == "address" {
+            self.value(&args[0], Some(&Expect::of(me)));
+            return Ok(if op == "index" { Type::I64 } else { Type::U64 });
+        }
         // The value, or the variant's name, comes before `ctx` and `f`.
         let first = match op {
-            "fields" | "variant" => Some(me.clone()),
+            "fields" | "variant" | "fold" => Some(me.clone()),
             "build_variant" => Some(Type::String),
             _ => None,
         };
@@ -168,6 +189,13 @@ impl Checker {
                     Type::Option(Box::new(result))
                 }
             }
+            // `fold` threads `init`'s type through every call (v17, milestone 143).
+            (r, false) if op == "fold" => {
+                if *r != ctx {
+                    return Err("needs `f` to return the type of `init`".into());
+                }
+                ctx.clone()
+            }
             (r, false) if !mentions(r, "F") => {
                 let all = Type::Array(Box::new(r.clone()));
                 if op == "fields" {
@@ -190,6 +218,7 @@ fn kind_name(covers: &Covers) -> String {
         Covers::Struct => "struct".into(),
         Covers::Enum => "enum".into(),
         Covers::Tuple => "tuple".into(),
+        Covers::Handle => "handle".into(),
         Covers::Type(t) => super::shown(&t.to_string()),
     }
 }
@@ -230,6 +259,18 @@ mod tests {
                 }\n\
             }";
         assert_eq!(codes(ok), Vec::<&str>::new());
+    }
+
+    #[test]
+    fn fold_threads_its_init_and_index_is_a_position() {
+        let ok = "derive Count for struct { fun count(self): i64 = derive.fold(self, 0, plus); }\n\
+            derive Count for enum { fun count(self): i64 = derive.fold(self, derive.index(self), plus); }\n\
+            fun plus<F: Count>(sum: i64, name: string, x: F): i64 = sum + x.count();";
+        assert_eq!(codes(ok), Vec::<&str>::new());
+        // `f` must give back `init`'s type.
+        let wrong = "derive Count for struct { fun count(self): i64 = derive.fold(self, 0, half); }\n\
+            fun half<F: Count>(sum: i64, name: string, x: F): bool = true;";
+        assert_eq!(codes(wrong), ["E0453"]);
     }
 
     #[test]

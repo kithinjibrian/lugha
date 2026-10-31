@@ -195,6 +195,8 @@ impl Checker {
                 }
                 None
             }
+            // A handle has no parts (v17, milestone 143).
+            Covers::Handle => None,
             Covers::Tuple => {
                 let parts = elements(ty).unwrap_or_default().to_vec();
                 parts.iter().enumerate().find_map(|(i, t)| {

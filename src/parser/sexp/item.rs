@@ -167,6 +167,7 @@ fn item(item: &Item) -> String {
                 crate::ast::DeriveTarget::Struct => "struct".to_string(),
                 crate::ast::DeriveTarget::Enum => "enum".to_string(),
                 crate::ast::DeriveTarget::Tuple => "tuple".to_string(),
+                crate::ast::DeriveTarget::Handle => "handle".to_string(),
             };
             let params = type_params(&d.type_params);
             format!("(derive {}{params} {target}{methods})", d.interface.name)

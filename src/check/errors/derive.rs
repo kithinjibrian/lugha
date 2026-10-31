@@ -78,7 +78,7 @@ pub(in crate::check) fn block_unsatisfied(
 /// E0453: a field intrinsic used wrongly; `why` says how.
 pub(in crate::check) fn bad_intrinsic(op: &str, why: &str, span: Span) -> Diagnostic {
     Diagnostic::error("E0453", format!("`derive.{op}` {why}"), span).with_help(
-        "`derive.fields` and `derive.build` work in `derive … for struct` and `for tuple` blocks; `derive.variant`, `variants` and `build_variant` in `for enum` blocks; `f` names a function of this module generic over one `F` with the block's interface",
+        "`derive.fields` and `derive.build` work in `derive … for struct` and `for tuple` blocks; `derive.variant`, `variants`, `build_variant` and `index` in `for enum` blocks; `derive.fold` in all three; `derive.address` in `for handle` blocks; `f` names a function of this module generic over one `F` with the block's interface",
     )
 }
 

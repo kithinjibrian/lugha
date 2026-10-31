@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- Derive blocks gain `derive.fold(x, init, f)` (threads a value through every field, nothing allocated), `derive.index(x)` (an enum value's variant position) and `derive … for handle` with `derive.address(x)` (milestone 143, PRP-174)
 - Derive blocks in every module (milestone 142, PRP-173): `derive Show for struct { … }` says once how every struct (or enum, tuple, or one type like `i64` or `T[]`) meets an interface its module declares, with `derive.fields(…)`, `derive.build(…)`, `derive.variant(…)`, `derive.variants()` and `derive.build_variant(…)` reaching the fields; a type's own method replaces a block's item; E0451 (a type that doesn't meet a derivable interface, with the path), E0452 (a block in the wrong module or overlapping another), E0453 (a misused field intrinsic); hover on a block's items and `derive.` completion in a block
 - Custom JSON for one type (milestone 142): `impl Date { fun to_json(self): json.Value = … }` (and `from_json`) replaces the derived encoding
 - `json.decode(v)` (milestone 140, PRP-171): a `json.Value` back into any data type — `let p: Person = json.decode(v)?;` — ignoring unknown keys, `None` for a missing `Option` field, exact numbers; `json.DecodeError` names the path to the first mismatch (`people[2].age: expected an integer, found a string`)
@@ -29,10 +30,12 @@ Never deleted. Older entries are never modified.
 - `net.resolve(name)` and `tls.Options.address`, milestone 121 (PRP-153): every address a name resolves to (IPv4 and IPv6, resolver order, each once), and a connection to a chosen IP address that keeps the host name for SNI and the certificate check, in `tls.connect_with` and `http.request_tls`/`request_tls_with` (`https://` and `http://`, the URL's host in `host`), like curl's `--resolve`
 
 ### Fixed
+- Equal sets or maps built in different orders hashed differently, so a `Set<Set<T>>` (or a map keyed by sets or maps) could hold the same key twice (milestone 143)
 - `lughac explain E0450` now has its page (missing from milestone 139's build, which also left the spec table's title longer than the page's)
 - A std type's own `show` is used when it's printed (it was skipped unless the type was generic)
 
 ### Changed
+- Hashing is written in Lugha (milestone 143, PRP-174): the prelude's `$Hash` on derive blocks replaces the compiler's per-type hashing; nothing to write differently, map-heavy code within about 5% of before
 - **Breaking:** a struct or enum that already has `fun to_json(self): json.Value` (or a `from_json` of `json.Json`'s shape) now has it used by `json.encode`/`json.decode` (milestone 142), and one with a `to_json` or `from_json` of another shape is E0422 where it is encoded or decoded
 - `json.encode` and `json.decode` are written in Lugha (milestone 141, PRP-172): derive blocks in `std` (`$derive Json for i64 { … }`, `$derive Json for struct { … }`) say how each type meets `json.Json`, replacing about 600 lines of per-type code in the compiler; output, errors and speed are unchanged. Only lughac's own sources can write derive blocks for now
 - **Breaking:** `http.json(status, v)` takes a `json.Value` instead of JSON text (milestone 138, PRP-170), so there is one way to answer with JSON; a value holding NaN or an infinity answers a `text/plain` 500. Text in hand: `http.json(status, json.parse(text)?)`. A string argument is now a type error

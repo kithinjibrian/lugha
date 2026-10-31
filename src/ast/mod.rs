@@ -80,6 +80,8 @@ pub enum DeriveTarget {
     Enum,
     /// Every tuple whose elements meet the interface.
     Tuple,
+    /// Every `extern type` handle (v17, milestone 143).
+    Handle,
 }
 
 /// `$derive<T: I> I for T[] { … }`: the interface's items for the types

@@ -2174,6 +2174,12 @@ Derive blocks as built: `$derive[<params>] I for X { items }` (`Item::Derive`; `
 
 **Why:** the discovery's answers (PRP-173): no program loses a name, customising one type mustn't need a new interface, and default methods already override per item.
 
+### 210. Hashing on derive blocks — milestone 143 (PRP-174)
+
+**Decision:** hashing is the prelude's derivable `$Hash` (`prelude/hash.la`): `fun $hash(self, h: u64): u64` folding into FNV-1a state, blocks for every `Eq` type, `$hash.text(s, h)` the one built-in (a string's bytes). `Eq` implies `$Hash`: `derive::implies_hash` (`Eq`, `Num` or `Float`) adds `$Hash` to a parameter's bounds in `satisfy::bound_entry` and `instances::bound_target`, so `K: Eq` is all a map needs and programs never see `$Hash`. Maps and sets hash order-independently (wrapping sum of entries), as `same` compares them. Derive blocks gained `derive.fold(x, init, f)` (unrolled, threading one accumulator, nothing allocated; an enum folds the variant at hand), `derive.index(x)` (the tag), and `Covers::Handle` (`derive … for handle`) with `derive.address(x)` (`ptrtoint`). Hashing order: hashing first, `==` next, printing last.
+
+**Why:** the discovery's answers (PRP-174); `fold` keeps map lookups free of allocation (measured +5% on a map benchmark, inside 10%); hashing inside `Eq` keeps it an implementation detail of maps. The user's guidance from this discovery: breaking changes are fine when the design is better.
+
 ---
 
 ## OPEN — Requires human input before implementation

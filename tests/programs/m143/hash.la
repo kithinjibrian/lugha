@@ -1,0 +1,69 @@
+// Hashing in Lugha (v17, milestone 143): maps and sets keyed by every kind
+// of `Eq` type find what they hold, and equal sets or maps built in
+// different orders are one key.
+extern "malloc" fun c_malloc(n: u64): CPtr;
+
+struct P { x: i64, tag: string, at: (i8, u16) }
+enum Tree { Leaf(i64), Node(Tree, Tree), Empty }
+
+fun main() {
+    // The same numbers, the other way round: equal sets, one key.
+    let mut sets: Set<Set<i64>> = #{};
+    for n in 0..200 {
+        let mut a: Set<i64> = #{};
+        let mut b: Set<i64> = #{};
+        for i in 0..n {
+            a.insert(i);
+            b.insert(n - 1 - i);
+        }
+        sets.insert(a);
+        sets.insert(b);
+    }
+    println(sets.len);
+
+    let mut maps: Set<Map<string, i64>> = #{};
+    maps.insert(#{"a": 1, "b": 2});
+    maps.insert(#{"b": 2, "a": 1});
+    maps.insert(#{"a": 1, "b": 3});
+    println(maps.len);
+
+    let mut by_point: Map<P, i64> = #{};
+    by_point.insert(P { x: 1, tag: "a", at: (-1, 2) }, 10);
+    by_point.insert(P { x: 1, tag: "b", at: (-1, 2) }, 20);
+    println(by_point.get(P { x: 1, tag: "a", at: (-1, 2) }));
+    println(by_point.get(P { x: 1, tag: "a", at: (-1, 3) }));
+
+    let mut trees: Map<Tree, string> = #{};
+    trees.insert(Tree.Node(Tree.Leaf(1), Tree.Empty), "left");
+    trees.insert(Tree.Node(Tree.Empty, Tree.Leaf(1)), "right");
+    println(trees.get(Tree.Node(Tree.Leaf(1), Tree.Empty)));
+    println(trees.len);
+
+    let mut small: Map<u8, char> = #{};
+    let mut wide: Map<i32, bool> = #{};
+    for i in 0..200 {
+        small.insert(i as u8, 'x');
+        wide.insert(-(i as i32), i % 2 == 0);
+    }
+    println("{small.len} {wide.get(-4)} {wide.get(5)}");
+
+    let mut chars: Set<char> = #{'é', 'e'};
+    chars.insert('é');
+    let mut options: Set<Option<string>> = #{};
+    options.insert(None);
+    options.insert(Some("x"));
+    options.insert(None);
+    let mut lists: Map<i64[], i64> = #{};
+    lists.insert([1, 2], 1);
+    lists.insert([2, 1], 2);
+    lists.insert([1, 2], 3);
+    println("{chars.len} {options.len} {lists.len} {lists.get([1, 2])}");
+
+    let p = c_malloc(8);
+    let q = c_malloc(8);
+    let mut handles: Map<CPtr, string> = #{};
+    handles.insert(p, "p");
+    handles.insert(q, "q");
+    handles.insert(p, "p again");
+    println("{handles.len} {handles.get(p)}");
+}

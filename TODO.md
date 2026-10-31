@@ -78,6 +78,6 @@ Done: portable x86-64 binaries (`--cpu`), the collector built in, `$LUGHA_CC`, L
 ## Ideas — noted, not scheduled
 
 - **Decorators:** user-written `@name` attributes that wrap a function, as Python's do (`@logged`, `@memo`); `@` is already reserved for them. Needs a way to wrap any signature (variadic generics or compile-time rewriting). Also `@test(skip)`-style arguments.
-- **Printing, `==` and hashing on derive blocks** (after milestone 142): rewrite the compiler's per-type code for them as derivable interfaces in the prelude, as milestone 141 did for JSON.
+- **`==`, then printing, on derive blocks** (after milestone 143; hashing is done): rewrite the compiler's per-type code for them as derivable interfaces in the prelude, as milestones 141 and 143 did for JSON and hashing. `==` can fold `$hash` into `Eq`'s items.
 - **`const` calling pure functions** (DECISIONS 208): work before the program runs, through an LLVM JIT that reuses codegen; needs core decision 4's "no interpreter" amended.
 - **`@cfg` on items** (DECISIONS 208): code for one OS or architecture, every target checked; with portability stage C1.
