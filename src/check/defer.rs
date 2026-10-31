@@ -11,7 +11,7 @@ use crate::span::Span;
 #[derive(Clone, Copy)]
 pub(super) struct Deferring {
     span: Span,
-    loops: u32,
+    loops: usize,
 }
 
 impl Checker {
@@ -23,7 +23,7 @@ impl Checker {
         let keyword = Span::new(span.start, span.start + "defer".len());
         let saved = self.deferring.replace(Deferring {
             span: keyword,
-            loops: self.loops,
+            loops: self.loops.len(),
         });
         if let StmtKind::Expr { expr, .. } = &inner.kind {
             let ty = self.expr(expr, None);
@@ -38,14 +38,18 @@ impl Checker {
 
     /// Reports E0455 when `keyword` (`return`, `?`, `break`, `continue`)
     /// would leave the deferred statement being checked. A `break` or
-    /// `continue` of a loop inside it stays inside; a closure's body is its
-    /// own (`closures.rs` clears `deferring`).
-    pub(super) fn leaves_defer(&mut self, keyword: &str, span: Span) {
+    /// `continue` whose `target` loop (an index in `loops`) is inside it
+    /// stays inside; a closure's body is its own (`closures.rs` clears
+    /// `deferring`). A jump with no target was already reported.
+    pub(super) fn leaves_defer(&mut self, keyword: &str, span: Span, target: Option<usize>) {
         let Some(deferring) = self.deferring else {
             return;
         };
         let jump = matches!(keyword, "break" | "continue");
-        if !jump || self.loops == deferring.loops {
+        if jump && target.is_none() {
+            return;
+        }
+        if !jump || target.is_some_and(|t| t < deferring.loops) {
             self.report(errors::leaves_defer(keyword, span, deferring.span));
         }
     }

@@ -66,6 +66,7 @@ mod layouts;
 mod levels;
 mod literal;
 mod liveness;
+mod loops;
 mod maps;
 mod matching;
 mod member_names;
@@ -191,7 +192,9 @@ impl Checker {
             methods: HashMap::new(),
             scopes: Vec::new(),
             ret: Type::Unit,
-            loops: 0,
+            loops: Vec::new(),
+            loop_labels: HashMap::new(),
+            outer_labels: Vec::new(),
             deferring: None,
             dead: false,
             iterating: Vec::new(),
@@ -304,8 +307,14 @@ pub(super) struct Checker {
     scopes: Vec<HashMap<String, Local>>,
     /// The return type of the function being checked.
     ret: Type,
-    /// How many loops enclose the current statement, for `break`/`continue`.
-    loops: u32,
+    /// The loops enclosing the current statement, for `break`/`continue`
+    /// (labels and values: milestone 152).
+    loops: Vec<loops::LoopScope>,
+    /// Labels of `while` and `for` statements, by their body's start, until
+    /// the body is checked (`loops.rs`).
+    loop_labels: HashMap<usize, crate::ast::Ident>,
+    /// Labels of loops outside the closures being checked, for E0512's help.
+    outer_labels: Vec<String>,
     /// The `defer` whose statement is being checked, for E0455 (milestone 151).
     deferring: Option<defer::Deferring>,
     /// True while checking code after a divergence, so nested blocks don't

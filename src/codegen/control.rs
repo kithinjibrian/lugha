@@ -7,6 +7,7 @@
 
 use inkwell::IntPredicate;
 use inkwell::basic_block::BasicBlock;
+use inkwell::values::PointerValue;
 
 use super::CodegenError;
 use super::hoist::Head;
@@ -16,13 +17,18 @@ use super::value::{Value, int_type, is_signed, llvm_type};
 use crate::ast::{Block, Expr, Ident};
 use crate::check::Type;
 
-/// Where `continue` and `break` jump in the innermost loop.
+/// Where `continue` and `break` jump in an enclosing loop.
 pub(super) struct Loop<'ctx> {
     pub next: BasicBlock<'ctx>,
     pub exit: BasicBlock<'ctx>,
     /// How many blocks enclosed the loop: a jump runs the defers of those
     /// inside it (milestone 151).
     pub defers: usize,
+    /// The loop's label, which `break label` and `continue label` name
+    /// (milestone 152).
+    pub label: Option<String>,
+    /// A `loop`'s result slot and type, which `break value` stores into.
+    pub result: Option<(PointerValue<'ctx>, Type)>,
 }
 
 impl<'ctx> Lowerer<'ctx> {
@@ -146,11 +152,7 @@ impl<'ctx> Lowerer<'ctx> {
             .expect(POSITIONED);
 
         self.builder.position_at_end(body_block);
-        self.loops.push(Loop {
-            next: cond_block,
-            exit,
-            defers: self.defers.len(),
-        });
+        self.push_loop(body, cond_block, exit);
         self.block(body)?;
         self.loops.pop();
         self.branch(cond_block);
@@ -227,12 +229,7 @@ impl<'ctx> Lowerer<'ctx> {
         };
         self.builder.build_store(var_slot.ptr, i).expect(POSITIONED);
         self.scopes.declare(&var.name, var_slot);
-        let defers = self.defers.len();
-        self.loops.push(Loop {
-            next: step,
-            exit,
-            defers,
-        });
+        self.push_loop(body, step, exit);
         self.block(body)?;
         self.loops.pop();
         self.scopes.pop();
@@ -254,14 +251,108 @@ impl<'ctx> Lowerer<'ctx> {
         Ok(())
     }
 
-    /// `break` (`is_break`) or `continue` in the innermost loop.
-    pub(super) fn jump(&mut self, is_break: bool) -> Result<(), CodegenError> {
-        let target = self
-            .loops
-            .last()
-            .expect("checked: E0504 rejects jumps outside loops");
-        let to = if is_break { target.exit } else { target.next };
-        self.run_defers(target.defers)?;
+    /// Enters the loop whose body is `body`: `continue` goes to `next`,
+    /// `break` to `exit`; its label is the one its statement recorded.
+    pub(super) fn push_loop(
+        &mut self,
+        body: &Block,
+        next: BasicBlock<'ctx>,
+        exit: BasicBlock<'ctx>,
+    ) {
+        let label = self.loop_labels.remove(&body.span.start);
+        self.loops.push(Loop {
+            next,
+            exit,
+            defers: self.defers.len(),
+            label,
+            result: None,
+        });
+    }
+
+    /// `[label:] loop { body }` (milestone 152): the value its breaks
+    /// store, `Void`, or `Never` when no `break` leaves it.
+    pub(super) fn loop_expr(
+        &mut self,
+        expr: &Expr,
+        label: Option<&Ident>,
+        body: &Block,
+    ) -> Result<Value<'ctx>, CodegenError> {
+        let ty = self.ty(expr);
+        let result = match &ty {
+            Type::Never | Type::Unit | Type::Error => None,
+            ty => Some((self.entry_alloca(ty, "loop.value"), ty.clone())),
+        };
+        let head = self.append("loop.body");
+        let exit = self.append("loop.end");
+        let hoists = self.hoist_loop(&[], body)?;
+        self.branch(head);
+
+        self.builder.position_at_end(head);
+        // A green thread's loop gives the others a turn now and then (v17).
+        self.preempt_point();
+        self.loops.push(Loop {
+            next: head,
+            exit,
+            defers: self.defers.len(),
+            label: label.map(|l| l.name.clone()),
+            result: result.clone(),
+        });
+        self.block(body)?;
+        self.loops.pop();
+        self.branch(head);
+
+        self.builder.position_at_end(exit);
+        self.end_hoists(hoists);
+        Ok(match (ty, result) {
+            // Nothing breaks out: the exit has no way in.
+            (Type::Never, _) => {
+                self.builder.build_unreachable().expect(POSITIONED);
+                self.start_dead_block("after.loop");
+                Value::Never
+            }
+            (_, Some((ptr, ty))) => {
+                let local = Local {
+                    ptr,
+                    ty,
+                    borrowed: false,
+                };
+                Value::Val(self.load(&local, "loop.value"))
+            }
+            _ => Value::Void,
+        })
+    }
+
+    /// `break [label] [value]` (`is_break`) or `continue [label]`: the
+    /// value is stored first, then the defers of the blocks left run.
+    pub(super) fn jump(
+        &mut self,
+        is_break: bool,
+        label: Option<&Ident>,
+        value: Option<&Expr>,
+    ) -> Result<(), CodegenError> {
+        let index = match label {
+            Some(label) => self
+                .loops
+                .iter()
+                .rposition(|l| l.label.as_deref() == Some(label.name.as_str())),
+            None => self.loops.len().checked_sub(1),
+        }
+        .expect("checked: E0504 and E0512 reject jumps with no loop");
+        if let (Some(value), Some((ptr, ty))) = (value, self.loops[index].result.clone()) {
+            let stored = self.value_for_store(value, &ty)?;
+            self.builder.build_store(ptr, stored).expect(POSITIONED);
+        } else if let Some(value) = value {
+            // A `()` value has nothing to store, but its effects still run.
+            if matches!(self.expr(value)?, Value::Never) {
+                return Ok(());
+            }
+        }
+        let target = &self.loops[index];
+        let (to, defers) = (
+            if is_break { target.exit } else { target.next },
+            target.defers,
+        );
+        self.run_defers(defers)?;
         self.branch(to);
         self.start_dead_block("after.jump");
         Ok(())

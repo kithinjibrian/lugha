@@ -1,0 +1,11 @@
+inner 00 done
+inner 01 done
+outer 0 done
+inner 10 done
+inner 11 done
+outer 1 done
+inner 20 done
+outer 2 done
+after
+leaving the loop
+7

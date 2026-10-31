@@ -1,0 +1,37 @@
+// PRP-185's program: a loop that only returns, a labelled loop's value,
+// and `continue` to an outer `for`.
+fun next_id(taken: Set<i64>): i64 {
+    let mut id = 0;
+    loop {
+        id += 1;
+        if !taken.has(id) {
+            return id;
+        }
+    }
+}
+
+fun main() {
+    let grid = [[1, 2], [3, 4]];
+    let found = search: loop {
+        for row of grid {
+            for x of row {
+                if x == 3 {
+                    break search x * 10;
+                }
+            }
+        }
+        break 0;
+    };
+    println(found);
+    println(next_id(#{1, 2}));
+
+    outer: for i in 0..3 {
+        for j in 0..3 {
+            if j > i {
+                continue outer;
+            }
+            print("{i}{j} ");
+        }
+    }
+    println("");
+}

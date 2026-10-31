@@ -175,6 +175,7 @@ impl<'ctx> Lowerer<'ctx> {
             }
             ExprKind::IfLet(parts) => return self.if_let(expr, parts),
             ExprKind::Block(block) => return self.block(block),
+            ExprKind::Loop { label, body } => return self.loop_expr(expr, label.as_ref(), body),
             ExprKind::Match(scrutinee, arms) => return self.match_expr(expr, scrutinee, arms),
             ExprKind::Str(text) => self.string_literal(text).into(),
             ExprKind::Interp(parts) => self.interpolation(parts)?,

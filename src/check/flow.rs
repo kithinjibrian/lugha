@@ -47,17 +47,11 @@ impl Checker {
                 let what = match expr.kind {
                     ExprKind::If { .. } => "`if`",
                     ExprKind::Match(..) => "`match`",
+                    ExprKind::Loop { .. } => "`loop`",
                     _ => "block",
                 };
                 self.report(errors::discarded(what, ty, expr.span));
             }
-        }
-    }
-
-    /// `break`/`continue` must be inside a loop.
-    pub(super) fn jump(&mut self, keyword: &str, span: Span) {
-        if self.loops == 0 {
-            self.report(errors::outside_loop(keyword, span));
         }
     }
 
@@ -68,7 +62,12 @@ impl Checker {
             .stmts
             .iter()
             .any(|s| matches!(s.kind, StmtKind::While { .. } | StmtKind::For { .. }));
-        let mut d = errors::missing_return(&f.name.name, ret, f.name.span, has_loop);
+        // `while true { … }` last: `loop` says the same and counts (milestone 152).
+        let while_true = f.body.tail.is_none()
+            && f.body.stmts.last().is_some_and(|s| {
+                matches!(&s.kind, StmtKind::While { cond, .. } if matches!(cond.kind, ExprKind::Bool(true)))
+            });
+        let mut d = errors::missing_return(&f.name.name, ret, f.name.span, has_loop, while_true);
         if let Some(semicolon) = self.stray_semicolon(&f.body) {
             d = errors::with_stray_semicolon(d, semicolon);
         }
@@ -144,9 +143,7 @@ mod tests {
             "fun g(): i64 { while true { return 1; } }\nfun main() {}",
         );
         assert!(
-            d[0].help
-                .as_deref()
-                .is_some_and(|h| h.contains("panic(\"unreachable\")")),
+            d[0].help.as_deref().is_some_and(|h| h.contains("loop {")),
             "{d:?}"
         );
     }

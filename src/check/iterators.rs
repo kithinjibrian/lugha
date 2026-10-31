@@ -55,9 +55,7 @@ impl Checker {
         let element = self.iterator_element(iter, ty);
         self.push();
         self.declare(var, element, Binding::LoopVar);
-        self.loops += 1;
-        self.block(body, None);
-        self.loops -= 1;
+        self.loop_body(body);
         self.pop();
     }
 

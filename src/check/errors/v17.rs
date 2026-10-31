@@ -186,3 +186,42 @@ pub(in crate::check) fn deferred_value(ty: Type, span: Span) -> Diagnostic {
     )
     .with_help(help)
 }
+
+/// `break label` or `continue label` with no enclosing loop of that name
+/// (milestone 152). `in_closure`: a loop outside the closure has it.
+pub(in crate::check) fn unknown_label(label: &crate::ast::Ident, in_closure: bool) -> Diagnostic {
+    let d = Diagnostic::error(
+        "E0512",
+        format!("unknown label `{}`", label.name),
+        label.span,
+    );
+    if in_closure {
+        d.with_help("labels don't reach into closures: a closure's body is its own function")
+    } else {
+        d.with_help("a label names an enclosing loop: `outer: for … { break outer; }`")
+    }
+}
+
+/// A loop labelled like a loop around it (milestone 152).
+pub(in crate::check) fn label_in_use(label: &crate::ast::Ident, outer: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0513",
+        format!(
+            "label `{}` is already used by an enclosing loop",
+            label.name
+        ),
+        label.span,
+    )
+    .with_label(outer, "the enclosing loop's label")
+    .with_help("give the inner loop another name")
+}
+
+/// `break value` out of a `while` or `for` loop (milestone 152).
+pub(in crate::check) fn break_value_outside_loop(span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0514",
+        "`break` with a value out of a `while` or `for` loop",
+        span,
+    )
+    .with_help("only `loop` gives a value; a `while` or `for` can end without a `break`")
+}

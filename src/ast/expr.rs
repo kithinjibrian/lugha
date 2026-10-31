@@ -75,6 +75,13 @@ pub enum ExprKind {
     IfLet(Box<IfLet>),
     /// A block used as an expression.
     Block(Block),
+    /// `[label:] loop { body }` (v17, milestone 152): repeats until a `break`
+    /// targets it, whose value is the loop's. The body is boxed so `Expr`
+    /// stays as small as before (the parser recurses on it).
+    Loop {
+        label: Option<Ident>,
+        body: Box<Block>,
+    },
     /// `match scrutinee { arms }` (v1).
     Match(Box<Expr>, Vec<Arm>),
     /// `spawn call` (v17): the call, wrapped by the parser in a closure

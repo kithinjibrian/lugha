@@ -1,0 +1,11 @@
+fun main() {
+    outer: loop {
+        let f = fun() {
+            loop {
+                break outer;
+            }
+        };
+        f();
+        break;
+    }
+}

@@ -1,0 +1,20 @@
+// An array copied inside a loop that a labelled `continue` goes round
+// again is still a copy: `xs` is read on the next round.
+fun main() {
+    let xs = [1, 2];
+    let mut n = 0;
+    let mut last = [0];
+    outer: loop {
+        n += 1;
+        loop {
+            let mut ys = xs;
+            ys[0] = n;
+            last = ys;
+            if n < 3 {
+                continue outer;
+            }
+            break outer;
+        }
+    }
+    println("{xs} {last}");
+}

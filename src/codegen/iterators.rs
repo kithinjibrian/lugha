@@ -7,7 +7,6 @@ use inkwell::types::BasicType;
 use inkwell::values::{BasicValueEnum, FunctionValue, PointerValue, ValueKind};
 
 use super::CodegenError;
-use super::control::Loop;
 use super::hoist::Head;
 use super::instances::instance_name;
 use super::interfaces::SLOTS;
@@ -106,8 +105,7 @@ impl<'ctx> Lowerer<'ctx> {
                 borrowed: false,
             },
         );
-        let defers = self.defers.len();
-        self.loops.push(Loop { next, exit, defers });
+        self.push_loop(body, next, exit);
         self.block(body)?;
         self.loops.pop();
         self.scopes.pop();

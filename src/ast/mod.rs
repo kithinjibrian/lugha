@@ -327,10 +327,15 @@ pub enum StmtKind {
     /// An expression statement. `semicolon` is false only for a block-like
     /// (`if` or `{`) statement written without one.
     Expr { expr: Expr, semicolon: bool },
-    /// `while cond { body }`
-    While { cond: Expr, body: Block },
-    /// `while let pattern = scrutinee { body }` (v9).
+    /// `[label:] while cond { body }`
+    While {
+        label: Option<Ident>,
+        cond: Expr,
+        body: Block,
+    },
+    /// `[label:] while let pattern = scrutinee { body }` (v9).
     WhileLet {
+        label: Option<Ident>,
         pattern: Box<Pattern>,
         scrutinee: Expr,
         body: Box<Block>,
@@ -341,18 +346,22 @@ pub enum StmtKind {
         init: Expr,
         else_: Option<Box<Block>>,
     },
-    /// `for var in a..b { body }` or `for var of xs { body }`
+    /// `[label:] for var in a..b { body }` or `… for var of xs { body }`
     For {
+        label: Option<Ident>,
         var: Ident,
         iter: ForIter,
         body: Block,
     },
     /// `return [expr];`
     Return(Option<Expr>),
-    /// `break;`
-    Break,
-    /// `continue;`
-    Continue,
+    /// `break [label] [value];` (a label and a value: v17, milestone 152).
+    Break {
+        label: Option<Ident>,
+        value: Option<Expr>,
+    },
+    /// `continue [label];`
+    Continue { label: Option<Ident> },
     /// `defer e;`, `defer { … }` or `defer place op value;` (v17, milestones
     /// 151 and PRP-183): the statement, an `Expr` or `Assign`, runs when the
     /// enclosing block is left, on every exit but a panic.

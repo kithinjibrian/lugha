@@ -129,6 +129,9 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) owned: Vec<(inkwell::values::PointerValue<'ctx>, crate::ast::Expr)>,
     /// Enclosing loops, innermost last, for `break` and `continue`.
     pub(super) loops: Vec<Loop<'ctx>>,
+    /// Labels of `while` and `for` statements, by their body's start,
+    /// until the loop is entered (`push_loop`, milestone 152).
+    pub(super) loop_labels: std::collections::HashMap<usize, String>,
     /// Per enclosing block, innermost last, the `defer` statements reached
     /// so far (milestone 151, `defer.rs`).
     pub(super) defers: Vec<Vec<super::control::defer::Deferred<'ctx>>>,
@@ -232,6 +235,7 @@ pub(super) fn lower<'ctx>(
         aliases: std::collections::HashMap::new(),
         owned: Vec::new(),
         loops: Vec::new(),
+        loop_labels: std::collections::HashMap::new(),
         defers: Vec::new(),
         constants: Constants::default(),
         source: OwnedSource {

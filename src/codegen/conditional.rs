@@ -3,7 +3,6 @@
 //! `test`, jumping to the else branch, the loop's exit or the `else` block.
 
 use super::CodegenError;
-use super::control::Loop;
 use super::hoist::Head;
 use super::lower::{Lowerer, POSITIONED};
 use super::patterns::Subject;
@@ -94,12 +93,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.scopes.push();
         let (subject, sty) = self.subject_of(scrutinee)?;
         self.test(pattern, subject, &sty, exit, true);
-        let defers = self.defers.len();
-        self.loops.push(Loop {
-            next: cond,
-            exit,
-            defers,
-        });
+        self.push_loop(body, cond, exit);
         self.block(body)?;
         self.loops.pop();
         self.scopes.pop();

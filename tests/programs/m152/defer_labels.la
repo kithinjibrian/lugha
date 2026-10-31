@@ -1,0 +1,21 @@
+// A labelled exit runs the defers of every block it leaves, innermost first.
+fun main() {
+    outer: for i in 0..3 {
+        defer println("outer {i} done");
+        for j in 0..3 {
+            defer println("inner {i}{j} done");
+            if j == 1 {
+                continue outer;
+            }
+            if i == 2 {
+                break outer;
+            }
+        }
+    }
+    println("after");
+    let v = l: loop {
+        defer println("leaving the loop");
+        break l 7;
+    };
+    println(v);
+}

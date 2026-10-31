@@ -1,0 +1,9 @@
+error[E0503]: `next` may end without returning a value of type i64
+  --> tests/programs/m152/while_true.la:1:5
+  |
+1 | fun next(n: i64): i64 {
+  |     ^^^^
+  |
+  = help: `while true` never counts as returning (spec §6); write `loop { … }`, which does when no `break` leaves it
+
+For more about E0503, run `lughac explain E0503`.

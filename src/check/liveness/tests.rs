@@ -36,7 +36,7 @@ fn visit_program(program: &crate::ast::Program, f: &mut dyn FnMut(&crate::ast::E
                     expr(value, f);
                 }
                 StmtKind::Expr { expr: e, .. } => expr(e, f),
-                StmtKind::While { cond, body } => {
+                StmtKind::While { cond, body, .. } => {
                     expr(cond, f);
                     block(body, f);
                 }

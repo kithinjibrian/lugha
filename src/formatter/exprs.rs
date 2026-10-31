@@ -174,6 +174,11 @@ impl Printer<'_> {
                 self.if_chain(head, &parts.then, parts.else_.as_deref())
             }
             ExprKind::Block(b) => self.block(b, 0),
+            ExprKind::Loop { label, body } => concat(vec![
+                text(super::stmts::label_prefix(label)),
+                text("loop "),
+                self.block(body, 0),
+            ]),
             ExprKind::Match(scrutinee, arms) => self.matching(e, scrutinee, arms),
             ExprKind::Spawn(closure) => {
                 concat(vec![text("spawn "), self.expr(spawned_call(closure))])
@@ -234,6 +239,7 @@ impl Printer<'_> {
             ExprKind::If { .. }
                 | ExprKind::IfLet(_)
                 | ExprKind::Block(_)
+                | ExprKind::Loop { .. }
                 | ExprKind::Match(..)
                 | ExprKind::Select(_)
                 | ExprKind::StructLit(_)

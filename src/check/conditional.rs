@@ -54,9 +54,7 @@ impl Checker {
         let bindings = self.tested(pattern, scrutinee);
         self.push();
         self.declare_bindings(&bindings);
-        self.loops += 1;
-        self.block(body, None);
-        self.loops -= 1;
+        self.loop_body(body);
         self.unused(&bindings);
         self.pop();
     }

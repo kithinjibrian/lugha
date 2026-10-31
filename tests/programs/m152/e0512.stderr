@@ -1,0 +1,9 @@
+error[E0512]: unknown label `nowhere`
+  --> tests/programs/m152/e0512.la:3:18
+  |
+3 |         continue nowhere;
+  |                  ^^^^^^^
+  |
+  = help: a label names an enclosing loop: `outer: for … { break outer; }`
+
+For more about E0512, run `lughac explain E0512`.
