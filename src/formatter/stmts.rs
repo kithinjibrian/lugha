@@ -74,22 +74,8 @@ impl Printer<'_> {
                     false => doc,
                 }
             }
-            StmtKind::Defer(expr) => {
-                // A block-like body takes no `;`, as a block statement doesn't.
-                let block_like = matches!(
-                    expr.kind,
-                    ExprKind::Block(_)
-                        | ExprKind::If { .. }
-                        | ExprKind::IfLet(_)
-                        | ExprKind::Match(..)
-                        | ExprKind::Select(_)
-                );
-                let mut parts = vec![text("defer "), self.expr(expr)];
-                if !block_like {
-                    parts.push(text(";"));
-                }
-                concat(parts)
-            }
+            // The inner statement prints its own `;`, or none after a block.
+            StmtKind::Defer(inner) => concat(vec![text("defer "), self.stmt(inner)]),
             StmtKind::While { cond, body } => concat(vec![
                 text("while "),
                 self.cond(cond),

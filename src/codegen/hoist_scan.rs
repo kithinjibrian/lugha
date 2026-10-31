@@ -166,7 +166,14 @@ impl<'ctx> Lowerer<'ctx> {
                     }
                 }
                 // Runs at the block's exits, still inside any loop around it.
-                StmtKind::Defer(expr) => self.scan_read(scan, expr),
+                StmtKind::Defer(inner) => {
+                    let block = Block {
+                        stmts: vec![(**inner).clone()],
+                        tail: None,
+                        span: inner.span,
+                    };
+                    self.block_scan(scan, &block);
+                }
                 StmtKind::Break | StmtKind::Continue => {}
             }
         }

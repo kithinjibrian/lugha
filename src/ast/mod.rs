@@ -353,9 +353,10 @@ pub enum StmtKind {
     Break,
     /// `continue;`
     Continue,
-    /// `defer e;` or `defer { … }` (v17, milestone 151): `e` runs when the
+    /// `defer e;`, `defer { … }` or `defer place op value;` (v17, milestones
+    /// 151 and PRP-183): the statement, an `Expr` or `Assign`, runs when the
     /// enclosing block is left, on every exit but a panic.
-    Defer(Expr),
+    Defer(Box<Stmt>),
 }
 
 /// What a `for` loop iterates over.

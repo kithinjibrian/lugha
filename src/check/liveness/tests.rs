@@ -41,7 +41,11 @@ fn visit_program(program: &crate::ast::Program, f: &mut dyn FnMut(&crate::ast::E
                     block(body, f);
                 }
                 StmtKind::For { body, .. } => block(body, f),
-                StmtKind::Defer(e) => expr(e, f),
+                StmtKind::Defer(inner) => {
+                    if let StmtKind::Expr { expr: e, .. } = &inner.kind {
+                        expr(e, f)
+                    }
+                }
                 _ => {}
             }
         }

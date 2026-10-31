@@ -1,0 +1,21 @@
+// `defer` takes an assignment too (PRP-183), run at exit like any other.
+fun count(): i64 {
+    let mut total = 0;
+    for i in 0..10 {
+        defer total += i;
+        if i == 3 {
+            break;
+        }
+    }
+    total
+}
+
+fun main() {
+    let mut n = 1;
+    defer println(n);
+    defer n += 10;
+    let mut log: string[] = ["a"];
+    defer log = [];
+    println(n);
+    println(count());
+}

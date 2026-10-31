@@ -3,7 +3,7 @@
 //! its block is already being left.
 
 use super::{Checker, Type, errors};
-use crate::ast::Expr;
+use crate::ast::{Stmt, StmtKind};
 use crate::span::Span;
 
 /// The `defer` being checked: where it is, and how many loops enclosed it,
@@ -16,19 +16,24 @@ pub(super) struct Deferring {
 
 impl Checker {
     /// `defer e;`: `e` is checked where it is written (it runs later, but
-    /// sees the same names) and must have type `()`.
-    pub(super) fn defer_stmt(&mut self, expr: &Expr, span: Span) {
+    /// sees the same names) and must have type `()`; an assignment is
+    /// checked as the statement it is (PRP-183).
+    pub(super) fn defer_stmt(&mut self, inner: &Stmt, span: Span) {
         // The label points at the keyword, not the whole statement.
         let keyword = Span::new(span.start, span.start + "defer".len());
         let saved = self.deferring.replace(Deferring {
             span: keyword,
             loops: self.loops,
         });
-        let ty = self.expr(expr, None);
-        self.deferring = saved;
-        if !matches!(ty, Type::Unit | Type::Never | Type::Error) {
-            self.report(errors::deferred_value(ty, expr.span));
+        if let StmtKind::Expr { expr, .. } = &inner.kind {
+            let ty = self.expr(expr, None);
+            if !matches!(ty, Type::Unit | Type::Never | Type::Error) {
+                self.report(errors::deferred_value(ty, expr.span));
+            }
+        } else {
+            self.stmt(inner);
         }
+        self.deferring = saved;
     }
 
     /// Reports E0455 when `keyword` (`return`, `?`, `break`, `continue`)
@@ -93,5 +98,17 @@ mod tests {
             "defer { let g = fun(): i64 { return 1; }; println(g()); }",
         ));
         ok(&main("defer { defer println(1); }"));
+    }
+
+    #[test]
+    fn an_assignment_is_checked_as_the_statement_it_is() {
+        ok(&main(
+            "let mut n = 1; defer n += 1; defer n = 0; let mut xs = [1]; defer xs[0] = 2;",
+        ));
+        assert_eq!(errors(&main("let n = 1; defer n += 1;")), [("E0501", "n")]);
+        assert_eq!(
+            errors(&main("let mut n = 1; defer n = \"a\";")),
+            [("E0403", "\"a\"")]
+        );
     }
 }

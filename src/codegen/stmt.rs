@@ -46,7 +46,7 @@ impl<'ctx> Lowerer<'ctx> {
                 iter: ForIter::MutOf(iter),
                 body,
             } => self.for_of(var, iter, body, true)?,
-            StmtKind::Defer(expr) => self.defer_stmt(expr),
+            StmtKind::Defer(inner) => self.defer_stmt(inner),
             StmtKind::Return(value) => {
                 self.return_stmt(value.as_ref())?;
                 return Ok(true);

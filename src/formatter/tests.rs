@@ -385,3 +385,11 @@ fn defer_keeps_its_statement_or_block_v17() {
         "fun f() {\n    defer println(1);\n    defer {\n        g();\n    }\n    defer if c {\n        g();\n    }\n}\n",
     );
 }
+
+#[test]
+fn defer_keeps_an_assignment_prp_183() {
+    check(
+        "fun f(){defer n+=1;defer xs[0]=2;}",
+        "fun f() {\n    defer n += 1;\n    defer xs[0] = 2;\n}\n",
+    );
+}

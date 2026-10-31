@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `defer` takes an assignment (PRP-183): `defer n += 1;` and `defer xs[0] = 2;` need no braces.
 - `defer` (milestone 151, PRP-182): `defer f.close();` or `defer { … }` runs when its block is left, on its end, `return`, `?`, `break` or `continue`, last first, after a tail or `return` value is computed; panics don't run it. E0455 (leaving a deferred statement) and E0456 (a deferred statement with a value). The formatter, completion and the VS Code grammar know it (extension 0.21.0). **Breaking:** `defer` is a keyword.
 - Inference through iterator chains (milestone 150, PRP-181): `let n: Option<i64>[] = xs.iter().map(fun(x) = None).collect();` now types, through `filter`, `take`, `skip`, `take_while` and `skip_while` too, and for `collect_set` and `collect_map`
 - Inference through `.unwrap()` and `.expect()` (milestone 148, PRP-179): `let p: Person = json.decode(v).unwrap();` now works, as do `json.decode(v).unwrap() == q` and list elements; generally, a generic call only its result can type takes its type through any method whose result mentions the receiver's type parameters, a program's own included (`let n: u8 = zeros().first();` with `fun first(self): T`)

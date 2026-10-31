@@ -33,7 +33,7 @@ impl Checker {
     }
 
     /// Checks a statement and reports whether it diverges.
-    fn stmt(&mut self, stmt: &Stmt) -> bool {
+    pub(super) fn stmt(&mut self, stmt: &Stmt) -> bool {
         match &stmt.kind {
             StmtKind::Let {
                 mutable,
@@ -76,7 +76,7 @@ impl Checker {
                 iter: ForIter::MutOf(iter),
                 body,
             } => self.for_of_mut(var, iter, body),
-            StmtKind::Defer(expr) => self.defer_stmt(expr, stmt.span),
+            StmtKind::Defer(inner) => self.defer_stmt(inner, stmt.span),
             StmtKind::Return(value) => {
                 self.leaves_defer("return", stmt.span);
                 self.return_stmt(value.as_ref(), stmt.span);
