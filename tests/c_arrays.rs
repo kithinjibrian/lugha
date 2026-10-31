@@ -137,7 +137,7 @@ fn what_cant_cross_is_rejected() {
                 extern fun by_value(u: U): i32;\n\
                 extern fun names(xs: string[], n: u64);\n\
                 fun main() { let u = U { a: 1, b: 2.0 }; let v = U { a: 1 }; println(v == v); }\n";
-    Case::new(main, SIDE).rejects(&["E0409", "E0409", "E0444", "E0404"]);
+    Case::new(main, SIDE).rejects(&["E0409", "E0409", "E0444", "E0451"]);
 }
 
 #[test]
