@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `std.json` (milestone 137, PRP-169): strict RFC 8259 JSON — `json.parse(text)` to a `Value` (exact `i64` integers, keys in order), `json.stringify(v)`/`json.pretty(v)` back, `get`/`at`/`as_*` helpers; duplicate keys, lone surrogates and numbers past `f64` are errors with a line and column, NaN and infinities can't be written, and size, depth and value-count limits hold against hostile input; all of JSONTestSuite's parsing cases pass
 - Running out of stack always panics with `stack overflow` (milestone 135, PRP-167): every function probes its stack a page at a time, so a frame bigger than the guard area no longer crashes with a segfault, on the main stack or in a green thread
 - Extern structs by value on ARM64 (milestone 134, PRP-166): to and from C, and through callbacks, as AAPCS64 passes them — floating-point aggregates in FP registers, other structs up to 16 bytes in one or two general registers, bigger ones by a caller-made copy or `x8`; `--emit=ir` follows `--target`; E0449 retired
 - Linux on ARM64 (milestone 133, PRP-165): `lughac build --target aarch64-unknown-linux-gnu` writes an ARM64 executable, green threads, actors and the collector included (an AArch64 stack switch in the runtime), compiled with `aarch64-linux-gnu-gcc` unless `$LUGHA_CC` is set; an extern struct by value to or from C is E0449 there until ARM's struct rules land; `--cpu` with it is exit 2

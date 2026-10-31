@@ -43,6 +43,11 @@ pub const STD: &[(&str, &str)] = &[
     ("$toml_strings", include_str!("std/toml_strings.la")),
     ("$toml_scan", include_str!("std/toml_scan.la")),
     ("$toml_parse", include_str!("std/toml_parse.la")),
+    ("json", include_str!("std/json.la")),
+    // Internal to `std.json`.
+    ("$json_value", include_str!("std/json_value.la")),
+    ("$json_parse", include_str!("std/json_parse.la")),
+    ("$json_write", include_str!("std/json_write.la")),
 ];
 
 /// The prelude: the array helpers, written in Lugha and loaded with every

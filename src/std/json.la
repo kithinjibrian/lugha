@@ -1,0 +1,73 @@
+/**
+ * std.json: strict RFC 8259 JSON (v17). `parse(text)` gives a `Value`;
+ * `stringify(v)` and `pretty(v)` write one back. Numbers without a fraction
+ * or exponent that fit `i64` stay exact (`Integer`), and objects keep their
+ * keys in the text's order. JSON comes from anywhere, so the text is read
+ * within limits — its size, nesting depth and count of values (`Limits`) —
+ * and every mistake, duplicate key or overflow is a `JsonError` with its
+ * line and column; nothing panics on any input. To read a file, pass
+ * `read_file(path)`'s text.
+ */
+public import std.$json_value { * };
+import std.$json_parse { parse_text };
+import std.$json_write { write };
+
+/**
+ * Parses JSON text with the default limits.
+ * @param text the JSON
+ * @returns its value, or the first mistake in it
+ */
+public fun parse(text: string): Result<Value, JsonError> = parse_text(text, limits());
+
+/**
+ * `parse` with other limits.
+ * @param text the JSON
+ * @param limits what to accept
+ */
+public fun parse_with(text: string, limits: Limits): Result<Value, JsonError> = parse_text(text, limits);
+
+/**
+ * `v` as compact JSON text: `{"ok":true}`.
+ * @returns the text, or `NotFinite` if a float in `v` is NaN or an infinity
+ */
+public fun stringify(v: Value): Result<string, JsonError> = write(v, false);
+
+/**
+ * `v` as JSON text indented by two spaces, one element or member per line.
+ * @returns the text, or `NotFinite` if a float in `v` is NaN or an infinity
+ */
+public fun pretty(v: Value): Result<string, JsonError> = write(v, true);
+
+/** An object's member: `json.get(v, "user").and_then(fun(u) = json.get(u, "name"))`. */
+public fun get(v: Value, key: string): Option<Value> = match v { Object(m) => m.get(key), _ => None };
+
+/** An array's element at `i`, if `v` is an array and `i` is in range. */
+public fun at(v: Value, i: i64): Option<Value> = match v {
+    Array(xs) => if i >= 0 && i < xs.len { Some(xs[i]) } else { None },
+    _ => None,
+};
+
+/** The string, if `v` is one: `json.get(v, "name").and_then(json.as_text)`. */
+public fun as_text(v: Value): Option<string> = match v { Text(s) => Some(s), _ => None };
+
+/** The integer, if `v` is an `Integer`. */
+public fun as_i64(v: Value): Option<i64> = match v { Integer(n) => Some(n), _ => None };
+
+/** The number as a float, if `v` is a `Float` or an `Integer` (widened). */
+public fun as_f64(v: Value): Option<f64> = match v {
+    Float(x) => Some(x),
+    Integer(n) => Some(n as f64),
+    _ => None,
+};
+
+/** The boolean, if `v` is one. */
+public fun as_bool(v: Value): Option<bool> = match v { Bool(b) => Some(b), _ => None };
+
+/** The array's values, if `v` is an array. */
+public fun as_array(v: Value): Option<Value[]> = match v { Array(xs) => Some(xs), _ => None };
+
+/** The object's members, if `v` is an object. */
+public fun as_object(v: Value): Option<Map<string, Value>> = match v { Object(m) => Some(m), _ => None };
+
+/** Whether `v` is `null`. */
+public fun is_null(v: Value): bool = match v { Null => true, _ => false };

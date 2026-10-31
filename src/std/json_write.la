@@ -1,0 +1,128 @@
+/**
+ * std.$json_write: writing a `Value` as JSON text (v17), compact or
+ * two-space indented. Bundled sources only; see `std.json`.
+ */
+import std.$json_value { ErrorKind, JsonError, Value };
+
+struct Writer {
+    out: u8[],
+    pretty: bool,
+}
+
+/** `v` as JSON text, or `NotFinite` for a NaN or infinite float anywhere in it. */
+fun write(v: Value, pretty: bool): Result<string, JsonError> {
+    let mut w = Writer { out: [], pretty: pretty };
+    w.value(v, 0)?;
+    Ok(string_from_utf8(w.out).unwrap_or(""))
+}
+
+fun not_finite(): JsonError = JsonError {
+    kind: ErrorKind.NotFinite,
+    detail: "NaN or an infinity can't be written as JSON",
+    line: 0,
+    column: 0,
+};
+
+impl Writer {
+    fun put(mut self, s: string) {
+        for c of s.to_bytes() {
+            self.out.push(c);
+        }
+    }
+
+    /** A line break and `indent` levels of two spaces, when pretty. */
+    fun newline(mut self, indent: i64) {
+        if self.pretty {
+            self.out.push(10);
+            for _ in 0..indent * 2 {
+                self.out.push(32);
+            }
+        }
+    }
+
+    fun value(mut self, v: Value, indent: i64): Result<(), JsonError> {
+        match v {
+            Null => self.put("null"),
+            Bool(b) => self.put(if b { "true" } else { "false" }),
+            Integer(n) => self.put("{n}"),
+            Float(x) => {
+                // `x - x` is NaN exactly when `x` is NaN or an infinity.
+                if !(x - x == 0.0) {
+                    return Err(not_finite());
+                }
+                // Lugha's shortest round-trip form (`1.0`, `1.0e300`) is valid JSON.
+                self.put("{x}");
+            }
+            Text(s) => self.text(s),
+            Array(xs) => {
+                if xs.len == 0 {
+                    self.put("[]");
+                    return Ok(());
+                }
+                self.out.push(91);
+                for k in 0..xs.len {
+                    if k > 0 {
+                        self.out.push(44);
+                    }
+                    self.newline(indent + 1);
+                    self.value(xs[k], indent + 1)?;
+                }
+                self.newline(indent);
+                self.out.push(93);
+            }
+            Object(m) => {
+                if m.len == 0 {
+                    self.put("{{}}");
+                    return Ok(());
+                }
+                self.out.push(123);
+                let mut first = true;
+                for (key, member) of m {
+                    if !first {
+                        self.out.push(44);
+                    }
+                    first = false;
+                    self.newline(indent + 1);
+                    self.text(key);
+                    self.out.push(58);
+                    if self.pretty {
+                        self.out.push(32);
+                    }
+                    self.value(member, indent + 1)?;
+                }
+                self.newline(indent);
+                self.out.push(125);
+            }
+        }
+        Ok(())
+    }
+
+    /** A string, escaping only `"`, `\` and control characters. */
+    fun text(mut self, s: string) {
+        let digits = "0123456789abcdef".to_bytes();
+        self.out.push(34);
+        for c of s.to_bytes() {
+            let named = match c {
+                34 => 34,
+                92 => 92,
+                10 => 110,
+                9 => 116,
+                13 => 114,
+                8 => 98,
+                12 => 102,
+                _ => 0,
+            };
+            if named != 0 {
+                self.out.push(92);
+                self.out.push(named as u8);
+            } else if c < 32 {
+                self.put("\\u00");
+                self.out.push(digits[(c / 16) as i64]);
+                self.out.push(digits[(c % 16) as i64]);
+            } else {
+                self.out.push(c);
+            }
+        }
+        self.out.push(34);
+    }
+}

@@ -432,6 +432,9 @@ Open (v16 §12): editing a box in place (`r.with`), a bounds-checked byte buffer
 ### Milestone 91 — Green threads ✅
 - [x] (PRP-122) `spawn call` → `Task<T>`/`Task`, `join`; `Chan<T>` (`new`, `buffered`, `send`, `recv`, `try_recv`, `close`, `is`); `select` with `recv`/`send`/`after`/`default`; `std.task` (`sleep`, `yield_now`); one OS thread, preemption by countdown, deadlock panic; E0211, E0438.
 
+### Milestone 137 — `std.json` ✅
+- [x] (PRP-169) strict RFC 8259 parse and write, `Integer`/`Float`, duplicates refused, limits, helpers; JSONTestSuite vendored. Later: `std.http` JSON helpers (`Response` from a `Value`, a request's body as JSON), mapping to and from structs.
+
 ### Milestone 136 — Finer slot sharing ✅
 - [x] (PRP-168) slots used one after another inside a block share (`frames.rs` ranges by instruction position).
 
