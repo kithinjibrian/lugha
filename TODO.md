@@ -6,7 +6,7 @@ What's next. Shipped work is in CHANGELOG.md (and the spec's §11 milestone tabl
 
 ## Known bugs and limits
 
-- [ ] `None` in a closure's result inside a generic function, with nothing fixing its type, is still E0412 (found testing milestone 94).
+- [ ] An iterator chain's expected type doesn't reach back through `.collect()`: `let n: Option<i64>[] = xs.iter().map(fun(x) = None).collect();` is E0412 (a closure returning only `None`; one returning `Some(x)` in another branch is fine). Milestone 148's rule covers methods, not the iterator helpers.
 
 ## Language and library
 
