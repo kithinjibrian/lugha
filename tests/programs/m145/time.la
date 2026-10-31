@@ -1,0 +1,49 @@
+// Calendar dates in std.time (v17, milestone 145): `civil` and `from_civil`
+// round-trip on the proleptic Gregorian calendar, for any `i64` moment and
+// offset, and refuse dates that don't exist.
+import std.time;
+
+fun show(c: time.Civil): string = "{c.year}-{c.month:02}-{c.day:02} {c.hour:02}:{c.minute:02}:{c.second:02}.{c.ms:03} w{c.weekday}";
+
+fun at(ms: i64, offset: i64) {
+    let c = time.civil(ms, offset).unwrap();
+    let back = time.from_civil(c, offset).unwrap();
+    println("{show(c)} back {back == ms}");
+}
+
+fun date(y: i64, m: i64, d: i64): time.Civil = time.Civil { year: y, month: m, day: d, weekday: 0, hour: 0, minute: 0, second: 0, ms: 0 };
+
+fun main() {
+    at(0, 0);                                  // 1970-01-01, a Thursday
+    at(-1, 0);                                 // the millisecond before
+    at(951782400000, 0);                       // 2000-02-29: 2000 is a leap year
+    at(1709164800000, 0);                      // 2024-02-29
+    at(1798761600000, 0);                      // 2027-01-01, a Friday
+    at(1798761600000, -43200);                 // twelve hours west: the day before
+    at(1798761600000, 19800);                  // +5:30
+    at(-1640995200000, 1172);                  // +0:19:32, Amsterdam's old offset
+    at(i64.MIN, 0);
+    at(i64.MAX, 0);
+    at(i64.MAX, 93600);
+    // Year 1 and year 0 (1 BC), and 1900, which isn't a leap year.
+    for (y, m, d) of [(1, 1, 1), (0, 12, 31), (1900, 2, 28), (2026, 12, 31)] {
+        let t = time.from_civil(date(y, m, d), 0).unwrap();
+        println("{y}-{m}-{d} is {show(time.civil(t, 0).unwrap())}");
+    }
+    // What doesn't exist.
+    println(time.from_civil(date(1900, 2, 29), 0));
+    println(time.from_civil(date(2026, 13, 1), 0));
+    println(time.from_civil(date(2026, 4, 31), 0));
+    let late = time.Civil { year: 2026, month: 1, day: 1, weekday: 0, hour: 24, minute: 0, second: 0, ms: 0 };
+    println(time.from_civil(late, 0));
+    let leap_second = time.Civil { year: 2026, month: 1, day: 1, weekday: 0, hour: 23, minute: 59, second: 60, ms: 0 };
+    println(time.from_civil(leap_second, 0));
+    let far = time.Civil { year: 300000000, month: 1, day: 1, weekday: 0, hour: 0, minute: 0, second: 0, ms: 0 };
+    println(time.from_civil(far, 0));
+    println(time.from_civil(date(292278995, 1, 1), 0));
+    println(time.civil(0, 93601));
+    println(time.from_civil(date(2026, 1, 1), -100000));
+    // The weekday given to `from_civil` is ignored.
+    let wrong = time.Civil { year: 2027, month: 1, day: 1, weekday: 2, hour: 0, minute: 0, second: 0, ms: 0 };
+    println(time.from_civil(wrong, 0));
+}

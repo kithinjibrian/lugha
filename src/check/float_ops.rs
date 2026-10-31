@@ -47,6 +47,8 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         "now_ms" => (Vec::new(), Type::I64),
         // `std.time` and `std.fs` (v17, milestone 115).
         "wall_ms" => (Vec::new(), Type::I64),
+        // The system zone's offset at a moment, in seconds (v17, milestone 145).
+        "local_offset" => (vec![Type::I64], result(Type::I64)),
         "rename" => (vec![Type::String, Type::String], result(Type::I64)),
         "chmod" => (vec![Type::String, Type::I64], result(Type::I64)),
         // v17, milestone 116.
@@ -271,7 +273,19 @@ impl Checker {
 
 #[cfg(test)]
 mod tests {
+    use crate::check::Type;
     use crate::check::modules::test_util::prelude_codes;
+
+    #[test]
+    fn local_offset_takes_seconds_and_may_fail() {
+        let (params, ret) = super::os_signature("local_offset").expect("a built-in");
+        assert_eq!(params, [Type::I64]);
+        let result = Type::Enum(
+            crate::check::RESULT.to_string(),
+            vec![Type::I64, Type::String],
+        );
+        assert_eq!(ret, result);
+    }
 
     #[test]
     fn std_math_follows_the_import_rules() {

@@ -1,0 +1,13 @@
+// The system zone's offset (v17, milestone 145), from `TZ`: a POSIX rule,
+// so no zone database is needed; daylight saving from March to November.
+import std.time;
+
+fun main() {
+    let january = 1767225600000;     // 2026-01-01T00:00Z
+    let july = 1782864000000;        // 2026-07-01T00:00Z
+    println(time.local_offset(january));
+    println(time.local_offset(july));
+    let c = time.civil(july, time.local_offset(july).unwrap()).unwrap();
+    println("{c.year}-{c.month:02}-{c.day:02} {c.hour:02}:{c.minute:02}");
+    println(time.local_offset(i64.MAX));
+}

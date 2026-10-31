@@ -31,6 +31,7 @@ Oct 16, 2026 · @kithinji
 - `and_then` on `Option` and `Result` (milestone 118); a closure whose expected result is only partly known (`Option<U>`) takes its result from its body.
 - Octal literals (milestone 117; section 2): `0o600`; a leading zero (`0600`) stays decimal and warns W0107.
 - `fs.sync` (milestone 116): `fsync` on a file or folder, so a saved file and its rename survive a power cut.
+- Calendar dates and the local offset in `std.time` (milestone 145): `time.civil(ms, offset_s)`, `time.from_civil(c, offset_s)` and `time.local_offset(ms)`, with `Civil` and `TimeError` (standard library).
 - Keeping data on disk (milestone 115): `fs.rename` (atomic within a file system), `fs.set_mode` (`chmod`), the `flush()` built-in, and `std.time` (`now_ms`, `monotonic_ms`).
 - `std.toml` (milestone 114; standard library): a read-only TOML 1.0 parser in Lugha with limits for hostile input; the prelude's `xs.join(sep)` is linear (it was quadratic).
 - `std.crypto` (milestone 113; standard library): SHA-256 (one-shot and streamed), Ed25519 keys, signing and verifying, secure random bytes and constant-time comparison, over the system's OpenSSL 3.
@@ -1252,12 +1253,17 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 | `sleep(ms: i64)` | pauses this green thread for at least `ms` milliseconds while the others run; `ms <= 0` is `yield_now()` |
 | `yield_now()` | lets every ready green thread run first, then goes on |
 
-`std.time` (v17, milestone 115). The clocks; no time zones, no formatting.
+`std.time` (v17, milestones 115 and 145). The clocks, calendar dates and the system's local offset; no zone names, no formatting by locale, no parsing.
 
 | Function | Gives |
 | --- | --- |
 | `now_ms(): i64` | milliseconds since 1970-01-01 00:00 UTC, from the system clock (`CLOCK_REALTIME`); it can jump when the clock is set |
 | `monotonic_ms(): i64` | milliseconds from an unspecified start that never goes back (`CLOCK_MONOTONIC`): subtract two readings to measure an interval |
+| `civil(ms: i64, offset_s: i64): Result<Civil, TimeError>` | moment `ms` (any `i64`, before 1970 too) as a date and time seen `offset_s` seconds east of UTC (v17, milestone 145) |
+| `from_civil(c: Civil, offset_s: i64): Result<i64, TimeError>` | the moment a date and time at that offset names, the inverse of `civil`; `c.weekday` is ignored |
+| `local_offset(ms: i64): Result<i64, TimeError>` | the system zone's offset from UTC at moment `ms`, in seconds east, daylight saving included (`localtime_r`'s `tm_gmtoff`: `TZ` if set, else `/etc/localtime`, else UTC) |
+
+`Civil { year, month, day, weekday, hour, minute, second, ms }`, every field `public` and `i64`, is a date on the proleptic Gregorian calendar (year 0 is 1 BC) and a time of day: month 1–12, day 1–31, weekday 1 (Monday) to 7 (Sunday) as in ISO 8601, hour 0–23, minute and second 0–59 (no leap seconds), ms 0–999. Offsets are in seconds, as the system gives them, so historical offsets that aren't whole minutes round-trip. A `TimeError { message }` (printing as its message) is an offset beyond ±26 hours, a field out of its range or a date that doesn't exist (`no day 31 in month 2 of 2026`), a moment past `i64`, or one the system can't give a local time for. Nothing panics on any input: `civil(i64.MIN, 0)` is `-292275055-05-16 16:47:04.192`.
 
 `std.net` (v17, milestone 110). TCP sockets. Waiting pauses only the waiting green thread (above). Addresses are `"host:port"` or `"[v6]:port"`; port `0` listens on any free port. Names resolve through the system's resolver, which blocks the OS thread while it looks one up. Failures are `Err` with a reason (the system's message, `"closed"`, `"timed out"`); nothing here panics. `Listener` and `Conn` share their socket between copies, so closing one copy closes them all; closing twice is harmless; the collector never closes a socket, so an unclosed one stays open until the program exits.
 
@@ -3867,6 +3873,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 142 | Derive blocks for every module (v17) | `derive I for X { … }`, `derive.fields(…)` and the rest, a type's own items override; custom JSON per type; E0451–E0453 | `tests/programs/m142/` (done) |
 | 143 | Hashing on derive blocks (v17) | the prelude's `$Hash`, implied by `Eq`; `derive.fold`, `derive.index`, `derive … for handle`, `derive.address`; equal maps and sets hash equal | `tests/programs/m143/` (done) |
 | 144 | `==` through `Eq` (v17) | `Eq` a derivable prelude interface with `eq` and `hash`, a type's own pair overriding both; `derive.all`; E0451 at `==`, E0454 | `tests/programs/m144/` (done) |
+| 145 | Calendar dates and the local offset (v17) | `time.civil`, `time.from_civil`, `time.local_offset`, `Civil`, `TimeError` | `tests/programs/m145/` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 
