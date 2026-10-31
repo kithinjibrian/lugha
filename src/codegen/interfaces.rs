@@ -49,7 +49,7 @@ impl<'ctx> Lowerer<'ctx> {
             other => return Ok(other),
         };
         // The box owns its value, as a variable would (spec §4 copy sites).
-        let copies = aliasing(expr) && !self.moves.contains(&expr.id);
+        let copies = aliasing(expr) && !self.moved(expr.id);
         let value = if copies {
             self.deep_copy(value, &ty)
         } else {

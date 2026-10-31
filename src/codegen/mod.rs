@@ -63,6 +63,7 @@ mod or_patterns;
 mod ordering;
 mod os;
 mod out_params;
+mod owning;
 mod patterns;
 mod places;
 mod rebuild;

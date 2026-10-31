@@ -18,6 +18,18 @@ pub struct Checked {
     pub enums: Enums,
     /// Values read from a place for the last time: stored without a copy (PRP-018).
     pub moves: HashSet<ExprId>,
+    /// Values stored from a kept parameter on its last use: moved only in
+    /// the function's owning instance (v17, milestone 149).
+    pub param_moves: HashSet<ExprId>,
+    /// Call arguments and receivers read from a `let` local for the last
+    /// time: handed to a kept parameter without a mark (milestone 149).
+    pub hands: HashSet<ExprId>,
+    /// Arguments read from a kept parameter for the last time: handed over
+    /// only in the owning instance (milestone 149).
+    pub param_hands: HashSet<ExprId>,
+    /// Which parameters each function or method keeps, by key, receiver
+    /// first for a method (milestone 149); only keys keeping one.
+    pub keeps: HashMap<String, Vec<bool>>,
     /// The key of the function or extern each call calls (PRP-034), so
     /// codegen never resolves names itself.
     pub callees: HashMap<ExprId, String>,

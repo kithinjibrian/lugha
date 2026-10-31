@@ -114,6 +114,7 @@ impl<'ctx> Lowerer<'ctx> {
             let function = self
                 .module
                 .add_function(&name, fn_type, Some(linkage(&mono.key)));
+            self.declare_owning(&mono.key, function, &params, f.receiver.is_some());
             let signature = Signature {
                 function,
                 params,

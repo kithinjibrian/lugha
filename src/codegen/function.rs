@@ -53,6 +53,25 @@ impl<'ctx> Lowerer<'ctx> {
         signature: &Signature<'ctx>,
         receiver: Option<Type>,
     ) -> Result<(), CodegenError> {
+        self.define_body(f, signature, receiver.clone())?;
+        // A keeping function's owning instance: the same body, its kept
+        // parameters its own (milestone 149, `owning.rs`).
+        if let Some(own) = self.owning_of(signature) {
+            self.owning = true;
+            let defined = self.define_body(f, &own, receiver);
+            self.owning = false;
+            defined?;
+        }
+        Ok(())
+    }
+
+    /// Lowers one instance of a function or method body.
+    fn define_body(
+        &mut self,
+        f: &FunDecl,
+        signature: &Signature<'ctx>,
+        receiver: Option<Type>,
+    ) -> Result<(), CodegenError> {
         self.function = Some(signature.function);
         self.ret = signature.ret.clone();
         self.scopes = Scopes::default();
@@ -220,6 +239,18 @@ impl<'ctx> Lowerer<'ctx> {
                 .into_iter()
                 .map(Into::into)
                 .collect(),
+            // A keeping function's owning instance (milestone 149).
+            None if let Some(own) = self.owning_instances.get(&signature.function).cloned() => {
+                let values = self.owned_arguments(args, &signature.params, &own.kept)?;
+                let site = self
+                    .builder
+                    .build_call(own.function, &values, "call")
+                    .expect(POSITIONED);
+                return Ok(match site.try_as_basic_value() {
+                    ValueKind::Basic(result) => Value::Val(result),
+                    ValueKind::Instruction(_) => Value::Void,
+                });
+            }
             None => self.arguments(args, &signature.params, signature.is_extern)?,
         };
         let site = match &signature.c_type {
