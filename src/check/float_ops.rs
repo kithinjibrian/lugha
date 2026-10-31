@@ -61,6 +61,12 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         "list_dir" => (vec![Type::String], result(Type::Array(Box::new(bytes())))),
         "make_dir" | "remove_file" | "remove_dir" => (vec![Type::String], result(Type::I64)),
         "stat_kind" => (vec![Type::String], Type::I64),
+        // `std.fs`'s file streams (v17, milestone 146): files as `i64`
+        // descriptors; mode 0 reads, 1 creates, 2 appends.
+        "file_open" => (vec![Type::String, Type::I64], result(Type::I64)),
+        "file_read" => (vec![Type::I64, Type::I64], result(bytes())),
+        "file_write" => (vec![Type::I64, bytes()], result(Type::I64)),
+        "file_close" => (vec![Type::I64], Type::Unit),
         // `std.process` (milestone 66): the result's tuple is built by
         // `os_call`, which can register it; `Unit` stands in here.
         "start" => (
@@ -285,6 +291,26 @@ mod tests {
             vec![Type::I64, Type::String],
         );
         assert_eq!(ret, result);
+    }
+
+    #[test]
+    fn file_streams_take_descriptors_v17() {
+        let bytes = Type::Array(Box::new(Type::U8));
+        let result = |t: Type| Type::Enum(crate::check::RESULT.to_string(), vec![t, Type::String]);
+        let sig = |op: &str| super::os_signature(op).expect("a built-in");
+        assert_eq!(
+            sig("file_open"),
+            (vec![Type::String, Type::I64], result(Type::I64))
+        );
+        assert_eq!(
+            sig("file_read"),
+            (vec![Type::I64, Type::I64], result(bytes.clone()))
+        );
+        assert_eq!(
+            sig("file_write"),
+            (vec![Type::I64, bytes], result(Type::I64))
+        );
+        assert_eq!(sig("file_close"), (vec![Type::I64], Type::Unit));
     }
 
     #[test]

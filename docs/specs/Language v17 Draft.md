@@ -321,6 +321,7 @@ After discovery (PRP-172): Lugha meets metaprogramming needs with targeted featu
 
 **`==` through `Eq`** (milestone 144, PRP-175): `Eq` becomes the prelude's derivable interface with `eq` and `hash` (`prelude/eq.la`, replacing milestone 143's `$Hash`); `==` on anything but numbers, `bool`, `char`, `string` and handles calls it; a struct or enum writing both `eq` and `hash` decides its own equality (reversing v15's "`==` stays structural"), E0454 for one alone; a type that isn't `Eq` is E0451 with a path at `==` and at `T: Eq`; derive blocks gain `derive.all(a, b, f)`; `codegen/equality.rs`'s per-type helpers go; tag `m144`.
 **Calendar dates and the local offset** (milestone 145, PRP-176, at Rapidkoi's request): `std.time` gains `Civil`, `TimeError`, `civil(ms, offset_s)`, `from_civil(c, offset_s)` (pure, proleptic Gregorian, any `i64` moment) and `local_offset(ms)` (`localtime_r`'s `tm_gmtoff`, through a new `$os.local_offset` and `lugha_rt_local_offset`); offsets in seconds; tag `m145`.
+**File streams** (milestone 146, PRP-177): `std.fs` gains `File` from `open`, `create` and `append`, with `read(max)`, `read_line()`, `write(bytes)`, `write_text(s)` and `close()`; unbuffered writes, modes fixed at opening, no seeking; through `$os.file_*` and `runtime/file.c`; tag `m146`.
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.

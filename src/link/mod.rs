@@ -28,7 +28,7 @@ pub use self::inputs::{Plan, PlanError};
 
 /// The runtime's source files, in the order they are joined: the core first,
 /// since it holds every `#include`, then the fragments that rely on it.
-pub const RUNTIME_PARTS: [(&str, &str); 21] = [
+pub const RUNTIME_PARTS: [(&str, &str); 22] = [
     ("lugha_rt.c", include_str!("../../runtime/lugha_rt.c")),
     ("stack.c", include_str!("../../runtime/stack.c")),
     ("print.c", include_str!("../../runtime/print.c")),
@@ -39,6 +39,7 @@ pub const RUNTIME_PARTS: [(&str, &str); 21] = [
     ("random.c", include_str!("../../runtime/random.c")),
     ("env.c", include_str!("../../runtime/env.c")),
     ("fs.c", include_str!("../../runtime/fs.c")),
+    ("file.c", include_str!("../../runtime/file.c")),
     ("process.c", include_str!("../../runtime/process.c")),
     ("test.c", include_str!("../../runtime/test.c")),
     ("callbacks.c", include_str!("../../runtime/callbacks.c")),
@@ -53,7 +54,7 @@ pub const RUNTIME_PARTS: [(&str, &str); 21] = [
 ];
 
 /// Every runtime function codegen may call; `lugha_rt.c` defines them all.
-pub const RUNTIME_SYMBOLS: [&str; 95] = [
+pub const RUNTIME_SYMBOLS: [&str; 99] = [
     "lugha_rt_init",
     "lugha_rt_read_line",
     "lugha_rt_read_file",
@@ -149,6 +150,10 @@ pub const RUNTIME_SYMBOLS: [&str; 95] = [
     "lugha_rt_net_write",
     "lugha_rt_net_close",
     "lugha_rt_net_name",
+    "lugha_rt_file_open",
+    "lugha_rt_file_read",
+    "lugha_rt_file_write",
+    "lugha_rt_file_close",
 ];
 
 /// The C runtime linked into every program: [`RUNTIME_PARTS`] joined in order,
@@ -164,6 +169,7 @@ pub const RUNTIME_SOURCE: &str = concat!(
     include_str!("../../runtime/random.c"),
     include_str!("../../runtime/env.c"),
     include_str!("../../runtime/fs.c"),
+    include_str!("../../runtime/file.c"),
     include_str!("../../runtime/process.c"),
     include_str!("../../runtime/test.c"),
     include_str!("../../runtime/callbacks.c"),
