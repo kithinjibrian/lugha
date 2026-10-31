@@ -298,7 +298,10 @@ impl Checker {
     /// The `eq` an `==` on concrete type `ty` calls (v17, milestone 144):
     /// a struct's or enum's own (listed when generic or the prelude's), or
     /// the covering block's. Nothing for types compared inline.
-    pub(super) fn eq_instances(&self, ty: &Type) -> Vec<super::instances::Instance> {
+    ///
+    /// With `every`, a type's own plain (non-generic) `eq` too, for the
+    /// purity of constants (milestone 147): it is compiled anyway, but runs.
+    pub(super) fn eq_instances(&self, ty: &Type, every: bool) -> Vec<super::instances::Instance> {
         if !super::derive::compared_through_eq(ty) {
             return Vec::new();
         }
@@ -309,7 +312,7 @@ impl Checker {
                 .contains(&(owner.clone(), "eq".to_string()))
         {
             let m = &self.methods[owner]["eq"];
-            let listed = !m.generics.is_empty() || super::instances::lazy_key(&m.key);
+            let listed = every || !m.generics.is_empty() || super::instances::lazy_key(&m.key);
             return if listed {
                 vec![super::instances::Instance {
                     key: m.key.clone(),

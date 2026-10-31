@@ -243,12 +243,12 @@ impl Checker {
             }
             // A print site reaches the `show` instances of its type (v12).
             None if u.callee.key == PRINT => {
-                self.show_instances(&subst(&u.callee.args[0], generics, args))
+                self.show_instances(&subst(&u.callee.args[0], generics, args), every)
             }
             // An `==` reaches its type's `eq`: its own, or its
             // derive block's (v17, milestone 144).
             None if u.callee.key == super::maps::EQUAL => {
-                self.eq_instances(&subst(&u.callee.args[0], generics, args))
+                self.eq_instances(&subst(&u.callee.args[0], generics, args), every)
             }
             None => vec![Instance {
                 key: u.callee.key.clone(),

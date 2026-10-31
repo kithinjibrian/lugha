@@ -231,7 +231,7 @@ pub(super) fn cycle_text(steps: &[(&str, &[String])], last: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{cycle_text, path_text};
-    use crate::check::modules::test_util::{errors, ok};
+    use crate::check::modules::test_util::{errors, ok, prelude_codes};
     use crate::check::test_util::{diagnostics, errors as one_file_errors};
 
     /// The help of the first diagnostic of a one-file program.
@@ -361,6 +361,33 @@ mod tests {
             "{}",
             help(&src)
         );
+    }
+
+    #[test]
+    fn a_types_own_show_and_eq_are_followed() {
+        // Interpolation calls `show` without naming it.
+        let src = "struct P { x: i64 }\n\
+                   impl P { fun show(self): string { println(1); \"p\" } }\n\
+                   const L: string = \"at {P { x: 0 }}\";\nfun main() {}";
+        assert_eq!(one_file_errors(src)[0].0, "E0445");
+        assert!(help(src).contains("`P.show`"), "{}", help(src));
+        // `==` calls `eq` without naming it (with the prelude's `Eq`).
+        let eq = "struct P { x: i64 }\n\
+                  impl P {\n\
+                      fun eq(self, other: P): bool { println(1); self.x == other.x }\n\
+                      fun hash(self, h: u64): u64 = h;\n\
+                  }\n";
+        let codes = prelude_codes(&[(
+            "main.la",
+            &format!("{eq}const B: bool = P {{ x: 1 }} == P {{ x: 1 }};\nfun main() {{}}"),
+        )]);
+        assert_eq!(codes, ["E0445"]);
+        // A quiet `show` stays pure.
+        ok(&[(
+            "main.la",
+            "struct P { x: i64 }\nimpl P { fun show(self): string = \"p\"; }\n\
+             const L: string = \"at {P { x: 0 }}\";\nfun main() {}",
+        )]);
     }
 
     #[test]

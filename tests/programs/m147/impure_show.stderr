@@ -1,0 +1,9 @@
+error[E0445]: a constant can only use pure code
+   --> tests/programs/m147/impure_show.la:12:35
+   |
+12 | const LABEL: string = "origin is {Point { x: 0, y: 0 }}";
+   |                                   ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: `Point.show` calls `println`, which prints; a constant is computed before `main` and may not print, read or write files, use the operating system, call C, or start tasks, channels or actors: compute the value in `main` instead
+
+For more about E0445, run `lughac explain E0445`.

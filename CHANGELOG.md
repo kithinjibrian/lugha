@@ -34,6 +34,7 @@ Never deleted. Older entries are never modified.
 - `net.resolve(name)` and `tls.Options.address`, milestone 121 (PRP-153): every address a name resolves to (IPv4 and IPv6, resolver order, each once), and a connection to a chosen IP address that keeps the host name for SNI and the certificate check, in `tls.connect_with` and `http.request_tls`/`request_tls_with` (`https://` and `http://`, the URL's host in `host`), like curl's `--resolve`
 
 ### Fixed
+- A constant interpolating or comparing a value whose type's own `show` or `eq` reaches outside the program is now E0445, like any other impure code (milestone 147).
 - Equal sets or maps built in different orders hashed differently, so a `Set<Set<T>>` (or a map keyed by sets or maps) could hold the same key twice (milestone 143)
 - `lughac explain E0450` now has its page (missing from milestone 139's build, which also left the spec table's title longer than the page's)
 - A std type's own `show` is used when it's printed (it was skipped unless the type was generic)
