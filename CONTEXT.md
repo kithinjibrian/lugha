@@ -9413,3 +9413,6 @@ Branch: prp-169-std_json
 
 ### STILL OPEN AT CLOSE
 - The PR awaits the user's merge (it includes session 327's PRP commits); then tag `m137`.
+
+## SESSION 329 — 2026-10-31 — std.http JSON helpers: discovery — open
+Branch: http-json
