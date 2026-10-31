@@ -1,3 +1,4 @@
+use super::expr::Expect;
 use super::{Checker, Type, errors};
 use crate::ast::{Expr, ExprKind, Ident};
 
@@ -56,8 +57,11 @@ impl Checker {
 
     /// `e?`: on `Result<T, E>` in a function returning `Result<U, E>`, or on
     /// `Option<T>` in one returning `Option<U>`, the `T`; E0424 otherwise.
-    pub(super) fn try_expr(&mut self, expr: &Expr, inner: &Expr) -> Type {
-        let ty = self.value(inner, None);
+    pub(super) fn try_expr(&mut self, expr: &Expr, inner: &Expr, expect: Option<&Expect>) -> Type {
+        // The value wanted from `e?` is what `e` holds (v17, milestone 140):
+        // `let p: Person = json.decode(v)?;` infers `decode`'s `T`.
+        let hint = expect.and_then(|e| self.try_hint(&e.ty));
+        let ty = self.value(inner, hint.as_ref());
         if matches!(ty, Type::Error | Type::Never) || self.closure_return_unknown(expr.span) {
             return Type::Error;
         }
@@ -87,6 +91,24 @@ impl Checker {
         self.report(errors::cant_try(expr.span, &help));
         Type::Error
     }
+
+    /// What `e` in `e?` should be when `e?` should be `want`: a `Result`
+    /// of it (its error left open, as conversions may change it) in a
+    /// function returning a `Result`, an `Option` of it in one returning an
+    /// `Option`.
+    fn try_hint(&self, want: &Type) -> Option<Expect> {
+        if matches!(want, Type::Error | Type::Never) {
+            return None;
+        }
+        match &self.ret {
+            Type::Enum(k, _) if k == RESULT => Some(Expect::of(Type::Enum(
+                RESULT.to_string(),
+                vec![want.clone(), Type::Error],
+            ))),
+            Type::Option(_) => Some(Expect::of(Type::Option(Box::new(want.clone())))),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -102,6 +124,22 @@ mod tests {
 
     fn result(t: Type, e: Type) -> Type {
         Type::Enum("$prelude.Result".into(), vec![t, e])
+    }
+
+    #[test]
+    fn question_mark_passes_the_wanted_type_on_v17() {
+        ok("fun none<T>(): Result<T, string> = Err(\"x\");\n\
+            fun nothing<T>(): Option<T> = None;\n\
+            fun f(): Result<i64, string> { let a: i64 = none()?; Ok(a) }\n\
+            fun g(): Option<string> { let s: string = nothing()?; Some(s) }\n\
+            fun main() {}");
+        // A concrete operand still has to match: one error, not two.
+        assert_eq!(
+            codes(&format!(
+                "{HALF}fun f(): Result<i64, string> {{ let s: string = half(2)?; Ok(1) }}\nfun main() {{}}"
+            )),
+            ["E0403"]
+        );
     }
 
     #[test]

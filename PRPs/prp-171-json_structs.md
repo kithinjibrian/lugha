@@ -64,6 +64,13 @@ Programs turn their own structs and enums into JSON and back — an HTTP handler
 - Smaller than planned: arrays, `Option`s, maps and sets are generic Lugha helpers in `std.$json_derive` (`$enc_array<T>` …) that call `$json.encode` again at their element type, so monomorphisation reaches every nested type; codegen (`codegen/json_encode.rs`, 255 lines) writes walkers only for structs, enums and tuples and calls the scalar helpers. Maps, sets and `Option`s are passed to the helpers as a pointer to a copy, as every Lugha call passes aggregates.
 - Tests: `tests/programs/m139/encode.la` (every shape, recursive and generic types, `-O2` checked by hand), `not_data.la` (six E0450s); unit tests for the helper choice; `tests/json.rs` checks a parse-only program has no encoder.
 
+## BUILT — milestone 140
+- Amended during the build (the user chose it): `json.decode`'s type couldn't come through `?` or `.unwrap()` (E0412), so `?` now passes `Result<T, _>`/`Option<T>` to its operand (`check/results.rs`, `try_hint`). `.unwrap()` still doesn't; the OBJECTIVE's `.unwrap()` line needs `let r: Result<Person, json.DecodeError> = json.decode(v);` or `?`.
+- Helpers in a new `std.$json_from` (196 lines): a decoder per scalar width, generic `$dec_array`/`$dec_option`/`$dec_map`/`$dec_set` calling `$json.decode` again, and the pieces walkers call (`$dec_object`, `$dec_field`, `$variant_name`, …). Integer map keys: the key's text is tried as `K`, then the integer it spells.
+- Codegen `codegen/json_decode.rs` (356 lines): walkers for structs, tuples and enums, each failure returning the helper's `Err` as the walker's own. The checker seeds every walker's `Result<T, DecodeError>` into the declared types (`json_walkers`).
+- Fixed on the way: a std type's own `show` wasn't listed for printing unless generic (`check/printing.rs`), so `DecodeError` printed as a struct; E0450's page was never registered in `src/explain.rs` and its spec title didn't match (milestone 139's).
+- Tests: `tests/programs/m140/decode.la` (round trips of every m139 shape, 21 error paths and details, a depth-99 recursive value; same output at `-O2`), `no_type.la` (E0412); `?` inference unit tests; `tests/json.rs` checks an encode-only program has no decoder.
+
 ## DESIGN
 - **New diagnostic E0450** (checker range): a type that isn't JSON-able where `Json` is required, with the path to the first bad part and a note for maps with other key types. Page `docs/errors/E0450.md`.
 - **New symbols** `lugha_json_enc_<type>`, `lugha_json_dec_<type>` (spec §8; core decision 6's rule of disjoint prefixes).

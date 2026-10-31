@@ -118,8 +118,9 @@ pub use input::prelude_helper;
 pub use instances::Instance;
 pub use iterators::Iteration;
 pub use json::{
-    DERIVE as JSON_DERIVE, VALUE as JSON_VALUE, container_helper, json_op, scalar_helper,
-    value_type as json_value_type,
+    DECODE_ERROR, DERIVE as JSON_DERIVE, FROM as JSON_FROM, VALUE as JSON_VALUE, container_decoder,
+    container_helper, decode_result, json_op, object_type as json_object_type, scalar_decoder,
+    scalar_helper, value_type as json_value_type,
 };
 pub use layouts::UNION_MARK;
 pub use members::{Detail, Member, MemberKind, TypeMembers, type_members, value_members};
@@ -218,6 +219,7 @@ impl Checker {
             param_literals: Vec::new(),
             uses: Vec::new(),
             body_types: HashMap::new(),
+            json_walkers: Vec::new(),
             hover: partial::Recorder::new(count),
             test_mode: false,
         }
@@ -356,6 +358,9 @@ pub(super) struct Checker {
     param_literals: Vec<literal::ParamLiteral>,
     /// Every generic call, with the body it is in (PRP-036).
     uses: Vec<instances::Use>,
+    /// The types `json.decode` writes a walker for (v17, milestone 140):
+    /// their `Result<T, DecodeError>` is declared for codegen.
+    json_walkers: Vec<Type>,
     /// The types in each generic body that mention its parameters, by the
     /// body's key: each instance's types are these, substituted (PRP-036).
     body_types: HashMap<String, Vec<Type>>,

@@ -140,6 +140,7 @@ impl Checker {
             .map(|r| (r.to_string(), Vec::new(), 0, None))
             .collect();
         let mut next = 0;
+        let mut walkers: Vec<Type> = Vec::new();
         while next < queue.len() {
             let (owner, args, depth, at) = queue[next].clone();
             next += 1;
@@ -158,6 +159,11 @@ impl Checker {
                     None if u.callee.key == super::json::JSON_ENCODE => {
                         self.json_encode_instances(&subst(&u.callee.args[0], &generics, &args))
                     }
+                    // So does `$json.decode`, noting the types with walkers (v17).
+                    None if u.callee.key == super::json::JSON_DECODE => self.json_decode_instances(
+                        &subst(&u.callee.args[0], &generics, &args),
+                        &mut walkers,
+                    ),
                     None => vec![Instance {
                         key: u.callee.key.clone(),
                         args: u
@@ -200,6 +206,7 @@ impl Checker {
                 }
             }
         }
+        self.json_walkers = walkers;
         found.into_iter().map(|(i, _, _)| i).collect()
     }
 

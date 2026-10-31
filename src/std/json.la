@@ -13,6 +13,7 @@ import std.$json_parse { parse_text };
 import std.$json_write { write };
 // Loaded for the helpers `$json.encode` calls (milestone 139).
 import std.$json_derive;
+import std.$json_from;
 
 /**
  * Parses JSON text with the default limits.
@@ -82,3 +83,13 @@ public fun is_null(v: Value): bool = match v { Null => true, _ => false };
  * NaN or infinite float inside.
  */
 public fun encode<T: Json>(x: T): Value = $json.encode(x);
+
+/**
+ * `v` as a value of type `T`, the inverse of `encode`: the type comes from
+ * context (`let p: Person = json.decode(v)?;`). Object keys a struct doesn't
+ * have are ignored; a missing field is `None` if it is an `Option`, an error
+ * otherwise; numbers must fit their type exactly (a `Float` never fills an
+ * integer).
+ * @returns the value, or the first mismatch and the path to it
+ */
+public fun decode<T: Json>(v: Value): Result<T, DecodeError> = $json.decode(v, "");

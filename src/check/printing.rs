@@ -80,7 +80,9 @@ impl Checker {
             Type::Task(_) | Type::Chan(_) | Type::Actor(_) => {}
             Type::Struct(key, args) | Type::Enum(key, args) => {
                 if let Some(m) = self.own_show(key) {
-                    if !args.is_empty() {
+                    // A std type's `show` compiles only when listed, generic
+                    // or not (lazy std, milestone 60; v17, milestone 140).
+                    if !args.is_empty() || super::instances::lazy_key(&m.key) {
                         found.push(Instance {
                             key: m.key.clone(),
                             args: args.clone(),

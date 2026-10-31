@@ -1,0 +1,9 @@
+error[E0412]: cannot infer the type argument `T`
+  --> tests/programs/m140/no_type.la:5:13
+  |
+5 |     let x = json.decode(v);
+  |             ^^^^^^^^^^^^^^
+  |
+  = help: annotate the variable, e.g. `let s: Stack<i64> = …;`
+
+For more about E0412, run `lughac explain E0412`.

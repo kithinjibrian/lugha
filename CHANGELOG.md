@@ -9,6 +9,8 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `json.decode(v)` (milestone 140, PRP-171): a `json.Value` back into any data type — `let p: Person = json.decode(v)?;` — ignoring unknown keys, `None` for a missing `Option` field, exact numbers; `json.DecodeError` names the path to the first mismatch (`people[2].age: expected an integer, found a string`)
+- `?` passes the type it should give to its operand (milestone 140): `let n: i64 = parse()?;` infers a generic `parse`'s type argument
 - `json.encode(x)` (milestone 139, PRP-171): any data type — structs, enums, arrays, tuples, maps, sets, `Option`, numbers, text — to a `json.Value` with no annotation; generic code passes types through with `T: json.Json`; E0450 names the part of a type that isn't data (a function, interface value, `Ref`, …)
 - JSON in `std.http` (milestone 138, PRP-170): `req.json()` and `resp.json()` parse a body (whatever its content type), `http.post_json(url, v)` posts a `json.Value`
 - `std.json` (milestone 137, PRP-169): strict RFC 8259 JSON — `json.parse(text)` to a `Value` (exact `i64` integers, keys in order), `json.stringify(v)`/`json.pretty(v)` back, `get`/`at`/`as_*` helpers; duplicate keys, lone surrogates and numbers past `f64` are errors with a line and column, NaN and infinities can't be written, and size, depth and value-count limits hold against hostile input; all of JSONTestSuite's parsing cases pass
@@ -23,6 +25,10 @@ Never deleted. Older entries are never modified.
 - `lughac test` builds the test files of one package folder into one executable instead of one per file (milestone 124, PRP-156); `--filter` builds only the files it selects
 - Joining arrays, milestone 122 (PRP-154): `xs + ys` is a new array of `xs`'s elements then `ys`'s (E0404 for arrays of different types), `xs += ys` and `s += t` join, and arrays satisfy `Add`, so a `T: Add` function takes arrays
 - `net.resolve(name)` and `tls.Options.address`, milestone 121 (PRP-153): every address a name resolves to (IPv4 and IPv6, resolver order, each once), and a connection to a chosen IP address that keeps the host name for SNI and the certificate check, in `tls.connect_with` and `http.request_tls`/`request_tls_with` (`https://` and `http://`, the URL's host in `host`), like curl's `--resolve`
+
+### Fixed
+- `lughac explain E0450` now has its page (missing from milestone 139's build, which also left the spec table's title longer than the page's)
+- A std type's own `show` is used when it's printed (it was skipped unless the type was generic)
 
 ### Changed
 - **Breaking:** `http.json(status, v)` takes a `json.Value` instead of JSON text (milestone 138, PRP-170), so there is one way to answer with JSON; a value holding NaN or an infinity answers a `text/plain` 500. Text in hand: `http.json(status, json.parse(text)?)`. A string argument is now a type error

@@ -51,6 +51,7 @@ mod int_methods;
 mod interfaces;
 mod io;
 mod iterators;
+mod json_decode;
 mod json_encode;
 mod lower;
 mod maps;

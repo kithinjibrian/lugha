@@ -1,0 +1,6 @@
+import std.json;
+
+fun main() {
+    let v = json.parse("1").unwrap();
+    let x = json.decode(v);
+}
