@@ -11,9 +11,6 @@
 public import std.$json_value { * };
 import std.$json_parse { parse_text };
 import std.$json_write { write };
-// Loaded for the helpers `$json.encode` calls (milestone 139).
-import std.$json_derive;
-import std.$json_from;
 
 /**
  * Parses JSON text with the default limits.
@@ -82,7 +79,7 @@ public fun is_null(v: Value): bool = match v { Null => true, _ => false };
  * objects, tuples and sets as arrays. Never fails; `stringify` refuses a
  * NaN or infinite float inside.
  */
-public fun encode<T: Json>(x: T): Value = $json.encode(x);
+public fun encode<T: Json>(x: T): Value = x.$to_json();
 
 /**
  * `v` as a value of type `T`, the inverse of `encode`: the type comes from
@@ -92,4 +89,4 @@ public fun encode<T: Json>(x: T): Value = $json.encode(x);
  * integer).
  * @returns the value, or the first mismatch and the path to it
  */
-public fun decode<T: Json>(v: Value): Result<T, DecodeError> = $json.decode(v, "");
+public fun decode<T: Json>(v: Value): Result<T, DecodeError> = T.$from_json(v, "");

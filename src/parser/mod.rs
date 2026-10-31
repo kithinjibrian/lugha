@@ -13,6 +13,7 @@ mod closure;
 mod conditional;
 mod consts;
 mod decl;
+mod derive;
 mod describe;
 mod expr;
 mod format;

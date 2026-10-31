@@ -499,11 +499,11 @@ fn a_program_that_only_parses_compiles_no_writer() {
             .any(|l| l.contains("json_write") || l.contains("json/stringify")),
         "{defined:?}"
     );
-    // Nor any of `encode`'s or `decode`'s machinery (milestones 139–140).
+    // Nor any of `encode`'s or `decode`'s derive blocks (milestones 139–141).
     assert!(
-        !defined.iter().any(|l| l.contains("lugha_json_")
-            || l.contains("json_derive")
-            || l.contains("json_from")),
+        !defined
+            .iter()
+            .any(|l| l.contains("Json@") || l.contains("json_from")),
         "{defined:?}"
     );
     // A program that only encodes compiles no decoder.
@@ -513,10 +513,11 @@ fn a_program_that_only_parses_compiles_no_writer() {
         &["build", "--emit=ir", "main.la"],
     );
     let ir = String::from_utf8_lossy(&encodes.stdout);
-    assert!(ir.contains("lugha_json_enc_"), "no encoder");
+    assert!(ir.contains("Json@struct.$to_json<P>"), "no encoder");
     assert!(
-        !ir.lines().any(|l| l.starts_with("define ")
-            && (l.contains("lugha_json_dec_") || l.contains("json_from"))),
+        !ir.lines()
+            .any(|l| l.starts_with("define ")
+                && (l.contains("$from_json") || l.contains("json_from"))),
         "a decoder was compiled"
     );
 }

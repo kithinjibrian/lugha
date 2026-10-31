@@ -60,6 +60,10 @@ impl Checker {
             return None;
         }
         self.bound_used(call, param, &name.name);
+        // Codegen finds a derivable interface's item through its blocks (v17).
+        if self.derives.derivable(&applied.key) {
+            self.derived.insert(call.id, applied.key.clone());
+        }
         self.default_callee(call, &req, applied.args);
         Some(Method {
             receiver: req.receiver,

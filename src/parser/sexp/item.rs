@@ -160,6 +160,17 @@ fn item(item: &Item) -> String {
             let kind = if i.actor { "actor-methods" } else { "impl" };
             format!("({kind} {}{params}{methods})", qualified(&i.module, &i.ty))
         }
+        Item::Derive(d) => {
+            let methods: String = d.methods.iter().map(|m| format!(" {}", fun(m))).collect();
+            let target = match &d.target {
+                crate::ast::DeriveTarget::Type(t) => ty(t),
+                crate::ast::DeriveTarget::Struct => "struct".to_string(),
+                crate::ast::DeriveTarget::Enum => "enum".to_string(),
+                crate::ast::DeriveTarget::Tuple => "tuple".to_string(),
+            };
+            let params = type_params(&d.type_params);
+            format!("(derive {}{params} {target}{methods})", d.interface.name)
+        }
         Item::Interface(i) => {
             let items: String = i
                 .items

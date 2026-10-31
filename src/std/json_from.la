@@ -1,8 +1,8 @@
 /**
- * std.$json_from: the Lugha half of `json.decode` (v17, milestone 140).
- * The compiler writes each struct's, enum's and tuple's walker and calls
- * these for everything else; `$json.decode(v, path)` here is that walker
- * again, at the type the context wants. Bundled sources only; see `std.json`.
+ * std.$json_from: what `json.decode` reads a `Value` with (v17, milestones
+ * 140–141): a decoder per scalar type and the pieces `std.$json_value`'s
+ * derive blocks build arrays, maps, structs and enums from. Bundled
+ * sources only; see `std.json`.
  */
 import std.$json_value { DecodeError, Value };
 
@@ -82,78 +82,9 @@ fun $dec_unit(v: Value, path: string): Result<(), DecodeError> = match v {
     _ => $wrong(path, "null", v),
 };
 
-fun $dec_value(v: Value, path: string): Result<Value, DecodeError> = Ok(v);
-
-fun $dec_array<T>(v: Value, path: string): Result<T[], DecodeError> {
-    let xs = match v {
-        Array(xs) => xs,
-        _ => {
-            return $wrong(path, "an array", v);
-        }
-    };
-    let mut out: T[] = [];
-    for i in 0..xs.len {
-        let r: Result<T, DecodeError> = $json.decode(xs[i], $index_path(path, i));
-        out.push(r?);
-    }
-    Ok(out)
-}
-
-fun $dec_option<T>(v: Value, path: string): Result<Option<T>, DecodeError> {
-    if let Null = v {
-        return Ok(None);
-    }
-    let r: Result<T, DecodeError> = $json.decode(v, path);
-    Ok(Some(r?))
-}
-
-/** An array with no element twice. */
-fun $dec_set<T: Eq>(v: Value, path: string): Result<Set<T>, DecodeError> {
-    let xs = $dec_items(v, -1, path)?;
-    let mut out: Set<T> = #{};
-    for i in 0..xs.len {
-        let r: Result<T, DecodeError> = $json.decode(xs[i], $index_path(path, i));
-        if !out.insert(r?) {
-            return $fail($index_path(path, i), "a repeated element");
-        }
-    }
-    Ok(out)
-}
-
-/** An object; keys decode as `K` from their text, or for an integer `K` as the integer they spell. */
-fun $dec_map<K: Eq, V>(v: Value, path: string): Result<Map<K, V>, DecodeError> {
-    let m = $dec_object(v, path)?;
-    let mut out: Map<K, V> = #{};
-    for (k, x) of m {
-        let at = "{path}[\"{k}\"]";
-        let as_text: Result<K, DecodeError> = $json.decode(Value.Text(k), at);
-        let key = match as_text {
-            Ok(key) => key,
-            Err(_) => {
-                let as_number: Result<K, DecodeError> = $json.decode($key_number(k, at)?, at);
-                as_number?
-            }
-        };
-        let r: Result<V, DecodeError> = $json.decode(x, at);
-        out.insert(key, r?);
-    }
-    Ok(out)
-}
-
-fun $key_number(k: string, at: string): Result<Value, DecodeError> = match parse_i64(k) {
-    Some(n) => Ok(Value.Integer(n)),
-    None => $fail(at, "a key that isn't an integer"),
-};
-
 fun $dec_object(v: Value, path: string): Result<Map<string, Value>, DecodeError> = match v {
     Object(m) => Ok(m),
     _ => $wrong(path, "an object", v),
-};
-
-/** A struct's field: missing is `null` for an `Option` field, an error otherwise. */
-fun $dec_field(m: Map<string, Value>, name: string, path: string, optional: bool): Result<Value, DecodeError> = match m.get(name) {
-    Some(x) => Ok(x),
-    None => if optional { Ok(Value.Null) } else { $fail(path, "missing field {name}") },
 };
 
 /** An array of exactly `n` values (any number when `n` is -1). */

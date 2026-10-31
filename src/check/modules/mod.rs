@@ -114,6 +114,8 @@ fn check_with(
             try_conversions: checker.try_conversions,
             default_args: checker.default_args,
             iterations: checker.iterations,
+            derives: checker.derives,
+            derived: checker.derived,
             interfaces,
             annotations: checker.annotations,
             instances: checker.instances,
@@ -191,7 +193,7 @@ impl Checker {
     /// Every pass of spec §6 over every module in turn, then every body.
     fn modules(&mut self, units: &[Unit]) {
         type Pass = fn(&mut Checker, &Program);
-        let passes: [Pass; 12] = [
+        let passes: [Pass; 13] = [
             Checker::collect_handles,
             Checker::collect_interfaces,
             Checker::collect_structs,
@@ -203,6 +205,7 @@ impl Checker {
             Checker::collect,
             Checker::collect_consts,
             Checker::collect_methods,
+            Checker::collect_derives,
             Checker::check_actors,
         ];
         // Named imports first, so every pass resolves through them (v11).

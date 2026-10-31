@@ -63,6 +63,7 @@ impl<'ctx> Lowerer<'ctx> {
                 | Item::Enum(_)
                 | Item::Impl(_)
                 | Item::Interface(_)
+                | Item::Derive(_)
                 | Item::ExternType(_) => continue,
             };
             let key = qualify(unit.path, name);

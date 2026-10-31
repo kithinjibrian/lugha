@@ -136,13 +136,9 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Call(callee, args) if crate::check::hash_op(callee).is_some() => {
                 self.hash_call(args)?
             }
-            // `$json.encode(x)` in std.json (v17, milestone 139).
-            ExprKind::Call(callee, args) if crate::check::json_op(callee).is_some() => {
-                if crate::check::json_op(callee) == Some("decode") {
-                    self.json_decode_call(expr, args)?
-                } else {
-                    self.json_encode_call(args)?
-                }
+            // `$derive.fields(x, ctx, f)` and the rest in derive blocks (v17, milestone 141).
+            ExprKind::Call(callee, args) if let Some(op) = crate::check::derive_op(callee) => {
+                self.derive_intrinsic(expr, op, args)?
             }
             ExprKind::Call(callee, args) if let Some(op) = crate::check::os_op(callee) => {
                 self.os_call(expr, op, args)?

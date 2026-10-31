@@ -31,6 +31,7 @@ Never deleted. Older entries are never modified.
 - A std type's own `show` is used when it's printed (it was skipped unless the type was generic)
 
 ### Changed
+- `json.encode` and `json.decode` are written in Lugha (milestone 141, PRP-172): derive blocks in `std` (`$derive Json for i64 { … }`, `$derive Json for struct { … }`) say how each type meets `json.Json`, replacing about 600 lines of per-type code in the compiler; output, errors and speed are unchanged. Only lughac's own sources can write derive blocks for now
 - **Breaking:** `http.json(status, v)` takes a `json.Value` instead of JSON text (milestone 138, PRP-170), so there is one way to answer with JSON; a value holding NaN or an infinity answers a `text/plain` 500. Text in hand: `http.json(status, json.parse(text)?)`. A string argument is now a type error
 - Smaller stack frames again (milestone 136, PRP-168): stack slots used one after another inside the same block now share, not only slots of different arms; kivuli's `resolve` falls from 66.5 KB to 41.1 KB at `-O0` (30.5 KB to 25.5 KB at `-O2`), so a 64-deep Rapidkoi screen fits in about 5.8 MB
 - Much smaller stack frames (milestone 135, PRP-167): stack slots are shared between match arms, branches and blocks that never run together, so a function's frame is its largest arm, not all of them; kivuli's `resolve` went from 313 KB to 66.5 KB at `-O0` and from 125 KB to 30.5 KB at `-O2`

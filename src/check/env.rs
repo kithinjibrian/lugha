@@ -56,6 +56,7 @@ impl Checker {
                 | Item::Impl(_)
                 | Item::Interface(_)
                 | Item::Const(_)
+                | Item::Derive(_)
                 | Item::ExternType(_) => continue,
             };
             let generics = self.enter_params(item);

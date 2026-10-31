@@ -64,6 +64,12 @@ pub struct Checked {
     /// Calls through a bound whose callee may be a generic interface's
     /// default (v6): the interface's arguments, in the caller's parameters.
     pub default_args: HashMap<ExprId, Vec<Type>>,
+    /// Every `$derive` block (v17, milestone 141): which block's items a
+    /// derivable interface's call reaches at a concrete type.
+    pub derives: super::Derives,
+    /// Calls through a bound of a derivable interface, with its key (v17,
+    /// milestone 141): codegen finds the item in the covering block.
+    pub derived: HashMap<ExprId, String>,
     /// Iterator loops (v6): the iterated expression's id, with what its
     /// `next` yields.
     pub iterations: HashMap<ExprId, Iteration>,

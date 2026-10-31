@@ -27,10 +27,11 @@ impl Checker {
                 return false;
             }
             for interface in &g.bounds.interfaces {
-                // `json.Json` is met by a type's structure, not an `impl`
-                // (v17, milestone 139): E0450 names the part that isn't data.
-                if interface.key == super::json::BOUND {
-                    if !self.meets_json(arg, span) {
+                // A derivable interface (`json.Json`) is met through its
+                // derive blocks (v17, milestone 141): E0450 names the part
+                // that isn't data.
+                if self.derives.derivable(&interface.key) {
+                    if !self.meets_derived(&interface.key, arg, span) {
                         return false;
                     }
                     continue;

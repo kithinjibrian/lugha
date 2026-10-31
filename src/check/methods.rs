@@ -124,6 +124,7 @@ impl Checker {
         }
         self.in_actor = None;
         self.default_bodies(program);
+        self.derive_bodies(program);
         self.type_params.clear();
         self.owner.clear();
     }

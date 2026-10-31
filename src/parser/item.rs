@@ -77,6 +77,8 @@ impl Parser<'_> {
             TokenKind::Const => self.const_decl().map(Item::Const),
             TokenKind::Private | TokenKind::Public => self.visible_item(),
             TokenKind::At => self.attributed_item(),
+            // Bundled sources only: `$` lexes nowhere else (v17, milestone 141).
+            _ if self.at_derive() => self.derive_decl(),
             other => {
                 let is_statement = starts_statement(other);
                 let reported = self

@@ -157,6 +157,8 @@ impl Checker {
                     payloads.for_each(|t| self.leak(t, at));
                 }
                 Item::Impl(i) => i.methods.iter().for_each(|m| self.signature(m)),
+                // A derive block declares no name (v17, milestone 141).
+                Item::Derive(_) => {}
                 Item::Interface(i) => {
                     let at = level(i.visibility);
                     let types = i

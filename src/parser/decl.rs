@@ -67,7 +67,7 @@ impl Parser<'_> {
     }
 
     /// The methods of an `impl` up to and including its `}`.
-    fn impl_methods(&mut self, open: Span) -> PResult<Vec<FunDecl>> {
+    pub(super) fn impl_methods(&mut self, open: Span) -> PResult<Vec<FunDecl>> {
         let mut methods = Vec::new();
         while !self.at(&TokenKind::RBrace) {
             let visibility = self.visibility();
