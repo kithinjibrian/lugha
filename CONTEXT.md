@@ -9385,3 +9385,6 @@ Branch: prp-168-big_values
 
 ### STILL OPEN AT CLOSE
 - The PR awaits the user's merge; tag `m136`, reinstall `lughac`. Rapidkoi's 64-deep screen to check by hand.
+
+## SESSION 327 — 2026-10-31 — Std library: discovery — open
+Branch: std-discovery
