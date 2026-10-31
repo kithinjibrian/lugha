@@ -11,7 +11,7 @@ What's next. Shipped work is in CHANGELOG.md (and the spec's §11 milestone tabl
 
 ## Language and library
 
-- [ ] **JSON, later:** per-field options (renaming, skipping, defaults), an `@json` attribute, base64 bytes; inference through `.unwrap()`/`.expect()` (only `?` and annotations pass a type to `json.decode` today).
+- [ ] **JSON, later:** per-field options (renaming, skipping, defaults), an `@json` attribute, base64 bytes.
 - [ ] **Boxes and bytes** (v16 §12): editing a box in place (`r.with`); a bounds-checked byte buffer.
 - [ ] **`std.process`:** streaming pipes to a running child and timeouts (found with oyster). Needs the user's security review.
 - [ ] **A separate debug form, and parsing values back from text.** Also module paths in printed type names, so two modules' `Point`s print differently.
