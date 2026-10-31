@@ -1,0 +1,132 @@
+// Hashing (v17, milestone 143, PRP-174): FNV-1a over the same structure
+// `==` compares, so equal values hash equal. `$Hash` is derivable: a block
+// per kind of type, and every `Eq` type meets it, so a parameter bounded by
+// `Eq` (or `Num`) has `$hash` too; maps and sets reach it that way. Not
+// cryptographic. Programs can't name any of it.
+
+/** Folds a value into FNV-1a state `h`. */
+interface $Hash {
+    fun $hash(self, h: u64): u64;
+}
+
+/** FNV-1a's step: xor `bits` in, then multiply by its prime, wrapping. */
+fun $mix(h: u64, bits: u64): u64 = (h ^ bits).wrapping_mul(1099511628211);
+
+/** A field or payload, folded in. */
+fun $part<F: $Hash>(h: u64, name: string, x: F): u64 = x.$hash(h);
+
+derive $Hash for i8 {
+    fun $hash(self, h: u64): u64 = $mix(h, self as u64);
+}
+
+derive $Hash for i16 {
+    fun $hash(self, h: u64): u64 = $mix(h, self as u64);
+}
+
+derive $Hash for i32 {
+    fun $hash(self, h: u64): u64 = $mix(h, self as u64);
+}
+
+derive $Hash for i64 {
+    fun $hash(self, h: u64): u64 = $mix(h, self as u64);
+}
+
+derive $Hash for u8 {
+    fun $hash(self, h: u64): u64 = $mix(h, self as u64);
+}
+
+derive $Hash for u16 {
+    fun $hash(self, h: u64): u64 = $mix(h, self as u64);
+}
+
+derive $Hash for u32 {
+    fun $hash(self, h: u64): u64 = $mix(h, self as u64);
+}
+
+derive $Hash for u64 {
+    fun $hash(self, h: u64): u64 = $mix(h, self);
+}
+
+/** Floats by their bits (they can't be keys themselves, E0441). */
+derive $Hash for f32 {
+    fun $hash(self, h: u64): u64 = $mix(h, self.to_bits() as u64);
+}
+
+derive $Hash for f64 {
+    fun $hash(self, h: u64): u64 = $mix(h, self.to_bits());
+}
+
+derive $Hash for bool {
+    fun $hash(self, h: u64): u64 = $mix(h, if self { 1 } else { 0 });
+}
+
+derive $Hash for char {
+    fun $hash(self, h: u64): u64 = $mix(h, self as u64);
+}
+
+derive $Hash for string {
+    fun $hash(self, h: u64): u64 = $hash.text(self, h);
+}
+
+derive $Hash for () {
+    fun $hash(self, h: u64): u64 = h;
+}
+
+/** The length, then each element. */
+derive<T: Eq> $Hash for T[] {
+    fun $hash(self, h: u64): u64 {
+        let mut s = $mix(h, self.len as u64);
+        for x of self {
+            s = x.$hash(s);
+        }
+        s
+    }
+}
+
+derive<T: Eq> $Hash for Option<T> {
+    fun $hash(self, h: u64): u64 = match self {
+        Some(x) => x.$hash($mix(h, 1)),
+        None => $mix(h, 0),
+    };
+}
+
+/** Each field, in declaration order. */
+derive $Hash for struct {
+    fun $hash(self, h: u64): u64 = derive.fold(self, h, $part);
+}
+
+derive $Hash for tuple {
+    fun $hash(self, h: u64): u64 = derive.fold(self, h, $part);
+}
+
+/** The variant's position, then its payloads. */
+derive $Hash for enum {
+    fun $hash(self, h: u64): u64 = derive.fold(self, $mix(h, derive.index(self) as u64), $part);
+}
+
+/** A handle by its address, as `==` compares it. */
+derive $Hash for handle {
+    fun $hash(self, h: u64): u64 = $mix(h, derive.address(self));
+}
+
+/** Equal maps hash equal in any order, as `==` compares them: entries combine by wrapping sum. */
+derive<K: Eq, V: Eq> $Hash for Map<K, V> {
+    fun $hash(self, h: u64): u64 {
+        let mut sum: u64 = 0;
+        for (k, x) of self {
+            sum = sum.wrapping_add(x.$hash(k.$hash(14695981039346656037)));
+        }
+        $mix($mix(h, self.len as u64), sum)
+    }
+}
+
+/** Equal sets hash equal in any order. */
+derive<T: Eq> $Hash for Set<T> {
+    fun $hash(self, h: u64): u64 {
+        let mut sum: u64 = 0;
+        for x of self {
+            sum = sum.wrapping_add(x.$hash(14695981039346656037));
+        }
+        $mix($mix(h, self.len as u64), sum)
+    }
+}

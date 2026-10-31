@@ -317,6 +317,8 @@ After discovery (PRP-172): Lugha meets metaprogramming needs with targeted featu
 
 **Derive blocks for every module** (milestone 142, PRP-173): `derive` is a contextual word starting a block in any module, for an interface that module declares (E0452 elsewhere or for overlapping blocks); the intrinsics are written `derive.fields(…)` and so on (E0453 when misused); a struct's or enum's own method with an item's exact signature replaces that item, per item, and one writing every item needs no block; a type that doesn't meet a derivable interface is E0451 with a path. `json.Json`'s items become `to_json` and `from_json`, so a type customises its JSON (breaking for a type that already has methods of those names); tag `m142`.
 
+**Hashing on derive blocks** (milestone 143, PRP-174): `$hash.value` and its per-type IR give way to the prelude's derivable `$Hash` (`prelude/hash.la`), which `Eq` (and `Num`) brings with it, so `K: Eq` stays all a map needs; `$hash.text(s, h)` stays built in for strings' bytes. Derive blocks gain `derive.fold(x, init, f)` (no allocation), `derive.index(x)` and a fourth kind, `derive … for handle`, with `derive.address(x)`. Maps and sets hash order-independently, fixing equal sets built in different orders being two keys; tag `m143`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.

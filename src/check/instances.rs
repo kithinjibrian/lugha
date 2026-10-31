@@ -113,13 +113,20 @@ impl Checker {
         // A derivable interface's item comes from the block covering the
         // type (v17, milestone 141).
         let derived = generics.iter().find(|g| g.name == param).and_then(|g| {
-            g.bounds.interfaces.iter().find(|a| {
-                let declares = self
-                    .interfaces
-                    .get(&a.key)
-                    .is_some_and(|i| i.items.iter().any(|r| r.name == name));
-                declares && self.derives.derivable(&a.key)
-            })
+            // `Eq` brings `$Hash` with it (v17, milestone 143).
+            let implied = super::derive::implies_hash(&g.bounds).then(super::derive::hash_bound);
+            g.bounds
+                .interfaces
+                .iter()
+                .cloned()
+                .chain(implied)
+                .find(|a| {
+                    let declares = self
+                        .interfaces
+                        .get(&a.key)
+                        .is_some_and(|i| i.items.iter().any(|r| r.name == name));
+                    declares && self.derives.derivable(&a.key)
+                })
         });
         // A struct's or enum's own item wins (v17, milestone 142).
         if let Some(interface) = derived

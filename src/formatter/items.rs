@@ -158,6 +158,7 @@ impl Printer<'_> {
             DeriveTarget::Struct => "struct".to_string(),
             DeriveTarget::Enum => "enum".to_string(),
             DeriveTarget::Tuple => "tuple".to_string(),
+            DeriveTarget::Handle => "handle".to_string(),
         };
         let head = format!(
             "derive{} {} for {target} ",

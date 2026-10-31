@@ -1,0 +1,20 @@
+// Misused `fold`, `index` and `address` (E0453, v17, milestone 143).
+interface Count {
+    fun count(self): i64;
+}
+
+derive Count for i64 {
+    fun count(self): i64 = derive.fold(self, 0, add);
+}
+
+derive Count for struct {
+    fun count(self): i64 = derive.index(self) + derive.fold(self, "", add);
+}
+
+derive Count for enum {
+    fun count(self): i64 = derive.address(self) as i64;
+}
+
+fun add<F: Count>(sum: i64, name: string, x: F): i64 = sum + x.count();
+
+fun main() {}

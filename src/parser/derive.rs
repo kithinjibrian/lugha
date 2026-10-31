@@ -37,6 +37,11 @@ impl Parser<'_> {
                 self.bump();
                 DeriveTarget::Tuple
             }
+            // Every `extern type` handle (v17, milestone 143).
+            TokenKind::Ident(word) if word == "handle" => {
+                self.bump();
+                DeriveTarget::Handle
+            }
             _ => DeriveTarget::Type(self.ty()?),
         };
         let open = self.expect(&TokenKind::LBrace)?;

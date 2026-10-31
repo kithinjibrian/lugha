@@ -1,0 +1,33 @@
+error[E0453]: `derive.fold` doesn't work in a `derive … for i64` block
+  --> tests/programs/m143/bad_fold.la:7:28
+  |
+7 |     fun count(self): i64 = derive.fold(self, 0, add);
+  |                            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: `derive.fields` and `derive.build` work in `derive … for struct` and `for tuple` blocks; `derive.variant`, `variants`, `build_variant` and `index` in `for enum` blocks; `derive.fold` in all three; `derive.address` in `for handle` blocks; `f` names a function of this module generic over one `F` with the block's interface
+
+error[E0453]: `derive.index` doesn't work in a `derive … for struct` block
+   --> tests/programs/m143/bad_fold.la:11:28
+   |
+11 |     fun count(self): i64 = derive.index(self) + derive.fold(self, "", add);
+   |                            ^^^^^^^^^^^^^^^^^^
+   |
+   = help: `derive.fields` and `derive.build` work in `derive … for struct` and `for tuple` blocks; `derive.variant`, `variants`, `build_variant` and `index` in `for enum` blocks; `derive.fold` in all three; `derive.address` in `for handle` blocks; `f` names a function of this module generic over one `F` with the block's interface
+
+error[E0453]: `derive.fold` needs `f`'s parameters to be `(ctx, name: string, …)` as the intrinsic passes them
+   --> tests/programs/m143/bad_fold.la:11:49
+   |
+11 |     fun count(self): i64 = derive.index(self) + derive.fold(self, "", add);
+   |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: `derive.fields` and `derive.build` work in `derive … for struct` and `for tuple` blocks; `derive.variant`, `variants`, `build_variant` and `index` in `for enum` blocks; `derive.fold` in all three; `derive.address` in `for handle` blocks; `f` names a function of this module generic over one `F` with the block's interface
+
+error[E0453]: `derive.address` doesn't work in a `derive … for enum` block
+   --> tests/programs/m143/bad_fold.la:15:28
+   |
+15 |     fun count(self): i64 = derive.address(self) as i64;
+   |                            ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: `derive.fields` and `derive.build` work in `derive … for struct` and `for tuple` blocks; `derive.variant`, `variants`, `build_variant` and `index` in `for enum` blocks; `derive.fold` in all three; `derive.address` in `for handle` blocks; `f` names a function of this module generic over one `F` with the block's interface
+
+For more about E0453, run `lughac explain E0453`.

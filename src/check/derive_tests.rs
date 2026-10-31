@@ -125,3 +125,56 @@ fn a_types_own_item_wins_and_must_have_its_shape() {
             fun main() { let s = show(R { a: 1 }); }";
     assert_eq!(codes(wrong), ["E0422"]);
 }
+
+/// `key<args>` of every instance of program `src` (prelude included).
+fn program_monos(src: &str) -> Vec<String> {
+    crate::check::test_util::ok(src)
+        .monos
+        .iter()
+        .map(|m| {
+            let args: Vec<String> = m.args.iter().map(Type::to_string).collect();
+            format!("{}<{}>", m.key, args.join(", "))
+        })
+        .collect()
+}
+
+#[test]
+fn eq_brings_the_preludes_hash_through_a_bound() {
+    // `K: Eq` is all a map needs; its keys reach `$Hash`'s blocks.
+    let found = program_monos(
+        "struct P { x: i64 }\n\
+         fun count<K: Eq>(xs: K[]): i64 { let mut m: Map<K, i64> = #{}; for x of xs { m.insert(x, 1); } m.len }\n\
+         fun main() { let n = count([P { x: 1 }]); }",
+    );
+    assert!(
+        found.iter().any(|m| m == "$prelude.$Hash@struct.$hash<P>"),
+        "{found:?}"
+    );
+    assert!(
+        found
+            .iter()
+            .any(|m| m.starts_with("$prelude.$Hash@i64.$hash")),
+        "{found:?}"
+    );
+    // A program without maps or sets compiles no hashing at all.
+    let none = program_monos("fun main() { let x = 1 == 2; }");
+    assert!(!none.iter().any(|m| m.contains("$Hash")), "{none:?}");
+}
+
+#[test]
+fn a_handle_block_covers_every_handle() {
+    let src = "interface Id { fun id(self): u64; }\n\
+        derive Id for handle { fun id(self): u64 = derive.address(self); }\n\
+        extern type Window;\n\
+        fun id<T: Id>(x: T): u64 = x.id();\n\
+        fun f(w: Window, p: CPtr): u64 = id(w) + id(p);\nfun main() {}";
+    assert_eq!(codes_of(src), Vec::<&str>::new());
+}
+
+/// The codes of checking `src` on its own.
+fn codes_of(src: &str) -> Vec<&'static str> {
+    match bundled(src) {
+        Ok(_) => Vec::new(),
+        Err(d) => d.iter().map(|d| d.code).collect(),
+    }
+}

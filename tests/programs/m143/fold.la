@@ -1,0 +1,48 @@
+// A program's own derivable interface using `derive.fold`, `derive.index`
+// and a `for handle` block (v17, milestone 143).
+extern "malloc" fun c_malloc(n: u64): CPtr;
+
+/** How many numbers a value holds, all the way down. */
+interface Count {
+    fun count(self): i64;
+}
+
+derive Count for i64 {
+    fun count(self): i64 = 1;
+}
+
+derive Count for string {
+    fun count(self): i64 = 0;
+}
+
+derive Count for struct {
+    fun count(self): i64 = derive.fold(self, 0, add);
+}
+
+derive Count for tuple {
+    fun count(self): i64 = derive.fold(self, 0, add);
+}
+
+/** An enum counts its variant's position too. */
+derive Count for enum {
+    fun count(self): i64 = derive.fold(self, derive.index(self) * 100, add);
+}
+
+derive Count for handle {
+    fun count(self): i64 = if derive.address(self) == 0 { 0 } else { 1 };
+}
+
+fun add<F: Count>(sum: i64, name: string, x: F): i64 = sum + x.count();
+
+fun count<T: Count>(x: T): i64 = x.count();
+
+struct P { a: i64, b: string, c: (i64, i64) }
+enum Shape { Dot, Line(i64, i64), Named(string, i64) }
+
+fun main() {
+    println(count(P { a: 1, b: "x", c: (2, 3) }));
+    println(count(Shape.Dot));
+    println(count(Shape.Line(4, 5)));
+    println(count(Shape.Named("n", 6)));
+    println(count(c_malloc(8)));
+}
