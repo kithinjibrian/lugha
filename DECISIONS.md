@@ -2159,7 +2159,7 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** Lugha meets each metaprogramming need with a targeted feature, never macros or comptime (discussion and discovery, session of 2026-10-31):
 - following a type's shape (serialise, compare, hash) → **derive blocks**, this milestone, bundled sources only;
-- doing work before the program runs → `const` calling pure functions (later; needs decision 4's "no interpreter" amended);
+- doing work before the program runs → `const` calling pure functions (built in milestone 147 at startup, without amending decision 4: see 212);
 - varying by platform → `@cfg` on items (later, with portability stage C1);
 - wrapping any signature (decorators) → wait for a real program;
 - new syntax → none: strings checked at build time cover it.
@@ -2187,6 +2187,16 @@ Derive blocks as built: `$derive[<params>] I for X { items }` (`Item::Derive`; `
 **Decision:** `Eq` is the prelude's derivable interface `Eq { fun eq(self, other: Self): bool; fun hash(self, h: u64): u64; }` (`prelude/eq.la`), replacing 210's `$Hash`. `T: Eq` stays the checker's `eq` flag, which `derive::implies_eq` turns into the interface (as 210 did), so no bound code changed shape. `==` on structs, enums, tuples, arrays and `Option` (`derive::compared_through_eq`) is `eq`: the checker's `EQUAL` use expands to the type's own `eq` or its block's (`eq_instances`), codegen's `equal` calls it (`eq_call`); numbers, `bool`, `char`, `string` and handles stay inline. A type's own `eq` and `hash` (exact shapes) win; one alone is E0454, a wrong shape E0422; writing both, it needs no block. E0451 replaces E0404/E0419 for aggregates that aren't `Eq`. `derive.all(a, b, f)` reads both values in place (`address_of`, `fields_at`) and branches out at the first false. `Option` is covered by the `enum` block. Prelude and std instances are `Internal` linkage. This reverses v15's "`==` stays structural" (amends core decision 35).
 
 **Why:** the discovery's answers (PRP-175). Performance: the first version was ~2× slower on `==`; three fixes brought it level (an array loop calling `eq` on elements made the loop copy shared arrays, `Option`'s nested `match` copied values, and both compared values were copied twice); measured best/median 0.25/0.26 s vs 0.26/0.27 s on `main`, maps 0.84/0.87 vs 0.88/0.89.
+
+### 212. Constants computed by pure code — milestone 147 (PRP-178)
+
+**Decision:** a constant's value is any expression that is *pure*: nothing reached from it, through calls, function values, interface conversions and bound calls at their real type arguments, prints, uses the I/O intrinsics, `$os`, an `extern` function, `spawn` or `Chan.new`. Locals, loops, closures, maps, `Ref` and `panic` are pure. Purity is inferred (no keyword). It is still computed **at startup**, in `lugha_const_init`, never while compiling. **Build-time evaluation is rejected, not deferred:** Lugha's types never need a value (`T[]` carries its length; no const generics; generic bodies checked once, decisions 33 and 41; no comptime, 208), so evaluating while compiling would only save microseconds at startup and move a constant's panic from first run to build, at the price of running the runtime and the GC inside `lughac`, turning heap values back into IR and taking cross-built values from the host. Revisit only if Lugha adds a type that holds a value (`u8[16]`) or constant patterns.
+
+As built: `check/purity.rs`. Each body records its `effects` and the constants it `reads` by owner; a constant's value is checked under owner `$const.<key>`. `used` keeps plain calls in `Checker.calls` (purity only) beside `uses` (monomorphization); `Checker::targets` (from `monomorphize`) with `every` also follows plain methods through a bound. After every body, `order_consts` walks each constant breadth first from its owner: the first effect is E0445 with the path (`` `load` calls `read_file`, which reads files ``, shortened past 6 names), and every constant read on the way becomes a dependency, so E0446 shows cycles through functions (`A calls `f`, which reads A`). Codegen is unchanged: `lugha_const_init` already compiled values as expressions, and the `$const.` owners are monomorphization roots.
+
+Known gap: a printing site or `==` reaches a type's own non-generic `show`/`eq` only for monomorphization's lists (`show_instances`, `eq_instances`), so a constant whose interpolation calls a user `show` that prints isn't caught. That code only runs earlier than it would in `main`; nothing unsafe follows.
+
+**Why:** the discovery's answers (2026-10-31): startup, not build time; any pure expression, not a list; purity inferred; dependencies through calls; generics judged per use.
 
 ---
 

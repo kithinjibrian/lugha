@@ -123,6 +123,8 @@ impl Checker {
     /// `print(x)`, `println([x])`, `panic(msg)`, `to_string(x)` (spec §5).
     /// `panic` never returns, so its type is `Never` (spec §6).
     fn intrinsic(&mut self, call: &Expr, name: &str, args: &[Expr]) -> Type {
+        // Constants may not reach this (v17, milestone 147).
+        self.intrinsic_effect(name, call.span);
         if name == "swap" {
             return self.swap(call, args);
         }

@@ -36,15 +36,15 @@ pub struct Instance {
 #[derive(Debug, Clone)]
 pub(super) struct Use {
     /// The key of the body the call is in.
-    owner: String,
-    callee: Instance,
+    pub(super) owner: String,
+    pub(super) callee: Instance,
     /// For a call through a bound (milestone 12), the type parameter; the
     /// callee is then just the method's name until the parameter is known.
-    through: Option<String>,
+    pub(super) through: Option<String>,
     /// A derive block's field intrinsic (v17, milestone 141): the callee is
     /// `f` at `Self`, reached at each part's type once `Self` is known.
-    per_field: bool,
-    span: Span,
+    pub(super) per_field: bool,
+    pub(super) span: Span,
 }
 
 impl Checker {
@@ -52,20 +52,24 @@ impl Checker {
     /// A prelude or std function is recorded even when it isn't generic, so
     /// it is compiled only if user code reaches it (PRP-043, v15).
     pub(super) fn used(&mut self, call: &Expr, key: &str, args: &[Type]) {
-        if args.is_empty() && !lazy_key(key) {
-            return;
-        }
         let callee = Instance {
             key: key.to_string(),
             args: args.to_vec(),
         };
-        self.uses.push(Use {
+        let u = Use {
             owner: self.owner.clone(),
             callee,
             through: None,
             per_field: false,
             span: call.span,
-        });
+        };
+        // A plain call is compiled anyway; it is kept only for the purity
+        // of constants (v17, milestone 147).
+        if args.is_empty() && !lazy_key(key) {
+            self.calls.push(u);
+        } else {
+            self.uses.push(u);
+        }
     }
 
     /// Records that a field intrinsic calls generic `key` once per part of
@@ -191,49 +195,7 @@ impl Checker {
             next += 1;
             let generics = self.params_of(&owner);
             for u in self.uses.iter().filter(|u| u.owner == owner) {
-                let callees = match &u.through {
-                    // A field intrinsic reaches `f` at each part's type (v17).
-                    None if u.per_field => {
-                        let me = subst(&u.callee.args[0], &generics, &args);
-                        self.part_types(&me)
-                            .into_iter()
-                            .map(|t| Instance {
-                                key: u.callee.key.clone(),
-                                args: vec![t],
-                            })
-                            .collect()
-                    }
-                    // A print site reaches the `show` instances of its type (v12).
-                    None if u.callee.key == PRINT => {
-                        self.show_instances(&subst(&u.callee.args[0], &generics, &args))
-                    }
-                    // An `==` reaches its type's `eq`: its own, or its
-                    // derive block's (v17, milestone 144).
-                    None if u.callee.key == super::maps::EQUAL => {
-                        self.eq_instances(&subst(&u.callee.args[0], &generics, &args))
-                    }
-                    None => vec![Instance {
-                        key: u.callee.key.clone(),
-                        args: u
-                            .callee
-                            .args
-                            .iter()
-                            .map(|a| subst(a, &generics, &args))
-                            .collect(),
-                    }],
-                    // `<` through `T: Ord` at a tuple reaches its elements'
-                    // `cmp` (v15, milestone 59).
-                    Some(param) if u.callee.key == "cmp" => {
-                        let concrete = subst(&Type::Param(param.clone()), &generics, &args);
-                        self.cmp_targets(&concrete)
-                    }
-                    Some(param) => {
-                        match self.bound_target(&generics, &args, param, &u.callee.key) {
-                            Some(instance) => vec![instance],
-                            None => continue,
-                        }
-                    }
-                };
+                let callees = self.targets(u, &generics, &args, false);
                 for callee in callees {
                     if !seen.insert(callee.clone()) {
                         continue;
@@ -255,6 +217,84 @@ impl Checker {
             }
         }
         found.into_iter().map(|(i, _, _)| i).collect()
+    }
+
+    /// The instances the call `u` reaches in a body whose type parameters
+    /// `generics` are `args`. Only generic and lazy ones unless `every`
+    /// (purity follows plain methods too, v17, milestone 147).
+    pub(super) fn targets(
+        &self,
+        u: &Use,
+        generics: &[Generic],
+        args: &[Type],
+        every: bool,
+    ) -> Vec<Instance> {
+        match &u.through {
+            // A field intrinsic reaches `f` at each part's type (v17).
+            None if u.per_field => {
+                let me = subst(&u.callee.args[0], generics, args);
+                self.part_types(&me)
+                    .into_iter()
+                    .map(|t| Instance {
+                        key: u.callee.key.clone(),
+                        args: vec![t],
+                    })
+                    .collect()
+            }
+            // A print site reaches the `show` instances of its type (v12).
+            None if u.callee.key == PRINT => {
+                self.show_instances(&subst(&u.callee.args[0], generics, args))
+            }
+            // An `==` reaches its type's `eq`: its own, or its
+            // derive block's (v17, milestone 144).
+            None if u.callee.key == super::maps::EQUAL => {
+                self.eq_instances(&subst(&u.callee.args[0], generics, args))
+            }
+            None => vec![Instance {
+                key: u.callee.key.clone(),
+                args: u
+                    .callee
+                    .args
+                    .iter()
+                    .map(|a| subst(a, generics, args))
+                    .collect(),
+            }],
+            // `<` through `T: Ord` at a tuple reaches its elements'
+            // `cmp` (v15, milestone 59).
+            Some(param) if u.callee.key == "cmp" => {
+                let concrete = subst(&Type::Param(param.clone()), generics, args);
+                self.cmp_targets(&concrete)
+            }
+            Some(param) => match self.bound_target(generics, args, param, &u.callee.key) {
+                Some(instance) => vec![instance],
+                // A plain method is compiled anyway; purity still follows it.
+                None if every => self.concrete_method(generics, args, param, &u.callee.key),
+                None => Vec::new(),
+            },
+        }
+    }
+
+    /// The concrete type's own method `name` through `param`, generic or not.
+    fn concrete_method(
+        &self,
+        generics: &[Generic],
+        args: &[Type],
+        param: &str,
+        name: &str,
+    ) -> Vec<Instance> {
+        let concrete = subst(&Type::Param(param.to_string()), generics, args);
+        let (Type::Struct(owner, targs) | Type::Enum(owner, targs)) = &concrete else {
+            return Vec::new();
+        };
+        self.methods
+            .get(owner)
+            .and_then(|m| m.get(name))
+            .map(|m| Instance {
+                key: m.key.clone(),
+                args: targs.clone(),
+            })
+            .into_iter()
+            .collect()
     }
 
     /// The type parameters of the function or method with key `key`.

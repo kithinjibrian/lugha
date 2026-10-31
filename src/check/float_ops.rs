@@ -217,6 +217,8 @@ impl Checker {
         (callee, op): (&Expr, &str),
         args: &[Expr],
     ) -> Type {
+        // Constants may not reach this (v17, milestone 147).
+        self.effect("", "uses the operating system", call.span);
         self.record(callee, Type::Unit);
         if let ExprKind::Field(base, _) = &callee.kind {
             self.record(base, Type::Unit);

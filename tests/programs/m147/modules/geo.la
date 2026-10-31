@@ -1,0 +1,3 @@
+public const PI: f64 = 3.0;
+
+public fun circle(r: f64): f64 = PI * r * r;
