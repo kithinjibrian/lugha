@@ -82,6 +82,7 @@ mod out_params;
 mod partial;
 mod patterns;
 mod printing;
+mod purity;
 mod reexports;
 mod refs;
 mod results;
@@ -223,6 +224,9 @@ impl Checker {
             owner: String::new(),
             param_literals: Vec::new(),
             uses: Vec::new(),
+            calls: Vec::new(),
+            effects: HashMap::new(),
+            reads: HashMap::new(),
             body_types: HashMap::new(),
             derives: derive::Derives::default(),
             deriving: None,
@@ -366,6 +370,12 @@ pub(super) struct Checker {
     param_literals: Vec<literal::ParamLiteral>,
     /// Every generic call, with the body it is in (PRP-036).
     uses: Vec<instances::Use>,
+    /// Plain calls, kept only for the purity of constants (v17, milestone 147).
+    calls: Vec<instances::Use>,
+    /// What each body does outside the program, by owner (milestone 147).
+    effects: HashMap<String, Vec<purity::Effect>>,
+    /// The constants each body reads, by owner (milestone 147).
+    reads: HashMap<String, Vec<String>>,
     /// Every `derive` block (v17, milestones 141–142).
     derives: derive::Derives,
     /// The derive block whose bodies are being checked: the field

@@ -1,0 +1,27 @@
+// A constant computed by pure code (milestone 147): calls, loops, `if` and
+// interpolation, in any order.
+fun crc_table(): u32[] {
+    let mut t: u32[] = [];
+    let mut i = 0;
+    while i < 256 {
+        let mut c = i as u32;
+        let mut k = 0;
+        while k < 8 {
+            c = if c & 1 == 1 { 0xEDB88320 ^ (c >> 1) } else { c >> 1 };
+            k += 1;
+        }
+        t.push(c);
+        i += 1;
+    }
+    t
+}
+
+const CRC: u32[] = crc_table();
+const MODE: string = if DEBUG { "dev" } else { "prod" };
+const DEBUG: bool = false;
+const BANNER: string = "crc[1] = {CRC[1]}, mode {MODE}";
+
+fun main() {
+    println(BANNER);
+    println(CRC.len);
+}

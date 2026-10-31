@@ -77,11 +77,12 @@ pub(in crate::check) fn unit_binding(name: &str, span: Span, init: Span) -> Diag
         ))
 }
 
-/// A part of a constant's value that isn't a constant expression (milestone 109).
-pub(in crate::check) fn not_constant(span: Span) -> Diagnostic {
-    Diagnostic::error("E0445", "not a constant expression", span).with_help(
-        "a constant's value is built from literals, other constants, operators, `as`, and array, struct, tuple and variant literals; no calls, closures, `if`, blocks or interpolation",
-    )
+/// A constant whose value reaches outside the program (milestone 147):
+/// `path` says how, "`load` calls `read_file`, which reads files".
+pub(in crate::check) fn impure(path: &str, span: Span) -> Diagnostic {
+    Diagnostic::error("E0445", "a constant can only use pure code", span).with_help(format!(
+        "{path}; a constant is computed before `main` and may not print, read or write files, use the operating system, call C, or start tasks, channels or actors: compute the value in `main` instead"
+    ))
 }
 
 /// A type a constant can't have (milestone 109).

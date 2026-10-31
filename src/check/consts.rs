@@ -1,12 +1,14 @@
 //! Global constants (v17, milestone 109): `const NAME: T = value;`.
 //! Collected with the functions, checked after them, evaluated by codegen
-//! once before `main` in `Checked::consts` order.
+//! once before `main` in `Checked::consts` order. Since milestone 147 the
+//! value is any pure expression (`purity.rs`).
 
 use std::collections::{HashMap, HashSet};
 
 use super::expr::Expect;
+use super::purity::{Reads, const_owner, cycle_text};
 use super::{Checker, Type, errors};
-use crate::ast::{ConstDecl, Expr, ExprKind, Item, Program};
+use crate::ast::{ConstDecl, Expr, Item, Program};
 use crate::span::Span;
 
 /// What the checker knows about one constant.
@@ -16,8 +18,9 @@ pub(super) struct ConstInfo {
     pub ty: Type,
     /// The name at the declaration.
     pub span: Span,
-    /// The constants its value reads, by key.
-    pub deps: Vec<String>,
+    /// The constants its value reads, by key, with the functions on the way
+    /// (v17, milestone 147).
+    pub deps: Reads,
 }
 
 impl Checker {
@@ -69,93 +72,11 @@ impl Checker {
     fn const_value(&mut self, key: &str, c: &ConstDecl) {
         let ty = self.consts[key].ty.clone();
         self.ret = Type::Unit;
+        // Under its own owner, so its calls, effects and reads are recorded
+        // like a body's (v17, milestone 147).
+        self.owner = const_owner(key);
         self.expect_type(&c.value, &Expect::of(ty));
-        let mut deps = Vec::new();
-        if let Some(bad) = self.non_constant(&c.value, &mut deps) {
-            self.report(errors::not_constant(bad));
-        }
-        self.consts.get_mut(key).expect("collected").deps = deps;
-    }
-
-    /// The first part of `e` that isn't a constant expression, if any;
-    /// the constants it reads go to `deps`.
-    fn non_constant(&mut self, e: &Expr, deps: &mut Vec<String>) -> Option<Span> {
-        let all = |c: &mut Self, es: &[&Expr], deps: &mut Vec<String>| {
-            es.iter().find_map(|x| c.non_constant(x, deps))
-        };
-        match &e.kind {
-            ExprKind::Int(_)
-            | ExprKind::Float(_)
-            | ExprKind::Char(_)
-            | ExprKind::Str(_)
-            | ExprKind::Bool(_) => None,
-            ExprKind::Name(name) => {
-                if let Some(key) = self.const_uses.get(&e.id) {
-                    deps.push(key.clone());
-                    return None;
-                }
-                (name != "None").then_some(e.span)
-            }
-            ExprKind::Field(base, _) => {
-                if let Some(key) = self.const_uses.get(&e.id) {
-                    deps.push(key.clone());
-                    return None;
-                }
-                if self.callees.contains_key(&e.id) || self.variant_values.contains_key(&e.id) {
-                    return Some(e.span);
-                }
-                // A type or module name (`i16.MAX`, `Color.Red`) holds nothing to check.
-                if self.type_of(base) == Some(Type::Unit) {
-                    return None;
-                }
-                self.non_constant(base, deps)
-            }
-            ExprKind::Unary(_, x) | ExprKind::Cast(x, _) => self.non_constant(x, deps),
-            ExprKind::Binary(_, _, a, b) | ExprKind::Index(a, _, b) | ExprKind::Repeat(a, b) => {
-                all(self, &[a, b], deps)
-            }
-            ExprKind::Tuple(xs) | ExprKind::Array(xs) => {
-                xs.iter().find_map(|x| self.non_constant(x, deps))
-            }
-            ExprKind::StructLit(lit) => {
-                if let Some(base) = &lit.base {
-                    return Some(base.span);
-                }
-                lit.fields
-                    .iter()
-                    .find_map(|(_, x)| self.non_constant(x, deps))
-            }
-            // A file's contents (v17, milestone 128): its path is checked as it is read.
-            ExprKind::Call(callee, _) if self.is_include(e, callee) => None,
-            // `Some(x)`, `Ok(x)`, `Err(x)`, `E.V(x)`: constructors only.
-            ExprKind::Call(callee, args) if self.constructor(e, callee) => {
-                args.iter().find_map(|x| self.non_constant(x, deps))
-            }
-            _ => Some(e.span),
-        }
-    }
-
-    /// True if `callee` (of `call`) is `include_bytes` or `include_str`.
-    fn is_include(&self, call: &Expr, callee: &Expr) -> bool {
-        matches!(&callee.kind, ExprKind::Name(n) if super::includes::INCLUDES.contains(&n.as_str()))
-            && !self.callees.contains_key(&call.id)
-    }
-
-    /// True if `callee` (of `call`) builds a variant rather than calling.
-    fn constructor(&self, call: &Expr, callee: &Expr) -> bool {
-        if self.callees.contains_key(&call.id) || self.callees.contains_key(&callee.id) {
-            return false;
-        }
-        match &callee.kind {
-            ExprKind::Name(n) => matches!(n.as_str(), "Some" | "Ok" | "Err"),
-            ExprKind::Field(base, _) => self.type_of(base) == Some(Type::Unit),
-            _ => false,
-        }
-    }
-
-    /// The type recorded for `e`, if any.
-    fn type_of(&self, e: &Expr) -> Option<Type> {
-        self.types.get(e.id.0 as usize).cloned().flatten()
+        self.owner.clear();
     }
 
     /// True if a constant may have type `ty`: plain data, no functions,
@@ -216,16 +137,28 @@ impl Checker {
         let info = &self.consts[key];
         let (ty, decl) = (info.ty.clone(), info.span);
         self.const_uses.insert(expr.id, key.to_string());
+        self.read_const(key);
         let name = key.rsplit('.').next().unwrap_or(key).to_string();
         self.hover.constant(at, decl, &name, &ty);
         ty
     }
 
-    /// After every body: the order constants are evaluated in, each after
-    /// those it reads; E0446 for every cycle.
+    /// After every body: E0445 for a constant reaching outside the program,
+    /// then the order constants are evaluated in, each after those it reads
+    /// (through calls too, milestone 147); E0446 for every cycle.
     pub(super) fn order_consts(&mut self) {
         let mut keys: Vec<String> = self.consts.keys().cloned().collect();
         keys.sort_by_key(|k| self.consts[k].span.start);
+        let found: Vec<_> = {
+            let index = self.calls_by_owner();
+            keys.iter().map(|k| self.reach_const(k, &index)).collect()
+        };
+        for (key, (impure, reads)) in keys.iter().zip(found) {
+            if let Some(d) = impure {
+                self.report(d);
+            }
+            self.consts.get_mut(key).expect("listed").deps = reads;
+        }
         let mut state: HashMap<String, bool> = HashMap::new();
         let mut order = Vec::new();
         for key in &keys {
@@ -246,20 +179,35 @@ impl Checker {
             Some(true) => return,
             Some(false) => {
                 let start = path.iter().position(|k| k == key).unwrap_or(0);
-                let mut names: Vec<&str> = path[start..]
+                let short = |k: &str| k.rsplit('.').next().unwrap_or(k).to_string();
+                let steps: Vec<(String, Vec<String>)> = path[start..]
                     .iter()
-                    .map(|k| k.rsplit('.').next().unwrap_or(k))
+                    .enumerate()
+                    .map(|(i, k)| {
+                        let next = path.get(start + i + 1).map_or(key, String::as_str);
+                        let via = self.consts[k.as_str()]
+                            .deps
+                            .iter()
+                            .find(|(d, _)| d == next)
+                            .map(|(_, via)| via.clone())
+                            .unwrap_or_default();
+                        (short(k), via)
+                    })
                     .collect();
-                names.push(key.rsplit('.').next().unwrap_or(key));
+                let steps: Vec<(&str, &[String])> = steps
+                    .iter()
+                    .map(|(n, via)| (n.as_str(), via.as_slice()))
+                    .collect();
+                let text = cycle_text(&steps, &short(key));
                 let span = self.consts[key].span;
-                self.report(errors::const_cycle(&names.join(" -> "), span));
+                self.report(errors::const_cycle(&text, span));
                 return;
             }
             None => {}
         }
         state.insert(key.to_string(), false);
         path.push(key.to_string());
-        for dep in self.consts[key].deps.clone() {
+        for (dep, _) in self.consts[key].deps.clone() {
             self.visit_const(&dep, state, path, order);
         }
         path.pop();
@@ -271,7 +219,7 @@ impl Checker {
 #[cfg(test)]
 mod tests {
     use crate::check::Type;
-    use crate::check::test_util::{errors, let_type, ok};
+    use crate::check::test_util::{diagnostics, errors, let_type, ok};
 
     #[test]
     fn constants_are_values_of_their_type() {
@@ -295,20 +243,10 @@ mod tests {
     }
 
     #[test]
-    fn only_constant_expressions_are_e0445() {
-        for (value, at) in [
-            ("f()", "f()"),
-            ("fun(): i64 = 1", "fun(): i64 = 1"),
-            ("if true { 1 } else { 2 }", "if true { 1 } else { 2 }"),
-            ("{ 1 }", "{ 1 }"),
-            ("f", "f"),
-            ("\"{A}\".len", "\"{A}\""),
-        ] {
-            let src = format!(
-                "fun f(): i64 = 1;\nconst A: i64 = 1;\nconst B: i64 = {value};\nfun main() {{}}"
-            );
-            assert_eq!(errors(&src).last(), Some(&("E0445", at)), "{value}");
-        }
+    fn any_pure_expression_is_a_value_but_types_stay_plain() {
+        ok("fun f(): i64 = 1;\nconst A: i64 = 1;\n\
+            const B: i64 = f() + if A > 0 { 1 } else { 2 } + { let x = 3; x };\n\
+            const S: string = \"{A}\";\nfun main() {}");
         assert_eq!(
             errors("const R: Ref<i64> = Ref.new(1);\nfun main() {}")[0],
             ("E0445", "Ref<i64>")
@@ -329,6 +267,16 @@ mod tests {
             errors("const A: i64 = B + 1;\nconst B: i64 = C;\nconst C: i64 = A;\nfun main() {}"),
             [("E0446", "A")]
         );
+        // Through a function, whatever the order (milestone 147).
+        let checked = ok(
+            "const T: i64 = twice();\nfun twice(): i64 = N * 2;\nconst N: i64 = 4;\nfun main() {}",
+        );
+        let order: Vec<&str> = checked.consts.iter().map(|(k, _)| k.as_str()).collect();
+        assert_eq!(order, ["N", "T"]);
+        let src = "const A: i64 = f();\nfun f(): i64 = A + 1;\nfun main() {}";
+        assert_eq!(errors(src), [("E0446", "A")]);
+        let help = diagnostics(src)[0].help.clone().unwrap_or_default();
+        assert!(help.ends_with("A calls `f`, which reads A"), "{help}");
     }
 
     #[test]

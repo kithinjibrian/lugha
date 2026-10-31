@@ -48,6 +48,7 @@ impl Checker {
     /// as any closure, makes a `Task` of its result.
     pub(super) fn spawn(&mut self, closure: &Expr, expect: Option<&Expect>) -> Type {
         self.uses_tasks = true;
+        self.effect("spawn", "starts a task", closure.span);
         // `let t: Task<u8> = spawn f(1)` types the call as a `u8`.
         let wanted = match expect.map(|e| &e.ty) {
             Some(Type::Task(inner)) if **inner != Type::Unit => {

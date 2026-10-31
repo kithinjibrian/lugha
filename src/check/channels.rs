@@ -40,6 +40,7 @@ impl Checker {
             self.expect_type(size, &Expect::of(Type::I64));
         }
         self.callees.insert(call.id, key.to_string());
+        self.effect("Chan.new", "makes a channel", call.span);
         match expect.map(|e| &e.ty) {
             Some(Type::Chan(inner)) => Type::Chan(inner.clone()),
             Some(Type::Error) => Type::Error,

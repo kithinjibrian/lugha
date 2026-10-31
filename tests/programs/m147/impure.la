@@ -1,0 +1,11 @@
+// A constant may not reach outside the program (E0445).
+fun load(): string = match read_file("app.toml") {
+    Ok(text) => text,
+    Err(_) => "",
+};
+
+const CONFIG: string = load();
+
+fun main() {
+    println(CONFIG);
+}

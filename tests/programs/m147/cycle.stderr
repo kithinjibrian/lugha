@@ -1,0 +1,9 @@
+error[E0446]: this constant depends on itself
+  --> tests/programs/m147/cycle.la:2:7
+  |
+2 | const A: i64 = next();
+  |       ^
+  |
+  = help: the values go round: A calls `next`, which reads A
+
+For more about E0446, run `lughac explain E0446`.
