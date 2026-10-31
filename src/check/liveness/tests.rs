@@ -41,6 +41,7 @@ fn visit_program(program: &crate::ast::Program, f: &mut dyn FnMut(&crate::ast::E
                     block(body, f);
                 }
                 StmtKind::For { body, .. } => block(body, f),
+                StmtKind::Defer(e) => expr(e, f),
                 _ => {}
             }
         }
@@ -215,4 +216,18 @@ fn receivers_are_slot_zero_and_methods_are_walked_v17() {
     assert_eq!(checked.keeps.get("Bag.grow"), None);
     assert_eq!(moved(src), ["xs", "ys[0]"]);
     assert_eq!(handed(src), ["bag", "bag"]); // the second, a `mut self`, is ignored by codegen
+}
+
+#[test]
+fn a_deferred_mention_counts_at_the_end_of_its_block() {
+    // The `defer` runs after `let ys = xs;`, so `xs` is still read then.
+    let src = "fun main() { let xs = [1]; defer println(xs[0]); let ys = xs; }";
+    assert!(moved(src).is_empty());
+    // Inside the deferred statement it would be the last use, but the rule
+    // errs towards copying: the statement's mentions count at the end too.
+    let src = "fun main() { let xs = [1]; defer { let ys = xs; } println(xs[0]); }";
+    assert!(moved(src).is_empty());
+    // Below its block, the deferred statement has already run.
+    let src = "fun main() { let xs = [1]; { defer println(xs[0]); } let ys = xs; }";
+    assert_eq!(moved(src), ["xs"]);
 }

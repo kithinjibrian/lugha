@@ -1,0 +1,6 @@
+// A deferred statement has type `()`: a dropped `Result` would hide an error.
+import std.fs;
+
+fun main() {
+    defer fs.remove_file("tmp.txt");
+}

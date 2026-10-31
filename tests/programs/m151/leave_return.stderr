@@ -1,0 +1,11 @@
+error[E0455]: `return` can't leave a deferred statement
+  --> tests/programs/m151/leave_return.la:4:9
+  |
+3 |     defer {
+  |     ----- deferred here
+4 |         return;
+  |         ^^^^^^^
+  |
+  = help: it runs while its block is already being left; handle the case inside it instead
+
+For more about E0455, run `lughac explain E0455`.

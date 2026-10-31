@@ -9,7 +9,6 @@ What's next. Shipped work is in CHANGELOG.md (and the spec's §11 milestone tabl
 
 ## Language and library
 
-- [ ] **`defer`:** cleanup at scope exit (files, sockets left open on an early `?`). Research and recommended design: `docs/decisions/defer.md`; DECISIONS OPEN. Next: the discovery, then a PRP.
 - [ ] **JSON, later:** per-field options (renaming, skipping, defaults), an `@json` attribute, base64 bytes.
 - [ ] **Boxes and bytes** (v16 §12): editing a box in place (`r.with`); a bounds-checked byte buffer.
 - [ ] **`std.process`:** streaming pipes to a running child and timeouts (found with oyster). Needs the user's security review.

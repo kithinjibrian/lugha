@@ -159,3 +159,30 @@ pub(in crate::check) fn not_json(ty: &Type, path: &str, what: &str, span: Span) 
         "JSON holds data: numbers, `bool`, `char`, `string`, arrays, tuples, maps with string or integer keys, sets, `Option`, and structs and enums of these",
     )
 }
+
+/// `return`, `?`, `break` or `continue` leaving a deferred statement
+/// (milestone 151): it runs while its block is already being left.
+pub(in crate::check) fn leaves_defer(keyword: &str, span: Span, defer: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0455",
+        format!("`{keyword}` can't leave a deferred statement"),
+        span,
+    )
+    .with_label(defer, "deferred here")
+    .with_help("it runs while its block is already being left; handle the case inside it instead")
+}
+
+/// A deferred statement with a value (milestone 151): nothing would see it.
+pub(in crate::check) fn deferred_value(ty: Type, span: Span) -> Diagnostic {
+    let help = if matches!(&ty, Type::Enum(k, _) if k == crate::check::RESULT) {
+        "handle the error inside it, or discard it on purpose: `defer { fs.remove_file(tmp); }`"
+    } else {
+        "nothing would see its value: add `;` inside braces to discard it, `defer { e; }`"
+    };
+    Diagnostic::error(
+        "E0456",
+        format!("a deferred statement must have type (), found {ty}"),
+        span,
+    )
+    .with_help(help)
+}

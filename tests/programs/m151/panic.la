@@ -1,0 +1,6 @@
+// A panic ends the program without running defers (spec §6).
+fun main() {
+    defer println("not printed");
+    println("before");
+    panic("stop");
+}

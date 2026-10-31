@@ -76,6 +76,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.ret = signature.ret.clone();
         self.scopes = Scopes::default();
         self.loops.clear();
+        self.defers.clear();
         self.builder
             .position_at_end(self.context.append_basic_block(signature.function, "entry"));
         self.preempt_point();
@@ -142,9 +143,13 @@ impl<'ctx> Lowerer<'ctx> {
         match (self.ret.clone(), value) {
             (Some(ty), Some(expr)) => {
                 let result = self.value_for_return(expr, &ty)?;
+                // Computed, then every block's defers run (milestone 151).
+                let result = self.hold(result, &ty, 0);
+                self.run_defers(0)?;
                 self.builder.build_return(Some(&result)).expect(POSITIONED);
             }
             _ => {
+                self.run_defers(0)?;
                 self.builder.build_return(None).expect(POSITIONED);
             }
         }

@@ -1,0 +1,9 @@
+error[E0456]: a deferred statement must have type (), found Result<i64, string>
+  --> tests/programs/m151/result.la:5:11
+  |
+5 |     defer fs.remove_file("tmp.txt");
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: handle the error inside it, or discard it on purpose: `defer { fs.remove_file(tmp); }`
+
+For more about E0456, run `lughac explain E0456`.

@@ -1,0 +1,7 @@
+error[E0201]: expected a pattern, found `defer`
+  --> tests/programs/m151/name.la:3:9
+  |
+3 |     let defer = 1;
+  |         ^^^^^
+
+For more about E0201, run `lughac explain E0201`.

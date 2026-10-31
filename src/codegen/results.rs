@@ -57,6 +57,9 @@ impl<'ctx> Lowerer<'ctx> {
             };
             self.construct_values(&ret, "Err", vec![error])
         };
+        // The failure is built, then every block's defers run (milestone 151).
+        let out = self.hold(out, &ret, 0);
+        self.run_defers(0)?;
         self.builder.build_return(Some(&out)).expect(POSITIONED);
         self.builder.position_at_end(pass_block);
         let value = self.load_payload(&ty, slot, &pass_payloads, 0, &pass_payloads[0]);

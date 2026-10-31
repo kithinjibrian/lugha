@@ -147,6 +147,8 @@ impl<'ctx> Lowerer<'ctx> {
         let saved_ret = std::mem::replace(&mut self.ret, (*ret != Type::Unit).then(|| ret.clone()));
         let saved_scopes = std::mem::take(&mut self.scopes);
         let saved_loops = std::mem::take(&mut self.loops);
+        // A closure's body is a function of its own: its defers run when it returns.
+        let saved_defers = std::mem::take(&mut self.defers);
         self.builder
             .position_at_end(self.context.append_basic_block(function, "entry"));
         self.preempt_point();
@@ -206,6 +208,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.ret = saved_ret;
         self.scopes = saved_scopes;
         self.loops = saved_loops;
+        self.defers = saved_defers;
         if let Some(block) = saved_block {
             self.builder.position_at_end(block);
         }

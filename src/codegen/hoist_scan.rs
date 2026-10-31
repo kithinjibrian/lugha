@@ -165,6 +165,8 @@ impl<'ctx> Lowerer<'ctx> {
                         self.scan_read(scan, value);
                     }
                 }
+                // Runs at the block's exits, still inside any loop around it.
+                StmtKind::Defer(expr) => self.scan_read(scan, expr),
                 StmtKind::Break | StmtKind::Continue => {}
             }
         }

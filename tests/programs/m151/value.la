@@ -1,0 +1,4 @@
+fun main() {
+    let n = 1;
+    defer n + 1;
+}

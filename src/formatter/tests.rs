@@ -377,3 +377,11 @@ fn a_header_stays_whole_while_its_body_can_break_v17() {
         "fun total(xs: i64[]): i64 = xs.iter().fold(0, fun(a, b) = a + b) + another_long_function(\n    xs,\n    1,\n    2,\n    3,\n);\n",
     );
 }
+
+#[test]
+fn defer_keeps_its_statement_or_block_v17() {
+    check(
+        "fun f(){defer  println(1);defer{g();};defer if c {g();}}",
+        "fun f() {\n    defer println(1);\n    defer {\n        g();\n    }\n    defer if c {\n        g();\n    }\n}\n",
+    );
+}

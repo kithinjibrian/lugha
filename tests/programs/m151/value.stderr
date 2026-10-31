@@ -1,0 +1,9 @@
+error[E0456]: a deferred statement must have type (), found i64
+  --> tests/programs/m151/value.la:3:11
+  |
+3 |     defer n + 1;
+  |           ^^^^^
+  |
+  = help: nothing would see its value: add `;` inside braces to discard it, `defer { e; }`
+
+For more about E0456, run `lughac explain E0456`.

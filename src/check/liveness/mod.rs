@@ -113,6 +113,7 @@ pub(super) fn analyse(
         closures: 0,
         overwrites: Vec::new(),
         frame: None,
+        block_ends: Vec::new(),
         out: Liveness::default(),
     };
     let mut frames: Vec<(String, Frame)> = Vec::new();

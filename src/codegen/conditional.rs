@@ -94,7 +94,12 @@ impl<'ctx> Lowerer<'ctx> {
         self.scopes.push();
         let (subject, sty) = self.subject_of(scrutinee)?;
         self.test(pattern, subject, &sty, exit, true);
-        self.loops.push(Loop { next: cond, exit });
+        let defers = self.defers.len();
+        self.loops.push(Loop {
+            next: cond,
+            exit,
+            defers,
+        });
         self.block(body)?;
         self.loops.pop();
         self.scopes.pop();

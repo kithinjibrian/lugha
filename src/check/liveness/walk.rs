@@ -24,17 +24,37 @@ pub(super) struct Walk<'a> {
     pub(super) overwrites: Vec<(Span, usize, usize)>,
     /// The function being walked.
     pub(super) frame: Option<Frame>,
+    /// Where each enclosing block ends, innermost last: a deferred
+    /// statement runs there (milestone 151).
+    pub(super) block_ends: Vec<usize>,
     pub(super) out: Liveness,
 }
 
 impl Walk<'_> {
     pub(super) fn block(&mut self, block: &Block) {
+        self.block_ends.push(block.span.end);
         for stmt in &block.stmts {
             self.stmt(stmt);
         }
         if let Some(tail) = &block.tail {
             self.expr(tail);
         }
+        self.block_ends.pop();
+    }
+
+    /// `defer e;` (milestone 151): `e` runs when its block ends, after
+    /// everything written below it, so each local it mentions is also
+    /// mentioned at the block's end and nothing below hands it over.
+    fn deferred(&mut self, e: &Expr) {
+        let end = *self.block_ends.last().expect("a statement is in a block");
+        for m in self.mentions.values() {
+            if e.span.start <= m.at && m.at < e.span.end {
+                let list = self.positions.entry(m.decl).or_default();
+                list.push(end);
+                list.sort_unstable();
+            }
+        }
+        self.expr(e);
     }
 
     fn stmt(&mut self, stmt: &Stmt) {
@@ -97,6 +117,7 @@ impl Walk<'_> {
                 self.block(body);
                 self.loops.pop();
             }
+            StmtKind::Defer(e) => self.deferred(e),
             StmtKind::Break | StmtKind::Continue => {}
         }
     }

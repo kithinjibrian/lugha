@@ -173,6 +173,7 @@ fn a_plain_word_offers_names_in_scope() {
     assert!(find(&items, "println").is_some(), "{items:?}");
     assert!(find(&items, "Some").is_some(), "{items:?}");
     assert_eq!(find(&items, "while").map(|i| i.1), Some(KEYWORD));
+    assert_eq!(find(&items, "defer").map(|i| i.1), Some(KEYWORD));
     // Not declared yet at the cursor, or in another function.
     assert!(find(&items, "later").is_none(), "{items:?}");
     assert!(find(&items, "hidden").is_none(), "{items:?}");
