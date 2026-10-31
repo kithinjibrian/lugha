@@ -1,0 +1,17 @@
+error[E0454]: `User` has its own `eq` but no `hash`: equal values must hash equal
+   --> tests/programs/m144/half_pair.la:16:13
+   |
+16 |     let a = User { id: 1, name: "a" } == User { id: 1, name: "b" };
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: write `fun hash` too, from the same fields as `eq` uses, or remove `eq` to compare every field
+
+error[E0454]: `Tag` has its own `hash` but no `eq`: equal values must hash equal
+   --> tests/programs/m144/half_pair.la:17:30
+   |
+17 |     let mut tags: Set<Tag> = #{};
+   |                              ^^^
+   |
+   = help: write `fun eq` too, from the same fields as `hash` uses, or remove `hash` to compare every field
+
+For more about E0454, run `lughac explain E0454`.

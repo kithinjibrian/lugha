@@ -27,6 +27,9 @@ pub(super) enum Unmet {
     /// A struct's or enum's own method named like an item, with another
     /// signature (E0422): what it should be.
     Mismatch(String),
+    /// A struct or enum with its own `eq` but no `hash`, or the other way
+    /// round (E0454): the one it has (v17, milestone 144).
+    HalfPair(String),
 }
 
 impl Checker {
@@ -39,6 +42,7 @@ impl Checker {
         };
         let name = interface.rsplit('.').next().unwrap_or(interface);
         let d = match &why {
+            Unmet::HalfPair(has) => errors::half_pair(arg, has, span),
             Unmet::Mismatch(problem) => {
                 let shown = if interface == super::json::BOUND {
                     "json.Json"
@@ -123,11 +127,10 @@ impl Checker {
             return None;
         }
         if let Type::Param(name) = ty {
-            let bound = self
-                .bounds(name)
-                .interfaces
-                .iter()
-                .any(|a| a.key == interface);
+            let bounds = self.bounds(name);
+            // `T: Eq` (or `Num`) is written as a flag (v17, milestone 144).
+            let bound = bounds.interfaces.iter().any(|a| a.key == interface)
+                || interface == super::derive::EQ && super::derive::implies_eq(&bounds);
             return if bound {
                 None
             } else {
@@ -162,6 +165,17 @@ impl Checker {
                 }
             }
         }
+        // `eq` and `hash` come together: equal values must hash equal (v17).
+        if interface == super::derive::EQ
+            && let Type::Struct(owner, _) | Type::Enum(owner, _) = ty
+        {
+            let has = |n: &str| self.own_item(interface, owner, n) == Some(true);
+            match (has("eq"), has("hash")) {
+                (true, false) => return at(Unmet::HalfPair("eq".into())),
+                (false, true) => return at(Unmet::HalfPair("hash".into())),
+                _ => {}
+            }
+        }
         let union = |key: &str| self.holds_union(key);
         let Some((block, args)) = self.derives.find(interface, ty, union) else {
             return match ty {
@@ -177,7 +191,17 @@ impl Checker {
                     _ => format!("{path}[]"),
                 };
                 for (g, arg) in block.generics.iter().zip(&args) {
-                    for b in &g.bounds.interfaces {
+                    // `T: Eq` is written as the built-in flag (v17, milestone 144).
+                    let eq = g.bounds.eq.then(super::derive::eq_bound);
+                    for b in g
+                        .bounds
+                        .interfaces
+                        .iter()
+                        .cloned()
+                        .chain(eq)
+                        .collect::<Vec<_>>()
+                        .iter()
+                    {
                         if b.key == interface {
                             if let found @ Some(_) =
                                 self.unmet_derived(interface, arg, &inner, seen)
@@ -218,6 +242,10 @@ impl Checker {
                 })
             }
             Covers::Enum => {
+                // `Option<T>` is `T`'s, at the same path.
+                if let Type::Option(inner) = ty {
+                    return self.unmet_derived(interface, inner, path, seen);
+                }
                 let (Type::Struct(key, targs) | Type::Enum(key, targs)) = ty else {
                     return None;
                 };
@@ -229,6 +257,71 @@ impl Checker {
                 })
             }
         }
+    }
+
+    /// `Eq`'s item `name` (`eq` or `hash`) called on a value of concrete
+    /// type `ty` without a method of its own by that name, when `ty` is
+    /// `Eq`: the covering block's item (v17, milestone 144).
+    pub(super) fn eq_item(
+        &mut self,
+        call: &crate::ast::Expr,
+        ty: &Type,
+        name: &str,
+    ) -> Option<super::methods::Method> {
+        let eq = super::derive::eq_bound();
+        let req = self
+            .items_for(&eq, ty)
+            .into_iter()
+            .find(|r| r.name == name)?;
+        if matches!(ty, Type::Param(_) | Type::Interface(..) | Type::Error)
+            || self
+                .unmet_derived(super::derive::EQ, ty, "", &mut HashSet::new())
+                .is_some()
+        {
+            return None;
+        }
+        let union = |key: &str| self.holds_union(key);
+        let target = self.derives.target(super::derive::EQ, name, ty, union)?;
+        self.derived.insert(call.id, super::derive::EQ.to_string());
+        self.used(call, &target.key, &target.args);
+        Some(super::methods::Method {
+            receiver: req.receiver,
+            params: req.params,
+            ret: req.ret,
+            span: req.span,
+            generics: Vec::new(),
+            outer: 0,
+            key: String::new(),
+        })
+    }
+
+    /// The `eq` an `==` on concrete type `ty` calls (v17, milestone 144):
+    /// a struct's or enum's own (listed when generic or the prelude's), or
+    /// the covering block's. Nothing for types compared inline.
+    pub(super) fn eq_instances(&self, ty: &Type) -> Vec<super::instances::Instance> {
+        if !super::derive::compared_through_eq(ty) {
+            return Vec::new();
+        }
+        if let Type::Struct(owner, targs) | Type::Enum(owner, targs) = ty
+            && self
+                .derives
+                .own
+                .contains(&(owner.clone(), "eq".to_string()))
+        {
+            let m = &self.methods[owner]["eq"];
+            let listed = !m.generics.is_empty() || super::instances::lazy_key(&m.key);
+            return if listed {
+                vec![super::instances::Instance {
+                    key: m.key.clone(),
+                    args: targs.clone(),
+                }]
+            } else {
+                Vec::new()
+            };
+        }
+        let union = |key: &str| self.holds_union(key);
+        let found = self.derives.target(super::derive::EQ, "eq", ty, union);
+        found.into_iter().collect()
     }
 
     /// The types of `ty`'s parts a struct, enum or tuple block reaches: its
@@ -244,6 +337,7 @@ impl Checker {
                     .map(|(_, t)| subst(t, &info.generics, args))
                     .collect()
             }),
+            Type::Option(inner) => vec![(**inner).clone()],
             Type::Enum(key, args) => self
                 .enum_variants(key, args)
                 .unwrap_or_default()
@@ -266,5 +360,6 @@ fn describe(name: &str, why: &Unmet) -> String {
         }
         Unmet::Union => "a struct holding a union".to_string(),
         Unmet::Mismatch(problem) => problem.clone(),
+        Unmet::HalfPair(has) => format!("its own `{has}` alone"),
     }
 }

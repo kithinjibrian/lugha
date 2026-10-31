@@ -1,0 +1,25 @@
+error[E0451]: `Job` doesn't meet `Eq`: `run` is `fun(i64): i64`, which no `derive Eq` block covers
+   --> tests/programs/m144/not_eq.la:11:13
+   |
+11 |     let a = j == j;
+   |             ^^^^^^
+   |
+   = help: `Eq` has blocks for `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, `f32`, `f64`, `bool`, `char`, `string`, `()`, `T[]`, structs, tuples, enums, handles, `Map<K, V>` and `Set<T>`
+
+error[E0451]: `Shelf` doesn't meet `Eq`: `jobs[].run` is `fun(i64): i64`, which no `derive Eq` block covers
+   --> tests/programs/m144/not_eq.la:12:13
+   |
+12 |     let b = same(Shelf { jobs: [j] }, Shelf { jobs: [] });
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: `Eq` has blocks for `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, `f32`, `f64`, `bool`, `char`, `string`, `()`, `T[]`, structs, tuples, enums, handles, `Map<K, V>` and `Set<T>`
+
+error[E0451]: `Slot` doesn't meet `Eq`: `Holding.0.run` is `fun(i64): i64`, which no `derive Eq` block covers
+   --> tests/programs/m144/not_eq.la:13:13
+   |
+13 |     let c = Slot.Holding(j) != Slot.Empty;
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: `Eq` has blocks for `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, `f32`, `f64`, `bool`, `char`, `string`, `()`, `T[]`, structs, tuples, enums, handles, `Map<K, V>` and `Set<T>`
+
+For more about E0451, run `lughac explain E0451`.

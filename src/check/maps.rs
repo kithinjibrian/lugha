@@ -143,61 +143,12 @@ impl Checker {
         true
     }
 
-    /// Records that `at` compares values of `ty` with `==`: a map or set
-    /// inside compares through its `same` (order doesn't matter, v17).
+    /// Records that `at` compares values of `ty` with `==`: anything but a
+    /// number, `bool`, `char` or `string` compares through `Eq` (v17,
+    /// milestone 144), its type's own `eq` or its derive block's.
     pub(super) fn equality_used(&mut self, at: &Expr, ty: &Type) {
         if !ty.is_numeric() && !matches!(ty, Type::Bool | Type::String | Type::Char | Type::Error) {
             self.used(at, EQUAL, std::slice::from_ref(ty));
-        }
-    }
-
-    /// The `same` instances comparing values of concrete type `ty` reaches:
-    /// each map's and set's, found through fields, payloads and elements.
-    pub(super) fn same_instances(&self, ty: &Type) -> Vec<super::instances::Instance> {
-        let mut found = Vec::new();
-        self.reach_same(ty, &mut Vec::new(), &mut found);
-        found
-    }
-
-    fn reach_same(
-        &self,
-        ty: &Type,
-        seen: &mut Vec<Type>,
-        found: &mut Vec<super::instances::Instance>,
-    ) {
-        if seen.contains(ty) {
-            return;
-        }
-        seen.push(ty.clone());
-        match ty {
-            Type::Array(inner) | Type::Option(inner) => self.reach_same(inner, seen, found),
-            Type::Struct(key, args) if key == MAP || key == SET => {
-                if let Some(m) = self.methods.get(key.as_str()).and_then(|ms| ms.get("same")) {
-                    found.push(super::instances::Instance {
-                        key: m.key.clone(),
-                        args: args.clone(),
-                    });
-                }
-            }
-            Type::Struct(key, args) | Type::Enum(key, args) => {
-                let mut parts: Vec<Type> = Vec::new();
-                if let Some(info) = self.structs.get(key) {
-                    parts.extend(
-                        info.fields
-                            .iter()
-                            .map(|(_, t)| subst(t, &info.generics, args)),
-                    );
-                }
-                if let Some(info) = self.enums.get(key) {
-                    for (_, payloads) in &info.variants {
-                        parts.extend(payloads.iter().map(|t| subst(t, &info.generics, args)));
-                    }
-                }
-                for part in &parts {
-                    self.reach_same(part, seen, found);
-                }
-            }
-            _ => {}
         }
     }
 

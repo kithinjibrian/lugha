@@ -15,7 +15,7 @@ const STD_KEY: &str = "std.";
 
 /// Whether `key` is an item compiled only when reached: the prelude's
 /// (PRP-043, v10) and, since milestone 60, std's.
-pub(super) fn lazy_key(key: &str) -> bool {
+pub fn lazy_key(key: &str) -> bool {
     key.starts_with(PRELUDE_KEY) || key.starts_with(STD_KEY)
 }
 
@@ -113,8 +113,8 @@ impl Checker {
         // A derivable interface's item comes from the block covering the
         // type (v17, milestone 141).
         let derived = generics.iter().find(|g| g.name == param).and_then(|g| {
-            // `Eq` brings `$Hash` with it (v17, milestone 143).
-            let implied = super::derive::implies_hash(&g.bounds).then(super::derive::hash_bound);
+            // `T: Eq` is the prelude's `Eq` (v17, milestones 143–144).
+            let implied = super::derive::implies_eq(&g.bounds).then(super::derive::eq_bound);
             g.bounds
                 .interfaces
                 .iter()
@@ -207,9 +207,10 @@ impl Checker {
                     None if u.callee.key == PRINT => {
                         self.show_instances(&subst(&u.callee.args[0], &generics, &args))
                     }
-                    // An `==` reaches the `same` of each map and set it compares (v17).
+                    // An `==` reaches its type's `eq`: its own, or its
+                    // derive block's (v17, milestone 144).
                     None if u.callee.key == super::maps::EQUAL => {
-                        self.same_instances(&subst(&u.callee.args[0], &generics, &args))
+                        self.eq_instances(&subst(&u.callee.args[0], &generics, &args))
                     }
                     None => vec![Instance {
                         key: u.callee.key.clone(),

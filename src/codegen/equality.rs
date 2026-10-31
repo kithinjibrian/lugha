@@ -1,16 +1,11 @@
-//! Deep `==` (v2 draft §4, §5): numbers and `bool` compare inline, strings
-//! through the runtime, and structs, enums, `Option` and arrays through one
-//! `lugha_eq_<type>` helper per type, which stops at the first difference.
+//! `==` (v2 draft §4, §5; v17, milestone 144): numbers, `bool`, `char` and
+//! handles compare inline and strings through the runtime; structs, enums,
+//! tuples, `Option` and arrays call `Eq`'s `eq` for their type, its own or
+//! its derive block's (`prelude/eq.la`), which stops at the first difference.
 
-use inkwell::basic_block::BasicBlock;
-use inkwell::module::Linkage;
-use inkwell::values::{BasicValueEnum, FunctionValue, IntValue, PointerValue, ValueKind};
+use inkwell::values::{BasicValueEnum, IntValue, PointerValue};
 
-use super::copy::mangle;
-use super::enums::variants;
-use super::heap::element_of;
 use super::lower::{Lowerer, POSITIONED};
-use super::value::llvm_type;
 use crate::ast::BinOp;
 use crate::check::Type;
 
@@ -36,172 +31,14 @@ impl<'ctx> Lowerer<'ctx> {
                     "eq",
                 )
                 .expect(POSITIONED),
-            // Maps and sets (v17): their `same`, which ignores order.
-            Type::Struct(key, args) if key == "$prelude.Map" || key == "$prelude.Set" => {
-                self.same(a, b, key, args)
-            }
+            // Everything else through `Eq` (v17, milestone 144): the type's
+            // own `eq`, or its derive block's.
             Type::Struct(_, _) | Type::Enum(_, _) | Type::Option(_) | Type::Array(_) => {
-                let helper = self.eq_function(ty);
-                let call = self
-                    .builder
-                    .build_call(helper, &[a.into(), b.into()], "eq")
-                    .expect(POSITIONED);
-                match call.try_as_basic_value() {
-                    ValueKind::Basic(result) => result.into_int_value(),
-                    ValueKind::Instruction(_) => unreachable!("eq helpers return i1"),
-                }
+                self.eq_call(a, b, ty)
             }
             // Numbers and `bool`: `f64` is ordered `==`, so `NaN != NaN`.
             _ => self.compare(BinOp::Eq, ty.clone(), a, b),
         }
-    }
-
-    /// `lugha_eq_<mangled>(T, T) -> i1`, generated once per type. Declared
-    /// before its body, so a recursive enum's helper can call itself.
-    fn eq_function(&mut self, ty: &Type) -> FunctionValue<'ctx> {
-        let name = format!("lugha_eq_{}", mangle(ty));
-        if let Some(function) = self.module.get_function(&name) {
-            return function;
-        }
-        let llvm = llvm_type(self.context, ty);
-        let bool_type = self.context.bool_type();
-        let function = self.module.add_function(
-            &name,
-            bool_type.fn_type(&[llvm.into(), llvm.into()], false),
-            Some(Linkage::Internal),
-        );
-        // Build the body elsewhere, then come back to where lowering was.
-        let (saved_block, saved_function) = (self.builder.get_insert_block(), self.function);
-        self.function = Some(function);
-        self.builder
-            .position_at_end(self.context.append_basic_block(function, "entry"));
-        let param = |i| function.get_nth_param(i).expect("two parameters");
-        let (a, b) = (param(0), param(1));
-        let unequal = self.append("unequal");
-        match ty {
-            Type::Struct(..) => self.eq_fields(a, b, &ty.to_string(), unequal),
-            Type::Array(_) => self.eq_elements(a, b, ty, unequal),
-            _ => self.eq_variants(a, b, ty, unequal),
-        }
-        // Every check passed.
-        let (yes, no) = (bool_type.const_int(1, false), bool_type.const_zero());
-        self.builder.build_return(Some(&yes)).expect(POSITIONED);
-        self.builder.position_at_end(unequal);
-        self.builder.build_return(Some(&no)).expect(POSITIONED);
-        self.function = saved_function;
-        if let Some(block) = saved_block {
-            self.builder.position_at_end(block);
-        }
-        function
-    }
-
-    /// Continues in a new block if `equal`, else jumps to `unequal`.
-    fn or_unequal(&self, equal: IntValue<'ctx>, unequal: BasicBlock<'ctx>, name: &str) {
-        let next = self.append(name);
-        self.builder
-            .build_conditional_branch(equal, next, unequal)
-            .expect(POSITIONED);
-        self.builder.position_at_end(next);
-    }
-
-    /// Field by field, in declaration order.
-    fn eq_fields(
-        &mut self,
-        a: BasicValueEnum<'ctx>,
-        b: BasicValueEnum<'ctx>,
-        name: &str,
-        unequal: BasicBlock<'ctx>,
-    ) {
-        let (a, b) = (a.into_struct_value(), b.into_struct_value());
-        for (index, (field, ty)) in self.structs[name].clone().iter().enumerate() {
-            let index = u32::try_from(index).expect("field count fits in u32");
-            let read = |this: &Self, value: inkwell::values::StructValue<'ctx>| {
-                let raw = this
-                    .builder
-                    .build_extract_value(value, index, field)
-                    .expect("field exists");
-                // Fields hold `bool` as `i8`, like elements.
-                this.loaded_form(raw, ty)
-            };
-            let (x, y) = (read(self, a), read(self, b));
-            let equal = self.equal(x, y, ty);
-            self.or_unequal(equal, unequal, "field.eq");
-        }
-    }
-
-    /// The lengths, then each element up to `.len`; spare capacity is never read.
-    fn eq_elements(
-        &mut self,
-        a: BasicValueEnum<'ctx>,
-        b: BasicValueEnum<'ctx>,
-        ty: &Type,
-        unequal: BasicBlock<'ctx>,
-    ) {
-        let (a, b) = (a.into_pointer_value(), b.into_pointer_value());
-        let element = element_of(ty);
-        let size = self.element_size(&element);
-        let len = self.length(a);
-        let same = self
-            .builder
-            .build_int_compare(inkwell::IntPredicate::EQ, len, self.length(b), "same.len")
-            .expect(POSITIONED);
-        self.or_unequal(same, unequal, "elements");
-        self.count_loop(len, |this, i| {
-            let x = this.load_element(this.element_address(a, i, size), &element);
-            let y = this.load_element(this.element_address(b, i, size), &element);
-            let equal = this.equal(x, y, &element);
-            this.or_unequal(equal, unequal, "element.eq");
-            Ok(())
-        })
-        .expect("equality loops only lower comparisons");
-    }
-
-    /// The tags, then the payloads of the shared variant.
-    fn eq_variants(
-        &mut self,
-        a: BasicValueEnum<'ctx>,
-        b: BasicValueEnum<'ctx>,
-        ty: &Type,
-        unequal: BasicBlock<'ctx>,
-    ) {
-        let slot = |this: &Self, value, name| {
-            let slot = this.entry_alloca(ty, name);
-            this.builder.build_store(slot, value).expect(POSITIONED);
-            slot
-        };
-        let (a, b) = (slot(self, a, "lhs"), slot(self, b, "rhs"));
-        let tag = self.tag(ty, a);
-        let same = self
-            .builder
-            .build_int_compare(inkwell::IntPredicate::EQ, tag, self.tag(ty, b), "same.tag")
-            .expect(POSITIONED);
-        self.or_unequal(same, unequal, "variants");
-        let done = self.append("payloads.eq");
-        let i32_type = self.context.i32_type();
-        let mut cases = Vec::new();
-        for (index, (_, payloads)) in variants(ty, &self.enums).into_iter().enumerate() {
-            if payloads.is_empty() {
-                continue;
-            }
-            let block = self.append("variant");
-            let tag = u64::try_from(index).expect("variant count fits in u64");
-            cases.push((i32_type.const_int(tag, false), block));
-            let resume = self.current_block();
-            self.builder.position_at_end(block);
-            for (i, payload) in payloads.iter().enumerate() {
-                let i = u32::try_from(i).expect("payload count fits in u32");
-                let x = self.load_payload(ty, a, &payloads, i, payload);
-                let y = self.load_payload(ty, b, &payloads, i, payload);
-                let equal = self.equal(x, y, payload);
-                self.or_unequal(equal, unequal, "payload.eq");
-            }
-            self.branch(done);
-            self.builder.position_at_end(resume);
-        }
-        self.builder
-            .build_switch(tag, done, &cases)
-            .expect(POSITIONED);
-        self.builder.position_at_end(done);
     }
 
     /// Payload `index` of the enum at `slot`, through its pointer if indirect.
@@ -243,18 +80,19 @@ mod tests {
     }
 
     #[test]
-    fn structs_compare_through_one_helper() {
+    fn structs_compare_through_their_eq_block() {
         let ir = ir("struct P { xs: i64[], s: string, ok: bool, f: f64 }\n\
              fun main() { let p = P { xs: [1], s: \"a\", ok: true, f: 1.5 }; let a = p == p; let b = p != p; }");
+        let eq = "@\"lugha_fn_$prelude/Eq@struct.eq<P>\"(";
         assert_eq!(
-            ir.matches("define internal zeroext i1 @lugha_eq_1P(")
+            ir.matches(&format!("define internal zeroext i1 {eq}"))
                 .count(),
             1,
             "{ir}"
         );
         let main = body(&ir, "lugha_fn_main");
         assert_eq!(
-            main.matches("call zeroext i1 @lugha_eq_1P(").count(),
+            main.matches(&format!("call zeroext i1 {eq}")).count(),
             2,
             "{ir}"
         );
@@ -262,13 +100,13 @@ mod tests {
             main.contains("xor i1") || main.contains("icmp eq i1"),
             "!= negates: {ir}"
         );
-        let helper = body(&ir, "lugha_eq_1P");
+        // Each field through its own `eq`: the array's, then inline ones.
         assert!(
-            helper.contains("call zeroext i1 @lugha_eq_i64_arr("),
+            ir.contains("define internal zeroext i1 @\"lugha_fn_$prelude/Eq@array.eq<i64>\"("),
             "{ir}"
         );
         assert!(
-            helper.contains("@lugha_rt_str_eq(") && helper.contains("fcmp oeq"),
+            ir.contains("@lugha_rt_str_eq(") && ir.contains("fcmp oeq"),
             "{ir}"
         );
     }
@@ -276,25 +114,32 @@ mod tests {
     #[test]
     fn arrays_compare_lengths_before_elements() {
         let ir = ir("fun main() { let a = [1, 2]; let e = a == [1, 3]; }");
-        let helper = body(&ir, "lugha_eq_i64_arr");
-        let lengths = helper.find("icmp eq i64").expect("lengths compared");
-        let looped = helper.find("each.cond").expect("element loop");
-        assert!(lengths < looped, "{ir}");
+        let helper = body(&ir, "\"lugha_fn_$prelude/Eq@array.eq<i64>\"");
+        let lengths = helper
+            .find("icmp ne i64")
+            .or_else(|| helper.find("icmp eq i64"));
+        let looped = helper.find("br label").expect("a loop");
+        assert!(lengths.expect("lengths compared") < looped, "{ir}");
     }
 
     #[test]
-    fn recursive_enums_and_options_call_themselves() {
+    fn enums_compare_their_variants_first() {
         let ir = ir("enum L { N, C(i64, L) }\n\
              fun main() { let l = L.C(1, L.N); let e = l == l; let o: Option<L> = None; let f = o == None; }");
+        let enum_eq = body(&ir, "\"lugha_fn_$prelude/Eq@enum.eq<L>\"");
         assert!(
-            body(&ir, "lugha_eq_1L").contains("call zeroext i1 @lugha_eq_1L("),
+            enum_eq.contains("same.variant") && enum_eq.contains("switch i32"),
+            "{ir}"
+        );
+        // A payload of type `L` compares through `L`'s `eq` again.
+        assert!(
+            body(&ir, "\"lugha_fn_$prelude/$same<L>\"").contains("Eq@enum.eq<L>"),
             "{ir}"
         );
         assert!(
-            body(&ir, "lugha_eq_1L_opt").contains("call zeroext i1 @lugha_eq_1L("),
+            ir.contains("define internal zeroext i1 @\"lugha_fn_$prelude/Eq@enum.eq<Option<L>>\"("),
             "{ir}"
         );
-        assert!(body(&ir, "lugha_eq_1L").contains("switch i32"), "{ir}");
     }
 
     #[test]

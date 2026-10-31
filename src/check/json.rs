@@ -18,6 +18,7 @@ pub(super) fn describe(why: &Unmet) -> String {
         Unmet::Bound(_, key) => format!("a map with `{key}` keys"),
         Unmet::Union => "a struct holding a union".to_string(),
         Unmet::Mismatch(problem) => problem.clone(),
+        Unmet::HalfPair(has) => format!("its own `{has}` alone"),
         Unmet::Missing(ty) => match ty {
             Type::Fun(..) => "a function".to_string(),
             Type::Interface(..) => "an interface value".to_string(),

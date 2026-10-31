@@ -91,7 +91,8 @@ mod tests {
         );
         assert_eq!(
             errors("struct H { r: Ref<i64> }\nfun main() { let h = H { r: Ref.new(1) }; let b = h == h; }")[0].0,
-            "E0404"
+            // A struct is `Eq` through its fields (v17, milestone 144).
+            "E0451"
         );
         assert_eq!(
             errors("fun same<T: Eq>(a: T, b: T): bool = a == b;\nfun main() { let r = Ref.new(1); let b = same(r, r); }")[0].0,

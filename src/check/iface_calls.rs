@@ -118,7 +118,8 @@ mod tests {
         );
         assert_eq!(
             e("struct H { s: Shape }\nfun f(a: H, b: H): bool = a == b;")[0].0,
-            "E0404"
+            // A struct is `Eq` through its fields: the path names `s` (v17, milestone 144).
+            "E0451"
         );
     }
 

@@ -259,9 +259,10 @@ mod tests {
         assert_eq!(e("let b = double == double;")[0].0, "E0404");
         assert_eq!(
             e("let b = Button { label: \"\", on_click: double }; let c = b == b;")[0].0,
-            "E0404"
+            // A struct is `Eq` through its fields (v17, milestone 144).
+            "E0451"
         );
-        assert_eq!(e("let fs = [double]; let c = fs == fs;")[0].0, "E0404");
+        assert_eq!(e("let fs = [double]; let c = fs == fs;")[0].0, "E0451");
         let eq = "fun has<T: Eq>(xs: T[], x: T): bool = false;\n";
         let src = format!("{LIB}{eq}fun main() {{ let c = has([double], double); }}");
         assert_eq!(errors(&src)[0].0, "E0419");

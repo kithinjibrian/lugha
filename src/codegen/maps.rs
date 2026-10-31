@@ -3,51 +3,15 @@
 //! the checker recorded at the literal's id.
 
 use inkwell::IntPredicate;
-use inkwell::values::{BasicValueEnum, IntValue, ValueKind};
+use inkwell::values::{BasicValueEnum, ValueKind};
 
 use super::CodegenError;
-use super::instances::instance_name;
 use super::lower::{Lowerer, POSITIONED};
 use super::value::Value;
 use crate::ast::{Expr, ExprKind, HashLiteral, Ident};
 use crate::check::Type;
 
 impl<'ctx> Lowerer<'ctx> {
-    /// `a == b` for maps or sets of type `key<args>`: the instance of their
-    /// `same` the checker listed, receiver first as for any `self` method.
-    pub(super) fn same(
-        &mut self,
-        a: BasicValueEnum<'ctx>,
-        b: BasicValueEnum<'ctx>,
-        key: &str,
-        args: &[Type],
-    ) -> IntValue<'ctx> {
-        let ty = Type::Struct(key.to_string(), args.to_vec());
-        let name = instance_name(&format!("{key}.same"), args);
-        let method = self
-            .monos
-            .get(&name)
-            .unwrap_or_else(|| panic!("checked: `{name}` is listed by `==`"))
-            .clone();
-        // Both go by pointer: `self` as any receiver, `other` as any struct argument.
-        let slot = self.entry_alloca(&ty, "self");
-        self.builder.build_store(slot, a).expect(POSITIONED);
-        let other = self.entry_alloca(&ty, "other");
-        self.builder.build_store(other, b).expect(POSITIONED);
-        let site = self
-            .builder
-            .build_call(
-                method.signature.function,
-                &[slot.into(), other.into()],
-                "same",
-            )
-            .expect(POSITIONED);
-        match site.try_as_basic_value() {
-            ValueKind::Basic(result) => result.into_int_value(),
-            ValueKind::Instruction(_) => unreachable!("`same` returns a `bool`"),
-        }
-    }
-
     /// True if `e` is a map (the prelude's `Map<K, V>`).
     pub(super) fn is_map(&self, e: &Expr) -> bool {
         matches!(self.ty(e), Type::Struct(k, _) if k == "$prelude.Map")

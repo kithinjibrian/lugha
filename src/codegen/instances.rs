@@ -30,6 +30,18 @@ struct Source<'a> {
     derive: Option<(&'a DeriveDecl, String)>,
 }
 
+/// An instance's linkage: the prelude's and std's (derive blocks
+/// included) are only ever called from this module, so they are internal
+/// and LLVM inlines them as it did the per-type helpers they replaced (v17,
+/// milestone 144); a program's own stay external.
+fn linkage(key: &str) -> Linkage {
+    if crate::check::lazy_key(key) {
+        Linkage::Internal
+    } else {
+        Linkage::External
+    }
+}
+
 /// `key<args>`: how an instance is named in `Lowerer::monos`.
 pub(super) fn instance_name(key: &str, args: &[Type]) -> String {
     // A prelude function without type parameters is listed with no arguments (PRP-043).
@@ -101,7 +113,7 @@ impl<'ctx> Lowerer<'ctx> {
             let name = symbol_of(&source, mono);
             let function = self
                 .module
-                .add_function(&name, fn_type, Some(Linkage::External));
+                .add_function(&name, fn_type, Some(linkage(&mono.key)));
             let signature = Signature {
                 function,
                 params,

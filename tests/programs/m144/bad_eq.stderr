@@ -1,0 +1,9 @@
+error[E0422]: `Point` doesn't satisfy `Eq`
+   --> tests/programs/m144/bad_eq.la:11:16
+   |
+11 |     let same = Point { x: 1, y: 2 } == Point { x: 1, y: 2 };
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: `eq` should be `fun eq(self, Point): bool`
+
+For more about E0422, run `lughac explain E0422`.

@@ -18,12 +18,13 @@ use super::{Checker, SELF, Type, errors};
 use crate::ast::{DeriveDecl, DeriveTarget, Item, Program};
 use crate::span::Span;
 
-/// The prelude's `$Hash`, which `Eq` brings with it (v17, milestone 143).
-pub(super) const HASH: &str = "$prelude.$Hash";
+/// The prelude's derivable `Eq` (v17, milestones 143–144): what `T: Eq`
+/// (the `eq` flag of a bound) means.
+pub const EQ: &str = "$prelude.Eq";
 
-/// True if a parameter with `bounds` has `==`, and so `$Hash`'s items:
+/// True if a parameter with `bounds` has `==`, and so `Eq`'s items:
 /// `Eq`, or `Num`/`Float`, which give `==` too.
-pub(super) fn implies_hash(bounds: &Bounds) -> bool {
+pub(super) fn implies_eq(bounds: &Bounds) -> bool {
     bounds.eq
         || bounds
             .interfaces
@@ -31,10 +32,20 @@ pub(super) fn implies_hash(bounds: &Bounds) -> bool {
             .any(|a| a.key == "$prelude.Num" || a.key == "$prelude.Float")
 }
 
-/// `$Hash` as a bound.
-pub(super) fn hash_bound() -> Applied {
+/// True for the types whose `==` goes through `Eq`'s blocks or their own
+/// `eq` (v17, milestone 144): structs, enums, tuples, arrays and `Option`.
+/// The rest compare inline, or have no `==` at all.
+pub(super) fn compared_through_eq(ty: &Type) -> bool {
+    matches!(
+        ty,
+        Type::Struct(..) | Type::Enum(..) | Type::Array(_) | Type::Option(_)
+    )
+}
+
+/// `Eq` as a bound.
+pub(super) fn eq_bound() -> Applied {
     Applied {
-        key: HASH.to_string(),
+        key: EQ.to_string(),
         args: Vec::new(),
     }
 }
@@ -117,12 +128,19 @@ impl Derives {
         let kind = match ty {
             Type::Struct(..) if elements(ty).is_some() => Covers::Tuple,
             Type::Struct(key, _) if !holds_union(key) => Covers::Struct,
-            Type::Enum(..) => Covers::Enum,
+            // `Option` is an enum too, unless a block names it (v17, milestone 144).
+            Type::Enum(..) | Type::Option(_) => Covers::Enum,
             Type::Handle(_) => Covers::Handle,
             _ => return None,
         };
         let b = mine().find(|b| b.covers == kind)?;
         Some((b, vec![ty.clone()]))
+    }
+
+    /// True if struct or enum `owner` has its own item `name` of a derivable
+    /// interface (v17, milestone 142).
+    pub fn has_own(&self, owner: &str, name: &str) -> bool {
+        self.own.contains(&(owner.to_string(), name.to_string()))
     }
 
     /// Every interface that has blocks, each once.
