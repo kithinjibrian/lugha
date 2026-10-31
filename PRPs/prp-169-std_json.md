@@ -8,8 +8,8 @@ import std.json;
 
 fun run(): Result<(), json.JsonError> {
     let v = json.parse("{\"user\": {\"name\": \"ada\", \"id\": 9007199254740993}}")?;  // Result<json.Value, JsonError>
-    let name = json.get(v, "user").and_then(|u| json.get(u, "name")).and_then(json.as_text);  // Some("ada")
-    let id = json.get(v, "user").and_then(|u| json.get(u, "id")).and_then(json.as_i64);       // exact, past 2^53
+    let name = json.get(v, "user").and_then(fun(u) = json.get(u, "name")).and_then(json.as_text);  // Some("ada")
+    let id = json.get(v, "user").and_then(fun(u) = json.get(u, "id")).and_then(json.as_i64);       // exact, past 2^53
 
     let reply = json.Value.Object(#{
         "ok": json.Value.Bool(true),
@@ -73,6 +73,12 @@ Programs read and answer JSON (first behind `std.http`) with the whole of RFC 82
 - Decision 339's exclusions; any compiler, runtime or `std.http` change without stopping first; recursion not bounded by the depth limit; silently accepting duplicates or non-finite floats.
 ### New dependencies
 - none.
+
+## BUILT (session 328)
+- As planned, in four files: `std.json` (API, 80 lines), `std.$json_value`, `std.$json_parse` (389 lines), `std.$json_write`; no compiler or runtime change. Floats are read through the prelude's `parse_f64` after the scanner has checked JSON's number grammar; Lugha's shortest round-trip float text (`1.0`, `1.0e300`, `5.0e-324`) is already valid JSON.
+- Closures in the OBJECTIVE and docs are Lugha's `fun(u) = …`, not `|u| …`.
+- JSONTestSuite (commit 1ef36fa, 318 cases): all 95 `y_` cases parse and round-trip through `stringify` and `pretty`, matching `serde_json`'s reading — except the two `y_object_duplicated_key*` cases, which are `Duplicate` by decision 332; all 188 `n_` cases are rejected (the two nested past depth 100 by `Limit`); the 35 `i_` cases are pinned in `tests/json.rs`.
+- Tests: `tests/json.rs` (9 tests: the suite, the OBJECTIVE program, values, errors and positions, limits, hostile input in linear time, writing, helpers, and a parse-only program compiling no writer); `tests/programs/m53/e0312.stderr` lists `std.json`.
 
 ## ERROR HANDLING REQUIREMENTS
 - `JsonError` with `ErrorKind` (decision 333) for every malformed, duplicate, overflowing, over-limit or unwritable input, with its 1-based line and column; never a panic.

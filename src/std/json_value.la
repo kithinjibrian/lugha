@@ -1,0 +1,76 @@
+/**
+ * std.$json_value: JSON's values, errors and limits (v17), re-exported by
+ * `std.json` — see there. Bundled sources only.
+ */
+
+/** A JSON value. */
+public enum Value {
+    /** `null`. */
+    Null,
+    /** `true` or `false`. */
+    Bool(bool),
+    /** A number written without `.`, `e` or `E` that fits `i64`, kept exactly. */
+    Integer(i64),
+    /** Any other number. Never NaN or an infinity when parsed. */
+    Float(f64),
+    /** A string. */
+    Text(string),
+    /** An array; its values may be of any kinds. */
+    Array(Value[]),
+    /** An object, its keys in the text's order. */
+    Object(Map<string, Value>),
+}
+
+/** What kind of mistake a `JsonError` is. */
+public enum ErrorKind {
+    /** Not JSON. */
+    Syntax,
+    /** A key defined twice in one object. */
+    Duplicate,
+    /** A number too large for `f64`. */
+    Overflow,
+    /** A bad escape or a lone surrogate in a string. */
+    BadValue,
+    /** A limit passed: the text's size, the nesting depth or the count of values. */
+    Limit,
+    /** Writing a float that is NaN or an infinity, which JSON can't hold. */
+    NotFinite,
+}
+
+/**
+ * Why a text isn't (acceptable) JSON, or a value can't be written, and
+ * where: line and column from 1, columns in characters (both 0 when writing).
+ */
+public struct JsonError {
+    public kind: ErrorKind,
+    public detail: string,
+    public line: i64,
+    public column: i64,
+}
+
+impl JsonError {
+    /** The error as a sentence: `a key defined twice: a (line 1, column 10)`. */
+    public fun message(self): string = "{self.detail} (line {self.line}, column {self.column})";
+}
+
+/** How much `parse_with` accepts (`limits()` gives the defaults). */
+public struct Limits {
+    /** The text's size in bytes (1048576). */
+    public bytes: i64,
+    /** Arrays and objects nested in each other (100). */
+    public depth: i64,
+    /** Every value made, arrays and objects included (1000000). */
+    public values: i64,
+}
+
+/** The default limits. */
+public fun limits(): Limits = Limits { bytes: 1048576, depth: 100, values: 1000000 };
+
+/** A mistake at byte `at`, before its line and column are counted. */
+struct Oops {
+    kind: ErrorKind,
+    detail: string,
+    at: i64,
+}
+
+fun oops(kind: ErrorKind, detail: string, at: i64): Oops = Oops { kind: kind, detail: detail, at: at };

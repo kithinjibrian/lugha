@@ -289,6 +289,12 @@ Rapidkoi ships its signed new-tab bundle inside its binary, and its icons as tex
 
 317–326. **Included files** (milestone 128): `include_bytes(path): u8[]` and `include_str(path): string`, a string-literal path relative to the naming file, constant expressions usable anywhere; the file inside the package's folder after links are resolved, a regular file of at most 16 MiB (E0447), `include_str` UTF-8 (E0448); read once by the checker (so `check` and the language server report errors), the bytes handed to codegen; private read-only globals, the `u8[]` one born shared, and in programs with includes a copy site's shared mark of an already-shared array goes to a sink word; hover shows the size, go-to-definition opens the file; the names reserved (E0302); tag `m128`.
 
+### `std.json` (milestone 137)
+
+JSON for programs behind `std.http`, after discovery in session 327. Details in PRP-169.
+
+327–343. **`std.json`** (milestone 137): strict RFC 8259 `parse`/`parse_with` to `Value { Null, Bool, Integer(i64), Float(f64), Text, Array, Object(Map) }` (exact integers, keys in order); duplicate keys, lone surrogates, a BOM and numbers past `f64` refused; `JsonError { kind, detail, line, column }`; limits on size (1 MiB), depth (100) and values (1 000 000); `stringify`/`pretty` returning `Result`, `NotFinite` for NaN and infinities; `get`, `at`, `as_*`, `is_null`; tested against JSONTestSuite (MIT, vendored); no struct mapping, JSON5, streaming or `std.http` change; tag `m137`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
