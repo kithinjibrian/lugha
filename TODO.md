@@ -78,6 +78,7 @@ Done: portable x86-64 binaries (`--cpu`), the collector built in, `$LUGHA_CC`, L
 ## Ideas — noted, not scheduled
 
 - **Decorators:** user-written `@name` attributes that wrap a function, as Python's do (`@logged`, `@memo`); `@` is already reserved for them. Needs a way to wrap any signature (variadic generics or compile-time rewriting). Also `@test(skip)`-style arguments.
-- **Derive blocks for every module** (after milestone 141, DECISIONS 208): `derive` as a keyword, programs writing their own derivable interfaces, and whether a type's own methods override a derived one. Then printing, `==` and hashing could move onto them.
+- **Printing, `==` and hashing on derive blocks** (after milestone 142): rewrite the compiler's per-type code for them as derivable interfaces in the prelude, as milestone 141 did for JSON.
+- **`tests/json.rs` is over 500 lines** (523, since milestones 140–141): split it (for example the encode/decode cases into `tests/json_derive.rs`).
 - **`const` calling pure functions** (DECISIONS 208): work before the program runs, through an LLVM JIT that reuses codegen; needs core decision 4's "no interpreter" amended.
 - **`@cfg` on items** (DECISIONS 208): code for one OS or architecture, every target checked; with portability stage C1.

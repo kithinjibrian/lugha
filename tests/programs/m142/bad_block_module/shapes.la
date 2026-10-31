@@ -1,0 +1,4 @@
+/** Anything that can describe itself. */
+public interface Show {
+    fun show(self): string;
+}

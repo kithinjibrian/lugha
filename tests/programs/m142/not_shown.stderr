@@ -1,0 +1,33 @@
+error[E0451]: `T` doesn't meet `Show`: it is a type parameter without `Show` (write `T: Show`)
+   --> tests/programs/m142/not_shown.la:31:30
+   |
+31 | fun loose<T>(x: T): string = show(x);
+   |                              ^^^^^^^
+   |
+   = help: `Show` has blocks for `i64`, `T[]`, structs and enums
+
+error[E0451]: `Job` doesn't meet `Show`: `run` is `fun(i64): i64`, which no `derive Show` block covers
+   --> tests/programs/m142/not_shown.la:34:13
+   |
+34 |     let a = show(Job { name: 1, run: fun(x: i64): i64 = x });
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: `Show` has blocks for `i64`, `T[]`, structs and enums
+
+error[E0451]: `Crowd` doesn't meet `Show`: `ages[]` is `bool`, which no `derive Show` block covers
+   --> tests/programs/m142/not_shown.la:35:13
+   |
+35 |     let b = show(Crowd { ages: [true] });
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: `Show` has blocks for `i64`, `T[]`, structs and enums
+
+error[E0451]: `Shape` doesn't meet `Show`: `Named.0` is `string`, which no `derive Show` block covers
+   --> tests/programs/m142/not_shown.la:36:13
+   |
+36 |     let c = show(Shape.Dot);
+   |             ^^^^^^^^^^^^^^^
+   |
+   = help: `Show` has blocks for `i64`, `T[]`, structs and enums
+
+For more about E0451, run `lughac explain E0451`.

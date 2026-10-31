@@ -1,6 +1,7 @@
-//! `$derive` blocks (v17, milestone 141): `$derive<T: I> I for T[] { … }`,
-//! how an interface is met by a type it doesn't own. `$derive` lexes only in
-//! bundled sources, so programs can never write one.
+//! Derive blocks (v17, milestones 141–142): `derive<T: I> I for T[] { … }`,
+//! how an interface is met by types its module doesn't declare. `derive` is
+//! a contextual word: it starts a block only at the start of an item,
+//! followed by `<` or a name; anywhere else it is an ordinary name.
 
 use super::{PResult, Parser};
 use crate::ast::{DeriveDecl, DeriveTarget, Item};
@@ -8,15 +9,16 @@ use crate::lexer::TokenKind;
 use crate::span::Span;
 
 /// The word that starts a derive block.
-pub(super) const DERIVE: &str = "$derive";
+pub(super) const DERIVE: &str = "derive";
 
 impl Parser<'_> {
-    /// True at `$derive`.
+    /// True at `derive` followed by `<` or a name: a block, not a name.
     pub(super) fn at_derive(&self) -> bool {
         matches!(self.peek(), TokenKind::Ident(word) if word == DERIVE)
+            && matches!(self.peek_at(1), TokenKind::Lt | TokenKind::Ident(_))
     }
 
-    /// `$derive [<params>] Interface for target { methods }`.
+    /// `derive [<params>] Interface for target { methods }`.
     pub(super) fn derive_decl(&mut self) -> PResult<Item> {
         let start = self.bump().start;
         let type_params = self.type_params()?;
@@ -52,18 +54,16 @@ impl Parser<'_> {
 #[cfg(test)]
 mod tests {
     use crate::ast::{DeriveTarget, Item, TypeKind};
-    use crate::lexer::{lex, lex_bundled};
-    use crate::parser::parse;
+    use crate::parser::test_util::parse_src;
 
     fn items(src: &str) -> Vec<Item> {
-        let (tokens, _) = lex_bundled(src).expect("lexes");
-        parse(&tokens).expect("parses").0.items
+        parse_src(src).unwrap_or_else(|d| panic!("{d:?}")).items
     }
 
     #[test]
     fn a_block_for_one_type_keeps_its_parameters_and_methods() {
         let found =
-            items("$derive<T: J> J for T[] { fun $a(self): i64 = 1; fun $b(x: i64): i64 = x; }");
+            items("derive<T: J> J for T[] { fun a(self): i64 = 1; fun b(x: i64): i64 = x; }");
         let [Item::Derive(d)] = found.as_slice() else {
             panic!("{found:?}")
         };
@@ -79,7 +79,7 @@ mod tests {
 
     #[test]
     fn blocks_cover_every_struct_enum_or_tuple() {
-        let found = items("$derive J for struct {}\n$derive J for enum {}\n$derive J for tuple {}");
+        let found = items("derive J for struct {}\nderive J for enum {}\nderive J for tuple {}");
         let targets: Vec<&DeriveTarget> = found
             .iter()
             .map(|i| match i {
@@ -98,9 +98,13 @@ mod tests {
     }
 
     #[test]
-    fn programs_cant_write_one() {
-        // `$` starts no identifier outside bundled sources (E0101).
-        let err = lex("$derive J for struct {}").expect_err("doesn't lex");
-        assert_eq!(err[0].code, "E0101");
+    fn derive_is_a_name_everywhere_else() {
+        let found = items(
+            "struct S { derive: i64 }\n\
+             fun derive(derive: i64): i64 { let derive = derive + 1; derive }\n\
+             fun f(s: S): i64 = derive(s.derive);",
+        );
+        assert_eq!(found.len(), 3);
+        assert!(found.iter().all(|i| !matches!(i, Item::Derive(_))));
     }
 }

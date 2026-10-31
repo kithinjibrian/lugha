@@ -1,0 +1,9 @@
+error[E0452]: a `derive` block for `Show` must be in the module that declares `Show`
+  --> tests/programs/m142/bad_block_module/main.la:4:8
+  |
+4 | derive Show for i64 {
+  |        ^^^^
+  |
+  = help: only an interface's own module says how types meet it; a type's own methods can replace an item instead
+
+For more about E0452, run `lughac explain E0452`.

@@ -1,0 +1,33 @@
+error[E0453]: `derive.variants` is used outside a derive block
+   --> tests/programs/m142/bad_fields.la:26:13
+   |
+26 |     let n = derive.variants();
+   |             ^^^^^^^^^^^^^^^^^
+   |
+   = help: `derive.fields` and `derive.build` work in `derive … for struct` and `for tuple` blocks; `derive.variant`, `variants` and `build_variant` in `for enum` blocks; `f` names a function of this module generic over one `F` with the block's interface
+
+error[E0453]: `derive.variants` doesn't work in a `derive … for struct` block
+   --> tests/programs/m142/bad_fields.la:15:28
+   |
+15 |     fun count(self): i64 = derive.variants().len + derive.fields(self, (), any).len;
+   |                            ^^^^^^^^^^^^^^^^^
+   |
+   = help: `derive.fields` and `derive.build` work in `derive … for struct` and `for tuple` blocks; `derive.variant`, `variants` and `build_variant` in `for enum` blocks; `f` names a function of this module generic over one `F` with the block's interface
+
+error[E0453]: `derive.fields` needs `f` generic over one `F: Count`
+   --> tests/programs/m142/bad_fields.la:15:52
+   |
+15 |     fun count(self): i64 = derive.variants().len + derive.fields(self, (), any).len;
+   |                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: `derive.fields` and `derive.build` work in `derive … for struct` and `for tuple` blocks; `derive.variant`, `variants` and `build_variant` in `for enum` blocks; `f` names a function of this module generic over one `F` with the block's interface
+
+error[E0453]: a local can't be named `derive` inside a derive block
+   --> tests/programs/m142/bad_fields.la:20:13
+   |
+20 |         let derive = 1;
+   |             ^^^^^^
+   |
+   = help: inside a block `derive.` means the field intrinsics: rename the local
+
+For more about E0453, run `lughac explain E0453`.

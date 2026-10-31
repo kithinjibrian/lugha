@@ -143,8 +143,7 @@ pub const SHAPES: &str = "interface Shape { fun area(self): f64; fun grow(mut se
     struct Square { side: f64 }\n\
     impl Square { fun area(self): f64 = self.side * self.side; fun grow(mut self, k: f64) { self.side *= k; } }\n";
 
-/// `src` lexed as a bundled source, where `$` names (and so `$derive`
-/// blocks, v17) are allowed, then checked: its `Checked`, or every diagnostic.
+/// `src` lexed as a bundled source, where `$` names are allowed, then checked: its `Checked`, or every diagnostic.
 pub fn bundled(src: &str) -> Result<Checked, Vec<Diagnostic>> {
     let (tokens, _) =
         lexer::lex_bundled(src).unwrap_or_else(|d| panic!("{src:?} does not lex: {d:?}"));

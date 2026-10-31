@@ -221,6 +221,10 @@ impl Checker {
     /// Declares a local in the innermost scope, shadowing earlier bindings.
     pub(super) fn declare(&mut self, name: &Ident, ty: Type, binding: Binding) {
         self.check_local_name(name);
+        // Inside a derive block `derive.` means the field intrinsics (v17).
+        if self.deriving.is_some() && name.name == "derive" {
+            self.report(super::errors::derive_local(name.span));
+        }
         let mutable = matches!(binding, Binding::Let { mutable: true } | Binding::SelfMut);
         self.hover.local(name, &ty, mutable);
         let scope = self

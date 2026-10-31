@@ -136,9 +136,9 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Call(callee, args) if crate::check::hash_op(callee).is_some() => {
                 self.hash_call(args)?
             }
-            // `$derive.fields(x, ctx, f)` and the rest in derive blocks (v17, milestone 141).
-            ExprKind::Call(callee, args) if let Some(op) = crate::check::derive_op(callee) => {
-                self.derive_intrinsic(expr, op, args)?
+            // `derive.fields(x, ctx, f)` and the rest in derive blocks (v17, milestones 141–142).
+            ExprKind::Call(_, args) if let Some(op) = self.derive_calls.get(&expr.id).cloned() => {
+                self.derive_intrinsic(expr, &op, args)?
             }
             ExprKind::Call(callee, args) if let Some(op) = crate::check::os_op(callee) => {
                 self.os_call(expr, op, args)?

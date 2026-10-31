@@ -167,7 +167,7 @@ impl Checker {
 }
 
 /// `fun area(self): f64`, as an interface declares it.
-fn shown(req: &Requirement) -> String {
+pub(super) fn shown(req: &Requirement) -> String {
     let receiver = req.receiver.map(|m| if m { "mut self" } else { "self" });
     let params = req.params.iter().map(Type::to_string);
     let list: Vec<String> = receiver

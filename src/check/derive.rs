@@ -1,4 +1,4 @@
-//! Derive blocks (v17, milestone 141, PRP-172): `$derive I for X { … }`,
+//! Derive blocks (v17, milestones 141–142, PRP-172, PRP-173): `derive I for X { … }`,
 //! written in interface `I`'s own module, gives `I`'s items to the types `X`
 //! covers: one type (`i64`, `T[]`), or every struct, enum or tuple whose
 //! parts meet `I`. A block's items are methods of a hidden owner,
@@ -14,9 +14,8 @@ use super::generics::{Bounds, Generic};
 use super::instances::Instance;
 use super::methods::Method;
 use super::tuples::elements;
-use super::{Checker, SELF, Type};
+use super::{Checker, SELF, Type, errors};
 use crate::ast::{DeriveDecl, DeriveTarget, Item, Program};
-use crate::diagnostic::Diagnostic;
 use crate::span::Span;
 
 /// What a block covers.
@@ -32,7 +31,7 @@ pub enum Covers {
     Tuple,
 }
 
-/// One `$derive` block.
+/// One `derive` block.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Block {
     /// The interface's key.
@@ -42,7 +41,7 @@ pub struct Block {
     pub(crate) generics: Vec<Generic>,
     /// The hidden owner of its items: `std.$json_value.Json@i64`.
     pub owner: String,
-    /// The whole block, from `$derive` to its `}`.
+    /// The whole block, from `derive` to its `}`.
     pub span: Span,
 }
 
@@ -61,6 +60,9 @@ impl Block {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Derives {
     blocks: Vec<Block>,
+    /// Struct and enum keys with their own item of a derivable interface,
+    /// by item name: calls reach those instead of a block's (v17, milestone 142).
+    pub(super) own: std::collections::HashSet<(String, String)>,
 }
 
 impl Derives {
@@ -99,7 +101,30 @@ impl Derives {
         Some((b, vec![ty.clone()]))
     }
 
-    /// The instance a call of item `name` of `interface` reaches at `ty`.
+    /// Every interface that has blocks, each once.
+    pub(super) fn interfaces(&self) -> Vec<String> {
+        let mut keys: Vec<String> = self.blocks.iter().map(|b| b.interface.clone()).collect();
+        keys.sort();
+        keys.dedup();
+        keys
+    }
+
+    /// The types `interface` has blocks for, as written: `i64`, `T[]`, `struct`s.
+    pub(super) fn covered(&self, interface: &str) -> Vec<String> {
+        self.blocks
+            .iter()
+            .filter(|b| b.interface == interface)
+            .map(|b| match &b.covers {
+                Covers::Type(t) => format!("`{}`", super::shown(&t.to_string())),
+                Covers::Struct => "structs".to_string(),
+                Covers::Enum => "enums".to_string(),
+                Covers::Tuple => "tuples".to_string(),
+            })
+            .collect()
+    }
+
+    /// The instance a call of item `name` of `interface` reaches at `ty`:
+    /// `None` when `ty` has its own item (or no block covers it).
     pub fn target(
         &self,
         interface: &str,
@@ -107,6 +132,11 @@ impl Derives {
         ty: &Type,
         holds_union: impl Fn(&str) -> bool,
     ) -> Option<Instance> {
+        if let Type::Struct(owner, _) | Type::Enum(owner, _) = ty
+            && self.own.contains(&(owner.clone(), name.to_string()))
+        {
+            return None;
+        }
         let (block, args) = self.find(interface, ty, holds_union)?;
         Some(Instance {
             key: format!("{}.{name}", block.owner),
@@ -153,6 +183,16 @@ fn matches(pattern: &Type, ty: &Type, names: &[&str], bound: &mut HashMap<String
     }
 }
 
+/// What a block covers, as written: `T[]`, `struct`.
+fn block_type(covers: &Covers) -> String {
+    match covers {
+        Covers::Type(t) => super::shown(&t.to_string()),
+        Covers::Struct => "struct".into(),
+        Covers::Enum => "enum".into(),
+        Covers::Tuple => "tuple".into(),
+    }
+}
+
 /// A short, symbol-safe name for what a block covers: `i64`, `array`, `Map`.
 fn label(covers: &Covers) -> String {
     match covers {
@@ -169,10 +209,30 @@ fn label(covers: &Covers) -> String {
     }
 }
 
-/// An internal error in a bundled source's derive block: only lughac's own
-/// sources can write one, so this is a compiler bug, not a user mistake.
-fn misuse(message: String, span: Span) -> Diagnostic {
-    Diagnostic::error("E0201", format!("bad `$derive` block: {message}"), span)
+/// True if one type could be covered by both patterns: each pattern's
+/// parameters (in `a` and `b`) stand for any type.
+fn overlap(a: &Type, b: &Type, a_names: &[&str], b_names: &[&str]) -> bool {
+    match (a, b) {
+        (Type::Param(n), _) if a_names.contains(&n.as_str()) => true,
+        (_, Type::Param(n)) if b_names.contains(&n.as_str()) => true,
+        (Type::Array(x), Type::Array(y)) | (Type::Option(x), Type::Option(y)) => {
+            overlap(x, y, a_names, b_names)
+        }
+        (Type::Struct(ka, xa), Type::Struct(kb, xb)) | (Type::Enum(ka, xa), Type::Enum(kb, xb)) => {
+            ka == kb
+                && xa.len() == xb.len()
+                && xa
+                    .iter()
+                    .zip(xb)
+                    .all(|(x, y)| overlap(x, y, a_names, b_names))
+        }
+        _ => a == b,
+    }
+}
+
+/// The names of a block's parameters.
+fn names(block: &Block) -> Vec<&str> {
+    block.generics.iter().map(|g| g.name.as_str()).collect()
 }
 
 impl Checker {
@@ -187,10 +247,11 @@ impl Checker {
     }
 
     fn collect_derive(&mut self, d: &DeriveDecl) {
-        let interface = self.key(&d.interface.name);
+        // Declared here, not named through an import (v17, milestone 142).
+        let interface = super::qualify(&self.module, &d.interface.name);
         if !self.interfaces.contains_key(&interface) {
-            let message = format!("`{}` isn't an interface of this module", d.interface.name);
-            self.report(misuse(message, d.interface.span));
+            let d = errors::derive_elsewhere(&d.interface.name, d.interface.span);
+            self.report(d);
             return;
         }
         let (generics, covers) = match &d.target {
@@ -220,7 +281,12 @@ impl Checker {
             }
         };
         self.type_params = generics.clone();
-        let owner = format!("{interface}@{}", label(&covers));
+        let mut owner = format!("{interface}@{}", label(&covers));
+        // Two blocks for one generic type at different arguments share a
+        // label: the second is named by its whole type.
+        if self.derives.blocks.iter().any(|b| b.owner == owner) {
+            owner = format!("{interface}@{}", block_type(&covers));
+        }
         let block = Block {
             interface: interface.clone(),
             covers: covers.clone(),
@@ -229,6 +295,22 @@ impl Checker {
             span: d.span,
         };
         let me = block.self_type();
+        let clash = self.derives.blocks.iter().find(|b| {
+            b.interface == interface
+                && match (&b.covers, &block.covers) {
+                    (Covers::Type(x), Covers::Type(y)) => overlap(x, y, &names(b), &names(&block)),
+                    (x, y) => x == y,
+                }
+        });
+        if clash.is_some() {
+            let shown = interface
+                .rsplit('.')
+                .next()
+                .unwrap_or(&interface)
+                .to_string();
+            self.report(errors::derive_overlap(&shown, &block_type(&covers), d.span));
+            return;
+        }
         let wanted = self.items_for(
             &Applied {
                 key: interface.clone(),
@@ -236,6 +318,7 @@ impl Checker {
             },
             &me,
         );
+        let mut problems = Vec::new();
         for f in &d.methods {
             let params: Vec<Type> = f.params.iter().map(|p| self.resolve(&p.ty)).collect();
             let ret = f.ret.as_ref().map_or(Type::Unit, |t| self.resolve(t));
@@ -247,10 +330,22 @@ impl Checker {
                     && r.ret == ret
             });
             if !fits || !f.type_params.is_empty() {
-                let message = format!("`{}` isn't `{interface}`'s item for `{me}`", f.name.name);
-                self.report(misuse(message, f.name.span));
+                problems.push(match wanted.iter().find(|r| r.name == f.name.name) {
+                    Some(r) => format!("`{}` should be `{}`", r.name, super::satisfy::shown(r)),
+                    None => format!("`{}` isn't one of its items", f.name.name),
+                });
                 continue;
             }
+            // Hover shows an item like a method (v17, milestone 142).
+            let sig = super::Sig::of(
+                &generics,
+                generics.len(),
+                receiver,
+                (&f.params, &params),
+                &ret,
+            );
+            self.hover.signatures.insert(f.name.span, sig);
+            self.hover.function(f.name.span, f.name.span, None);
             let method = Method {
                 receiver,
                 params,
@@ -265,9 +360,13 @@ impl Checker {
         }
         for r in &wanted {
             if !d.methods.iter().any(|f| f.name.name == r.name) {
-                let message = format!("no `{}` for `{me}`", r.name);
-                self.report(misuse(message, d.span));
+                problems.push(format!("no method `{}`", r.name));
             }
+        }
+        if !problems.is_empty() {
+            let shown = format!("derive {} for {}", d.interface.name, block_type(&covers));
+            let d = errors::block_unsatisfied(&shown, &d.interface.name, &problems, d.span);
+            self.report(d);
         }
         self.derives.blocks.push(block);
     }
@@ -296,97 +395,5 @@ impl Checker {
             }
         }
         self.deriving = None;
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::check::Type;
-    use crate::check::test_util::bundled;
-
-    /// A derivable `Show`: blocks for `i64`, arrays, structs and enums.
-    const SHOW: &str = "interface Show { fun $show(self): string; }\n\
-        $derive Show for i64 { fun $show(self): string = \"{self}\"; }\n\
-        $derive<T: Show> Show for T[] {\n\
-            fun $show(self): string { let mut s = \"\"; for x of self { s = s + x.$show(); } s }\n\
-        }\n\
-        $derive Show for struct { fun $show(self): string = $join($derive.fields(self, (), $part)); }\n\
-        $derive Show for enum {\n\
-            fun $show(self): string { let (n, ps) = $derive.variant(self, (), $part); n + $join(ps) }\n\
-        }\n\
-        fun $part<F: Show>(c: (), name: string, x: F): string = name + \"=\" + x.$show();\n\
-        fun $join(xs: string[]): string { let mut s = \"\"; for x of xs { s = s + x; } s }\n\
-        fun show<T: Show>(x: T): string = x.$show();\n";
-
-    /// `key<args>` of every instance of `src` after `SHOW`.
-    fn monos(src: &str) -> Vec<String> {
-        let checked = bundled(&format!("{SHOW}{src}")).unwrap_or_else(|d| panic!("{d:?}"));
-        checked
-            .monos
-            .iter()
-            .map(|m| {
-                let args: Vec<String> = m.args.iter().map(Type::to_string).collect();
-                format!("{}<{}>", m.key, args.join(", "))
-            })
-            .collect()
-    }
-
-    /// The codes of checking `src` after `SHOW`.
-    fn codes(src: &str) -> Vec<&'static str> {
-        match bundled(&format!("{SHOW}{src}")) {
-            Ok(_) => Vec::new(),
-            Err(d) => d.iter().map(|d| d.code).collect(),
-        }
-    }
-
-    #[test]
-    fn a_type_uses_its_own_block_then_the_struct_block() {
-        let found = monos(
-            "struct P { a: i64, b: i64[] }\nfun main() { let s = show(P { a: 1, b: [2] }); }",
-        );
-        for want in [
-            "show<P>",
-            "Show@struct.$show<P>",
-            "$part<i64>",
-            "$part<i64[]>",
-            "Show@array.$show<i64>",
-        ] {
-            assert!(found.iter().any(|m| m == want), "{want}: {found:?}");
-        }
-        // `i64`'s block isn't generic: listed once, without arguments.
-        assert!(found.iter().any(|m| m == "Show@i64.$show<>"), "{found:?}");
-    }
-
-    #[test]
-    fn recursive_and_generic_types_meet_it_through_their_parts() {
-        let list = "enum List { Nil, Cons(i64, List) }\n\
-            fun main() { let s = show(List.Cons(1, List.Nil)); }";
-        assert!(monos(list).iter().any(|m| m == "Show@enum.$show<List>"));
-        let boxed = "struct Box<T> { v: T }\n\
-            fun f<T: Show>(b: Box<T>): string = show(b);\nfun main() { let s = f(Box { v: 1 }); }";
-        assert!(
-            monos(boxed)
-                .iter()
-                .any(|m| m == "Show@struct.$show<Box<i64>>")
-        );
-    }
-
-    #[test]
-    fn a_part_no_block_covers_misses_the_bound() {
-        let fun_field = "struct Job { run: fun(i64): i64 }\n\
-            fun main() { let s = show(Job { run: fun(x: i64): i64 = x }); }";
-        assert_eq!(codes(fun_field), ["E0419"]);
-        let unbounded =
-            "struct Box<T> { v: T }\nfun f<T>(b: Box<T>): string = show(b);\nfun main() {}";
-        assert_eq!(codes(unbounded), ["E0419"]);
-        assert_eq!(codes("fun main() { let s = show(true); }"), ["E0419"]);
-    }
-
-    #[test]
-    fn a_block_must_be_for_its_own_modules_interface_and_match_it() {
-        let src = "$derive Nope for i64 { fun $show(self): string = \"\"; }\nfun main() {}";
-        assert_eq!(codes(src), ["E0201"]);
-        let wrong = "$derive Show for bool { fun $show(self): i64 = 1; }\nfun main() {}";
-        assert_eq!(codes(wrong), ["E0201"]);
     }
 }

@@ -116,6 +116,7 @@ fn check_with(
             iterations: checker.iterations,
             derives: checker.derives,
             derived: checker.derived,
+            derive_calls: checker.derive_calls,
             interfaces,
             annotations: checker.annotations,
             instances: checker.instances,
@@ -220,6 +221,8 @@ impl Checker {
                 pass(self, unit.program);
             }
         }
+        // Which structs and enums supply derivable items themselves (v17).
+        self.derive_owners();
         for unit in units {
             self.enter(unit);
             self.visibility_rules(unit.program);

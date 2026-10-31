@@ -1,0 +1,13 @@
+// A method named like one of `json.Json`'s items must have its shape:
+// `to_json(self): json.Value` (E0422, v17, milestone 142).
+import std.json;
+
+struct Point { x: i64, y: i64 }
+
+impl Point {
+    fun to_json(self): string = "({self.x}, {self.y})";
+}
+
+fun main() {
+    let v = json.encode(Point { x: 1, y: 2 });
+}

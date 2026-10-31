@@ -1,0 +1,27 @@
+// Misused field intrinsics (E0453, v17, milestone 142).
+interface Count {
+    fun count(self): i64;
+}
+
+derive Count for i64 {
+    fun count(self): i64 = 1;
+}
+
+fun one<F: Count>(c: (), name: string, x: F): i64 = x.count();
+
+fun any<F>(c: (), name: string, x: F): i64 = 1;
+
+derive Count for struct {
+    fun count(self): i64 = derive.variants().len + derive.fields(self, (), any).len;
+}
+
+derive Count for enum {
+    fun count(self): i64 {
+        let derive = 1;
+        derive
+    }
+}
+
+fun main() {
+    let n = derive.variants();
+}

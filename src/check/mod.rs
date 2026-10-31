@@ -33,6 +33,8 @@ mod defaults;
 mod derive;
 mod derive_intrinsics;
 mod derive_meets;
+#[cfg(test)]
+mod derive_tests;
 mod enums;
 mod env;
 mod errors;
@@ -222,6 +224,7 @@ impl Checker {
             derives: derive::Derives::default(),
             deriving: None,
             derived: HashMap::new(),
+            derive_calls: HashMap::new(),
             hover: partial::Recorder::new(count),
             test_mode: false,
         }
@@ -360,13 +363,15 @@ pub(super) struct Checker {
     param_literals: Vec<literal::ParamLiteral>,
     /// Every generic call, with the body it is in (PRP-036).
     uses: Vec<instances::Use>,
-    /// Every `$derive` block (v17, milestone 141).
+    /// Every `derive` block (v17, milestones 141–142).
     derives: derive::Derives,
     /// The derive block whose bodies are being checked: the field
     /// intrinsics read their `Self` from it.
     deriving: Option<derive::Block>,
     /// See `Checked::derived`.
     derived: HashMap<ExprId, String>,
+    /// See `Checked::derive_calls`.
+    derive_calls: HashMap<ExprId, String>,
     /// The types in each generic body that mention its parameters, by the
     /// body's key: each instance's types are these, substituted (PRP-036).
     body_types: HashMap<String, Vec<Type>>,

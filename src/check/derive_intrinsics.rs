@@ -1,17 +1,17 @@
-//! The field intrinsics of derive blocks (v17, milestone 141, PRP-172),
-//! bundled sources only. Each takes a generic function `f<F: I>` by name and
+//! The field intrinsics of derive blocks (v17, milestones 141–142,
+//! PRP-172, PRP-173), written `derive.fields(…)` and so on. Each takes a generic function `f<F: I>` by name and
 //! calls it once per field of the block's `Self`, at that field's type; the
 //! body is checked once with `F` known only to meet `I`, and each instance
 //! of the block reaches `f` at every field type (`instances.rs`):
 //!
-//! - `$derive.fields(x, ctx, f)`: `R[]`, `f(ctx, name, field)` per field of
+//! - `derive.fields(x, ctx, f)`: `R[]`, `f(ctx, name, field)` per field of
 //!   a struct or tuple (tuples' names are `"0"`, `"1"`, …);
-//! - `$derive.build(ctx, f)`: `Result<Self, E>`, each field made by
+//! - `derive.build(ctx, f)`: `Result<Self, E>`, each field made by
 //!   `f(ctx, name, at, of): Result<F, E>`, the first `Err` returned;
-//! - `$derive.variant(x, ctx, f)`: `(string, R[])`, an enum value's variant
+//! - `derive.variant(x, ctx, f)`: `(string, R[])`, an enum value's variant
 //!   name and its payloads through `f(ctx, name, payload)`;
-//! - `$derive.variants()`: `(string, i64)[]`, each variant's name and payload count;
-//! - `$derive.build_variant(name, ctx, f)`: `Option<Result<Self, E>>`,
+//! - `derive.variants()`: `(string, i64)[]`, each variant's name and payload count;
+//! - `derive.build_variant(name, ctx, f)`: `Option<Result<Self, E>>`,
 //!   `None` for an unknown name, else the variant built as `build` does.
 
 use super::derive::Covers;
@@ -19,16 +19,16 @@ use super::expr::Expect;
 use super::float_ops::builtin_op;
 use super::generics::Generic;
 use super::results::RESULT;
-use super::{Checker, SELF, Type};
+use super::{Checker, SELF, Type, errors};
 use crate::ast::{Expr, ExprKind};
-use crate::diagnostic::Diagnostic;
 
-/// The intrinsics' names, after `$derive.`.
+/// The intrinsics' names, after `derive.`.
 pub const DERIVE_OPS: [&str; 5] = ["fields", "build", "variant", "variants", "build_variant"];
 
-/// The intrinsic `callee` names: `fields` for `$derive.fields`.
+/// The intrinsic `callee` would name: `fields` for `derive.fields`.
+/// Whether it does depends on scope (`Checker::is_intrinsic`).
 pub fn derive_op(callee: &Expr) -> Option<&str> {
-    builtin_op(callee, "$derive").filter(|op| DERIVE_OPS.contains(op))
+    builtin_op(callee, "derive").filter(|op| DERIVE_OPS.contains(op))
 }
 
 /// What `f` must look like: its parameters after `ctx`, and whether it
@@ -42,6 +42,15 @@ fn shape(op: &str) -> (Vec<Type>, bool) {
 }
 
 impl Checker {
+    /// True if `callee` is a field intrinsic here: always inside a derive
+    /// block; elsewhere only when no local or import is named `derive`, so a
+    /// program's own `derive.fields(…)` keeps its meaning.
+    pub(super) fn is_intrinsic(&self, callee: &Expr) -> bool {
+        derive_op(callee).is_some()
+            && (self.deriving.is_some()
+                || (self.local("derive").is_none() && !self.imports.contains_key("derive")))
+    }
+
     /// A call of a field intrinsic, inside a derive block of the right kind.
     pub(super) fn derive_call(&mut self, call: &Expr, callee: &Expr, args: &[Expr]) -> Type {
         self.record(callee, Type::Unit);
@@ -50,11 +59,12 @@ impl Checker {
         }
         let op = derive_op(callee).unwrap_or_default().to_string();
         match self.derive_typed(call, &op, args) {
-            Ok(ty) => ty,
+            Ok(ty) => {
+                self.derive_calls.insert(call.id, op);
+                ty
+            }
             Err(message) => {
-                // A compiler bug: only lughac's own sources write `$derive`.
-                let d = Diagnostic::error("E0415", format!("`$derive.{op}`: {message}"), call.span);
-                self.report(d);
+                self.report(errors::bad_intrinsic(&op, &message, call.span));
                 // Each argument gets a type once: `f`'s name would be E0412
                 // as a value of its own.
                 for arg in args {
@@ -74,7 +84,10 @@ impl Checker {
     }
 
     fn derive_typed(&mut self, call: &Expr, op: &str, args: &[Expr]) -> Result<Type, String> {
-        let block = self.deriving.clone().ok_or("outside a `$derive` block")?;
+        let block = self
+            .deriving
+            .clone()
+            .ok_or("is used outside a derive block")?;
         let me = Type::Param(SELF.to_string());
         let on_enum = matches!(op, "variant" | "variants" | "build_variant");
         let fits = match block.covers {
@@ -83,7 +96,10 @@ impl Checker {
             Covers::Type(_) => false,
         };
         if !fits {
-            return Err("not in this kind of block".into());
+            return Err(format!(
+                "doesn't work in a `derive … for {}` block",
+                kind_name(&block.covers)
+            ));
         }
         let count = match op {
             "variants" => 0,
@@ -110,10 +126,13 @@ impl Checker {
         let f = &args[count - 1];
         self.record(f, Type::Unit);
         let ExprKind::Name(name) = &f.kind else {
-            return Err("`f` must name a function".into());
+            return Err("needs `f` to name a function of this module".into());
         };
         let key = self.key(name);
-        let sig = self.functions.get(&key).ok_or("`f` must name a function")?;
+        let sig = self
+            .functions
+            .get(&key)
+            .ok_or("needs `f` to name a function of this module")?;
         let one_bound = |g: &[Generic]| {
             g.len() == 1
                 && g[0]
@@ -124,7 +143,7 @@ impl Checker {
         };
         if !one_bound(&sig.generics) {
             return Err(format!(
-                "`f` must be generic over one `F: {}`",
+                "needs `f` generic over one `F: {}`",
                 block.interface
             ));
         }
@@ -134,13 +153,13 @@ impl Checker {
         let ret = sig.ret.substitute(&map);
         let (rest, makes) = shape(op);
         if params.first() != Some(&ctx) || params[1..] != rest[..] {
-            return Err("`f`'s parameters don't fit".into());
+            return Err("needs `f`'s parameters to be `(ctx, name: string, …)` as the intrinsic passes them".into());
         }
         let out = match (&ret, makes) {
             (Type::Enum(k, a), true) if k == RESULT && a[0] == Type::Param("F".into()) => {
                 let error = a[1].clone();
                 if mentions(&error, "F") {
-                    return Err("`f`'s error mentions `F`".into());
+                    return Err("needs `f`'s error type not to mention `F`".into());
                 }
                 let result = Type::Enum(RESULT.to_string(), vec![me, error]);
                 if op == "build" {
@@ -157,11 +176,21 @@ impl Checker {
                     self.tuple_type(vec![Type::String, all])
                 }
             }
-            _ => return Err("`f`'s result doesn't fit".into()),
+            _ => return Err("needs `f`'s result to fit the intrinsic".into()),
         };
         self.callees.insert(call.id, key.clone());
         self.field_used(call, &key);
         Ok(out)
+    }
+}
+
+/// `struct`, `enum`, `tuple` or the covered type, for messages.
+fn kind_name(covers: &Covers) -> String {
+    match covers {
+        Covers::Struct => "struct".into(),
+        Covers::Enum => "enum".into(),
+        Covers::Tuple => "tuple".into(),
+        Covers::Type(t) => super::shown(&t.to_string()),
     }
 }
 
@@ -175,9 +204,9 @@ fn mentions(ty: &Type, name: &str) -> bool {
 mod tests {
     use crate::check::test_util::bundled;
 
-    const COUNT: &str = "interface Count { fun $count(self): i64; }\n\
-        $derive Count for i64 { fun $count(self): i64 = 1; }\n\
-        fun $one<F: Count>(c: (), name: string, x: F): i64 = x.$count();\n";
+    const COUNT: &str = "interface Count { fun count(self): i64; }\n\
+        derive Count for i64 { fun count(self): i64 = 1; }\n\
+        fun one<F: Count>(c: (), name: string, x: F): i64 = x.count();\n";
 
     /// The codes of checking `src` after `COUNT`.
     fn codes(src: &str) -> Vec<&'static str> {
@@ -189,14 +218,14 @@ mod tests {
 
     #[test]
     fn each_intrinsic_has_its_result_type() {
-        let ok = "$derive Count for struct {\n\
-                fun $count(self): i64 { let xs: i64[] = $derive.fields(self, (), $one); xs.len }\n\
+        let ok = "derive Count for struct {\n\
+                fun count(self): i64 { let xs: i64[] = derive.fields(self, (), one); xs.len }\n\
             }\n\
-            $derive Count for enum {\n\
-                fun $count(self): i64 {\n\
-                    let (name, xs) = $derive.variant(self, (), $one);\n\
+            derive Count for enum {\n\
+                fun count(self): i64 {\n\
+                    let (name, xs) = derive.variant(self, (), one);\n\
                     let counts: i64[] = xs;\n\
-                    let all: (string, i64)[] = $derive.variants();\n\
+                    let all: (string, i64)[] = derive.variants();\n\
                     counts.len + all.len + name.len\n\
                 }\n\
             }";
@@ -206,16 +235,22 @@ mod tests {
     #[test]
     fn misuse_is_reported() {
         // Outside a block, or in the wrong kind of block.
-        assert_eq!(codes("fun f(): i64 = $derive.variants().len;"), ["E0415"]);
-        let in_struct =
-            "$derive Count for struct { fun $count(self): i64 = $derive.variants().len; }";
-        assert_eq!(codes(in_struct), ["E0415"]);
+        assert_eq!(codes("fun f(): i64 = derive.variants().len;"), ["E0453"]);
+        let in_struct = "derive Count for struct { fun count(self): i64 = derive.variants().len; }";
+        assert_eq!(codes(in_struct), ["E0453"]);
         // `f` must be generic over one `F` bounded by the block's interface.
-        let unbounded = "fun $any<F>(c: (), name: string, x: F): i64 = 1;\n\
-            $derive Count for struct { fun $count(self): i64 = $derive.fields(self, (), $any).len; }";
-        assert_eq!(codes(unbounded), ["E0415"]);
-        let shape = "fun $two<F: Count>(c: i64, name: string, x: F): i64 = 1;\n\
-            $derive Count for struct { fun $count(self): i64 = $derive.fields(self, (), $two).len; }";
-        assert_eq!(codes(shape), ["E0415"]);
+        let unbounded = "fun any<F>(c: (), name: string, x: F): i64 = 1;\n\
+            derive Count for struct { fun count(self): i64 = derive.fields(self, (), any).len; }";
+        assert_eq!(codes(unbounded), ["E0453"]);
+        let shape = "fun two<F: Count>(c: i64, name: string, x: F): i64 = 1;\n\
+            derive Count for struct { fun count(self): i64 = derive.fields(self, (), two).len; }";
+        assert_eq!(codes(shape), ["E0453"]);
+        // A program's own `derive` keeps its meaning outside blocks.
+        assert_eq!(
+            codes("struct D { variants: fun(): i64 }\nfun f(derive: D): i64 = derive.variants();"),
+            Vec::<&str>::new()
+        );
+        let named = "derive Count for struct { fun count(self): i64 { let derive = 1; derive } }";
+        assert_eq!(codes(named), ["E0453"]);
     }
 }

@@ -315,6 +315,8 @@ After discovery (PRP-172): Lugha meets metaprogramming needs with targeted featu
 
 **Derive blocks** (milestone 141): `$derive[<params>] I for X { items }`, written only in bundled sources and only in interface `I`'s own module, gives `I`'s items to one type (`i64`, `T[]`, `Option<T>`, `Map<K, V>`) or to every `struct`, `enum` or `tuple` whose parts meet `I`; a type meets a derivable interface through the block that covers it (E0450's paths for `Json`, E0419 otherwise). The field intrinsics `$derive.fields`, `build`, `variant`, `variants` and `build_variant` call a generic function once per field, unrolled per type. `json.encode`/`json.decode` and `json.Json` move onto blocks in `std.$json_value`, byte for byte; the compiler's JSON walkers and `std.$json_derive` are removed. Programs see no change: `derive` stays a name. Opening derive blocks to every module is a later PRP; tag `m141`.
 
+**Derive blocks for every module** (milestone 142, PRP-173): `derive` is a contextual word starting a block in any module, for an interface that module declares (E0452 elsewhere or for overlapping blocks); the intrinsics are written `derive.fields(…)` and so on (E0453 when misused); a struct's or enum's own method with an item's exact signature replaces that item, per item, and one writing every item needs no block; a type that doesn't meet a derivable interface is E0451 with a path. `json.Json`'s items become `to_json` and `from_json`, so a type customises its JSON (breaking for a type that already has methods of those names); tag `m142`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.

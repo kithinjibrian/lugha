@@ -263,3 +263,22 @@ fn a_maps_members_complete_without_its_internals_v17() {
         "{items:?}"
     );
 }
+
+#[test]
+fn derive_dot_in_a_derive_block_offers_the_field_intrinsics() {
+    let before = "interface S { fun s(self): i64; }\nderive S for struct {\n    fun s(self): i64 = 1;\n}\nfun main() {}\n";
+    let t = Temp::with(&[("main.la", before)]);
+    let uri = t.uri("main.la");
+    let mut server = Server::start(&t, json!({}));
+    server.open(&uri, before);
+    server.expect(&uri, &[]);
+    let text = before.replace("= 1;", "= derive.");
+    server.change(&uri, 2, &text);
+    let col = "    fun s(self): i64 = derive.".len() as u32;
+    let items = server.completion(&uri, 2, col);
+    assert_eq!(server.finish(), Some(0));
+    let fields = find(&items, "fields").expect("offered");
+    assert_eq!(fields.1, FUNCTION);
+    assert!(fields.2.starts_with("derive.fields("), "{fields:?}");
+    assert!(find(&items, "build_variant").is_some(), "{items:?}");
+}

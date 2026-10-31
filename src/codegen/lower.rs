@@ -90,6 +90,8 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) derives: crate::check::Derives,
     /// Calls through a derivable interface's bound (`Checked::derived`).
     pub(super) derived: HashMap<ExprId, String>,
+    /// Field intrinsic calls (`Checked::derive_calls`).
+    pub(super) derive_calls: HashMap<ExprId, String>,
     /// Iterator loops (`Checked::iterations`, v6).
     pub(super) iterations: HashMap<ExprId, Iteration>,
     /// Dispatch tables and conversions between interfaces (v6).
@@ -197,6 +199,7 @@ pub(super) fn lower<'ctx>(
         default_args: checked.default_args.clone(),
         derives: checked.derives.clone(),
         derived: checked.derived.clone(),
+        derive_calls: checked.derive_calls.clone(),
         iterations: checked.iterations.clone(),
         tests: checked.tests.clone(),
         upcasts: Default::default(),

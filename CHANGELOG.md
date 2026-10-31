@@ -9,6 +9,8 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- Derive blocks in every module (milestone 142, PRP-173): `derive Show for struct { … }` says once how every struct (or enum, tuple, or one type like `i64` or `T[]`) meets an interface its module declares, with `derive.fields(…)`, `derive.build(…)`, `derive.variant(…)`, `derive.variants()` and `derive.build_variant(…)` reaching the fields; a type's own method replaces a block's item; E0451 (a type that doesn't meet a derivable interface, with the path), E0452 (a block in the wrong module or overlapping another), E0453 (a misused field intrinsic); hover on a block's items and `derive.` completion in a block
+- Custom JSON for one type (milestone 142): `impl Date { fun to_json(self): json.Value = … }` (and `from_json`) replaces the derived encoding
 - `json.decode(v)` (milestone 140, PRP-171): a `json.Value` back into any data type — `let p: Person = json.decode(v)?;` — ignoring unknown keys, `None` for a missing `Option` field, exact numbers; `json.DecodeError` names the path to the first mismatch (`people[2].age: expected an integer, found a string`)
 - `?` passes the type it should give to its operand (milestone 140): `let n: i64 = parse()?;` infers a generic `parse`'s type argument
 - `json.encode(x)` (milestone 139, PRP-171): any data type — structs, enums, arrays, tuples, maps, sets, `Option`, numbers, text — to a `json.Value` with no annotation; generic code passes types through with `T: json.Json`; E0450 names the part of a type that isn't data (a function, interface value, `Ref`, …)
@@ -31,6 +33,7 @@ Never deleted. Older entries are never modified.
 - A std type's own `show` is used when it's printed (it was skipped unless the type was generic)
 
 ### Changed
+- **Breaking:** a struct or enum that already has `fun to_json(self): json.Value` (or a `from_json` of `json.Json`'s shape) now has it used by `json.encode`/`json.decode` (milestone 142), and one with a `to_json` or `from_json` of another shape is E0422 where it is encoded or decoded
 - `json.encode` and `json.decode` are written in Lugha (milestone 141, PRP-172): derive blocks in `std` (`$derive Json for i64 { … }`, `$derive Json for struct { … }`) say how each type meets `json.Json`, replacing about 600 lines of per-type code in the compiler; output, errors and speed are unchanged. Only lughac's own sources can write derive blocks for now
 - **Breaking:** `http.json(status, v)` takes a `json.Value` instead of JSON text (milestone 138, PRP-170), so there is one way to answer with JSON; a value holding NaN or an infinity answers a `text/plain` 500. Text in hand: `http.json(status, json.parse(text)?)`. A string argument is now a type error
 - Smaller stack frames again (milestone 136, PRP-168): stack slots used one after another inside the same block now share, not only slots of different arms; kivuli's `resolve` falls from 66.5 KB to 41.1 KB at `-O0` (30.5 KB to 25.5 KB at `-O2`), so a 64-deep Rapidkoi screen fits in about 5.8 MB
