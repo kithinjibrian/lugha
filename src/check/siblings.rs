@@ -6,7 +6,9 @@
 //! `None` already do, and takes the type they fix as its expected type.
 
 use super::expr::Expect;
+use super::infer::{Bound, known, unify};
 use super::ops::defers;
+use super::results::RESULT;
 use super::{Checker, Type};
 use crate::ast::{Expr, ExprKind};
 
@@ -33,31 +35,34 @@ impl Checker {
         }
     }
 
-    /// The type a waiting expression will have, by name: a waiting call's
-    /// declared result (`Node` for `leaf<M>(s): Node<M>`), or, through a
-    /// method that returns its receiver's own type, the receiver's.
-    fn waiting_head(&self, e: &Expr) -> Option<String> {
-        if let Some(head) = self.waiting_receiver(e) {
-            return Some(head);
-        }
-        let ExprKind::Call(callee, _) = &e.kind else {
-            return None;
+    /// The declared type a waiting expression will have, when its head is
+    /// known: a waiting call's declared result (`Node<M>` for
+    /// `leaf<M>(s): Node<M>`, `Result<T, DecodeError>` for `json.decode`),
+    /// or a method's result through a waiting receiver. Only its head
+    /// (struct, enum or `Option`) is read.
+    fn waiting_head(&self, e: &Expr) -> Option<Type> {
+        let ty = match self.waiting_receiver(e) {
+            Some(ret) => ret,
+            None => {
+                let ExprKind::Call(callee, _) = &e.kind else {
+                    return None;
+                };
+                if !self.waiting_call(e) {
+                    return None;
+                }
+                self.callee_signature(callee)?.2
+            }
         };
-        if !self.waiting_call(e) {
-            return None;
-        }
-        let (_, _, ret) = self.callee_signature(callee)?;
-        match &ret {
-            Type::Struct(key, _) | Type::Enum(key, _) => Some(key.clone()),
-            _ => None,
-        }
+        matches!(ty, Type::Struct(..) | Type::Enum(..) | Type::Option(_)).then_some(ty)
     }
 
-    /// For `r.m(…)` whose receiver `r` waits and whose method `m` returns
-    /// the receiver's own type (`fun pad(self, n: i64): Node<M>` in
-    /// `impl Node<M>`): the type's name. Such a call waits too, and its
-    /// expected type is the receiver's (kivuli: `text("a").padding(8)`).
-    fn waiting_receiver(&self, e: &Expr) -> Option<String> {
+    /// For `r.m(…)` whose receiver `r` waits and whose method `m`'s result
+    /// mentions the receiver type's own parameters (`fun pad(self, n: i64):
+    /// Node<M>` in `impl Node<M>`, `unwrap` on a `Result<T, E>`): that
+    /// result, declared. Such a call waits too, and its expected type
+    /// reaches the receiver (kivuli: `text("a").padding(8)`; v17, milestone
+    /// 148: `json.decode(v).unwrap()`).
+    fn waiting_receiver(&self, e: &Expr) -> Option<Type> {
         let ExprKind::Call(callee, _) = &e.kind else {
             return None;
         };
@@ -65,24 +70,49 @@ impl Checker {
             return None;
         };
         let head = self.waiting_head(base)?;
-        self.returns_self(&head, &name.name).then_some(head)
+        let (ret, params, _) = self.result_of(&head, &name.name)?;
+        params.iter().any(|p| mentions(&ret, p)).then_some(ret)
     }
 
-    /// True if `head`'s method `name` returns `head` at the `impl`'s own
-    /// type parameters, in order.
-    fn returns_self(&self, head: &str, name: &str) -> bool {
-        let Some(m) = self.methods.get(head).and_then(|ms| ms.get(name)) else {
-            return false;
-        };
-        let own: Vec<Type> = m.generics[..m.outer]
-            .iter()
-            .map(|g| Type::Param(g.name.clone()))
-            .collect();
-        matches!(&m.ret, Type::Struct(k, args) | Type::Enum(k, args) if k == head && *args == own)
+    /// The method `name` on a receiver headed like `head`: its declared
+    /// result, the receiver type's own parameters it is written in, and
+    /// the receiver's type at those parameters. `unwrap` and `expect` on
+    /// `Option` and `Result` are built in, so they are answered here.
+    fn result_of(&self, head: &Type, name: &str) -> Option<(Type, Vec<String>, Type)> {
+        // `$`-names can't clash with a program's type parameters.
+        let p = |n: &str| Type::Param(n.to_string());
+        let payload = matches!(name, "unwrap" | "expect");
+        match head {
+            Type::Option(_) if payload => {
+                Some((p("$T"), vec!["$T".into()], Type::Option(Box::new(p("$T")))))
+            }
+            Type::Enum(k, _) if payload && k == RESULT => Some((
+                p("$T"),
+                vec!["$T".into(), "$E".into()],
+                Type::Enum(k.clone(), vec![p("$T"), p("$E")]),
+            )),
+            Type::Struct(k, _) | Type::Enum(k, _) => {
+                let m = self.methods.get(k)?.get(name)?;
+                m.receiver?;
+                let params: Vec<String> = m.generics[..m.outer]
+                    .iter()
+                    .map(|g| g.name.clone())
+                    .collect();
+                let own = params.iter().map(|g| p(g)).collect();
+                let receiver = match head {
+                    Type::Struct(..) => Type::Struct(k.clone(), own),
+                    _ => Type::Enum(k.clone(), own),
+                };
+                Some((m.ret.clone(), params, receiver))
+            }
+            _ => None,
+        }
     }
 
-    /// The expected type for the receiver of `base.name(…)`: the call's own,
-    /// when the receiver waits and the method returns the receiver's type.
+    /// The expected type for the receiver of `base.name(…)`, when the
+    /// receiver waits: the call's expected type matched against the
+    /// method's result fixes some of the receiver type's parameters, and
+    /// the others are left open, as `?` leaves the error type open.
     pub(super) fn receiver_expect(
         &self,
         base: &Expr,
@@ -91,8 +121,11 @@ impl Checker {
     ) -> Option<Expect> {
         let expected = expect?;
         let head = self.waiting_head(base)?;
-        let fits = matches!(&expected.ty, Type::Struct(k, _) | Type::Enum(k, _) if *k == head);
-        (fits && self.returns_self(&head, name)).then(|| Expect::of(expected.ty.clone()))
+        let (ret, params, receiver) = self.result_of(&head, name)?;
+        let names: Vec<&str> = params.iter().map(String::as_str).collect();
+        let mut bound = Bound::new();
+        unify(&ret, &expected.ty, &names, &mut bound);
+        (!bound.is_empty()).then(|| Expect::of(known(&receiver, &names, &bound)))
     }
 
     /// A call `f(…)` or `m.f(…)` of a generic function whose result has a
@@ -287,6 +320,59 @@ mod tests {
         let found = errors(&src);
         assert_eq!(found.first().map(|(c, _)| *c), Some("E0412"), "{found:?}");
         let src = format!("{node}fun main() {{ println(leaf(\"x\").pad(1) == leaf(\"y\")); }}");
+        let found = errors(&src);
+        assert_eq!(found.first().map(|(c, _)| *c), Some("E0412"), "{found:?}");
+    }
+
+    #[test]
+    fn unwrap_and_expect_pass_the_wanted_type_back_v17() {
+        let lib = "struct Person { name: string }\n\
+            fun decode<T>(s: string): Result<T, string> = Err(s);\n\
+            fun maybe<T>(): Option<T> = None;\n\
+            fun take(p: Person) {}\n";
+        ok(&format!(
+            "{lib}fun get(): Person = decode(\"x\").unwrap();\n\
+             fun main() {{\n\
+                 let p: Person = decode(\"x\").unwrap();\n\
+                 let q: Person = decode(\"x\").expect(\"a person\");\n\
+                 let r: Person = maybe().unwrap();\n\
+                 let s: string = maybe().expect(\"text\");\n\
+                 take(decode(\"x\").unwrap());\n\
+                 let all: Person[] = [decode(\"x\").unwrap(), maybe().unwrap()];\n\
+                 println(decode(\"x\").unwrap() == p);\n\
+                 println(q == maybe().unwrap());\n\
+             }}"
+        ));
+        // Nothing wanting a type: still E0412.
+        let src = format!("{lib}fun main() {{ let p = decode(\"x\").unwrap(); }}");
+        let found = errors(&src);
+        assert_eq!(found.first().map(|(c, _)| *c), Some("E0412"), "{found:?}");
+        // A concrete receiver that doesn't fit: one error, as before.
+        let src = format!(
+            "{lib}fun one(): Result<i64, string> = Ok(1);\n\
+             fun main() {{ let s: string = one().unwrap(); }}"
+        );
+        let found = errors(&src);
+        assert_eq!(found.len(), 1, "{found:?}");
+    }
+
+    #[test]
+    fn a_programs_own_methods_pass_it_back_too_v17() {
+        let lib = "struct Pair<T> { a: T, b: T }\n\
+            impl Pair<T> {\n\
+                fun first(self): T = self.a;\n\
+                fun wrap(self): Option<T> = Some(self.a);\n\
+                fun size(self): i64 = 2;\n\
+            }\n\
+            fun zeros<T: Num>(): Pair<T> = Pair { a: 0, b: 0 };\n";
+        ok(&format!(
+            "{lib}fun main() {{\n\
+                 let n: u8 = zeros().first();\n\
+                 let m: Option<i32> = zeros().wrap();\n\
+                 let k: u16 = zeros().wrap().unwrap();\n\
+             }}"
+        ));
+        let src = format!("{lib}fun main() {{ let n: i64 = zeros().size(); }}");
         let found = errors(&src);
         assert_eq!(found.first().map(|(c, _)| *c), Some("E0412"), "{found:?}");
     }

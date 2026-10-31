@@ -10,7 +10,7 @@ use super::{Checker, Type, errors};
 use crate::ast::{Expr, ExprKind};
 
 /// Type arguments bound so far, by parameter name.
-type Bound = HashMap<String, Type>;
+pub(super) type Bound = HashMap<String, Type>;
 
 impl Checker {
     /// Checks `inputs` — each an expression and the type its declaration
@@ -118,7 +118,7 @@ pub(super) fn bind(declared: &Type, actual: &Type, generics: &[Generic]) -> Boun
 /// one substitution: replacing in two steps would take a bound parameter's
 /// type for one of `names` when they share a name (`map`'s `T` bound to a
 /// caller's own `T`).
-fn known(ty: &Type, names: &[&str], bound: &Bound) -> Type {
+pub(super) fn known(ty: &Type, names: &[&str], bound: &Bound) -> Type {
     let map: HashMap<String, Type> = names
         .iter()
         .map(|n| (n.to_string(), bound.get(*n).cloned().unwrap_or(Type::Error)))

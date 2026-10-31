@@ -1,0 +1,39 @@
+// Milestone 148: a waiting generic call takes its type through any method
+// whose result reveals it: `json.decode(v).unwrap()`, `.expect(…)`, and a
+// program's own methods.
+import std.json;
+
+struct Person { name: string, age: i64 }
+
+struct Pair<T> { a: T, b: T }
+
+impl Pair<T> {
+    fun first(self): T = self.a;
+    fun wrap(self): Option<T> = Some(self.b);
+}
+
+fun zeros<T: Num>(): Pair<T> = Pair { a: 0, b: 7 };
+
+fun oldest(people: Person[]): i64 {
+    let mut most = 0;
+    for p of people {
+        if p.age > most {
+            most = p.age;
+        }
+    }
+    most
+}
+
+fun main() {
+    let v = json.parse("{{\"name\": \"ada\", \"age\": 36}}").unwrap();
+    let p: Person = json.decode(v).unwrap();
+    let q: Person = json.decode(v).expect("a person");
+    println(p.name);
+    println(json.decode(v).unwrap() == q);
+    let people: Person[] = [json.decode(v).unwrap(), q];
+    println(people.len);
+    println(oldest([json.decode(v).unwrap()]));
+    let n: u8 = zeros().first();
+    let m: u16 = zeros().wrap().unwrap();
+    println("{n} {m}");
+}
