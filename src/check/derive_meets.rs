@@ -22,8 +22,8 @@ pub(super) enum Unmet {
     /// A block's parameter misses another derivable bound: `Map<bool, V>`'s
     /// keys, for one.
     Bound(String, Type),
-    /// A struct holding a C union.
-    Union,
+    /// A C union (`true`) or a struct holding one (`false`).
+    Union(bool),
     /// A struct's or enum's own method named like an item, with another
     /// signature (E0422): what it should be.
     Mismatch(String),
@@ -179,7 +179,9 @@ impl Checker {
         let union = |key: &str| self.holds_union(key);
         let Some((block, args)) = self.derives.find(interface, ty, union) else {
             return match ty {
-                Type::Struct(key, _) if self.holds_union(key) => at(Unmet::Union),
+                Type::Struct(key, _) if self.holds_union(key) => {
+                    at(Unmet::Union(self.c_unions.contains(key)))
+                }
                 _ => at(Unmet::Missing(ty.clone())),
             };
         };
@@ -352,6 +354,16 @@ impl Checker {
     }
 }
 
+/// What E0451 and E0450 call a union part: the union itself, or a struct
+/// holding one.
+pub(super) fn union_part(itself: bool) -> String {
+    if itself {
+        "a C union".to_string()
+    } else {
+        "a struct holding a union".to_string()
+    }
+}
+
 /// What E0451 says a part is, for derivable interface `name`.
 fn describe(name: &str, why: &Unmet) -> String {
     match why {
@@ -361,7 +373,7 @@ fn describe(name: &str, why: &Unmet) -> String {
             let other = key.rsplit('.').next().unwrap_or(key);
             format!("`{ty}`, which doesn't meet `{other}`")
         }
-        Unmet::Union => "a struct holding a union".to_string(),
+        Unmet::Union(itself) => union_part(*itself),
         Unmet::Mismatch(problem) => problem.clone(),
         Unmet::HalfPair(has) => format!("its own `{has}` alone"),
     }
