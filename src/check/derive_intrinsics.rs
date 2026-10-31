@@ -17,7 +17,10 @@
 //!   threaded through `f(acc, name, field): A` per field (an enum's: the
 //!   payloads of the variant at hand, named by the variant), nothing allocated;
 //! - `derive.index(x)`: an enum value's variant position, an `i64`;
-//! - `derive.address(x)`: in a `for handle` block, the handle's address, a `u64`.
+//! - `derive.address(x)`: in a `for handle` block, the handle's address, a `u64`;
+//! - `derive.all(a, b, f)` (v17, milestone 144): `bool`, true if `f(name, x, y)`
+//!   holds for every pair of corresponding fields (an enum's: false for
+//!   different variants, else every payload pair), stopping at the first false.
 
 use super::derive::Covers;
 use super::expr::Expect;
@@ -28,7 +31,7 @@ use super::{Checker, SELF, Type, errors};
 use crate::ast::{Expr, ExprKind};
 
 /// The intrinsics' names, after `derive.`.
-pub const DERIVE_OPS: [&str; 8] = [
+pub const DERIVE_OPS: [&str; 9] = [
     "fields",
     "build",
     "variant",
@@ -37,6 +40,7 @@ pub const DERIVE_OPS: [&str; 8] = [
     "fold",
     "index",
     "address",
+    "all",
 ];
 
 /// The intrinsic `callee` would name: `fields` for `derive.fields`.
@@ -104,7 +108,9 @@ impl Checker {
             .ok_or("is used outside a derive block")?;
         let me = Type::Param(SELF.to_string());
         let fits = match (&block.covers, op) {
-            (_, "fold") => matches!(block.covers, Covers::Struct | Covers::Tuple | Covers::Enum),
+            (_, "fold" | "all") => {
+                matches!(block.covers, Covers::Struct | Covers::Tuple | Covers::Enum)
+            }
             (Covers::Enum, o) => matches!(o, "variant" | "variants" | "build_variant" | "index"),
             (Covers::Struct | Covers::Tuple, o) => matches!(o, "fields" | "build"),
             (Covers::Handle, o) => o == "address",
@@ -128,6 +134,10 @@ impl Checker {
         if op == "variants" {
             let pair = self.tuple_type(vec![Type::String, Type::I64]);
             return Ok(Type::Array(Box::new(pair)));
+        }
+        // Two values compared field by field (v17, milestone 144).
+        if op == "all" {
+            return self.derive_all(call, args, &block.interface);
         }
         // A variant's position, or a handle's address (v17, milestone 143).
         if op == "index" || op == "address" {
@@ -154,13 +164,15 @@ impl Checker {
             .functions
             .get(&key)
             .ok_or("needs `f` to name a function of this module")?;
+        // `F: Eq` is written as the built-in flag (v17, milestone 144).
         let one_bound = |g: &[Generic]| {
             g.len() == 1
-                && g[0]
+                && (g[0]
                     .bounds
                     .interfaces
                     .iter()
                     .any(|a| a.key == block.interface)
+                    || block.interface == super::derive::EQ && g[0].bounds.eq)
         };
         if !one_bound(&sig.generics) {
             return Err(format!(
@@ -209,6 +221,52 @@ impl Checker {
         self.callees.insert(call.id, key.clone());
         self.field_used(call, &key);
         Ok(out)
+    }
+}
+
+impl Checker {
+    /// `derive.all(a, b, f)`: `f(name, x, y): bool` for each pair of
+    /// corresponding fields, `F` bounded by the block's `interface`.
+    fn derive_all(&mut self, call: &Expr, args: &[Expr], interface: &str) -> Result<Type, String> {
+        let me = Type::Param(SELF.to_string());
+        if args.len() != 3 {
+            return Err("takes 3 arguments".into());
+        }
+        self.value(&args[0], Some(&Expect::of(me.clone())));
+        self.value(&args[1], Some(&Expect::of(me)));
+        let f = &args[2];
+        self.record(f, Type::Unit);
+        let ExprKind::Name(name) = &f.kind else {
+            return Err("needs `f` to name a function of this module".into());
+        };
+        let key = self.key(name);
+        let sig = self
+            .functions
+            .get(&key)
+            .ok_or("needs `f` to name a function of this module")?;
+        let bounded = sig.generics.len() == 1
+            && sig.generics[0]
+                .bounds
+                .interfaces
+                .iter()
+                .any(|a| a.key == interface)
+            || sig.generics.len() == 1
+                && interface == super::derive::EQ
+                && sig.generics[0].bounds.eq;
+        if !bounded {
+            return Err(format!(
+                "needs `f` generic over one `F: {}`",
+                super::shown(interface)
+            ));
+        }
+        let field = Type::Param(sig.generics[0].name.clone());
+        let shape = [Type::String, field.clone(), field];
+        if sig.params[..] != shape[..] || sig.ret != Type::Bool {
+            return Err("needs `f` to be `(name: string, x: F, y: F): bool`".into());
+        }
+        self.callees.insert(call.id, key.clone());
+        self.field_used(call, &key);
+        Ok(Type::Bool)
     }
 }
 
@@ -270,6 +328,16 @@ mod tests {
         // `f` must give back `init`'s type.
         let wrong = "derive Count for struct { fun count(self): i64 = derive.fold(self, 0, half); }\n\
             fun half<F: Count>(sum: i64, name: string, x: F): bool = true;";
+        assert_eq!(codes(wrong), ["E0453"]);
+    }
+
+    #[test]
+    fn all_compares_two_values_with_a_boolean_f() {
+        let ok = "derive Count for struct { fun count(self): i64 = if derive.all(self, self, same) { 1 } else { 0 }; }\n\
+            fun same<F: Count>(name: string, x: F, y: F): bool = x.count() == y.count();";
+        assert_eq!(codes(ok), Vec::<&str>::new());
+        let wrong = "derive Count for struct { fun count(self): i64 = if derive.all(self, self, two) { 1 } else { 0 }; }\n\
+            fun two<F: Count>(name: string, x: F): bool = true;";
         assert_eq!(codes(wrong), ["E0453"]);
     }
 

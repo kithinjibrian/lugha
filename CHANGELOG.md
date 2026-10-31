@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- Custom equality (milestone 144, PRP-175): `Eq` is a prelude interface with `eq` and `hash`; a struct or enum writing both (`impl User { fun eq(self, other: User): bool = self.id == other.id; fun hash(self, h: u64): u64 = self.id.hash(h); }`) decides what `==` means for it, in maps and sets too; E0454 for one without the other; `derive.all(a, b, f)` for derive blocks
 - Derive blocks gain `derive.fold(x, init, f)` (threads a value through every field, nothing allocated), `derive.index(x)` (an enum value's variant position) and `derive … for handle` with `derive.address(x)` (milestone 143, PRP-174)
 - Derive blocks in every module (milestone 142, PRP-173): `derive Show for struct { … }` says once how every struct (or enum, tuple, or one type like `i64` or `T[]`) meets an interface its module declares, with `derive.fields(…)`, `derive.build(…)`, `derive.variant(…)`, `derive.variants()` and `derive.build_variant(…)` reaching the fields; a type's own method replaces a block's item; E0451 (a type that doesn't meet a derivable interface, with the path), E0452 (a block in the wrong module or overlapping another), E0453 (a misused field intrinsic); hover on a block's items and `derive.` completion in a block
 - Custom JSON for one type (milestone 142): `impl Date { fun to_json(self): json.Value = … }` (and `from_json`) replaces the derived encoding
@@ -35,6 +36,8 @@ Never deleted. Older entries are never modified.
 - A std type's own `show` is used when it's printed (it was skipped unless the type was generic)
 
 ### Changed
+- **Breaking:** a struct or enum with methods named `eq` and `hash` of `Eq`'s shapes now has them used by `==`, maps and sets; one with just one of them, or another shape, is E0454 or E0422 where it is compared (milestone 144)
+- `==` on a struct, enum, tuple, array or `Option` that isn't `Eq` is E0451, naming the part at fault (`` `Job` doesn't meet `Eq`: `run` is `fun(i64): i64` ``), instead of E0404 or E0419 (milestone 144)
 - Hashing is written in Lugha (milestone 143, PRP-174): the prelude's `$Hash` on derive blocks replaces the compiler's per-type hashing; nothing to write differently, map-heavy code within about 5% of before
 - **Breaking:** a struct or enum that already has `fun to_json(self): json.Value` (or a `from_json` of `json.Json`'s shape) now has it used by `json.encode`/`json.decode` (milestone 142), and one with a `to_json` or `from_json` of another shape is E0422 where it is encoded or decoded
 - `json.encode` and `json.decode` are written in Lugha (milestone 141, PRP-172): derive blocks in `std` (`$derive Json for i64 { … }`, `$derive Json for struct { … }`) say how each type meets `json.Json`, replacing about 600 lines of per-type code in the compiler; output, errors and speed are unchanged. Only lughac's own sources can write derive blocks for now

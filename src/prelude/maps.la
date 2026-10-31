@@ -2,7 +2,7 @@
 // A compact table: entries in insertion order (removed ones marked and
 // compacted when half are), and `$slots`, open addressing with linear probing
 // at a load of at most 2/3 over indexes into the entries. Values, like arrays:
-// copies are independent. Keys are hashed by `$hash` (`hash.la`), which matches `==`.
+// copies are independent. Keys are hashed by `Eq`'s `hash` (`eq.la`), which matches `==`.
 
 /**
  * A map from keys to values, visited in insertion order: `#{"ann": 31}`.
@@ -30,7 +30,7 @@ struct Set<T> {
 /** The slot `k` is in (`.0`) and its entry, or -1 when it has none (`.1`). */
 fun $map_find<K: Eq, V>(m: Map<K, V>, k: K): (i64, i64) {
     let mask = m.$slots.len - 1;
-    let mut i = (k.$hash(14695981039346656037) & (mask as u64)) as i64;
+    let mut i = (k.hash(14695981039346656037) & (mask as u64)) as i64;
     while true {
         let s = m.$slots[i];
         if s == 0 {

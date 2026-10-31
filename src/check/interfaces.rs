@@ -57,7 +57,8 @@ impl Checker {
             let key = self.key(name);
             if is_intrinsic(name) {
                 self.report(errors::reserved(name, span));
-            } else if BUILTIN_NAMES.contains(&name.as_str()) {
+            } else if BUILTIN_NAMES.contains(&name.as_str()) && !self.in_prelude() {
+                // The prelude declares `Eq` itself (v17, milestone 144).
                 self.report(errors::builtin_name(name, span));
             } else if let Some(first) = self.type_span(&key) {
                 self.report(errors::duplicate(name, span, first));

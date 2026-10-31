@@ -114,7 +114,7 @@ pub use channels::{CHAN_BUFFERED, CHAN_NEW};
 pub use checked::Checked;
 pub(crate) use concat::CONCAT;
 pub use defaults::SELF;
-pub use derive::{Block as DeriveBlock, Covers, Derives};
+pub use derive::{Block as DeriveBlock, Covers, Derives, EQ};
 pub use derive_intrinsics::{DERIVE_OPS, derive_op};
 pub use float_bits::{bits_of, from_bits};
 pub use float_ops::{float_op, os_op, os_signature, string_op};
@@ -122,7 +122,7 @@ pub use hashing::hash_op;
 pub use iface_tables::{InterfaceMethod, InterfaceShape};
 pub use includes::{Included, MAX_INCLUDE};
 pub use input::prelude_helper;
-pub use instances::Instance;
+pub use instances::{Instance, lazy_key};
 pub use iterators::Iteration;
 pub use layouts::UNION_MARK;
 pub use members::{Detail, Member, MemberKind, TypeMembers, type_members, value_members};
@@ -151,7 +151,10 @@ pub fn intrinsics() -> impl Iterator<Item = &'static str> {
 }
 
 /// Type-checks `program`, a program of one file, returning the type table
-/// and any warnings. [`check_modules`] checks several.
+/// and any warnings. [`check_modules`] checks several. It checks without the
+/// prelude, so `==` on a struct, enum, tuple, array or `Option` (which comes
+/// from the prelude's `Eq` since v17, milestone 144) is E0451 here: check a
+/// real program with the prelude (`modules::with_prelude`, `check_modules`).
 ///
 /// # Errors
 ///

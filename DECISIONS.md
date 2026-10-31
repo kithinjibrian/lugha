@@ -467,6 +467,8 @@ Questions about the *language* are answered by `docs/specs/Language v17 Specific
 
 **Rules out:** a pointer-equality fast path (wrong for NaN); ordering structs or arrays.
 
+**Amended (decision 211, milestone 144):** `==` on structs, enums, tuples, arrays and `Option` now goes through the prelude's `Eq`, and a type may write its own `eq` and `hash`; `codegen/equality.rs`'s helpers are gone.
+
 ---
 
 ### 36. Nested patterns, guards, usefulness, W0103 (PRP-032)
@@ -2179,6 +2181,12 @@ Derive blocks as built: `$derive[<params>] I for X { items }` (`Item::Derive`; `
 **Decision:** hashing is the prelude's derivable `$Hash` (`prelude/hash.la`): `fun $hash(self, h: u64): u64` folding into FNV-1a state, blocks for every `Eq` type, `$hash.text(s, h)` the one built-in (a string's bytes). `Eq` implies `$Hash`: `derive::implies_hash` (`Eq`, `Num` or `Float`) adds `$Hash` to a parameter's bounds in `satisfy::bound_entry` and `instances::bound_target`, so `K: Eq` is all a map needs and programs never see `$Hash`. Maps and sets hash order-independently (wrapping sum of entries), as `same` compares them. Derive blocks gained `derive.fold(x, init, f)` (unrolled, threading one accumulator, nothing allocated; an enum folds the variant at hand), `derive.index(x)` (the tag), and `Covers::Handle` (`derive … for handle`) with `derive.address(x)` (`ptrtoint`). Hashing order: hashing first, `==` next, printing last.
 
 **Why:** the discovery's answers (PRP-174); `fold` keeps map lookups free of allocation (measured +5% on a map benchmark, inside 10%); hashing inside `Eq` keeps it an implementation detail of maps. The user's guidance from this discovery: breaking changes are fine when the design is better.
+
+### 211. `==` through `Eq` — milestone 144 (PRP-175)
+
+**Decision:** `Eq` is the prelude's derivable interface `Eq { fun eq(self, other: Self): bool; fun hash(self, h: u64): u64; }` (`prelude/eq.la`), replacing 210's `$Hash`. `T: Eq` stays the checker's `eq` flag, which `derive::implies_eq` turns into the interface (as 210 did), so no bound code changed shape. `==` on structs, enums, tuples, arrays and `Option` (`derive::compared_through_eq`) is `eq`: the checker's `EQUAL` use expands to the type's own `eq` or its block's (`eq_instances`), codegen's `equal` calls it (`eq_call`); numbers, `bool`, `char`, `string` and handles stay inline. A type's own `eq` and `hash` (exact shapes) win; one alone is E0454, a wrong shape E0422; writing both, it needs no block. E0451 replaces E0404/E0419 for aggregates that aren't `Eq`. `derive.all(a, b, f)` reads both values in place (`address_of`, `fields_at`) and branches out at the first false. `Option` is covered by the `enum` block. Prelude and std instances are `Internal` linkage. This reverses v15's "`==` stays structural" (amends core decision 35).
+
+**Why:** the discovery's answers (PRP-175). Performance: the first version was ~2× slower on `==`; three fixes brought it level (an array loop calling `eq` on elements made the loop copy shared arrays, `Option`'s nested `match` copied values, and both compared values were copied twice); measured best/median 0.25/0.26 s vs 0.26/0.27 s on `main`, maps 0.84/0.87 vs 0.88/0.89.
 
 ---
 

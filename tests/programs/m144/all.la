@@ -1,0 +1,36 @@
+// A program's own interface comparing two values with `derive.all`
+// (v17, milestone 144): close enough, field by field.
+interface Close {
+    fun close(self, other: Self): bool;
+}
+
+derive Close for f64 {
+    fun close(self, other: f64): bool = self - other < 0.01 && other - self < 0.01;
+}
+
+derive Close for string {
+    fun close(self, other: string): bool = self == other;
+}
+
+derive Close for struct {
+    fun close(self, other: Self): bool = derive.all(self, other, near);
+}
+
+derive Close for enum {
+    fun close(self, other: Self): bool = derive.all(self, other, near);
+}
+
+fun near<F: Close>(name: string, x: F, y: F): bool = x.close(y);
+
+fun close<T: Close>(a: T, b: T): bool = a.close(b);
+
+struct Reading { at: string, value: f64 }
+enum Shape { Dot, Circle(f64), Box(f64, f64) }
+
+fun main() {
+    println(close(Reading { at: "a", value: 1.0 }, Reading { at: "a", value: 1.001 }));
+    println(close(Reading { at: "a", value: 1.0 }, Reading { at: "b", value: 1.0 }));
+    println(close(Shape.Circle(2.0), Shape.Circle(2.004)));
+    println(close(Shape.Circle(2.0), Shape.Box(2.0, 2.0)));
+    println(close(Shape.Dot, Shape.Dot));
+}

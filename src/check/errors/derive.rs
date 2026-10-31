@@ -75,6 +75,20 @@ pub(in crate::check) fn block_unsatisfied(
     .with_help(problems.join("; "))
 }
 
+/// E0454: a struct or enum with its own `eq` but not `hash`, or the other
+/// way round (v17, milestone 144): `has` is the one it has.
+pub(in crate::check) fn half_pair(ty: &Type, has: &str, span: Span) -> Diagnostic {
+    let missing = if has == "eq" { "hash" } else { "eq" };
+    Diagnostic::error(
+        "E0454",
+        format!("`{ty}` has its own `{has}` but no `{missing}`: equal values must hash equal"),
+        span,
+    )
+    .with_help(format!(
+        "write `fun {missing}` too, from the same fields as `{has}` uses, or remove `{has}` to compare every field"
+    ))
+}
+
 /// E0453: a field intrinsic used wrongly; `why` says how.
 pub(in crate::check) fn bad_intrinsic(op: &str, why: &str, span: Span) -> Diagnostic {
     Diagnostic::error("E0453", format!("`derive.{op}` {why}"), span).with_help(

@@ -1,0 +1,18 @@
+// A type's own `eq` needs its own `hash`, and the other way round:
+// equal values must hash equal (E0454, v17, milestone 144).
+struct User { id: i64, name: string }
+
+impl User {
+    fun eq(self, other: User): bool = self.id == other.id;
+}
+
+struct Tag { text: string }
+
+impl Tag {
+    fun hash(self, h: u64): u64 = self.text.hash(h);
+}
+
+fun main() {
+    let a = User { id: 1, name: "a" } == User { id: 1, name: "b" };
+    let mut tags: Set<Tag> = #{};
+}

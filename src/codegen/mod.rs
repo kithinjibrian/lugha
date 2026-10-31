@@ -29,6 +29,7 @@ mod cow;
 mod declare;
 mod defaults;
 mod derive;
+mod derive_pairs;
 mod dispatch;
 mod enums;
 mod equality;
@@ -359,16 +360,53 @@ pub(crate) mod test_util {
     use super::emit_ir;
     use crate::{check, lexer, parser};
 
-    /// The IR for `src`, which must lex, parse, type-check and lower.
+    /// The IR for `src`, which must lex, parse, type-check and lower, with
+    /// the prelude as every program has it (`==` on a struct comes from
+    /// it since v17, milestone 144).
     pub fn ir(src: &str) -> String {
         let (tokens, _) = lexer::lex(src).expect("test source lexes");
         let (program, _) = parser::parse(&tokens).expect("test source parses");
-        let (checked, _) = check::check(&program).unwrap_or_else(|e| panic!("{src:?}: {e:?}"));
-        let source = super::SourceInfo {
-            name: "test.la",
-            text: src,
+        let main = crate::modules::Module {
+            path: Vec::new(),
+            file: "test.la".into(),
+            base: 0,
+            text: src.to_string(),
+            program: Some(program),
+            package: None,
+            folder: None,
+            imports: Vec::new(),
         };
-        emit_ir(&program, &checked, &source).unwrap_or_else(|e| panic!("{src:?}: {e}"))
+        let mut modules = vec![main];
+        let mut errors = Vec::new();
+        crate::modules::with_prelude(&mut modules, &mut errors);
+        assert!(errors.is_empty(), "the prelude parses: {errors:?}");
+        let units: Vec<check::Unit> = modules
+            .iter()
+            .map(|m| check::Unit {
+                path: &m.path,
+                program: m.program.as_ref().expect("parsed"),
+                imports: &m.imports,
+                package: m.package.as_deref(),
+                origin: check::Origin::of(m),
+            })
+            .collect();
+        let (checked, _) =
+            check::check_modules(&units).unwrap_or_else(|e| panic!("{src:?}: {e:?}"));
+        let names: Vec<String> = modules
+            .iter()
+            .map(|m| m.file.to_string_lossy().into_owned())
+            .collect();
+        let sources: Vec<super::ModuleSource> = modules
+            .iter()
+            .zip(&names)
+            .map(|(m, name)| super::ModuleSource {
+                name,
+                base: m.base,
+                text: &m.text,
+            })
+            .collect();
+        super::emit_ir_for(&units, &checked, &sources, super::Target::default())
+            .unwrap_or_else(|e| panic!("{src:?}: {e}"))
     }
 
     /// The IR for `src` lowered for `target` (v17, milestone 134).

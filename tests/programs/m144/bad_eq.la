@@ -1,0 +1,12 @@
+// A method named like one of `Eq`'s items must have its shape (E0422,
+// v17, milestone 144).
+struct Point { x: i64, y: i64 }
+
+impl Point {
+    fun eq(self, other: Point): i64 = 1;
+    fun hash(self, h: u64): u64 = h;
+}
+
+fun main() {
+    let same = Point { x: 1, y: 2 } == Point { x: 1, y: 2 };
+}

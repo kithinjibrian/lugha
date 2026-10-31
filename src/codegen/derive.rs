@@ -45,6 +45,13 @@ impl<'ctx> Lowerer<'ctx> {
         if op == "variants" {
             return Ok(self.variant_table(&me, &out));
         }
+        // Two values compared field by field (v17, milestone 144).
+        if op == "all" {
+            let a = self.address_of(&args[0], &me)?;
+            let b = self.address_of(&args[1], &me)?;
+            let f = self.callees[&expr.id].clone();
+            return Ok(self.all(&f, (a, b), &me).into());
+        }
         // A variant's position, or a handle's address (v17, milestone 143).
         if op == "index" || op == "address" {
             let x = self.get(&args[0], &me)?;
@@ -94,7 +101,7 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// A call of `f`'s instance at `ty`; aggregates go as a pointer to a
     /// copy, as every Lugha call passes them.
-    fn field_call(
+    pub(super) fn field_call(
         &mut self,
         f: &str,
         ty: &Type,
@@ -128,7 +135,7 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// Each field of struct or tuple `value` (of type `ty`): name, type, value.
-    fn field_values(
+    pub(super) fn field_values(
         &self,
         value: BasicValueEnum<'ctx>,
         ty: &Type,
@@ -385,90 +392,6 @@ impl<'ctx> Lowerer<'ctx> {
             rows.push(self.aggregate(pair, &fields, vec![name, count.into()]));
         }
         self.array_of(&rows, pair).into()
-    }
-}
-
-impl<'ctx> Lowerer<'ctx> {
-    /// `derive.index(x)` (the tag, widened) or `derive.address(x)`.
-    fn index_or_address(
-        &mut self,
-        x: BasicValueEnum<'ctx>,
-        ty: &Type,
-        op: &str,
-    ) -> inkwell::values::IntValue<'ctx> {
-        let i64_type = self.context.i64_type();
-        if op == "address" {
-            return self
-                .builder
-                .build_ptr_to_int(x.into_pointer_value(), i64_type, "address")
-                .expect(POSITIONED);
-        }
-        let held = self.entry_alloca(ty, "value");
-        self.builder.build_store(held, x).expect(POSITIONED);
-        let tag = self.tag(ty, held);
-        self.builder
-            .build_int_z_extend(tag, i64_type, "index")
-            .expect(POSITIONED)
-    }
-
-    /// `derive.fold(x, init, f)`: `f(acc, name, part)` for each field, or
-    /// each payload of the variant at hand, threading `acc` (v17, milestone 143).
-    fn fold(
-        &mut self,
-        f: &str,
-        x: BasicValueEnum<'ctx>,
-        ty: &Type,
-        (init, acc_ty): (BasicValueEnum<'ctx>, Type),
-    ) -> BasicValueEnum<'ctx> {
-        let acc = self.entry_alloca(&acc_ty, "acc");
-        self.builder.build_store(acc, init).expect(POSITIONED);
-        let llvm = super::value::llvm_type(self.context, &acc_ty);
-        let step = |this: &mut Self, name: &str, part: BasicValueEnum<'ctx>, part_ty: &Type| {
-            let now = this.builder.build_load(llvm, acc, "acc").expect(POSITIONED);
-            let name = this.string_literal(name).into();
-            let args = [
-                (now, acc_ty.clone()),
-                (name, Type::String),
-                (part, part_ty.clone()),
-            ];
-            let next = this.field_call(f, part_ty, &args);
-            this.builder.build_store(acc, next).expect(POSITIONED);
-        };
-        if let Type::Enum(..) | Type::Option(_) = ty {
-            let held = self.entry_alloca(ty, "value");
-            self.builder.build_store(held, x).expect(POSITIONED);
-            let tag = self.tag(ty, held);
-            let done = self.append("fold.done");
-            let mut cases = Vec::new();
-            for (index, (name, payloads)) in variants(ty, &self.enums).into_iter().enumerate() {
-                let block = self.append("fold.variant");
-                cases.push((
-                    self.context.i32_type().const_int(index as u64, false),
-                    block,
-                ));
-                let resume = self.current_block();
-                self.builder.position_at_end(block);
-                for (i, p) in payloads.iter().enumerate() {
-                    let i = u32::try_from(i).expect("payload count fits in u32");
-                    let part = self.load_payload(ty, held, &payloads, i, p);
-                    step(self, &name, part, p);
-                }
-                self.branch(done);
-                self.builder.position_at_end(resume);
-            }
-            // Every tag has a case; the default is never taken.
-            self.builder
-                .build_switch(tag, done, &cases)
-                .expect(POSITIONED);
-            self.builder.position_at_end(done);
-        } else {
-            for (name, part_ty, part) in self.field_values(x, ty) {
-                step(self, &name, part, &part_ty);
-            }
-        }
-        self.builder
-            .build_load(llvm, acc, "folded")
-            .expect(POSITIONED)
     }
 }
 

@@ -26,9 +26,9 @@ impl Checker {
     pub(super) fn bound_entry(&self, param: &str, name: &str) -> Option<(Requirement, Applied)> {
         let bounds = self.bounds(param);
         let me = Type::Param(param.to_string());
-        // `Eq` (and `Num`, which gives `==`) brings the prelude's `$Hash`
-        // with it (v17, milestone 143).
-        let implied = super::derive::implies_hash(&bounds).then(super::derive::hash_bound);
+        // `T: Eq` (and `Num`, which gives `==`) is the prelude's `Eq` (v17,
+        // milestones 143–144).
+        let implied = super::derive::implies_eq(&bounds).then(super::derive::eq_bound);
         bounds.interfaces.into_iter().chain(implied).find_map(|a| {
             let req = self
                 .items_for(&a, &me)

@@ -9,18 +9,20 @@ impl Checker {
     /// E0419 for the first argument that doesn't meet its parameter's bounds.
     pub(super) fn meets_bounds(&mut self, generics: &[Generic], args: &[Type], span: Span) -> bool {
         for (g, arg) in generics.iter().zip(args) {
-            let unmet = if g.bounds.eq && !self.eq_ok(arg) {
-                Some("Eq")
-            } else if g.bounds.ord && !self.ord_ok(arg) {
-                Some("Ord")
-            } else {
-                None
-            };
-            if let Some(bound) = unmet {
-                let d = errors::unmet_bound(arg, bound, span);
+            // `Eq` on a struct, enum, tuple, array or `Option` is the
+            // prelude's derivable `Eq`: E0451 with the path (v17, milestone 144).
+            if g.bounds.eq && super::derive::compared_through_eq(arg) {
+                if !self.meets_derived(super::derive::EQ, arg, span) {
+                    return false;
+                }
+            } else if g.bounds.eq && !self.eq_ok(arg) {
+                self.report(errors::unmet_bound(arg, "Eq", span));
+                return false;
+            }
+            if g.bounds.ord && !self.ord_ok(arg) {
+                let d = errors::unmet_bound(arg, "Ord", span);
                 // A struct or enum becomes `Ord` through `cmp` (v15).
-                let help = super::ordering::cmp_help(arg).filter(|_| bound == "Ord");
-                self.report(match help {
+                self.report(match super::ordering::cmp_help(arg) {
                     Some(help) => d.with_help(help),
                     None => d,
                 });

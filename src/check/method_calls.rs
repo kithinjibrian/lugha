@@ -161,6 +161,11 @@ impl Checker {
                 .method(receiver, &name.name)
                 .filter(|m| m.receiver.is_some()),
         };
+        // `x.eq(y)` and `x.hash(h)` on any `Eq` type (v17, milestone 144).
+        let found = match found {
+            None => self.eq_item(call, receiver, &name.name),
+            found => found,
+        };
         // A default method on a struct or enum without its own (v10).
         let found = match found {
             None => match self.concrete_default(call, receiver, name) {

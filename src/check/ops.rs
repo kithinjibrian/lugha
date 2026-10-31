@@ -56,6 +56,15 @@ impl Checker {
             (Type::Never, ty) | (ty, Type::Never) => (ty.clone(), ty),
             pair => pair,
         };
+        // `==` on a struct, enum, tuple, array or `Option` needs it to meet
+        // `Eq`: E0451 names the part that doesn't (v17, milestone 144).
+        if matches!(op, BinOp::Eq | BinOp::Ne)
+            && l == r
+            && super::derive::compared_through_eq(&l)
+            && !self.meets_derived(super::derive::EQ, &l, expr.span)
+        {
+            return Type::Error;
+        }
         let allowed = l == r
             && match op {
                 // Strings join with `+` (spec §4), and arrays (v17, milestone 122).

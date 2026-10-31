@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use lugha::codegen::{self, Cpu, OptLevel, Target};
 use lugha::link::{self, LinkError};
-use lugha::{check, lexer, parser};
+use lugha::{check, lexer, modules, parser};
 
 /// The exit status of a panic (spec §5).
 const PANIC: i32 = 101;
@@ -33,24 +33,64 @@ impl Drop for TempDir {
     }
 }
 
-fn build_and_run(src: &str, opt: OptLevel) -> ExitStatus {
+/// Builds `src`, with the prelude as every program has it (`==` on a
+/// struct comes from it since v17, milestone 144), into `object`.
+fn emit(src: &str, opt: OptLevel, cpu: Cpu, object: &Path) {
     let (tokens, _) = lexer::lex(src).expect("lexes");
     let (program, _) = parser::parse(&tokens).expect("parses");
-    let (checked, _) = check::check(&program).unwrap_or_else(|e| panic!("{src}: {e:?}"));
-    let dir = TempDir::new();
-    let (object, exe) = (dir.0.join("prog.o"), dir.0.join("prog"));
-    codegen::emit_object(
-        &program,
+    let main = modules::Module {
+        path: Vec::new(),
+        file: "test.la".into(),
+        base: 0,
+        text: src.to_string(),
+        program: Some(program),
+        package: None,
+        folder: None,
+        imports: Vec::new(),
+    };
+    let mut all = vec![main];
+    let mut errors = Vec::new();
+    modules::with_prelude(&mut all, &mut errors);
+    assert!(errors.is_empty(), "the prelude parses: {errors:?}");
+    let units: Vec<check::Unit> = all
+        .iter()
+        .map(|m| check::Unit {
+            path: &m.path,
+            program: m.program.as_ref().expect("parsed"),
+            imports: &m.imports,
+            package: m.package.as_deref(),
+            origin: check::Origin::of(m),
+        })
+        .collect();
+    let (checked, _) = check::check_modules(&units).unwrap_or_else(|e| panic!("{src}: {e:?}"));
+    let names: Vec<String> = all
+        .iter()
+        .map(|m| m.file.to_string_lossy().into_owned())
+        .collect();
+    let sources: Vec<codegen::ModuleSource> = all
+        .iter()
+        .zip(&names)
+        .map(|(m, name)| codegen::ModuleSource {
+            name,
+            base: m.base,
+            text: &m.text,
+        })
+        .collect();
+    codegen::emit_object_modules(
+        &units,
         &checked,
-        &codegen::SourceInfo {
-            name: "test.la",
-            text: src,
-        },
+        &sources,
         opt,
-        (Cpu::default(), Target::default()),
-        &object,
+        (cpu, Target::default()),
+        object,
     )
     .unwrap_or_else(|e| panic!("{src}: {e}"));
+}
+
+fn build_and_run(src: &str, opt: OptLevel) -> ExitStatus {
+    let dir = TempDir::new();
+    let (object, exe) = (dir.0.join("prog.o"), dir.0.join("prog"));
+    emit(src, opt, Cpu::default(), &object);
     link::link(&[&object], &exe).unwrap_or_else(|e| panic!("{src}: {e}"));
     Command::new(&exe).status().expect("built program runs")
 }
@@ -58,24 +98,9 @@ fn build_and_run(src: &str, opt: OptLevel) -> ExitStatus {
 /// The object file `src` makes at -O2 for `cpu`, and the exit code of the
 /// program linked from it.
 fn object_and_exit(src: &str, cpu: Cpu) -> (Vec<u8>, Option<i32>) {
-    let (tokens, _) = lexer::lex(src).expect("lexes");
-    let (program, _) = parser::parse(&tokens).expect("parses");
-    let (checked, _) = check::check(&program).unwrap_or_else(|e| panic!("{src}: {e:?}"));
     let dir = TempDir::new();
     let (object, exe) = (dir.0.join("prog.o"), dir.0.join("prog"));
-    let source = codegen::SourceInfo {
-        name: "test.la",
-        text: src,
-    };
-    codegen::emit_object(
-        &program,
-        &checked,
-        &source,
-        OptLevel::O2,
-        (cpu, Target::default()),
-        &object,
-    )
-    .unwrap_or_else(|e| panic!("{src}: {e}"));
+    emit(src, OptLevel::O2, cpu, &object);
     link::link(&[&object], &exe).unwrap_or_else(|e| panic!("{src}: {e}"));
     let status = Command::new(&exe).status().expect("built program runs");
     (

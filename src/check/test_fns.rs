@@ -80,6 +80,12 @@ impl Checker {
         if matches!(ty, Type::Error | Type::Never) {
             return Type::Unit;
         }
+        if super::derive::compared_through_eq(&ty) {
+            // E0451 with the path, as `==` (v17, milestone 144).
+            if !self.meets_derived(super::derive::EQ, &ty, call.span) {
+                return Type::Unit;
+            }
+        }
         if !self.eq_ok(&ty) {
             self.report(errors::bad_operands_on("==", &[ty], call.span));
         } else if !super::printing::printable(&ty) {

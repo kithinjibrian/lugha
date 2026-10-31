@@ -1,0 +1,52 @@
+// `==` through `Eq` (v17, milestone 144): structural for every `Eq` type,
+// and a type's own `eq` and `hash` wherever it appears.
+extern "malloc" fun c_malloc(n: u64): CPtr;
+
+struct User { id: i64, name: string, seen: i64 }
+
+impl User {
+    /** Users are the same user when their ids are. */
+    fun eq(self, other: User): bool = self.id == other.id;
+    fun hash(self, h: u64): u64 = self.id.hash(h);
+}
+
+struct Team { lead: User, size: i64 }
+struct Point { x: i64, y: i64 }
+enum Tree { Leaf(i64), Node(Tree, Tree), Empty }
+
+fun same<T: Eq>(a: T, b: T): bool = a == b;
+
+fun main() {
+    let a = User { id: 7, name: "ada", seen: 1 };
+    let b = User { id: 7, name: "Ada", seen: 9 };
+    println(a == b);
+    println(a != User { id: 8, name: "ada", seen: 1 });
+    let mut names: Map<User, string> = #{};
+    names.insert(a, "first");
+    names.insert(b, "second");
+    let other = User { id: 7, name: "x", seen: 0 };
+    println("{names.len} {names.get(other)}");
+    // As a field, the own `eq` is used too.
+    println(Team { lead: a, size: 3 } == Team { lead: b, size: 3 });
+    println(same(a, b));
+
+    println(Point { x: 1, y: 2 } == Point { x: 1, y: 2 });
+    println([Some(1), None] != [Some(1), Some(2)]);
+    println((1, "a", 'c') == (1, "a", 'c'));
+    println(Tree.Node(Tree.Leaf(1), Tree.Empty) == Tree.Node(Tree.Leaf(1), Tree.Empty));
+    println(Tree.Node(Tree.Leaf(1), Tree.Empty) == Tree.Node(Tree.Empty, Tree.Leaf(1)));
+    let m1: Map<string, i64> = #{"a": 1, "b": 2};
+    let m2: Map<string, i64> = #{"b": 2, "a": 1};
+    let s1: Set<i64> = #{1, 2, 3};
+    let s2: Set<i64> = #{3, 2, 1};
+    let m3: Map<string, i64> = #{"a": 1};
+    println("{m1 == m2} {s1 == s2} {m1 != m3}");
+    let p = c_malloc(8);
+    println("{p == p} {p == c_malloc(8)}");
+    let nan = 0.0 / 0.0;
+    println("{nan == nan} {[1.5] == [1.5]}");
+    // `hash` is callable on any `Eq` value; equal values hash equal.
+    let h: u64 = 14695981039346656037;
+    let pair = (1, "x");
+    println("{a.hash(h) == b.hash(h)} {pair.hash(h) == (1, "x").hash(h)} {[1, 2].hash(h) == [2, 1].hash(h)}");
+}
