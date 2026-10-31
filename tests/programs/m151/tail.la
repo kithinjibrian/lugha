@@ -1,0 +1,28 @@
+// A block's tail and a `return` value are computed before the defers run,
+// and keep the value they had then.
+fun last(): i64[] {
+    let mut xs = [1, 2, 3];
+    defer xs.push(4);
+    xs
+}
+
+fun count(): i64 {
+    let mut n = 1;
+    defer {
+        n += 100;
+    }
+    return n;
+}
+
+fun main() {
+    let total = {
+        let mut t = 5;
+        defer {
+            t = 0;
+        }
+        t * 2
+    };
+    println(last());
+    println(count());
+    println(total);
+}

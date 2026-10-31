@@ -48,6 +48,8 @@ impl Checker {
             _ => None,
         };
         let saved = (self.ret.clone(), self.loops, self.dead);
+        // A closure's `return` and `?` leave the closure, never a `defer` around it.
+        let saved_deferring = self.deferring.take();
         let saved_changes = std::mem::take(&mut self.changes);
         let saved_iterating = std::mem::take(&mut self.iterating);
         self.closures.push(Frame {
@@ -65,6 +67,7 @@ impl Checker {
         self.pop();
         let frame = self.closures.pop().expect("pushed above");
         (self.ret, self.loops, self.dead) = saved;
+        self.deferring = saved_deferring;
         self.changes = saved_changes;
         self.iterating = saved_iterating;
         self.captures.insert(expr.id, frame.captures);

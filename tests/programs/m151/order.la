@@ -1,0 +1,17 @@
+// `defer` (v17, milestone 151): several run last first, at the end of
+// their own block, reading values as they are when they run.
+fun main() {
+    defer println("c");
+    {
+        defer println("inner end");
+        println("inner");
+    }
+    defer {
+        println("b");
+    }
+    let mut n = 1;
+    defer println("n = {n}");
+    n = 2;
+    let n = 10;
+    println("a {n}");
+}

@@ -43,6 +43,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.ret = None;
         self.scopes = Scopes::default();
         self.loops.clear();
+        self.defers.clear();
         self.builder
             .position_at_end(self.context.append_basic_block(function, "entry"));
         self.scopes.push();

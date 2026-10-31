@@ -1,6 +1,6 @@
 # `defer`: cleanup at scope exit
 
-Design note, 2026-10-31, written for the session that implements it. It records the problem, what other languages do, and a recommended design. Nothing here is decided yet: the discovery (one question at a time, `PRPs/DISCOVERY.md`) settles each choice, then a PRP. DECISIONS.md lists it under OPEN.
+**Decided and built:** decision 214, PRP-182, milestone 151 (every recommendation below was taken, except that `defer` is a reserved keyword, not a contextual word). Design note, 2026-10-31, written for the session that implements it. It records the problem, what other languages do, and a recommended design. Nothing here is decided yet: the discovery (one question at a time, `PRPs/DISCOVERY.md`) settles each choice, then a PRP. DECISIONS.md lists it under OPEN.
 
 ## The problem
 

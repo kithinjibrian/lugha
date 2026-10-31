@@ -20,6 +20,9 @@ use crate::check::Type;
 pub(super) struct Loop<'ctx> {
     pub next: BasicBlock<'ctx>,
     pub exit: BasicBlock<'ctx>,
+    /// How many blocks enclosed the loop: a jump runs the defers of those
+    /// inside it (milestone 151).
+    pub defers: usize,
 }
 
 impl<'ctx> Lowerer<'ctx> {
@@ -37,6 +40,7 @@ impl<'ctx> Lowerer<'ctx> {
         returns: bool,
     ) -> Result<Value<'ctx>, CodegenError> {
         self.scopes.push();
+        self.defers.push(Vec::new());
         let mut diverged = false;
         for stmt in &block.stmts {
             diverged |= self.stmt(stmt)?;
@@ -51,6 +55,14 @@ impl<'ctx> Lowerer<'ctx> {
             Some(tail) => self.expr(tail)?,
             None => Value::Void,
         };
+        // The tail is computed, then the block's defers run (milestone 151).
+        let depth = self.defers.len() - 1;
+        let value = match (value, &block.tail) {
+            (Value::Val(v), Some(tail)) => Value::Val(self.hold(v, &self.ty(tail), depth)),
+            (value, _) => value,
+        };
+        self.run_defers(depth)?;
+        self.defers.pop();
         self.scopes.pop();
         Ok(if diverged { Value::Never } else { value })
     }
@@ -137,6 +149,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.loops.push(Loop {
             next: cond_block,
             exit,
+            defers: self.defers.len(),
         });
         self.block(body)?;
         self.loops.pop();
@@ -214,7 +227,12 @@ impl<'ctx> Lowerer<'ctx> {
         };
         self.builder.build_store(var_slot.ptr, i).expect(POSITIONED);
         self.scopes.declare(&var.name, var_slot);
-        self.loops.push(Loop { next: step, exit });
+        let defers = self.defers.len();
+        self.loops.push(Loop {
+            next: step,
+            exit,
+            defers,
+        });
         self.block(body)?;
         self.loops.pop();
         self.scopes.pop();
@@ -237,14 +255,16 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// `break` (`is_break`) or `continue` in the innermost loop.
-    pub(super) fn jump(&mut self, is_break: bool) {
+    pub(super) fn jump(&mut self, is_break: bool) -> Result<(), CodegenError> {
         let target = self
             .loops
             .last()
             .expect("checked: E0504 rejects jumps outside loops");
         let to = if is_break { target.exit } else { target.next };
+        self.run_defers(target.defers)?;
         self.branch(to);
         self.start_dead_block("after.jump");
+        Ok(())
     }
 
     /// Continues lowering in a fresh block nothing jumps to, after a terminator.
@@ -270,6 +290,11 @@ impl<'ctx> Lowerer<'ctx> {
             .expect(POSITIONED);
     }
 }
+
+// `defer` (milestone 151) lowers at the exits this file and `function.rs` emit;
+// declared here because `mod.rs` is at its 500-line limit.
+#[path = "defer.rs"]
+pub(super) mod defer;
 
 #[cfg(test)]
 mod tests {

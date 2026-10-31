@@ -2206,15 +2206,21 @@ Printing sites and `==` reach a type's own plain `show`/`eq` too (`show_instance
 
 **Why:** a single instance would need every caller to protect kept arguments, and codegen calls Lugha functions from a dozen internal paths (derive blocks, printing, ordering, maps, helpers, operators, actors, interface tables, function values); missing one is a silent wrong result. With two instances those paths call the ordinary one and stay correct untouched (amended mid-build, approved). Measured at `-O2`: 200 000 `bag = insert(bag, k)` 1 min 50 s → 7 ms; m101's map inserts and a read-only `total(g)` loop level with `main` (0.04 s, 0.17 s).
 
+### 214. `defer` — milestone 151 (PRP-182)
+
+**Decision:** `defer e;` or `defer { … }`, settled in a discovery (2026-10-31) from the design note `docs/decisions/defer.md`: (1) block scope; (2) the whole statement runs at exit, reading values then, with the names in scope at the `defer`; (3) last first, on every exit (end, `return`, `?`, `break`, `continue`), after a tail or `return` value is computed (and copied when defers are pending); leaving a deferred statement is E0455; (4) panics, `exit` and the program's end don't run defers; (5) a deferred statement has type `()` (E0456); (6) no `errdefer`; (7) `defer` is a reserved keyword. Codegen keeps per block the `defer`s reached (with a copy of the scopes) and lowers them inline at each exit (`codegen/defer.rs`); liveness counts a deferred mention as at its block's end.
+
+**Why:** (1) Go's function scope keeps every file opened in a loop open until the function returns. (2) One rule, as Zig, Swift and C; for handles evaluating early or late is the same. (3) A deferred `?` or `return` would replace the error already leaving (Swift forbids it too). (4) A panic ends the process, which closes everything, and running defers would need unwinding (landing pads or a run-time list) for that last moment; the one leak, an actor's panic, is a known limit (spec §6), to revisit if actors gain supervision. (5) Nothing would see the value, and a dropped `Result` hides an error (Go's `defer f.Close()` pitfall); `close()` already returns `()`. (6) With `?` and value semantics nothing half-built stays visible. (7) A contextual word needs lookahead rules (`defer(x);` a call, `defer.close();` a method) and gives worse errors and highlighting; nothing bundled used the name, and breaks are acceptable. Not destructors: copies are shared handles and there is no ownership or reference counting (DECISIONS v3, DECISION-010).
+
 ## OPEN — Requires human input before implementation
 
-- **`defer` (2026-10-31):** cleanup at scope exit, so a forgotten `close()` on an early `?` stops leaking descriptors. Research and a recommended design (block scope, the whole statement run at exit, last first, on every exit, no exits from inside, panics don't run it, a deferred statement is `()`) are in `docs/decisions/defer.md`. Settle each choice in a discovery, then a PRP.
+None.
 
 ---
 
 ## DEFERRED — Acknowledged, not yet needed
 
-None.
+- **`errdefer` (2026-10-31, decision 214):** a deferred statement run only when the block is left by an error (Zig). Not needed while `?` and value semantics leave nothing half-built visible; revisit when a program needs to undo partial work.
 
 ---
 

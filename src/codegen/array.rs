@@ -249,7 +249,12 @@ impl<'ctx> Lowerer<'ctx> {
                 borrowed: true,
             },
         );
-        self.loops.push(Loop { next: step, exit });
+        let defers = self.defers.len();
+        self.loops.push(Loop {
+            next: step,
+            exit,
+            defers,
+        });
         self.block(body)?;
         self.loops.pop();
         self.scopes.pop();

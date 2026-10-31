@@ -51,6 +51,7 @@ fn stmt(stmt: &Stmt) -> String {
             semicolon: false,
         } => format!("(stmt {})", expr(e)),
         StmtKind::While { cond, body } => format!("(while {} {})", expr(cond), block(body)),
+        StmtKind::Defer(e) => format!("(defer {})", expr(e)),
         StmtKind::WhileLet {
             pattern: p,
             scrutinee,

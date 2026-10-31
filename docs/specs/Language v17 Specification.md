@@ -34,6 +34,7 @@ Oct 16, 2026 · @kithinji
 - Calendar dates and the local offset in `std.time` (milestone 145): `time.civil(ms, offset_s)`, `time.from_civil(c, offset_s)` and `time.local_offset(ms)`, with `Civil` and `TimeError` (standard library).
 - File streams in `std.fs` (milestone 146): `fs.open`, `fs.create` and `fs.append` give a `File` to read by line or in chunks and write piece by piece (standard library).
 - Constants computed by pure code (milestone 147; sections 6, 8): a `const`'s value may be any expression, calls, `if`, `match`, blocks, closures and interpolation included, as long as nothing it reaches prints, touches files, the operating system or C, or starts tasks, channels or actors (E0445, with the path); constants read inside the functions it calls are computed first (E0446 for a cycle through them). Still computed once before `main`, never while compiling.
+- `defer` (milestone 151; sections 2, 3, 5, 6, 9): `defer f.close();` or `defer { … }` runs when its block is left — its end, `return`, `?`, `break`, `continue` — last first, after a tail or `return` value is computed, reading values as they are then; a panic doesn't run it. Leaving a deferred statement is E0455; one with a value is E0456. **Breaking:** `defer` is a keyword.
 - An iterator chain's expected type reaches `map`'s closure through `collect` and the helpers between (milestone 150; section 5): `let n: Option<i64>[] = xs.iter().map(fun(x) = None).collect();`.
 - Handing over arguments (milestone 149; sections 4, 9): `x = f(x)`, where `f` keeps its parameter, no longer copies `x`'s arrays on every call; a function that stores a parameter on its last use takes it without a copy from a caller that is done with it (quadratic loops become linear). Programs print the same.
 - A generic call only its result can type takes its type through a method whose result mentions the receiver's type parameters (milestone 148; sections 4, 5): `let p: Person = json.decode(v).unwrap();`, `.expect(…)`, and a program's own methods (`let n: u8 = zeros().first();`).
@@ -282,7 +283,7 @@ Source files are UTF-8. The lexer produces a flat list of tokens, each carrying 
 ```
 fun  extern  struct  enum  impl  let  mut  if  else  while  for  in  of  match
 import  private  public  interface
-return  break  continue  true  false  as  self  spawn  select  actor  const
+return  break  continue  true  false  as  self  spawn  select  actor  const  defer
 i32  i64  u8  f64  bool  string  u32  u64  f32  i8  i16  u16  char
 ```
 
@@ -402,6 +403,7 @@ block        = "{" { stmt } [ expr ] "}" ;   (* trailing expr = tail value *)
 stmt         = var_decl | while_stmt | for_stmt
              | "return" [ expr ] ";"
              | "break" ";" | "continue" ";"
+             | "defer" ( block_like [ ";" ] | expr ";" )   (* v17, milestone 151 *)
              | block_like                     (* no ";" needed *)
              | expr [ assign_op expr ] ";" ;
 block_like   = if_expr | match_expr | select_expr | block ;   (* select: v17 *)
@@ -1016,9 +1018,19 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 
 **break and continue.** Apply to the innermost enclosing loop. Using either outside a loop is a compile error.
 
+**defer** (v17, milestone 151). `defer e;` or `defer { … }` runs `e` when the block holding it is left, on every way out after the `defer` was reached: the block's end, `return`, `?` returning, `break` and `continue` (through every block between the jump and its loop). Several run last first, innermost block first. `e` is evaluated when it runs, reading variables as they are then (`let mut n = 1; defer println(n); n = 2;` prints 2), with the names in scope at the `defer` (a later `let` shadowing one doesn't change what it reads). A block's tail and a `return` value are computed first and keep the value they had (`defer xs.push(4); xs` gives `xs` without the 4). A `defer` not yet reached doesn't run, and one inside a deferred block runs at that block's end. `e` must have type `()` (E0456), so a `Result` can't be dropped by accident: `defer { fs.remove_file(p); }` discards one on purpose. A `return`, `?`, `break` or `continue` that would leave `e` is E0455, since its block is already being left; loops and closures inside `e` may use them. A closure's or a spawned call's defers run when it returns. A panic, `exit` and the end of the program don't run pending defers (section 6). `defer` is for closing files and sockets on an early `?`:
+
+```lugha
+for path in paths {
+    let f = fs.open(path)?;
+    defer f.close();            // at the end of each iteration
+    out.push(f.read_line()?);   // an Err here still closes f
+}
+```
+
 **Expression statements.** Any expression followed by `;` is a statement, and its value is discarded. Discarding the result of any call is allowed. Adding `;` after a would-be tail expression turns it into a statement, so `{ x * x; }` is a `()` block. When a value was expected, the checker reports this as "remove this semicolon" and points at it.
 
-**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), a shift out of range (`shift out of range`; v7), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), an out-of-range `slice` (`slice out of bounds: from F to T of a string of length L`, at the method name; v4), `split` with an empty separator (located in the prelude, `<prelude>:…`; v4), a negative repeat-literal count, too-deep recursion (`stack overflow`), `unwrap` on a `None` or an `Err` (`unwrap on None`, `unwrap on Err: <error>` with the error printed, v12) and `expect(msg)` likewise (message `msg`), each located at the method name (v9), and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. A stack overflow is the one panic without a location — it prints just `panic: stack overflow` — because the runtime can't tell which call went too deep. They cannot be caught.
+**Panics.** A panic prints `panic: <message> at <file>:<line>:<col>` to stderr and exits with code 101. Panics come from integer overflow (message `integer overflow`, including `MIN / -1`), integer division by zero (`division by zero`), a shift out of range (`shift out of range`; v7), out-of-bounds indexing (`index out of bounds: the length is N but the index is I`, located at the `[`), an out-of-range `slice` (`slice out of bounds: from F to T of a string of length L`, at the method name; v4), `split` with an empty separator (located in the prelude, `<prelude>:…`; v4), a negative repeat-literal count, too-deep recursion (`stack overflow`), `unwrap` on a `None` or an `Err` (`unwrap on None`, `unwrap on Err: <error>` with the error printed, v12) and `expect(msg)` likewise (message `msg`), each located at the method name (v9), and the `panic(msg)` intrinsic. An arithmetic panic's location is its operator: the `+` in `x + 1`, the `+=` of a compound assignment, the `-` of a negation. A stack overflow is the one panic without a location — it prints just `panic: stack overflow` — because the runtime can't tell which call went too deep. They cannot be caught, and they don't run pending `defer` statements (section 5): the process ends and the system closes its files and sockets. A panic that ends only an actor (section 9) leaves open what the actor's defers would have closed.
 
 **Intrinsics.** These names are built into the compiler, not declared in source. They accept arguments that ordinary functions can't, which is why they are special. Inside a derive block, `derive.fields`, `derive.build`, `derive.variant`, `derive.variants`, `derive.build_variant`, `derive.fold`, `derive.index`, `derive.address` and `derive.all` are intrinsics too (v17, milestones 142–144; section 4); elsewhere `derive` is an ordinary name.
 
@@ -1604,6 +1616,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 - **Equality** (v17, milestone 144): numbers, `bool`, `char` and handles compare inline and strings through `lugha_rt_str_eq`; any other `==` calls its type's own `eq` or the instance of its `Eq` block, `lugha_fn_$prelude/Eq@struct.eq<P>`, whose `derive.all` reads both values in place and stops at the first difference. Prelude and std instances are internal, so LLVM inlines them.
 - **Struct, enum and array arguments:** pass a pointer to the caller's storage rather than the value itself, since the callee can't modify it.
 - **`?`** (v4): the operand goes in a slot and its tag picks the branch. The failing branch builds the function's own `Err(e)` (or `None`) from the payload and returns it; the passing branch loads the `Ok`/`Some` payload.
+- **`defer`** (v17, milestone 151): emits nothing where it is written; each block keeps the `defer` statements reached so far, with the names then in scope. Every exit lowers the pending ones inline, innermost block first and last first: the block's end after its tail, `return` and a failing `?` (every block of the function, after the value is built), `break` and `continue` (the blocks inside the loop). A statement reached by several exits is emitted at each. A value leaving while defers are pending is copied first (arrays only marked shared, section 4). Liveness counts a local mentioned in a deferred statement as used at its block's end, so nothing below the `defer` hands it over.
 - **Text and option helpers** (v4) are prelude functions (`str_trim`, `option_map`, `result_map_err`, …) chosen by the receiver's type; `slice` is built in and calls `lugha_rt_str_slice`. A prelude function without type parameters is compiled only when user code reaches it, as generic helpers are.
 - **`Result`** (v4) is declared in the prelude, so it is the generic-enum machinery throughout; its LLVM type and helpers are named as it prints (`%"Result<i64, string>"`).
 - **Array helpers** (v3): `xs.map(f)` calls the prelude's `map` instance with `xs` first. The prelude is Lugha source like any other (`sort_by` is a bottom-up merge sort between two buffers), so it needs no special lowering; `--emit=tokens|ast` leaves it out, and an error inside it is reported as an internal compiler error.
@@ -1854,6 +1867,8 @@ Name and type errors, reported by the checker:
 | E0452 | A derive block in the wrong module, or overlapping another (v17) | `derive Show for i64 { … }` where `Show` is imported; `derive Show for Option<T>` beside `derive Show for Option<i64>` |
 | E0453 | A field intrinsic used wrongly (v17) | `derive.fields(…)` outside a derive block or in a `for enum` block; an `f` that isn't generic over one `F: I`; a local named `derive` in a block |
 | E0454 | A type with its own `eq` but not `hash`, or the other way round (v17) | `impl User { fun eq(self, other: User): bool = self.id == other.id; }` with no `hash`, then `a == b` or a `Set<User>` |
+| E0455 | A `return`, `?`, `break` or `continue` leaving a deferred statement (v17) | `defer { return; }`; `defer { let n = load()?; }`; `while c { defer { break; } }` |
+| E0456 | A deferred statement with a value (v17) | `defer fs.remove_file(p);` (a `Result`); `defer n + 1;` |
 | E0437 | A malformed `extern struct` (v16) | `extern struct S { s: string }`; a field of an array, a plain struct, an enum, `Option` (other than of a handle, v17) or a function type; a handle, `Option` of one or `CPtr` in an `extern union`, at any depth (v17); `extern struct S<T> { … }`; `extern struct S {}` |
 | E0433 | A pattern that must match every value but might not (v14) | `let (1, x) = t;`, `let Some(n) = o;` without `else`, `for (Some(a), b) of …` |
 | E0428 | Or-pattern alternatives that bind differently, or `mut` on a variant | `Some(x) \| None`; `Count(n) \| Circle(n)` with `n` an `i64` and an `f64`; `mut None` (v9) |
@@ -3900,6 +3915,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 148 | Inference through result methods (v17) | a waiting generic call typed through a method whose result mentions its receiver's type parameters: `json.decode(v).unwrap()`, `.expect(…)`, own methods | `tests/programs/m148/` (done) |
 | 149 | Handing over arguments (v17) | kept parameters, `x = f(x)` as a last use, the owning instance `lugha_fn_<symbol>.$own` called by direct calls | `tests/programs/m149/` (done) |
 | 150 | Inference through iterator chains (v17) | `collect`/`collect_set`/`collect_map`'s expected element passed back through `filter`, `take`, `skip`, `take_while`, `skip_while` to `map`'s closure | `tests/programs/m150/` (done) |
+| 151 | `defer` (v17) | `defer e;` and `defer { … }` at every exit of their block but a panic, last first; E0455, E0456; `defer` a keyword | `tests/programs/m151/` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

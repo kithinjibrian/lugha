@@ -1,0 +1,6 @@
+// A deferred statement can't leave its block: it runs while it is being left.
+fun main() {
+    defer {
+        return;
+    }
+}

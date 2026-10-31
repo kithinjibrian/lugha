@@ -18,8 +18,9 @@ pub(super) struct Local<'ctx> {
     pub borrowed: bool,
 }
 
-/// Nested block scopes; inner names shadow outer ones (spec §5).
-#[derive(Default)]
+/// Nested block scopes; inner names shadow outer ones (spec §5). Cloned
+/// for a `defer`, which runs with the names in scope where it is written.
+#[derive(Default, Clone)]
 pub(super) struct Scopes<'ctx> {
     stack: Vec<HashMap<String, Local<'ctx>>>,
 }

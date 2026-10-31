@@ -1,0 +1,4 @@
+// `defer` is a keyword (v17, milestone 151).
+fun main() {
+    let defer = 1;
+}

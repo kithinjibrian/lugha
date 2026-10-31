@@ -70,6 +70,8 @@ pub enum TokenKind {
     Spawn,
     /// `select`, waiting on several channels (v17).
     Select,
+    /// `defer`, running a statement when its block is left (v17, milestone 151).
+    Defer,
     /// `actor`, declaring an actor (v17, milestone 92).
     Actor,
     // Built-in type names are keywords too, so structs can't shadow them.
@@ -181,6 +183,7 @@ pub fn keyword(word: &str) -> Option<TokenKind> {
         "as" => As,
         "spawn" => Spawn,
         "select" => Select,
+        "defer" => Defer,
         "actor" => Actor,
         "i32" => TyI32,
         "i64" => TyI64,

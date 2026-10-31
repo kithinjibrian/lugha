@@ -1,0 +1,8 @@
+// SYNTAX TEST "source.lugha" "defer: a keyword (milestone 151)"
+
+fun main() {
+    defer println("done");
+//  ^^^^^ keyword.control.lugha
+    let deferred = 1;
+//      ^^^^^^^^ - keyword.control.lugha
+}

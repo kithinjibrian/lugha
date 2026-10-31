@@ -1,0 +1,12 @@
+fun load(): Result<i64, string> = Err("no");
+
+fun run(): Result<i64, string> {
+    defer {
+        let n = load()?;
+    }
+    Ok(1)
+}
+
+fun main() {
+    println(run());
+}

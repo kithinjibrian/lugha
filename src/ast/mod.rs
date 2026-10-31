@@ -353,6 +353,9 @@ pub enum StmtKind {
     Break,
     /// `continue;`
     Continue,
+    /// `defer e;` or `defer { … }` (v17, milestone 151): `e` runs when the
+    /// enclosing block is left, on every exit but a panic.
+    Defer(Expr),
 }
 
 /// What a `for` loop iterates over.

@@ -30,6 +30,7 @@ mod conflicts;
 mod construct;
 mod consts;
 mod defaults;
+mod defer;
 mod derive;
 mod derive_intrinsics;
 mod derive_meets;
@@ -191,6 +192,7 @@ impl Checker {
             scopes: Vec::new(),
             ret: Type::Unit,
             loops: 0,
+            deferring: None,
             dead: false,
             iterating: Vec::new(),
             changes: Vec::new(),
@@ -304,6 +306,8 @@ pub(super) struct Checker {
     ret: Type,
     /// How many loops enclose the current statement, for `break`/`continue`.
     loops: u32,
+    /// The `defer` whose statement is being checked, for E0455 (milestone 151).
+    deferring: Option<defer::Deferring>,
     /// True while checking code after a divergence, so nested blocks don't
     /// repeat W0101.
     dead: bool,

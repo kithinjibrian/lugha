@@ -76,7 +76,9 @@ impl Checker {
                 iter: ForIter::MutOf(iter),
                 body,
             } => self.for_of_mut(var, iter, body),
+            StmtKind::Defer(expr) => self.defer_stmt(expr, stmt.span),
             StmtKind::Return(value) => {
+                self.leaves_defer("return", stmt.span);
                 self.return_stmt(value.as_ref(), stmt.span);
                 return true;
             }
@@ -87,6 +89,7 @@ impl Checker {
                     "continue"
                 };
                 self.jump(keyword, stmt.span);
+                self.leaves_defer(keyword, stmt.span);
                 return true;
             }
         }

@@ -1,0 +1,11 @@
+error[E0455]: `continue` can't leave a deferred statement
+  --> tests/programs/m151/leave_continue.la:4:13
+  |
+3 |         defer if i == 1 {
+  |         ----- deferred here
+4 |             continue;
+  |             ^^^^^^^^^
+  |
+  = help: it runs while its block is already being left; handle the case inside it instead
+
+For more about E0455, run `lughac explain E0455`.

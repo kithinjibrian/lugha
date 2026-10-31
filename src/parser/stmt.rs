@@ -94,6 +94,23 @@ impl Parser<'_> {
                 self.expect(&TokenKind::Semi)?;
                 kind
             }
+            TokenKind::Defer => {
+                self.bump();
+                // A block-like body needs no `;`, as a block statement doesn't.
+                let expr = if matches!(
+                    self.peek(),
+                    TokenKind::If | TokenKind::LBrace | TokenKind::Match | TokenKind::Select
+                ) {
+                    let expr = self.block_like()?;
+                    self.eat(&TokenKind::Semi);
+                    expr
+                } else {
+                    let expr = self.expr()?;
+                    self.expect(&TokenKind::Semi)?;
+                    expr
+                };
+                StmtKind::Defer(expr)
+            }
             TokenKind::Semi => {
                 let span = self.bump();
                 let diagnostic = Diagnostic::error("E0201", "expected statement, found `;`", span);
