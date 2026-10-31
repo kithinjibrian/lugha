@@ -91,7 +91,16 @@ impl Checker {
         }
         let iter = Type::Interface(ITER.to_string(), vec![element]);
         self.convert(base, receiver.clone(), Some(&Expect::of(iter.clone())));
-        let bound = bind(&params[0], &iter, &generics);
+        let mut bound = bind(&params[0], &iter, &generics);
+        // `map` yielding what the chain's `collect` wants (milestone 150):
+        // its result's element, in its own parameters, meets the hint.
+        if name.name == "map"
+            && let Some(hint) = self.element_hints.remove(&call.id)
+            && let Some(yields) = self.next_of(&ret)
+        {
+            let names: Vec<&str> = generics.iter().map(|g| g.name.as_str()).collect();
+            super::infer::unify(&yields.element, &hint, &names, &mut bound);
+        }
         let inputs: Vec<_> = args
             .iter()
             .zip(&params[1..])
@@ -111,6 +120,37 @@ impl Checker {
                 None => Type::Error,
             },
         )
+    }
+
+    /// Gives `base`, the receiver of `call` (`base.name(…)`), the element
+    /// type its iterator should yield (v17, milestone 150): from what a
+    /// `collect`, `collect_set` or `collect_map` is expected to be, or the
+    /// hint `call` itself has when `name` keeps the elements as they are.
+    /// Only the helper `map` reads it, so a program's own methods never do.
+    pub(super) fn pass_element_hint(
+        &mut self,
+        call: &Expr,
+        base: &Expr,
+        name: &str,
+        expect: Option<&Expect>,
+    ) {
+        let wanted = expect.map(|e| &e.ty);
+        let hint = match (name, wanted) {
+            ("collect", Some(Type::Array(e))) => Some((**e).clone()),
+            ("collect_set", Some(Type::Struct(k, args))) if k == super::maps::SET => {
+                args.first().cloned()
+            }
+            ("collect_map", Some(Type::Struct(k, args))) if k == super::maps::MAP => {
+                Some(self.tuple_type(args.clone()))
+            }
+            ("filter" | "take" | "skip" | "take_while" | "skip_while", _) => {
+                self.element_hints.remove(&call.id)
+            }
+            _ => None,
+        };
+        if let Some(hint) = hint.filter(|h| !matches!(h, Type::Error | Type::Never)) {
+            self.element_hints.insert(base.id, hint);
+        }
     }
 
     /// Whether `ty` has its own method, interface item or bound item `name`.
@@ -256,5 +296,46 @@ mod tests {
         };
         assert!(e("let r = [S { n: 1 }].iter().min();").contains(&"E0419"));
         assert!(e("let r = [1].iter().chain([\"a\"].iter());").contains(&"E0422"));
+    }
+
+    #[test]
+    fn a_chains_expected_type_reaches_maps_closure_v17() {
+        ok("fun main() {\n\
+            let xs = [1, 2, 3];\n\
+            let n: Option<i64>[] = xs.iter().map(fun(x) = None).collect();\n\
+            let m: Option<i64>[] = xs.iter().map(fun(x) = None).filter(fun(o) = true).take(2).skip(0).collect();\n\
+            let w: Option<i64>[] = xs.iter().map(fun(x) = None).take_while(fun(o) = true).skip_while(fun(o) = false).collect();\n\
+            let s: Set<Option<i64>> = xs.iter().map(fun(x) = None).collect_set();\n\
+            let k: Map<i64, Option<string>> = xs.iter().map(fun(x) = (x, None)).collect_map();\n\
+            let same: i64[] = xs.iter().map(fun(x) = x * 2).collect();\n\
+        }");
+    }
+
+    #[test]
+    fn without_an_expected_type_it_is_still_e0412_v17() {
+        let found = errors("fun main() { let n = [1].iter().map(fun(x) = None).collect(); }");
+        assert_eq!(found.first().map(|(c, _)| *c), Some("E0412"), "{found:?}");
+        // A helper that changes the elements passes nothing on.
+        let found = errors(
+            "fun main() { let n: (i64, Option<i64>)[] = [1].iter().map(fun(x) = None).enumerate().collect(); }",
+        );
+        assert_eq!(found.first().map(|(c, _)| *c), Some("E0412"), "{found:?}");
+    }
+
+    #[test]
+    fn a_closure_that_disagrees_is_one_error_v17() {
+        let found =
+            errors("fun main() { let n: string[] = [1].iter().map(fun(x) = 1).collect(); }");
+        assert_eq!(found.len(), 1, "{found:?}");
+    }
+
+    #[test]
+    fn a_types_own_methods_see_no_hint_v17() {
+        ok("struct Box1 { v: i64 }\n\
+            impl Box1 {\n\
+                fun map(self, f: fun(i64): i64): Box1 = Box1 { v: f(self.v) };\n\
+                fun collect(self): i64[] = [self.v];\n\
+            }\n\
+            fun main() { let b = Box1 { v: 1 }; let xs: i64[] = b.map(fun(x) = x + 1).collect(); }");
     }
 }

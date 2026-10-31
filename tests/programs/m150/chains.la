@@ -1,0 +1,10 @@
+// Milestone 150: an iterator chain's expected type reaches map's closure
+// through collect and the helpers between.
+fun main() {
+    let xs = [1, 2, 3];
+    let n: Option<i64>[] = xs.iter().map(fun(x) = None).collect();
+    let m: Option<i64>[] = xs.iter().map(fun(x) = None).filter(fun(o) = true).take(2).collect();
+    let s: Set<Option<i64>> = xs.iter().map(fun(x) = None).collect_set();
+    let k: Map<i64, Option<string>> = xs.iter().map(fun(x) = (x, None)).collect_map();
+    println("{n} {m} {s.len} {k.len}");
+}
