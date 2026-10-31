@@ -1,6 +1,7 @@
 /**
- * std.fs: folders and what exists. File contents stay
- * with the intrinsics (`read_file`, `write_file`, …). Nothing here deletes
+ * std.fs: folders, what exists, and file streams. Whole files stay with the
+ * intrinsics (`read_file`, `write_file`, …); a `File` from `open`, `create`
+ * or `append` reads or writes one piece at a time. Nothing here deletes
  * recursively: `remove_dir` takes only an empty folder.
  */
 
@@ -111,4 +112,195 @@ public fun set_mode(path: string, mode: i64): Result<(), string> {
 public fun sync(path: string): Result<(), string> {
     $os.sync(path)?;
     Ok(())
+}
+
+/**
+ * An open file, from `open` (reading), `create` or `append` (writing). Every
+ * copy is the same stream. Close what you open: the collector never closes a
+ * file, so one left open stays open until the program exits. Reads and writes
+ * block the whole program while they run: quick for files on a disk, but
+ * reading a FIFO or a terminal stalls the other green threads too.
+ */
+public struct File {
+    fd: Ref<i64>,
+    writing: bool,
+    buf: Ref<u8[]>,
+    pos: Ref<i64>,
+    line: Ref<i64>,
+}
+
+/**
+ * Opens a file for reading.
+ * @param path the file
+ * @returns the file, or `Err` with the system's message
+ */
+public fun open(path: string): Result<File, string> = start(path, 0);
+
+/**
+ * Opens a file for writing, emptying it first, or makes it (permissions 0666
+ * less the umask, as `write_file`'s).
+ * @param path the file
+ * @returns the file, or `Err` with the system's message
+ */
+public fun create(path: string): Result<File, string> = start(path, 1);
+
+/**
+ * Opens a file for writing at its end, making it if it doesn't exist: every
+ * write lands at the end, even when another program writes there too.
+ * @param path the file
+ * @returns the file, or `Err` with the system's message
+ */
+public fun append(path: string): Result<File, string> = start(path, 2);
+
+fun start(path: string, mode: i64): Result<File, string> {
+    let fd = $os.file_open(path, mode)?;
+    Ok(File { fd: Ref.new(fd), writing: mode != 0, buf: Ref.new([]), pos: Ref.new(0), line: Ref.new(0) })
+}
+
+impl File {
+    /**
+     * Reads up to `max` bytes: what `read_line` has read ahead first, else
+     * what one read of the file gives.
+     * @param max at most this many bytes, from 1 to 16777216
+     * @returns the bytes (`[]` at the end of the file), or `Err`
+     */
+    public fun read(self, max: i64): Result<u8[], string> {
+        let fd = self.reading()?;
+        if max < 1 || max > 16777216 {
+            return Err("max must be from 1 to 16777216");
+        }
+        let buf = self.buf.get();
+        let pos = self.pos.get();
+        if pos >= buf.len {
+            return $os.file_read(fd, max);
+        }
+        let end = if buf.len - pos > max { pos + max } else { buf.len };
+        let got = cut(buf, pos, end);
+        if end == buf.len {
+            self.buf.set([]);
+            self.pos.set(0);
+        } else {
+            self.pos.set(end);
+        }
+        Ok(got)
+    }
+
+    /**
+     * Reads the next line, without its `\n` and one `\r` before it, as
+     * `read_line()` reads stdin: a last line without `\n` is still a line.
+     * @returns `Some(line)`, `None` at the end of the file, or `Err` (a line
+     *   that isn't UTF-8 is `line N is not valid UTF-8`, and is skipped)
+     */
+    public fun read_line(self): Result<Option<string>, string> {
+        let fd = self.reading()?;
+        let mut buf = self.buf.get();
+        let mut pos = self.pos.get();
+        let mut i = pos;
+        while true {
+            while i < buf.len {
+                if buf[i] == 10 {
+                    let end = if i > pos && buf[i - 1] == 13 { i - 1 } else { i };
+                    let bytes = cut(buf, pos, end);
+                    self.keep(buf, i + 1);
+                    return self.text(bytes);
+                }
+                i += 1;
+            }
+            // Keep what was read ahead even when the next read fails.
+            self.keep(buf, pos);
+            let more = $os.file_read(fd, 65536)?;
+            if more.len == 0 {
+                if pos == buf.len {
+                    return Ok(None);
+                }
+                let bytes = cut(buf, pos, buf.len);
+                self.keep([], 0);
+                return self.text(bytes);
+            }
+            // Drop the lines already given once they are most of the buffer,
+            // so it stays about one line plus one read long.
+            if pos * 2 > buf.len {
+                buf = cut(buf, pos, buf.len);
+                i -= pos;
+                pos = 0;
+            }
+            for b of more {
+                buf.push(b);
+            }
+        }
+        panic("unreachable");
+    }
+
+    /**
+     * Writes every byte, straight to the file: nothing waits in a buffer, so
+     * nothing is lost if the program stops without closing it.
+     * @param bytes what to write
+     * @returns `Ok(())`, or `Err` with the system's message
+     */
+    public fun write(self, bytes: u8[]): Result<(), string> {
+        let fd = self.fd.get();
+        if fd < 0 {
+            return Err("closed");
+        }
+        if !self.writing {
+            return Err("not open for writing");
+        }
+        $os.file_write(fd, bytes)?;
+        Ok(())
+    }
+
+    /**
+     * Writes a string's bytes, as `write` does.
+     * @param s what to write
+     * @returns `Ok(())`, or `Err` with the system's message
+     */
+    public fun write_text(self, s: string): Result<(), string> = self.write(s.to_bytes());
+
+    /** Closes the file; every copy of it is closed. Closing twice is fine. */
+    public fun close(self) {
+        let fd = self.fd.get();
+        if fd >= 0 {
+            $os.file_close(fd);
+            self.fd.set(-1);
+            self.buf.set([]);
+            self.pos.set(0);
+        }
+    }
+
+    /** The descriptor, if this file is open for reading. */
+    fun reading(self): Result<i64, string> {
+        let fd = self.fd.get();
+        if fd < 0 {
+            return Err("closed");
+        }
+        if self.writing {
+            return Err("not open for reading");
+        }
+        Ok(fd)
+    }
+
+    /** Stores the read-ahead buffer and where the unread part starts. */
+    fun keep(self, buf: u8[], pos: i64) {
+        self.buf.set(buf);
+        self.pos.set(pos);
+    }
+
+    /** The next line's bytes as text, counting the line. */
+    fun text(self, bytes: u8[]): Result<Option<string>, string> {
+        let n = self.line.get() + 1;
+        self.line.set(n);
+        match string_from_utf8(bytes) {
+            Ok(line) => Ok(Some(line)),
+            Err(_) => Err("line {n} is not valid UTF-8"),
+        }
+    }
+}
+
+/** `bytes[from..to]` as a new array. */
+fun cut(bytes: u8[], from: i64, to: i64): u8[] {
+    let mut out: u8[] = [];
+    for i in from..to {
+        out.push(bytes[i]);
+    }
+    out
 }

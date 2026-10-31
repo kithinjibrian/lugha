@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- File streams in `std.fs` (milestone 146, PRP-177): `fs.open(path)` reads a file line by line (`f.read_line()`) or in chunks (`f.read(max)`), `fs.create(path)` and `fs.append(path)` write it piece by piece (`f.write(bytes)`, `f.write_text(s)`, nothing buffered), and `f.close()` closes it; files far larger than memory can now be read
 - Calendar dates and the local time zone in `std.time` (milestone 145, PRP-176, for Rapidkoi): `time.civil(ms, offset_s)` gives a `time.Civil` (year, month, day, ISO weekday, hour, minute, second, ms) for any moment at any offset, `time.from_civil(c, offset_s)` goes back (31 February is a `time.TimeError`), and `time.local_offset(ms)` is the system zone's offset at that moment, daylight saving included
 - Custom equality (milestone 144, PRP-175): `Eq` is a prelude interface with `eq` and `hash`; a struct or enum writing both (`impl User { fun eq(self, other: User): bool = self.id == other.id; fun hash(self, h: u64): u64 = self.id.hash(h); }`) decides what `==` means for it, in maps and sets too; E0454 for one without the other; `derive.all(a, b, f)` for derive blocks
 - Derive blocks gain `derive.fold(x, init, f)` (threads a value through every field, nothing allocated), `derive.index(x)` (an enum value's variant position) and `derive … for handle` with `derive.address(x)` (milestone 143, PRP-174)

@@ -32,6 +32,7 @@ Oct 16, 2026 · @kithinji
 - Octal literals (milestone 117; section 2): `0o600`; a leading zero (`0600`) stays decimal and warns W0107.
 - `fs.sync` (milestone 116): `fsync` on a file or folder, so a saved file and its rename survive a power cut.
 - Calendar dates and the local offset in `std.time` (milestone 145): `time.civil(ms, offset_s)`, `time.from_civil(c, offset_s)` and `time.local_offset(ms)`, with `Civil` and `TimeError` (standard library).
+- File streams in `std.fs` (milestone 146): `fs.open`, `fs.create` and `fs.append` give a `File` to read by line or in chunks and write piece by piece (standard library).
 - Keeping data on disk (milestone 115): `fs.rename` (atomic within a file system), `fs.set_mode` (`chmod`), the `flush()` built-in, and `std.time` (`now_ms`, `monotonic_ms`).
 - `std.toml` (milestone 114; standard library): a read-only TOML 1.0 parser in Lugha with limits for hostile input; the prelude's `xs.join(sep)` is linear (it was quadratic).
 - `std.crypto` (milestone 113; standard library): SHA-256 (one-shot and streamed), Ed25519 keys, signing and verifying, secure random bytes and constant-time comparison, over the system's OpenSSL 3.
@@ -1195,7 +1196,7 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 | `current_dir(): Result<string, string>` | the absolute path of the working directory, or `Err` with the system's message (e.g. when it was deleted) |
 | `set_current_dir(path: string): Result<i64, string>` | `Ok(0)` after making `path` the working directory (`chdir`); relative paths in the file functions and `std.fs`, and every program `std.process` starts afterwards, use it. `Err` with the system's message (`No such file or directory`, `Not a directory`), or `Err("path contains a NUL byte")` (v16) |
 
-`std.fs` (milestone 65). Folders and what exists; a file's contents stay with the intrinsics (`read_file`, `write_file`, …). Errors are the system's message, as for `read_file`; a path holding a NUL byte is `Err("path contains a NUL byte")` (or `false`). Nothing deletes recursively.
+`std.fs` (milestone 65). Folders, what exists, and (v17, milestone 146) file streams; whole files stay with the intrinsics (`read_file`, `write_file`, …). Errors are the system's message, as for `read_file`; a path holding a NUL byte is `Err("path contains a NUL byte")` (or `false`). Nothing deletes recursively.
 
 | Function | Result |
 | --- | --- |
@@ -1208,6 +1209,19 @@ An integer goes to a float function through a cast: `math.sqrt(n as f64)`; `math
 | `set_mode(path, mode: i64): Result<(), string>` | `chmod(2)` (v17, milestone 115), following symbolic links; `mode` from 0 to 4095 (`0o7777`), else `Err`. a leading zero is still decimal (`0600` is six hundred, W0107): write `0o600` |
 | `sync(path): Result<(), string>` | `fsync(2)` (v17, milestone 116): a file's data, or a folder's entries, written out to the disk so they survive a power cut; `Err` (the data may not be there) with the system's message. A file is saved durably with `write_file("f.tmp", data)`, `sync("f.tmp")`, `rename("f.tmp", "f")`, `sync(".")` — the last makes the rename durable |
 | `exists(path)`, `is_dir(path)`, `is_file(path)`: `bool` | whether something, a folder or a regular file is at `path`, following symbolic links; never an error |
+| `open(path): Result<File, string>` | a `File` for reading (v17, milestone 146) |
+| `create(path): Result<File, string>` | a `File` for writing, emptied first or made (mode 0666 less the umask) |
+| `append(path): Result<File, string>` | a `File` for writing at its end (`O_APPEND`), made if missing |
+
+**File streams** (v17, milestone 146). A `File` is a shared handle to one open file, like `net.Conn`: every copy is the same stream, and the collector never closes one, so a file left open stays open until the program exits. Each is opened close-on-exec, for reading or for writing, never both; there is no seeking. Reads and writes block the whole program while they run, quick for disk files, but a FIFO or terminal stalls the other green threads too. Using a writing `File` to read is `Err("not open for reading")`, the reverse `Err("not open for writing")`, and any use after `close` is `Err("closed")`.
+
+| Method | Result |
+| --- | --- |
+| `f.read(max): Result<u8[], string>` | up to `max` bytes (1 to 16777216, else `Err("max must be from 1 to 16777216")`): what `read_line` read ahead first, else one `read(2)`; `[]` at the end of the file |
+| `f.read_line(): Result<Option<string>, string>` | the next line without its `\n` and one `\r` before it, as `read_line()` reads stdin: a last line without `\n` is still a line, `None` at the end; read in 64 KiB pieces, with no length limit. A line that isn't UTF-8 is `Err("line N is not valid UTF-8")` (counting the lines `read_line` gave) and is skipped |
+| `f.write(bytes: u8[]): Result<(), string>` | every byte, straight to the file (`write(2)` until done): nothing is buffered, so nothing is lost if the program stops without closing |
+| `f.write_text(s: string): Result<(), string>` | `s`'s bytes, as `write` |
+| `f.close()` | closes the file and every copy of it; closing twice is fine |
 
 `std.process` (milestone 66). Runs another program and waits for it. **There is never a shell**: the command and each argument reach the program exactly as given (`posix_spawnp`), so `;`, `|`, `$( )`, quotes and globs in them mean nothing. A command without `/` is looked up on `PATH`, one with `/` is a path; whoever controls `PATH` chooses which program a bare name runs, so use a path containing `/` when that matters. The program inherits this one's environment unchanged and gets only stdin, stdout and stderr: every other descriptor is closed on exec. A NUL byte in the command or an argument is `Err` before anything starts. There is no timeout and no limit on output size.
 
@@ -1625,6 +1639,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 | `lugha_rt_os_seed()` | 64 bits of OS entropy for `std.random`'s `from_os()` (v15): `getrandom`, else `/dev/urandom`, else a panic |
 | `lugha_rt_env(name, out)` / `lugha_rt_cwd(out, error)` / `lugha_rt_chdir(path, error)` (v16) | `std.env` (v15): a variable's bytes, or 0 when unset or the name holds a NUL; the working directory's bytes, or 0 and the system's message |
 | `lugha_rt_list_dir(path, out, error)` / `lugha_rt_make_dir` / `lugha_rt_remove_file` / `lugha_rt_remove_dir(path, error)` / `lugha_rt_stat_kind(path)` | `std.fs` (v15): a folder's names as bytes, one folder made or removed, a file removed, each with the system's message on failure; the kind of thing at a path |
+| `lugha_rt_file_open(path, mode, out, error)` / `lugha_rt_file_read(fd, max, out, error)` / `lugha_rt_file_write(fd, bytes, error)` / `lugha_rt_file_close(fd)` | `std.fs`'s file streams (v17, milestone 146): a descriptor opened close-on-exec (mode 0 reads, 1 creates or truncates, 2 appends), one read, a write of every byte, a close |
 | `lugha_rt_spawn(cmd, args, input, mode, code, out, err, error)` | `std.process` (v15): runs a program without a shell (mode 0 shares stdio, 1 captures with an empty stdin, 2 also writes `input`), and gives its code and output bytes, or 0 and why it couldn't start |
 | `lugha_rt_fmt_int(v, bits, signed, kind, alt, fill, align, width, zero)` / `lugha_rt_fmt_float(v, f32, precision, fill, align, width, zero)` / `lugha_rt_pad(text, fill, align, width)` | Format specifiers (v13): an integer (sign- or zero-extended to `i64`), a float (as `f64`), or any other value's text, padded; all arguments are plain numbers |
 | `lugha_rt_print_newline()` | The newline `println` adds |
@@ -3874,6 +3889,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 143 | Hashing on derive blocks (v17) | the prelude's `$Hash`, implied by `Eq`; `derive.fold`, `derive.index`, `derive … for handle`, `derive.address`; equal maps and sets hash equal | `tests/programs/m143/` (done) |
 | 144 | `==` through `Eq` (v17) | `Eq` a derivable prelude interface with `eq` and `hash`, a type's own pair overriding both; `derive.all`; E0451 at `==`, E0454 | `tests/programs/m144/` (done) |
 | 145 | Calendar dates and the local offset (v17) | `time.civil`, `time.from_civil`, `time.local_offset`, `Civil`, `TimeError` | `tests/programs/m145/` (done) |
+| 146 | File streams (v17) | `fs.open`, `fs.create`, `fs.append`, `File` with `read`, `read_line`, `write`, `write_text`, `close` | `tests/programs/m146/` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

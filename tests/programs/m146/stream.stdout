@@ -1,0 +1,14 @@
+Err("not open for reading")
+Err("not open for reading")
+[first]
+[second]
+[last!]
+Ok(None)
+Ok([])
+Err("not open for writing")
+Err("not open for writing")
+Err("closed")
+Err("closed")
+Err("closed")
+Ok("fresh")
+Ok(())

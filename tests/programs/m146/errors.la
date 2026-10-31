@@ -1,0 +1,20 @@
+// File streams' errors (v17, milestone 146): a missing file or folder, a
+// NUL in the path, `read` sizes out of range, and a line that isn't UTF-8,
+// which is skipped so the next line still reads.
+import std.fs;
+
+fun main() {
+    println(fs.open("missing.txt").map(fun(f: fs.File): i64 = 0));
+    println(fs.create("no/such/folder.txt").map(fun(f: fs.File): i64 = 0));
+    println(fs.append("a\0b").map(fun(f: fs.File): i64 = 0));
+    let bad: u8[] = [111, 107, 10, 255, 10, 102, 105, 110, 101, 10];
+    let w = write_bytes("bad.txt", bad);
+    let f = fs.open("bad.txt").unwrap();
+    println(f.read(0));
+    println(f.read(16777217));
+    println(f.read_line());
+    println(f.read_line());
+    println(f.read_line());
+    println(f.read_line());
+    f.close();
+}

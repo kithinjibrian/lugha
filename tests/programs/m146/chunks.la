@@ -1,0 +1,79 @@
+// File streams (v17, milestone 146) over many reads: 200 000 lines written
+// piece by piece and read back by line and in chunks, `read` after
+// `read_line` giving the read-ahead first, an empty file, a long line.
+import std.fs;
+
+fun run(): Result<(), string> {
+    let out = fs.create("big.txt")?;
+    let mut total = 0;
+    for i in 0..200000 {
+        let line = "line {i}\n";
+        total += line.len;
+        out.write_text(line)?;
+    }
+    out.close();
+
+    let f = fs.open("big.txt")?;
+    let mut count = 0;
+    let mut last = "";
+    while true {
+        match f.read_line()? {
+            Some(line) => {
+                count += 1;
+                last = line;
+            }
+            None => {
+                break;
+            }
+        }
+    }
+    f.close();
+    println("{count} lines, last {last}");
+
+    let g = fs.open("big.txt")?;
+    let mut bytes = 0;
+    while true {
+        let got = g.read(4096)?;
+        if got.len == 0 {
+            break;
+        }
+        bytes += got.len;
+    }
+    g.close();
+    println("{bytes} bytes of {total}");
+
+    let h = fs.open("big.txt")?;
+    println(h.read_line());
+    let next = h.read(7)?;
+    println(string_from_utf8(next));
+    println(h.read_line());
+    h.close();
+
+    let empty = fs.create("empty.txt")?;
+    empty.close();
+    let e = fs.open("empty.txt")?;
+    println(e.read_line());
+    println(e.read(1));
+    e.close();
+
+    let long = fs.create("long.txt")?;
+    let mut text = "";
+    for i in 0..10000 {
+        text = text + "0123456789";
+    }
+    long.write_text(text + "\nshort")?;
+    long.close();
+    let l = fs.open("long.txt")?;
+    match l.read_line()? {
+        Some(line) => println("{line.len} {line == text}"),
+        None => println("none"),
+    }
+    println(l.read_line());
+    println(l.read_line());
+    l.close();
+    Ok(())
+}
+
+fun main() {
+    println(run());
+}
