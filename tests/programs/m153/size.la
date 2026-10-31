@@ -1,0 +1,30 @@
+// `fs.size` (v17, milestone 153): a regular file's size from `stat`, links
+// followed, without opening it; a folder, a FIFO, a missing path and a NUL
+// byte are `Err`; a sparse 5 GB file proves sizes past 32 bits.
+import std.fs;
+import std.process;
+
+fun say(label: string, r: Result<i64, string>) {
+    match r {
+        Ok(n) => println("{label}: {n}"),
+        Err(e) => println("{label}: Err({e})"),
+    }
+}
+
+fun main(): i32 {
+    let w = write_file("note.txt", "hello, size");
+    let e = write_file("empty.txt", "");
+    say("note", fs.size("note.txt"));
+    say("empty", fs.size("empty.txt"));
+    let made = fs.make_dir("box");
+    say("folder", fs.size("box"));
+    say("missing", fs.size("nope.txt"));
+    say("nul", fs.size("note\0.txt"));
+    let l = process.run("ln", ["-s", "note.txt", "link"]);
+    say("link", fs.size("link"));
+    let f = process.run("mkfifo", ["pipe"]);
+    say("fifo", fs.size("pipe"));
+    let t = process.run("truncate", ["-s", "5G", "big"]);
+    say("big", fs.size("big"));
+    0
+}

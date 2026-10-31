@@ -2220,6 +2220,12 @@ Printing sites and `==` reach a type's own plain `show`/`eq` too (`show_instance
 
 **Why:** the benchmark suite (PRP-184) needed a `done` flag to leave two loops, and CLAUDE.md listed `while true` + `panic("unreachable")` as a known issue; one small feature fixes both. Rust's `'label` would clash with char literals; a `break value` out of `while` or `for` has no value when the loop ends on its own. Breaking: `loop` is a keyword (no program in this repository or its sibling packages used it as a name).
 
+### 216. `fs.size` — milestone 153 (PRP-186)
+
+**Decision:** approved by the user (2026-10-31): `fs.size(path): Result<i64, string>` is `stat(2)`'s `st_size` for a regular file, following symbolic links, opening nothing. A folder is `Err("Is a directory")` (`strerror(EISDIR)`, as `remove_file` says), any other non-regular kind `Err("not a regular file")`, a failed `stat` the system's message, a NUL byte `Err("path contains a NUL byte")`. One function, not a `metadata` struct.
+
+**Why:** Rapidkoi (its DECISION-015, PRP-056) must refuse a file over 16 MB before `read_bytes` holds all of it in memory; `is_file` couldn't say how big. A size of a folder would be mistaken for a file's, so only regular files answer. A `metadata` struct would fix a shape for fields nobody needs yet; `fs.size` can sit beside one later.
+
 ## OPEN — Requires human input before implementation
 
 None.

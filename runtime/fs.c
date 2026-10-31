@@ -104,6 +104,28 @@ int64_t lugha_rt_stat_kind(const LughaString *path) {
     return S_ISDIR(info.st_mode) ? 2 : 3;
 }
 
+/* `$os.file_size(path)` (v17, milestone 153): `stat(2)`'s `st_size` for a
+ * regular file, links followed; nothing is opened. A folder is `EISDIR`'s
+ * message and any other kind "not a regular file", so a caller never takes
+ * a folder's size for a file's. */
+int32_t lugha_rt_file_size(const LughaString *path, int64_t *out, LughaString **error) {
+    struct stat info;
+    if (fs_has_nul(path)) {
+        return fs_fail(error, "path contains a NUL byte");
+    }
+    if (stat(path->bytes, &info) != 0) {
+        return fs_fail(error, strerror(errno));
+    }
+    if (S_ISDIR(info.st_mode)) {
+        return fs_fail(error, strerror(EISDIR));
+    }
+    if (!S_ISREG(info.st_mode)) {
+        return fs_fail(error, "not a regular file");
+    }
+    *out = (int64_t)info.st_size;
+    return 1;
+}
+
 /* `$os.rename(from, to)` (v17, milestone 115): `rename(2)`, which replaces
  * `to` atomically on one file system and refuses a move across devices. */
 int32_t lugha_rt_rename(const LughaString *from, const LughaString *to, LughaString **error) {

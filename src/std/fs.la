@@ -74,6 +74,16 @@ public fun is_dir(path: string): bool = $os.stat_kind(path) == 2;
 public fun is_file(path: string): bool = $os.stat_kind(path) == 1;
 
 /**
+ * The size in bytes of the regular file at `path`, following symbolic links,
+ * without opening it: check it before `read_bytes` to refuse a file too big
+ * to read whole.
+ * @param path the file
+ * @returns the size, or `Err`: the system's message (`No such file or directory`),
+ *   `Is a directory` for a folder, `not a regular file` for anything else
+ */
+public fun size(path: string): Result<i64, string> = $os.file_size(path);
+
+/**
  * Renames `from` to `to`, replacing `to` if it exists: in one step, so
  * anyone opening `to` sees the old file or the new one, never neither. Only
  * within one file system: a move to another is `Err` (`Invalid cross-device
