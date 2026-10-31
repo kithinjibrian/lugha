@@ -47,3 +47,19 @@ int64_t lugha_rt_wall_ms(void) {
     clock_gettime(CLOCK_REALTIME, &t);
     return (int64_t)t.tv_sec * 1000 + t.tv_nsec / 1000000;
 }
+
+/* `$os.local_offset(seconds)` (v17, milestone 145): the system zone's
+ * offset from UTC, in seconds east, at that moment (`TZ`, else
+ * `/etc/localtime`, through `localtime_r`), daylight saving included.
+ * A moment `time_t` or the C library can't represent is an error. */
+int32_t lugha_rt_local_offset(int64_t seconds, int64_t *out, LughaString **error) {
+    time_t t = (time_t)seconds;
+    struct tm parts;
+    if ((int64_t)t != seconds || localtime_r(&t, &parts) == NULL) {
+        const char *message = "the system can't give a local time for that moment";
+        *error = string_of(message, (int64_t)strlen(message));
+        return 0;
+    }
+    *out = (int64_t)parts.tm_gmtoff;
+    return 1;
+}

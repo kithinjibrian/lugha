@@ -1,6 +1,10 @@
 /**
- * std.time: the clocks (v17). `now_ms` for timestamps, `monotonic_ms` for
- * measuring how long something took. No time zones, no formatting.
+ * std.time: the clocks, calendar dates and the system's local offset (v17).
+ * `now_ms` for timestamps, `monotonic_ms` for measuring how long something
+ * took; `civil` and `from_civil` turn a moment into a date and time at an
+ * offset and back, on the proleptic Gregorian calendar; `local_offset`
+ * asks the system for its zone's offset at a moment. No zone names, no
+ * formatting by locale, no parsing.
  */
 
 /**
@@ -14,3 +18,180 @@ public fun now_ms(): i64 = $os.wall_ms();
  * readings to measure an interval.
  */
 public fun monotonic_ms(): i64 = $os.now_ms();
+
+/**
+ * A moment as a calendar date and time of day (proleptic Gregorian; year 0
+ * is 1 BC). `weekday` is 1 (Monday) to 7 (Sunday), as in ISO 8601.
+ */
+public struct Civil {
+    public year: i64,
+    /** 1 to 12. */
+    public month: i64,
+    /** 1 to 31. */
+    public day: i64,
+    /** 1 (Monday) to 7 (Sunday); `from_civil` ignores it. */
+    public weekday: i64,
+    /** 0 to 23. */
+    public hour: i64,
+    /** 0 to 59. */
+    public minute: i64,
+    /** 0 to 59. */
+    public second: i64,
+    /** 0 to 999. */
+    public ms: i64,
+}
+
+/** Why a date, offset or moment can't be used. */
+public struct TimeError {
+    public message: string,
+}
+
+impl TimeError {
+    /** What went wrong: `no day 31 in month 2 of 2026`. */
+    public fun message(self): string = self.message;
+
+    /** Printed as its message. */
+    public fun show(self): string = self.message;
+}
+
+/** The widest offset accepted, in seconds: 26 hours. */
+const MAX_OFFSET: i64 = 93600;
+
+const DAY_MS: i64 = 86400000;
+
+/**
+ * The moment `ms` (milliseconds since 1970-01-01 00:00 UTC, before it too)
+ * as seen at `offset_s` seconds east of UTC: `civil(t, 0)` is UTC,
+ * `civil(t, time.local_offset(t)?)` the system's local time.
+ * @returns the date and time, or an error for an offset beyond 26 hours
+ */
+public fun civil(ms: i64, offset_s: i64): Result<Civil, TimeError> {
+    if offset_s < -MAX_OFFSET || offset_s > MAX_OFFSET {
+        return Err(TimeError { message: "offset {offset_s} s is beyond 26 hours" });
+    }
+    // Days first, then the time of day: no step can overflow.
+    let mut days = floor_div(ms, DAY_MS);
+    let local = floor_mod(ms, DAY_MS) + offset_s * 1000;
+    days += floor_div(local, DAY_MS);
+    let of_day = floor_mod(local, DAY_MS);
+    let (year, month, day) = civil_from_days(days);
+    Ok(Civil {
+        year: year,
+        month: month,
+        day: day,
+        weekday: floor_mod(days + 3, 7) + 1,
+        hour: of_day / 3600000,
+        minute: of_day / 60000 % 60,
+        second: of_day / 1000 % 60,
+        ms: of_day % 1000,
+    })
+}
+
+/**
+ * The moment a date and time at `offset_s` seconds east of UTC names, the
+ * inverse of `civil`; `c.weekday` is ignored.
+ * @returns milliseconds since 1970-01-01 00:00 UTC, or an error naming a
+ * field out of its range, a date that doesn't exist (31 February), an
+ * offset beyond 26 hours or a moment past `i64`
+ */
+public fun from_civil(c: Civil, offset_s: i64): Result<i64, TimeError> {
+    let fail = fun(message: string): Result<i64, TimeError> = Err(TimeError { message: message });
+    if offset_s < -MAX_OFFSET || offset_s > MAX_OFFSET {
+        return fail("offset {offset_s} s is beyond 26 hours");
+    }
+    // ±300 million years holds every `i64` moment and keeps the arithmetic small.
+    if c.year < -300000000 || c.year > 300000000 {
+        return fail("year {c.year} is past what an i64 moment holds");
+    }
+    if c.month < 1 || c.month > 12 {
+        return fail("month {c.month} isn't 1 to 12");
+    }
+    if c.day < 1 || c.day > days_in(c.year, c.month) {
+        return fail("no day {c.day} in month {c.month} of {c.year}");
+    }
+    if c.hour < 0 || c.hour > 23 {
+        return fail("hour {c.hour} isn't 0 to 23");
+    }
+    if c.minute < 0 || c.minute > 59 {
+        return fail("minute {c.minute} isn't 0 to 59");
+    }
+    if c.second < 0 || c.second > 59 {
+        return fail("second {c.second} isn't 0 to 59");
+    }
+    if c.ms < 0 || c.ms > 999 {
+        return fail("ms {c.ms} isn't 0 to 999");
+    }
+    // The time of day less the offset, folded into whole days first, so the
+    // product below never passes a moment that fits (`i64.MAX` at +26 h).
+    let local = ((c.hour * 60 + c.minute) * 60 + c.second) * 1000 + c.ms - offset_s * 1000;
+    let days = days_from_civil(c.year, c.month, c.day) + floor_div(local, DAY_MS);
+    let of_day = floor_mod(local, DAY_MS);
+    // Before 1970 one day fewer is multiplied, so the earliest moments
+    // (`i64.MIN`'s day) don't overflow before their time of day is added.
+    let moment = if days < 0 {
+        (days + 1).checked_mul(DAY_MS).and_then(fun(t) = t.checked_add(of_day - DAY_MS))
+    } else {
+        days.checked_mul(DAY_MS).and_then(fun(t) = t.checked_add(of_day))
+    };
+    match moment {
+        Some(t) => Ok(t),
+        None => fail("{c.year}-{c.month}-{c.day} is past what an i64 moment holds"),
+    }
+}
+
+/**
+ * The system time zone's offset from UTC at moment `ms`, in seconds east
+ * (`TZ` if set, else `/etc/localtime`; UTC when neither says), daylight
+ * saving included: ask again for each moment.
+ * @returns the offset, or an error for a moment the system can't represent
+ */
+public fun local_offset(ms: i64): Result<i64, TimeError> = match $os.local_offset(floor_div(ms, 1000)) {
+    Ok(offset) => Ok(offset),
+    Err(message) => Err(TimeError { message: message }),
+};
+
+/** `a / b` rounded down (`b` > 0), for negative moments too. */
+fun floor_div(a: i64, b: i64): i64 {
+    let q = a / b;
+    if a % b < 0 { q - 1 } else { q }
+}
+
+/** `a` modulo `b` (`b` > 0), from 0 to `b - 1`. */
+fun floor_mod(a: i64, b: i64): i64 {
+    let r = a % b;
+    if r < 0 { r + b } else { r }
+}
+
+/** Days in `month` of `year`. */
+fun days_in(year: i64, month: i64): i64 {
+    if month == 2 {
+        let leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+        return if leap { 29 } else { 28 };
+    }
+    if month == 4 || month == 6 || month == 9 || month == 11 { 30 } else { 31 }
+}
+
+/** Days since 1970-01-01 of a date (Howard Hinnant's `days_from_civil`). */
+fun days_from_civil(year: i64, month: i64, day: i64): i64 {
+    let y = if month <= 2 { year - 1 } else { year };
+    let era = floor_div(y, 400);
+    let yoe = y - era * 400;
+    let mp = if month > 2 { month - 3 } else { month + 9 };
+    let doy = (153 * mp + 2) / 5 + day - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    era * 146097 + doe - 719468
+}
+
+/** The date of a day since 1970-01-01 (Howard Hinnant's `civil_from_days`). */
+fun civil_from_days(days: i64): (i64, i64, i64) {
+    let z = days + 719468;
+    let era = floor_div(z, 146097);
+    let doe = z - era * 146097;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = yoe + era * 400 + if month <= 2 { 1 } else { 0 };
+    (year, month, day)
+}
