@@ -33,7 +33,7 @@ impl<'ctx> Lowerer<'ctx> {
         )
     }
 
-    /// `$derive.fields(x, ctx, f)` and the other field intrinsics.
+    /// `derive.fields(x, ctx, f)` and the other field intrinsics.
     pub(super) fn derive_intrinsic(
         &mut self,
         expr: &Expr,
@@ -363,7 +363,7 @@ impl<'ctx> Lowerer<'ctx> {
         self.finish(slot, none, done, out)
     }
 
-    /// `$derive.variants()`: each variant's name and payload count, in order.
+    /// `derive.variants()`: each variant's name and payload count, in order.
     fn variant_table(&mut self, ty: &Type, out: &Type) -> BasicValueEnum<'ctx> {
         let Type::Array(pair) = out else {
             unreachable!("checked: `(string, i64)[]`")

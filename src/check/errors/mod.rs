@@ -3,6 +3,7 @@
 //! Split by code range: `names` (E03xx), `types` (E04xx), `places` (E05xx, W01xx),
 //! with `generics` holding milestone 11's codes from both ranges.
 
+mod derive;
 mod generics;
 mod names;
 mod places;
@@ -18,6 +19,7 @@ mod v6;
 mod v8;
 mod v9;
 
+pub(super) use derive::*;
 pub(super) use generics::*;
 pub(super) use names::*;
 pub(super) use places::*;

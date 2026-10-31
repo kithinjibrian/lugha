@@ -131,10 +131,8 @@ impl Checker {
             ExprKind::Call(callee, args) if let Some(op) = super::hashing::hash_op(callee) => {
                 self.hash_call(expr, (callee, op), args)
             }
-            // `$derive.fields(x, ctx, f)` and the rest (v17, milestone 141).
-            ExprKind::Call(callee, args)
-                if super::derive_intrinsics::derive_op(callee).is_some() =>
-            {
+            // `derive.fields(x, ctx, f)` and the rest (v17, milestones 141–142).
+            ExprKind::Call(callee, args) if self.is_intrinsic(callee) => {
                 self.derive_call(expr, callee, args)
             }
             ExprKind::Call(callee, args) if let Some(op) = super::float_ops::os_op(callee) => {

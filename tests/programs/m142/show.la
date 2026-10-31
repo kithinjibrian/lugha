@@ -1,0 +1,86 @@
+// A program's own derivable interface, and custom JSON for one type
+// (v17, milestone 142).
+import std.json;
+
+/** Anything that can describe itself on one line. */
+interface Show {
+    fun show(self): string;
+}
+
+derive Show for i64 {
+    fun show(self): string = "{self}";
+}
+
+derive Show for string {
+    fun show(self): string = "\"{self}\"";
+}
+
+derive<T: Show> Show for T[] {
+    fun show(self): string = "[" + join(self.map(fun(x: T): string = x.show())) + "]";
+}
+
+derive Show for struct {
+    fun show(self): string = "{{" + join(derive.fields(self, (), part)) + "}}";
+}
+
+derive Show for tuple {
+    fun show(self): string = "(" + join(derive.fields(self, (), value)) + ")";
+}
+
+derive Show for enum {
+    fun show(self): string {
+        let (name, parts) = derive.variant(self, (), value);
+        if parts.len == 0 { name } else { "{name}(" + join(parts) + ")" }
+    }
+}
+
+fun part<F: Show>(c: (), name: string, x: F): string = "{name}: {x.show()}";
+
+fun value<F: Show>(c: (), name: string, x: F): string = x.show();
+
+fun join(xs: string[]): string = xs.join(", ");
+
+fun show<T: Show>(x: T): string = x.show();
+
+struct Date { y: i64, m: i64, d: i64 }
+
+impl Date {
+    /** Dates are JSON strings, not objects: this replaces the derived `to_json`. */
+    fun to_json(self): json.Value = json.Value.Text("{self.y}-{self.m}-{self.d}");
+
+    /** And read back from one. */
+    fun from_json(v: json.Value, path: string): Result<Date, json.DecodeError> {
+        let text = match v {
+            Text(s) => s,
+            _ => {
+                return Err(json.DecodeError { path: path, detail: "expected a date" });
+            }
+        };
+        let parts = text.split("-");
+        if parts.len != 3 {
+            return Err(json.DecodeError { path: path, detail: "expected y-m-d" });
+        }
+        Ok(Date { y: parse_i64(parts[0]).unwrap_or(0), m: parse_i64(parts[1]).unwrap_or(0), d: parse_i64(parts[2]).unwrap_or(0) })
+    }
+}
+
+enum Shape { Dot, Circle(i64), Rect(i64, i64) }
+
+struct Event { title: string, on: Date, shapes: Shape[] }
+
+struct Pair<A, B> { first: A, second: B }
+
+enum List { Nil, Cons(i64, List) }
+
+fun main() {
+    let e = Event { title: "launch", on: Date { y: 2026, m: 10, d: 31 }, shapes: [Shape.Dot, Shape.Circle(2), Shape.Rect(1, 2)] };
+    println(show(e));
+    println(show(Pair { first: [1, 2], second: (3, "x") }));
+    println(show(List.Cons(1, List.Cons(2, List.Nil))));
+    let text = json.stringify(json.encode(e)).unwrap();
+    println(text);
+    let back: Result<Event, json.DecodeError> = json.decode(json.parse(text).unwrap());
+    println(show(back.unwrap()));
+    let bad: Result<Event, json.DecodeError> = json.decode(json.parse("{{\"title\": \"x\", \"on\": 5, \"shapes\": []}}").unwrap());
+    println(bad);
+}

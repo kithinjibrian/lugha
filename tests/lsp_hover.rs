@@ -371,3 +371,22 @@ fn an_included_file_shows_its_size_v17() {
     );
     assert_eq!(s.finish(), Some(0));
 }
+
+#[test]
+fn a_derive_blocks_items_show_their_signatures() {
+    let program = "interface Show { fun show(self): string; }\n\
+        derive Show for i64 { fun show(self): string = \"{self}\"; }\n\
+        fun show_it<T: Show>(x: T): string = x.show();\n\
+        fun main() { println(show_it(1)); }\n";
+    let t = Temp::with(&[("main.la", program)]);
+    let uri = t.uri("main.la");
+    let mut s = Server::start(&t, json!({}));
+    s.open(&uri, program);
+    s.expect(&uri, &[]);
+    let at = pos(program, "fun show(self): string =", "show");
+    assert_eq!(
+        hover_at(&mut s, &uri, at),
+        code("fun Show.show(self): string", &[])
+    );
+    assert_eq!(s.finish(), Some(0));
+}

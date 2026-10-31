@@ -2166,7 +2166,13 @@ Derive blocks as built: `$derive[<params>] I for X { items }` (`Item::Derive`; `
 
 **Why:** macros would break decision 3 (the spec defines the language) and architecture rule 1; comptime with types as values would break decisions 33 and 41 (generic bodies checked once). Derive blocks are Rust's orphan rule narrowed to the interface's own module, so no two libraries can disagree about a type.
 
-**Open for the next PRP:** opening `derive` to every module, and whether a type's own methods override a derived interface.
+**Open for the next PRP:** opening `derive` to every module, and whether a type's own methods override a derived interface. Both answered by 209.
+
+### 209. Derive blocks for every module — milestone 142 (PRP-173)
+
+**Decision:** `derive` is a contextual word (an item starting with `derive` and then `<` or a name), never reserved; the intrinsics are `derive.fields(…)` and so on, meaning the intrinsics inside a block and, outside, only when no local or import is named `derive` (codegen reads `Checked::derive_calls`, never the syntax). A block must be in its interface's module (E0452, checked against `qualify(module, name)`, so a named import doesn't count) and may not overlap another (E0452; two patterns overlap when either's parameters can stand for anything that makes them equal). Items that don't match are E0422 (`errors::block_unsatisfied`). A struct's or enum's own item with the exact signature wins per item: `derive_owners` (after every declaration pass) fills `Derives::own`, which `Derives::target` honours in both `monomorphize` and codegen; a type writing every item needs no block; a same-named item of another shape is E0422 while meeting. E0451 is E0450's path search with generic wording; E0453 covers intrinsic misuse and a local named `derive` in a block. `json.Json`'s items are `to_json`/`from_json` (`$missing`, `$JsonKey` stay internal).
+
+**Why:** the discovery's answers (PRP-173): no program loses a name, customising one type mustn't need a new interface, and default methods already override per item.
 
 ---
 

@@ -1,0 +1,33 @@
+error[E0452]: two `derive Show` blocks cover `Option<i64>`
+   --> tests/programs/m142/bad_block.la:13:1
+   |
+13 | / derive Show for Option<i64> {
+14 | |     fun show(self): string = "?";
+15 | |     fun width(self): i64 = 1;
+16 | | }
+   | \-^
+   |
+   = help: each type gets its items from one block: remove or narrow one of them
+
+error[E0422]: `derive Show for i64` doesn't match `Show`
+   --> tests/programs/m142/bad_block.la:18:1
+   |
+18 | / derive Show for i64 {
+19 | |     fun show(self): string = "{self}";
+20 | | }
+   | \-^
+   |
+   = help: no method `width`
+
+error[E0422]: `derive Show for bool` doesn't match `Show`
+   --> tests/programs/m142/bad_block.la:22:1
+   |
+22 | / derive Show for bool {
+23 | |     fun show(self): i64 = 1;
+24 | |     fun width(self): i64 = 1;
+25 | | }
+   | \-^
+   |
+   = help: `show` should be `fun show(self): string`
+
+For more about E0452 and E0422, run `lughac explain <code>`.

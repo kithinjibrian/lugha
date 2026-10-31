@@ -79,7 +79,7 @@ public fun is_null(v: Value): bool = match v { Null => true, _ => false };
  * objects, tuples and sets as arrays. Never fails; `stringify` refuses a
  * NaN or infinite float inside.
  */
-public fun encode<T: Json>(x: T): Value = x.$to_json();
+public fun encode<T: Json>(x: T): Value = x.to_json();
 
 /**
  * `v` as a value of type `T`, the inverse of `encode`: the type comes from
@@ -89,4 +89,4 @@ public fun encode<T: Json>(x: T): Value = x.$to_json();
  * integer).
  * @returns the value, or the first mismatch and the path to it
  */
-public fun decode<T: Json>(v: Value): Result<T, DecodeError> = T.$from_json(v, "");
+public fun decode<T: Json>(v: Value): Result<T, DecodeError> = T.from_json(v, "");

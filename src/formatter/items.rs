@@ -151,7 +151,7 @@ impl Printer<'_> {
         }
     }
 
-    /// `$derive<T: I> I for T[] { methods }` (v17, milestone 141).
+    /// `derive<T: I> I for T[] { methods }` (v17, milestones 141–142).
     fn derive(&mut self, d: &DeriveDecl) -> Doc {
         let target = match &d.target {
             DeriveTarget::Type(t) => self.ty(t),
@@ -160,7 +160,7 @@ impl Printer<'_> {
             DeriveTarget::Tuple => "tuple".to_string(),
         };
         let head = format!(
-            "$derive{} {} for {target} ",
+            "derive{} {} for {target} ",
             self.type_params(&d.type_params),
             self.ident(&d.interface)
         );

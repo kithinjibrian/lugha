@@ -252,6 +252,12 @@ pub(super) fn declaration(snapshot: &Snapshot, decl: Span) -> Option<(String, St
                     .iter()
                     .find(|m| m.name.span == decl)
                     .map(|m| (m, Some(i.ty.name.as_str()))),
+                // A derive block's item, under its interface (v17, milestone 142).
+                Item::Derive(d) => d
+                    .methods
+                    .iter()
+                    .find(|m| m.name.span == decl)
+                    .map(|m| (m, Some(d.interface.name.as_str()))),
                 _ => None,
             };
             if let Some((f, owner)) = found {

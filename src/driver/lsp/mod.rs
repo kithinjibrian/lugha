@@ -10,6 +10,7 @@ mod check;
 mod code_actions;
 mod completion;
 mod definition;
+mod derive_completion;
 mod docs;
 mod documents;
 mod fixes;

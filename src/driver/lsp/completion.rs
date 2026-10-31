@@ -8,10 +8,11 @@ use lsp_types::{
     CompletionItem, CompletionItemKind as Kind, Documentation, MarkupContent, MarkupKind, Position,
 };
 
+use super::derive_completion::{derive_intrinsics, enclosing};
 use super::docs;
 use super::hover::{Snapshot, byte_offset, declaration};
 use super::snippets;
-use crate::ast::{FunDecl, Item, Program, VisibilityKind};
+use crate::ast::{Item, Program, VisibilityKind};
 use crate::check::{self, Detail, Member, MemberKind, Name, Target, Type};
 use crate::modules::Module;
 use crate::span::Span;
@@ -174,6 +175,13 @@ impl<'a> Here<'a> {
 
     /// What can follow the `.` at `dot`.
     fn members(&self, dot: usize) -> Vec<CompletionItem> {
+        // `derive.` inside a derive block: the field intrinsics (v17).
+        if let Some(items) = self
+            .program()
+            .and_then(|p| derive_intrinsics(p, (self.text, self.base), dot))
+        {
+            return items;
+        }
         match self.receiver(dot) {
             Some(Receiver::Members(members)) => self.items(&members),
             Some(Receiver::Module(path)) => self.module_items(&path),
@@ -414,16 +422,6 @@ impl<'a> Here<'a> {
     pub(super) fn header(&self, decl: Span, name: &str) -> String {
         declaration(self.snapshot, decl).map_or_else(|| name.to_string(), |(header, _)| header)
     }
-}
-
-/// The function or method whose body holds `offset`.
-fn enclosing(program: &Program, offset: usize) -> Option<Span> {
-    let holds = |f: &FunDecl| f.span.start <= offset && offset <= f.span.end;
-    program.items.iter().find_map(|it| match it {
-        Item::Fun(f) if holds(f) => Some(f.span),
-        Item::Impl(i) => i.methods.iter().find(|m| holds(m)).map(|m| m.span),
-        _ => None,
-    })
 }
 
 /// The value of the smallest span among `found`.

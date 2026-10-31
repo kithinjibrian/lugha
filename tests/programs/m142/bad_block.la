@@ -1,0 +1,27 @@
+// Mistakes in derive blocks: two blocks covering one type (E0452), and
+// items that don't match the interface's (E0422) (v17, milestone 142).
+interface Show {
+    fun show(self): string;
+    fun width(self): i64;
+}
+
+derive<T: Show> Show for Option<T> {
+    fun show(self): string = "?";
+    fun width(self): i64 = 1;
+}
+
+derive Show for Option<i64> {
+    fun show(self): string = "?";
+    fun width(self): i64 = 1;
+}
+
+derive Show for i64 {
+    fun show(self): string = "{self}";
+}
+
+derive Show for bool {
+    fun show(self): i64 = 1;
+    fun width(self): i64 = 1;
+}
+
+fun main() {}

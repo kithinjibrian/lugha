@@ -135,3 +135,18 @@ fn a_missing_path_is_exit_2() {
     assert_eq!(out.status.code(), Some(2));
     assert!(text(&out.stderr).contains("nowhere.la"));
 }
+
+#[test]
+fn a_derive_block_is_formatted_like_an_impl() {
+    let t = Temp::new();
+    t.write(
+        "main.la",
+        "interface Show { fun show(self): string; }\nderive<T: Show> Show for T[] { fun show(self): string = \"list\"; }\nfun main() {}\n",
+    );
+    let out = lughac(&t.0, &["fmt", "main.la"]);
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    assert_eq!(
+        t.read("main.la"),
+        "interface Show {\n    fun show(self): string;\n}\nderive<T: Show> Show for T[] {\n    fun show(self): string = \"list\";\n}\nfun main() {}\n"
+    );
+}
