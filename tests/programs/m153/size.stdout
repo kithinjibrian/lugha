@@ -1,0 +1,8 @@
+note: 11
+empty: 0
+folder: Err(Is a directory)
+missing: Err(No such file or directory)
+nul: Err(path contains a NUL byte)
+link: 11
+fifo: Err(not a regular file)
+big: 5368709120

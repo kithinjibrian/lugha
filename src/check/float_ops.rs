@@ -61,6 +61,8 @@ pub fn os_signature(op: &str) -> Option<(Vec<Type>, Type)> {
         "list_dir" => (vec![Type::String], result(Type::Array(Box::new(bytes())))),
         "make_dir" | "remove_file" | "remove_dir" => (vec![Type::String], result(Type::I64)),
         "stat_kind" => (vec![Type::String], Type::I64),
+        // A regular file's size, without opening it (v17, milestone 153).
+        "file_size" => (vec![Type::String], result(Type::I64)),
         // `std.fs`'s file streams (v17, milestone 146): files as `i64`
         // descriptors; mode 0 reads, 1 creates, 2 appends.
         "file_open" => (vec![Type::String, Type::I64], result(Type::I64)),

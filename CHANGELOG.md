@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `fs.size(path)` (milestone 153, PRP-186): a regular file's size in bytes from `stat(2)`, links followed, without opening it, so a program can refuse a file too big to read whole; a folder is `Err("Is a directory")`, another kind `Err("not a regular file")`.
 - `loop` and labels (milestone 152, PRP-185): `loop { … }` repeats until a `break` and is an expression (`let x = loop { … break v; };`); a `loop` no `break` leaves counts as returning, so `panic("unreachable")` after `while true` is no longer needed. `outer:` labels a `loop`, `while` or `for` for `break outer;` and `continue outer;`. E0512 (unknown label), E0513 (a label reused inside its loop), E0514 (`break` with a value out of `while` or `for`). The formatter, completion and the VS Code grammar know them (extension 0.22.0). **Breaking:** `loop` is a keyword.
 - A benchmark suite (PRP-184): `python3 bench/run.py` times six programs (`fib`, `nbody`, `binarytrees`, `fannkuch`, `mandelbrot`, `wordfreq`) in Lugha (-O2 and -O0), C, Rust, Go, Node and optionally Python, after checking that every version prints what C's does; `--save` appends the tables to `bench/RESULTS.md`. `cargo test --test bench` keeps the Lugha versions building.
 - `defer` takes an assignment (PRP-183): `defer n += 1;` and `defer xs[0] = 2;` need no braces.
