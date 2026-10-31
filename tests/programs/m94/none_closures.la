@@ -1,0 +1,23 @@
+// `None` in a closure's result inside a generic function (TODO since
+// milestone 94): the closure's other branch, or the expected type, fixes it.
+fun evens<T>(xs: T[], keep: fun(T): bool): Option<T>[] = xs.iter().map(
+    fun(x) = if keep(x) { Some(x) } else { None },
+).collect();
+fun firsts<T>(xs: T[][]): Option<T>[] = xs.iter().map(
+    fun(x) = if x.len > 0 { Some(x[0]) } else { None },
+).collect();
+fun nones_first<T>(xs: T[], keep: fun(T): bool): Option<T>[] = xs.iter().map(
+    fun(x) = if !keep(x) { None } else { Some(x) },
+).collect();
+fun nones<T>(xs: T[]): Option<T>[] = xs.map(fun(x) = None);
+
+fun main() {
+    println(nones([1, 2]).len);
+    println(evens([1, 2, 3], fun(x) = x % 2 == 0));
+    println(firsts([[1], []]));
+    println(nones_first([1, 2], fun(x) = x > 1));
+    let plain: Option<i64>[] = [1, 2].iter().map(
+        fun(x) = if x > 1 { None } else { Some(x) },
+    ).collect();
+    println(plain);
+}
