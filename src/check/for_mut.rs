@@ -34,9 +34,7 @@ impl Checker {
             Type::Array(element) => {
                 self.push();
                 self.declare(var, *element, Binding::Let { mutable: true });
-                self.loops += 1;
-                self.block(body, None);
-                self.loops -= 1;
+                self.loop_body(body);
                 self.pop();
             }
             // Reported by `loop_place`; the body is still checked.
@@ -48,9 +46,7 @@ impl Checker {
                 };
                 self.push();
                 self.declare(var, element, Binding::LoopVar);
-                self.loops += 1;
-                self.block(body, None);
-                self.loops -= 1;
+                self.loop_body(body);
                 self.pop();
             }
             other => self.iterator_loop(var, iter, &other, body),

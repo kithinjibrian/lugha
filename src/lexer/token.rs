@@ -74,6 +74,8 @@ pub enum TokenKind {
     Defer,
     /// `actor`, declaring an actor (v17, milestone 92).
     Actor,
+    /// `loop`, repeating until a `break` (v17, milestone 152).
+    Loop,
     // Built-in type names are keywords too, so structs can't shadow them.
     TyI32,
     TyI64,
@@ -185,6 +187,7 @@ pub fn keyword(word: &str) -> Option<TokenKind> {
         "select" => Select,
         "defer" => Defer,
         "actor" => Actor,
+        "loop" => Loop,
         "i32" => TyI32,
         "i64" => TyI64,
         "u8" => TyU8,

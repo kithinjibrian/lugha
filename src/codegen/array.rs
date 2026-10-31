@@ -8,7 +8,6 @@ use inkwell::IntPredicate;
 use inkwell::values::{BasicValueEnum, IntValue, PointerValue, ValueKind};
 
 use super::CodegenError;
-use super::control::Loop;
 use super::heap::{ARRAY_HEADER, element_of};
 use super::hoist::Head;
 use super::lower::{Lowerer, POSITIONED};
@@ -249,12 +248,7 @@ impl<'ctx> Lowerer<'ctx> {
                 borrowed: true,
             },
         );
-        let defers = self.defers.len();
-        self.loops.push(Loop {
-            next: step,
-            exit,
-            defers,
-        });
+        self.push_loop(body, step, exit);
         self.block(body)?;
         self.loops.pop();
         self.scopes.pop();

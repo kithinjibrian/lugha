@@ -121,7 +121,7 @@ impl<'ctx> Lowerer<'ctx> {
                     self.scan_read(scan, value);
                 }
                 StmtKind::Expr { expr, .. } => self.scan_read(scan, expr),
-                StmtKind::While { cond, body } => {
+                StmtKind::While { cond, body, .. } => {
                     self.scan_read(scan, cond);
                     self.block_scan(scan, body);
                 }
@@ -129,6 +129,7 @@ impl<'ctx> Lowerer<'ctx> {
                     pattern,
                     scrutinee,
                     body,
+                    ..
                 } => {
                     scan.bind_pattern(pattern);
                     self.scan_read(scan, scrutinee);
@@ -145,7 +146,9 @@ impl<'ctx> Lowerer<'ctx> {
                         self.block_scan(scan, block);
                     }
                 }
-                StmtKind::For { var, iter, body } => {
+                StmtKind::For {
+                    var, iter, body, ..
+                } => {
                     match iter {
                         ForIter::Range(start, end) => {
                             self.scan_read(scan, start);
@@ -174,7 +177,13 @@ impl<'ctx> Lowerer<'ctx> {
                     };
                     self.block_scan(scan, &block);
                 }
-                StmtKind::Break | StmtKind::Continue => {}
+                // A loop's value is read out of it, like a returned one.
+                StmtKind::Break { value, .. } => {
+                    if let Some(value) = value {
+                        self.scan_read(scan, value);
+                    }
+                }
+                StmtKind::Continue { .. } => {}
             }
         }
         if let Some(tail) = &block.tail {
@@ -243,6 +252,7 @@ impl<'ctx> Lowerer<'ctx> {
                 else_.iter().for_each(|e| self.scan_read(scan, e));
             }
             ExprKind::Block(block) => self.block_scan(scan, block),
+            ExprKind::Loop { body, .. } => self.block_scan(scan, body),
             ExprKind::Array(items) | ExprKind::Tuple(items) => {
                 items.iter().for_each(|e| self.scan_read(scan, e))
             }

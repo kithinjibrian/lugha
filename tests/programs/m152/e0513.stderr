@@ -1,0 +1,11 @@
+error[E0513]: label `scan` is already used by an enclosing loop
+  --> tests/programs/m152/e0513.la:3:9
+  |
+2 |     scan: for i in 0..3 {
+  |     ---- the enclosing loop's label
+3 |         scan: for j in 0..3 {
+  |         ^^^^
+  |
+  = help: give the inner loop another name
+
+For more about E0513, run `lughac explain E0513`.

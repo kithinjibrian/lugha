@@ -35,6 +35,7 @@ Oct 16, 2026 · @kithinji
 - File streams in `std.fs` (milestone 146): `fs.open`, `fs.create` and `fs.append` give a `File` to read by line or in chunks and write piece by piece (standard library).
 - Constants computed by pure code (milestone 147; sections 6, 8): a `const`'s value may be any expression, calls, `if`, `match`, blocks, closures and interpolation included, as long as nothing it reaches prints, touches files, the operating system or C, or starts tasks, channels or actors (E0445, with the path); constants read inside the functions it calls are computed first (E0446 for a cycle through them). Still computed once before `main`, never while compiling.
 - `defer` (milestone 151; sections 2, 3, 5, 6, 9): `defer f.close();`, `defer n += 1;` or `defer { … }` runs when its block is left — its end, `return`, `?`, `break`, `continue` — last first, after a tail or `return` value is computed, reading values as they are then; a panic doesn't run it. Leaving a deferred statement is E0455; one with a value is E0456. **Breaking:** `defer` is a keyword.
+- `loop` and labels (milestone 152; sections 2, 3, 5, 6, 9): `loop { … }` repeats until a `break`, and is an expression: `let x = loop { … break v; };`. A `loop` no `break` leaves has type `never`, so a function whose only exit is a `return` inside it needs no `panic("unreachable")`. `name:` labels a `loop`, `while` or `for` for `break name;` and `continue name;`. E0512 (unknown label), E0513 (a label reused inside its loop), E0514 (`break` with a value out of `while` or `for`). **Breaking:** `loop` is a keyword.
 - An iterator chain's expected type reaches `map`'s closure through `collect` and the helpers between (milestone 150; section 5): `let n: Option<i64>[] = xs.iter().map(fun(x) = None).collect();`.
 - Handing over arguments (milestone 149; sections 4, 9): `x = f(x)`, where `f` keeps its parameter, no longer copies `x`'s arrays on every call; a function that stores a parameter on its last use takes it without a copy from a caller that is done with it (quadratic loops become linear). Programs print the same.
 - A generic call only its result can type takes its type through a method whose result mentions the receiver's type parameters (milestone 148; sections 4, 5): `let p: Person = json.decode(v).unwrap();`, `.expect(…)`, and a program's own methods (`let n: u8 = zeros().first();`).
@@ -283,7 +284,7 @@ Source files are UTF-8. The lexer produces a flat list of tokens, each carrying 
 ```
 fun  extern  struct  enum  impl  let  mut  if  else  while  for  in  of  match
 import  private  public  interface
-return  break  continue  true  false  as  self  spawn  select  actor  const  defer
+return  break  continue  true  false  as  self  spawn  select  actor  const  defer  loop
 i32  i64  u8  f64  bool  string  u32  u64  f32  i8  i16  u16  char
 ```
 
@@ -400,13 +401,15 @@ base_type    = "i32" | "i64" | "u8" | "f64" | "bool" | "string"
                                            (* `m.T`, `m.v.T` (v14), `Stack<i64>`; `Option<T>` is one such *)
 
 block        = "{" { stmt } [ expr ] "}" ;   (* trailing expr = tail value *)
-stmt         = var_decl | while_stmt | for_stmt
+stmt         = var_decl | [ label ] while_stmt | [ label ] for_stmt
              | "return" [ expr ] ";"
-             | "break" ";" | "continue" ";"
+             | "break" [ IDENT ] [ expr ] ";" | "continue" [ IDENT ] ";"   (* a label and a value: v17, milestone 152 *)
              | "defer" ( block_like [ ";" ] | expr [ assign_op expr ] ";" )   (* v17, milestone 151; an assignment: PRP-183 *)
              | block_like                     (* no ";" needed *)
              | expr [ assign_op expr ] ";" ;
-block_like   = if_expr | match_expr | select_expr | block ;   (* select: v17 *)
+block_like   = if_expr | match_expr | select_expr | [ label ] loop_expr | block ;   (* select: v17; loop: milestone 152 *)
+label        = IDENT ":" ;        (* only directly before `loop`, `while` or `for`; never a map literal's key *)
+loop_expr    = "loop" block ;     (* v17, milestone 152 *)
 var_decl     = "let" [ "mut" ] IDENT [ ":" type ] "=" expr ";"
              | "let" pattern "=" expr [ "else" block ] ";" ; (* let-else (v9); without else, irrefutable (v14) *)
 assign_op    = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ;   (* bit forms: v7; `%=`: v9 *)
@@ -1016,7 +1019,11 @@ let sign = if x < 0 { -1 } else if x == 0 { 0 } else { 1 };
 }
 ```
 
-**break and continue.** Apply to the innermost enclosing loop. Using either outside a loop is a compile error.
+**loop** (v17, milestone 152). `loop { body }` runs `body` again and again until a `break` targets it, or a `return`, `?`, `panic` or `exit` leaves it. It is an expression, like `if`: `break value;` gives the loop that value, and every `break` targeting one loop gives the same type (E0403 at the value otherwise); the loop's expected type flows into each value (`let o: Option<i64> = loop { break None; };`), and with none the first `break`'s value decides. A plain `break;` gives `()`. A `loop` that no `break` targets never ends: its type is `never`, so it counts as returning (section 6) and can stand in for any type. Its body has type `()` (E0403 for a tail value). As a statement it needs no `;`, like any block-like one, and its value, if any, must be `()` (E0505). Only a `loop` gives a value: `break value` out of a `while` or `for` is E0514, since those can end without a `break`. `loop` is a keyword.
+
+**Labels** (v17, milestone 152). `name:` directly before `loop`, `while`, `while let` or `for` labels that loop: `outer: for row of grid { for x of row { if x == 0 { continue outer; } } }`. `break name;`, `break name value;` and `continue name;` reach the loop with that label, running the defers of every block they leave, innermost first, as a plain `break` does. Labels live apart from variables: after `break`, a name is the label only when an enclosing loop has that label, and otherwise the start of a value (`break x;` breaks with `x`); after `continue`, a name is always a label. A label that no enclosing loop has is E0512, and labels don't reach into closures or spawned calls, whose bodies are their own functions. Nested loops can't share a label (E0513); loops side by side may. A labelled `loop` is also an expression: `let first = search: loop { … break search x; … };`. In a map literal, `#{a: loop { … }}` is the entry `a`, not a label.
+
+**break and continue.** Without a label, apply to the innermost enclosing loop. Using either outside a loop is a compile error (E0504).
 
 **defer** (v17, milestone 151). `defer e;`, `defer place op value;` (any assignment, checked as that statement) or `defer { … }` runs `e` when the block holding it is left, on every way out after the `defer` was reached: the block's end, `return`, `?` returning, `break` and `continue` (through every block between the jump and its loop). Several run last first, innermost block first. `e` is evaluated when it runs, reading variables as they are then (`let mut n = 1; defer println(n); n = 2;` prints 2), with the names in scope at the `defer` (a later `let` shadowing one doesn't change what it reads). A block's tail and a `return` value are computed first and keep the value they had (`defer xs.push(4); xs` gives `xs` without the 4). A `defer` not yet reached doesn't run, and one inside a deferred block runs at that block's end. `e` must have type `()` (E0456), so a `Result` can't be dropped by accident: `defer { fs.remove_file(p); }` discards one on purpose. A `return`, `?`, `break` or `continue` that would leave `e` is E0455, since its block is already being left; loops and closures inside `e` may use them. A closure's or a spawned call's defers run when it returns. A panic, `exit` and the end of the program don't run pending defers (section 6). `defer` is for closing files and sockets on an early `?`:
 
@@ -1388,11 +1395,12 @@ fun clamp(x: i64, lo: i64, hi: i64): i64 {
 - `return e;` definitely returns.
 - A block definitely returns if any statement in it does. Statements after it are unreachable and reported as a warning.
 - `if/else` definitely returns if both branches do. `if` without `else` never does.
-- Loops never do, even `while true`.
+- `while` and `for` loops never do, even `while true`.
+- A `loop` that no `break` targets does (v17, milestone 152): it never ends.
 
 A `panic(...);` statement also counts as definitely returning, because it never returns. A block that definitely returns can stand in for a value of any type, so `if x < 0 { return 0; } else { x }` has type `i64`.
 
-This rejects a few correct programs, such as a function whose only exit is a `return` inside `while true`. Add a final `panic("unreachable");` in that case. `return` stays available for early exits. In a function returning `()`, `return;` (the same as `return ();`) is allowed and falling off the end is an implicit return.
+This rejects a few correct programs, such as a function whose only exit is a `return` inside `while true`. Write that loop as `loop { … }`, which counts (v17), or add a final `panic("unreachable");`. `return` stays available for early exits. In a function returning `()`, `return;` (the same as `return ();`) is allowed and falling off the end is an implicit return.
 
 **Entry point.** Every program must define `main` as either `fun main()` or `fun main(): i32`, without type parameters (E0304). The process exit code is 0 for the first form and `main`'s return value for the second. The user's `main` is emitted as `lugha_fn_main`, like every Lugha function, and the compiler emits a real C `main` that initializes the runtime and calls it (see section 9). Command-line arguments are not accessible in v0.
 
@@ -1617,6 +1625,7 @@ The compiler, `lughac`, is written in Rust with inkwell. It turns one `.la` file
 - **Struct, enum and array arguments:** pass a pointer to the caller's storage rather than the value itself, since the callee can't modify it.
 - **`?`** (v4): the operand goes in a slot and its tag picks the branch. The failing branch builds the function's own `Err(e)` (or `None`) from the payload and returns it; the passing branch loads the `Ok`/`Some` payload.
 - **`defer`** (v17, milestone 151): emits nothing where it is written; each block keeps the `defer` statements reached so far, with the names then in scope. Every exit lowers the pending ones inline, innermost block first and last first: the block's end after its tail, `return` and a failing `?` (every block of the function, after the value is built), `break` and `continue` (the blocks inside the loop). A statement reached by several exits is emitted at each. A value leaving while defers are pending is copied first (arrays only marked shared, section 4). Liveness counts a local mentioned in a deferred statement as used at its block's end, so nothing below the `defer` hands it over.
+- **`loop`** (v17, milestone 152): a head block (where `continue` goes, and a preemption point like every loop head) and an exit block (where `break` goes). A `loop` with a value gets a result slot in the entry block; `break value` stores into it, after copying the value as any store does, before the defers it leaves run, and the exit loads it. A `never` loop's exit block is unreachable. Labels are resolved by the checker; each jump goes to its loop's head or exit.
 - **Text and option helpers** (v4) are prelude functions (`str_trim`, `option_map`, `result_map_err`, …) chosen by the receiver's type; `slice` is built in and calls `lugha_rt_str_slice`. A prelude function without type parameters is compiled only when user code reaches it, as generic helpers are.
 - **`Result`** (v4) is declared in the prelude, so it is the generic-enum machinery throughout; its LLVM type and helpers are named as it prints (`%"Result<i64, string>"`).
 - **Array helpers** (v3): `xs.map(f)` calls the prelude's `map` instance with `xs` first. The prelude is Lugha source like any other (`sort_by` is a bottom-up merge sort between two buffers), so it needs no special lowering; `--emit=tokens|ast` leaves it out, and an error inside it is reported as an internal compiler error.
@@ -1888,6 +1897,9 @@ Name and type errors, reported by the checker:
 | E0509 | A place swapped with a part of itself | `swap(n, n.kids[0])` |
 | E0510 | A statement changes what contains the place it writes | `xs[0] = { xs.push(2); 9 };`; for a `mut self` receiver only across an index, `gs[0].f(gs.clear())` (§5) |
 | E0511 | Changing a variable a closure captured | `let inc = fun() { count += 1; };` (v3) |
+| E0512 | Unknown label (v17) | `loop { continue nowhere; }`; `a: loop { let f = fun() { loop { break a; } }; }` |
+| E0513 | A label already used by an enclosing loop (v17) | `a: for i in 0..3 { a: for j in 0..3 { } }` |
+| E0514 | `break` with a value out of a `while` or `for` loop (v17) | `while c { break 1; }`; `a: for x of xs { loop { break a x; } }` |
 | W0101 | Unreachable code (warning) | statements after `return`, `break` or `continue`; reported once per block |
 | W0102 | Unreachable `match` arm (warning) | an arm after `_`, or a variant already covered |
 | W0103 | Unused `match` binding (warning) | `Some(Emtpy) => 0`, a misspelled variant that became a binding |
@@ -3916,6 +3928,7 @@ The spec is implemented in five milestones, each ending in a program that runs. 
 | 149 | Handing over arguments (v17) | kept parameters, `x = f(x)` as a last use, the owning instance `lugha_fn_<symbol>.$own` called by direct calls | `tests/programs/m149/` (done) |
 | 150 | Inference through iterator chains (v17) | `collect`/`collect_set`/`collect_map`'s expected element passed back through `filter`, `take`, `skip`, `take_while`, `skip_while` to `map`'s closure | `tests/programs/m150/` (done) |
 | 151 | `defer` (v17) | `defer e;` and `defer { … }` at every exit of their block but a panic, last first; E0455, E0456; `defer` a keyword | `tests/programs/m151/` (done) |
+| 152 | `loop` and labels (v17) | `loop { }` as an expression (`never` without a `break`), `break value`, labels on `loop`, `while` and `for` for `break` and `continue`; E0512–E0514; `loop` a keyword | `tests/programs/m152/` (done) |
 
 In milestones 1 and 2, every value can be treated as `i64`, so codegen can start before the type checker exists. Until milestone 4 provides `lugha_rt_panic`, integer `+`, `-` and `*` wrap, and `/` and `%` stop the program with a trap on a zero divisor or `MIN / -1`. Milestone 3 then replaces that assumption with real types. The process exit code is the low 8 bits of `main`'s result, so milestone tests use results below 256.
 

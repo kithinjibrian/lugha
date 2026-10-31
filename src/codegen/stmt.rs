@@ -10,6 +10,28 @@ use crate::check::Type;
 impl<'ctx> Lowerer<'ctx> {
     /// Lowers a statement and reports whether it diverges (spec §6).
     pub(super) fn stmt(&mut self, stmt: &Stmt) -> Result<bool, CodegenError> {
+        // A labelled loop's label, for `push_loop` when its body is entered.
+        if let StmtKind::While {
+            label: Some(label),
+            body,
+            ..
+        }
+        | StmtKind::For {
+            label: Some(label),
+            body,
+            ..
+        } = &stmt.kind
+        {
+            self.loop_labels.insert(body.span.start, label.name.clone());
+        }
+        if let StmtKind::WhileLet {
+            label: Some(label),
+            body,
+            ..
+        } = &stmt.kind
+        {
+            self.loop_labels.insert(body.span.start, label.name.clone());
+        }
         match &stmt.kind {
             StmtKind::Let { name, ty, init, .. } => self.let_stmt(name, ty.as_ref(), init)?,
             StmtKind::Assign {
@@ -20,8 +42,9 @@ impl<'ctx> Lowerer<'ctx> {
             } => self.assign(*op, op_span.start, place, value)?,
             StmtKind::Expr { expr, .. } => return Ok(matches!(self.expr(expr)?, Value::Never)),
             // Loops never definitely return (spec §6), whatever their body does.
-            StmtKind::While { cond, body } => self.while_loop(cond, body)?,
+            StmtKind::While { cond, body, .. } => self.while_loop(cond, body)?,
             StmtKind::WhileLet {
+                label: _,
                 pattern,
                 scrutinee,
                 body,
@@ -35,24 +58,31 @@ impl<'ctx> Lowerer<'ctx> {
                 var,
                 iter: ForIter::Range(start, end),
                 body,
+                ..
             } => self.for_range(var, start, end, body)?,
             StmtKind::For {
                 var,
                 iter: ForIter::Array(iter),
                 body,
+                ..
             } => self.for_of(var, iter, body, false)?,
             StmtKind::For {
                 var,
                 iter: ForIter::MutOf(iter),
                 body,
+                ..
             } => self.for_of(var, iter, body, true)?,
             StmtKind::Defer(inner) => self.defer_stmt(inner),
             StmtKind::Return(value) => {
                 self.return_stmt(value.as_ref())?;
                 return Ok(true);
             }
-            StmtKind::Break | StmtKind::Continue => {
-                self.jump(matches!(stmt.kind, StmtKind::Break))?;
+            StmtKind::Break { label, value } => {
+                self.jump(true, label.as_ref(), value.as_ref())?;
+                return Ok(true);
+            }
+            StmtKind::Continue { label } => {
+                self.jump(false, label.as_ref(), None)?;
                 return Ok(true);
             }
         }

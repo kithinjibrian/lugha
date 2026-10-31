@@ -47,7 +47,11 @@ impl Checker {
             (None, Some((_, r))) if !unknown(r) => Some(r.clone()),
             _ => None,
         };
-        let saved = (self.ret.clone(), self.loops, self.dead);
+        let saved = (self.ret.clone(), std::mem::take(&mut self.loops), self.dead);
+        // Labels outside stay out of reach, but E0512's help names them.
+        let saved_outer = self.outer_labels.clone();
+        let outside = saved.1.iter().filter_map(|l| l.label.as_ref());
+        self.outer_labels.extend(outside.map(|l| l.name.clone()));
         // A closure's `return` and `?` leave the closure, never a `defer` around it.
         let saved_deferring = self.deferring.take();
         let saved_changes = std::mem::take(&mut self.changes);
@@ -57,7 +61,7 @@ impl Checker {
             captures: Vec::new(),
             infer_ret: ret.is_none(),
         });
-        (self.ret, self.loops, self.dead) = (ret.clone().unwrap_or(Type::Error), 0, false);
+        (self.ret, self.dead) = (ret.clone().unwrap_or(Type::Error), false);
         self.push();
         for ((name, _), ty) in c.params.iter().zip(&params) {
             self.declare(name, ty.clone(), Binding::Param);
@@ -67,6 +71,7 @@ impl Checker {
         self.pop();
         let frame = self.closures.pop().expect("pushed above");
         (self.ret, self.loops, self.dead) = saved;
+        self.outer_labels = saved_outer;
         self.deferring = saved_deferring;
         self.changes = saved_changes;
         self.iterating = saved_iterating;

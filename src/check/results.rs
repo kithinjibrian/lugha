@@ -61,7 +61,7 @@ impl Checker {
         // The value wanted from `e?` is what `e` holds (v17, milestone 140):
         // `let p: Person = json.decode(v)?;` infers `decode`'s `T`.
         let hint = expect.and_then(|e| self.try_hint(&e.ty));
-        self.leaves_defer("?", expr.span);
+        self.leaves_defer("?", expr.span, None);
         let ty = self.value(inner, hint.as_ref());
         if matches!(ty, Type::Error | Type::Never) || self.closure_return_unknown(expr.span) {
             return Type::Error;

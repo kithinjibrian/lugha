@@ -50,14 +50,18 @@ fn stmt(s: &Stmt) -> String {
             expr: e,
             semicolon: false,
         } => format!("(stmt {})", expr(e)),
-        StmtKind::While { cond, body } => format!("(while {} {})", expr(cond), block(body)),
+        StmtKind::While { label, cond, body } => {
+            format!("(while{} {} {})", lbl(label), expr(cond), block(body))
+        }
         StmtKind::Defer(inner) => format!("(defer {})", stmt(inner)),
         StmtKind::WhileLet {
+            label,
             pattern: p,
             scrutinee,
             body,
         } => format!(
-            "(while-let {} {} {})",
+            "(while-let{} {} {} {})",
+            lbl(label),
             pattern(p),
             expr(scrutinee),
             block(body)
@@ -70,19 +74,35 @@ fn stmt(s: &Stmt) -> String {
             Some(e) => format!("(let-else {} {} {})", pattern(p), expr(init), block(e)),
             None => format!("(let-pat {} {})", pattern(p), expr(init)),
         },
-        StmtKind::For { var, iter, body } => {
+        StmtKind::For {
+            label,
+            var,
+            iter,
+            body,
+        } => {
             let iter = match iter {
                 ForIter::Range(a, b) => format!("(range {} {})", expr(a), expr(b)),
                 ForIter::Array(xs) => format!("(of {})", expr(xs)),
                 ForIter::MutOf(xs) => format!("(of-mut {})", expr(xs)),
             };
-            format!("(for {} {iter} {})", var.name, block(body))
+            format!("(for{} {} {iter} {})", lbl(label), var.name, block(body))
         }
         StmtKind::Return(Some(value)) => format!("(return {})", expr(value)),
         StmtKind::Return(None) => "(return)".into(),
-        StmtKind::Break => "(break)".into(),
-        StmtKind::Continue => "(continue)".into(),
+        StmtKind::Break { label, value } => {
+            let value = value.as_ref().map(|v| format!(" {}", expr(v)));
+            format!("(break{}{})", lbl(label), value.unwrap_or_default())
+        }
+        StmtKind::Continue { label } => format!("(continue{})", lbl(label)),
     }
+}
+
+/// A loop's or jump's label as printed: ` name:`, or nothing.
+fn lbl(label: &Option<crate::ast::Ident>) -> String {
+    label
+        .as_ref()
+        .map(|l| format!(" {}:", l.name))
+        .unwrap_or_default()
 }
 
 /// Prints one expression.
@@ -161,6 +181,7 @@ pub fn expr(expr: &Expr) -> String {
             crate::ast::HashKind::Set => list("set", &[&lit.keys]),
             crate::ast::HashKind::Empty => "(hash-empty)".to_string(),
         },
+        ExprKind::Loop { label, body } => format!("(loop{} {})", lbl(label), block(body)),
         ExprKind::If { cond, then, else_ } => {
             let otherwise = else_
                 .as_ref()

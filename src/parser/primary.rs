@@ -44,7 +44,11 @@ impl Parser<'_> {
                 return self.with_struct_literals(true, |p| p.array(start, open));
             }
             TokenKind::HashBrace => return self.hash_literal(start),
-            TokenKind::If | TokenKind::LBrace | TokenKind::Match | TokenKind::Select => {
+            TokenKind::If
+            | TokenKind::LBrace
+            | TokenKind::Match
+            | TokenKind::Select
+            | TokenKind::Loop => {
                 return self.block_like();
             }
             // `i16.MAX`: an integer type keyword before `.` is a name (v10).
@@ -75,6 +79,10 @@ impl Parser<'_> {
     /// whose frame is on every nesting level's stack (E0206's limit).
     #[inline(never)]
     fn ident_primary(&mut self, start: usize, name: String) -> PResult<Expr> {
+        // `name: loop { … }` as a value (v17, milestone 152).
+        if self.label_ahead() && self.peek_at(2) == &TokenKind::Loop {
+            return self.labelled_loop(start);
+        }
         let name = Ident {
             name,
             span: self.bump(),
@@ -197,6 +205,9 @@ impl Parser<'_> {
             return self.select_expr();
         }
         let start = self.span().start;
+        if self.at(&TokenKind::Loop) {
+            return self.loop_expr(start, None);
+        }
         let block = self.block()?;
         Ok(self.mk(start, ExprKind::Block(block)))
     }

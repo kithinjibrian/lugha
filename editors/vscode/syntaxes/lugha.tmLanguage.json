@@ -106,7 +106,8 @@
     },
     "keyword": {
       "patterns": [
-        { "name": "keyword.control.lugha", "match": "\\b(if|else|while|for|in|of|match|return|break|continue|spawn|select|defer)\\b" },
+        { "comment": "A loop's label (v17, milestone 152): `outer:` before `loop`, `while` or `for`, and the name after `continue`.", "name": "entity.name.label.lugha", "match": "\\b[A-Za-z_][A-Za-z0-9_]*(?=\\s*:\\s*(?:loop|while|for)\\b)|(?<=\\bcontinue\\s)[A-Za-z_][A-Za-z0-9_]*" },
+        { "name": "keyword.control.lugha", "match": "\\b(if|else|while|for|in|of|match|return|break|continue|spawn|select|defer|loop)\\b" },
         { "comment": "`after(ms) =>` and `default =>` open a `select` arm (v17); elsewhere they are names.", "name": "keyword.control.lugha", "match": "\\b(?:after(?=\\s*\\([^()]*\\)\\s*=>)|default(?=\\s*=>))" },
         { "name": "keyword.other.$1.lugha", "match": "\\b(fun|extern|struct|enum|impl|interface|let|import|actor|const)\\b" },
         { "name": "storage.modifier.lugha", "match": "\\b(mut|private|public)\\b" },

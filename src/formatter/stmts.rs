@@ -76,17 +76,20 @@ impl Printer<'_> {
             }
             // The inner statement prints its own `;`, or none after a block.
             StmtKind::Defer(inner) => concat(vec![text("defer "), self.stmt(inner)]),
-            StmtKind::While { cond, body } => concat(vec![
+            StmtKind::While { label, cond, body } => concat(vec![
+                text(label_prefix(label)),
                 text("while "),
                 self.cond(cond),
                 text(" "),
                 self.block(body, 0),
             ]),
             StmtKind::WhileLet {
+                label,
                 pattern,
                 scrutinee,
                 body,
             } => concat(vec![
+                text(label_prefix(label)),
                 text(format!("while let {} = ", self.pattern(pattern))),
                 self.cond(scrutinee),
                 text(" "),
@@ -108,12 +111,17 @@ impl Printer<'_> {
                 parts.push(text(";"));
                 concat(parts)
             }
-            StmtKind::For { var, iter, body } => {
+            StmtKind::For {
+                label,
+                var,
+                iter,
+                body,
+            } => {
                 let (head, skip) = match destructured(var.name.as_str(), body) {
                     Some(pattern) => (self.pattern(pattern), 1),
                     None => (self.ident(var), 0),
                 };
-                let mut parts = vec![text(format!("for {head} "))];
+                let mut parts = vec![text(format!("{}for {head} ", label_prefix(label)))];
                 match iter {
                     ForIter::Range(from, to) => {
                         parts.push(text("in "));
@@ -138,10 +146,30 @@ impl Printer<'_> {
             StmtKind::Return(Some(value)) => {
                 concat(vec![text("return "), self.expr(value), text(";")])
             }
-            StmtKind::Break => text("break;"),
-            StmtKind::Continue => text("continue;"),
+            StmtKind::Break { label, value } => {
+                let mut parts = vec![text("break")];
+                if let Some(label) = label {
+                    parts.push(text(format!(" {}", label.name)));
+                }
+                if let Some(value) = value {
+                    parts.push(text(" "));
+                    parts.push(self.expr(value));
+                }
+                parts.push(text(";"));
+                concat(parts)
+            }
+            StmtKind::Continue { label: None } => text("continue;"),
+            StmtKind::Continue { label: Some(label) } => text(format!("continue {};", label.name)),
         }
     }
+}
+
+/// `name: ` before a labelled loop (milestone 152), or nothing.
+pub(super) fn label_prefix(label: &Option<crate::ast::Ident>) -> String {
+    label
+        .as_ref()
+        .map(|l| format!("{}: ", l.name))
+        .unwrap_or_default()
 }
 
 /// The pattern of `for (i, w) of …`: the parser binds a hidden `$item…`

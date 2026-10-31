@@ -1,0 +1,15 @@
+// SYNTAX TEST "source.lugha" "loop and labels (milestone 152)"
+
+fun main() {
+    let n = loop {
+//          ^^^^ keyword.control.lugha
+        break 1;
+    };
+    outer: for i in 0..3 {
+//  ^^^^^ entity.name.label.lugha
+        continue outer;
+//               ^^^^^ entity.name.label.lugha
+    }
+    let looped = 1;
+//      ^^^^^^ - keyword.control.lugha
+}

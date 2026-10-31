@@ -22,6 +22,7 @@ mod hashed;
 mod import;
 mod interface;
 mod item;
+mod loops;
 mod operators;
 mod out_params;
 mod pattern;
@@ -89,6 +90,8 @@ pub fn parse_partial_from(tokens: &[Token], first: u32) -> (Program, Vec<Diagnos
         no_struct: false,
         scrutinee: false,
         impl_self: None,
+        labels: Vec::new(),
+        no_label: false,
         diagnostics: Vec::new(),
     };
     let (imports, items) = parser.program();
@@ -121,6 +124,12 @@ struct Parser<'t> {
     scrutinee: bool,
     /// The type and parameters of the `impl` being read: what `Self` means (v10).
     impl_self: Option<(Ident, Vec<Ident>)>,
+    /// The labels of the enclosing loops (v17, milestone 152): after
+    /// `break`, one of these names is the label, any other a value.
+    labels: Vec<String>,
+    /// True while a map literal's key is read, where `a: loop` is an entry,
+    /// not a label (milestone 152).
+    no_label: bool,
     diagnostics: Vec<Diagnostic>,
 }
 

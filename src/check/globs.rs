@@ -211,10 +211,10 @@ mod tests {
             ("top.la", "public import mid { * };\n"),
             (
                 "mid.la",
-                "public import raw { * };\npublic import more { extra };\npublic import loop { * };\n",
+                "public import raw { * };\npublic import more { extra };\npublic import cycle { * };\n",
             ),
             (
-                "loop.la",
+                "cycle.la",
                 "public import mid { * };\npublic fun looped(): i64 = 0;\n",
             ),
             ("more.la", "public fun extra(): i64 = 3;\n"),

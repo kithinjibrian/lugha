@@ -1,0 +1,37 @@
+// `break` with a value: the expected type flows into it, and an array it
+// gives is the loop's own copy.
+fun first_even(xs: i64[]): Option<i64> = search: loop {
+    for x of xs {
+        if x % 2 == 0 {
+            break search Some(x);
+        }
+    }
+    break None;
+};
+
+fun main() {
+    println(first_even([1, 3, 4, 5]));
+    println(first_even([1, 3]));
+    let empty: string[] = loop {
+        break [];
+    };
+    println(empty.len);
+    let a = [1, 2, 3];
+    let mut b = loop {
+        break a;
+    };
+    b[0] = 9;
+    println("{a[0]} {b[0]}");
+    let mut tries = 0;
+    let n = loop {
+        tries += 1;
+        if tries == 3 {
+            break tries * 100;
+        }
+    };
+    println(n);
+    let unit: () = loop {
+        break;
+    };
+    println(unit);
+}

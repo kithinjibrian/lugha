@@ -42,6 +42,7 @@ impl Parser<'_> {
         let scrutinee = self.cond()?;
         let body = self.block()?;
         Ok(StmtKind::WhileLet {
+            label: None,
             pattern: Box::new(pattern),
             scrutinee,
             body: Box::new(body),

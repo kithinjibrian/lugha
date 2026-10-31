@@ -82,7 +82,7 @@ impl Walk<'_> {
             }
             StmtKind::Expr { expr, .. } => self.expr(expr),
             StmtKind::Return(value) => value.iter().for_each(|v| self.result(v)),
-            StmtKind::While { cond, body } => {
+            StmtKind::While { cond, body, .. } => {
                 self.loops.push(stmt.span);
                 self.expr(cond);
                 self.block(body);
@@ -118,7 +118,9 @@ impl Walk<'_> {
                 self.loops.pop();
             }
             StmtKind::Defer(inner) => self.deferred(inner),
-            StmtKind::Break | StmtKind::Continue => {}
+            // A loop's value is stored where the loop's result goes (v17).
+            StmtKind::Break { value, .. } => value.iter().for_each(|v| self.store(v)),
+            StmtKind::Continue { .. } => {}
         }
     }
 
@@ -226,6 +228,14 @@ impl Walk<'_> {
                 parts.else_.iter().for_each(|e| self.expr(e));
             }
             ExprKind::Block(block) => self.block(block),
+            // Labelled jumps need nothing more: a local moves only when it is
+            // declared inside every enclosing loop (`mod.rs`), so any jump
+            // runs its declaration again first (milestone 152).
+            ExprKind::Loop { body, .. } => {
+                self.loops.push(expr.span);
+                self.block(body);
+                self.loops.pop();
+            }
             // A closure's own lets can move; captures never do (`Binding::Param`).
             ExprKind::Closure(c) => {
                 self.closures += 1;

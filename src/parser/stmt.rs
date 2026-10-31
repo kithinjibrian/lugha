@@ -12,7 +12,9 @@ use crate::span::Span;
 
 /// One element of a block.
 enum Element {
-    Stmt(Stmt),
+    /// Boxed: a `Stmt` is several times an `Expr`'s size (labelled `for`
+    /// loops, milestone 152), and this enum lives only until it's pushed.
+    Stmt(Box<Stmt>),
     /// The final expression, directly followed by `}`.
     Tail(Expr),
     /// Nothing to add (a stray `;`, already reported).
@@ -38,7 +40,7 @@ impl Parser<'_> {
             }
             let before = self.pos;
             match self.element() {
-                Ok(Element::Stmt(stmt)) => stmts.push(stmt),
+                Ok(Element::Stmt(stmt)) => stmts.push(*stmt),
                 Ok(Element::Tail(expr)) => tail = Some(Box::new(expr)),
                 Ok(Element::Nothing) => {}
                 Err(Reported) => {
@@ -59,6 +61,9 @@ impl Parser<'_> {
 
     fn element(&mut self) -> PResult<Element> {
         let start = self.span().start;
+        if self.label_ahead() {
+            return self.labelled_element(start);
+        }
         let kind = match self.peek() {
             TokenKind::Let => self.let_stmt()?,
             TokenKind::While if matches!(self.peek_at(1), TokenKind::Let) => {
@@ -69,6 +74,7 @@ impl Parser<'_> {
                 self.bump();
                 let cond = self.cond()?;
                 StmtKind::While {
+                    label: None,
                     cond,
                     body: self.block()?,
                 }
@@ -84,16 +90,7 @@ impl Parser<'_> {
                 self.expect(&TokenKind::Semi)?;
                 StmtKind::Return(value)
             }
-            TokenKind::Break | TokenKind::Continue => {
-                let kind = if self.at(&TokenKind::Break) {
-                    StmtKind::Break
-                } else {
-                    StmtKind::Continue
-                };
-                self.bump();
-                self.expect(&TokenKind::Semi)?;
-                kind
-            }
+            TokenKind::Break | TokenKind::Continue => self.jump_stmt()?,
             TokenKind::Defer => {
                 self.bump();
                 StmtKind::Defer(Box::new(self.deferred()?))
@@ -104,13 +101,13 @@ impl Parser<'_> {
                 self.error(diagnostic.with_help("remove this `;`"));
                 return Ok(Element::Nothing);
             }
-            TokenKind::If | TokenKind::LBrace | TokenKind::Match | TokenKind::Select => {
+            TokenKind::If
+            | TokenKind::LBrace
+            | TokenKind::Match
+            | TokenKind::Select
+            | TokenKind::Loop => {
                 let expr = self.block_like()?;
-                if self.at(&TokenKind::RBrace) {
-                    return Ok(Element::Tail(expr));
-                }
-                let semicolon = self.eat(&TokenKind::Semi);
-                StmtKind::Expr { expr, semicolon }
+                return Ok(self.block_like_element(start, expr));
             }
             _ => {
                 let expr = self.expr()?;
@@ -135,10 +132,39 @@ impl Parser<'_> {
                 }
             }
         };
-        Ok(Element::Stmt(Stmt {
+        Ok(Element::Stmt(Box::new(Stmt {
             kind,
             span: Span::new(start, self.prev_end()),
+        })))
+    }
+
+    /// A block-like expression (`if`, `{`, `match`, `select`, `loop`) at a
+    /// statement's start: the tail if `}` follows, else a statement whose
+    /// `;` is optional.
+    fn block_like_element(&mut self, start: usize, expr: Expr) -> Element {
+        if self.at(&TokenKind::RBrace) {
+            return Element::Tail(expr);
+        }
+        let semicolon = self.eat(&TokenKind::Semi);
+        Element::Stmt(Box::new(Stmt {
+            kind: StmtKind::Expr { expr, semicolon },
+            span: Span::new(start, self.prev_end()),
         }))
+    }
+
+    /// A labelled loop at a statement's start (milestone 152): `loop` is a
+    /// block-like expression, `while` and `for` statements.
+    fn labelled_element(&mut self, start: usize) -> PResult<Element> {
+        let label = self.label()?;
+        if self.at(&TokenKind::Loop) {
+            let expr = self.loop_expr(start, Some(label))?;
+            return Ok(self.block_like_element(start, expr));
+        }
+        let kind = self.labelled_stmt(label)?;
+        Ok(Element::Stmt(Box::new(Stmt {
+            kind,
+            span: Span::new(start, self.prev_end()),
+        })))
     }
 
     /// What follows `defer`: a block-like expression (no `;` needed, as for
@@ -147,7 +173,11 @@ impl Parser<'_> {
         let start = self.span().start;
         let kind = if matches!(
             self.peek(),
-            TokenKind::If | TokenKind::LBrace | TokenKind::Match | TokenKind::Select
+            TokenKind::If
+                | TokenKind::LBrace
+                | TokenKind::Match
+                | TokenKind::Select
+                | TokenKind::Loop
         ) {
             let expr = self.block_like()?;
             self.eat(&TokenKind::Semi);
@@ -209,7 +239,7 @@ impl Parser<'_> {
         })
     }
 
-    fn for_stmt(&mut self) -> PResult<StmtKind> {
+    pub(super) fn for_stmt(&mut self) -> PResult<StmtKind> {
         self.bump();
         let open = if self.header_paren() {
             Some(self.bump())
@@ -236,6 +266,7 @@ impl Parser<'_> {
         }
         let body = self.block()?;
         Ok(StmtKind::For {
+            label: None,
             var,
             iter,
             body: self.destructured(destructure, body),
