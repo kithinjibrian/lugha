@@ -100,7 +100,7 @@ Read `docs/CODE_STYLE.md` before writing code. Every `pub` item has a `///` doc 
 ## KNOWN ISSUES — DO NOT FIX
 
 Specified behaviour that looks like a bug:
-- A function whose only exit is a `return` inside `while true` is rejected as missing a return (spec §6); write `panic("unreachable");` after the loop.
+- A function whose only exit is a `return` inside `while true` is rejected as missing a return (spec §6); write it as `loop { … }` (milestone 152), which counts as returning.
 - Integer overflow always panics, even at `-O2` (spec §12). `as` casts truncate or saturate silently (spec §4), the only place values wrap.
 - Boehm may keep garbage alive when an integer looks like a pointer (spec §7).
 - Extern C code keeping a Lugha pointer is undefined behaviour (spec §7–8).

@@ -1,0 +1,7 @@
+fun main() {
+    rows: for r in 0..3 {
+        loop {
+            break rows r;
+        }
+    }
+}

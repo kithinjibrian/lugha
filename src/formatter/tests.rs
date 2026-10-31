@@ -393,3 +393,11 @@ fn defer_keeps_an_assignment_prp_183() {
         "fun f() {\n    defer n += 1;\n    defer xs[0] = 2;\n}\n",
     );
 }
+
+#[test]
+fn loops_and_labels_v17_m152() {
+    check(
+        "fun f(){let x=a:loop{break a 1;};outer:  for i in 0..3{continue outer;}w:while c{break w;}loop{break;}}",
+        "fun f() {\n    let x = a: loop {\n        break a 1;\n    };\n    outer: for i in 0..3 {\n        continue outer;\n    }\n    w: while c {\n        break w;\n    }\n    loop {\n        break;\n    }\n}\n",
+    );
+}

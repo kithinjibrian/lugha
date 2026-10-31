@@ -1,0 +1,9 @@
+error[E0514]: `break` with a value out of a `while` or `for` loop
+  --> tests/programs/m152/e0514.la:4:15
+  |
+4 |         break i;
+  |               ^
+  |
+  = help: only `loop` gives a value; a `while` or `for` can end without a `break`
+
+For more about E0514, run `lughac explain E0514`.

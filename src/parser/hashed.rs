@@ -21,7 +21,11 @@ impl Parser<'_> {
         let (mut keys, mut values) = (Vec::new(), Vec::new());
         let mut kind = HashKind::Empty;
         while !self.at(&TokenKind::RBrace) {
-            let key = self.expr()?;
+            // `#{a: loop { … }}` is the entry `a`, not a labelled loop.
+            let no_label = std::mem::replace(&mut self.no_label, true);
+            let key = self.expr();
+            self.no_label = no_label;
+            let key = key?;
             let pair = self.eat(&TokenKind::Colon);
             let this = if pair { HashKind::Map } else { HashKind::Set };
             if kind != HashKind::Empty && kind != this {

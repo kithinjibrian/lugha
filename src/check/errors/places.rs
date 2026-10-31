@@ -62,9 +62,12 @@ pub(in crate::check) fn missing_return(
     ty: Type,
     span: Span,
     has_loop: bool,
+    while_true: bool,
 ) -> Diagnostic {
-    let help = if has_loop {
-        "loops never count as returning (spec §6); add `panic(\"unreachable\");` after the loop"
+    let help = if while_true {
+        "`while true` never counts as returning (spec §6); write `loop { … }`, which does when no `break` leaves it"
+    } else if has_loop {
+        "`while` and `for` loops never count as returning (spec §6); add `panic(\"unreachable\");` after the loop"
     } else {
         "end the body with a value, or `return` on every path"
     };

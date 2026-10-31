@@ -1,0 +1,9 @@
+error[E0512]: unknown label `outer`
+  --> tests/programs/m152/e0512_closure.la:5:23
+  |
+5 |                 break outer;
+  |                       ^^^^^
+  |
+  = help: labels don't reach into closures: a closure's body is its own function
+
+For more about E0512, run `lughac explain E0512`.

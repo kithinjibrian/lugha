@@ -1,0 +1,7 @@
+error[E0403]: expected i64, found string
+  --> tests/programs/m152/breaks_disagree.la:7:15
+  |
+7 |         break "one";
+  |               ^^^^^ expected i64
+
+For more about E0403, run `lughac explain E0403`.

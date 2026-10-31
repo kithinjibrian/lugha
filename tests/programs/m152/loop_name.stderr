@@ -1,0 +1,7 @@
+error[E0201]: expected a pattern, found `loop`
+  --> tests/programs/m152/loop_name.la:2:9
+  |
+2 |     let loop = 1;
+  |         ^^^^
+
+For more about E0201, run `lughac explain E0201`.

@@ -34,6 +34,27 @@ impl Checker {
 
     /// Checks a statement and reports whether it diverges.
     pub(super) fn stmt(&mut self, stmt: &Stmt) -> bool {
+        if let StmtKind::While {
+            label: Some(label),
+            body,
+            ..
+        }
+        | StmtKind::For {
+            label: Some(label),
+            body,
+            ..
+        } = &stmt.kind
+        {
+            self.label_loop(label, body);
+        }
+        if let StmtKind::WhileLet {
+            label: Some(label),
+            body,
+            ..
+        } = &stmt.kind
+        {
+            self.label_loop(label, body);
+        }
         match &stmt.kind {
             StmtKind::Let {
                 mutable,
@@ -45,16 +66,15 @@ impl Checker {
                 op, place, value, ..
             } => self.assign(*op, place, value),
             StmtKind::Expr { expr, .. } => return self.expr(expr, None) == Type::Never,
-            StmtKind::While { cond, body } => {
+            StmtKind::While { cond, body, .. } => {
                 self.expect_type(cond, &Expect::of(Type::Bool));
-                self.loops += 1;
-                self.block(body, None);
-                self.loops -= 1;
+                self.loop_body(body);
             }
             StmtKind::WhileLet {
                 pattern,
                 scrutinee,
                 body,
+                ..
             } => self.while_let(pattern, scrutinee, body),
             StmtKind::LetElse {
                 pattern,
@@ -65,35 +85,44 @@ impl Checker {
                 var,
                 iter: ForIter::Range(start, end),
                 body,
+                ..
             } => self.for_range(var, start, end, body),
             StmtKind::For {
                 var,
                 iter: ForIter::Array(iter),
                 body,
+                ..
             } => self.for_of(var, iter, body),
             StmtKind::For {
                 var,
                 iter: ForIter::MutOf(iter),
                 body,
+                ..
             } => self.for_of_mut(var, iter, body),
             StmtKind::Defer(inner) => self.defer_stmt(inner, stmt.span),
             StmtKind::Return(value) => {
-                self.leaves_defer("return", stmt.span);
+                self.leaves_defer("return", stmt.span, None);
                 self.return_stmt(value.as_ref(), stmt.span);
                 return true;
             }
-            StmtKind::Break | StmtKind::Continue => {
-                let keyword = if matches!(stmt.kind, StmtKind::Break) {
-                    "break"
-                } else {
-                    "continue"
-                };
-                self.jump(keyword, stmt.span);
-                self.leaves_defer(keyword, stmt.span);
+            StmtKind::Break { label, value } => {
+                let target = self.jump(true, label.as_ref(), value.as_ref(), stmt.span);
+                self.leaves_defer("break", stmt.span, target);
+                return true;
+            }
+            StmtKind::Continue { label } => {
+                let target = self.jump(false, label.as_ref(), None, stmt.span);
+                self.leaves_defer("continue", stmt.span, target);
                 return true;
             }
         }
         false
+    }
+
+    /// Records a `while` or `for` statement's label for its body
+    /// (`loops.rs` takes it when the body is checked).
+    fn label_loop(&mut self, label: &Ident, body: &Block) {
+        self.loop_labels.insert(body.span.start, label.clone());
     }
 
     /// `let`: the annotation, if any, is expected; the binding enters scope afterwards (spec §5).
@@ -140,9 +169,7 @@ impl Checker {
         };
         self.push();
         self.declare(var, ty, Binding::LoopVar);
-        self.loops += 1;
-        self.block(body, None);
-        self.loops -= 1;
+        self.loop_body(body);
         self.pop();
     }
 

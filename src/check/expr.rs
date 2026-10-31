@@ -157,6 +157,7 @@ impl Checker {
             }
             ExprKind::IfLet(parts) => self.if_let(expr, parts, expect),
             ExprKind::Block(block) => self.block(block, expect),
+            ExprKind::Loop { label, body } => self.loop_expr(label.as_ref(), body, expect),
             ExprKind::Match(scrutinee, arms) => self.match_expr(expr, scrutinee, arms, expect),
             ExprKind::Str(_) => Type::String,
             ExprKind::Interp(parts) => self.interpolation(parts),
