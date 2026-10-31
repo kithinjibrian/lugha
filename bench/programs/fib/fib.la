@@ -1,0 +1,9 @@
+// fib: naive recursion. Stresses calls and integer overflow checks,
+// which Lugha always performs (spec §12); C and Rust at -O2 don't check.
+
+fun fib(n: i64): i64 = if n < 2 { n } else { fib(n - 1) + fib(n - 2) };
+
+fun main() {
+    let n = parse_i64(args()[1]).unwrap();
+    println(fib(n));
+}
