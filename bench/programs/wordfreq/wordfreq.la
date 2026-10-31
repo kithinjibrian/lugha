@@ -1,0 +1,54 @@
+// wordfreq: generates a text of n words from a fixed vocabulary, splits
+// it on spaces and counts each word. Stresses strings, maps and hashing.
+// The generator is a 31-bit LCG every language computes identically;
+// draws use its high bits (`>> 16`), since its low bits cycle quickly.
+
+struct Lcg {
+    state: i64,
+}
+
+impl Lcg {
+    fun next(mut self): i64 {
+        self.state = (self.state * 1103515245 + 12345) % 2147483648;
+        self.state >> 16
+    }
+}
+
+fun vocabulary(rng: Lcg): (string[], Lcg) {
+    let mut rng = rng;
+    let mut words: string[] = [];
+    for _ in 0..1000 {
+        let len = 3 + rng.next() % 8;
+        let mut bytes: u8[] = [];
+        for _ in 0..len {
+            bytes.push((97 + rng.next() % 26) as u8);
+        }
+        words.push(string_from_utf8(bytes).unwrap());
+    }
+    (words, rng)
+}
+
+fun main() {
+    let n = parse_i64(args()[1]).unwrap();
+    let (vocab, mut rng) = vocabulary(Lcg { state: 42 });
+    let mut picked: string[] = [];
+    for _ in 0..n {
+        picked.push(vocab[rng.next() % 1000]);
+    }
+    let text = picked.join(" ");
+
+    let mut counts: Map<string, i64> = #{};
+    for w of text.split(" ") {
+        counts[w] = counts.get(w).unwrap_or(0) + 1;
+    }
+
+    let mut entries: (string, i64)[] = [];
+    for (w, c) of counts {
+        entries.push((w, c));
+    }
+    let top = entries.sort_by(fun(a, b) = a.1 > b.1 || a.1 == b.1 && a.0 < b.0);
+    println(counts.len);
+    for i in 0..10 {
+        println("{top[i].0} {top[i].1}");
+    }
+}

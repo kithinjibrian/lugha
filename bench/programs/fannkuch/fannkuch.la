@@ -1,0 +1,72 @@
+// fannkuch-redux: flips prefixes of every permutation of 1..n.
+// Stresses array indexing and bounds checks.
+
+fun main() {
+    let n = parse_i64(args()[1]).unwrap();
+    let mut perm1 = [0; n];
+    let mut perm = [0; n];
+    let mut count = [0; n];
+    for i in 0..n {
+        perm1[i] = i;
+    }
+    let mut r = n;
+    let mut perm_count = 0;
+    let mut max_flips = 0;
+    let mut checksum = 0;
+    while true {
+        while r != 1 {
+            count[r - 1] = r;
+            r -= 1;
+        }
+        for i in 0..n {
+            perm[i] = perm1[i];
+        }
+        let mut flips = 0;
+        let mut k = perm[0];
+        while k != 0 {
+            let mut i = 0;
+            let mut j = k;
+            while i < j {
+                let t = perm[i];
+                perm[i] = perm[j];
+                perm[j] = t;
+                i += 1;
+                j -= 1;
+            }
+            flips += 1;
+            k = perm[0];
+        }
+        if flips > max_flips {
+            max_flips = flips;
+        }
+        if perm_count % 2 == 0 {
+            checksum += flips;
+        } else {
+            checksum -= flips;
+        }
+        // The next permutation: rotate the first r + 1 elements until a
+        // counter is left.
+        let mut done = false;
+        while true {
+            if r == n {
+                done = true;
+                break;
+            }
+            let first = perm1[0];
+            for i in 0..r {
+                perm1[i] = perm1[i + 1];
+            }
+            perm1[r] = first;
+            count[r] -= 1;
+            if count[r] > 0 {
+                break;
+            }
+            r += 1;
+        }
+        if done {
+            break;
+        }
+        perm_count += 1;
+    }
+    println("{checksum} {max_flips}");
+}

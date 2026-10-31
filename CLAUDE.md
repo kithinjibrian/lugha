@@ -57,6 +57,8 @@ cargo run -q -- explain [CODE]                # an error code's page (docs/error
 cargo run -q -- spec                          # the bundled language spec
 cargo run -q -- lsp                           # the language server on stdin/stdout
 
+python3 bench/run.py [names…] [--lang L,…] [--runs N] [--check] [--save]  # benchmarks vs C, Rust, Go, Node (bench/README.md); never in CI
+
 cd editors/vscode && npm ci && npm test       # the VS Code extension
 npm run package                               # lugha-<version>.vsix; bump the version (npm version minor --no-git-tag-version) whenever editors/vscode changes
 ```
