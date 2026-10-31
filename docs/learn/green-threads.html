@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Open in a browser. Steps through two tiny programs (spawn + join, a channel) as the
+<!-- Open in a browser. Steps through four tiny programs (spawn + join, a channel, yield_now, two spawns) as the
      scheduler sees them: running, ready line, waiting. Spec section 6, "Green threads". -->
 <title>Lugha Spawn and Channel Stepper</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,15 +12,15 @@
 /* Layout: code on the left, the scheduler's three boxes on the right, output and a turn timeline below; one step at a time. */
 :root {
   --bg: #F2F5F3; --panel: #FFFFFF; --fg: #13221E; --muted: #5B6E68; --line: #D3DDD9;
-  --main: #23866B; --other: #4A5DC0; --gold: #B97A0B; --hl: #FBEFD3;
+  --main: #23866B; --other: #4A5DC0; --third: #A8458A; --gold: #B97A0B; --hl: #FBEFD3;
   --sans: "IBM Plex Sans", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0E1916; --panel: #15231F; --fg: #DCEDE6; --muted: #8FA59E; --line: #2A3B36;
-  --main: #5CC3A4; --other: #92A0F2; --gold: #E8B44A; --hl: #3A3220; color-scheme: dark } }
+  --main: #5CC3A4; --other: #92A0F2; --gold: #E8B44A; --hl: #3A3220; --third: #E38CC6; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0E1916; --panel: #15231F; --fg: #DCEDE6; --muted: #8FA59E; --line: #2A3B36;
-  --main: #5CC3A4; --other: #92A0F2; --gold: #E8B44A; --hl: #3A3220; color-scheme: dark }
+  --main: #5CC3A4; --other: #92A0F2; --gold: #E8B44A; --hl: #3A3220; --third: #E38CC6; color-scheme: dark }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.5 }
 .wrap { max-width: 1180px; margin: 0 auto; padding-block: 24px 40px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -82,6 +82,8 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px }
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="tab-spawn" data-ex="spawn" aria-selected="true">1 · spawn + join</button>
     <button class="tab" role="tab" id="tab-chan" data-ex="chan" aria-selected="false">2 · channel</button>
+    <button class="tab" role="tab" id="tab-yield" data-ex="yield" aria-selected="false">3 · yield_now</button>
+    <button class="tab" role="tab" id="tab-two" data-ex="two" aria-selected="false">4 · two spawns + yield</button>
   </div>
 
   <div class="main">
@@ -184,6 +186,91 @@ const EX = {
         note: 'sender finishes, so main gets the worker. <b>recv()</b> returns <b>Some(42)</b>, and main prints it.' },
       { line: 12, jobs: { main: ['gone', 'exiting'], sender: ['gone', 'done'] }, chan: 'value: none · waiting: nobody',
         note: 'main returns, and the program exits.' }]
+  },
+  yield: {
+    jobs: { main: 'var(--main)', helper: 'var(--other)' },
+    code: [
+      K('import') + ' std.task;',
+      '',
+      K('fun') + ' helper() {',
+      '    println(' + Q('"helper: hi"') + ');',
+      '}',
+      '',
+      K('fun') + ' main() {',
+      '    ' + K('spawn') + ' helper();',
+      '    println(' + Q('"main: before yield"') + ');',
+      '    task.yield_now();',
+      '    println(' + Q('"main: after yield"') + ');',
+      '}'],
+    steps: [
+      { line: 6, jobs: { main: ['run', 'running'] }, note: 'The program starts. Only <b>main</b> exists.' },
+      { line: 7, jobs: { main: ['run', 'running'], helper: ['ready', 'not started'] },
+        note: '<b>spawn</b> puts helper in the ready line. main keeps the worker.' },
+      { line: 8, jobs: { main: ['run', 'running'], helper: ['ready', 'not started'] }, out: 'main: before yield',
+        note: 'main prints.' },
+      { line: 9, jobs: { helper: ['run', 'running'], main: ['ready', 'yielded'] },
+        note: '<b>yield_now()</b>: main isn\'t stuck on anything, it just steps aside. So it goes to the <em>back of the ready line</em>, not to waiting. helper, at the front, gets the worker.' },
+      { line: 3, jobs: { helper: ['run', 'running'], main: ['ready', 'yielded'] }, out: 'helper: hi',
+        note: 'helper prints.' },
+      { line: 10, jobs: { main: ['run', 'running'], helper: ['gone', 'done'] }, out: 'main: after yield',
+        note: 'helper finishes. main is next in line, gets the worker back and prints.' },
+      { line: 11, jobs: { main: ['gone', 'exiting'], helper: ['gone', 'done'] },
+        note: 'main returns, and the program exits. Without the yield, helper would never have run: main would exit first, and leftover green threads are dropped.' }]
+  },
+  two: {
+    jobs: { main: 'var(--main)', A: 'var(--other)', B: 'var(--third)' },
+    code: [
+      K('import') + ' std.task;',
+      '',
+      K('fun') + ' helper(name: string) {',
+      '    println(' + Q('"{name}: step 1"') + ');',
+      '    task.yield_now();',
+      '    println(' + Q('"{name}: step 2"') + ');',
+      '}',
+      '',
+      K('fun') + ' main() {',
+      '    ' + K('spawn') + ' helper(' + Q('"A"') + ');',
+      '    ' + K('spawn') + ' helper(' + Q('"B"') + ');',
+      '    println(' + Q('"main: before yield"') + ');',
+      '    task.yield_now();',
+      '    println(' + Q('"main: after yield"') + ');',
+      '    task.yield_now();',
+      '    println(' + Q('"main: done"') + ');',
+      '}'],
+    steps: [
+      { line: 8, jobs: { main: ['run', 'running'] }, note: 'The program starts. Only <b>main</b> exists.' },
+      { line: 9, jobs: { main: ['run', 'running'], A: ['ready', 'not started'] },
+        note: '<b>spawn</b> puts A in the ready line.' },
+      { line: 10, jobs: { main: ['run', 'running'], A: ['ready', 'not started'], B: ['ready', 'not started'] },
+        note: 'B joins the line behind A. The ready line runs front to back: A first, then B.' },
+      { line: 11, jobs: { main: ['run', 'running'], A: ['ready', 'not started'], B: ['ready', 'not started'] }, out: 'main: before yield',
+        note: 'main still has the worker, so it prints.' },
+      { line: 12, jobs: { A: ['run', 'running'], B: ['ready', 'waiting turn'], main: ['ready', 'yielded'] },
+        note: 'main yields: it goes to the <em>back</em> of the line, behind B. A, at the front, runs.' },
+      { line: 3, jobs: { A: ['run', 'running'], B: ['ready', 'waiting turn'], main: ['ready', 'yielded'] }, out: 'A: step 1',
+        note: 'A runs helper\'s first line and prints.' },
+      { line: 4, jobs: { B: ['run', 'running'], main: ['ready', 'yielded'], A: ['ready', 'yielded'] },
+        note: 'A yields and goes to the back. B, at the front, runs.' },
+      { line: 3, jobs: { B: ['run', 'running'], main: ['ready', 'yielded'], A: ['ready', 'yielded'] }, out: 'B: step 1',
+        note: 'B runs the same helper code, with name = "B", and prints.' },
+      { line: 4, jobs: { main: ['run', 'running'], A: ['ready', 'yielded'], B: ['ready', 'yielded'] },
+        note: 'B yields and goes to the back. main is at the front again, so it runs.' },
+      { line: 13, jobs: { main: ['run', 'running'], A: ['ready', 'yielded'], B: ['ready', 'yielded'] }, out: 'main: after yield',
+        note: 'main carries on from where it yielded and prints.' },
+      { line: 14, jobs: { A: ['run', 'running'], B: ['ready', 'yielded'], main: ['ready', 'yielded'] },
+        note: 'main yields again: back of the line. A runs, continuing after its own yield.' },
+      { line: 5, jobs: { A: ['run', 'running'], B: ['ready', 'yielded'], main: ['ready', 'yielded'] }, out: 'A: step 2',
+        note: 'A prints its second line.' },
+      { line: 6, jobs: { B: ['run', 'running'], main: ['ready', 'yielded'], A: ['gone', 'done'] },
+        note: 'A reaches the end of helper and finishes. A finished job leaves for good instead of rejoining the line. B runs.' },
+      { line: 5, jobs: { B: ['run', 'running'], main: ['ready', 'yielded'], A: ['gone', 'done'] }, out: 'B: step 2',
+        note: 'B prints its second line.' },
+      { line: 6, jobs: { main: ['run', 'running'], A: ['gone', 'done'], B: ['gone', 'done'] },
+        note: 'B finishes and leaves. Only main is left, so it runs.' },
+      { line: 15, jobs: { main: ['run', 'running'], A: ['gone', 'done'], B: ['gone', 'done'] }, out: 'main: done',
+        note: 'main prints.' },
+      { line: 16, jobs: { main: ['gone', 'exiting'], A: ['gone', 'done'], B: ['gone', 'done'] },
+        note: 'main returns, and the program exits. The rotation was main, A, B, main, A, B: each yield sends the running job to the back of the line.' }]
   }
 };
 
