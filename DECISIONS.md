@@ -2208,7 +2208,7 @@ Printing sites and `==` reach a type's own plain `show`/`eq` too (`show_instance
 
 ## OPEN — Requires human input before implementation
 
-None.
+- **`defer` (2026-10-31):** cleanup at scope exit, so a forgotten `close()` on an early `?` stops leaking descriptors. Research and a recommended design (block scope, the whole statement run at exit, last first, on every exit, no exits from inside, panics don't run it, a deferred statement is `()`) are in `docs/decisions/defer.md`. Settle each choice in a discovery, then a PRP.
 
 ---
 
