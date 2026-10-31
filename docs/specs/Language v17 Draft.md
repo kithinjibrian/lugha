@@ -305,7 +305,9 @@ After discovery in session 329, revised in session 330. Details in PRP-170.
 
 After discovery (PRP-171): JSON for any data type, the per-type code written by the compiler.
 
-352–360. **`json.encode`** (milestone 139): `encode<T: json.Json>(x: T): Value`; `json.Json` a built-in bound met structurally (E0450 naming the path otherwise); externally tagged enums, `None`/`Some` as `null`/the value, maps with string or integer keys, all fields; `u64` past `i64.MAX` a `Float`; walkers per struct, enum and tuple (`lugha_json_enc_<type>`) and Lugha helpers in `std.$json_derive`; tag `m139`. **`json.decode`** (milestone 140) follows in the same PRP.
+352–360. **`json.encode`** (milestone 139): `encode<T: json.Json>(x: T): Value`; `json.Json` a built-in bound met structurally (E0450 naming the path otherwise); externally tagged enums, `None`/`Some` as `null`/the value, maps with string or integer keys, all fields; `u64` past `i64.MAX` a `Float`; walkers per struct, enum and tuple (`lugha_json_enc_<type>`) and Lugha helpers in `std.$json_derive`; tag `m139`.
+
+361–368. **`json.decode`** (milestone 140): `decode<T: json.Json>(v: Value): Result<T, DecodeError>`, `T` from context; unknown keys ignored, a missing `Option` field `None`, exact numbers (a `Float` never an integer), `DecodeError { path, detail }` printing as its message; walkers per struct, enum and tuple (`lugha_json_dec_<type>`) and helpers in `std.$json_from`; `?` passes its expected type to its operand (`Result<T, _>` or `Option<T>`), added during the build (the user, PRP-171 amendment); tag `m140`.
 
 ## Changes by section
 

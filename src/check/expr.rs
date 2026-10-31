@@ -133,7 +133,7 @@ impl Checker {
             }
             // `$json.encode(x)` in std.json (v17, milestone 139).
             ExprKind::Call(callee, args) if super::json::json_op(callee).is_some() => {
-                self.json_call(expr, callee, args)
+                self.json_call(expr, callee, args, expect)
             }
             ExprKind::Call(callee, args) if let Some(op) = super::float_ops::os_op(callee) => {
                 self.os_call(expr, (callee, op), args)
@@ -162,7 +162,7 @@ impl Checker {
             ExprKind::Interp(parts) => self.interpolation(parts),
             ExprKind::Format(call) => self.format_call(call),
             ExprKind::Closure(c) => self.closure(expr, c, expect),
-            ExprKind::Try(inner) => self.try_expr(expr, inner),
+            ExprKind::Try(inner) => self.try_expr(expr, inner, expect),
             ExprKind::Cast(inner, target) => self.cast(expr, inner, target),
             ExprKind::Index(base, _, index) => self.index(expr, base, index),
             // `CPtr.null` (v17, milestone 105): C's NULL as a `CPtr`.

@@ -1,0 +1,106 @@
+import std.json;
+
+struct Person { name: string, age: i64, email: Option<string>, tags: string[] }
+enum Shape { Dot, Circle(f64), Rect(f64, f64) }
+enum Tree { Leaf(i64), Node(Tree[]) }
+struct Pair<T> { a: T, b: T }
+struct Doc { meta: json.Value, n: u8 }
+
+fun round<T: json.Json>(x: T): Result<T, json.DecodeError> = json.decode(json.encode(x));
+
+fun parse<T: json.Json>(text: string): Result<T, json.DecodeError> = json.decode(json.parse(text).unwrap());
+
+fun load(text: string): Result<Person, json.DecodeError> {
+    let p: Person = json.decode(json.parse(text).unwrap())?;
+    Ok(p)
+}
+
+fun main() {
+    println(round(Person { name: "ada", age: 36, email: Some("a@x"), tags: ["math"] }));
+    println(round([Shape.Dot, Shape.Circle(1.5), Shape.Rect(2.0, 3.0)]));
+    println(round(Tree.Node([Tree.Leaf(1), Tree.Node([])])));
+    println(round(Pair { a: "x", b: "y" }));
+    let n8: i8 = -8;
+    let u16v: u16 = 65535;
+    let i32v: i32 = -2147483648;
+    let u32v: u32 = 4294967295;
+    println(round((n8, u16v, i32v, u32v)));
+    let small: u64 = 5;
+    let big: u64 = 18446744073709551615;
+    println(round([small]));
+    println(round([small, big]));
+    let f: f32 = 1.5;
+    println(round((f, 0.1, true, 'é')));
+    println(round(()));
+    let m: Map<string, i64> = #{"b": 2, "a": 1};
+    println(round(m));
+    let mi: Map<i64, bool> = #{3: true, -1: false};
+    println(round(mi));
+    let s: Set<string> = #{"x", "y"};
+    println(round(s));
+    let o: Option<Option<i64>> = Some(None);
+    println(round(o));
+    println(round(Some(Some(4))));
+    let r: Result<i64, string> = Err("no");
+    println(round(r));
+    println(round(Doc { meta: json.parse("[1, {{\"k\": null}}]").unwrap(), n: 255 }));
+    println(load("{{\"name\": \"bob\", \"age\": 7, \"tags\": [], \"extra\": true}}"));
+    println(load("{{\"name\": \"cy\", \"age\": 1, \"email\": null, \"tags\": [\"t\"]}}"));
+    let deep: Result<Tree, json.DecodeError> = parse(repeat("{{\"Node\": [", 49) + "{{\"Leaf\": 9}}" + repeat("]}}", 49));
+    println(deep.is_ok());
+
+    let e1: Result<Person, json.DecodeError> = parse("{{\"name\": 1}}");
+    println(e1);
+    let e2: Result<Person, json.DecodeError> = parse("{{\"name\": \"a\"}}");
+    println(e2);
+    let e3: Result<u8[], json.DecodeError> = parse("[1, 300]");
+    println(e3);
+    let e4: Result<i64, json.DecodeError> = parse("1.5");
+    println(e4);
+    let e5: Result<char, json.DecodeError> = parse("\"ab\"");
+    println(e5);
+    let e6: Result<(i64, i64), json.DecodeError> = parse("[1, 2, 3]");
+    println(e6);
+    let e7: Result<Set<i64>, json.DecodeError> = parse("[1, 1]");
+    println(e7);
+    let e8: Result<Map<i64, bool>, json.DecodeError> = parse("{{\"x\": true}}");
+    println(e8);
+    let e9: Result<Map<u8, bool>, json.DecodeError> = parse("{{\"300\": true}}");
+    println(e9);
+    let e10: Result<Shape, json.DecodeError> = parse("\"Square\"");
+    println(e10);
+    let e11: Result<Shape, json.DecodeError> = parse("{{\"Circle\": 1, \"Dot\": 2}}");
+    println(e11);
+    let e12: Result<Shape, json.DecodeError> = parse("{{\"Rect\": [1.0]}}");
+    println(e12);
+    let e13: Result<Shape, json.DecodeError> = parse("{{\"Dot\": 1}}");
+    println(e13);
+    let e14: Result<Shape, json.DecodeError> = parse("\"Circle\"");
+    println(e14);
+    let e15: Result<i64, json.DecodeError> = parse("null");
+    println(e15);
+    let e16: Result<Person[], json.DecodeError> = parse("[{{\"name\": \"a\", \"age\": 1, \"tags\": []}}, {{\"name\": \"b\", \"age\": \"x\", \"tags\": []}}]");
+    println(e16);
+    let e17: Result<Map<string, i64>, json.DecodeError> = parse("{{\"ann\": true}}");
+    println(e17);
+    let e18: Result<Shape, json.DecodeError> = parse("{{\"Circle\": \"x\"}}");
+    println(e18);
+    let e19: Result<Shape, json.DecodeError> = parse("{{\"Rect\": [1.0, null]}}");
+    println(e19);
+    let e20: Result<Person, json.DecodeError> = parse("[1]");
+    println(e20);
+    let e21: Result<Person, json.DecodeError> = parse("{{\"name\": \"a\", \"age\": 1, \"email\": 5, \"tags\": []}}");
+    println(e21);
+    match e21 {
+        Err(e) => println("{e.path} | {e.detail} | {e.message()}"),
+        Ok(_) => {}
+    }
+}
+
+fun repeat(s: string, n: i64): string {
+    let mut out = "";
+    for _ in 0..n {
+        out += s;
+    }
+    out
+}

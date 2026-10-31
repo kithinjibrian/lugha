@@ -49,6 +49,7 @@ pub const STD: &[(&str, &str)] = &[
     ("$json_parse", include_str!("std/json_parse.la")),
     ("$json_write", include_str!("std/json_write.la")),
     ("$json_derive", include_str!("std/json_derive.la")),
+    ("$json_from", include_str!("std/json_from.la")),
 ];
 
 /// The prelude: the array helpers, written in Lugha and loaded with every

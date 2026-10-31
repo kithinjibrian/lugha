@@ -20,6 +20,71 @@ use crate::span::Span;
 /// The key of a `$json.encode` site's use: its one argument is the type.
 pub(super) const JSON_ENCODE: &str = "$json.encode";
 
+/// The key of a `$json.decode` site's use: its one argument is the target.
+pub(super) const JSON_DECODE: &str = "$json.decode";
+
+/// `std.json`'s `DecodeError`.
+pub const DECODE_ERROR: &str = "std.$json_value.DecodeError";
+
+/// The start of every decoding helper's key, in `std.$json_from`.
+pub const FROM: &str = "std.$json_from.";
+
+/// `Result<T, DecodeError>`, what decoding to `T` gives.
+pub fn decode_result(target: Type) -> Type {
+    Type::Enum(
+        super::results::RESULT.to_string(),
+        vec![target, Type::Struct(DECODE_ERROR.to_string(), Vec::new())],
+    )
+}
+
+/// The helper that decodes a scalar of type `ty`, if it is one.
+pub fn scalar_decoder(ty: &Type) -> Option<&'static str> {
+    Some(match ty {
+        Type::I8 => "$dec_i8",
+        Type::I16 => "$dec_i16",
+        Type::I32 => "$dec_i32",
+        Type::I64 => "$dec_i64",
+        Type::U8 => "$dec_u8",
+        Type::U16 => "$dec_u16",
+        Type::U32 => "$dec_u32",
+        Type::U64 => "$dec_u64",
+        Type::F32 => "$dec_f32",
+        Type::F64 => "$dec_f64",
+        Type::Bool => "$dec_bool",
+        Type::Char => "$dec_char",
+        Type::String => "$dec_text",
+        Type::Unit => "$dec_unit",
+        Type::Enum(key, _) if key == VALUE => "$dec_value",
+        _ => return None,
+    })
+}
+
+/// The generic helper decoding a container of type `ty`, with its arguments.
+pub fn container_decoder(ty: &Type) -> Option<(&'static str, Vec<Type>)> {
+    let (name, args) = container_helper(ty)?;
+    let name = match name {
+        "$enc_array" => "$dec_array",
+        "$enc_option" => "$dec_option",
+        "$enc_map" => "$dec_map",
+        _ => "$dec_set",
+    };
+    Some((name, args))
+}
+
+/// The helpers a struct's, tuple's or enum's decoding walker calls.
+const WALKER_HELPERS: [&str; 10] = [
+    "$dec_object",
+    "$dec_field",
+    "$field_path",
+    "$dec_items",
+    "$index_path",
+    "$variant_name",
+    "$variant_payload",
+    "$variant_bare",
+    "$payload_error",
+    "$unknown_variant",
+];
+
 /// `std.json`'s `Value` and `Json` (declared in `std.$json_value`).
 pub const VALUE: &str = "std.$json_value.Value";
 pub(super) const BOUND: &str = "std.$json_value.Json";
@@ -35,6 +100,11 @@ pub fn json_op(callee: &Expr) -> Option<&str> {
 /// `std.json`'s `Value` type.
 pub fn value_type() -> Type {
     Type::Enum(VALUE.to_string(), Vec::new())
+}
+
+/// An object's members, `Map<string, Value>`.
+pub fn object_type() -> Type {
+    Type::Struct(MAP.to_string(), vec![Type::String, value_type()])
 }
 
 /// The helper that encodes a scalar of type `ty`, if it is one.
@@ -71,17 +141,40 @@ fn helper(name: &str, args: Vec<Type>) -> Instance {
 
 impl Checker {
     /// `$json.encode(x)`: `x` of any type (the `Json` bound on `std.json`'s
-    /// `encode` checks it at the user's call); a `Value`.
-    pub(super) fn json_call(&mut self, call: &Expr, callee: &Expr, args: &[Expr]) -> Type {
+    /// `encode` checks it at the user's call); a `Value`. `$json.decode(v,
+    /// path)`: a `Result<T, DecodeError>`, `T` from what the context expects
+    /// (milestone 140).
+    pub(super) fn json_call(
+        &mut self,
+        call: &Expr,
+        callee: &Expr,
+        args: &[Expr],
+        expect: Option<&Expect>,
+    ) -> Type {
         self.record(callee, Type::Unit);
         if let ExprKind::Field(base, _) = &callee.kind {
             self.record(base, Type::Unit);
         }
-        if json_op(callee) != Some("encode") || args.len() != 1 {
-            // A compiler bug: only std.json writes `$json`.
+        let target = match expect.map(|e| &e.ty) {
+            Some(Type::Enum(key, args)) if key == super::results::RESULT => Some(args[0].clone()),
+            _ => None,
+        };
+        let well_formed = match json_op(callee) {
+            Some("encode") => args.len() == 1,
+            Some("decode") => args.len() == 2 && target.is_some(),
+            _ => false,
+        };
+        if !well_formed {
+            // A compiler bug: only std.json writes `$json`, always typed.
             let d = Diagnostic::error("E0415", "no such `$json` built-in", call.span);
             self.report(d);
             return self.unchecked_args(args);
+        }
+        if let Some(target) = target.filter(|_| json_op(callee) == Some("decode")) {
+            self.value(&args[0], Some(&Expect::of(value_type())));
+            self.value(&args[1], Some(&Expect::of(Type::String)));
+            self.used(call, JSON_DECODE, std::slice::from_ref(&target));
+            return decode_result(target);
         }
         let ty = self.value(&args[0], None::<&Expect>);
         self.used(call, JSON_ENCODE, std::slice::from_ref(&ty));
@@ -225,6 +318,64 @@ impl Checker {
         };
         for part in &parts {
             self.reach_json(part, seen, found);
+        }
+    }
+}
+
+impl Checker {
+    /// The `std.$json_from` helpers decoding to concrete type `ty` reaches
+    /// directly, and (into `walkers`) each struct, tuple and enum type that
+    /// gets a walker, whose `Result` codegen must declare.
+    pub(super) fn json_decode_instances(
+        &self,
+        ty: &Type,
+        walkers: &mut Vec<Type>,
+    ) -> Vec<Instance> {
+        let mut found = Vec::new();
+        self.reach_decode(ty, &mut HashSet::new(), &mut found, walkers);
+        found
+    }
+
+    fn reach_decode(
+        &self,
+        ty: &Type,
+        seen: &mut HashSet<Type>,
+        found: &mut Vec<Instance>,
+        walkers: &mut Vec<Type>,
+    ) {
+        let from = |name: &str, args: Vec<Type>| Instance {
+            key: format!("{FROM}{name}"),
+            args,
+        };
+        if let Some(name) = scalar_decoder(ty) {
+            found.push(from(name, Vec::new()));
+            return;
+        }
+        if let Some((name, args)) = container_decoder(ty) {
+            found.push(from(name, args));
+            return;
+        }
+        if !seen.insert(ty.clone()) {
+            return;
+        }
+        let parts: Vec<Type> = match ty {
+            Type::Struct(..) if elements(ty).is_some() => elements(ty).unwrap_or_default().to_vec(),
+            Type::Struct(key, args) => self.structs.get(key).map_or_else(Vec::new, |info| {
+                info.fields
+                    .iter()
+                    .map(|(_, t)| subst(t, &info.generics, args))
+                    .collect()
+            }),
+            Type::Enum(key, args) => {
+                let variants = self.enum_variants(key, args).unwrap_or_default();
+                variants.into_iter().flat_map(|(_, p)| p).collect()
+            }
+            _ => return,
+        };
+        walkers.push(ty.clone());
+        found.extend(WALKER_HELPERS.iter().map(|h| from(h, Vec::new())));
+        for part in &parts {
+            self.reach_decode(part, seen, found, walkers);
         }
     }
 }

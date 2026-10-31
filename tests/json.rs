@@ -499,11 +499,24 @@ fn a_program_that_only_parses_compiles_no_writer() {
             .any(|l| l.contains("json_write") || l.contains("json/stringify")),
         "{defined:?}"
     );
-    // Nor any of `encode`'s machinery (milestone 139).
+    // Nor any of `encode`'s or `decode`'s machinery (milestones 139–140).
     assert!(
-        !defined
-            .iter()
-            .any(|l| l.contains("lugha_json_") || l.contains("json_derive")),
+        !defined.iter().any(|l| l.contains("lugha_json_")
+            || l.contains("json_derive")
+            || l.contains("json_from")),
         "{defined:?}"
+    );
+    // A program that only encodes compiles no decoder.
+    let encodes = lughac(
+        &temp.0,
+        "import std.json;\nstruct P { x: i64 }\nfun main() { println(json.encode(P { x: 1 })); }\n",
+        &["build", "--emit=ir", "main.la"],
+    );
+    let ir = String::from_utf8_lossy(&encodes.stdout);
+    assert!(ir.contains("lugha_json_enc_"), "no encoder");
+    assert!(
+        !ir.lines().any(|l| l.starts_with("define ")
+            && (l.contains("lugha_json_dec_") || l.contains("json_from"))),
+        "a decoder was compiled"
     );
 }

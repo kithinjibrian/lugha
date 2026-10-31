@@ -82,3 +82,21 @@ fun oops(kind: ErrorKind, detail: string, at: i64): Oops = Oops { kind: kind, de
  * implemented: write `T: json.Json` on a type parameter to pass one through.
  */
 public interface Json {}
+
+/**
+ * Why `decode` couldn't turn a value into the type asked for, and where:
+ * `path` leads from the top (`people[2].age`, `scores["ann"]`; empty at
+ * the top itself).
+ */
+public struct DecodeError {
+    public path: string,
+    public detail: string,
+}
+
+impl DecodeError {
+    /** `people[2].age: expected an integer, found a string`, or the detail alone at the top. */
+    public fun message(self): string = if self.path.len == 0 { self.detail } else { "{self.path}: {self.detail}" };
+
+    /** Printed as its message. */
+    public fun show(self): string = self.message();
+}
