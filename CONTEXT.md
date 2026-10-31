@@ -9426,3 +9426,6 @@ Branch: http-json
 
 ### STILL OPEN AT CLOSE
 - PRP-170 awaits approval.
+
+## SESSION 330 — 2026-10-31 — std.http JSON helpers: build (m138) — open
+Branch: prp-170-http_json
