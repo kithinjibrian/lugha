@@ -16,7 +16,7 @@ pub(super) fn describe(why: &Unmet) -> String {
             format!("a type parameter without `json.Json` (write `{name}: json.Json`)")
         }
         Unmet::Bound(_, key) => format!("a map with `{key}` keys"),
-        Unmet::Union => "a struct holding a union".to_string(),
+        Unmet::Union(itself) => super::derive_meets::union_part(*itself),
         Unmet::Mismatch(problem) => problem.clone(),
         Unmet::HalfPair(has) => format!("its own `{has}` alone"),
         Unmet::Missing(ty) => match ty {
@@ -50,6 +50,7 @@ mod tests {
             describe(&Unmet::Unbounded("T".into())),
             "a type parameter without `json.Json` (write `T: json.Json`)"
         );
-        assert_eq!(describe(&Unmet::Union), "a struct holding a union");
+        assert_eq!(describe(&Unmet::Union(false)), "a struct holding a union");
+        assert_eq!(describe(&Unmet::Union(true)), "a C union");
     }
 }

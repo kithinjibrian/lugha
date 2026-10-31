@@ -207,3 +207,26 @@ fn eq_through_a_bound_reaches_eq_and_hash() {
         assert!(found.iter().any(|m| m == want), "{want}: {found:?}");
     }
 }
+
+#[test]
+fn e0451_says_whether_the_part_is_a_union_or_holds_one() {
+    let src = "extern union U { a: i32, b: f64 }\n\
+        struct W { u: U }\n\
+        fun main() {\n\
+            let v = U { a: 1 };\n\
+            let w = W { u: U { a: 2 } };\n\
+            println(v == v);\n\
+            println(w == w);\n\
+        }";
+    let messages: Vec<String> = crate::check::test_util::diagnostics(src)
+        .into_iter()
+        .filter(|d| d.code == "E0451")
+        .map(|d| d.message)
+        .collect();
+    assert_eq!(messages.len(), 2, "{messages:?}");
+    assert!(messages[0].ends_with("it is a C union"), "{messages:?}");
+    assert!(
+        messages[1].ends_with("it is a struct holding a union"),
+        "{messages:?}"
+    );
+}
