@@ -96,20 +96,7 @@ impl Parser<'_> {
             }
             TokenKind::Defer => {
                 self.bump();
-                // A block-like body needs no `;`, as a block statement doesn't.
-                let expr = if matches!(
-                    self.peek(),
-                    TokenKind::If | TokenKind::LBrace | TokenKind::Match | TokenKind::Select
-                ) {
-                    let expr = self.block_like()?;
-                    self.eat(&TokenKind::Semi);
-                    expr
-                } else {
-                    let expr = self.expr()?;
-                    self.expect(&TokenKind::Semi)?;
-                    expr
-                };
-                StmtKind::Defer(expr)
+                StmtKind::Defer(Box::new(self.deferred()?))
             }
             TokenKind::Semi => {
                 let span = self.bump();
@@ -152,6 +139,46 @@ impl Parser<'_> {
             kind,
             span: Span::new(start, self.prev_end()),
         }))
+    }
+
+    /// What follows `defer`: a block-like expression (no `;` needed, as for
+    /// a block statement), an expression or an assignment (PRP-183).
+    fn deferred(&mut self) -> PResult<Stmt> {
+        let start = self.span().start;
+        let kind = if matches!(
+            self.peek(),
+            TokenKind::If | TokenKind::LBrace | TokenKind::Match | TokenKind::Select
+        ) {
+            let expr = self.block_like()?;
+            self.eat(&TokenKind::Semi);
+            StmtKind::Expr {
+                expr,
+                semicolon: false,
+            }
+        } else {
+            let expr = self.expr()?;
+            let kind = match self.assignment_operator() {
+                Some((op, width)) => {
+                    let op_span = self.bump_n(width);
+                    StmtKind::Assign {
+                        op,
+                        op_span,
+                        place: expr,
+                        value: self.expr()?,
+                    }
+                }
+                None => StmtKind::Expr {
+                    expr,
+                    semicolon: true,
+                },
+            };
+            self.expect(&TokenKind::Semi)?;
+            kind
+        };
+        Ok(Stmt {
+            kind,
+            span: Span::new(start, self.prev_end()),
+        })
     }
 
     fn let_stmt(&mut self) -> PResult<StmtKind> {

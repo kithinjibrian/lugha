@@ -9,7 +9,7 @@
 
 use inkwell::values::BasicValueEnum;
 
-use crate::ast::Expr;
+use crate::ast::Stmt;
 use crate::check::Type;
 use crate::codegen::CodegenError;
 use crate::codegen::lower::Lowerer;
@@ -17,7 +17,7 @@ use crate::codegen::scope::Scopes;
 
 /// A `defer` statement reached in the current block.
 pub(in crate::codegen) struct Deferred<'ctx> {
-    expr: Expr,
+    stmt: Stmt,
     /// The names in scope at the `defer`: a later `let` may shadow one
     /// before the statement runs.
     scopes: Scopes<'ctx>,
@@ -25,9 +25,9 @@ pub(in crate::codegen) struct Deferred<'ctx> {
 
 impl<'ctx> Lowerer<'ctx> {
     /// `defer e;`: remembered in the innermost block, lowered at its exits.
-    pub(in crate::codegen) fn defer_stmt(&mut self, expr: &Expr) {
+    pub(in crate::codegen) fn defer_stmt(&mut self, stmt: &Stmt) {
         let deferred = Deferred {
-            expr: expr.clone(),
+            stmt: stmt.clone(),
             scopes: self.scopes.clone(),
         };
         self.defers
@@ -48,12 +48,12 @@ impl<'ctx> Lowerer<'ctx> {
         let mut pending = Vec::new();
         for block in self.defers[to..].iter().rev() {
             for d in block.iter().rev() {
-                pending.push((d.expr.clone(), d.scopes.clone()));
+                pending.push((d.stmt.clone(), d.scopes.clone()));
             }
         }
-        for (expr, scopes) in pending {
+        for (stmt, scopes) in pending {
             let saved = std::mem::replace(&mut self.scopes, scopes);
-            let lowered = self.expr(&expr);
+            let lowered = self.stmt(&stmt);
             self.scopes = saved;
             lowered?;
         }

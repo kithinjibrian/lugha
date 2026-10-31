@@ -45,7 +45,7 @@ impl Walk<'_> {
     /// `defer e;` (milestone 151): `e` runs when its block ends, after
     /// everything written below it, so each local it mentions is also
     /// mentioned at the block's end and nothing below hands it over.
-    fn deferred(&mut self, e: &Expr) {
+    fn deferred(&mut self, e: &Stmt) {
         let end = *self.block_ends.last().expect("a statement is in a block");
         for m in self.mentions.values() {
             if e.span.start <= m.at && m.at < e.span.end {
@@ -54,7 +54,7 @@ impl Walk<'_> {
                 list.sort_unstable();
             }
         }
-        self.expr(e);
+        self.stmt(e);
     }
 
     fn stmt(&mut self, stmt: &Stmt) {
@@ -117,7 +117,7 @@ impl Walk<'_> {
                 self.block(body);
                 self.loops.pop();
             }
-            StmtKind::Defer(e) => self.deferred(e),
+            StmtKind::Defer(inner) => self.deferred(inner),
             StmtKind::Break | StmtKind::Continue => {}
         }
     }

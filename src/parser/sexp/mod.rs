@@ -22,8 +22,8 @@ pub fn block(block: &Block) -> String {
     format!("({})", parts.join(" "))
 }
 
-fn stmt(stmt: &Stmt) -> String {
-    match &stmt.kind {
+fn stmt(s: &Stmt) -> String {
+    match &s.kind {
         StmtKind::Let {
             mutable,
             name,
@@ -51,7 +51,7 @@ fn stmt(stmt: &Stmt) -> String {
             semicolon: false,
         } => format!("(stmt {})", expr(e)),
         StmtKind::While { cond, body } => format!("(while {} {})", expr(cond), block(body)),
-        StmtKind::Defer(e) => format!("(defer {})", expr(e)),
+        StmtKind::Defer(inner) => format!("(defer {})", stmt(inner)),
         StmtKind::WhileLet {
             pattern: p,
             scrutinee,
