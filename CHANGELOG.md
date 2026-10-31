@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- Inference through iterator chains (milestone 150, PRP-181): `let n: Option<i64>[] = xs.iter().map(fun(x) = None).collect();` now types, through `filter`, `take`, `skip`, `take_while` and `skip_while` too, and for `collect_set` and `collect_map`
 - Inference through `.unwrap()` and `.expect()` (milestone 148, PRP-179): `let p: Person = json.decode(v).unwrap();` now works, as do `json.decode(v).unwrap() == q` and list elements; generally, a generic call only its result can type takes its type through any method whose result mentions the receiver's type parameters, a program's own included (`let n: u8 = zeros().first();` with `fun first(self): T`)
 - Constants computed by pure code (milestone 147, PRP-178): `const CRC: u32[] = crc_table();` — a constant's value may be any expression (calls, `if`, `match`, blocks, closures, interpolation) as long as nothing it reaches prints, touches files, the operating system or C, or starts tasks, channels or actors; E0445 shows the path to what isn't pure, and constants read inside called functions are computed first (E0446 through functions). Still computed once before `main`.
 - File streams in `std.fs` (milestone 146, PRP-177): `fs.open(path)` reads a file line by line (`f.read_line()`) or in chunks (`f.read(max)`), `fs.create(path)` and `fs.append(path)` write it piece by piece (`f.write(bytes)`, `f.write_text(s)`, nothing buffered), and `f.close()` closes it; files far larger than memory can now be read

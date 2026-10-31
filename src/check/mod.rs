@@ -195,6 +195,7 @@ impl Checker {
             iterating: Vec::new(),
             changes: Vec::new(),
             mentions: HashMap::new(),
+            element_hints: HashMap::new(),
             module: Vec::new(),
             package: None,
             origin: None,
@@ -312,6 +313,9 @@ pub(super) struct Checker {
     changes: Vec<conflicts::Change>,
     /// The local every `Name` expression resolved to, for move on last use.
     mentions: HashMap<ExprId, liveness::Mention>,
+    /// The element type an iterator chain's receiver should yield, by the
+    /// receiver's id (v17, milestone 150, `iter_helpers.rs`).
+    element_hints: HashMap<ExprId, Type>,
     /// The module whose names are being resolved (PRP-034).
     module: Vec<String>,
     /// Its package; `None` for the root package (v8).
