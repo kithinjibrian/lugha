@@ -169,8 +169,8 @@ Questions about the *language* are answered by `docs/specs/Language v17 Specific
 
 **Note (PRP-028):** the source is kept as three fragments: `runtime/lugha_rt.c` (core, first), `stack.c` and `print.c`. `link::RUNTIME_SOURCE` joins them with `concat!`, so lughac still writes and compiles one `lugha_rt.c`.
 
-
 **Note (2026-10-31, where it lives):** the runtime stays at the top-level `runtime/`, not `src/runtime/`. `src/` is the Rust crate that becomes `lughac`; the runtime is a separate C codebase that `cc` compiles into every program `lughac` produces (and cross-compiles for ARM64), never built by `cargo` and never run by the compiler, like the vendored `third_party/bdwgc/`. The prelude and `std` belong in `src/`, by contrast: they are Lugha source that `lughac` itself parses and checks as modules.
+
 ---
 
 ### 16. Array value semantics (PRP-014)
