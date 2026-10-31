@@ -37,6 +37,18 @@ pub(super) struct Lowerer<'ctx> {
     pub(super) enums: Enums,
     /// Values read from a place for the last time, stored without a copy.
     pub(super) moves: HashSet<ExprId>,
+    /// Kept parameters' last-use stores and hand-ons, which move only in
+    /// an owning instance; arguments handed over; which parameters each
+    /// key keeps (v17, milestone 149, `owning.rs`).
+    pub(super) param_moves: HashSet<ExprId>,
+    pub(super) param_hands: HashSet<ExprId>,
+    pub(super) hands: HashSet<ExprId>,
+    pub(super) keeps: HashMap<String, Vec<bool>>,
+    /// Each keeping function's owning instance, by its ordinary one.
+    pub(super) owning_instances:
+        HashMap<inkwell::values::FunctionValue<'ctx>, super::owning::Owned<'ctx>>,
+    /// True while lowering an owning instance's body.
+    pub(super) owning: bool,
     /// Every declared function, by key (`geometry.origin`; PRP-034).
     pub(super) functions: HashMap<String, Signature<'ctx>>,
     /// The checker's key for what each call calls (PRP-034).
@@ -173,6 +185,12 @@ pub(super) fn lower<'ctx>(
         structs: checked.structs.clone(),
         enums: checked.enums.clone(),
         moves: checked.moves.clone(),
+        param_moves: checked.param_moves.clone(),
+        param_hands: checked.param_hands.clone(),
+        hands: checked.hands.clone(),
+        keeps: checked.keeps.clone(),
+        owning_instances: HashMap::new(),
+        owning: false,
         functions: HashMap::new(),
         callees: checked.callees.clone(),
         annotations: checked.annotations.clone(),

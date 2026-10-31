@@ -94,21 +94,29 @@ fn check_with(
     let (structs, enums) = checker.tables(&layouts);
     let interfaces = checker.interface_methods();
     // Every expression of a valid program has been visited; `Error` is a safe filler.
-    let types = checker
+    let types: Vec<Type> = checker
         .types
         .into_iter()
         .map(|t| t.unwrap_or(Type::Error))
         .collect();
-    let moves = units
-        .iter()
-        .flat_map(|u| liveness::moves(u.program, &checker.mentions))
-        .collect();
+    // Only values that may hold arrays are worth keeping (milestone 149);
+    // a type parameter may be one, in some instance.
+    let deep = |id: crate::ast::ExprId| {
+        types
+            .get(id.0 as usize)
+            .is_some_and(|t: &Type| liveness::maybe_deep(t, &structs))
+    };
+    let live = liveness::analyse(units, &checker.mentions, &checker.callees, &deep);
     Ok((
         Checked {
             types,
             structs,
             enums,
-            moves,
+            moves: live.moves,
+            param_moves: live.param_moves,
+            hands: live.hands,
+            param_hands: live.param_hands,
+            keeps: live.keeps,
             callees: checker.callees,
             conversions: checker.conversions,
             try_conversions: checker.try_conversions,

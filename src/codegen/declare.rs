@@ -131,6 +131,9 @@ impl<'ctx> Lowerer<'ctx> {
                     (f, None)
                 }
             };
+            if !is_extern {
+                self.declare_owning(&key, function, &params, false);
+            }
             let signature = Signature {
                 function,
                 params,

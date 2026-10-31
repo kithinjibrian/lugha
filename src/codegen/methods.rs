@@ -70,6 +70,7 @@ impl<'ctx> Lowerer<'ctx> {
                     fn_type,
                     Some(Linkage::External),
                 );
+                self.declare_owning(&key, function, &params, f.receiver.is_some());
                 let signature = Signature {
                     function,
                     params,
@@ -264,12 +265,24 @@ impl<'ctx> Lowerer<'ctx> {
         // milestone 57): its indexes now, the place itself after the
         // arguments, which may call methods on it. A `self` receiver is a
         // copy taken first.
+        // A keeping method's owning instance (milestone 149): its kept
+        // receiver and arguments protected unless handed over.
+        let own = self
+            .owning_instances
+            .get(&method.signature.function)
+            .cloned();
+        let slots = usize::from(method.receiver.is_some());
+        let kept_self = own.as_ref().is_some_and(|o| slots == 1 && o.kept[0]);
         let (plan, copy) = match receiver {
             Some(base) if method.receiver == Some(true) => (Some(self.place_plan(base)?), None),
-            Some(base) => (None, Some(self.receiver_copy(base, base_type)?)),
+            Some(base) => (None, Some(self.receiver_copy(base, base_type, kept_self)?)),
             None => (None, None),
         };
-        let arguments = self.arguments(args, &method.signature.params, false)?;
+        let arguments = match &own {
+            Some(o) => self.owned_arguments(args, &method.signature.params, &o.kept[slots..])?,
+            None => self.arguments(args, &method.signature.params, false)?,
+        };
+        let function = own.map_or(method.signature.function, |o| o.function);
         if let (Some(base), Some(plan)) = (receiver, &plan) {
             values.push(self.place_commit(base, plan).0.into());
         }
@@ -279,7 +292,7 @@ impl<'ctx> Lowerer<'ctx> {
         values.extend(arguments);
         let site = self
             .builder
-            .build_call(method.signature.function, &values, "method")
+            .build_call(function, &values, "method")
             .expect(POSITIONED);
         Ok(Some(match site.try_as_basic_value() {
             ValueKind::Basic(result) => Value::Val(result),
@@ -287,13 +300,20 @@ impl<'ctx> Lowerer<'ctx> {
         }))
     }
 
-    /// A `self` receiver: a pointer to a copy of the value.
+    /// A `self` receiver: a pointer to a copy of the value; protected
+    /// when the method keeps it (milestone 149).
     fn receiver_copy(
         &mut self,
         base: &Expr,
         ty: &Type,
+        kept: bool,
     ) -> Result<inkwell::values::PointerValue<'ctx>, CodegenError> {
         let value = self.get(base, ty)?;
+        let value = if kept {
+            self.protect(base, value, ty)
+        } else {
+            value
+        };
         let slot = self.entry_alloca(ty, "self");
         self.builder.build_store(slot, value).expect(POSITIONED);
         Ok(slot)

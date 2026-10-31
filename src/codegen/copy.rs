@@ -27,7 +27,7 @@ impl<'ctx> Lowerer<'ctx> {
         ty: &Type,
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
         let value = self.get(expr, ty)?;
-        let copies = self.aliased(expr) && !self.moves.contains(&expr.id);
+        let copies = self.aliased(expr) && !self.moved(expr.id);
         Ok(if ty.is_deep(&self.structs) && copies {
             self.deep_copy(value, ty)
         } else {
@@ -47,6 +47,8 @@ impl<'ctx> Lowerer<'ctx> {
             // `None` is a constructor, not a local.
             .and_then(|name| self.scopes.find(name))
             .is_some_and(|local| !local.borrowed);
+        // A kept parameter returned on its last use, in the owning instance.
+        let moves = moves || self.moved(expr.id);
         Ok(if ty.is_deep(&self.structs) && aliasing(expr) && !moves {
             self.deep_copy(value, ty)
         } else {

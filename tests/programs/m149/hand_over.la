@@ -1,0 +1,85 @@
+// Milestone 149: handing over arguments. A function that keeps its
+// parameter takes it without a copy when the caller is done with it, and
+// the caller's value is protected when it isn't.
+
+struct Bag { items: i64[] }
+
+fun insert(b: Bag, k: i64): Bag {
+    let mut out = b;
+    out.items.push(k);
+    out
+}
+
+fun total(b: Bag): i64 {
+    let mut s = 0;
+    for x of b.items {
+        s += x;
+    }
+    s
+}
+
+impl Bag {
+    fun with(self, k: i64): Bag {
+        let mut b = self;
+        b.items.push(k);
+        b
+    }
+}
+
+interface Grows {
+    fun grown(self, k: i64): Self;
+}
+
+impl Bag {
+    fun grown(self, k: i64): Bag = self.with(k);
+}
+
+fun push_all(xs: i64[], n: i64): i64[] {
+    if n == 0 {
+        return xs;
+    }
+    let mut ys = xs;
+    ys.push(n);
+    push_all(ys, n - 1)
+}
+
+fun grow_through<T: Grows>(x: T, k: i64): T = x.grown(k);
+
+fun main() {
+    // Handed over in a loop: linear, not quadratic.
+    let mut bag = Bag { items: [] };
+    for k in 0..100000 {
+        bag = insert(bag, k);
+    }
+    println(bag.items.len);
+
+    // Still needed afterwards: protected, the original unchanged.
+    let more = insert(bag, 7);
+    println("{bag.items.len} {more.items.len}");
+    let mut a = Bag { items: [1, 2] };
+    let b = insert(a, 3);
+    a.items[0] = 100;
+    println("{a.items} {b.items}");
+
+    // The same argument twice: the first is still needed.
+    let xs = [1];
+    let pair = [push_all(xs, 2), push_all(xs, 1)];
+    println("{pair} {xs}");
+
+    // Through a method, a function value, an interface bound.
+    let mut m = Bag { items: [] };
+    for k in 0..50000 {
+        m = m.with(k);
+    }
+    println(m.items.len);
+    let f = insert;
+    let c = Bag { items: [5] };
+    let d = f(c, 6);
+    println("{c.items} {d.items}");
+    let e = grow_through(c, 9);
+    println("{c.items} {e.items}");
+
+    // A recursive builder hands its parameter on.
+    println(push_all([], 5));
+    println(total(bag));
+}

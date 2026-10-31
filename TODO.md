@@ -6,7 +6,6 @@ What's next. Shipped work is in CHANGELOG.md (and the spec's §11 milestone tabl
 
 ## Known bugs and limits
 
-- [ ] Copy-on-write: `x = f(x)` where `f` takes `x` by value and changes it copies `x`'s arrays every time (the argument isn't treated as a move although `x` is overwritten); worked around in the prelude.
 - [ ] `None` in a closure's result inside a generic function, with nothing fixing its type, is still E0412 (found testing milestone 94).
 
 ## Language and library

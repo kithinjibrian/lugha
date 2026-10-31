@@ -2200,6 +2200,12 @@ Printing sites and `==` reach a type's own plain `show`/`eq` too (`show_instance
 
 ---
 
+### 213. Handing over arguments — milestone 149 (PRP-180)
+
+**Decision:** the caller decides, while compiling, whether a function may keep its argument (option 1 of three; a run-time ownership flag with every argument and leaving the bug were declined). Liveness (`check/liveness/`) now also finds: parameters a function *keeps* (stored on their last use, or handed on to a keeping parameter; a fixed point over calls; only values that may hold arrays), call arguments and receivers on their last use (`hands`), and `x` inside the value of `x = …` as a last use, loops or not; it walks methods and derive items too. A keeping function or method is compiled twice (`codegen/owning.rs`): `lugha_fn_<symbol>`, unchanged, and `lugha_fn_<symbol>.$own`, whose kept parameters move on their last use. Only direct calls (`function.rs::call`, `methods.rs::call_method`) call `.$own`, sharing (`deep_copy`) each kept argument not handed over. Core decision 6: a new suffix, not a prefix; `$` can't appear in programs' names.
+
+**Why:** a single instance would need every caller to protect kept arguments, and codegen calls Lugha functions from a dozen internal paths (derive blocks, printing, ordering, maps, helpers, operators, actors, interface tables, function values); missing one is a silent wrong result. With two instances those paths call the ordinary one and stay correct untouched (amended mid-build, approved). Measured at `-O2`: 200 000 `bag = insert(bag, k)` 1 min 50 s → 7 ms; m101's map inserts and a read-only `total(g)` loop level with `main` (0.04 s, 0.17 s).
+
 ## OPEN — Requires human input before implementation
 
 None.

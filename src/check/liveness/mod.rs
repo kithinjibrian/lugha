@@ -8,7 +8,16 @@
 //! - every loop enclosing `E` also encloses `b`'s declaration, so no later
 //!   iteration can reach `b` again.
 //!
-//! Parameters and `for … of` variables are never moved from.
+//! Or (v17, milestone 149) when `E` is inside the value of `b = …`, with no
+//! mention of `b` after it in that value: the assignment overwrites `b`
+//! before anything reads it again, loops or not.
+//!
+//! Handing over arguments (milestone 149, PRP-180): a call argument on its
+//! last use is *handed over*; a function *keeps* a parameter when it stores
+//! it (or hands it to a keeping parameter) on its last use. Codegen compiles
+//! a keeping function a second time, owning its kept parameters, and only
+//! direct calls reach that instance. Closures' and `for … of` variables
+//! are never moved from.
 
 use std::collections::{HashMap, HashSet};
 
@@ -17,7 +26,8 @@ mod walk;
 use walk::Walk;
 
 use super::Binding;
-use crate::ast::{Expr, ExprId, ExprKind, Item, Program};
+use super::modules::{Unit, qualify};
+use crate::ast::{Expr, ExprId, ExprKind, FunDecl, Item};
 use crate::span::Span;
 
 /// A `Name` expression that resolved to a local.
@@ -30,45 +40,214 @@ pub(super) struct Mention {
     pub at: usize,
 }
 
-/// Every store-site value of `program` that can move instead of copying.
-pub(super) fn moves(program: &Program, mentions: &HashMap<ExprId, Mention>) -> HashSet<ExprId> {
-    let mut last: HashMap<Span, usize> = HashMap::new();
+/// What liveness found, for `Checked`.
+#[derive(Debug, Default)]
+pub(super) struct Liveness {
+    /// Store sites that move a dead `let` local's value.
+    pub moves: HashSet<ExprId>,
+    /// Store sites that move a kept parameter: only in the owning instance.
+    pub param_moves: HashSet<ExprId>,
+    /// Call arguments (and receivers) rooted in a dead `let` local.
+    pub hands: HashSet<ExprId>,
+    /// Call arguments rooted in a kept parameter on its last use: handed
+    /// over only in the owning instance.
+    pub param_hands: HashSet<ExprId>,
+    /// Per function or method key, which parameters it keeps (receiver
+    /// first for a method); only keys with at least one.
+    pub keeps: HashMap<String, Vec<bool>>,
+}
+
+/// One function's parameters while it is walked.
+pub(super) struct Frame {
+    /// Each slot's declaration (receiver first); `None` for `mut self`.
+    pub params: Vec<Option<Span>>,
+    pub kept: Vec<bool>,
+    /// Parameter slots handed on: (slot, callee key, callee slot, argument).
+    pub passed: Vec<(usize, String, usize, ExprId)>,
+}
+
+/// How a value read from a place ends its root's life.
+pub(super) enum Dead {
+    No,
+    /// A `let` local nothing reads again.
+    Local,
+    /// The current function's parameter in this slot, on its last use.
+    Param(usize),
+}
+
+/// True if a value of type `ty` may hold arrays: deep (spec §4), or
+/// mentioning a type parameter, which some instance may make deep.
+pub(super) fn maybe_deep(ty: &crate::check::Type, structs: &crate::check::Structs) -> bool {
+    use crate::check::Type;
+    match ty {
+        Type::Param(_) => true,
+        Type::Struct(_, args) | Type::Enum(_, args) | Type::Interface(_, args)
+            if args.iter().any(|a| maybe_deep(a, structs)) =>
+        {
+            true
+        }
+        _ => ty.is_deep(structs),
+    }
+}
+
+/// Liveness of every function, method and derive item in `units`.
+pub(super) fn analyse(
+    units: &[Unit],
+    mentions: &HashMap<ExprId, Mention>,
+    callees: &HashMap<ExprId, String>,
+    deep: &dyn Fn(ExprId) -> bool,
+) -> Liveness {
+    let mut positions: HashMap<Span, Vec<usize>> = HashMap::new();
     for mention in mentions.values() {
-        let latest = last.entry(mention.decl).or_insert(mention.at);
-        *latest = (*latest).max(mention.at);
+        positions.entry(mention.decl).or_default().push(mention.at);
+    }
+    for list in positions.values_mut() {
+        list.sort_unstable();
     }
     let mut walk = Walk {
         mentions,
-        last,
+        positions,
+        callees,
+        deep,
         loops: Vec::new(),
-        moves: HashSet::new(),
+        closures: 0,
+        overwrites: Vec::new(),
+        frame: None,
+        out: Liveness::default(),
     };
-    for item in &program.items {
-        if let Item::Fun(f) = item {
-            walk.block(&f.body);
+    let mut frames: Vec<(String, Frame)> = Vec::new();
+    for unit in units {
+        for item in &unit.program.items {
+            match item {
+                Item::Fun(f) => {
+                    frames.push((qualify(unit.path, &f.name.name), walk.function(f)));
+                }
+                Item::Impl(i) => {
+                    let owner = qualify(unit.path, &i.ty.name);
+                    for f in &i.methods {
+                        frames.push((format!("{owner}.{}", f.name.name), walk.function(f)));
+                    }
+                }
+                // Derive items are reached through bounds and blocks: they
+                // move their own locals, but never keep a parameter.
+                Item::Derive(d) => d.methods.iter().for_each(|f| {
+                    walk.function(f);
+                }),
+                _ => {}
+            }
         }
     }
-    walk.moves
+    let mut out = walk.out;
+    // Keeping spreads backwards through handed-on parameters, to a fixed point.
+    let mut keeps: HashMap<String, Vec<bool>> = frames
+        .iter()
+        .map(|(k, f)| (k.clone(), f.kept.clone()))
+        .collect();
+    loop {
+        let mut changed = false;
+        for (key, frame) in &frames {
+            for (slot, callee, at, _) in &frame.passed {
+                let kept = keeps
+                    .get(callee)
+                    .is_some_and(|k| k.get(*at).copied().unwrap_or(false));
+                let mine = keeps.get_mut(key).expect("every frame has an entry");
+                if kept && !mine[*slot] {
+                    mine[*slot] = true;
+                    changed = true;
+                }
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    // A parameter handed on counts only if its function keeps it (and so
+    // owns it in its owning instance).
+    for (key, frame) in &frames {
+        for (slot, _, _, arg) in &frame.passed {
+            if !keeps[key][*slot] {
+                out.param_hands.remove(arg);
+            }
+        }
+    }
+    keeps.retain(|_, k| k.iter().any(|&b| b));
+    out.keeps = keeps;
+    out
 }
 
 impl Walk<'_> {
-    /// True if `value` is a place rooted in a `let` local that nothing can
-    /// reach once `value` has been read.
-    pub(super) fn dead_after(&self, value: &Expr) -> bool {
+    /// Walks one function's body with its parameters in scope.
+    fn function(&mut self, f: &FunDecl) -> Frame {
+        let mut params: Vec<Option<Span>> = f
+            .receiver
+            .iter()
+            .map(|r| (!r.mutable).then_some(r.span))
+            .collect();
+        params.extend(f.params.iter().map(|p| Some(p.name.span)));
+        let kept = vec![false; params.len()];
+        self.frame = Some(Frame {
+            params,
+            kept,
+            passed: Vec::new(),
+        });
+        self.block(&f.body);
+        // The body's result is stored by the caller, as `return` values are.
+        if let Some(tail) = &f.body.tail {
+            self.result(tail);
+        }
+        self.frame.take().expect("set above")
+    }
+
+    /// How reading `value` ends its root's life, if it does.
+    pub(super) fn dead_after(&self, value: &Expr) -> Dead {
         let Some(root) = root(value) else {
-            return false;
+            return Dead::No;
         };
         let Some(mention) = self.mentions.get(&root.id) else {
-            return false;
+            return Dead::No;
         };
-        if !matches!(mention.binding, Binding::Let { .. }) {
-            return false;
+        let later = |end: usize| {
+            self.positions
+                .get(&mention.decl)
+                .is_some_and(|ps| ps.last().is_some_and(|&last| last >= end))
+        };
+        match mention.binding {
+            Binding::Let { .. } => {
+                // `b = f(b)`: overwritten before anything reads it again.
+                if let Some(&(decl, end, depth)) = self.overwrites.last()
+                    && decl == mention.decl
+                    && depth == self.closures
+                    && !self.positions[&decl]
+                        .iter()
+                        .any(|&p| p >= value.span.end && p < end)
+                {
+                    return Dead::Local;
+                }
+                let in_every_loop = self
+                    .loops
+                    .iter()
+                    .all(|l| l.start <= mention.decl.start && mention.decl.end <= l.end);
+                if in_every_loop && !later(value.span.end) {
+                    Dead::Local
+                } else {
+                    Dead::No
+                }
+            }
+            // Inside a closure a parameter is a capture, never moved.
+            Binding::Param
+                if self.closures == 0 && self.loops.is_empty() && (self.deep)(value.id) =>
+            {
+                let slot = self
+                    .frame
+                    .as_ref()
+                    .and_then(|f| f.params.iter().position(|p| *p == Some(mention.decl)));
+                match slot {
+                    Some(slot) if !later(value.span.end) => Dead::Param(slot),
+                    _ => Dead::No,
+                }
+            }
+            _ => Dead::No,
         }
-        let in_every_loop = self
-            .loops
-            .iter()
-            .all(|l| l.start <= mention.decl.start && mention.decl.end <= l.end);
-        in_every_loop && self.last[&mention.decl] < value.span.end
     }
 }
 
@@ -82,132 +261,4 @@ fn root(expr: &Expr) -> Option<&Expr> {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::check::test_util::ok;
-
-    /// The source text of every moved expression in `src`, in source order.
-    fn moved(src: &str) -> Vec<&str> {
-        let program = {
-            let (tokens, _) = crate::lexer::lex(src).expect("lexes");
-            crate::parser::parse(&tokens).expect("parses").0
-        };
-        let checked = ok(src);
-        let mut spans = Vec::new();
-        visit_program(&program, &mut |e| {
-            if checked.moves.contains(&e.id) {
-                spans.push(e.span);
-            }
-        });
-        spans.sort_by_key(|s| s.start);
-        spans.iter().map(|s| &src[s.start..s.end]).collect()
-    }
-
-    fn visit_program(program: &crate::ast::Program, f: &mut dyn FnMut(&crate::ast::Expr)) {
-        use crate::ast::{Item, StmtKind};
-        fn block(b: &crate::ast::Block, f: &mut dyn FnMut(&crate::ast::Expr)) {
-            for s in &b.stmts {
-                match &s.kind {
-                    StmtKind::Let { init, .. } => expr(init, f),
-                    StmtKind::Assign { place, value, .. } => {
-                        expr(place, f);
-                        expr(value, f);
-                    }
-                    StmtKind::Expr { expr: e, .. } => expr(e, f),
-                    StmtKind::While { cond, body } => {
-                        expr(cond, f);
-                        block(body, f);
-                    }
-                    StmtKind::For { body, .. } => block(body, f),
-                    _ => {}
-                }
-            }
-            if let Some(t) = &b.tail {
-                expr(t, f);
-            }
-        }
-        fn expr(e: &crate::ast::Expr, f: &mut dyn FnMut(&crate::ast::Expr)) {
-            use crate::ast::ExprKind::*;
-            f(e);
-            match &e.kind {
-                Array(es) => es.iter().for_each(|x| expr(x, f)),
-                StructLit(lit) => {
-                    lit.fields.iter().for_each(|(_, x)| expr(x, f));
-                    lit.base.iter().for_each(|x| expr(x, f));
-                }
-                Index(a, _, b) => {
-                    expr(a, f);
-                    expr(b, f);
-                }
-                Field(a, _) => expr(a, f),
-                Call(callee, args) => {
-                    expr(callee, f);
-                    args.iter().for_each(|x| expr(x, f));
-                }
-                _ => {}
-            }
-        }
-        for item in &program.items {
-            if let Item::Fun(fun) = item {
-                block(&fun.body, f);
-            }
-        }
-    }
-
-    #[test]
-    fn a_dead_local_moves_and_a_live_one_copies() {
-        assert_eq!(moved("fun main() { let xs = [1]; let ys = xs; }"), ["xs"]);
-        assert!(moved("fun main() { let xs = [1]; let ys = xs; println(xs[0]); }").is_empty());
-        assert!(moved("fun main() { let mut xs = [1]; let ys = xs; xs[0] = 2; }").is_empty());
-    }
-
-    #[test]
-    fn loops_only_move_locals_declared_inside_them() {
-        let life = "fun main() { let mut g = [[true]]; for s in 0..3 { let mut next = g; next[0][0] = false; g = next; } }";
-        assert_eq!(moved(life), ["next"]);
-        assert!(
-            moved("fun main() { let a = [1]; for i in 0..3 { let mut c = a; c[0] = i; } }")
-                .is_empty()
-        );
-    }
-
-    #[test]
-    fn shadowed_names_are_different_bindings() {
-        assert_eq!(
-            moved("fun main() { let a = [1]; let b = a; let a = [2]; println(a[0]); }"),
-            ["a"]
-        );
-    }
-
-    #[test]
-    fn records_parameters_and_loop_variables() {
-        let src = "struct P { v: i64[] }\nfun main() { let mut ps = [P { v: [1] }]; let mut p = ps[0]; p.v[0] = 2; ps[0] = p; }";
-        assert_eq!(moved(src), ["p"]);
-        assert!(moved("fun f(a: i64[]) { let b = a; }\nfun main() {}").is_empty());
-        assert!(moved("fun main() { let g = [[1]]; for r of g { let c = r; } }").is_empty());
-        let field =
-            "struct W { data: i64[] }\nfun main() { let w = W { data: [1] }; let d = w.data; }";
-        assert_eq!(moved(field), ["w.data"]);
-    }
-
-    #[test]
-    fn literal_elements_and_fields_move_on_their_last_mention() {
-        // Only the second `a` moves: the first is followed by another mention.
-        let src = "fun main() { let a = [1]; let g = [a, a]; }";
-        let moved_at: Vec<usize> = moved(src)
-            .iter()
-            .map(|m| m.as_ptr() as usize - src.as_ptr() as usize)
-            .collect();
-        assert_eq!(moved_at, [src.rfind('a').unwrap()]);
-        let src = "struct W { data: i64[] }\nfun main() { let xs = [1]; let w = W { data: xs }; }";
-        assert_eq!(moved(src), ["xs"]);
-    }
-
-    #[test]
-    fn push_moves_a_dead_local_into_the_array() {
-        let src = "fun main() { let mut g = [[1]]; let r = [2]; g.push(r); }";
-        assert_eq!(moved(src), ["r"]);
-        assert!(
-            moved("fun main() { let mut g = [[1]]; let r = [2]; g.push(r); g[0] = r; }").len() == 1
-        );
-    }
-}
+mod tests;
