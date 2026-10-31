@@ -2070,7 +2070,7 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 ### 187. Map/Set inserts in place (session 246)
 
-**Decision:** the prelude's maps change themselves through `mut self` methods (`$put`, `$rebuild`), never `self = f(self, …)`: passing a value into a function that changes and returns it copies its arrays (copy-on-write sees two owners), which made inserts quadratic. Read-only passes (`$map_find(self, k)`) are fine. The compiler-side improvement (treating such an argument as a move) is a TODO. Regression guard: `tests/programs/m101/many_inserts` (100 000 inserts inside the runner's 10 s).
+**Decision:** the prelude's maps change themselves through `mut self` methods (`$put`, `$rebuild`), never `self = f(self, …)`: passing a value into a function that changes and returns it copies its arrays (copy-on-write sees two owners), which made inserts quadratic. Read-only passes (`$map_find(self, k)`) are fine. The compiler-side improvement came in milestone 149 (decision 213): an argument on its last use, `x` in `x = f(x)` included, is handed over without a copy. It covers `let` locals, not a `mut self` receiver (the caller's own place), so `mut self` stays the way to write the maps, and it is the plain style anyway. Regression guard: `tests/programs/m101/many_inserts` (100 000 inserts inside the runner's 10 s).
 
 ### 188. `out` parameters — milestone 102 (PRP-134)
 

@@ -66,8 +66,8 @@ fun $set_of<T: Eq>(xs: T[]): Set<T> {
 impl Map<K: Eq, V> {
     /**
      * Sets `k` to `v` in place: replaced, or added at the end, after growing
-     * the table when it is full. Everything here changes `self` where it is:
-     * a map passed by value and changed would copy its arrays on every insert.
+     * the table when it is full. Everything here changes `self` where it is,
+     * through `mut self`: no copy, whoever else holds the map.
      */
     fun $put(mut self, k: K, v: V) {
         if (self.$keys.len + 1) * 3 > self.$slots.len * 2 {
