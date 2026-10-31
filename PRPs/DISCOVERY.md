@@ -1,46 +1,21 @@
 # Discovery Interview Protocol
 
-Use when a feature request arrives without a PRP.
+Use when a feature request arrives without a PRP: any time a feature is described in a sentence or two without saying what it produces, how it fails, what it touches, and which open decisions it depends on.
 
-## When to Run a Discovery Interview
+## Questions
 
-Any time a feature is described in one or two sentences without specifying:
-- What triggers it and what it produces
-- Who is affected and how
-- What the error and edge-case behavior should be
-- Which existing files it touches, and what it must not touch
-- Which open decisions in DECISIONS.md are relevant
+Ask one question at a time and wait for the answer. Every question comes with a recommended answer, the reason for it, and the realistic alternatives, so the user can accept with one word (the AskUserQuestion tool, the recommendation first). Skip what the request or the code already settles.
 
-## Question Sequence
-
-Ask one question at a time. Do not batch questions. Wait for each answer.
-
-Every question comes with a recommended answer and the reason for it, plus the realistic alternatives, so the user can accept with one word. Prefer the AskUserQuestion tool with the recommendation as the first option.
-
-1. What does it do — input, processing, output
+Cover, in order:
+1. What it does: the syntax, call or command, and what it produces
 2. Who uses it and when
-3. What happens when it fails — the error returned on each failure path
-4. Edge cases — empty input, huge input, invalid input, concurrency
-5. Which existing files it reads from or writes to
-6. What it must never modify
-7. Which open entries in DECISIONS.md it depends on
-8. Security implications — external input, `unsafe`, new dependencies
-9. What rollback looks like if it is abandoned
-10. How success is verified — which commands prove it works
+3. How it fails: the diagnostic or error on each failure path
+4. Edge cases: empty, huge and invalid input, concurrency
+5. Which existing files it reads or changes, and what it must never touch
+6. Which open entries in DECISIONS.md it depends on
+7. Security: external input, `unsafe`, new dependencies, running programs or `git`
+8. How success is verified: which tests and commands prove it
 
-## After the Interview
+## After the interview
 
-Write the PRP to `/PRPs/prp-{NNN}-{feature_name}.md` using `TEMPLATE.md`. `NNN` is the next unused three-digit number; `feature_name` is lowercase snake_case (e.g. `prp-002-type_checker.md`).
-Present it to the user. Wait for explicit approval before writing any code.
-
-## PRP Quality Check
-
-- [ ] Described in user-visible behavior, not implementation
-- [ ] Every existing file it will touch is listed
-- [ ] "Must NOT do" covers the common wrong approaches
-- [ ] Every failure path names the error variant returned
-- [ ] Security considerations filled in
-- [ ] Test cases listed
-- [ ] Rollback plan specified
-- [ ] Blocking DECISIONS.md entries listed
-- [ ] Acceptance criteria verifiable by command or specific check
+Write the PRP to `PRPs/prp-{NNN}-{feature_name}.md` from `TEMPLATE.md`, present it, and wait for explicit approval before writing any code.

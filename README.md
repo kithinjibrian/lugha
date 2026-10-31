@@ -203,12 +203,11 @@ Its [README](editors/vscode/README.md) covers the settings (`lugha.path`, `lugha
 
 ## Contributing
 
-The project is developed with AI coding assistants under a context system:
+The project is developed with AI coding assistants:
 - [`CLAUDE.md`](CLAUDE.md) holds the rules.
 - [`PRPs/`](PRPs) holds one brief per feature.
-- [`MEMORY.md`](MEMORY.md) and [`DECISIONS.md`](DECISIONS.md) hold settled and open decisions.
-- [`CONTEXT.md`](CONTEXT.md) holds the session log.
-- [`docs/setup.md`](docs/setup.md) explains the system.
+- [`DECISIONS.md`](DECISIONS.md) holds every decision and its why: core decisions, then open, deferred and resolved questions.
+- [`CHANGELOG.md`](CHANGELOG.md) and [`TODO.md`](TODO.md) hold what shipped and what's next; commit messages say what changed and why.
 
 Human contributors follow the same flow: a PRP before code, and tests first.
 
