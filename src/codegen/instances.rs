@@ -14,8 +14,8 @@ use super::function::Signature;
 use super::lower::Lowerer;
 use super::methods::Method;
 use super::value::llvm_type;
-use crate::ast::{Expr, FunDecl, ImplDecl, InterfaceDecl, Item};
-use crate::check::{Instance, SELF, Type, Unit, qualify, symbol};
+use crate::ast::{DeriveDecl, DeriveTarget, Expr, FunDecl, ImplDecl, InterfaceDecl, Item};
+use crate::check::{Derives, Instance, SELF, Type, Unit, qualify, symbol};
 
 /// Where an instance's code comes from.
 struct Source<'a> {
@@ -25,6 +25,9 @@ struct Source<'a> {
     /// The interface of a default method (v5), by key: its type arguments
     /// are the receiver's type, then the interface's own (v6).
     interface: Option<(String, &'a InterfaceDecl)>,
+    /// The derive block of a derived item (v17, milestone 141), with its
+    /// hidden owner: its type arguments are the block's parameters.
+    derive: Option<(&'a DeriveDecl, String)>,
 }
 
 /// `key<args>`: how an instance is named in `Lowerer::monos`.
@@ -78,7 +81,7 @@ impl<'ctx> Lowerer<'ctx> {
     /// Declares every instance: `lugha_fn_max<i64>`, `lugha_fn_Stack<string>.push`.
     pub(super) fn declare_instances(&mut self, units: &[Unit], monos: &[Instance]) {
         for mono in monos {
-            let source = find(units, &mono.key);
+            let source = find(units, &mono.key, &self.derives);
             self.enter(&source, &mono.args);
             let f = source.f;
             let params: Vec<Type> = f
@@ -125,7 +128,7 @@ impl<'ctx> Lowerer<'ctx> {
         monos: &[Instance],
     ) -> Result<(), CodegenError> {
         for mono in monos {
-            let source = find(units, &mono.key);
+            let source = find(units, &mono.key, &self.derives);
             let method = self.monos[&instance_name(&mono.key, &mono.args)].clone();
             self.enter(&source, &mono.args);
             let receiver = match (&source.owner, method.receiver) {
@@ -134,6 +137,9 @@ impl<'ctx> Lowerer<'ctx> {
                     Some(owner_type(units, owner, args))
                 }
                 _ if source.interface.is_some() => mono.args.first().cloned(),
+                (_, Some(_)) if let Some((_, owner)) = &source.derive => {
+                    self.derives.self_type(owner, &mono.args)
+                }
                 _ => None,
             };
             self.define_with(source.f, &method.signature, receiver)?;
@@ -153,6 +159,12 @@ impl<'ctx> Lowerer<'ctx> {
             let own = i.type_params.iter().map(|p| p.name.name.clone());
             std::iter::once(SELF.to_string()).chain(own)
         });
+        // A derive block's parameters: its own, or `Self` (v17, milestone 141).
+        let derived = source.derive.iter().flat_map(|(d, _)| match d.target {
+            DeriveTarget::Type(_) => d.type_params.iter().map(|p| p.name.name.clone()).collect(),
+            _ => vec![SELF.to_string()],
+        });
+        let hidden = hidden.chain(derived);
         self.subst = hidden
             .chain(names.map(|n| n.name.clone()))
             .zip(args.iter().cloned())
@@ -161,15 +173,33 @@ impl<'ctx> Lowerer<'ctx> {
 }
 
 /// The declaration of function or method `key`.
-fn find<'a>(units: &[Unit<'a>], key: &str) -> Source<'a> {
+fn find<'a>(units: &[Unit<'a>], key: &str, derives: &Derives) -> Source<'a> {
     for unit in units {
         for item in &unit.program.items {
             match item {
+                Item::Derive(d) => {
+                    let Some(owner) = derives.owner_at(d.span) else {
+                        continue;
+                    };
+                    let found = d
+                        .methods
+                        .iter()
+                        .find(|f| format!("{owner}.{}", f.name.name) == key);
+                    if let Some(f) = found {
+                        return Source {
+                            f,
+                            owner: None,
+                            interface: None,
+                            derive: Some((d, owner.to_string())),
+                        };
+                    }
+                }
                 Item::Fun(f) if qualify(unit.path, &f.name.name) == key => {
                     return Source {
                         f,
                         owner: None,
                         interface: None,
+                        derive: None,
                     };
                 }
                 Item::Interface(i) => {
@@ -183,6 +213,7 @@ fn find<'a>(units: &[Unit<'a>], key: &str) -> Source<'a> {
                             f,
                             owner: None,
                             interface: Some((owner, i)),
+                            derive: None,
                         };
                     }
                 }
@@ -197,6 +228,7 @@ fn find<'a>(units: &[Unit<'a>], key: &str) -> Source<'a> {
                             f,
                             owner: Some((i, owner)),
                             interface: None,
+                            derive: None,
                         };
                     }
                 }
@@ -210,6 +242,15 @@ fn find<'a>(units: &[Unit<'a>], key: &str) -> Source<'a> {
 /// The symbol of `mono`: the type arguments go on the function, or for a
 /// method on its type and then its own (`lugha_fn_Stack<string>.tag<f64>`).
 fn symbol_of(source: &Source, mono: &Instance) -> String {
+    // `lugha_fn_std/$json_value/Json@array.$to_json<i64>` (v17, milestone 141).
+    if let Some((_, owner)) = &source.derive {
+        let args = if mono.args.is_empty() {
+            String::new()
+        } else {
+            format!("<{}>", symbol(&spelled(&mono.args)))
+        };
+        return format!("lugha_fn_{}.{}{args}", symbol(owner), source.f.name.name);
+    }
     match &source.owner {
         // `lugha_fn_Error.report<ParseError>` (v5 draft §9).
         // `lugha_fn_Source<i64>.skip<Count>` for a generic interface (v6).

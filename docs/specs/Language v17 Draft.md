@@ -309,6 +309,12 @@ After discovery (PRP-171): JSON for any data type, the per-type code written by 
 
 361–368. **`json.decode`** (milestone 140): `decode<T: json.Json>(v: Value): Result<T, DecodeError>`, `T` from context; unknown keys ignored, a missing `Option` field `None`, exact numbers (a `Float` never an integer), `DecodeError { path, detail }` printing as its message; walkers per struct, enum and tuple (`lugha_json_dec_<type>`) and helpers in `std.$json_from`; `?` passes its expected type to its operand (`Result<T, _>` or `Option<T>`), added during the build (the user, PRP-171 amendment); tag `m140`.
 
+### Derive blocks (milestone 141)
+
+After discovery (PRP-172): Lugha meets metaprogramming needs with targeted features (DECISIONS.md 208); following a type's shape comes first.
+
+**Derive blocks** (milestone 141): `$derive[<params>] I for X { items }`, written only in bundled sources and only in interface `I`'s own module, gives `I`'s items to one type (`i64`, `T[]`, `Option<T>`, `Map<K, V>`) or to every `struct`, `enum` or `tuple` whose parts meet `I`; a type meets a derivable interface through the block that covers it (E0450's paths for `Json`, E0419 otherwise). The field intrinsics `$derive.fields`, `build`, `variant`, `variants` and `build_variant` call a generic function once per field, unrolled per type. `json.encode`/`json.decode` and `json.Json` move onto blocks in `std.$json_value`, byte for byte; the compiler's JSON walkers and `std.$json_derive` are removed. Programs see no change: `derive` stays a name. Opening derive blocks to every module is a later PRP; tag `m141`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.

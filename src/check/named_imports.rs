@@ -37,7 +37,7 @@ pub(super) fn declared(item: &Item) -> Option<&Ident> {
         Item::Interface(i) => &i.name,
         Item::ExternType(t) => &t.name,
         Item::Const(c) => &c.name,
-        Item::Impl(_) => return None,
+        Item::Impl(_) | Item::Derive(_) => return None,
     })
 }
 

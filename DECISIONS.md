@@ -2153,6 +2153,21 @@ The rest of v15 (directories, processes, env, Unicode follow-ups) is in `TODO.md
 
 **Decision:** as PRP-153 (session 289; approved and built 290). `lugha_rt_net_resolve(name, numeric)` in `runtime/net.c` (`getaddrinfo`, `SOCK_STREAM`, `inet_ntop`, newline-joined; `numeric` = `AI_NUMERICHOST` for the address check); `net.resolve` splits and drops repeats with a `Set`. `tls.connect_with` connects to `[ip]:port`/`ip:port` and still passes `host_of(addr)` as the name to verify; `http.exchange` takes the address (private `pinned` for `http://`); the resolver lives in its own fragment, `runtime/resolve.c` (net.c is at the 300-line fragment limit). Rapidkoi's two full `tls.Options` literals need `address` (or `..tls.options()`).
 
+### 208. Metaprogramming, and derive blocks — milestone 141 (PRP-172)
+
+**Decision:** Lugha meets each metaprogramming need with a targeted feature, never macros or comptime (discussion and discovery, session of 2026-10-31):
+- following a type's shape (serialise, compare, hash) → **derive blocks**, this milestone, bundled sources only;
+- doing work before the program runs → `const` calling pure functions (later; needs decision 4's "no interpreter" amended);
+- varying by platform → `@cfg` on items (later, with portability stage C1);
+- wrapping any signature (decorators) → wait for a real program;
+- new syntax → none: strings checked at build time cover it.
+
+Derive blocks as built: `$derive[<params>] I for X { items }` (`Item::Derive`; `$derive` lexes only in bundled sources, so `derive` stays a name in programs), only in `I`'s module; `X` is one type (`i64`, `T[]`, `Option<T>`, `Map<K, V>`, `Value`) or `struct`/`enum`/`tuple`. Items are methods of a hidden owner `<I>@<label>` (`check/derive.rs`), generic over the block's parameters or `Self`, checked once like default methods; `Derives::find` picks the exact block, then the kind's. Satisfaction and E0450's paths are `check/derive_meets.rs`; JSON's wording stays in `check/json.rs`. Field intrinsics `$derive.fields/build/variant/variants/build_variant` (`check/derive_intrinsics.rs`) take a generic function by name, expanded per part type in `monomorphize` (`Use::per_field`) and unrolled in `codegen/derive.rs`; calls through a derivable bound are recorded in `Checked::derived` and dispatched before built-in methods. Symbols `lugha_fn_<I>@<label>.<item><args>` (no new prefix, decision 6). `json.encode`/`decode` and the `Json` bound now come from `std.$json_value`'s blocks; the compiler's walkers and `std.$json_derive` are gone.
+
+**Why:** macros would break decision 3 (the spec defines the language) and architecture rule 1; comptime with types as values would break decisions 33 and 41 (generic bodies checked once). Derive blocks are Rust's orphan rule narrowed to the interface's own module, so no two libraries can disagree about a type.
+
+**Open for the next PRP:** opening `derive` to every module, and whether a type's own methods override a derived interface.
+
 ---
 
 ## OPEN — Requires human input before implementation

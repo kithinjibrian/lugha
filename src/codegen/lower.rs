@@ -86,6 +86,10 @@ pub(super) struct Lowerer<'ctx> {
     /// A generic interface's arguments at a call that may reach its
     /// default (`Checked::default_args`, v6).
     pub(super) default_args: HashMap<ExprId, Vec<Type>>,
+    /// Every derive block (`Checked::derives`, v17, milestone 141).
+    pub(super) derives: crate::check::Derives,
+    /// Calls through a derivable interface's bound (`Checked::derived`).
+    pub(super) derived: HashMap<ExprId, String>,
     /// Iterator loops (`Checked::iterations`, v6).
     pub(super) iterations: HashMap<ExprId, Iteration>,
     /// Dispatch tables and conversions between interfaces (v6).
@@ -191,6 +195,8 @@ pub(super) fn lower<'ctx>(
         interfaces: checked.interfaces.clone(),
         try_conversions: checked.try_conversions.clone(),
         default_args: checked.default_args.clone(),
+        derives: checked.derives.clone(),
+        derived: checked.derived.clone(),
         iterations: checked.iterations.clone(),
         tests: checked.tests.clone(),
         upcasts: Default::default(),

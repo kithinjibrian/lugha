@@ -1,7 +1,15 @@
 /**
  * std.$json_value: JSON's values, errors and limits (v17), re-exported by
- * `std.json` — see there. Bundled sources only.
+ * `std.json` — see there. Bundled sources only. `Json` and its derive
+ * blocks (milestone 141) are here, where only `Json`'s own module may
+ * write them; the blocks' decoding helpers are in `std.$json_from`.
  */
+import std.$json_from {
+    $dec_bool, $dec_char, $dec_f32, $dec_f64, $dec_i16, $dec_i32, $dec_i64, $dec_i8, $dec_int,
+    $dec_items, $dec_object, $dec_text, $dec_u16, $dec_u32, $dec_u64, $dec_u8, $dec_unit, $fail,
+    $field_path, $index_path, $payload_error, $unknown_variant, $variant_bare, $variant_name,
+    $variant_payload,
+};
 
 /** A JSON value. */
 public enum Value {
@@ -78,10 +86,16 @@ fun oops(kind: ErrorKind, detail: string, at: i64): Oops = Oops { kind: kind, de
 /**
  * The types `encode` and `decode` take: numbers, `bool`, `char`, `string`,
  * `()`, arrays, tuples, maps with string or integer keys, sets, `Option`,
- * structs and enums made of these, and `Value`. Checked by the compiler, not
- * implemented: write `T: json.Json` on a type parameter to pass one through.
+ * structs and enums made of these, and `Value`. Met through this module's
+ * derive blocks, never implemented: write `T: json.Json` on a type
+ * parameter to pass one through.
  */
-public interface Json {}
+public interface Json {
+    fun $to_json(self): Value;
+    fun $from_json(v: Value, path: string): Result<Self, DecodeError>;
+    /** A struct's field named `name` that the object at `path` lacks. */
+    fun $missing(path: string, name: string): Result<Self, DecodeError>;
+}
 
 /**
  * Why `decode` couldn't turn a value into the type asked for, and where:
@@ -99,4 +113,340 @@ impl DecodeError {
 
     /** Printed as its message. */
     public fun show(self): string = self.message();
+}
+
+// ---- How each type meets `Json` (milestone 141) ----
+
+/** A struct's missing field: an error unless the field is an `Option`. */
+fun $no_field<T>(path: string, name: string): Result<T, DecodeError> = $fail(path, "missing field {name}");
+
+$derive Json for i8 {
+    fun $to_json(self): Value = Value.Integer(self as i64);
+    fun $from_json(v: Value, path: string): Result<i8, DecodeError> = $dec_i8(v, path);
+    fun $missing(path: string, name: string): Result<i8, DecodeError> = $no_field(path, name);
+}
+
+$derive Json for i16 {
+    fun $to_json(self): Value = Value.Integer(self as i64);
+    fun $from_json(v: Value, path: string): Result<i16, DecodeError> = $dec_i16(v, path);
+    fun $missing(path: string, name: string): Result<i16, DecodeError> = $no_field(path, name);
+}
+
+$derive Json for i32 {
+    fun $to_json(self): Value = Value.Integer(self as i64);
+    fun $from_json(v: Value, path: string): Result<i32, DecodeError> = $dec_i32(v, path);
+    fun $missing(path: string, name: string): Result<i32, DecodeError> = $no_field(path, name);
+}
+
+$derive Json for i64 {
+    fun $to_json(self): Value = Value.Integer(self);
+    fun $from_json(v: Value, path: string): Result<i64, DecodeError> = $dec_i64(v, path);
+    fun $missing(path: string, name: string): Result<i64, DecodeError> = $no_field(path, name);
+}
+
+$derive Json for u8 {
+    fun $to_json(self): Value = Value.Integer(self as i64);
+    fun $from_json(v: Value, path: string): Result<u8, DecodeError> = $dec_u8(v, path);
+    fun $missing(path: string, name: string): Result<u8, DecodeError> = $no_field(path, name);
+}
+
+$derive Json for u16 {
+    fun $to_json(self): Value = Value.Integer(self as i64);
+    fun $from_json(v: Value, path: string): Result<u16, DecodeError> = $dec_u16(v, path);
+    fun $missing(path: string, name: string): Result<u16, DecodeError> = $no_field(path, name);
+}
+
+$derive Json for u32 {
+    fun $to_json(self): Value = Value.Integer(self as i64);
+    fun $from_json(v: Value, path: string): Result<u32, DecodeError> = $dec_u32(v, path);
+    fun $missing(path: string, name: string): Result<u32, DecodeError> = $no_field(path, name);
+}
+
+/** A `u64` past `i64.MAX` can only be a (rounded) `Float`. */
+$derive Json for u64 {
+    fun $to_json(self): Value = if self > 9223372036854775807 { Value.Float(self as f64) } else { Value.Integer(self as i64) };
+    fun $from_json(v: Value, path: string): Result<u64, DecodeError> = $dec_u64(v, path);
+    fun $missing(path: string, name: string): Result<u64, DecodeError> = $no_field(path, name);
+}
+
+$derive Json for f32 {
+    fun $to_json(self): Value = Value.Float(self as f64);
+    fun $from_json(v: Value, path: string): Result<f32, DecodeError> = $dec_f32(v, path);
+    fun $missing(path: string, name: string): Result<f32, DecodeError> = $no_field(path, name);
+}
+
+$derive Json for f64 {
+    fun $to_json(self): Value = Value.Float(self);
+    fun $from_json(v: Value, path: string): Result<f64, DecodeError> = $dec_f64(v, path);
+    fun $missing(path: string, name: string): Result<f64, DecodeError> = $no_field(path, name);
+}
+
+$derive Json for bool {
+    fun $to_json(self): Value = Value.Bool(self);
+    fun $from_json(v: Value, path: string): Result<bool, DecodeError> = $dec_bool(v, path);
+    fun $missing(path: string, name: string): Result<bool, DecodeError> = $no_field(path, name);
+}
+
+$derive Json for char {
+    fun $to_json(self): Value = Value.Text("{self}");
+    fun $from_json(v: Value, path: string): Result<char, DecodeError> = $dec_char(v, path);
+    fun $missing(path: string, name: string): Result<char, DecodeError> = $no_field(path, name);
+}
+
+$derive Json for string {
+    fun $to_json(self): Value = Value.Text(self);
+    fun $from_json(v: Value, path: string): Result<string, DecodeError> = $dec_text(v, path);
+    fun $missing(path: string, name: string): Result<string, DecodeError> = $no_field(path, name);
+}
+
+$derive Json for () {
+    fun $to_json(self): Value = Value.Null;
+    fun $from_json(v: Value, path: string): Result<(), DecodeError> = $dec_unit(v, path);
+    fun $missing(path: string, name: string): Result<(), DecodeError> = $no_field(path, name);
+}
+
+/** A `Value` is itself. */
+$derive Json for Value {
+    fun $to_json(self): Value = self;
+    fun $from_json(v: Value, path: string): Result<Value, DecodeError> = Ok(v);
+    fun $missing(path: string, name: string): Result<Value, DecodeError> = $no_field(path, name);
+}
+
+$derive<T: Json> Json for T[] {
+    fun $to_json(self): Value {
+        let mut out: Value[] = [];
+        for x of self {
+            out.push(x.$to_json());
+        }
+        Value.Array(out)
+    }
+
+    fun $from_json(v: Value, path: string): Result<T[], DecodeError> {
+        let xs = $dec_items(v, -1, path)?;
+        let mut out: T[] = [];
+        for i in 0..xs.len {
+            out.push(T.$from_json(xs[i], $index_path(path, i))?);
+        }
+        Ok(out)
+    }
+
+    fun $missing(path: string, name: string): Result<T[], DecodeError> = $no_field(path, name);
+}
+
+/** `None` is `null` and `Some(x)` is `x`'s; a missing `Option` field is `None`. */
+$derive<T: Json> Json for Option<T> {
+    fun $to_json(self): Value = match self {
+        Some(x) => x.$to_json(),
+        None => Value.Null,
+    };
+
+    fun $from_json(v: Value, path: string): Result<Option<T>, DecodeError> {
+        if let Null = v {
+            return Ok(None);
+        }
+        Ok(Some(T.$from_json(v, path)?))
+    }
+
+    fun $missing(path: string, name: string): Result<Option<T>, DecodeError> = Ok(None);
+}
+
+/** An object, its keys as text: a string as it is, an integer in decimal. */
+$derive<K: Eq + $JsonKey, V: Json> Json for Map<K, V> {
+    fun $to_json(self): Value {
+        let mut out: Map<string, Value> = #{};
+        for (k, x) of self {
+            out.insert(k.$key_text(), x.$to_json());
+        }
+        Value.Object(out)
+    }
+
+    fun $from_json(v: Value, path: string): Result<Map<K, V>, DecodeError> {
+        let m = $dec_object(v, path)?;
+        let mut out: Map<K, V> = #{};
+        for (k, x) of m {
+            let at = "{path}[\"{k}\"]";
+            let key = K.$key_from(k, at)?;
+            out.insert(key, V.$from_json(x, at)?);
+        }
+        Ok(out)
+    }
+
+    fun $missing(path: string, name: string): Result<Map<K, V>, DecodeError> = $no_field(path, name);
+}
+
+/** An array with no element twice. */
+$derive<T: Eq + Json> Json for Set<T> {
+    fun $to_json(self): Value {
+        let mut out: Value[] = [];
+        for x of self {
+            out.push(x.$to_json());
+        }
+        Value.Array(out)
+    }
+
+    fun $from_json(v: Value, path: string): Result<Set<T>, DecodeError> {
+        let xs = $dec_items(v, -1, path)?;
+        let mut out: Set<T> = #{};
+        for i in 0..xs.len {
+            if !out.insert(T.$from_json(xs[i], $index_path(path, i))?) {
+                return $fail($index_path(path, i), "a repeated element");
+            }
+        }
+        Ok(out)
+    }
+
+    fun $missing(path: string, name: string): Result<Set<T>, DecodeError> = $no_field(path, name);
+}
+
+/** An array of the elements, by position. */
+$derive Json for tuple {
+    fun $to_json(self): Value = Value.Array($derive.fields(self, (), $enc_part));
+
+    fun $from_json(v: Value, path: string): Result<Self, DecodeError> = $derive.build(Read { v: v, path: path }, $dec_element);
+
+    fun $missing(path: string, name: string): Result<Self, DecodeError> = $no_field(path, name);
+}
+
+/** An object of every field, private ones too, in declaration order. */
+$derive Json for struct {
+    fun $to_json(self): Value = $members($derive.fields(self, (), $enc_member));
+
+    fun $from_json(v: Value, path: string): Result<Self, DecodeError> {
+        let m = $dec_object(v, path)?;
+        $derive.build(Members { m: m, path: path }, $dec_member)
+    }
+
+    fun $missing(path: string, name: string): Result<Self, DecodeError> = $no_field(path, name);
+}
+
+/** A variant's name, or a one-key object holding its payload (several as an array). */
+$derive Json for enum {
+    fun $to_json(self): Value {
+        let (name, parts) = $derive.variant(self, (), $enc_part);
+        if parts.len == 0 {
+            Value.Text(name)
+        } else if parts.len == 1 {
+            $members([(name, parts[0])])
+        } else {
+            $members([(name, Value.Array(parts))])
+        }
+    }
+
+    fun $from_json(v: Value, path: string): Result<Self, DecodeError> {
+        let name = $variant_name(v, path)?;
+        let bare = $variant_bare(v);
+        for (known, count) of $derive.variants() {
+            if known == name {
+                // A bare name is right exactly when the variant has no payload.
+                if (count == 0) != bare {
+                    return Err($payload_error(path, name, bare));
+                }
+                let payload = Read { v: $variant_payload(v), path: $field_path(path, name) };
+                return match $derive.build_variant(name, payload, $dec_payload) {
+                    Some(built) => built,
+                    None => Err($unknown_variant(path, name)),
+                };
+            }
+        }
+        Err($unknown_variant(path, name))
+    }
+
+    fun $missing(path: string, name: string): Result<Self, DecodeError> = $no_field(path, name);
+}
+
+/** A value and where it is, for the field functions below. */
+struct Read { v: Value, path: string }
+
+/** An object's members and where it is. */
+struct Members { m: Map<string, Value>, path: string }
+
+fun $enc_part<F: Json>(c: (), name: string, x: F): Value = x.$to_json();
+
+fun $enc_member<F: Json>(c: (), name: string, x: F): (string, Value) = (name, x.$to_json());
+
+/** An object of `parts`, in order. */
+fun $members(parts: (string, Value)[]): Value {
+    let mut m: Map<string, Value> = #{};
+    for (k, x) of parts {
+        m.insert(k, x);
+    }
+    Value.Object(m)
+}
+
+/** A tuple's element `i` of `of`, from an array of exactly that length. */
+fun $dec_element<F: Json>(c: Read, name: string, i: i64, n: i64): Result<F, DecodeError> {
+    let xs = $dec_items(c.v, n, c.path)?;
+    F.$from_json(xs[i], $index_path(c.path, i))
+}
+
+/** A struct's field `name`. */
+fun $dec_member<F: Json>(c: Members, name: string, i: i64, n: i64): Result<F, DecodeError> = match c.m.get(name) {
+    Some(x) => F.$from_json(x, $field_path(c.path, name)),
+    None => F.$missing(c.path, name),
+};
+
+/** A variant's payload `i` of `of`: the value itself, or element `i` of an array of `of`. */
+fun $dec_payload<F: Json>(c: Read, name: string, i: i64, n: i64): Result<F, DecodeError> {
+    if n == 1 {
+        return F.$from_json(c.v, c.path);
+    }
+    let xs = $dec_items(c.v, n, c.path)?;
+    F.$from_json(xs[i], $index_path(c.path, i))
+}
+
+/** A map's key type: a string, or an integer spelled in decimal. */
+interface $JsonKey {
+    fun $key_text(self): string;
+    fun $key_from(k: string, at: string): Result<Self, DecodeError>;
+}
+
+/** The integer a key spells, if it fits `name`'s range. */
+fun $key_int(k: string, at: string, min: i64, max: i64, name: string): Result<i64, DecodeError> = match parse_i64(k) {
+    Some(n) => $dec_int(Value.Integer(n), at, min, max, name),
+    None => $fail(at, "a key that isn't an integer"),
+};
+
+$derive $JsonKey for string {
+    fun $key_text(self): string = self;
+    fun $key_from(k: string, at: string): Result<string, DecodeError> = Ok(k);
+}
+
+$derive $JsonKey for i8 {
+    fun $key_text(self): string = "{self}";
+    fun $key_from(k: string, at: string): Result<i8, DecodeError> = $key_int(k, at, -128, 127, "i8").map(fun(n) = n as i8);
+}
+
+$derive $JsonKey for i16 {
+    fun $key_text(self): string = "{self}";
+    fun $key_from(k: string, at: string): Result<i16, DecodeError> = $key_int(k, at, -32768, 32767, "i16").map(fun(n) = n as i16);
+}
+
+$derive $JsonKey for i32 {
+    fun $key_text(self): string = "{self}";
+    fun $key_from(k: string, at: string): Result<i32, DecodeError> = $key_int(k, at, -2147483648, 2147483647, "i32").map(fun(n) = n as i32);
+}
+
+$derive $JsonKey for i64 {
+    fun $key_text(self): string = "{self}";
+    fun $key_from(k: string, at: string): Result<i64, DecodeError> = $key_int(k, at, i64.MIN, i64.MAX, "i64");
+}
+
+$derive $JsonKey for u8 {
+    fun $key_text(self): string = "{self}";
+    fun $key_from(k: string, at: string): Result<u8, DecodeError> = $key_int(k, at, 0, 255, "u8").map(fun(n) = n as u8);
+}
+
+$derive $JsonKey for u16 {
+    fun $key_text(self): string = "{self}";
+    fun $key_from(k: string, at: string): Result<u16, DecodeError> = $key_int(k, at, 0, 65535, "u16").map(fun(n) = n as u16);
+}
+
+$derive $JsonKey for u32 {
+    fun $key_text(self): string = "{self}";
+    fun $key_from(k: string, at: string): Result<u32, DecodeError> = $key_int(k, at, 0, 4294967295, "u32").map(fun(n) = n as u32);
+}
+
+$derive $JsonKey for u64 {
+    fun $key_text(self): string = "{self}";
+    fun $key_from(k: string, at: string): Result<u64, DecodeError> = $key_int(k, at, 0, i64.MAX, "u64").map(fun(n) = n as u64);
 }

@@ -141,6 +141,11 @@ impl<'ctx> Lowerer<'ctx> {
             return self.chan_new(call, args).map(|v| Some(Value::Val(v)));
         }
         let base_type = self.ty(base);
+        // Through a derivable interface's bound, the covering derive
+        // block's item, whatever the type (v17, milestone 141).
+        if let Some(method) = self.derive_method(call, &name.name, &base_type) {
+            return self.call_method(method, Some(&**base), &base_type, args);
+        }
         // `xs.map(f)`, `s.trim()`, `o.unwrap_or(d)`: helpers call the prelude
         // with the receiver first (v3 PRP-041, v4 PRP-043).
         let callee = self.callees.get(&call.id).cloned();
@@ -240,6 +245,18 @@ impl<'ctx> Lowerer<'ctx> {
         let Some(method) = found else {
             return Ok(None); // a variant constructor, or a function of a module
         };
+        self.call_method(method, receiver.map(|b| &**b), &base_type, args)
+    }
+
+    /// Calls `method` with `receiver` (dropped for an associated function)
+    /// and `args`.
+    fn call_method(
+        &mut self,
+        method: Method<'ctx>,
+        receiver: Option<&Expr>,
+        base_type: &Type,
+        args: &[Expr],
+    ) -> Result<Option<Value<'ctx>>, CodegenError> {
         let mut values: Vec<BasicMetadataValueEnum> = Vec::with_capacity(args.len() + 1);
         // `T.make(…)` through a bound names its type with `T`: no receiver.
         let receiver = receiver.filter(|_| method.receiver.is_some());
@@ -249,7 +266,7 @@ impl<'ctx> Lowerer<'ctx> {
         // copy taken first.
         let (plan, copy) = match receiver {
             Some(base) if method.receiver == Some(true) => (Some(self.place_plan(base)?), None),
-            Some(base) => (None, Some(self.receiver_copy(base, &base_type)?)),
+            Some(base) => (None, Some(self.receiver_copy(base, base_type)?)),
             None => (None, None),
         };
         let arguments = self.arguments(args, &method.signature.params, false)?;

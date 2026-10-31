@@ -5,8 +5,8 @@ use super::Printer;
 use super::doc::{Doc, concat, spaced, text};
 use super::leaves::visibility;
 use crate::ast::{
-    EnumDecl, Field, FunDecl, ImplDecl, Import, InterfaceDecl, InterfaceItem, Item, Program,
-    StructDecl, Variant,
+    DeriveDecl, DeriveTarget, EnumDecl, Field, FunDecl, ImplDecl, Import, InterfaceDecl,
+    InterfaceItem, Item, Program, StructDecl, Variant,
 };
 use crate::span::Span;
 
@@ -59,6 +59,7 @@ impl Printer<'_> {
             Top::Item(Item::Struct(s)) => (s.visibility.map(|v| v.span.start), s.span),
             Top::Item(Item::Enum(e)) => (e.visibility.map(|v| v.span.start), e.span),
             Top::Item(Item::Impl(i)) => (None, i.span),
+            Top::Item(Item::Derive(d)) => (None, d.span),
             Top::Item(Item::Interface(i)) => (i.visibility.map(|v| v.span.start), i.span),
             Top::Actor(s, _) => (s.visibility.map(|v| v.span.start), s.span),
         };
@@ -145,8 +146,33 @@ impl Printer<'_> {
                 concat(vec![text(head), self.braced(body)])
             }
             Top::Item(Item::Interface(i)) => self.interface(i),
+            Top::Item(Item::Derive(d)) => self.derive(d),
             Top::Actor(s, i) => self.actor(s, i),
         }
+    }
+
+    /// `$derive<T: I> I for T[] { methods }` (v17, milestone 141).
+    fn derive(&mut self, d: &DeriveDecl) -> Doc {
+        let target = match &d.target {
+            DeriveTarget::Type(t) => self.ty(t),
+            DeriveTarget::Struct => "struct".to_string(),
+            DeriveTarget::Enum => "enum".to_string(),
+            DeriveTarget::Tuple => "tuple".to_string(),
+        };
+        let head = format!(
+            "$derive{} {} for {target} ",
+            self.type_params(&d.type_params),
+            self.ident(&d.interface)
+        );
+        let inner = self.inner(d.interface.span.end, d.span);
+        let body = self.sequence(
+            inner,
+            &d.methods,
+            |_, f| fun_span(f),
+            |_| "",
+            |p, f| p.fun(f),
+        );
+        concat(vec![text(head), self.braced(body)])
     }
 
     /// `actor Name { fields and methods }` in source order (v17).

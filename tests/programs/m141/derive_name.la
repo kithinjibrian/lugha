@@ -1,0 +1,15 @@
+// `derive` stays an ordinary name in programs: `$derive` blocks are for
+// lughac's own sources only (v17, milestone 141).
+import std.json;
+
+struct Point { derive: i64, tuple: i64 }
+
+fun derive(x: i64): i64 = x * 2;
+
+fun main() {
+    let p = Point { derive: 3, tuple: 4 };
+    println(derive(p.derive));
+    let tuple = p.tuple;
+    println(tuple);
+    println(json.stringify(json.encode(p)).unwrap());
+}

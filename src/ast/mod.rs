@@ -64,6 +64,38 @@ pub enum Item {
     Interface(InterfaceDecl),
     /// `const NAME: T = value;` (v17, milestone 109).
     Const(ConstDecl),
+    /// `$derive I for X { methods }`: how interface `I` is met by a type it
+    /// doesn't own, in bundled sources only (v17, milestone 141).
+    Derive(DeriveDecl),
+}
+
+/// What a `$derive` block covers (v17, milestone 141).
+#[derive(Debug, Clone, PartialEq)]
+pub enum DeriveTarget {
+    /// One type, possibly generic over the block's parameters: `i64`, `T[]`.
+    Type(Type),
+    /// Every struct whose fields meet the interface.
+    Struct,
+    /// Every enum whose payloads meet the interface.
+    Enum,
+    /// Every tuple whose elements meet the interface.
+    Tuple,
+}
+
+/// `$derive<T: I> I for T[] { … }`: the interface's items for the types
+/// `target` covers, written in the interface's own module (v17, milestone 141).
+#[derive(Debug, Clone, PartialEq)]
+pub struct DeriveDecl {
+    /// The block's type parameters, with their bounds.
+    pub type_params: Vec<TypeParam>,
+    /// The interface, declared in the same module.
+    pub interface: Ident,
+    /// The types it covers.
+    pub target: DeriveTarget,
+    /// The interface's items for those types.
+    pub methods: Vec<FunDecl>,
+    /// From `$derive` to the closing brace.
+    pub span: Span,
 }
 
 /// A global constant: evaluated once before `main` (v17, milestone 109).

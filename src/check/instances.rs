@@ -41,6 +41,9 @@ pub(super) struct Use {
     /// For a call through a bound (milestone 12), the type parameter; the
     /// callee is then just the method's name until the parameter is known.
     through: Option<String>,
+    /// A derive block's field intrinsic (v17, milestone 141): the callee is
+    /// `f` at `Self`, reached at each part's type once `Self` is known.
+    per_field: bool,
     span: Span,
 }
 
@@ -60,6 +63,22 @@ impl Checker {
             owner: self.owner.clone(),
             callee,
             through: None,
+            per_field: false,
+            span: call.span,
+        });
+    }
+
+    /// Records that a field intrinsic calls generic `key` once per part of
+    /// the derive block's `Self` (v17, milestone 141).
+    pub(super) fn field_used(&mut self, call: &Expr, key: &str) {
+        self.uses.push(Use {
+            owner: self.owner.clone(),
+            callee: Instance {
+                key: key.to_string(),
+                args: vec![Type::Param(super::SELF.to_string())],
+            },
+            through: None,
+            per_field: true,
             span: call.span,
         });
     }
@@ -75,6 +94,7 @@ impl Checker {
             owner: self.owner.clone(),
             callee,
             through: Some(param.to_string()),
+            per_field: false,
             span: call.span,
         });
     }
@@ -90,6 +110,22 @@ impl Checker {
         name: &str,
     ) -> Option<Instance> {
         let concrete = subst(&Type::Param(param.to_string()), generics, args);
+        // A derivable interface's item comes from the block covering the
+        // type (v17, milestone 141).
+        let derived = generics.iter().find(|g| g.name == param).and_then(|g| {
+            g.bounds.interfaces.iter().find(|a| {
+                let declares = self
+                    .interfaces
+                    .get(&a.key)
+                    .is_some_and(|i| i.items.iter().any(|r| r.name == name));
+                declares && self.derives.derivable(&a.key)
+            })
+        });
+        if let Some(interface) = derived {
+            return self
+                .derives
+                .target(&interface.key, name, &concrete, |k| self.holds_union(k));
+        }
         // `a + b` through `T: Add` at an array joins them (v17, milestone 122).
         if name == "add"
             && let Some(target) = super::concat::concat_target(&concrete)
@@ -140,13 +176,23 @@ impl Checker {
             .map(|r| (r.to_string(), Vec::new(), 0, None))
             .collect();
         let mut next = 0;
-        let mut walkers: Vec<Type> = Vec::new();
         while next < queue.len() {
             let (owner, args, depth, at) = queue[next].clone();
             next += 1;
             let generics = self.params_of(&owner);
             for u in self.uses.iter().filter(|u| u.owner == owner) {
                 let callees = match &u.through {
+                    // A field intrinsic reaches `f` at each part's type (v17).
+                    None if u.per_field => {
+                        let me = subst(&u.callee.args[0], &generics, &args);
+                        self.part_types(&me)
+                            .into_iter()
+                            .map(|t| Instance {
+                                key: u.callee.key.clone(),
+                                args: vec![t],
+                            })
+                            .collect()
+                    }
                     // A print site reaches the `show` instances of its type (v12).
                     None if u.callee.key == PRINT => {
                         self.show_instances(&subst(&u.callee.args[0], &generics, &args))
@@ -155,15 +201,6 @@ impl Checker {
                     None if u.callee.key == super::maps::EQUAL => {
                         self.same_instances(&subst(&u.callee.args[0], &generics, &args))
                     }
-                    // `$json.encode` reaches the helpers its type needs (v17).
-                    None if u.callee.key == super::json::JSON_ENCODE => {
-                        self.json_encode_instances(&subst(&u.callee.args[0], &generics, &args))
-                    }
-                    // So does `$json.decode`, noting the types with walkers (v17).
-                    None if u.callee.key == super::json::JSON_DECODE => self.json_decode_instances(
-                        &subst(&u.callee.args[0], &generics, &args),
-                        &mut walkers,
-                    ),
                     None => vec![Instance {
                         key: u.callee.key.clone(),
                         args: u
@@ -206,7 +243,6 @@ impl Checker {
                 }
             }
         }
-        self.json_walkers = walkers;
         found.into_iter().map(|(i, _, _)| i).collect()
     }
 
