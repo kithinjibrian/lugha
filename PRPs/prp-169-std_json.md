@@ -1,6 +1,6 @@
 ## FEATURE: `std.json` — a strict RFC 8259 JSON parser and writer written in Lugha, safe on hostile input; milestone 137 (v17).
 
-**Status:** proposed 2026-10-31 (session 327), after discovery in session 327 (6 questions, each answered with the recommended option): (1) the next std gap is JSON; (2) parse and write a `Value`, no struct mapping; (3) numbers as `Integer(i64)` and `Float(f64)`; (4) strict RFC 8259 with duplicate keys an error, limits like `std.toml`'s; (5) writing returns `Result`, `Err` on NaN/±Infinity; (6) helpers `get`, `at` and `as_*` only; JSONTestSuite vendored as fixtures, no `std.http` change.
+**Status:** approved 2026-10-31 ("build", session 328); proposed 2026-10-31 (session 327), after discovery in session 327 (6 questions, each answered with the recommended option): (1) the next std gap is JSON; (2) parse and write a `Value`, no struct mapping; (3) numbers as `Integer(i64)` and `Float(f64)`; (4) strict RFC 8259 with duplicate keys an error, limits like `std.toml`'s; (5) writing returns `Result`, `Err` on NaN/±Infinity; (6) helpers `get`, `at` and `as_*` only; JSONTestSuite vendored as fixtures, no `std.http` change.
 
 ## OBJECTIVE
 ```lugha

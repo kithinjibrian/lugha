@@ -9398,3 +9398,6 @@ Branch: std-discovery
 
 ### STILL OPEN AT CLOSE
 - PRP-169 awaits approval.
+
+## SESSION 328 — 2026-10-31 — std.json: build (m137) — open
+Branch: prp-169-std_json
