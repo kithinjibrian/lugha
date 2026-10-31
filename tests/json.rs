@@ -499,4 +499,11 @@ fn a_program_that_only_parses_compiles_no_writer() {
             .any(|l| l.contains("json_write") || l.contains("json/stringify")),
         "{defined:?}"
     );
+    // Nor any of `encode`'s machinery (milestone 139).
+    assert!(
+        !defined
+            .iter()
+            .any(|l| l.contains("lugha_json_") || l.contains("json_derive")),
+        "{defined:?}"
+    );
 }

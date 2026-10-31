@@ -55,6 +55,7 @@ mod instances;
 mod interfaces;
 mod iter_helpers;
 mod iterators;
+mod json;
 mod layouts;
 mod levels;
 mod literal;
@@ -116,6 +117,10 @@ pub use includes::{Included, MAX_INCLUDE};
 pub use input::prelude_helper;
 pub use instances::Instance;
 pub use iterators::Iteration;
+pub use json::{
+    DERIVE as JSON_DERIVE, VALUE as JSON_VALUE, container_helper, json_op, scalar_helper,
+    value_type as json_value_type,
+};
 pub use layouts::UNION_MARK;
 pub use members::{Detail, Member, MemberKind, TypeMembers, type_members, value_members};
 pub use modules::{Origin, Unit, check_modules, check_test_roots, check_tests, qualify, symbol};

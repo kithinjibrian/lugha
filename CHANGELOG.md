@@ -9,6 +9,7 @@ Never deleted. Older entries are never modified.
 ## [Unreleased]
 
 ### Added
+- `json.encode(x)` (milestone 139, PRP-171): any data type — structs, enums, arrays, tuples, maps, sets, `Option`, numbers, text — to a `json.Value` with no annotation; generic code passes types through with `T: json.Json`; E0450 names the part of a type that isn't data (a function, interface value, `Ref`, …)
 - JSON in `std.http` (milestone 138, PRP-170): `req.json()` and `resp.json()` parse a body (whatever its content type), `http.post_json(url, v)` posts a `json.Value`
 - `std.json` (milestone 137, PRP-169): strict RFC 8259 JSON — `json.parse(text)` to a `Value` (exact `i64` integers, keys in order), `json.stringify(v)`/`json.pretty(v)` back, `get`/`at`/`as_*` helpers; duplicate keys, lone surrogates and numbers past `f64` are errors with a line and column, NaN and infinities can't be written, and size, depth and value-count limits hold against hostile input; all of JSONTestSuite's parsing cases pass
 - Running out of stack always panics with `stack overflow` (milestone 135, PRP-167): every function probes its stack a page at a time, so a frame bigger than the guard area no longer crashes with a segfault, on the main stack or in a green thread

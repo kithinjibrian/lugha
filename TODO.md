@@ -11,7 +11,7 @@ What's next. Shipped work is in CHANGELOG.md (and the spec's §11 milestone tabl
 
 ## Language and library
 
-- [ ] **JSON and structs:** turning a `json.Value` into a user struct and back (needs language support: derive-like generation or reflection).
+- [ ] **`json.decode`** (milestone 140, PRP-171): a `json.Value` back into any data type, `DecodeError` with paths. `json.encode` is done (milestone 139).
 - [ ] **Boxes and bytes** (v16 §12): editing a box in place (`r.with`); a bounds-checked byte buffer.
 - [ ] **`std.process`:** streaming pipes to a running child and timeouts (found with oyster). Needs the user's security review.
 - [ ] **File streams:** open a file, read it line by line or in chunks, write incrementally, close.

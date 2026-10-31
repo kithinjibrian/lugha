@@ -11,6 +11,8 @@
 public import std.$json_value { * };
 import std.$json_parse { parse_text };
 import std.$json_write { write };
+// Loaded for the helpers `$json.encode` calls (milestone 139).
+import std.$json_derive;
 
 /**
  * Parses JSON text with the default limits.
@@ -71,3 +73,12 @@ public fun as_object(v: Value): Option<Map<string, Value>> = match v { Object(m)
 
 /** Whether `v` is `null`. */
 public fun is_null(v: Value): bool = match v { Null => true, _ => false };
+
+/**
+ * `x` as a JSON value, for any data type (`Json`): structs as objects of
+ * their fields, enums by variant (`"Dot"`, `{"Circle": 1.5}`,
+ * `{"Rect": [2.0, 3.0]}`), `None` as `null`, `Some(x)` as `x`, maps as
+ * objects, tuples and sets as arrays. Never fails; `stringify` refuses a
+ * NaN or infinite float inside.
+ */
+public fun encode<T: Json>(x: T): Value = $json.encode(x);

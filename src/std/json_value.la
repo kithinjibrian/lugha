@@ -74,3 +74,11 @@ struct Oops {
 }
 
 fun oops(kind: ErrorKind, detail: string, at: i64): Oops = Oops { kind: kind, detail: detail, at: at };
+
+/**
+ * The types `encode` and `decode` take: numbers, `bool`, `char`, `string`,
+ * `()`, arrays, tuples, maps with string or integer keys, sets, `Option`,
+ * structs and enums made of these, and `Value`. Checked by the compiler, not
+ * implemented: write `T: json.Json` on a type parameter to pass one through.
+ */
+public interface Json {}

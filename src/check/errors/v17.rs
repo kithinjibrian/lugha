@@ -140,3 +140,21 @@ pub(in crate::check) fn include_not_utf8(
     )
     .with_help("`include_bytes` takes any bytes; `string_from_utf8` can check them at run time")
 }
+
+/// A type where `json.Json` is required that holds something that isn't
+/// data (milestone 139): `path` leads to it (empty for the type itself).
+pub(in crate::check) fn not_json(ty: &Type, path: &str, what: &str, span: Span) -> Diagnostic {
+    let place = if path.is_empty() {
+        "it is".to_string()
+    } else {
+        format!("`{}` is", path.trim_start_matches('.'))
+    };
+    Diagnostic::error(
+        "E0450",
+        format!("`{ty}` can't be turned into JSON: {place} {what}"),
+        span,
+    )
+    .with_help(
+        "JSON holds data: numbers, `bool`, `char`, `string`, arrays, tuples, maps with string or integer keys, sets, `Option`, and structs and enums of these",
+    )
+}

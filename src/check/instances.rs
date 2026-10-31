@@ -154,6 +154,10 @@ impl Checker {
                     None if u.callee.key == super::maps::EQUAL => {
                         self.same_instances(&subst(&u.callee.args[0], &generics, &args))
                     }
+                    // `$json.encode` reaches the helpers its type needs (v17).
+                    None if u.callee.key == super::json::JSON_ENCODE => {
+                        self.json_encode_instances(&subst(&u.callee.args[0], &generics, &args))
+                    }
                     None => vec![Instance {
                         key: u.callee.key.clone(),
                         args: u
