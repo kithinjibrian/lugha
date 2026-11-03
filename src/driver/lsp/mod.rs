@@ -24,6 +24,8 @@ mod server;
 mod signature;
 mod snippets;
 mod targets;
+mod token_names;
+mod tokens;
 
 use std::io::Write;
 use std::time::{Duration, Instant};
@@ -38,6 +40,10 @@ use lsp_types::{
     TextDocumentSyncOptions, TextDocumentSyncSaveOptions,
 };
 use lsp_types::{ReferenceParams, RenameOptions, RenameParams, TextDocumentPositionParams};
+use lsp_types::{
+    SemanticTokensFullOptions, SemanticTokensOptions, SemanticTokensParams,
+    SemanticTokensServerCapabilities,
+};
 use thiserror::Error;
 
 use self::server::Server;
@@ -216,6 +222,18 @@ fn run(connection: &Connection) -> Result<u8, LspError> {
                             Err(error) => invalid(request.id, &error),
                         }
                     }
+                    "textDocument/semanticTokens/full" => {
+                        match serde_json::from_value::<SemanticTokensParams>(request.params) {
+                            Ok(params) => {
+                                let uri = params.text_document.uri.as_str();
+                                let (tokens, published) =
+                                    server.semantic_tokens(uri, Instant::now());
+                                send(connection, published)?;
+                                Response::new_ok(request.id, tokens)
+                            }
+                            Err(error) => invalid(request.id, &error),
+                        }
+                    }
                     "textDocument/definition" => {
                         match serde_json::from_value::<GotoDefinitionParams>(request.params) {
                             Ok(params) => {
@@ -279,6 +297,14 @@ fn capabilities() -> ServerCapabilities {
             work_done_progress_options: Default::default(),
         })),
         document_formatting_provider: Some(OneOf::Left(true)),
+        // Full documents only (PRP-187): no range or delta requests.
+        semantic_tokens_provider: Some(SemanticTokensServerCapabilities::SemanticTokensOptions(
+            SemanticTokensOptions {
+                legend: tokens::legend(),
+                full: Some(SemanticTokensFullOptions::Bool(true)),
+                ..SemanticTokensOptions::default()
+            },
+        )),
         code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
             code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
             ..CodeActionOptions::default()

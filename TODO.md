@@ -59,7 +59,7 @@ Done: portable x86-64 binaries (`--cpu`), the collector built in, `$LUGHA_CC`, L
 - [ ] **Go to Symbol in Workspace** (`workspace/symbol`, `Ctrl+T`).
 - [ ] **Highlight uses** (`textDocument/documentHighlight`).
 - [ ] **Inlay hints** (`textDocument/inlayHint`) — a `let`'s inferred type and parameter names at calls.
-- [ ] **Semantic highlighting** (`textDocument/semanticTokens`).
+- [ ] **Imported enum qualifiers:** in `Msg.Launched` with `Msg` imported (`import m { Msg };`) the checker records no definition for `Msg`, so Go to Definition, References and semantic tokens miss it (found building milestone 154).
 - [ ] **Run from the editor** — a "▶ Run" code lens running `lughac run`; needs a security review (it starts programs).
 - [ ] **Debugging** — breakpoints and stepping through a Debug Adapter; needs debug info (DWARF) from codegen first. Large.
 - [ ] **Call hierarchy** (`callHierarchy/*`).

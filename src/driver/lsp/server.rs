@@ -9,17 +9,16 @@ use std::time::{Duration, Instant};
 use lsp_server::{Message, Notification};
 use lsp_types::notification::{LogMessage, Notification as _, PublishDiagnostics};
 use lsp_types::{
-    CodeActionOrCommand, CodeActionParams, CompletionItem, CompletionParams,
-    DidChangeConfigurationParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, DidSaveTextDocumentParams, GotoDefinitionParams, Hover, HoverParams,
-    InitializeParams, Location, LogMessageParams, MessageType, PublishDiagnosticsParams,
-    ReferenceParams, SignatureHelp, SignatureHelpParams, TextDocumentPositionParams,
+    CodeActionOrCommand, CodeActionParams, DidChangeConfigurationParams,
+    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    DidSaveTextDocumentParams, GotoDefinitionParams, Hover, HoverParams, InitializeParams,
+    Location, LogMessageParams, MessageType, PublishDiagnosticsParams, ReferenceParams,
+    TextDocumentPositionParams,
 };
 use serde_json::Value;
 
 use super::check;
 use super::code_actions;
-use super::completion;
 use super::definition;
 use super::documents::{Documents, uri_to_path};
 use super::formatting;
@@ -28,8 +27,9 @@ use super::hover::{self, Snapshot};
 use super::publish::{self, Store};
 use super::references;
 use super::rename;
-use super::signature;
 use super::targets::{self, Target};
+
+mod last_good;
 
 /// How long typing must pause before a changed document is checked.
 const DELAY: Duration = Duration::from_millis(200);
@@ -357,72 +357,6 @@ impl Server {
             .filter_map(|t| checks.get(&t.main))
             .map(|s| &**s)
             .find(|s| s.has(file))
-    }
-
-    /// Answers signature help, from the last check that parsed as
-    /// completion does (decision 35).
-    pub(super) fn signature_help(
-        &mut self,
-        params: &SignatureHelpParams,
-        now: Instant,
-    ) -> (Option<SignatureHelp>, Vec<Message>) {
-        let at = &params.text_document_position_params;
-        let (file, out) = self.fresh(at.text_document.uri.as_str(), now);
-        let help = file.and_then(|f| {
-            let targets = self.plan(&f, &mut Vec::new());
-            let text = match self.docs.text(&f) {
-                Some(text) => text.to_string(),
-                None => std::fs::read_to_string(&f).ok()?,
-            };
-            let current = Self::loaded(&self.snapshots, &targets, &f)
-                .and_then(|s| signature::answer(s, &f, &text, at.position));
-            // The call being typed is a broken statement the current check
-            // dropped, so only the last good check may know its instance: its
-            // filled-in signature wins over a written one (decision 34).
-            let filled = |h: &SignatureHelp| h.signatures[0].documentation.is_some();
-            if current.as_ref().is_some_and(filled) {
-                return current;
-            }
-            let older = Self::loaded(&self.last_good, &targets, &f)
-                .and_then(|s| signature::answer(s, &f, &text, at.position));
-            match older {
-                Some(help) if filled(&help) || current.is_none() => Some(help),
-                _ => current,
-            }
-        });
-        (help, out)
-    }
-
-    /// Answers completion from the last check that parsed (decision 29),
-    /// as fresh as a hover.
-    pub(super) fn completion(
-        &mut self,
-        params: &CompletionParams,
-        now: Instant,
-    ) -> (Vec<CompletionItem>, Vec<Message>) {
-        let at = &params.text_document_position;
-        let (file, out) = self.fresh(at.text_document.uri.as_str(), now);
-        let items = file
-            .and_then(|f| {
-                let targets = self.plan(&f, &mut Vec::new());
-                // The current text's check first (milestone 75); the last one with
-                // a tree only when the current text didn't lex (decision 39).
-                let snapshot = Self::loaded(&self.snapshots, &targets, &f)
-                    .or_else(|| Self::loaded(&self.last_good, &targets, &f))?;
-                let text = match self.docs.text(&f) {
-                    Some(text) => text.to_string(),
-                    None => std::fs::read_to_string(&f).ok()?,
-                };
-                Some(completion::answer(
-                    snapshot,
-                    &f,
-                    &text,
-                    at.position,
-                    self.snippets,
-                ))
-            })
-            .unwrap_or_default();
-        (items, out)
     }
 
     fn plan(&self, file: &Path, out: &mut Vec<Message>) -> Vec<Target> {
