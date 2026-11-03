@@ -158,7 +158,7 @@ It never overwrites a file; the package name is the folder's unless `--name` giv
 | `lughac explain [CODE]` | Explain an error or warning code (`E0501`), or list every code |
 | `lughac test [paths…] [--filter TEXT] [--timeout SECS]` | Run the `@test` functions in `.la` files, each in its own process; exit 1 if any fails |
 | `lughac fmt [paths…] [--check]` | Format `.la` files (folders: every `.la` under them) in the canonical style; `--check` lists the files that would change, exit 1 if any |
-| `lughac lsp` | Serve the Language Server Protocol on stdin/stdout: `check`'s diagnostics as you type, hover types, go-to-definition, completion and signature help, for editors |
+| `lughac lsp` | Serve the Language Server Protocol on stdin/stdout: `check`'s diagnostics as you type, hover types, go-to-definition, completion, signature help and semantic tokens, for editors |
 | `lughac build prog.la [-o prog]` | Compile and link an executable |
 | `lughac run prog.la [-- args…]` | Build to a temporary file and run it, passing `args` to it; the exit code is the program's |
 | `lughac check prog.la` | Lex, parse and type-check only |
@@ -200,6 +200,20 @@ code --install-extension lugha-0.3.2.vsix
 ```
 
 Its [README](editors/vscode/README.md) covers the settings (`lugha.path`, `lugha.entries`) and how it picks the file to check.
+
+**Neovim** (0.11 or later) needs no plugin: `lughac lsp` sends semantic tokens, so files are coloured from the server. In `init.lua`:
+
+```lua
+vim.filetype.add({ extension = { la = "lugha" } })
+vim.lsp.config("lugha", {
+  cmd = { "lughac", "lsp" },
+  filetypes = { "lugha" },
+  root_markers = { "lugha.toml", ".git" },
+})
+vim.lsp.enable("lugha")
+```
+
+Other editors start `lughac lsp` the same way, for `.la` files.
 
 ## Contributing
 
