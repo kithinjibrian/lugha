@@ -4,7 +4,7 @@ Use when a feature request arrives without a PRP: any time a feature is describe
 
 ## Questions
 
-Ask one question at a time and wait for the answer. Every question comes with a recommended answer, the reason for it, and the realistic alternatives, so the user can accept with one word (the AskUserQuestion tool, the recommendation first). Skip what the request or the code already settles.
+Ask one question at a time and wait for the answer. Every question comes with a recommended answer, the reason for it, and the realistic alternatives, so the user can accept with one word (the AskUserQuestion tool, the recommendation first). Skip what the request or the code already settles, and decide yourself every question where your own judgement is the best guide (consistency with existing rules, naming, diagnostics, scope that follows from them): record each such call, with its reason, in the PRP so the user reviews them at approval. Ask only what is genuinely the user's call: taste, priorities, scope they must choose.
 
 Cover, in order:
 1. What it does: the syntax, call or command, and what it produces
