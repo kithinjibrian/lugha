@@ -1,140 +1,113 @@
 <p align="center">
-  <img src="editors/vscode/icons/lugha.svg" alt="Lugha: a baobab before the sun" width="128">
+  <img src="editors/vscode/icons/lugha.svg" alt="The Lugha icon: a baobab tree in front of the sun" width="128">
 </p>
 
 <h1 align="center">Lugha</h1>
 
-<p align="center">
-  <b>A small, statically typed language that compiles to native code.</b><br>
-  Plain values, green threads and actors, and C libraries without bindings.
-</p>
-
-<p align="center">
-  <a href="#install">Install</a> ·
-  <a href="#a-tour">Tour</a> ·
-  <a href="docs/specs/Language%20v17%20Specification.md">Specification</a> ·
-  <a href="#editors">Editors</a> ·
-  <a href="#status">Status</a>
-</p>
+<p align="center"><b>A language that doesn't get in your way, but still has your back.</b></p>
 
 ---
 
+*Lugha* is the Swahili word for "language". It is a small programming language I am building. You
+write your program in a file that ends in `.la`. Then `lughac`, the Lugha compiler, turns it into a
+program your computer can run on its own.
+
 ```lugha
-enum Shape {
-    Circle(f64),
-    Rect(f64, f64),
-}
+fun fib(n: i64): i64 =
+    if n < 2 { n } else { fib(n - 1) + fib(n - 2) };
 
-fun area(s: Shape): f64 = match s {
-    Circle(r) => 3.14159 * r * r,
-    Rect(w, h) => w * h,
-};
-
-fun main() {
-    let shapes = [Shape.Circle(1.0), Shape.Rect(2.0, 3.0), Shape.Circle(0.5)];
-    let total = shapes.iter().map(area).sum();
-    println("{shapes.len} shapes, total area {total:.2}");
+fun main(): i32 {
+    println(fib(30));
+    0
 }
 ```
 
 ```console
-$ lughac run shapes.la
-3 shapes, total area 9.93
-$ lughac build shapes.la -O2 && ls -lh shapes
--rwxr-xr-x 1 you you 212K  shapes        # one file, needs only libc
+$ lughac run fib.la
+832040
 ```
 
-*Lugha* is Swahili for "language". `lughac`, its compiler, is written in Rust. It checks a `.la`
-program, compiles it through LLVM and links it with a small C runtime and a garbage collector into
-one executable.
+## How it started
 
-## Why Lugha
-
-- **Everything is a value.** Assigning an array, struct or enum gives you your own copy, so nothing
-  changes behind your back. Copies are cheap: arrays are shared until one side writes. When you do
-  want sharing, `Ref<T>` says so in the type.
-- **Mistakes stop the program, never corrupt it.** Integer overflow, out-of-bounds indexes and
-  division by zero panic with a message and the line, at `-O2` too. `match` must cover every case,
-  and there is no `null`: a missing value is `Option<T>`.
-- **Concurrency without `async`.** `spawn f(x)` runs any call on a green thread, channels and
-  `select` carry values between them, and actors keep state that needs no locks. Every function
-  stays an ordinary function.
-- **C is one declaration away.** `extern fun` calls C, `extern struct` passes structs exactly as a C
-  compiler does, closures become C callbacks, and a `[link]` table in `lugha.toml` links any library,
-  `pkg-config` included. GTK 4 apps are written in plain Lugha
-  ([lugha-gtk](https://github.com/kithinjibrian/lugha-gtk)).
-- **The tools come in the box.** One `lughac` binary builds, runs, tests, formats, explains every
-  error code and serves editors through the Language Server Protocol.
-
-## Install
-
-Lugha builds on Linux. You need Rust (the toolchain is pinned, so [rustup](https://rustup.rs)
-fetches the right one), LLVM 21 and a C compiler. On Ubuntu:
-
-```sh
-sudo apt install llvm-21-dev build-essential
-git clone https://github.com/kithinjibrian/lugha && cd lugha
-cargo install --path .
-```
-
-Then start a project:
-
-```console
-$ lughac init hello
-created hello/lugha.toml
-created hello/src/main.la
-…
-$ lughac run hello/src/main.la
-Hello, world, from hello!
-$ lughac test hello
-test hello.test.greeting_test.greets ... ok
-
-1 test: 1 passed, 0 failed
-```
-
-<details>
-<summary>Optional extras</summary>
-
-- **TLS and crypto** (`std.tls`, `std.http` over `https`, `std.crypto`): `sudo apt install libssl-dev`.
-- **Git packages**: `git` on your `PATH`.
-- **C libraries through `pkg-config`**: `pkg-config` or `pkgconf`, and the library's development files.
-- **Another C compiler**: `LUGHA_CC=clang` or `LUGHA_CC="zig cc"`.
-- **ARM64 Linux**: `sudo apt install gcc-aarch64-linux-gnu qemu-user`, then
-  `lughac build app.la --target aarch64-unknown-linux-gnu` and run it with
-  `qemu-aarch64 -L /usr/aarch64-linux-gnu ./app`, or copy it to an ARM machine.
-- **This machine's CPU only**: `--cpu=native` (by default, executables run on any x86-64).
-
-</details>
-
-## A tour
-
-### Errors are values
-
-`Result<T, E>` holds a value or an error, and `?` passes the error up.
+The first version of Lugha could do one thing. It could work out a sum inside `main`, like this:
 
 ```lugha
-fun parse_age(s: string): Result<i64, string> {
-    let n = parse_i64(s.trim()).ok_or("not a number: {s}")?;
-    if n < 0 {
-        return Err("negative: {n}");
-    }
-    Ok(n)
-}
+fun main(): i32 { 2 + 3 * 4 }
+```
 
-fun main() {
-    for s of ["42", " 7 ", "-1", "abc"] {
-        match parse_age(s) {
-            Ok(n) => println("age {n}"),
-            Err(e) => eprintln("error: {e}"),
-        }
-    }
+The program did the maths and quit with the answer, 14. That was all.
+
+Then I added one small piece at a time: variables and loops, then structs and arrays, then enums,
+modules, generics, closures and much more. Lugha is now on its seventeenth version.
+
+Today it is big enough to build [Rapidkoi](https://github.com/kithinjibrian/rapidkoi), a browser for
+apps. In Rapidkoi, apps don't decide what they take from you. You decide what they get. Rapidkoi is
+written in Lugha.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kithinjibrian/rapidkoi/main/docs/screenshot.png" alt="Rapidkoi's new tab" width="720">
+</p>
+
+## What it is like
+
+### Every value is your own
+
+When you give a value a new name, you get your own copy. Changing the copy never changes the
+original.
+
+```lugha
+struct Point { x: i64, y: i64 }
+
+fun main(): i32 {
+    let a = Point { x: 1, y: 2 };
+    let mut b = a;
+    b.x = 9;
+    println(a);
+    println(b);
+    0
 }
 ```
 
-### Actors and green threads
+```console
+Point { x: 1, y: 2 }
+Point { x: 9, y: 2 }
+```
 
-An actor handles one message at a time, so its state needs no locks. `c.add(n)` is queued and
-`c.get()` waits for the answer.
+Copies are cheap. Two copies of an array share the same memory until one of them changes. When you
+really do want two names for one thing, you put it in a box called `Ref`, and the type shows it.
+
+### Mistakes are caught early
+
+`lughac` checks your program before it runs. When something is wrong, it says where, and often how
+to fix it:
+
+```console
+$ lughac check push.la
+error[E0501]: cannot call `mut self` method `push` on `xs`: it is not mutable
+  --> push.la:3:5
+  |
+2 |     let xs = [1, 2, 3];
+  |         -- declared here
+3 |     xs.push(4);
+  |     ^^
+  |
+  = help: make it mutable: `let mut xs`
+
+For more about E0501, run `lughac explain E0501`.
+```
+
+Some mistakes can only show up while the program runs. Reading past the end of an array is one. A
+number that grows too big to fit is another. Lugha never lets these slip by quietly. It stops the
+program and tells you what happened and where:
+
+```console
+panic: index out of bounds: the length is 3 but the index is 5 at oob.la:3:15
+```
+
+### Doing many things at once
+
+`spawn` runs a function next to the rest of your program. An *actor* is a value that answers
+messages one at a time, so two parts of your program can never change it at the same moment.
 
 ```lugha
 actor Counter {
@@ -155,84 +128,66 @@ fun main() {
     for t of tasks {
         t.join();
     }
-    println("count = {c.get()}");  // count = 6
+    println("count = {c.get()}");
 }
 ```
 
-Channels (`Chan<T>`), `select` with timeouts, and a panic that ends only the actor it happens in
-are covered in the spec. For a step-by-step look at the scheduler, open
-[`docs/learn/green-threads/index.html`](docs/learn/green-threads/index.html) in a browser.
-
-### Errors that say what to do
-
 ```console
-$ lughac check push.la
-error[E0501]: cannot call `mut self` method `push` on `xs`: it is not mutable
-  --> push.la:3:5
-  |
-2 |     let xs = [1, 2, 3];
-  |         -- declared here
-3 |     xs.push(4);
-  |     ^^
-  |
-  = help: make it mutable: `let mut xs`
-
-For more about E0501, run `lughac explain E0501`.
+count = 6
 ```
 
-Every code has a page with an example and its fix (`lughac explain E0501`). With
-`--diagnostics=json`, tools get the same diagnostics as one JSON object per line.
+### Using C libraries
 
-### And the rest
+A lot of useful code is written in C. Lugha can call it directly. You write one line saying what
+the C function looks like, and list the library in your project's `lugha.toml`. That is how
+Rapidkoi draws its windows with GTK and keeps its data in SQLite.
 
-- **Types:** integers from `i8` to `u64`, `f32` and `f64`, `char`, UTF-8 strings, tuples, structs,
-  enums, growable arrays, `Map` and `Set` (`#{"a": 1}`), and global constants computed by pure code.
-- **Abstraction:** generics with inferred type arguments, interfaces met by any type with the right
-  methods, interface values, default methods, operator overloading, user-defined `==` and order,
-  and `derive` blocks that say once how every struct meets an interface (JSON, hashing, printing).
-- **Control:** `match` with or-patterns, guards and type patterns; `if let`, `while let` and
-  `let … else`; `loop` and labelled `break`; `defer`; closures; lazy iterators (`map`, `filter`,
-  `zip`, `take_while`, `collect`, …).
-- **Standard library**, each module loaded only when imported: `std.math`, `std.random`, `std.fs`
-  (files, folders and streams), `std.env`, `std.process` (never through a shell), `std.time`,
-  `std.json`, `std.toml`, `std.net`, `std.http`, `std.tls`, `std.crypto` and `std.task`.
-- **Programs and packages:** modules across files, `private` and `public`, packages from a folder or
-  a git tag with a lock file, and `include_str`/`include_bytes` for files built into the program.
+## Things to know before you start
 
-The full language, with every rule and example program, is the
-[specification](docs/specs/Language%20v17%20Specification.md). `lughac spec` prints the copy that
-matches your compiler, ready to read or to paste into an AI assistant.
+- **It is young.** Lugha changes as I learn what works. A new version can break programs written
+  for the last one. There are only a few libraries so far.
+- **It runs on Linux.** It works best on x86-64 computers. It can also build programs for ARM64.
+- **It has a garbage collector.** Lugha frees memory for you. This is easier, but it uses more
+  memory than freeing it by hand.
+- **The safety checks are always on.** Every sum and every array index is checked, even in a fast
+  (`-O2`) build. This costs a little speed.
+
+## Try it
+
+The easiest way to try Lugha is the [playground](https://lugha-lang.org/playground). You write a
+program in your browser, press Run, and see what it prints. Nothing to install.
+
+If you are new to Lugha, the [lessons](https://lugha-lang.org/learn) go one small idea at a time,
+and the [examples](https://lugha-lang.org/examples) show whole programs you can open in the
+playground.
 
 ## The `lughac` command
 
 | Command | What it does |
 | --- | --- |
-| `lughac init [folder] [--lib]` | Start a program, or a library with an example and a test |
-| `lughac run prog.la [-- args…]` | Build and run; the exit code is the program's |
-| `lughac build prog.la [-o out] [-O2]` | Build an executable |
-| `lughac check prog.la` | Type-check only |
-| `lughac test [paths…] [--filter T]` | Run `@test` functions, each in its own process, in parallel |
-| `lughac fmt [paths…] [--check]` | Format `.la` files, keeping every comment |
-| `lughac explain [CODE]` | Explain an error code, or list them all |
-| `lughac update prog.la` | Re-resolve git packages and rewrite `lugha.lock` |
-| `lughac lsp` | Serve the Language Server Protocol on stdin and stdout |
-| `lughac spec` | Print the language specification |
+| `lughac init [folder] [--lib]` | Start a new program, or a library |
+| `lughac run prog.la` | Build a program and run it |
+| `lughac build prog.la [-O2]` | Build a program you can share |
+| `lughac check prog.la` | Look for mistakes without building |
+| `lughac test` | Run the tests (functions marked `@test`) |
+| `lughac fmt` | Lay out your code in the standard style |
+| `lughac explain E0501` | Explain an error, with an example and the fix |
+| `lughac spec` | Print the full description of the language |
 
-`lughac` exits 0 on success, 1 when the program has errors, and 2 for bad usage, an internal error
-or output it couldn't write.
+The [language specification](docs/specs/Language%20v17%20Specification.md) describes every rule,
+with example programs. `lughac spec` prints the copy that matches your compiler.
 
 ## Editors
 
-**VS Code:** the extension in [`editors/vscode/`](editors/vscode) shows errors as you type, plus
-hover, go to definition, find references, rename, completion, signature help, quick fixes,
-formatting, snippets, and a ▶ beside every test.
+The VS Code extension in [`editors/vscode/`](editors/vscode) shows mistakes as you type. It also
+completes names, jumps to where things are defined, renames, formats, and runs your tests.
 
 ```sh
 cd editors/vscode && npm ci && npm run package
 code --install-extension lugha-*.vsix
 ```
 
-**Neovim 0.11 and later** need no plugin; `lughac lsp` colours the code itself:
+Other editors, such as Neovim, Helix and Zed, can start `lughac lsp`. In Neovim 0.11 or later:
 
 ```lua
 vim.filetype.add({ extension = { la = "lugha" } })
@@ -244,48 +199,23 @@ vim.lsp.config("lugha", {
 vim.lsp.enable("lugha")
 ```
 
-Helix, Zed and any other editor with LSP support start `lughac lsp` the same way, for `.la` files.
+## Working on lughac
 
-## Performance
-
-Lugha checks every integer operation and index, and uses a garbage collector. On numeric code it
-runs close to C; on code that allocates many small objects it is slower. A sample from
-`python3 bench/run.py` (median wall time, `-O2`, Intel i5-4308U):
-
-| Benchmark | Lugha | C | Rust | Go | Node |
-| --- | --- | --- | --- | --- | --- |
-| mandelbrot | 0.36 s | 0.36 s | 0.41 s | 0.38 s | 0.54 s |
-| nbody | 0.65 s | 0.53 s | 0.61 s | 0.69 s | 0.98 s |
-| fannkuch | 0.25 s | 0.22 s | 0.22 s | 0.23 s | 0.46 s |
-| binarytrees | 1.11 s | 0.52 s | 1.37 s | 1.08 s | 0.54 s |
-| wordfreq | 0.56 s | 0.10 s | 0.15 s | 0.35 s | 1.11 s |
-
-All six benchmarks, peak memory and how to run them are in [`bench/`](bench).
-
-## Status
-
-Lugha is young and maintained by one person. It runs real programs, GTK apps among them, but the
-language still changes: version 17 is in progress, and a release may break code written for the
-last one. Linux on x86-64 is the main platform; ARM64 Linux builds and runs.
-
-## Building and testing lughac
+To build `lughac` on your own computer, you need Linux, Rust, LLVM 21 (`llvm-21-dev`) and a C
+compiler.
 
 ```sh
-cargo build                                  # target/debug/lughac
-cargo test                                   # everything; needs llvm-21-dev, cc and libssl-dev
+cargo install --path .
+cargo test        # needs llvm-21-dev, a C compiler and libssl-dev
 cargo fmt --check && cargo clippy --all-targets -- -D warnings
 ```
 
-End-to-end tests are programs in [`tests/programs/`](tests/programs), grouped by feature: `name.la`
-with its expected `name.stdout` and `name.exit`, or `name.stderr` for a program that must be
-rejected. Add a test by adding files; no runner changes.
+The test programs live in [`tests/programs/`](tests/programs), one folder for each feature. A
+test is a `.la` file with the output it should print next to it. To add one, add the files.
 
-## Contributing
-
-Each feature starts as a short proposal in [`PRPs/`](PRPs), and every design decision and its reason
-is in [`DECISIONS.md`](DECISIONS.md). Code follows [`docs/CODE_STYLE.md`](docs/CODE_STYLE.md), and
-tests come first. [`TODO.md`](TODO.md) lists what's next and [`CHANGELOG.md`](CHANGELOG.md) what
-shipped. Issues and pull requests are welcome.
+Each feature starts as a short plan in [`PRPs/`](PRPs). [`DECISIONS.md`](DECISIONS.md) records
+each design choice and why it was made, and [`docs/CODE_STYLE.md`](docs/CODE_STYLE.md) says how the
+code is written. [`TODO.md`](TODO.md) lists what comes next.
 
 ## License
 
