@@ -39,7 +39,8 @@ impl Checker {
         }
     }
 
-    /// `base[index]`: a string's byte (`u8`) or an array's element; the index is an `i64`.
+    /// `base[index]`: a string's byte (`u8`), an array's element, a map's
+    /// value, or the result of the base's own `index` method.
     pub(super) fn index(&mut self, expr: &Expr, base: &Expr, index: &Expr) -> Type {
         let mark = self.changes_mark();
         let ty = self.value(base, None);
@@ -55,6 +56,10 @@ impl Checker {
                 Type::Enum(_, args) => args[0].clone(),
                 other => other,
             };
+        }
+        // A struct, enum, interface value or `T`: its `index` method.
+        if super::indexing::by_method(&ty) {
+            return self.index_call(expr, (base, &ty), index, mark);
         }
         // Any integer type indexes; a bare literal is an `i64`.
         let at = self.value(index, None);

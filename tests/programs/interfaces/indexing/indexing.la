@@ -1,0 +1,95 @@
+// Indexing your own types: `a[i]` calls `index`, `a[i] = v` calls
+// `set_index`, and `a[x, y]` is `a[(x, y)]`.
+
+struct Grid { w: i64, cells: f64[] }
+
+impl Grid {
+    fun index(self, at: (i64, i64)): f64 {
+        let (r, c) = at;
+        self.cells[r * self.w + c]
+    }
+
+    fun set_index(mut self, at: (i64, i64), v: f64) {
+        let (r, c) = at;
+        self.cells[r * self.w + c] = v;
+    }
+}
+
+// A literal index takes the parameter's type.
+struct Bytes { xs: u8[] }
+
+impl Bytes {
+    fun index(self, i: u8): u8 = self.xs[i];
+}
+
+enum Sign { Plus, Minus }
+
+impl Sign {
+    fun index(self, n: i64): i64 = match self {
+        Plus => n,
+        Minus => -n,
+    };
+}
+
+interface Table {
+    fun index(self, k: string): i64;
+    fun set_index(mut self, k: string, v: i64);
+}
+
+struct Pairs { keys: string[], values: i64[] }
+
+impl Pairs {
+    fun index(self, k: string): i64 {
+        for i in 0..self.keys.len {
+            if self.keys[i] == k {
+                return self.values[i];
+            }
+        }
+        -1
+    }
+
+    fun set_index(mut self, k: string, v: i64) {
+        self.keys.push(k);
+        self.values.push(v);
+    }
+}
+
+fun first<T: Table>(t: T): i64 = t["a"];
+
+fun fill(t: Table): Table {
+    let mut u = t;
+    u["b"] = 2;
+    u
+}
+
+fun main() {
+    let mut g = Grid { w: 3, cells: [0.0; 9] };
+    g[1, 2] = 5.0;
+    println(g[1, 2]);
+    g[(0, 0)] = g[1, 2] + 1.0;
+    println(g[0, 0]);
+
+    // Writes in a loop, and a copy that keeps its own cells.
+    let before = g;
+    for i in 0..3 {
+        g[i, i] = 9.0;
+    }
+    println(g.cells);
+    println(before.cells);
+
+    let b = Bytes { xs: [10, 20, 30, 40] };
+    println(b[3]);
+    println(Sign.Minus[4]);
+
+    let mut p = Pairs { keys: [], values: [] };
+    p["a"] = 1;
+    println(first(p));
+    let t: Table = fill(p);
+    println(t["b"]);
+    println(p["b"]);
+
+    // Maps with tuple keys take the comma too.
+    let mut d: Map<(i64, i64), string> = #{};
+    d[0, 0] = "origin";
+    println(d[0, 0]);
+}

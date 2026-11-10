@@ -103,7 +103,8 @@ impl Checker {
 
     /// `m[k] = v` on a map: its `insert` method, with `m` as a `mut
     /// self` receiver; true when `place` was such an entry and is checked.
-    /// `m[k] += v` is E0404 (write `m[k] = m[k] + v`).
+    /// `m[k] += v` is E0404 (write `m[k] = m[k] + v`). `a[i] = v` on a type
+    /// with `set_index` is checked here too, as the same kind of call.
     pub(super) fn map_assign(
         &mut self,
         op: AssignOp,
@@ -117,6 +118,11 @@ impl Checker {
         // The base's type decides; a probe whose findings the normal path repeats.
         let reported = self.diagnostics.len();
         let ty = self.value(base, None);
+        // `a[i] = v` on a struct, enum, interface value or `T`: `set_index`.
+        if super::indexing::by_method(&ty) {
+            self.index_assign(op, (place, base, &ty), (key, value), mark);
+            return true;
+        }
         if !matches!(&ty, Type::Struct(k, _) if k == MAP) {
             self.diagnostics.truncate(reported);
             return false;

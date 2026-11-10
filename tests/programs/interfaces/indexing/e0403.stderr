@@ -1,0 +1,13 @@
+error[E0403]: expected u8, found string
+   --> tests/programs/interfaces/indexing/e0403.la:11:15
+   |
+11 |     let x = b["a"];
+   |               ^^^ expected u8
+
+error[E0403]: expected i64, found (i64, i64)
+   --> tests/programs/interfaces/indexing/e0403.la:13:16
+   |
+13 |     let y = xs[0, 1];
+   |                ^^^^ expected i64
+
+For more about E0403, run `lughac explain E0403`.

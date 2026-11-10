@@ -33,6 +33,23 @@ impl Parser<'_> {
         Ok(self.mk(start, ExprKind::Tuple(elements)))
     }
 
+    /// The rest of `a[x, y, …]` after its first index, at a `,`: the tuple
+    /// `(x, y, …)`, spanning its elements. The `]` is left to the caller.
+    pub(super) fn index_tuple(&mut self, open: Span, first: Expr) -> PResult<Expr> {
+        let start = first.span.start;
+        let mut elements = vec![first];
+        while self.eat(&TokenKind::Comma) && !self.at(&TokenKind::RBracket) {
+            elements.push(self.expr()?);
+        }
+        if elements.len() < 2 {
+            let at = Span::new(open.start, self.prev_end());
+            let d = Diagnostic::error("E0201", "a tuple index needs two or more elements", at)
+                .with_help("drop the comma: `a[x]`");
+            self.error(d);
+        }
+        Ok(self.mk(start, ExprKind::Tuple(elements)))
+    }
+
     /// `()`: the unit value, an empty tuple. Kept out
     /// of `primary`, whose frame is on every nesting level's stack.
     #[inline(never)]
@@ -163,5 +180,13 @@ mod tests {
         assert_eq!(body("let x: () = ();"), "(block (let x (tuple) (tuple)))");
         assert_eq!(body("let () = f();"), "(block (let-pat (tuple) (call f)))");
         assert!(body("match o { Some(()) => 1, _ => 2 }").contains("(Some (tuple))"));
+    }
+
+    #[test]
+    fn a_comma_in_brackets_makes_a_tuple_index() {
+        assert_eq!(expr("g[1, 2]"), "(index g (tuple 1 2))");
+        assert_eq!(expr("g[(1, 2)]"), "(index g (tuple 1 2))");
+        assert_eq!(expr("g[a, b, c,]"), "(index g (tuple a b c))");
+        assert_eq!(errors("fun main() { g[1,]; }"), [("E0201", "[1,")]);
     }
 }

@@ -55,6 +55,7 @@ mod iface_tables;
 mod iface_values;
 mod impl_bounds;
 mod includes;
+mod indexing;
 mod infer;
 mod input;
 mod instances;

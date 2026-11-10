@@ -115,6 +115,16 @@ impl<'ctx> Lowerer<'ctx> {
                     self.scan_read(scan, key);
                     self.scan_read(scan, value);
                 }
+                // `g[i] = v` through `set_index`: a `mut self` call on `g`.
+                StmtKind::Assign { place, value, .. } if matches!(&place.kind, ExprKind::Index(base, _, _) if self.indexes_by_method(base)) =>
+                {
+                    let ExprKind::Index(base, _, key) = &place.kind else {
+                        unreachable!("matched just above")
+                    };
+                    self.scan_receiver(scan, base);
+                    self.scan_read(scan, key);
+                    self.scan_read(scan, value);
+                }
                 StmtKind::Assign { place, value, .. } => {
                     let deep = self.ty(place).is_deep(&self.structs);
                     self.scan_write(scan, place, deep);
@@ -275,6 +285,11 @@ impl<'ctx> Lowerer<'ctx> {
                 self.scan_read(scan, e)
             }
             ExprKind::Field(base, _) => self.scan_read(scan, base),
+            // `g[i]` through `index`: a method call on `g`.
+            ExprKind::Index(base, _, index) if self.indexes_by_method(base) => {
+                self.scan_receiver(scan, base);
+                self.scan_read(scan, index);
+            }
             ExprKind::Binary(_, _, a, b) | ExprKind::Index(a, _, b) | ExprKind::Repeat(a, b) => {
                 self.scan_read(scan, a);
                 self.scan_read(scan, b);

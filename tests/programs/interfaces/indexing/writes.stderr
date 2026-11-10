@@ -1,0 +1,45 @@
+error[E0501]: cannot call `mut self` method `set_index` on `r`: it is not mutable
+   --> tests/programs/interfaces/indexing/writes.la:13:5
+   |
+12 |     let r = Rows { rows: [[1]] };
+   |         - declared here
+13 |     r[0] = [2];
+   |     ^
+   |
+   = help: make it mutable: `let mut r`
+
+error[E0404]: `+=` can't change an element of `Rows` in place
+   --> tests/programs/interfaces/indexing/writes.la:15:5
+   |
+15 |     s[0] += [3];
+   |     ^^^^^^^^^^^
+   |
+   = help: write `a[i] = a[i] + v`, which calls `index` and then `set_index`
+
+error[E0502]: cannot assign to this expression
+   --> tests/programs/interfaces/indexing/writes.la:16:5
+   |
+16 |     s[0][0] = 4;
+   |     ^^^^^^^
+   |
+   = help: an element read by `index` is a copy: change it, then write it back with `let mut e = g[i]; e.x = v; g[i] = e;`
+
+error[E0502]: cannot assign to this expression
+   --> tests/programs/interfaces/indexing/writes.la:17:5
+   |
+17 |     s[0].push(5);
+   |     ^^^^
+   |
+   = help: an element read by `index` is a copy: change it, then write it back with `let mut e = g[i]; e.x = v; g[i] = e;`
+
+error[E0508]: cannot pass `s` to a `mut self` method called on `s`
+   --> tests/programs/interfaces/indexing/writes.la:18:12
+   |
+18 |     s[0] = s.rows[0];
+   |     -      ^
+   |     |
+   |     `s` is edited by this call
+   |
+   = help: copy it first: `let w = s;` and pass `w`
+
+For more about E0501, E0404, E0502 and E0508, run `lughac explain <code>`.

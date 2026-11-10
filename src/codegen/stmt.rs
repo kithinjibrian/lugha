@@ -134,6 +134,14 @@ impl<'ctx> Lowerer<'ctx> {
                 .map_method(place, base, "insert", &[(**key).clone(), value.clone()])
                 .map(|_| ());
         }
+        // `a[i] = v` on a type with `set_index`: that `mut self` call.
+        if let crate::ast::ExprKind::Index(base, _, key) = &place.kind
+            && self.indexes_by_method(base)
+        {
+            return self
+                .map_method(place, base, "set_index", &[(**key).clone(), value.clone()])
+                .map(|_| ());
+        }
         // The place's indexes are evaluated once, before the value;
         // the arrays on its path are made unique after the value, so a
         // value that shares one of them is never written through.

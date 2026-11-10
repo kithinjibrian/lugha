@@ -6,6 +6,8 @@ What's next. Shipped work is in CHANGELOG.md (and the spec's §11 milestone tabl
 
 ## Known bugs and limits
 
+- [ ] **Writing inside a map entry crashes lughac:** `m["a"].x = 5`, `n["a"][0] = 3` and `n["a"].push(4)` are an internal error (`codegen/places.rs`) instead of E0502, which a type's own `set_index` already gives.
+- [ ] **Read-modify-write through `[ ]`:** `m[k] += v` and `g[i].x = v` for maps and types with `index`/`set_index` (Swift's subscripts), as one PRP.
 
 ## Language and library
 

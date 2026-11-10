@@ -27,6 +27,14 @@ fn spaces_around_operators_after_commas_and_colons() {
 }
 
 #[test]
+fn a_tuple_index_drops_its_parentheses() {
+    check(
+        "fun f() { g[(1, 2)] = m[ 0,1 ]; }",
+        "fun f() {\n    g[1, 2] = m[0, 1];\n}\n",
+    );
+}
+
+#[test]
 fn an_expression_body_stays_on_its_line() {
     check("fun two():i64=2;", "fun two(): i64 = 2;\n");
 }

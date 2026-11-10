@@ -193,6 +193,12 @@ impl<'ctx> Lowerer<'ctx> {
             ExprKind::Index(base, open, index) if self.is_map(base) => {
                 self.map_entry(expr, base, index, open.start)?
             }
+            // `a[i]` on a type with `index`: the call the checker recorded here.
+            ExprKind::Index(base, _, index) if self.indexes_by_method(base) => {
+                return Ok(self
+                    .map_method(expr, base, "index", std::slice::from_ref(index))?
+                    .expect("checked: `index` is a method"));
+            }
             ExprKind::Index(base, open, index) => self.index(base, open.start, index)?,
             // `i16.MAX`: the checker typed the keyword `void` too.
             ExprKind::Field(base, field) if Type::int_limit(base, &field.name).is_some() => {

@@ -17,6 +17,16 @@ impl<'ctx> Lowerer<'ctx> {
         matches!(self.ty(e), Type::Struct(k, _) if k == "$prelude.Map")
     }
 
+    /// True when `base[i]` calls `base`'s own `index` (or `set_index`): a
+    /// struct other than the map, an enum or an interface value.
+    pub(super) fn indexes_by_method(&self, base: &Expr) -> bool {
+        match self.ty(base) {
+            Type::Struct(k, _) => k != "$prelude.Map",
+            Type::Enum(..) | Type::Interface(..) => true,
+            _ => false,
+        }
+    }
+
     /// `m[k]`: the `Ok` of the map's `$entry`, or a panic at `at` (the `[`)
     /// with its `Err`'s message, `no key "z" in the map`.
     pub(super) fn map_entry(
@@ -60,7 +70,8 @@ impl<'ctx> Lowerer<'ctx> {
     }
 
     /// `base.name(args)`, the method the checker recorded at `at`'s id: a
-    /// map entry's read (`at`) or write (`insert`, a `mut self` receiver).
+    /// map entry's read (`at`) or write (`insert`, a `mut self` receiver),
+    /// and a type's own `index` and `set_index`.
     pub(super) fn map_method(
         &mut self,
         at: &Expr,

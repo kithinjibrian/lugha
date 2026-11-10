@@ -105,10 +105,19 @@ impl Printer<'_> {
                 let args = self.exprs(args);
                 concat(vec![callee, call_args(args)])
             }
+            // `a[(x, y)]` is written `a[x, y]`: the comma builds the tuple.
             ExprKind::Index(base, _, index) => {
                 let base = self.operand(base, POSTFIX);
-                let index = self.allowing(|p| p.expr(index));
-                concat(vec![base, text("["), index, text("]")])
+                match &index.kind {
+                    ExprKind::Tuple(elements) if elements.len() >= 2 => {
+                        let items = self.exprs(elements);
+                        concat(vec![base, list("[", items, "]")])
+                    }
+                    _ => {
+                        let index = self.allowing(|p| p.expr(index));
+                        concat(vec![base, text("["), index, text("]")])
+                    }
+                }
             }
             ExprKind::Field(base, member) => {
                 let base = self.operand(base, POSTFIX);

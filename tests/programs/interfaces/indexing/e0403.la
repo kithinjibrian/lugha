@@ -1,0 +1,14 @@
+// The index is checked against `index`'s parameter; arrays take one integer.
+
+struct Bytes { xs: u8[] }
+
+impl Bytes {
+    fun index(self, i: u8): u8 = self.xs[i];
+}
+
+fun main() {
+    let b = Bytes { xs: [1] };
+    let x = b["a"];
+    let xs = [1, 2];
+    let y = xs[0, 1];
+}

@@ -98,6 +98,11 @@ impl Parser<'_> {
                 TokenKind::LBracket => {
                     let open = self.bump();
                     let index = self.expr()?;
+                    // `a[x, y]` is `a[(x, y)]`: several indexes are one tuple.
+                    let index = match self.at(&TokenKind::Comma) {
+                        true => self.index_tuple(open, index)?,
+                        false => index,
+                    };
                     self.close(open, &TokenKind::RBracket)?;
                     ExprKind::Index(Box::new(expr), open, Box::new(index))
                 }

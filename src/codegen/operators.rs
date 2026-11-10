@@ -119,4 +119,15 @@ mod tests {
         );
         assert!(main.contains("@lugha_fn_Vec2.neg("), "{ir}");
     }
+
+    #[test]
+    fn brackets_on_user_types_call_index_and_set_index() {
+        let ir = ir("struct B { xs: i64[] }\nimpl B {\n\
+            fun index(self, i: i64): i64 = self.xs[i];\n\
+            fun set_index(mut self, i: i64, v: i64) { self.xs[i] = v; }\n}\n\
+            fun main() { let mut b = B { xs: [1, 2] }; b[0] = b[1]; }");
+        let main = &ir[ir.find("define void @lugha_fn_main").unwrap()..];
+        assert!(main.contains("call i64 @lugha_fn_B.index("), "{ir}");
+        assert!(main.contains("call void @lugha_fn_B.set_index("), "{ir}");
+    }
 }

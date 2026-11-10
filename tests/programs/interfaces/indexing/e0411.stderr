@@ -1,0 +1,33 @@
+error[E0411]: cannot index into a value of type `T`
+   --> tests/programs/interfaces/indexing/e0411.la:17:26
+   |
+17 | fun pick<T>(t: T): i64 = t[0];
+   |                          ^
+   |
+   = help: add a bound whose interface declares `index`
+
+error[E0411]: cannot index into a value of type `Plain`
+   --> tests/programs/interfaces/indexing/e0411.la:21:13
+   |
+21 |     let a = p[0];
+   |             ^
+   |
+   = help: give `Plain` a method `fun index(self, i: …): …`
+
+error[E0411]: cannot assign by index into a value of type `Reader`
+   --> tests/programs/interfaces/indexing/e0411.la:23:5
+   |
+23 |     r[0] = 2;
+   |     ^
+   |
+   = help: give `Reader` a method `fun set_index(mut self, i: …, v: …)`
+
+error[E0411]: cannot index into a value of type `Wrong`
+   --> tests/programs/interfaces/indexing/e0411.la:25:13
+   |
+25 |     let b = w[0];
+   |             ^
+   |
+   = help: to be used by `[ ]`, `index` must be `fun index(self, i: …): …`
+
+For more about E0411, run `lughac explain E0411`.
