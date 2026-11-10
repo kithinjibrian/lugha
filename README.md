@@ -1,207 +1,238 @@
-# Lugha
+<p align="center">
+  <img src="editors/vscode/icons/lugha.svg" alt="Lugha: a baobab before the sun" width="128">
+</p>
 
-Lugha (Swahili for "language") is a small, statically typed, compiled language with Rust-flavored structure and TypeScript-flavored declarations. `lughac` compiles a `.la` file through LLVM to a native executable; heap memory is managed by the Boehm garbage collector.
+<h1 align="center">Lugha</h1>
 
-```
-fun fib(n: i64): i64 = if n < 2 { n } else { fib(n - 1) + fib(n - 2) };
+<p align="center">
+  <b>A small, statically typed language that compiles to native code.</b><br>
+  Plain values, green threads and actors, and C libraries without bindings.
+</p>
 
-fun main(): i32 {
-    println(fib(30));
-    0
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#a-tour">Tour</a> ·
+  <a href="docs/specs/Language%20v17%20Specification.md">Specification</a> ·
+  <a href="#editors">Editors</a> ·
+  <a href="#status">Status</a>
+</p>
+
+---
+
+```lugha
+enum Shape {
+    Circle(f64),
+    Rect(f64, f64),
+}
+
+fun area(s: Shape): f64 = match s {
+    Circle(r) => 3.14159 * r * r,
+    Rect(w, h) => w * h,
+};
+
+fun main() {
+    let shapes = [Shape.Circle(1.0), Shape.Rect(2.0, 3.0), Shape.Circle(0.5)];
+    let total = shapes.iter().map(area).sum();
+    println("{shapes.len} shapes, total area {total:.2}");
 }
 ```
 
 ```console
-$ lughac run fib.la
-832040
+$ lughac run shapes.la
+3 shapes, total area 9.93
+$ lughac build shapes.la -O2 && ls -lh shapes
+-rwxr-xr-x 1 you you 212K  shapes        # one file, needs only libc
 ```
 
-Lugha v2 and v3 are complete (milestones 9–16), and v4, input and output, is complete (milestones 17–19), with v4.1 allowing string literals inside interpolations. v5, interface values, is complete (milestones 20–22), and v6, generic interfaces, iterators, `Self` and converting between interfaces, is complete (milestones 23–26). v7, numbers and bits, is complete (milestones 27–29: `u32`, `u64`, `f32`, the bit operators and integer methods), v8, packages, is complete (milestone 30), v9, `match` conveniences, is complete (milestones 31–33), v10, `Self` everywhere, more integers and iterator helpers, is complete (milestones 34–36), v11, package versions and re-exports, is complete (milestones 37–38), v12, printing any value, is complete (milestones 39–40), v13, `Self` in declarations, `for … of mut`, more iterator helpers and format specifiers, is complete (milestones 41–44), and v14 is in progress (milestones 45–46 done). Today it has everything in v1.2:
-- **Basic types:** integers (`i32`, `i64`, `u8`), `f64`, `bool` and immutable strings.
-- **Compound types:** growable arrays (`push`, `pop`, `clear`), structs, and enums with exhaustive `match`, including `Option<T>` and recursive enums.
-- **Behaviour:** methods in `impl` blocks, `if` expressions, loops and `for … of`, and `swap(a, b)` to exchange two places without copying.
-- **C interop:** `extern fun` for calling C.
-- **Safety:** checked arithmetic and bounds that panic instead of misbehaving.
-- **New in v2 so far (milestone 9):** `==` on every type (deep, structural), bytewise string order (`"ab" < "abc"`), and nested `match` patterns with `if` guards (`Some(Circle(r)) if r > 1.0 =>`).
-- **Modules (milestone 10):** a program can span several files: `import geometry;`, then `geometry.origin()`, `geometry.Vec2 { … }`. Everything is visible to the whole program unless marked `private`, which keeps an item, method or field inside its file.
-- **Generics (milestone 11):** generic functions, structs, enums and methods (`fun max<T: Ord>(a: T, b: T): T`, `struct Stack<T>`), with `Eq`/`Ord` bounds and type arguments that are always inferred; each instance is compiled separately.
-- **Interfaces (milestone 12):** `interface Shape { fun area(self): f64; }` as a bound (`fun total<T: Shape>(xs: T[])`); any type with matching methods satisfies it, with no declaration, and each call compiles to the concrete method.
-- **Input and interpolation (v3, milestone 13):** `args()` and `parse_i64`/`parse_f64` read the command line, and strings interpolate: `"{name} is {age}"` (since v4.1 with string literals inside, `"{parts.join("-")}"`). Pass arguments with `lughac run prog.la -- 21`.
-- **Functions as values (v3, milestone 14):** `fun(i64): i64` is a type; named functions can be stored, passed and returned (`let fs = [double, triple]; apply(fs[0], 3)`), and any function value can be called.
-- **Closures (v3, milestone 15):** `let add = fun(x) = x + k;` captures `k` by copy; parameter types come from the expected function type, and `fun adder(k: i64): fun(i64): i64 = fun(x) = x + k;` returns one.
-- **Array helpers (v3, milestone 16):** `map`, `filter`, `fold`, `sort_by` (stable), `any` and `all`, each returning a new value: `people.filter(fun(p) = p.age >= 18).map(fun(p) = p.name)`.
-- **Results (v4, milestone 17):** `Result<T, E>` with `Ok`/`Err`, and `?` to return a failure early: `let h = half(n)?;`.
-- **Text helpers (v4, milestone 18):** `s.lines()`, `s.split(",")`, `s.trim()`, `s.contains(x)`, `s.slice(a, b)`, `parts.join("-")`, and `unwrap_or`, `ok_or`, `map` on `Option`/`Result`.
-- **Input and output (v4, milestone 19):** `read_line()` for stdin, `read_file`/`write_file`/`append_file` returning `Result`, `eprint`/`eprintln` for stderr, and `exit(code)`.
-- **Interface values (v5, milestone 20):** an interface is a type, so one array holds different shapes: `let shapes: Shape[] = [Circle { r: 1.0 }, Square { side: 2.0 }];`, and `s.area()` runs each one's own method. Interface values are values: copies are independent.
-- **Type patterns (v5, milestone 21):** `match s { c: Circle => c.r, _: Square => 1.0, _ => 0.0 }` gets the concrete value back out of an interface value.
-- **Default methods and error conversion (v5, milestone 22):** `fun report(self): string = "error: {self.message()}";` inside an interface, and `?` turning a `ParseError` into an `Error` in a function returning `Result<T, Error>`.
-- **Generic interfaces (v6, milestone 23):** `interface Source<T> { fun next(mut self): Option<T>; }` and `fun collect<T, S: Source<T>>(src: S): T[]`, where `collect(Count { … })` works out `T = i64` from `Count.next`; generic interfaces are types too, `let s: Source<i64> = Count { … };`.
-- **Iterators (v6, milestone 24):** `for n of c { … }` loops over anything with `fun next(mut self): Option<T>`, such as a struct, a type parameter `I: Iter<T>` or an `Iter<i64>` value, and works on a copy, so `c` is unchanged afterwards.
-- **`Self` (v6, milestone 25):** `interface Ordered { fun less(self, other: Self): bool; }` is satisfied by `Money` with `fun less(self, other: Money): bool`, and `fun largest<T: Ordered>(xs: T[]): T` works on it; such an interface is a bound only (E0427 as a type).
-- **Converting between interfaces (v6, milestone 26):** a `Pet` value becomes a `Named` where one is expected when `Pet` declares everything `Named` does; the dog inside is still a `Dog` to a type pattern, and `?` converts interface errors the same way.
-- **More numbers (v7, milestone 27):** `u32`, `u64` and `f32`, as in `let h: u64 = 14695981039346656037;` and `-1 as u32`; an `f32` prints its own shortest form (`0.1`).
-- **Bits (v7, milestone 28):** `& | ^ ~ << >>` with Rust's precedence (`flags & MASK == 0`), `&=` and friends, `0b1010` literals; a shift by the width or more panics.
-- **Integer methods (v7, milestone 29):** `h.wrapping_mul(1099511628211)` and friends never panic; `x.count_ones()`, `leading_zeros()`, `trailing_zeros()` give an `i64`.
-- **Packages (v8, milestone 30):** a `lugha.toml` next to `main.la` lists package folders (`[packages]` / `geo = "libs/geo"`), and `import geo.shapes;` loads a package's module; a package can list its own packages, and other packages see only what it marks `public`.
-- **Better patterns (v9, milestone 31):** `Circle(r) | Square(r) => r * 2.0`, `"q" | "quit" => …`, and `Some(mut n) => { n += 1; … }` with the arm's own copy.
-- **Unwrapping (v9, milestone 32):** `parse_i64(s).unwrap()` and `.expect("need a number")` panic at the call on `None`/`Err`; `x %= 10`.
-- **Conditional patterns (v9, milestone 33):** `if let Some(n) = parse_i64(w) { … } else { … }`, `while let Some(x) = stack.pop() { … }`, and `let Some(n) = o else { return; };`.
-- **`Self` everywhere (v10, milestone 34):** `fun origin(): Self = Self { x: 0, y: 0 };` and `Self.Red` inside `impl` blocks; an interface's default method called straight on a type, `p.describe()`.
-- **More integers (v10, milestone 35):** `i8`, `i16` and `u16`; `a.checked_add(1)` gives `None` instead of panicking, `saturating_mul` clamps, `rotate_left(n)` rotates; `i16.MAX`; `parse_u64(s)`.
-- **Iterator helpers (v10, milestone 36):** `xs.iter().filter(even).map(f).collect()`, `range(1, 101).sum()`, `s.bytes().enumerate()` and `for b of s`, lazy so `take(3)` stops early.
-- **Package versions (v11, milestone 37):** a package's `lugha.toml` says `[package]` `version = "1.4.0"`, and a program requires `geo = { path = "libs/geo", version = "1.2" }`; an incompatible folder is E0324.
-- **Re-exports (v11, milestone 38):** `import mathx.vec { Vec2, add };` brings items into a file, and `public import mathx.vec { Vec2 };` lets users of your package write `shapes.Vec2` without listing `mathx`.
-- **Printing values (v12, milestone 39):** `println(Point { x: 1, y: 2 })` prints `Point { x: 1, y: 2 }`; arrays, enums and `Option` print too, and a type's own `fun show(self): string` overrides the form.
-- **Printing anything (v12, milestone 40):** interface values print as their contents, function values as `<fun>`, and `r.unwrap()` on an `Err` panics with `unwrap on Err: <the error>`.
-- **`Self` in declarations (v13, milestone 41):** `struct Tree<T> { value: T, kids: Self[] }` and `enum List { Cons(i64, Self), Nil }`.
-- **`for … of mut` (v13, milestone 42):** `for x of mut xs { x *= 2; }` changes the array, and `for w of mut words { … break; }` leaves the iterator where it stopped.
-- **More iterator helpers (v13, milestone 43):** `a.zip(b)` (yielding `Pair { first, second }`, tuples since v14), `chain`, `take_while`, `skip_while`, `flat_map`, `min`, `max` and `position`.
-- **Format specifiers (v13, milestone 44):** `"{pi:.2}"`, `"{n:>6}"`, `"{n:05}"`, `"{n:#x}"`, `"{name:*^9}"`.
-- **Bytes and indexes (v14, milestone 45):** `read_bytes`/`write_bytes`/`append_bytes`/`read_stdin_bytes`, `s.to_bytes()`, `string_from_utf8(bytes)` (checked), and `xs[i]` with `i` of any integer type.
-- **Unicode text (v14, milestone 46):** a `char` type with `'é'` literals, `s.chars()`, `s.char_count()`, `c as u32`, `char_from(n)`, and `is_alphabetic`/`to_upper`-style methods for ASCII and Latin-1.
-- **Tuples (v14, milestone 47):** `fun divmod(a: i64, b: i64): (i64, i64)`, `let (q, r) = divmod(7, 2);`, `t.0`, `for (i, w) of xs.iter().zip(ws.iter())`, tuple patterns in `match`, `==` and `<`, printed `(1, "a")`.
-- **`format` (v14, milestone 48):** `format("{} has {:>4} items", name, n)` returns a `string`; the template is a literal checked when compiling.
-- **Import aliases and re-exports (v14, milestone 49):** `import a.util as u1;`, `import shapes.vec { Vec2 as V };`, and `public import shapes.vec;` so that importers write `shapes.vec.Vec2`.
-- **Git packages (v14, milestone 50):** `geo = { git = "https://example.org/geo.git", version = "1.4" }` in `lugha.toml` fetches the newest matching `vX.Y.Z` tag into a per-user cache and pins its commit in `lugha.lock`; `lughac update` refreshes it and `--offline` never fetches.
-- **Package layout (v15, milestone 51):** a library's `lugha.toml` can say `[package] name = "glowworm"` and `source = "src"`, so `src/array.la` is `glowworm.array`; a program inside the package (`examples/basics.la`) imports it by name with no manifest of its own.
-- **Operator overloading (v15, milestone 52):** give a struct `fun add(self, o: Vec2): Vec2` and `a + b` calls it (likewise `sub`, `mul`, `div`, `rem`, `neg`); `fun add<T: Add>(a: T, b: T): T = a + b;` works for numbers, strings and your types; `impl Grid<T: Num> { … }` does element arithmetic.
-- **The standard library (v15, milestone 53):** `import std.math;` then `math.sqrt(2.0)`, `math.pow`, `math.sin`, `math.round`, `math.abs(-3)`, `math.max(2, 7)`, `math.clamp`, `math.pi()`; the float functions work for any `T: Float` (`f32`, `f64`). Std modules ship inside `lughac` and cost nothing unless imported.
-- **Copy-on-write arrays (v15, milestone 55):** `let g = grads[i];` no longer copies the array; it is shared until either side writes, and the writer copies it first. Programs print exactly what they did before, and read-heavy code such as firefly's autograd trains 13–35% faster.
-- **Lazy std modules (v15, milestone 60):** of an imported std module, only the functions your program reaches are compiled, as with the prelude; everything is still type-checked.
-- **Green threads (v17, milestone 91):** `let t = spawn work(3);` runs `work` concurrently and `t.join()` waits for its result; `spawn fun() { … }()` runs a closure, as Go's `go func() { … }()` does. `Chan<T>` (`Chan.new()`, `Chan.buffered(n)`, `send`, `recv`, `close`) carries values between threads, and `select { m = c.recv() => …, after(500) => …, default => … }` waits on several. No `async`, no `await`: every function stays an ordinary function. All green threads share one OS thread; `import std.task;` adds `task.sleep(ms)` and `task.yield_now()`.
-- **Actors (v17, milestone 92):** `actor Counter { count: i64, fun add(mut self, n: i64) { self.count += n; } fun get(self): i64 = self.count; }`, then `let c = spawn Counter { count: 0 };`: `c.add(5)` is queued, `c.get()` waits for the answer. One message at a time, so the state needs no locks; a panic ends only that actor and `c.join()` tells you (`Some(message)`), so a supervisor is a small loop; `c.stop()` ends it. Fields are private and nothing shared (`Ref`) crosses into an actor.
-- **GTK 4 apps:** [lugha-gtk](https://github.com/kithinjibrian/lugha-gtk) (a separate package, PRP-121) wraps GTK as Lugha types — `Window`, `Box`, `Button`, `Label`, `Entry` — with closures for signals, built on milestones 87–90.
-- **C structs by value (v16, milestones 89–90):** `extern struct Color { r: u8, g: u8, b: u8, a: u8 }` goes to C exactly as a C compiler passes it, so raylib-style APIs need no shims; C's text comes back as Lugha strings.
-- **Callbacks and handles (v16, milestone 88):** `extern type GtkWidget;` gives C objects a type of their own, and a `fun(GtkWidget, data)` parameter lets C call back into Lugha — closures included, kept alive while C holds them — enough for a GTK 4 window with a working button in plain Lugha.
-- **C libraries (v16, milestone 87):** `[link]` in `lugha.toml` — `libs = ["z"]`, `paths = ["vendor/lib"]`, `c = ["shim.c"]`, `include = ["inc"]`, `pkg-config = ["gtk4"]` — links any C library, and a package's table travels with it to every program that imports it.
-- **`lughac explain` (v16, milestone 86):** `lughac explain E0501` explains any error code with an example and its fix; errors end with a pointer to it, and VS Code links each code to its explanation.
-- **Tests in VS Code (v16, milestone 85):** the Testing view lists every `@test`, with a ▶ beside each in the editor; failures show at the failing line. Nothing runs in an untrusted folder.
-- **`lughac test` (v16, milestone 84):** write `@test fun area_of_unit() { assert_eq(area(0.0), 0.0); }` beside your code and run `lughac test`: each test runs in its own process, in parallel, with a time limit; failures show the values and what the test printed.
-- **Find References and Rename (v16, milestone 83):** Shift+F12 in VS Code lists every use of a name; F2 renames them all, after checking that the renamed program means the same.
-- **More quick fixes (v16, milestone 82):** the lightbulb makes a variable `mut` when you assign to it, corrects a misspelled variant in a pattern, and adds a missing `import std.math;`.
-- **Formatting in the editor (v16, milestone 81):** Shift+Alt+F in VS Code formats a `.la` file as `lughac fmt` would, unsaved text included; add `"editor.formatOnSave": true` for `[lugha]` to format on every save.
-- **`lughac fmt` (v16, milestone 80):** `lughac fmt src/` rewrites every `.la` file in one style, keeping every comment; `--check` only lists what would change. It re-parses its output first and writes nothing if the meaning would differ.
-- **Quick fixes (v16, milestone 79):** a non-exhaustive `match` gets a lightbulb in VS Code: add every missing arm, or a `_` arm.
-- **Snippets (v16, milestone 78):** `fun`, `struct`, `forof`, `match`… in VS Code; completing a call fills in its parameters as tab stops; `value.match` writes out every variant.
-- **Doc comments (v16, milestone 77):** `/** … */` above a declaration, with `@param` and `@returns`, shows in VS Code's hover, completion and signature help; std and the prelude are documented the same way.
-- **Block comments (v16, milestone 76):** `/* … */` anywhere whitespace may be, over several lines, nested, so code holding one can be commented out.
-- **Editing with mistakes (v16, milestone 75):** hover, Ctrl+click, completion and signature help keep working in a file with a syntax error, everywhere but the broken statement.
-- **Signature help (v16, milestone 74):** typing `max(1.5, ` in VS Code shows `fun max(a: f64, b: f64): f64` with `b` highlighted; methods, module functions, variants, built-ins and intrinsics too.
-- **Completion (v16, milestone 73):** typing `p.`, `xs.`, `geo.` or `Shape.` in VS Code offers fields, methods, built-ins, module items and variants with their types; a plain word offers the names in scope and keywords.
-- **Go to Definition (v16, milestone 72):** F12 or Ctrl+click in VS Code jumps from a variable, function, method, type, field, variant or module to its declaration, across files.
-- **Hover (v16, milestone 71):** hovering in VS Code shows a value's type or a function's header (`let total: i64`, `fun Circle.area(self): f64`), even while the program has errors.
-- **`lughac lsp` (v16, milestone 70):** a language server; the VS Code extension shows errors as you type, in unsaved files too.
-- **`lughac init` (v16, milestone 69):** `lughac init oyster` or `lughac init shapes --lib` writes a runnable program or a library with an example; existing files are kept.
-- **Changing directory (v16, milestone 68):** `env.set_current_dir("/tmp")?` moves the whole program: relative paths and programs it starts follow.
-- **Shared boxes (v16, milestone 67):** `let n = Ref.new(0);` is a box every copy shares: `n.get()`, `n.set(1)`, `n.update(f)`, `n.is(m)`. A closure can keep state in one, and `struct Node { next: Option<Ref<Node>> }` links to itself. Everything else is still a value.
-- **`std.process` (v15, milestone 66):** `process.run("git", ["rev-parse", "HEAD"])?` gives `{ code, stdout, stderr }`; `run_with` feeds stdin; `call` shares the terminal. Never a shell: arguments reach the program exactly as given.
-- **`std.fs` (v15, milestone 65):** `import std.fs;`, then `fs.make_dirs("out/runs")?`, `fs.list_dir("data")?` (sorted names), `fs.is_file(p)`, `fs.remove_file(p)?`, `fs.remove_dir(p)?` (empty folders only).
-- **`std.env` (v15, milestone 64):** `import std.env;`, then `env.get("DATA")` (an `Option<string>`) and `env.current_dir()`; read-only.
-- **Widths in characters (v15, milestone 63):** `"{name:<8}"` pads by characters, so accented names line up, and any character can fill (`{n:é^9}`).
-- **User-defined order (v15, milestone 59):** give a type `fun cmp(self, other: Self): Ordering` (`Ordering.Less`, `.Equal`, `.Greater`) and `<`, `math.min`, `it.min()`, tuples and the new `xs.sort()` work on it; `==` stays structural.
-- **Numbers as `T` (v15, milestone 58):** generic numeric code can write `s / xs.len as T`, `i as T`, `x as f64`, `x * 2` and (for `T: Float`) `x * 0.5`; a literal too big for one instance (`300` as a `u8`) is reported at that literal.
-- **Nested `mut self` calls (v15, milestone 57):** `g.matmul(g.tanh(g.add(a, b)), w)` works: arguments may call methods on the receiver or read numbers from it, and run before the call. Only real aliasing, like `v.add(v)`, is still rejected.
-- **Owning arrays once per loop (v15, milestone 56):** a loop that writes into arrays it can't share (`counts[c] += 1`, `out[i][j] += …`) makes them unique once before it starts, so copy-on-write costs nothing inside it.
-- **Random numbers (v15, milestone 54):** `import std.random;`, then `let mut rng = random.seeded(42);` (or `random.from_os()`), and `rng.uniform()`, `rng.below(6)`, `rng.between(lo, hi)`, `rng.normal(0.0, 1.0)`, `rng.chance(p)`, `rng.choice(xs)`, `rng.shuffle(xs)`. xoshiro256\*\*, repeatable for a seed; not cryptographically secure.
+*Lugha* is Swahili for "language". `lughac`, its compiler, is written in Rust. It checks a `.la`
+program, compiles it through LLVM and links it with a small C runtime and a garbage collector into
+one executable.
 
-Everything is a value: assigning an array, struct or enum gives you your own copy. The one exception is a `Ref<T>` box (v16), which copies share on purpose. The full definition is [`docs/specs/Language v16 Specification.md`](docs/specs/Language%20v16%20Specification.md) (what `lughac spec` prints, in progress); the approved plan it is built from is [`Language v16 Draft.md`](docs/specs/Language%20v16%20Draft.md), and v15 is frozen in [`Language v15 Specification.md`](docs/specs/Language%20v15%20Specification.md).
+## Why Lugha
 
-## Prerequisites
+- **Everything is a value.** Assigning an array, struct or enum gives you your own copy, so nothing
+  changes behind your back. Copies are cheap: arrays are shared until one side writes. When you do
+  want sharing, `Ref<T>` says so in the type.
+- **Mistakes stop the program, never corrupt it.** Integer overflow, out-of-bounds indexes and
+  division by zero panic with a message and the line, at `-O2` too. `match` must cover every case,
+  and there is no `null`: a missing value is `Option<T>`.
+- **Concurrency without `async`.** `spawn f(x)` runs any call on a green thread, channels and
+  `select` carry values between them, and actors keep state that needs no locks. Every function
+  stays an ordinary function.
+- **C is one declaration away.** `extern fun` calls C, `extern struct` passes structs exactly as a C
+  compiler does, closures become C callbacks, and a `[link]` table in `lugha.toml` links any library,
+  `pkg-config` included. GTK 4 apps are written in plain Lugha
+  ([lugha-gtk](https://github.com/kithinjibrian/lugha-gtk)).
+- **The tools come in the box.** One `lughac` binary builds, runs, tests, formats, explains every
+  error code and serves editors through the Language Server Protocol.
 
-- **Rust** via [rustup](https://rustup.rs). The toolchain version is pinned in `rust-toolchain.toml`, and rustup installs it on first build.
-- **LLVM 21** development files. It must be major version 21, and it is linked dynamically.
-- A **C compiler** (`cc`). `lughac` compiles the runtime and its built-in garbage collector (bdwgc, `third_party/bdwgc/`) with it, and links every program with it. To use another, set `LUGHA_CC`: `LUGHA_CC=clang` or `LUGHA_CC="zig cc"`. Its words are split on spaces and run without a shell, so a compiler whose path holds a space needs a small wrapper script.
-- **git**, only for programs whose `lugha.toml` lists git packages (v14).
-- **pkg-config** (or `pkgconf`), only for programs whose `lugha.toml` has `pkg-config` under `[link]` (v16), plus the development files of the C libraries a program links.
+## Install
 
-On Ubuntu 26.04:
+Lugha builds on Linux. You need Rust (the toolchain is pinned, so [rustup](https://rustup.rs)
+fetches the right one), LLVM 21 and a C compiler. On Ubuntu:
 
 ```sh
-sudo apt install llvm-21-dev build-essential libssl-dev   # libssl-dev only for programs using TLS (std.tls, std.http)
+sudo apt install llvm-21-dev build-essential
+git clone https://github.com/kithinjibrian/lugha && cd lugha
+cargo install --path .
 ```
 
-To build for Linux on ARM64 (v17), install the cross compiler, and qemu to run the result here:
+Then start a project:
 
-```sh
-sudo apt install gcc-aarch64-linux-gnu qemu-user
-lughac build app.la --target aarch64-unknown-linux-gnu
-qemu-aarch64 -L /usr/aarch64-linux-gnu ./app      # or copy ./app to an ARM machine
+```console
+$ lughac init hello
+created hello/lugha.toml
+created hello/src/main.la
+…
+$ lughac run hello/src/main.la
+Hello, world, from hello!
+$ lughac test hello
+test hello.test.greeting_test.greets ... ok
+
+1 test: 1 passed, 0 failed
 ```
 
-Extern structs cross to C by value on ARM as on x86-64 (each by its own C rules). A `[link]` table using `pkg-config` needs `$PKG_CONFIG` pointed at the ARM libraries' files.
+<details>
+<summary>Optional extras</summary>
 
-## Build and install
+- **TLS and crypto** (`std.tls`, `std.http` over `https`, `std.crypto`): `sudo apt install libssl-dev`.
+- **Git packages**: `git` on your `PATH`.
+- **C libraries through `pkg-config`**: `pkg-config` or `pkgconf`, and the library's development files.
+- **Another C compiler**: `LUGHA_CC=clang` or `LUGHA_CC="zig cc"`.
+- **ARM64 Linux**: `sudo apt install gcc-aarch64-linux-gnu qemu-user`, then
+  `lughac build app.la --target aarch64-unknown-linux-gnu` and run it with
+  `qemu-aarch64 -L /usr/aarch64-linux-gnu ./app`, or copy it to an ARM machine.
+- **This machine's CPU only**: `--cpu=native` (by default, executables run on any x86-64).
 
-```sh
-cargo build --release          # target/release/lughac
-cargo install --path .         # or put lughac on your PATH
+</details>
+
+## A tour
+
+### Errors are values
+
+`Result<T, E>` holds a value or an error, and `?` passes the error up.
+
+```lugha
+fun parse_age(s: string): Result<i64, string> {
+    let n = parse_i64(s.trim()).ok_or("not a number: {s}")?;
+    if n < 0 {
+        return Err("negative: {n}");
+    }
+    Ok(n)
+}
+
+fun main() {
+    for s of ["42", " 7 ", "-1", "abc"] {
+        match parse_age(s) {
+            Ok(n) => println("age {n}"),
+            Err(e) => eprintln("error: {e}"),
+        }
+    }
+}
 ```
 
-## Usage
+### Actors and green threads
 
-Start a project with `lughac init`:
+An actor handles one message at a time, so its state needs no locks. `c.add(n)` is queued and
+`c.get()` waits for the answer.
 
-```sh
-lughac init oyster                 # a program: lugha.toml, src/main.la, src/greeting.la, test/, .gitignore
-lughac run oyster/src/main.la      # Hello, world, from oyster!
-lughac test oyster                 # its one test passes
-lughac init shapes --lib           # a library: src/lib.la, examples/hello.la and test/
-lughac run shapes/examples/hello.la
+```lugha
+actor Counter {
+    count: i64,
+    fun add(mut self, n: i64) {
+        self.count += n;
+    }
+    fun get(self): i64 = self.count;
+}
+
+fun work(c: Counter, n: i64) {
+    c.add(n);
+}
+
+fun main() {
+    let c = spawn Counter { count: 0 };
+    let tasks = [spawn work(c, 1), spawn work(c, 2), spawn work(c, 3)];
+    for t of tasks {
+        t.join();
+    }
+    println("count = {c.get()}");  // count = 6
+}
 ```
 
-It never overwrites a file; the package name is the folder's unless `--name` gives one.
+Channels (`Chan<T>`), `select` with timeouts, and a panic that ends only the actor it happens in
+are covered in the spec. For a step-by-step look at the scheduler, open
+[`docs/learn/green-threads/index.html`](docs/learn/green-threads/index.html) in a browser.
 
-| Command | Effect |
+### Errors that say what to do
+
+```console
+$ lughac check push.la
+error[E0501]: cannot call `mut self` method `push` on `xs`: it is not mutable
+  --> push.la:3:5
+  |
+2 |     let xs = [1, 2, 3];
+  |         -- declared here
+3 |     xs.push(4);
+  |     ^^
+  |
+  = help: make it mutable: `let mut xs`
+
+For more about E0501, run `lughac explain E0501`.
+```
+
+Every code has a page with an example and its fix (`lughac explain E0501`). With
+`--diagnostics=json`, tools get the same diagnostics as one JSON object per line.
+
+### And the rest
+
+- **Types:** integers from `i8` to `u64`, `f32` and `f64`, `char`, UTF-8 strings, tuples, structs,
+  enums, growable arrays, `Map` and `Set` (`#{"a": 1}`), and global constants computed by pure code.
+- **Abstraction:** generics with inferred type arguments, interfaces met by any type with the right
+  methods, interface values, default methods, operator overloading, user-defined `==` and order,
+  and `derive` blocks that say once how every struct meets an interface (JSON, hashing, printing).
+- **Control:** `match` with or-patterns, guards and type patterns; `if let`, `while let` and
+  `let … else`; `loop` and labelled `break`; `defer`; closures; lazy iterators (`map`, `filter`,
+  `zip`, `take_while`, `collect`, …).
+- **Standard library**, each module loaded only when imported: `std.math`, `std.random`, `std.fs`
+  (files, folders and streams), `std.env`, `std.process` (never through a shell), `std.time`,
+  `std.json`, `std.toml`, `std.net`, `std.http`, `std.tls`, `std.crypto` and `std.task`.
+- **Programs and packages:** modules across files, `private` and `public`, packages from a folder or
+  a git tag with a lock file, and `include_str`/`include_bytes` for files built into the program.
+
+The full language, with every rule and example program, is the
+[specification](docs/specs/Language%20v17%20Specification.md). `lughac spec` prints the copy that
+matches your compiler, ready to read or to paste into an AI assistant.
+
+## The `lughac` command
+
+| Command | What it does |
 | --- | --- |
-| `lughac init [folder] [--lib] [--name N]` | Start a program, or a library with an example, in a folder |
-| `lughac explain [CODE]` | Explain an error or warning code (`E0501`), or list every code |
-| `lughac test [paths…] [--filter TEXT] [--timeout SECS]` | Run the `@test` functions in `.la` files, each in its own process; exit 1 if any fails |
-| `lughac fmt [paths…] [--check]` | Format `.la` files (folders: every `.la` under them) in the canonical style; `--check` lists the files that would change, exit 1 if any |
-| `lughac lsp` | Serve the Language Server Protocol on stdin/stdout: `check`'s diagnostics as you type, hover types, go-to-definition, completion, signature help and semantic tokens, for editors |
-| `lughac build prog.la [-o prog]` | Compile and link an executable |
-| `lughac run prog.la [-- args…]` | Build to a temporary file and run it, passing `args` to it; the exit code is the program's |
-| `lughac check prog.la` | Lex, parse and type-check only |
-| `lughac spec` | Print the language spec bundled with this compiler |
-| `lughac update prog.la` | Fetch each git package's newest matching tag and rewrite `lugha.lock` |
-| `--offline` | On `build`, `run` and `check`: never run `git`; git packages must be locked and cached |
-| `lughac build --emit=tokens\|ast\|ir prog.la` | Print an intermediate stage and stop |
+| `lughac init [folder] [--lib]` | Start a program, or a library with an example and a test |
+| `lughac run prog.la [-- args…]` | Build and run; the exit code is the program's |
+| `lughac build prog.la [-o out] [-O2]` | Build an executable |
+| `lughac check prog.la` | Type-check only |
+| `lughac test [paths…] [--filter T]` | Run `@test` functions, each in its own process, in parallel |
+| `lughac fmt [paths…] [--check]` | Format `.la` files, keeping every comment |
+| `lughac explain [CODE]` | Explain an error code, or list them all |
+| `lughac update prog.la` | Re-resolve git packages and rewrite `lugha.lock` |
+| `lughac lsp` | Serve the Language Server Protocol on stdin and stdout |
+| `lughac spec` | Print the language specification |
 
-`build`, `run` and `check` take `--diagnostics=human|json` (human is the default). `build` and `run` take `-O0` (default) or `-O2`. `build`, `run` and `test` take `--cpu=x86-64|x86-64-v2|x86-64-v3|x86-64-v4|native`: by default executables run on any x86-64 CPU, and `native` builds for this machine's own (v17).
+`lughac` exits 0 on success, 1 when the program has errors, and 2 for bad usage, an internal error
+or output it couldn't write.
 
-Exit codes:
-- **0** — success.
-- **1** — the program has errors, reported with codes such as `E0401`.
-- **2** — bad usage, or an internal compiler error.
+## Editors
 
-`lughac spec` prints the specification matching your compiler, ready to paste into an AI assistant's prompt.
-
-## Tests
-
-```sh
-cargo test
-```
-
-- **Example programs:** every program in spec §10 is extracted from the spec and run (`tests/spec.rs`).
-- **Acceptance tests:** these live in `tests/programs/`. Add one by adding files, without editing any runner:
-  - a program: `name.la`;
-  - its expected output: `name.stdout` and `name.exit`;
-  - for a program that must be rejected: `name.stderr`.
-
-CI runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` and the VS Code extension's tests once per pull request (a newer push cancels the older run), or by hand with `gh workflow run CI --ref <branch>`. Merges don't wait for it: the same checks run locally first.
-
-## Editor support
-
-`editors/vscode/` is a VS Code extension: syntax highlighting, and errors as you type from `lughac lsp`, a language server any editor can start (it speaks the Language Server Protocol on stdin/stdout). Build it with Node 22:
+**VS Code:** the extension in [`editors/vscode/`](editors/vscode) shows errors as you type, plus
+hover, go to definition, find references, rename, completion, signature help, quick fixes,
+formatting, snippets, and a ▶ beside every test.
 
 ```sh
 cd editors/vscode && npm ci && npm run package
-code --install-extension lugha-0.3.2.vsix
+code --install-extension lugha-*.vsix
 ```
 
-Its [README](editors/vscode/README.md) covers the settings (`lugha.path`, `lugha.entries`) and how it picks the file to check.
-
-**Neovim** (0.11 or later) needs no plugin: `lughac lsp` sends semantic tokens, so files are coloured from the server. In `init.lua`:
+**Neovim 0.11 and later** need no plugin; `lughac lsp` colours the code itself:
 
 ```lua
 vim.filetype.add({ extension = { la = "lugha" } })
@@ -213,18 +244,49 @@ vim.lsp.config("lugha", {
 vim.lsp.enable("lugha")
 ```
 
-Other editors start `lughac lsp` the same way, for `.la` files.
+Helix, Zed and any other editor with LSP support start `lughac lsp` the same way, for `.la` files.
+
+## Performance
+
+Lugha checks every integer operation and index, and uses a garbage collector. On numeric code it
+runs close to C; on code that allocates many small objects it is slower. A sample from
+`python3 bench/run.py` (median wall time, `-O2`, Intel i5-4308U):
+
+| Benchmark | Lugha | C | Rust | Go | Node |
+| --- | --- | --- | --- | --- | --- |
+| mandelbrot | 0.36 s | 0.36 s | 0.41 s | 0.38 s | 0.54 s |
+| nbody | 0.65 s | 0.53 s | 0.61 s | 0.69 s | 0.98 s |
+| fannkuch | 0.25 s | 0.22 s | 0.22 s | 0.23 s | 0.46 s |
+| binarytrees | 1.11 s | 0.52 s | 1.37 s | 1.08 s | 0.54 s |
+| wordfreq | 0.56 s | 0.10 s | 0.15 s | 0.35 s | 1.11 s |
+
+All six benchmarks, peak memory and how to run them are in [`bench/`](bench).
+
+## Status
+
+Lugha is young and maintained by one person. It runs real programs, GTK apps among them, but the
+language still changes: version 17 is in progress, and a release may break code written for the
+last one. Linux on x86-64 is the main platform; ARM64 Linux builds and runs.
+
+## Building and testing lughac
+
+```sh
+cargo build                                  # target/debug/lughac
+cargo test                                   # everything; needs llvm-21-dev, cc and libssl-dev
+cargo fmt --check && cargo clippy --all-targets -- -D warnings
+```
+
+End-to-end tests are programs in [`tests/programs/`](tests/programs), grouped by feature: `name.la`
+with its expected `name.stdout` and `name.exit`, or `name.stderr` for a program that must be
+rejected. Add a test by adding files; no runner changes.
 
 ## Contributing
 
-The project is developed with AI coding assistants:
-- [`CLAUDE.md`](CLAUDE.md) holds the rules.
-- [`PRPs/`](PRPs) holds one brief per feature.
-- [`DECISIONS.md`](DECISIONS.md) holds every decision and its why: core decisions, then open, deferred and resolved questions.
-- [`CHANGELOG.md`](CHANGELOG.md) and [`TODO.md`](TODO.md) hold what shipped and what's next; commit messages say what changed and why.
-
-Human contributors follow the same flow: a PRP before code, and tests first.
+Each feature starts as a short proposal in [`PRPs/`](PRPs), and every design decision and its reason
+is in [`DECISIONS.md`](DECISIONS.md). Code follows [`docs/CODE_STYLE.md`](docs/CODE_STYLE.md), and
+tests come first. [`TODO.md`](TODO.md) lists what's next and [`CHANGELOG.md`](CHANGELOG.md) what
+shipped. Issues and pull requests are welcome.
 
 ## License
 
-GPL-3.0 — see [LICENSE](LICENSE).
+[GPL-3.0](LICENSE).
