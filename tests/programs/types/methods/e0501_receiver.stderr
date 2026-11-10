@@ -1,0 +1,11 @@
+error[E0501]: cannot call `mut self` method `bump` on `p`: it is not mutable
+   --> tests/programs/types/methods/e0501_receiver.la:11:5
+   |
+10 |     let p = P { x: 1 };
+   |         - declared here
+11 |     p.bump();
+   |     ^
+   |
+   = help: make it mutable: `let mut p`
+
+For more about E0501, run `lughac explain E0501`.

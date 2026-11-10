@@ -1,0 +1,75 @@
+# fmt, clippy and the full test suite (PRP-017), once per pull request:
+# a background safety net that merges never wait on (session 150). Runs in
+# the same Ubuntu release as development, so LLVM 21 and libgc come from the
+# stock archive — no third-party apt source.
+name: CI
+
+on:
+  pull_request:
+  # By hand: `gh workflow run CI --ref <branch>` or the Actions tab.
+  workflow_dispatch:
+
+# A newer push to the same pull request replaces the run still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    container: ubuntu:26.04
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: Install system packages
+        # llvm-21-dev: inkwell's LLVM (DECISION-005, linked dynamically).
+        # build-essential: `cc` compiles the runtime and the bundled collector
+        # (no libgc-dev: milestone 131) and links every test program.
+        # gcc-aarch64-linux-gnu and qemu-user: tests/arm.rs (milestone 133).
+        # curl and ca-certificates: rustup's installer. git: a real checkout.
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            llvm-21-dev build-essential gcc-aarch64-linux-gnu qemu-user curl ca-certificates git libssl-dev openssl
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Rust
+        # The toolchain and its rustfmt/clippy come from rust-toolchain.toml.
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+            | sh -s -- -y --profile minimal --default-toolchain none
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+
+      - name: Format
+        run: cargo fmt --check
+
+      - name: Lint
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test
+
+      - name: Install Node
+        # The VS Code extension's tests (PRP-099, PRP-100); Node from the Ubuntu archive.
+        run: apt-get install -y --no-install-recommends nodejs npm
+
+      - name: VS Code extension
+        # Its keyword test reads the spec, so it runs on every change; the
+        # language server itself is tested by `cargo test` (tests/lsp.rs).
+        working-directory: editors/vscode
+        run: |
+          npm ci
+          npm test

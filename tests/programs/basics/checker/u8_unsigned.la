@@ -1,0 +1,9 @@
+// u8 compares and divides unsigned: 200 is not -56.
+fun main(): i32 {
+    let big: u8 = 200;
+    if big > 100 {
+        (big / 3) as i32
+    } else {
+        1
+    }
+}

@@ -1,0 +1,9 @@
+// An interface that uses `Self` can only be a bound.
+
+interface Ordered {
+    fun less(self, other: Self): bool;
+}
+
+fun first(xs: Ordered[]): bool = false;
+
+fun main() {}

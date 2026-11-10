@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Open in a browser. Steps through tiny programs as the scheduler sees them: running, ready line,
+     waiting. Spec section 6, "Green threads". Each tab is a file in examples/. -->
+<title>Lugha Spawn and Channel Stepper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: code on the left, the scheduler's three boxes on the right, output and a turn timeline below; one step at a time. */
+:root {
+  --bg: #F2F5F3; --panel: #FFFFFF; --fg: #13221E; --muted: #5B6E68; --line: #D3DDD9;
+  --main: #23866B; --other: #4A5DC0; --third: #A8458A; --gold: #B97A0B; --hl: #FBEFD3;
+  --sans: "IBM Plex Sans", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E1916; --panel: #15231F; --fg: #DCEDE6; --muted: #8FA59E; --line: #2A3B36;
+  --main: #5CC3A4; --other: #92A0F2; --gold: #E8B44A; --hl: #3A3220; --third: #E38CC6; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0E1916; --panel: #15231F; --fg: #DCEDE6; --muted: #8FA59E; --line: #2A3B36;
+  --main: #5CC3A4; --other: #92A0F2; --gold: #E8B44A; --hl: #3A3220; --third: #E38CC6; color-scheme: dark }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.5 }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 18px }
+h1 { margin: 0; font-size: 26px; font-weight: 600; text-wrap: balance }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap }
+button { font: inherit; color: inherit; cursor: pointer }
+.tab { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 16px; font-family: var(--mono); font-size: 14px }
+.tab[aria-selected="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg) }
+button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px }
+.main { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 18px; align-items: start }
+@media (max-width: 860px) { .main { grid-template-columns: minmax(0, 1fr) } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0 }
+.lbl { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px }
+.code { font-family: var(--mono); font-size: 14px; overflow-x: auto }
+.code div { white-space: pre; padding: 1px 8px; border-radius: 6px; display: flex; gap: 12px; transition: background .25s }
+.code div span.n { color: var(--muted); width: 1.6em; text-align: right; flex: none; user-select: none }
+.code div.cur { background: var(--hl) }
+.code div.cur span.n { color: var(--gold); font-weight: 700 }
+.kw { color: var(--main); font-weight: 700 } .str { color: var(--gold) }
+.note { font-size: 16px; min-height: 4.5em; margin: 0 }
+.note b { font-family: var(--mono); font-weight: 700 }
+.sched { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px }
+.box { border: 2px dashed var(--line); border-radius: 10px; padding: 8px; min-height: 170px }
+.box.run { border-style: solid; border-color: var(--fg) }
+.box .lbl { margin-bottom: 0 }
+.chan { grid-column: 1 / -1; min-height: 0; border-style: solid; border-color: var(--line); display: flex; gap: 16px; align-items: center; flex-wrap: wrap; font-family: var(--mono); font-size: 14px }
+.chip { position: absolute; left: 0; top: 0; height: 56px; border-radius: 9px; border: 2px solid var(--c);
+  background: color-mix(in srgb, var(--c) 14%, var(--panel)); padding: 6px 10px; box-sizing: border-box;
+  display: flex; flex-direction: column; justify-content: center; overflow: hidden;
+  transition: transform .6s cubic-bezier(.4,0,.2,1), width .6s, opacity .4s }
+.chip b { font-family: var(--mono); font-size: 15px; color: var(--c) }
+.chip small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.chip.running { background: color-mix(in srgb, var(--c) 28%, var(--panel)) }
+.token { position: absolute; left: 0; top: 0; width: 40px; height: 40px; border-radius: 50%; background: var(--gold); color: var(--panel);
+  font-family: var(--mono); font-weight: 700; display: flex; align-items: center; justify-content: center; opacity: 0; z-index: 3 }
+.ticket { font-family: var(--mono); font-size: 14px; margin-top: 10px; color: var(--muted) }
+.ticket b { color: var(--fg) }
+.out { font-family: var(--mono); font-size: 14px; background: var(--fg); color: var(--bg); border-radius: 10px; padding: 12px 14px; min-height: 7.5em; white-space: pre; overflow-x: auto }
+.out .new { color: var(--gold) }
+.controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 7px 14px }
+.btn.primary { background: var(--main); border-color: var(--main); color: var(--panel); font-weight: 600 }
+.btn:disabled { opacity: .4; cursor: default }
+.count { font-family: var(--mono); font-size: 13px; color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums }
+.tl { display: grid; gap: 6px; font-family: var(--mono); font-size: 13px }
+.tl .row { display: grid; grid-template-columns: 4.5em 1fr; gap: 8px; align-items: center }
+.tl .cells { display: grid; gap: 3px }
+.tl .cell { height: 18px; border-radius: 4px; background: color-mix(in srgb, var(--line) 50%, transparent) }
+.tl .cell.on { background: var(--c) }
+.tl .cell.now { outline: 2px solid var(--gold); outline-offset: 1px }
+@media (prefers-reduced-motion: reduce) { .chip, .code div { transition: none } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Step through Lugha's green threads</h1>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-spawn" data-ex="spawn" aria-selected="true">1 · spawn + join</button>
+    <button class="tab" role="tab" id="tab-chan" data-ex="chan" aria-selected="false">2 · channel</button>
+    <button class="tab" role="tab" id="tab-yield" data-ex="yield" aria-selected="false">3 · yield_now</button>
+    <button class="tab" role="tab" id="tab-two" data-ex="two" aria-selected="false">4 · two spawns + yield</button>
+    <button class="tab" role="tab" id="tab-net" data-ex="net" aria-selected="false">5 · socket (non-blocking)</button>
+    <button class="tab" role="tab" id="tab-actor" data-ex="actor" aria-selected="false">6 · actor</button>
+  </div>
+
+  <div class="main">
+    <div class="card" style="display:grid;gap:14px">
+      <div><p class="lbl">Code</p><div class="code" id="code"></div></div>
+      <p class="note" id="note"></p>
+      <div class="controls">
+        <button class="btn" id="back">← Back</button>
+        <button class="btn primary" id="next">Next →</button>
+        <button class="btn" id="play">Play</button>
+        <button class="btn" id="restart">Restart</button>
+        <span class="count" id="count"></span>
+      </div>
+    </div>
+
+    <div style="display:grid;gap:14px;min-width:0">
+      <div class="card">
+        <div class="sched" id="sched">
+          <div class="box run" data-box="run"><p class="lbl">Running (1 worker)</p></div>
+          <div class="box" data-box="ready"><p class="lbl">Ready line</p></div>
+          <div class="box" data-box="wait"><p class="lbl">Waiting</p></div>
+          <div class="box chan" id="chanbox" hidden><span class="lbl" style="margin:0" id="chanlbl">Channel c</span><span id="chantext"></span></div>
+          <div class="token" id="token">42</div>
+        </div>
+        <div class="ticket" id="ticket" hidden></div>
+      </div>
+      <div class="card"><p class="lbl">Output</p><div class="out" id="out"></div></div>
+      <div class="card"><p class="lbl">Who had the worker, step by step</p><div class="tl" id="tl"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const K = s => '<span class="kw">' + s + '</span>', Q = s => '<span class="str">' + s + '</span>';
+const EX = {};
+</script>
+<script src="examples/spawn.js"></script>
+<script src="examples/chan.js"></script>
+<script src="examples/yield.js"></script>
+<script src="examples/two.js"></script>
+<script src="examples/net.js"></script>
+<script src="examples/actor.js"></script>
+<script>
+
+const $ = id => document.getElementById(id);
+const sched = $('sched'), token = $('token');
+let ex = 'spawn', step = 0, chips = {}, timer = null;
+
+function build() {
+  const e = EX[ex];
+  $('code').innerHTML = e.code.map((l, i) => '<div data-l="' + i + '"><span class="n">' + (i + 1) + '</span><span>' + (l || ' ') + '</span></div>').join('');
+  sched.querySelectorAll('.chip').forEach(c => c.remove());
+  chips = {};
+  for (const [name, c] of Object.entries(e.jobs)) {
+    const el = document.createElement('div');
+    el.className = 'chip'; el.style.setProperty('--c', c); el.style.opacity = 0;
+    el.innerHTML = '<b>' + name + '</b><small></small>';
+    sched.appendChild(el); chips[name] = el;
+  }
+  $('tl').innerHTML = Object.entries(e.jobs).map(([n, c]) =>
+    '<div class="row"><span>' + n + '</span><div class="cells" style="grid-template-columns:repeat(' + e.steps.length + ',1fr)">' +
+    e.steps.map((_, i) => '<div class="cell" data-j="' + n + '" data-i="' + i + '" style="--c:' + c + '"></div>').join('') + '</div></div>').join('');
+  $('chanbox').hidden = !EX[ex].boxLabel;
+  $('chanlbl').textContent = EX[ex].boxLabel || '';
+}
+
+function slots() {
+  // where each job sits: box + index in that box, in the step's listed order
+  const s = EX[ex].steps[step], pos = {}, n = { run: 0, ready: 0, wait: 0 };
+  for (const [job, [where]] of Object.entries(s.jobs)) if (where !== 'gone') pos[job] = [where, n[where]++];
+  return pos;
+}
+
+function place(animate) {
+  const s = EX[ex].steps[step], pos = slots(), last = {};
+  // grow the boxes when a box holds three jobs
+  const cnt = { run: 0, ready: 0, wait: 0 };
+  for (const k in pos) cnt[pos[k][0]]++;
+  const most = Math.max(cnt.ready, cnt.wait, 2);
+  sched.querySelectorAll('[data-box]').forEach(b => b.style.minHeight = (40 + most * 64) + 'px');
+  for (const [job, el] of Object.entries(chips)) {
+    const st = s.jobs[job];
+    if (!animate) el.style.transition = 'none';
+    if (st) el.querySelector('small').textContent = st[1];
+    el.classList.toggle('running', !!st && st[0] === 'run');
+    if (pos[job]) {
+      const [where, i] = pos[job], box = sched.querySelector('[data-box="' + where + '"]');
+      const x = box.offsetLeft + 8, y = box.offsetTop + 32 + i * 64, w = box.offsetWidth - 16;
+      el.style.transform = 'translate(' + x + 'px,' + y + 'px)'; el.style.width = w + 'px';
+      el.style.opacity = 1; last[job] = [x, y, w];
+    } else el.style.opacity = st ? 0 : 0;
+    if (!animate) { el.offsetWidth; el.style.transition = ''; }
+  }
+  return last;
+}
+
+function render(animate) {
+  const e = EX[ex], s = e.steps[step];
+  $('code').querySelectorAll('div').forEach(d => d.classList.toggle('cur', +d.dataset.l === s.line));
+  $('note').innerHTML = s.note;
+  $('count').textContent = 'Step ' + (step + 1) + ' of ' + e.steps.length;
+  const lines = e.steps.slice(0, step + 1).filter(x => x.out).map(x => x.out);
+  $('out').innerHTML = lines.map((l, i) => i === lines.length - 1 && s.out ? '<span class="new">' + l + '</span>' : l).join('\n');
+  const tk = $('ticket');
+  tk.hidden = !s.ticket; if (s.ticket) tk.innerHTML = 't (ticket) → <b>double: ' + s.ticket + '</b>';
+  if (s.chan) $('chantext').textContent = s.chan; else $('chantext').textContent = 'not created yet';
+  $('tl').querySelectorAll('.cell').forEach(c => {
+    const i = +c.dataset.i, st = e.steps[i].jobs[c.dataset.j];
+    c.classList.toggle('on', i <= step && !!st && st[0] === 'run');
+    c.classList.toggle('now', i === step && !!st && st[0] === 'run');
+  });
+  const prev = animate ? snapshot() : null;
+  const now = place(animate);
+  token.style.transition = 'none'; token.style.opacity = 0;
+  if (animate && s.fly && prev && prev[s.fly[0]] && now[s.fly[1]] && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const a = prev[s.fly[0]], b = now[s.fly[1]];
+    token.textContent = s.fly[2] || '42';
+    token.style.transform = 'translate(' + (a[0] + a[2] - 48) + 'px,' + (a[1] + 8) + 'px)'; token.style.opacity = 1;
+    token.offsetWidth;
+    token.style.transition = 'transform .9s cubic-bezier(.4,0,.2,1) .15s, opacity .3s 1.2s';
+    token.style.transform = 'translate(' + (b[0] + b[2] - 48) + 'px,' + (b[1] + 8) + 'px)';
+    token.style.opacity = 0;
+  }
+  $('back').disabled = step === 0; $('next').disabled = step === e.steps.length - 1;
+}
+
+function snapshot() {
+  const r = {};
+  for (const [job, el] of Object.entries(chips)) {
+    const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(el.style.transform);
+    if (m) r[job] = [+m[1], +m[2], parseFloat(el.style.width) || 0];
+  }
+  return r;
+}
+
+function go(i, animate = true) { step = Math.max(0, Math.min(EX[ex].steps.length - 1, i)); render(animate); }
+function stop() { clearInterval(timer); timer = null; $('play').textContent = 'Play'; }
+function play() {
+  if (timer) return stop();
+  if (step === EX[ex].steps.length - 1) go(0, false);
+  $('play').textContent = 'Pause';
+  timer = setInterval(() => { if (step >= EX[ex].steps.length - 1) return stop(); go(step + 1); }, 2600);
+}
+function pick(name) {
+  stop(); ex = name;
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.ex === name));
+  build(); go(0, false);
+}
+
+$('next').onclick = () => { stop(); go(step + 1); };
+$('back').onclick = () => { stop(); go(step - 1, false); };
+$('restart').onclick = () => { stop(); go(0, false); };
+$('play').onclick = play;
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => pick(t.dataset.ex));
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') { stop(); go(step + 1); }
+  if (e.key === 'ArrowLeft') { stop(); go(step - 1, false); }
+});
+window.addEventListener('resize', () => place(false));
+pick('spawn');
+</script>
+</body>
+</html>

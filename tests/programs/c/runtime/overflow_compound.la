@@ -1,0 +1,5 @@
+fun main() {
+    let mut b: u8 = 250;
+    b += 10;
+    println(b);
+}

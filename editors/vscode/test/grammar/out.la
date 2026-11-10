@@ -1,0 +1,10 @@
+// SYNTAX TEST "source.lugha" "out parameters"
+
+extern fun fuel(out n: u64): bool;
+//              ^^^ storage.modifier.out.lugha
+fun f() {
+    fuel(out n);
+//       ^^^ storage.modifier.out.lugha
+    g(out);
+//    ^^^ - storage.modifier.out.lugha
+}

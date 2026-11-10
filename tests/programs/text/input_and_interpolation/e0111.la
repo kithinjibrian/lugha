@@ -1,0 +1,4 @@
+fun main() {
+    let n = 3;
+    println("total: {n} }");
+}

@@ -1,0 +1,16 @@
+// Every alternative must bind the same names at the same types.
+
+enum Shape { Circle(f64), Count(i64), Empty }
+
+fun f(s: Shape): f64 = match s {
+    Circle(r) | Empty => r,
+    Count(n) | Circle(n) => n as f64,
+    _ => 0.0,
+};
+
+fun main() {
+    match Some(1) {
+        Some(_) => {}
+        mut None => {}
+    }
+}

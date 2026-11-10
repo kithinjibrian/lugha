@@ -1,0 +1,12 @@
+error[E0501]: cannot swap `xs`: it is not mutable
+  --> tests/programs/basics/swap/e0501_swap.la:4:10
+  |
+2 |     let xs = [1, 2];
+  |         -- declared here
+3 |     let mut ys = [3];
+4 |     swap(xs, ys);
+  |          ^^
+  |
+  = help: make it mutable: `let mut xs`
+
+For more about E0501, run `lughac explain E0501`.

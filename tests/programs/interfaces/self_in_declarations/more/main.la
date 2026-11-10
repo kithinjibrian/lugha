@@ -1,0 +1,26 @@
+// Self in a generic enum, in a struct's array field, and in another
+// module's struct used through m.T.
+import geo;
+
+enum Tree<T> { Leaf, Node(Self, T, Self) }
+
+struct Chain { value: i64, rest: Self[] }
+
+fun depth<T>(t: Tree<T>): i64 = match t {
+    Leaf => 0,
+    Node(l, _, r) => {
+        let a = depth(l);
+        let b = depth(r);
+        1 + if a > b { a } else { b }
+    }
+};
+
+fun main() {
+    let t: Tree<string> = Tree.Node(Tree.Leaf, "a", Tree.Node(Tree.Leaf, "b", Tree.Leaf));
+    println(depth(t));
+    let c = Chain { value: 1, rest: [Chain { value: 2, rest: [] }] };
+    println(c);
+    let m = geo.Menu { name: "top", items: [geo.Menu { name: "sub", items: [] }] };
+    println(m.items[0].name);
+    println(m);
+}

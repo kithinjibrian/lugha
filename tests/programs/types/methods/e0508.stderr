@@ -1,0 +1,11 @@
+error[E0508]: cannot pass `v` to a `mut self` method called on `v`
+   --> tests/programs/types/methods/e0508.la:11:11
+   |
+11 |     v.add(v);
+   |     -     ^
+   |     |
+   |     `v` is edited by this call
+   |
+   = help: copy it first: `let w = v;` and pass `w`
+
+For more about E0508, run `lughac explain E0508`.

@@ -1,0 +1,13 @@
+struct Range { private lo: i64, private hi: i64 }
+
+impl Range {
+    fun new(a: i64, b: i64): Range = if a <= b { Range { lo: a, hi: b } } else { Range { lo: b, hi: a } };
+    fun len(self): i64 = self.hi - self.lo;
+    fun contains(self, x: i64): bool = self.lo <= x && x < self.hi;
+}
+
+// Panics on purpose: the location names this file.
+fun checked(n: i64): i64 {
+    let xs = [1, 2, 3];
+    xs[n]
+}

@@ -1,0 +1,6 @@
+{title: "launch", on: {y: 2026, m: 10, d: 31}, shapes: [Dot, Circle(2), Rect(1, 2)]}
+{first: [1, 2], second: (3, "x")}
+Cons(1, Cons(2, Nil))
+{"title":"launch","on":"2026-10-31","shapes":["Dot",{"Circle":2},{"Rect":[1,2]}]}
+{title: "launch", on: {y: 2026, m: 10, d: 31}, shapes: [Dot, Circle(2), Rect(1, 2)]}
+Err(on: expected a date)

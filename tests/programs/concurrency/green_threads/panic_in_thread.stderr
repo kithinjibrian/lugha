@@ -1,0 +1,1 @@
+panic: boom at tests/programs/concurrency/green_threads/panic_in_thread.la:3:5

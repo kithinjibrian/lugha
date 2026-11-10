@@ -1,0 +1,9 @@
+between(-3, 4) over 10000 draws: min -3, max 3
+below(4) roughly even: true
+normal(5, 2) mean near 5: true
+an f32 normal: true
+chance(0.0): false, chance(1.0): true
+choice([]): None
+shuffle keeps every element: true
+shuffle leaves the original: [5, 3, 9, 1, 7, 2]
+from_os in range: true

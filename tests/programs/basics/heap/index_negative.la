@@ -1,0 +1,6 @@
+fun main() {
+    let s = "hello";
+    let i: i64 = -1;
+    let b = s[i];
+    println(b);
+}

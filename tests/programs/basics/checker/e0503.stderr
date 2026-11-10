@@ -1,0 +1,9 @@
+error[E0503]: `sign` may end without returning a value of type i64
+  --> tests/programs/basics/checker/e0503.la:1:5
+  |
+1 | fun sign(x: i64): i64 {
+  |     ^^^^
+  |
+  = help: end the body with a value, or `return` on every path
+
+For more about E0503, run `lughac explain E0503`.

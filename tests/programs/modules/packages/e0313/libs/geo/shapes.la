@@ -1,0 +1,8 @@
+public struct Circle { r: f64 }
+
+impl Circle {
+    public fun area(self): f64 = 3.0 * self.r * self.r;
+    fun diameter(self): f64 = 2.0 * self.r;
+}
+
+public fun circle(r: f64): Circle = Circle { r: r };

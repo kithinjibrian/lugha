@@ -1,0 +1,5 @@
+fun main() {
+    let s = "hello";
+    let b = s[7];
+    println(b);
+}

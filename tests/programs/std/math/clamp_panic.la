@@ -1,0 +1,6 @@
+import std.math;
+
+fun main() {
+    println(math.clamp(5, 0, 10));
+    println(math.clamp(5, 10, 0));
+}

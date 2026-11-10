@@ -1,0 +1,18 @@
+// Records holding arrays, updated through a local copy: two deep copies per element per step.
+struct Particle { pos: f64[], vel: f64[], mass: f64 }
+
+fun main() {
+    let n = 2000;
+    let mut ps = [Particle { pos: [0.0; 3], vel: [1.0; 3], mass: 1.0 }; n];
+    for i in 0..n { ps[i].vel[0] = (i % 17) as f64; ps[i].mass = 1.0 + (i % 5) as f64; }
+    for step in 0..1000 {
+        for i in 0..n {
+            let mut p = ps[i];
+            for d in 0..3 { p.pos[d] += p.vel[d] / p.mass; }
+            ps[i] = p;
+        }
+    }
+    let mut sum = 0.0;
+    for p of ps { sum += p.pos[0] + p.pos[1] + p.pos[2]; }
+    println(sum);
+}

@@ -1,0 +1,39 @@
+fun save(path: string, lines: string[]): Result<i64, string> {
+    let mut total = write_file(path, "")?;
+    for line of lines {
+        total += append_file(path, line + "\n")?;
+    }
+    Ok(total)
+}
+
+fun count_lines(path: string): Result<i64, string> {
+    let text = read_file(path)?;
+    Ok(text.lines().len)
+}
+
+fun main() {
+    match save("notes.txt", ["one", "two", "three"]) {
+        Ok(n) => println("saved {n} bytes"),
+        Err(e) => println("save failed: " + e),
+    }
+    match count_lines("notes.txt") {
+        Ok(n) => println("{n} lines"),
+        Err(e) => println("read failed: " + e),
+    }
+    match write_file("notes.txt", "replaced") {
+        Ok(n) => println("wrote {n}"),
+        Err(e) => println(e),
+    }
+    match read_file("notes.txt") {
+        Ok(t) => println(t),
+        Err(e) => println(e),
+    }
+    match read_file("missing.txt") {
+        Ok(_) => println("unexpected"),
+        Err(e) => println("missing.txt: " + e),
+    }
+    match count_lines("missing.txt") {
+        Ok(_) => println("unexpected"),
+        Err(e) => println("count: " + e),
+    }
+}

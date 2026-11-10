@@ -1,0 +1,6 @@
+struct Crate { held: i64 }
+
+impl Crate {
+    fun size(self): i64 = self.held;
+    fun grow(mut self) { self.held *= 2; }
+}

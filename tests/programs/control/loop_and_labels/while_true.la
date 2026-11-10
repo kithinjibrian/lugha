@@ -1,0 +1,9 @@
+fun next(n: i64): i64 {
+    while true {
+        if n > 0 {
+            return n;
+        }
+    }
+}
+
+fun main() {}

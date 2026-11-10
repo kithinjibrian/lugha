@@ -1,0 +1,9 @@
+// Deep recursion in a green thread overflows its stack: a panic.
+fun down(n: i64): i64 {
+    if n == 0 { 0 } else { down(n - 1) + 1 }
+}
+
+fun main() {
+    let t = spawn down(100000000);
+    println(t.join());
+}

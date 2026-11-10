@@ -1,0 +1,23 @@
+fun even(n: i64): bool = n % 2 == 0;
+
+fun main() {
+    let xs = [3, 1, 4, 1, 5, 9, 2, 6];
+    let words = xs.iter().filter(even).map(fun(n) = "{n * n}").collect();
+    println(words.join(","));
+    println(range(1, 101).sum());
+    println(range(10, 1000000000).filter(fun(n) = n % 7 == 0).take(3).sum());
+    for p of "hey".bytes().enumerate() {
+        print("{p.i}={p.value};");
+    }
+    println("");
+    let mut vowels = 0;
+    for b of "banana" {
+        if b == 97 {
+            vowels += 1;
+        }
+    }
+    println(vowels);
+    println(xs.iter().any(fun(n) = n > 8));
+    println(xs.iter().find(fun(n) = n > 4).unwrap());
+    println(xs.iter().fold(0, fun(a, n) = a + n));
+}

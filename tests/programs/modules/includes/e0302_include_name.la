@@ -1,0 +1,4 @@
+// The intrinsics' names are reserved.
+fun include_str(path: string): string = path;
+
+fun main() {}

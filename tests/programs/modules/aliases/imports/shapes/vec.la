@@ -1,0 +1,11 @@
+public struct Vec2 { public x: i64, public y: i64 }
+
+impl Vec2 {
+    public fun zero(): Vec2 = Vec2 { x: 0, y: 0 };
+}
+
+public fun add(a: Vec2, b: Vec2): Vec2 = Vec2 { x: a.x + b.x, y: a.y + b.y };
+
+public enum Dir { Up, Down }
+
+fun hidden(): i64 = 1;

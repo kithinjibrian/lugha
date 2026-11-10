@@ -1,0 +1,11 @@
+// A call that returns nothing gives a plain `Task`.
+fun greet(name: string) {
+    println("hello, {name}");
+}
+
+fun main() {
+    let t: Task = spawn greet("green thread");
+    println("spawned");
+    t.join();
+    println("joined");
+}

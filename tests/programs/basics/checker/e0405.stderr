@@ -1,0 +1,7 @@
+error[E0405]: `add` takes 2 arguments but 1 was given
+  --> tests/programs/basics/checker/e0405.la:4:13
+  |
+4 |     let n = add(1);
+  |             ^^^^^^
+
+For more about E0405, run `lughac explain E0405`.

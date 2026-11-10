@@ -1,0 +1,67 @@
+struct Parser { text: string }
+
+impl Parser {
+    fun digit(self, i: i64): Result<i64, string> {
+        if i >= self.text.len { return Err("no character {i}"); }
+        let c = self.text[i] as i64;
+        if c < 48 || c > 57 { return Err("not a digit at {i}"); }
+        Ok(c - 48)
+    }
+    fun two(self): Result<i64, string> {
+        let a = self.digit(0)?;
+        let b = self.digit(1)?;
+        Ok(a * 10 + b)
+    }
+}
+
+fun half(n: i64): Result<i64, string> = if n % 2 == 0 { Ok(n / 2) } else { Err("{n} is odd") };
+
+fun eighth(n: i64): Result<i64, string> {
+    let a = half(n)?;
+    println("  halved once");
+    let b = half(a)?;
+    println("  halved twice");
+    half(b)
+}
+
+fun last_doubled(xs: i64[]): Option<i64> {
+    let mut ys = xs;
+    let x = ys.pop()?;
+    Some(x * 2)
+}
+
+fun first_ok<T>(xs: Result<T, string>[]): Result<T, string> {
+    let x = xs[0]?;
+    Ok(x)
+}
+
+fun show(r: Result<i64, string>) {
+    match r {
+        Ok(n) => println("ok {n}"),
+        Err(e) => println("err {e}"),
+    }
+}
+
+fun main() {
+    show(eighth(40));
+    show(eighth(12));
+    show(Parser { text: "42" }.two());
+    show(Parser { text: "4x" }.two());
+    show(Parser { text: "4" }.two());
+    match last_doubled([1, 2, 3]) {
+        Some(n) => println(n),
+        None => println("none"),
+    }
+    let empty: i64[] = [];
+    match last_doubled(empty) {
+        Some(n) => println(n),
+        None => println("none"),
+    }
+    let checked = fun(n: i64): Result<i64, string> {
+        let h = half(n)?;
+        Ok(h + 100)
+    };
+    show(checked(8));
+    show(checked(7));
+    show(first_ok([half(4), half(5)]));
+}

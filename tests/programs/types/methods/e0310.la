@@ -1,0 +1,8 @@
+struct P { x: i64 }
+
+impl P {
+    fun get(self): i64 = 1;
+    fun get(self): i64 = 2;
+}
+
+fun main() {}

@@ -1,0 +1,4 @@
+// `geo` is both a package and the local folder geo/.
+import geo.shapes;
+
+fun main() {}

@@ -1,0 +1,4 @@
+fun main() {
+    let flag = true;
+    let n = flag + 1;
+}

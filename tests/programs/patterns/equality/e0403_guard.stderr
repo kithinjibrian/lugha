@@ -1,0 +1,7 @@
+error[E0403]: expected bool, found i64
+  --> tests/programs/patterns/equality/e0403_guard.la:4:14
+  |
+4 |         _ if n => 1,
+  |              ^ expected bool
+
+For more about E0403, run `lughac explain E0403`.

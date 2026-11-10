@@ -1,0 +1,3 @@
+extern fun lugha_rt_alloc(size: i64): i64;
+
+fun main() {}

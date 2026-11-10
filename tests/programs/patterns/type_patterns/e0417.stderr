@@ -1,0 +1,9 @@
+error[E0417]: non-exhaustive match: `_` not covered
+   --> tests/programs/patterns/type_patterns/e0417.la:11:24
+   |
+11 | fun f(s: Shape): f64 = match s {
+   |                        ^^^^^^^
+   |
+   = help: add the missing arms, or `_ => …`
+
+For more about E0417, run `lughac explain E0417`.

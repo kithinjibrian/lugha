@@ -1,0 +1,9 @@
+Some(3)
+None
+None
+Some(30)
+Ok(42)
+Err("not a number: x")
+Err("no file")
+Some("koi")
+None

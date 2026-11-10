@@ -1,0 +1,19 @@
+struct Tree<T> { value: T, kids: Self[] }
+
+impl Tree<T> {
+    fun size(self): i64 {
+        let mut n = 1;
+        for k of self.kids {
+            n += k.size();
+        }
+        n
+    }
+}
+
+enum List { Cons(i64, Self), Nil }
+
+fun main() {
+    let t = Tree { value: 1, kids: [Tree { value: 2, kids: [] }, Tree { value: 3, kids: [] }] };
+    println(t.size());
+    println(List.Cons(1, List.Cons(2, List.Nil)));
+}

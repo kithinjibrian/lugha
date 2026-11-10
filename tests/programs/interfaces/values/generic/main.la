@@ -1,0 +1,47 @@
+// Generic types, bounds and another module's interface as interface values.
+import geo;
+
+interface Sized {
+    fun size(self): i64;
+}
+
+struct Stack<T> { items: T[] }
+
+impl Stack<T> {
+    fun size(self): i64 = self.items.len;
+    fun push(mut self, x: T) { self.items.push(x); }
+}
+
+interface Shape {
+    fun area(self): f64;
+}
+
+struct Sq { s: f64 }
+
+impl Sq {
+    fun area(self): f64 = self.s * self.s;
+}
+
+fun total_area<T: Shape>(xs: T[]): f64 {
+    let mut t = 0.0;
+    for x of xs {
+        t += x.area();
+    }
+    t
+}
+
+fun boxed<T: Shape>(x: T): Shape = x;
+
+fun main() {
+    let mut st = Stack { items: [1, 2] };
+    st.push(3);
+    let z: Sized = st;
+    println(z.size());
+    // `Stack<string>.size` is reached only through the conversion.
+    let w: Sized = Stack { items: ["a"] };
+    println(w.size());
+    let shapes: Shape[] = [Sq { s: 2.0 }, boxed(Sq { s: 3.0 })];
+    println(total_area(shapes));
+    let c: geo.Named = geo.Cat { called: "tom" };
+    println(c.name());
+}

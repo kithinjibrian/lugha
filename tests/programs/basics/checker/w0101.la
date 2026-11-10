@@ -1,0 +1,5 @@
+// A warning is printed but the exit code is the program's own.
+fun main(): i32 {
+    return 3;
+    let ignored = 1;
+}

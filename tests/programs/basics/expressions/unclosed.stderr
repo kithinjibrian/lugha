@@ -1,0 +1,9 @@
+error[E0201]: expected `)`, found `}`
+  --> tests/programs/basics/expressions/unclosed.la:1:26
+  |
+1 | fun main(): i32 { (1 + 2 }
+  |                   -      ^
+  |                   |
+  |                   to match this `(`
+
+For more about E0201, run `lughac explain E0201`.

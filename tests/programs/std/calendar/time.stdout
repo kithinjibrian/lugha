@@ -1,0 +1,25 @@
+1970-01-01 00:00:00.000 w4 back true
+1969-12-31 23:59:59.999 w3 back true
+2000-02-29 00:00:00.000 w2 back true
+2024-02-29 00:00:00.000 w4 back true
+2027-01-01 00:00:00.000 w5 back true
+2026-12-31 12:00:00.000 w4 back true
+2027-01-01 05:30:00.000 w5 back true
+1918-01-01 00:19:32.000 w2 back true
+-292275055-05-16 16:47:04.192 w7 back true
+292278994-08-17 07:12:55.807 w7 back true
+292278994-08-18 09:12:55.807 w1 back true
+1-1-1 is 1-01-01 00:00:00.000 w1
+0-12-31 is 0-12-31 00:00:00.000 w7
+1900-2-28 is 1900-02-28 00:00:00.000 w3
+2026-12-31 is 2026-12-31 00:00:00.000 w4
+Err(no day 29 in month 2 of 1900)
+Err(month 13 isn't 1 to 12)
+Err(no day 31 in month 4 of 2026)
+Err(hour 24 isn't 0 to 23)
+Err(second 60 isn't 0 to 59)
+Err(300000000-1-1 is past what an i64 moment holds)
+Err(292278995-1-1 is past what an i64 moment holds)
+Err(offset 93601 s is beyond 26 hours)
+Err(offset -100000 s is beyond 26 hours)
+Ok(1798761600000)

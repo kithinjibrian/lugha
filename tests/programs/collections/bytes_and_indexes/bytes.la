@@ -1,0 +1,21 @@
+fun main() {
+    let data: u8[] = [104, 105, 0, 255];
+    match write_bytes("out.bin", data) {
+        Ok(n) => println("wrote {n}"),
+        Err(e) => println("error {e}"),
+    }
+    match read_bytes("out.bin") {
+        Ok(b) => println(b),
+        Err(e) => println(e),
+    }
+    let text = "héllo";
+    let raw = text.to_bytes();
+    println(raw.len);
+    println(string_from_utf8(raw));
+    let bad: u8[] = [104, 195, 40];
+    println(string_from_utf8(bad));
+    let i: u8 = 1;
+    let j: u32 = 2;
+    let k: i32 = 0;
+    println("{raw[i]} {raw[j]} {raw[k]}");
+}

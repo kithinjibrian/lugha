@@ -1,0 +1,13 @@
+// Package geo: its own module util, and package mathx from its manifest.
+import mathx.consts;
+import util.names;
+
+public struct Circle { r: f64 }
+
+impl Circle {
+    public fun area(self): f64 = consts.pi() * self.r * self.r;
+}
+
+public fun circle(r: f64): Circle = Circle { r: r };
+
+public fun label(c: Circle): string = "{names.kind()} {c.area()}";

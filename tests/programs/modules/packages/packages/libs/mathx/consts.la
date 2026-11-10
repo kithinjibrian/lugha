@@ -1,0 +1,3 @@
+// Package mathx, reached only through geo's manifest.
+
+public fun pi(): f64 = 3.0;

@@ -1,0 +1,7 @@
+error[E0415]: no method `size` on `P`
+  --> tests/programs/types/methods/e0415.la:5:15
+  |
+5 |     let n = p.size();
+  |               ^^^^
+
+For more about E0415, run `lughac explain E0415`.

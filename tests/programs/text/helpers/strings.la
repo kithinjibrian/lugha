@@ -1,0 +1,28 @@
+fun show(xs: string[]): string = "[" + xs.map(fun(x) = "<{x}>").join(",") + "]";
+
+fun main() {
+    println(show("a\nb\n".lines()));
+    println(show("a\r\nb\r\n".lines()));
+    println(show("a\n\nb".lines()));
+    println(show("".lines()));
+    println(show("only".lines()));
+    println(show("a,,b".split(",")));
+    println(show("abc".split(",")));
+    println(show("a::b::c".split("::")));
+    println(show(",x,".split(",")));
+    println("<" + "  \t padded \r\n".trim() + ">");
+    println("<" + "   ".trim() + ">");
+    let s = "hello world";
+    println(s.contains("lo w"));
+    println(s.contains(""));
+    println(s.contains("xyz"));
+    println(s.starts_with("hell"));
+    println(s.starts_with(""));
+    println(s.ends_with("world"));
+    println(s.ends_with("hello world!"));
+    println(s.slice(6, 11));
+    println(s.slice(0, 0).len);
+    let empty: string[] = [];
+    println("<" + empty.join("-") + ">");
+    println(["one"].join("-"));
+}

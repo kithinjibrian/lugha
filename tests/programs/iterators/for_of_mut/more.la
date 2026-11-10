@@ -1,0 +1,66 @@
+// Struct elements changed through a field and a mut self method, bool
+// elements, continue and break keeping writes, nested arrays, an
+// iterator in a struct field, and an interface-typed iterator resumed.
+
+struct P { n: i64 }
+
+impl P {
+    fun bump(mut self) {
+        self.n += 10;
+    }
+}
+
+struct Holder { it: Range, seen: i64 }
+
+fun main() {
+    let mut ps = [P { n: 1 }, P { n: 2 }];
+    for p of mut ps {
+        p.n += 1;
+        p.bump();
+    }
+    println(ps);
+
+    let mut flags = [true, false, true];
+    for f of mut flags {
+        f = !f;
+    }
+    println(flags);
+
+    let mut xs = [1, 2, 3, 4, 5];
+    for x of mut xs {
+        if x == 2 {
+            continue;
+        }
+        x = x * 100;
+        if x == 400 {
+            break;
+        }
+    }
+    println(xs);
+
+    let mut grid = [[1, 2], [3]];
+    for row of mut grid {
+        for c of mut row {
+            c = -c;
+        }
+    }
+    println(grid);
+
+    let mut h = Holder { it: range(0, 10), seen: 0 };
+    for n of mut h.it {
+        h.seen += n;
+        if n == 3 {
+            break;
+        }
+    }
+    println(h.seen);
+    println(h.it.next());
+
+    let mut it: Iter<i64> = range(1, 6);
+    for n of mut it {
+        if n == 2 {
+            break;
+        }
+    }
+    println(it.collect());
+}

@@ -1,0 +1,15 @@
+// A busy loop that never waits is preempted, so the thread that ends it runs.
+fun spin(stop: Ref<bool>): i64 {
+    let mut turns = 0;
+    while !stop.get() {
+        turns += 1;
+    }
+    1
+}
+
+fun main() {
+    let stop = Ref.new(false);
+    let s = spawn spin(stop);
+    spawn fun() { stop.set(true); }();
+    println(s.join());
+}

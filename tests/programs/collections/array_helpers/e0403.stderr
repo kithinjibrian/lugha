@@ -1,0 +1,7 @@
+error[E0403]: expected bool, found i64
+  --> tests/programs/collections/array_helpers/e0403.la:3:36
+  |
+3 |     let evens = xs.filter(fun(x) = x % 2);
+  |                                    ^^^^^ expected bool
+
+For more about E0403, run `lughac explain E0403`.

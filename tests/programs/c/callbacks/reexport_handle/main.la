@@ -1,0 +1,9 @@
+// A re-exported `extern type` is the same type by either name.
+import mid;
+import handles { Handle as H };
+
+fun same(h: mid.Handle): H = h;
+
+fun main() {
+    println("same");
+}

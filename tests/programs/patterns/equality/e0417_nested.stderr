@@ -1,0 +1,9 @@
+error[E0417]: non-exhaustive match: `None`, `Some(Rect(_, _))` not covered
+  --> tests/programs/patterns/equality/e0417_nested.la:3:35
+  |
+3 | fun area(s: Option<Shape>): f64 = match s {
+  |                                   ^^^^^^^
+  |
+  = help: add the missing arms, or `_ => …`
+
+For more about E0417, run `lughac explain E0417`.

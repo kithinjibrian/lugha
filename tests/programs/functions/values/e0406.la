@@ -1,0 +1,9 @@
+struct Circle { r: f64 }
+
+impl Circle {
+    fun area(self): f64 = 3.0 * self.r * self.r;
+}
+
+fun main() {
+    let a = Circle.area;
+}

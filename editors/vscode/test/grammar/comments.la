@@ -1,0 +1,22 @@
+// SYNTAX TEST "source.lugha" "block comments, nested and inline"
+
+/* a block comment */
+// <-------------------- comment.block.lugha
+
+let x = 1 /* inline */ + 2;
+//        ^^^^^^^^^^^^ comment.block.lugha
+//                     ^ keyword.operator.lugha
+//                       ^ constant.numeric.decimal.lugha
+
+/* outer /* inner */ still */ let y = 3;
+//       ^^^^^^^^^^^ comment.block.lugha comment.block.lugha
+//                   ^^^^^ comment.block.lugha
+//                            ^^^ keyword.other.let.lugha
+
+/** A doc. */ fun f() { }
+// <------------ comment.block.lugha
+//            ^^^ keyword.other.fun.lugha
+
+let s = "/* text */";
+//       ^^^^^^^^^^ string.quoted.double.lugha
+

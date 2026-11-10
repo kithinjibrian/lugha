@@ -1,0 +1,55 @@
+// SYNTAX TEST "source.lugha" "keywords, types, numbers and comments"
+
+import std.env;
+// <----- keyword.other.import.lugha
+
+public fun area(s: Shape, n: i64): f64 {
+// <----- storage.modifier.lugha
+//     ^^^ keyword.other.fun.lugha
+//         ^^^^ entity.name.function.lugha
+//                 ^^^^^ entity.name.type.lugha
+//                           ^^^ storage.type.primitive.lugha
+//                                 ^^^ storage.type.primitive.lugha
+
+    let mut total = 1_000 + 0xFF + 0b1010;
+//  ^^^ keyword.other.let.lugha
+//      ^^^ storage.modifier.lugha
+//                  ^^^^^ constant.numeric.decimal.lugha
+//                        ^ keyword.operator.lugha
+//                          ^^^^ constant.numeric.hex.lugha
+//                                 ^^^^^^ constant.numeric.binary.lugha
+
+    let x = 2.0e-3 as f64; // a comment
+//          ^^^^^^ constant.numeric.float.lugha
+//                 ^^ keyword.operator.as.lugha
+//                         ^^^^^^^^^^^^ comment.line.double-slash.lugha
+
+    if x >= 1.5 && true { return 0.0; } else { return self.n; }
+//  ^^ keyword.control.lugha
+//       ^^ keyword.operator.lugha
+//                 ^^^^ constant.language.boolean.lugha
+//                        ^^^^^^ keyword.control.lugha
+//                                      ^^^^ keyword.control.lugha
+//                                                    ^^^^ variable.language.self.lugha
+
+    for i in 0..10 { }
+//  ^^^ keyword.control.lugha
+//        ^^ keyword.control.lugha
+//            ^^ keyword.operator.range.lugha
+
+    match s { Shape.Circle(r) => Some(r), _ => None }
+//  ^^^^^ keyword.control.lugha
+//            ^^^^^ entity.name.type.lugha
+//                  ^^^^^^ entity.name.type.lugha
+//                            ^^ keyword.operator.lugha
+//                               ^^^^ support.constant.lugha
+//                                             ^^^^ support.constant.lugha
+
+struct Stack<T> { items: T[] }
+// <----- keyword.other.struct.lugha
+//     ^^^^^ entity.name.type.lugha
+//                       ^ entity.name.type.lugha
+
+fun f() { compute(1); }
+//        ^^^^^^^ entity.name.function.call.lugha
+

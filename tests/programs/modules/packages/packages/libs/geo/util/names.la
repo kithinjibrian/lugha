@@ -1,0 +1,3 @@
+// geo's own module: `import util.names;` inside geo is `geo.util.names`.
+
+fun kind(): string = "circle";

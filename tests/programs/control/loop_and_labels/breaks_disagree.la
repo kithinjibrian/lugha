@@ -1,0 +1,9 @@
+fun main() {
+    let c = true;
+    let x = loop {
+        if c {
+            break 1;
+        }
+        break "one";
+    };
+}

@@ -1,0 +1,31 @@
+// SYNTAX TEST "source.lugha" "strings, interpolation, format templates and chars"
+
+let s = "a\n{{b}} {name} {pi:.2} {xs.join("-")}";
+//      ^ string.quoted.double.lugha punctuation.definition.string.begin.lugha
+//        ^^ string.quoted.double.lugha constant.character.escape.lugha
+//          ^^ constant.character.escape.lugha
+//                ^ meta.interpolation.lugha punctuation.section.interpolation.begin.lugha
+//                 ^^^^ meta.interpolation.lugha
+//                     ^ punctuation.section.interpolation.end.lugha
+//                          ^^^ meta.interpolation.lugha constant.other.format-spec.lugha
+//                                        ^^^ meta.interpolation.lugha string.quoted.double.lugha
+
+let t = format("{} has {:>4} items", a, b);
+//      ^^^^^^ support.function.format.lugha
+//             ^ string.quoted.double.template.lugha
+//              ^^ constant.other.placeholder.lugha
+//                     ^^^^^ constant.other.placeholder.lugha
+//                                   ^^ - string
+
+let u = xs.format("{name}");
+//                 ^ meta.interpolation.lugha
+
+let c = 'a';
+//      ^^^ string.quoted.single.lugha
+
+let n = '\n';
+//       ^^ constant.character.escape.lugha
+
+let e = '\u{1F600}';
+//       ^^^^^^^^^ constant.character.escape.lugha
+

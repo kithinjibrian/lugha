@@ -1,0 +1,13 @@
+error[E0201]: expected `;`, found end of file
+  --> shapes/circle.la:3:1
+  |
+3 |
+  | ^
+
+error[E0202]: unclosed `{`
+  --> shapes/circle.la:1:23
+  |
+1 | fun area(r: f64): f64 {
+  |                       ^
+
+For more about E0201 and E0202, run `lughac explain <code>`.

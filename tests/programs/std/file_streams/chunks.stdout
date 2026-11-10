@@ -1,0 +1,11 @@
+200000 lines, last line 199999
+2288890 bytes of 2288890
+Ok(Some("line 0"))
+Ok("line 1\n")
+Ok(Some("line 2"))
+Ok(None)
+Ok([])
+100000 true
+Ok(Some("short"))
+Ok(None)
+Ok(())

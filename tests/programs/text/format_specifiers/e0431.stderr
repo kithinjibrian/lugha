@@ -1,0 +1,25 @@
+error[E0431]: a precision (`.2`) applies only to floats
+  --> tests/programs/text/format_specifiers/e0431.la:4:16
+  |
+4 |     println("{n:.2}");
+  |                ^^^
+  |
+  = help: a specifier is `[[fill]align][#][0][width][.precision][kind]`, e.g. `{x:>8.2}`
+
+error[E0431]: `x`, `X`, `b` and `o` apply only to integers
+  --> tests/programs/text/format_specifiers/e0431.la:5:16
+  |
+5 |     println("{f:x}");
+  |                ^^
+  |
+  = help: a specifier is `[[fill]align][#][0][width][.precision][kind]`, e.g. `{x:>8.2}`
+
+error[E0431]: `0` padding applies only to numbers
+  --> tests/programs/text/format_specifiers/e0431.la:6:18
+  |
+6 |     println("{"s":05}");
+  |                  ^^^
+  |
+  = help: a specifier is `[[fill]align][#][0][width][.precision][kind]`, e.g. `{x:>8.2}`
+
+For more about E0431, run `lughac explain E0431`.

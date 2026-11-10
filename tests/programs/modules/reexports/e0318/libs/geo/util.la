@@ -1,0 +1,1 @@
+fun helper(): i64 = 1;

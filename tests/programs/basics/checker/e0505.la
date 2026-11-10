@@ -1,0 +1,5 @@
+fun main() {
+    let big = true;
+    if big { 100 } else { 1 }
+    let x = 2;
+}

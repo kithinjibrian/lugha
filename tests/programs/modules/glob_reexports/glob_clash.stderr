@@ -1,0 +1,9 @@
+error[E0314]: `twice` is both this module's own `twice` and `raw.twice`
+  --> gtk.la:1:21
+  |
+1 | public import raw { * };
+  |                     ^
+  |
+  = help: list the items you want instead of `*`: `public import m { … };`
+
+For more about E0314, run `lughac explain E0314`.

@@ -1,0 +1,7 @@
+public extern type Handle;
+
+public struct Plain {
+    n: i64,
+}
+
+public extern fun make_handle(): Handle;

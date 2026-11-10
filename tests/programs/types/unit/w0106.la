@@ -1,0 +1,8 @@
+// Binding a call's `()` warns; writing the type silences it.
+fun log() {}
+
+fun main() {
+    let x = log();
+    let y: () = log();
+    println(x == y);
+}

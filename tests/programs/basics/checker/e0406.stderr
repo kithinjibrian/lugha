@@ -1,0 +1,7 @@
+error[E0406]: `step` is not a function
+  --> tests/programs/basics/checker/e0406.la:3:5
+  |
+3 |     step(1);
+  |     ^^^^
+
+For more about E0406, run `lughac explain E0406`.

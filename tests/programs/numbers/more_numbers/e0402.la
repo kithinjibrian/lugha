@@ -1,0 +1,5 @@
+// A literal must fit its type.
+
+fun main() {
+    let n: u32 = 4294967296;
+}

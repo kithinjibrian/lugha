@@ -1,0 +1,89 @@
+# Lugha for VS Code
+
+Syntax highlighting, live `lughac` diagnostics and formatting for [Lugha](../../README.md) (`.la` files).
+
+- **Highlighting:** `actor` declarations (milestone 92), `spawn`, `select` and its `after(ms) =>`/`default =>` arms, `Task` and `Chan` (milestone 91), `extern type`, `extern struct`, `extern "symbol" fun` and the `data`/`release` markers of callbacks (milestones 88–90), `@test` attributes (milestone 84), keywords, types, numbers, `//` and `/* … */` comments (nested ones too), strings with `{…}` interpolation and format specifiers (`{pi:.2}`), `format("{} {:>4}", …)` templates, `char` literals.
+- **Semantic highlighting:** once `lughac lsp` has checked the file, names are coloured by what they are — parameters, locals (`let mut` ones marked mutable), fields, variants, types, modules, functions and methods, std and prelude names as library ones — on top of the grammar's colours. Needs a `lughac` from milestone 154; turn it off with `"editor.semanticHighlighting.enabled": false`.
+- **Editing:** `Ctrl+/` toggles `//`, `Shift+Alt+A` toggles `/* … */`; brackets and quotes close themselves.
+- **Find References** (`Shift+F12`) lists every use of the name under the cursor — a variable, function, method, type, field, variant or module — and **Rename** (`F2`) renames them all at once. Both search the files the server has checked: open files, their imports, the main files in `lugha.entries` and main files it has seen. Rename checks the renamed program before answering and refuses (with the reason) a keyword, a name from std or the prelude, a module, a clash or a changed meaning, and a public item of a module no checked main file imports. Needs a `lughac` from milestone 83.
+- **Error explanations:** the code of each diagnostic (`E0501` in the Problems panel and the hover) is a link: it opens a read-only tab explaining the error, with an example and its fix, from your `lughac explain`. **Lugha: Explain Error Code** in the Command Palette opens one by code. Works offline and in untrusted folders. Needs a `lughac` from milestone 86.
+- **Tests:** every `@test` in the workspace's `.la` files appears in the **Testing** view, with a ▶ in the gutter beside it. Run one, a file's or all; a failure shows its message (`assert_eq failed: left 4, right 5`) at the failing line, and what the test printed is in the test's output. Tests run only when you ask (or under the Testing view's continuous run, if you turn it on), each in its own process through `lughac test`. In a folder VS Code doesn't trust (Restricted Mode), tests are neither listed nor run, since running them runs that folder's code. Needs a `lughac` from milestone 85.
+- **Formatting:** **Format Document** (`Shift+Alt+F`) formats the file exactly as `lughac fmt` would — the text in the editor, unsaved changes included — and one undo puts it back. To format on every save, add `"[lugha]": { "editor.formatOnSave": true }` to your user `settings.json`. A file with a syntax error is left as it is (its errors are already underlined). Needs a `lughac` from milestone 81.
+- **Quick fixes:** on a non-exhaustive `match` (E0417), the lightbulb offers **Add missing arms** (every missing case, in full) and **Add a `_` arm**; each new arm's body is `panic("not handled")` until you write it (milestone 79). Assigning to a `let` that isn't `mut` (E0501) offers **Make `x` mutable**; a misspelled variant in a pattern (W0103, `Some(Emtpy)`) offers **Change to `Empty`** when one variant is that close; `math.sqrt` without its import (E0301) offers **Add `import std.math;`** (milestone 82).
+- **Snippets:** type a prefix and Tab — `fun`, `main`, `struct`, `enum`, `impl`, `interface`, `import`, `doc`, `extern`, `externtype`, `externstruct`, `externcb` (a C function taking a callback), `spawn` (a closure in a green thread, then `join`), `chan`, `select` (with a timeout), `actor`, `if`, `ifelse`, `while`, `forof`, `forin`, `iflet`, `letelse`, `match`. Picking a function, method or variant from completion inserts its call with each parameter as a tab stop; on an enum, `Option` or `Result` value, `value.match` writes out every variant. Needs a `lughac` from milestone 78 for the completion ones.
+- **Doc comments:** `/** … */` above a function, method, type, field or variant (Markdown, `@param name text`, `@returns text`) shows under its header in hover and completion, and in signature help with the active parameter's text. Hovering a type or variant name shows it too. std and the prelude are documented. Needs a `lughac` from milestone 77.
+- **While a file has a syntax error** (a missing `;`, a half-typed line), all of the below keep working everywhere but the broken statement, and only the syntax errors are underlined. Needs a `lughac` from milestone 75.
+- **Signature help:** while you type a call's arguments, its signature with the current parameter highlighted — functions, methods, module functions, variants, built-ins, intrinsics; a generic call with its types filled in when they're known. Needs a `lughac` from milestone 74.
+- **Completion:** after `.`, a value's fields and methods (built-in and prelude ones too), a module's items, an enum's variants and associated functions; otherwise the names in scope, the module's functions and types, imports, intrinsics and keywords — each with its type or header. It works while the line you're typing doesn't parse yet, from the last check that did. Needs a `lughac` from milestone 73.
+- **Go to Definition** (F12, Ctrl+click): from a variable, function or method, type, field, variant or module (`import geo;`, `geo.f`) to its declaration, across files; an interface call goes to the interface's method. Nothing for `std` and prelude names. Needs a `lughac` from milestone 72.
+- **Hover:** a value's type, a binding's declaration (`let total: i64`), a function's or method's header as written (`fun Circle.area(self): f64`), a field's type; with `instance: max<f64>` for a generic call and `converted to Shape` for a value converted to an interface. It works while the program has errors (not while a file doesn't parse). Needs a `lughac` from milestone 71.
+- **Diagnostics as you type:** the extension starts `lughac lsp`, a language server that checks the program a moment after you stop typing, saved or not. Unsaved changes in other open files count too. Errors and warnings appear in the files they belong to, with their codes (`E0403`…), labels as related information and `help` in the message.
+
+Needs a `lughac` from milestone 70 or later (one with `lughac lsp`).
+
+## Build and install
+
+Needs Node 22.
+
+```bash
+cd editors/vscode
+npm ci
+npm test                    # server-command and grammar tests
+npm run package             # lugha-0.9.0.vsix
+code --install-extension lugha-0.9.0.vsix
+```
+
+**After any change in `editors/vscode/`**, bump the version in `package.json` (`npm version minor --no-git-tag-version`), rebuild the `.vsix` and reinstall it, then run **Developer: Reload Window**. VS Code skips a `.vsix` whose version is already installed, so an unbumped rebuild needs `code --install-extension … --force`. The language-server features come from `lughac` itself: reinstall it too (`cargo install --path .`) when they changed.
+
+## Settings
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `lugha.path` | `lughac` | The compiler whose `lsp` command serves diagnostics: a name on `PATH` or an absolute path. Set in user settings only, so a folder you open can't choose what runs. |
+| `lugha.entries` | `[]` | Main files, relative to the workspace folder, e.g. `["src/main.la", "examples/demo.la"]`. |
+
+**Which file is checked.** A file with `fun main` is checked itself. A module (no `main`) is checked through the main files in `lugha.entries` and through every main file the server has already checked that imports it — so opening `src/main.la` once is usually enough. With neither, the module is checked alone and the "no `main`" error (E0303) is hidden. `lughac` has no default entry point, so nothing scans the folder for one.
+
+**Offline.** The server never runs `git` and never writes a file. A git package not yet in the cache shows E0325 in `lugha.toml`: run `lughac update main.la` (or a build) in a terminal once.
+
+**Problems.** If `lughac lsp` can't start (a missing `lughac`, or one from before milestone 70), one notification offers to set `lugha.path`. The **Lugha** output channel (`Lugha: Show Output`) holds the server's log. A bug inside the compiler shows as one "internal compiler error" at the top of the file; the server keeps running.
+
+## No suggestions popping up?
+
+If your user settings turn suggestions off (`"editor.quickSuggestions"` off, or `"editor.suggestOnTriggerCharacters": false`), completion still answers **Ctrl+Space** but never pops up on its own. Turn it back on for Lugha only in your user `settings.json`:
+
+```json
+"[lugha]": {
+    "editor.quickSuggestions": { "other": "on", "comments": "off", "strings": "off" },
+    "editor.suggestOnTriggerCharacters": true
+}
+```
+
+Also make sure the `lughac` VS Code starts is from milestone 73 or later (`cargo install --path .` in the lugha repo), then run **Developer: Reload Window**.
+
+## Manual check before a release
+
+1. Install the `.vsix`; open `tests/programs/patterns/type_patterns/nested/main.la`: it is highlighted.
+2. Type `let z: i64 = "x";` inside a function, **without saving**: the error appears; delete it: it goes.
+3. Open `geo.la` from the same folder, add that line there without saving: the error appears in `geo.la`, with no E0303.
+4. Undo it without saving: `main.la` and `geo.la` are clean again.
+5. Hover `let`-bound names, a method call and a generic call: their types and headers appear; add an error elsewhere and hover again: still there.
+6. Ctrl+click a variable, a method call, a type and an `import`: each opens its declaration (the module's file for the import).
+7. Type `p.` after a struct value, `geo.` after an import, `Shape.` and a plain word: the suggestions list fields and methods, the module's items, the variants, and the names in scope.
+8. Type `twice(`, `p.scale(`, `max(1.5, ` and `println(`: the signature appears with the right parameter highlighted, moving on each `,`.
+9. Delete a `;` in a function: only that syntax error is underlined, and hover, Ctrl+click and `p.` completion still work on the other lines.
+10. Write a `/* … */` comment with a nested one inside: all of it is coloured as a comment; select lines and press `Shift+Alt+A`: they become a block comment.
+11. Write `/** Doubles. @param n the number */` above a function: hover it, complete it and type its call — the doc shows each time; hover `math.sqrt` and `xs.map`: their library docs show.
+12. Type `fun` then Tab, and `forof` then Tab: the snippets expand with tab stops; complete `max` and press Enter: `max(a, b)` with `a` selected; type `s.match` on an enum value and pick `match`: every variant is written out.
+13. Leave a variant out of a `match`: the lightbulb offers **Add missing arms** and **Add a `_` arm**; either one clears the error.
+14. Mess up a function's spacing and press `Shift+Alt+F`: it is laid out as `lughac fmt` would; `Ctrl+Z` restores it in one step; delete a `;` and format again: nothing changes and no message appears.
+15. Write `let n = 0; n = 1;`, `Some(Emtpy) =>` in a match on an `Option` of an enum with `Empty`, and `math.sqrt(2.0)` with no import: the lightbulb offers **Make `n` mutable**, **Change to `Empty`** and **Add `import std.math;`**, and each clears its diagnostic.
+16. Write `@test` above a function: `@test` is coloured as an attribute; run `lughac test` in a terminal.
+17. Open the **Testing** view in a folder with `@test` functions: they are listed by file; ▶ beside a passing one turns it green, a failing one red with its message at the failing line; in Restricted Mode the view is empty.
+18. Make an E0501 (`let n = 0; n = 1;`) and click `E0501` in the Problems panel: a tab explains it; run **Lugha: Explain Error Code** with `W0103`: its page opens.
+19. `Shift+F12` on a function used in two files lists both; `F2` on it renames it in both, and `F2` to a name already used is refused with the reason.
+20. Write `extern type W;`, `extern struct C { x: f32 }` and `extern fun on(f: fun(W, data), u: data, d: release);`: `type`, the names and `data`/`release` are coloured; type `externcb` then Tab: the snippet checks clean; hover `W` and `C`: `extern type W`, `extern struct C`.
+21. Write `let t = spawn work(1);` and a `select` with `after(10) =>` and `default =>` arms: `spawn`, `select`, `after` and `default` are coloured as keywords, but not in `let after = 1;`; type `spawn`, `chan` and `select` then Tab: each checks clean.
+22. Write `actor Counter { count: i64 }`: `actor` and `Counter` are coloured; type `actor` then Tab: the snippet checks clean; type `c.` after `let c = spawn Counter { count: 0 };`: completion offers its methods and `stop`, `join`, `is`, not `count`.
+23. Set `lugha.path` to `/nonexistent`: one notification.
+24. Run **Developer: Inspect Editor Tokens and Scopes** on a parameter's use, a `let mut` binding, a field and `println`: each shows a semantic token type (`parameter`, `variable` + `mutable`, `property`, `function` + `defaultLibrary`).

@@ -1,0 +1,10 @@
+// An `extern type` imported by name, like a struct or an extern function
+// (kivuli's report, session 230).
+import handles { Handle, Plain, make_handle };
+
+fun keep(h: Handle): Option<Handle> = Some(h);
+
+fun main() {
+    let p = Plain { n: 1 };
+    println(p.n);
+}

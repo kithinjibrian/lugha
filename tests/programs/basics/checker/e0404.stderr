@@ -1,0 +1,7 @@
+error[E0404]: cannot apply `+` to bool and i64
+  --> tests/programs/basics/checker/e0404.la:3:13
+  |
+3 |     let n = flag + 1;
+  |             ^^^^^^^^
+
+For more about E0404, run `lughac explain E0404`.

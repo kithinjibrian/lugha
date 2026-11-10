@@ -1,0 +1,77 @@
+// Self in a generic impl, in closures and arrays; Self.Variant with
+// payloads; defaults on concrete types, generic and chained.
+
+struct Stack<T> { items: T[] }
+
+impl Stack<T> {
+    fun new(): Self = Self { items: [] };
+    fun with(self, x: T): Self {
+        let mut s = self;
+        s.items.push(x);
+        s
+    }
+    fun pair(self): Self[] = [self, self];
+    fun size(self): i64 = self.items.len;
+}
+
+enum Shape { Circle(f64), Square(f64) }
+
+impl Shape {
+    fun grow(self, k: f64): Self = match self {
+        Circle(r) => Self.Circle(r * k),
+        Square(s) => Self.Square(s * k),
+    };
+    fun side(self): f64 = match self {
+        Circle(r) => r,
+        Square(s) => s,
+    };
+    fun all(): Self[] {
+        let make = fun(x: f64): Self = Self.Square(x);
+        [make(1.0), Self.Circle(2.0)]
+    }
+}
+
+interface Source<T> {
+    fun next(mut self): Option<T>;
+    fun first(mut self): T = match self.next() {
+        Some(x) => x,
+        None => panic("empty"),
+    };
+}
+
+struct Count { n: i64 }
+
+impl Count {
+    fun next(mut self): Option<i64> {
+        self.n += 1;
+        Some(self.n)
+    }
+}
+
+interface Named {
+    fun name(self): string;
+    fun greet(self): string = "hello {self.name()}";
+    fun shout(self): string = "{self.greet()}!";
+}
+
+struct Dog { called: string }
+
+impl Dog {
+    fun name(self): string = self.called;
+    fun intro(self): string = self.shout();
+}
+
+fun main() {
+    let empty: Stack<i64> = Stack.new();
+    let s = empty.with(1).with(2);
+    println(s.size());
+    println(s.pair().len);
+    println(Shape.Circle(1.5).grow(2.0).side());
+    let all = Shape.all();
+    println(all[0].side() + all[1].side());
+    let mut c = Count { n: 9 };
+    println(c.first());
+    let d = Dog { called: "rex" };
+    println(d.greet());
+    println(d.intro());
+}

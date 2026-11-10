@@ -1,0 +1,4 @@
+// Paths are relative to the file that names them.
+public const SIZE: i64 = include_bytes("logo.txt").len;
+
+public fun svg(): string = include_str("../art/logo.txt");

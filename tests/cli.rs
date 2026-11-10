@@ -1,0 +1,422 @@
+//! The `lughac` binary end to end: commands, emit modes,
+//! diagnostics formats and exit codes.
+
+use std::os::unix::process::ExitStatusExt;
+use std::path::Path;
+use std::process::Command;
+
+#[path = "common/cli.rs"]
+mod cli;
+
+use cli::{ARITH, TempDir, lughac, text};
+
+#[test]
+fn build_writes_the_file_stem_or_dash_o() {
+    let dir = TempDir::with(&[("arith.la", ARITH.as_bytes())]);
+    let out = lughac(&dir.0, &["build", "arith.la"]);
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+    let status = Command::new(dir.0.join("arith"))
+        .status()
+        .expect("binary runs");
+    assert_eq!(status.code(), Some(14));
+    assert_eq!(
+        lughac(&dir.0, &["build", "arith.la", "-o", "out"])
+            .status
+            .code(),
+        Some(0)
+    );
+    assert_eq!(dir.entries(), ["arith", "arith.la", "out"]);
+}
+
+#[test]
+fn run_passes_the_exit_code_through() {
+    let dir = TempDir::with(&[
+        ("arith.la", ARITH.as_bytes()),
+        ("abort.la", b"extern fun abort();\nfun main() { abort(); }"),
+    ]);
+    assert_eq!(lughac(&dir.0, &["run", "arith.la"]).status.code(), Some(14));
+    assert_eq!(
+        lughac(&dir.0, &["run", "-O2", "arith.la"]).status.code(),
+        Some(14)
+    );
+    // 128 + SIGABRT, as a shell would report it.
+    assert_eq!(
+        lughac(&dir.0, &["run", "abort.la"]).status.code(),
+        Some(134)
+    );
+    assert_eq!(
+        dir.entries(),
+        ["abort.la", "arith.la"],
+        "run leaves no files behind"
+    );
+}
+
+#[test]
+fn check_reports_errors_with_exit_1() {
+    let dir = TempDir::with(&[("ok.la", ARITH.as_bytes()), ("bad.la", b"fun main() { ` }")]);
+    let ok = lughac(&dir.0, &["check", "ok.la"]);
+    assert_eq!(
+        (ok.status.code(), ok.stdout.len(), ok.stderr.len()),
+        (Some(0), 0, 0)
+    );
+    let bad = lughac(&dir.0, &["check", "bad.la"]);
+    assert_eq!(bad.status.code(), Some(1));
+    assert!(
+        text(&bad.stderr).starts_with("error[E0101]: unexpected character '`'\n"),
+        "{}",
+        text(&bad.stderr)
+    );
+}
+
+#[test]
+fn emit_prints_a_stage_and_writes_nothing() {
+    let dir = TempDir::with(&[("arith.la", ARITH.as_bytes())]);
+    let tokens = text(&lughac(&dir.0, &["build", "--emit=tokens", "arith.la"]).stdout);
+    assert!(
+        tokens.starts_with("1:1 Fun\n1:5 Ident(\"main\")\n1:9 LParen\n"),
+        "{tokens}"
+    );
+    assert!(!tokens.contains("Eof"), "{tokens}");
+    let ast = text(&lughac(&dir.0, &["build", "--emit=ast", "arith.la"]).stdout);
+    assert_eq!(ast, "(fun main () i32 (block (+ 2 (* 3 4))))\n");
+    let ir = text(&lughac(&dir.0, &["build", "--emit=ir", "arith.la"]).stdout);
+    assert!(ir.contains("define i32 @main(i32 %0, ptr %1)"), "{ir}");
+    assert_eq!(dir.entries(), ["arith.la"]);
+}
+
+#[test]
+fn json_diagnostics_are_one_line_each_and_nothing_else() {
+    let dir = TempDir::with(&[("bad.la", b"fun main() { ` # }")]);
+    let out = lughac(&dir.0, &["check", "--diagnostics=json", "bad.la"]);
+    assert_eq!(out.status.code(), Some(1));
+    let stderr = text(&out.stderr);
+    let lines: Vec<_> = stderr.lines().collect();
+    assert_eq!(lines.len(), 2, "{stderr}");
+    for line in lines {
+        assert!(
+            line.starts_with(r#"{"severity":"error","code":"E0101","#),
+            "{line}"
+        );
+        assert!(line.ends_with('}'), "{line}");
+    }
+}
+
+#[test]
+fn unreadable_files_and_bad_usage_exit_2() {
+    let dir = TempDir::with(&[]);
+    let missing = lughac(&dir.0, &["check", "nope.la"]);
+    assert_eq!(missing.status.code(), Some(2));
+    assert!(
+        text(&missing.stderr).contains("cannot read `nope.la`"),
+        "{}",
+        text(&missing.stderr)
+    );
+    assert_eq!(lughac(&dir.0, &[]).status.code(), Some(2));
+    assert_eq!(
+        lughac(&dir.0, &["build", "--frobnicate", "x.la"])
+            .status
+            .code(),
+        Some(2)
+    );
+    assert_eq!(lughac(&dir.0, &["--help"]).status.code(), Some(0));
+}
+
+#[test]
+fn invalid_utf8_is_e0110() {
+    let dir = TempDir::with(&[("latin1.la", b"fun main() { \xe9 }")]);
+    let out = lughac(&dir.0, &["check", "latin1.la"]);
+    assert_eq!(out.status.code(), Some(1));
+    assert!(
+        text(&out.stderr).starts_with("error[E0110]: source is not valid UTF-8\n"),
+        "{}",
+        text(&out.stderr)
+    );
+}
+
+#[test]
+fn internal_errors_have_no_code_or_span() {
+    // An unreadable file is the one internal error a user can trigger
+    // without a broken toolchain.
+    let dir = TempDir::with(&[("ok.la", b"fun main() {}")]);
+    let json = lughac(&dir.0, &["build", "--diagnostics=json", "nope.la"]);
+    assert_eq!(json.status.code(), Some(2));
+    let line = text(&json.stderr);
+    assert!(
+        line.starts_with(r#"{"severity":"error","code":null,"#),
+        "{line}"
+    );
+    assert!(line.contains(r#""span":null"#), "{line}");
+    assert_eq!(dir.entries(), ["ok.la"]);
+}
+
+#[test]
+fn signals_are_not_exit_codes() {
+    // Sanity check of the mapping used above: the program itself dies by SIGABRT (6).
+    let dir = TempDir::with(&[("abort.la", b"extern fun abort();\nfun main() { abort(); }")]);
+    assert_eq!(
+        lughac(&dir.0, &["build", "abort.la"]).status.code(),
+        Some(0)
+    );
+    let status = Command::new(dir.0.join("abort"))
+        .status()
+        .expect("binary runs");
+    assert_eq!(status.signal(), Some(6));
+}
+
+#[test]
+fn e0401_json_matches_the_spec_example() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let out = lughac(
+        root,
+        &[
+            "check",
+            "--diagnostics=json",
+            "tests/programs/basics/checker/e0401.la",
+        ],
+    );
+    assert_eq!(out.status.code(), Some(1));
+    let expected = concat!(
+        r#"{"severity":"error","code":"E0401","message":"float literal where i32 expected","file":"tests/programs/basics/checker/e0401.la","#,
+        r#""span":{"start":{"line":3,"col":17,"offset":49},"end":{"line":3,"col":20,"offset":52}},"#,
+        r#""label":"expected i32","#,
+        r#""labels":[{"span":{"start":{"line":3,"col":13,"offset":45},"end":{"line":3,"col":14,"offset":46}},"message":"this operand is i32"}],"#,
+        r#""help":null}"#,
+        "\n"
+    );
+    assert_eq!(text(&out.stderr), expected);
+}
+
+#[test]
+fn every_valid_acceptance_program_type_checks() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let mut checked = 0;
+    for dir in [
+        "tests/programs/basics/expressions",
+        "tests/programs/basics/control_flow",
+    ] {
+        for entry in std::fs::read_dir(root.join(dir)).expect("program dir exists") {
+            let path = entry.expect("entry").path();
+            // Reject-mode cases (with a .stderr and no .exit) are meant to fail.
+            if path.extension().is_some_and(|e| e == "la") && path.with_extension("exit").exists() {
+                let rel = path.strip_prefix(root).expect("under the repo");
+                let out = lughac(root, &["check", rel.to_str().expect("UTF-8 path")]);
+                assert_eq!(
+                    out.status.code(),
+                    Some(0),
+                    "{}: {}",
+                    rel.display(),
+                    text(&out.stderr)
+                );
+                checked += 1;
+            }
+        }
+    }
+    assert!(checked >= 15, "only {checked} programs checked");
+}
+
+#[test]
+fn spec_prints_the_bundled_specification() {
+    let dir = TempDir::with(&[]);
+    let out = lughac(&dir.0, &["spec"]);
+    assert_eq!(out.status.code(), Some(0));
+    assert_eq!(text(&out.stdout), lugha::SPEC);
+    assert!(lugha::SPEC.starts_with("# Lugha v17 Specification"));
+    assert!(out.stderr.is_empty(), "{}", text(&out.stderr));
+    assert_eq!(lughac(&dir.0, &["spec", "extra"]).status.code(), Some(2));
+}
+
+#[test]
+fn structs_and_methods_compile_and_run() {
+    let src = b"struct P { x: i64 }\nimpl P { fun get(self): i64 = self.x; }\nfun main(): i32 { let p = P { x: 7 }; p.get() as i32 }\n";
+    let dir = TempDir::with(&[("p.la", src)]);
+    let out = lughac(&dir.0, &["run", "p.la"]);
+    assert_eq!(out.status.code(), Some(7), "{}", text(&out.stderr));
+    let ast = lughac(&dir.0, &["build", "--emit=ast", "p.la"]);
+    assert!(text(&ast.stdout).contains("(impl P (fun get (self) i64 (block (. self x))))"));
+}
+
+#[test]
+fn generics_run() {
+    // Each instance compiles under its own symbol.
+    let src = b"fun id<T>(x: T): T = x;\nfun main() { println(id(41) + 1); }\n";
+    let dir = TempDir::with(&[("g.la", src)]);
+    let ast = lughac(&dir.0, &["build", "--emit=ast", "g.la"]);
+    assert_eq!(ast.status.code(), Some(0), "{}", text(&ast.stderr));
+    assert!(text(&ast.stdout).contains("(fun id (type-params T) ((x T)) T (block x))"));
+    let run = lughac(&dir.0, &["run", "g.la"]);
+    assert_eq!(run.status.code(), Some(0), "{}", text(&run.stderr));
+    assert_eq!(text(&run.stdout), "42\n");
+    let ir = text(&lughac(&dir.0, &["build", "--emit=ir", "g.la"]).stdout);
+    assert!(ir.contains("define i64 @\"lugha_fn_id<i64>\"(i64"), "{ir}");
+}
+
+#[test]
+fn number_instances_of_operator_bounds_keep_the_built_in_operator() {
+    // `add<i64>` through `T: Add` is a checked `add` with no call.
+    let src = "fun add<T: Add>(a: T, b: T): T = a + b;\nfun main() { let n = add(1, 2); }\n";
+    let dir = TempDir::with(&[("add.la", src.as_bytes())]);
+    let out = lughac(&dir.0, &["build", "--emit=ir", "add.la"]);
+    let ir = text(&out.stdout);
+    let body = &ir[ir
+        .find("define i64 @\"lugha_fn_add<i64>\"")
+        .expect("an i64 instance")..];
+    let body = &body[..body.find("\n}").expect("the body ends")];
+    assert!(body.contains("llvm.sadd.with.overflow.i64"), "{ir}");
+    assert!(!body.contains("call i64 @lugha_fn_"), "{ir}");
+}
+
+#[test]
+fn std_math_lowers_to_llvm_float_intrinsics() {
+    // Each instance of `math.sqrt` is LLVM's `sqrt` at its width.
+    let src = "import std.math;\nfun main() { let a = math.sqrt(2.0); let x: f32 = 2.0; let b = math.sqrt(x); }\n";
+    let dir = TempDir::with(&[("m.la", src.as_bytes())]);
+    let out = lughac(&dir.0, &["build", "--emit=ir", "m.la"]);
+    let ir = text(&out.stdout);
+    assert!(
+        ir.contains("@llvm.sqrt.f64") && ir.contains("@llvm.sqrt.f32"),
+        "{ir}"
+    );
+    assert!(ir.contains("lugha_fn_std/math/sqrt<f64>"), "{ir}");
+    assert!(!ir.contains("declare double @sqrt"), "{ir}");
+}
+
+#[test]
+fn std_random_seeds_from_the_runtime_only_through_from_os() {
+    // `from_os()` calls `lugha_rt_os_seed`; a program using `seeded`
+    // never reaches it (std's `from_os` is compiled, but `main` doesn't call it).
+    let os =
+        "import std.random;\nfun main() { let mut r = random.from_os(); let x = r.uniform(); }\n";
+    let fixed =
+        "import std.random;\nfun main() { let mut r = random.seeded(3); let x = r.uniform(); }\n";
+    let dir = TempDir::with(&[("os.la", os.as_bytes()), ("fixed.la", fixed.as_bytes())]);
+    let ir = |file: &str| text(&lughac(&dir.0, &["build", "--emit=ir", file]).stdout);
+    assert!(
+        ir("os.la").contains("call i64 @lugha_rt_os_seed()"),
+        "{}",
+        ir("os.la")
+    );
+    let fixed_ir = ir("fixed.la");
+    let main = &fixed_ir[fixed_ir.find("define void @lugha_fn_main").expect("main")..];
+    let main = &main[..main.find("\n}").expect("main ends")];
+    assert!(
+        !main.contains("from_os") && !main.contains("lugha_rt_os_seed"),
+        "{main}"
+    );
+}
+
+#[test]
+fn check_takes_a_file_without_main_as_a_library() {
+    let dir = TempDir::with(&[
+        ("lib.la", b"public fun double(n: i64): i64 = n * 2;\n"),
+        ("bad.la", b"public fun double(n: i64): i64 = n * \"2\";\n"),
+    ]);
+    let checked = lughac(&dir.0, &["check", "lib.la"]);
+    assert_eq!(checked.status.code(), Some(0), "{}", text(&checked.stderr));
+    // Errors are still found.
+    assert_eq!(lughac(&dir.0, &["check", "bad.la"]).status.code(), Some(1));
+    // Only `build` and `run` need `main`.
+    let built = lughac(&dir.0, &["build", "lib.la"]);
+    assert_eq!(built.status.code(), Some(1));
+    assert!(
+        text(&built.stderr).contains("E0303"),
+        "{}",
+        text(&built.stderr)
+    );
+}
+
+/// Only `build` and `run` report E0303, not `check`, so this case can't be a
+/// program case: their runner checks with `lughac check`.
+#[test]
+fn build_without_main_is_e0303() {
+    let dir = TempDir::with(&[("e0303.la", b"fun helper() {}\n")]);
+    let built = lughac(&dir.0, &["build", "e0303.la"]);
+    assert_eq!(built.status.code(), Some(1));
+    assert_eq!(
+        text(&built.stderr),
+        "error[E0303]: no `main` function\n  --> e0303.la:1:1\n  |\n1 | fun helper() {}\n  \
+         | ^\n  |\n  = help: add `fun main() { }`\n\nFor more about E0303, run `lughac explain E0303`.\n"
+    );
+}
+
+/// Outside a package, a library file in an import cycle checks as a module
+/// (session 239): `vdom` importing it back is no E0319.
+#[test]
+fn check_takes_a_loose_library_file_in_a_cycle_as_a_module() {
+    let dir = TempDir::with(&[
+        ("diff.la", b"import vdom;\npublic fun patch(n: i64): i64 = vdom.size(n) + 1;\n"),
+        (
+            "vdom.la",
+            b"import diff;\npublic fun size(n: i64): i64 = n * 2;\npublic fun both(n: i64): i64 = diff.patch(n);\n",
+        ),
+        ("main.la", b"import vdom;\nfun main() { println(vdom.both(1)); }\n"),
+    ]);
+    let checked = lughac(&dir.0, &["check", "diff.la"]);
+    assert_eq!(checked.status.code(), Some(0), "{}", text(&checked.stderr));
+    // A file with `main` is still the main file: importing it is E0319.
+    std::fs::write(
+        dir.0.join("vdom.la"),
+        "import main;\npublic fun both(n: i64): i64 = n;\n",
+    )
+    .unwrap();
+    let main = lughac(&dir.0, &["check", "main.la"]);
+    assert!(
+        text(&main.stderr).contains("E0319"),
+        "{}",
+        text(&main.stderr)
+    );
+}
+
+/// `lughac` with its stdout on `/dev/full`, where every write fails with "no space left".
+fn lughac_to_full_disk(dir: &Path, args: &[&str]) -> std::process::Output {
+    let full = std::fs::OpenOptions::new()
+        .write(true)
+        .open("/dev/full")
+        .expect("Linux has /dev/full");
+    Command::new(env!("CARGO_BIN_EXE_lughac"))
+        .args(args)
+        .current_dir(dir)
+        .stdout(full)
+        .output()
+        .expect("lughac runs")
+}
+
+#[test]
+fn output_that_cant_be_written_is_exit_2() {
+    let dir = TempDir::with(&[("arith.la", ARITH.as_bytes())]);
+    for args in [
+        &["build", "--emit=ir", "arith.la"][..],
+        &["build", "--emit=tokens", "arith.la"],
+        &["explain", "E0401"],
+        &["explain"],
+        &["spec"],
+    ] {
+        let out = lughac_to_full_disk(&dir.0, args);
+        assert_eq!(
+            out.status.code(),
+            Some(2),
+            "{args:?}: {}",
+            text(&out.stderr)
+        );
+        assert!(
+            text(&out.stderr).contains("error: cannot write"),
+            "{args:?}: {}",
+            text(&out.stderr)
+        );
+    }
+}
+
+#[test]
+fn a_reader_that_stops_early_is_not_a_failure() {
+    let dir = TempDir::with(&[("arith.la", ARITH.as_bytes())]);
+    let mut child = Command::new(env!("CARGO_BIN_EXE_lughac"))
+        .args(["build", "--emit=ir", "arith.la"])
+        .current_dir(&dir.0)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("lughac runs");
+    // Closing the pipe before lughac writes makes its write fail with a broken pipe.
+    drop(child.stdout.take());
+    let out = child.wait_with_output().expect("lughac finishes");
+    assert_eq!(out.status.code(), Some(0), "{}", text(&out.stderr));
+}

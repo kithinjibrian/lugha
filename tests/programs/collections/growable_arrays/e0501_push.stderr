@@ -1,0 +1,11 @@
+error[E0501]: cannot call `mut self` method `push` on `xs`: it is not mutable
+  --> tests/programs/collections/growable_arrays/e0501_push.la:3:5
+  |
+2 |     let xs = [1];
+  |         -- declared here
+3 |     xs.push(2);
+  |     ^^
+  |
+  = help: make it mutable: `let mut xs`
+
+For more about E0501, run `lughac explain E0501`.

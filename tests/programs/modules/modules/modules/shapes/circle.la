@@ -1,0 +1,9 @@
+struct Circle { r: f64 }
+
+impl Circle {
+    fun area(self): f64 = 3.0 * square(self.r);
+}
+
+enum Shape { Round(Circle), Flat }
+
+private fun square(x: f64): f64 = x * x;

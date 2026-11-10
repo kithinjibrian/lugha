@@ -1,0 +1,2 @@
+// A re-export of a re-export: the items are still mathx.vec's.
+public import shapes { Vec2, add, Dir, Sized };

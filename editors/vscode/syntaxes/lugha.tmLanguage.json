@@ -1,0 +1,238 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Lugha",
+  "scopeName": "source.lugha",
+  "fileTypes": ["la"],
+  "patterns": [{ "include": "#code" }],
+  "repository": {
+    "code": {
+      "patterns": [
+        { "include": "#block-comment" },
+        { "include": "#comment" },
+        { "include": "#format-template" },
+        { "include": "#string" },
+        { "include": "#char" },
+        { "include": "#attribute" },
+        { "include": "#number" },
+        { "include": "#declaration" },
+        { "include": "#c-marker" },
+        { "include": "#hashed" },
+        { "include": "#import" },
+        { "include": "#keyword" },
+        { "include": "#builtin" },
+        { "include": "#call" },
+        { "include": "#type" },
+        { "include": "#operator" },
+        { "include": "#punctuation" }
+      ]
+    },
+    "comment": {
+      "name": "comment.line.double-slash.lugha",
+      "begin": "//",
+      "beginCaptures": { "0": { "name": "punctuation.definition.comment.lugha" } },
+      "end": "$"
+    },
+    "block-comment": {
+      "comment": "`/* … */`, nesting (spec §2, v16 milestone 76).",
+      "name": "comment.block.lugha",
+      "begin": "/\\*",
+      "beginCaptures": { "0": { "name": "punctuation.definition.comment.begin.lugha" } },
+      "end": "\\*/",
+      "endCaptures": { "0": { "name": "punctuation.definition.comment.end.lugha" } },
+      "patterns": [{ "include": "#block-comment" }]
+    },
+    "declaration": {
+      "patterns": [
+        {
+          "comment": "`extern type Name;`: a handle (v16, milestone 88); `type` is a keyword only here.",
+          "match": "\\b(extern)\\s+(type)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.other.extern.lugha" },
+            "2": { "name": "keyword.other.type.lugha" },
+            "3": { "name": "entity.name.type.lugha" }
+          }
+        },
+        {
+          "match": "\\b(fun)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.other.fun.lugha" },
+            "2": { "name": "entity.name.function.lugha" }
+          }
+        },
+        {
+          "match": "\\b(struct|enum|interface|actor)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.other.$1.lugha" },
+            "2": { "name": "entity.name.type.lugha" }
+          }
+        }
+      ]
+    },
+    "c-marker": {
+      "comment": "`data` and `release` as an extern parameter's type (v16, milestone 88): `user: data`. Only after a `:`, so a variable named `data` stays plain.",
+      "match": "(:)\\s*(data|release)\\b(?!\\s*[.(\\[<])",
+      "captures": {
+        "1": { "name": "punctuation.separator.lugha" },
+        "2": { "name": "storage.type.c-marker.lugha" }
+      }
+    },
+    "import": {
+      "comment": "`import m.n as k { f, T as U };`: the path and its alias are namespaces; in the braces, lowercase names are functions and capitalised ones types.",
+      "begin": "\\b(import)\\b",
+      "beginCaptures": { "1": { "name": "keyword.other.import.lugha" } },
+      "end": ";",
+      "endCaptures": { "0": { "name": "punctuation.terminator.lugha" } },
+      "patterns": [
+        { "include": "#block-comment" },
+        { "include": "#comment" },
+        { "name": "keyword.operator.as.lugha", "match": "\\bas\\b" },
+        { "name": "entity.name.namespace.lugha", "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b" },
+        { "name": "punctuation.accessor.lugha", "match": "\\." },
+        {
+          "begin": "\\{",
+          "end": "\\}",
+          "beginCaptures": { "0": { "name": "punctuation.lugha" } },
+          "endCaptures": { "0": { "name": "punctuation.lugha" } },
+          "patterns": [
+            { "include": "#block-comment" },
+            { "include": "#comment" },
+            { "name": "keyword.operator.as.lugha", "match": "\\bas\\b" },
+            { "include": "#type" },
+            { "name": "entity.name.function.lugha", "match": "\\b[a-z_][A-Za-z0-9_]*\\b" },
+            { "include": "#punctuation" }
+          ]
+        }
+      ]
+    },
+    "keyword": {
+      "patterns": [
+        { "comment": "A loop's label (v17, milestone 152): `outer:` before `loop`, `while` or `for`, and the name after `continue`.", "name": "entity.name.label.lugha", "match": "\\b[A-Za-z_][A-Za-z0-9_]*(?=\\s*:\\s*(?:loop|while|for)\\b)|(?<=\\bcontinue\\s)[A-Za-z_][A-Za-z0-9_]*" },
+        { "name": "keyword.control.lugha", "match": "\\b(if|else|while|for|in|of|match|return|break|continue|spawn|select|defer|loop)\\b" },
+        { "comment": "`after(ms) =>` and `default =>` open a `select` arm (v17); elsewhere they are names.", "name": "keyword.control.lugha", "match": "\\b(?:after(?=\\s*\\([^()]*\\)\\s*=>)|default(?=\\s*=>))" },
+        { "name": "keyword.other.$1.lugha", "match": "\\b(fun|extern|struct|enum|impl|interface|let|import|actor|const)\\b" },
+        { "name": "storage.modifier.lugha", "match": "\\b(mut|private|public)\\b" },
+        {
+          "comment": "`out` before a name: an extern's `out` parameter or argument (v17).",
+          "name": "storage.modifier.out.lugha",
+          "match": "\\b(?:out|ptr)(?=\\s+[A-Za-z_0-9\\[\"'#])|(?<=\\bextern\\s)union\\b"
+        },
+        { "name": "keyword.operator.as.lugha", "match": "\\bas\\b" },
+        { "name": "constant.language.boolean.lugha", "match": "\\b(true|false)\\b" },
+        { "name": "variable.language.self.lugha", "match": "\\bself\\b" },
+        { "name": "storage.type.primitive.lugha", "match": "\\b(i8|i16|i32|i64|u8|u16|u32|u64|f32|f64|bool|string|char)\\b" }
+      ]
+    },
+    "builtin": {
+      "patterns": [
+        { "name": "support.constant.lugha", "match": "\\b(Some|None|Ok|Err)\\b" },
+        { "name": "support.type.lugha", "match": "\\b(Self|Option|Result|Ref|Task|Chan)\\b" }
+      ]
+    },
+    "call": {
+      "match": "\\b([a-z_][A-Za-z0-9_]*)\\s*(?=\\()",
+      "captures": { "1": { "name": "entity.name.function.call.lugha" } }
+    },
+    "type": {
+      "name": "entity.name.type.lugha",
+      "match": "\\b[A-Z][A-Za-z0-9_]*\\b"
+    },
+    "number": {
+      "patterns": [
+        { "name": "constant.numeric.hex.lugha", "match": "\\b0x[0-9a-fA-F](?:_?[0-9a-fA-F])*\\b" },
+        { "name": "constant.numeric.binary.lugha", "match": "\\b0b[01](?:_?[01])*\\b" },
+        { "name": "constant.numeric.octal.lugha", "match": "\\b0o[0-7](?:_?[0-7])*\\b" },
+        { "name": "constant.numeric.float.lugha", "match": "\\b[0-9]+\\.[0-9]+(?:[eE][+-]?[0-9]+)?\\b" },
+        { "name": "constant.numeric.decimal.lugha", "match": "\\b[0-9](?:_?[0-9])*\\b" }
+      ]
+    },
+    "operator": {
+      "patterns": [
+        { "name": "keyword.operator.range.lugha", "match": "\\.\\." },
+        { "name": "keyword.operator.lugha", "match": "=>|==|!=|<=|>=|&&|\\|\\||<<=?|[-+*/%&|^]=?|[<>!~=?]" }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        { "name": "punctuation.separator.lugha", "match": "[,;:]" },
+        { "name": "punctuation.accessor.lugha", "match": "\\." }
+      ]
+    },
+    "escape": {
+      "name": "constant.character.escape.lugha",
+      "match": "\\\\[ntr0\\\\\"']"
+    },
+    "string": {
+      "name": "string.quoted.double.lugha",
+      "begin": "\"",
+      "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.lugha" } },
+      "end": "\"|$",
+      "endCaptures": { "0": { "name": "punctuation.definition.string.end.lugha" } },
+      "patterns": [
+        { "include": "#escape" },
+        { "name": "constant.character.escape.lugha", "match": "\\{\\{|\\}\\}" },
+        { "include": "#interpolation" }
+      ]
+    },
+    "interpolation": {
+      "name": "meta.interpolation.lugha",
+      "begin": "\\{",
+      "beginCaptures": { "0": { "name": "punctuation.section.interpolation.begin.lugha" } },
+      "end": "\\}",
+      "endCaptures": { "0": { "name": "punctuation.section.interpolation.end.lugha" } },
+      "patterns": [
+        { "name": "constant.other.format-spec.lugha", "match": ":[^{}\"]*(?=\\})" },
+        { "include": "#braces" },
+        { "include": "#code" }
+      ]
+    },
+    "hashed": {
+      "comment": "`#{k: v}` and `#{x}`: map and set literals (v17).",
+      "begin": "#\\{",
+      "end": "\\}",
+      "beginCaptures": { "0": { "name": "punctuation.definition.map.begin.lugha" } },
+      "endCaptures": { "0": { "name": "punctuation.definition.map.end.lugha" } },
+      "patterns": [{ "include": "#braces" }, { "include": "#code" }]
+    },
+    "braces": {
+      "begin": "\\{",
+      "end": "\\}",
+      "patterns": [{ "include": "#braces" }, { "include": "#code" }]
+    },
+    "format-template": {
+      "comment": "A string literal right after `format(` is a template (spec §2): its braces are holes, never interpolations.",
+      "begin": "(?<!\\.)\\b(format)\\s*(\\()\\s*(\")",
+      "beginCaptures": {
+        "1": { "name": "support.function.format.lugha" },
+        "2": { "name": "punctuation.parenthesis.lugha" },
+        "3": { "name": "string.quoted.double.template.lugha punctuation.definition.string.begin.lugha" }
+      },
+      "end": "\"|$",
+      "endCaptures": { "0": { "name": "string.quoted.double.template.lugha punctuation.definition.string.end.lugha" } },
+      "contentName": "string.quoted.double.template.lugha",
+      "patterns": [
+        { "include": "#escape" },
+        { "name": "constant.character.escape.lugha", "match": "\\{\\{|\\}\\}" },
+        { "name": "constant.other.placeholder.lugha", "match": "\\{(?::[^{}\"]*)?\\}" }
+      ]
+    },
+    "attribute": {
+      "comment": "`@test` before a function (v16, milestone 84).",
+      "match": "(@)([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": { "name": "punctuation.definition.decorator.lugha" },
+        "2": { "name": "entity.name.function.decorator.lugha" }
+      }
+    },
+    "char": {
+      "name": "string.quoted.single.lugha",
+      "begin": "'",
+      "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.lugha" } },
+      "end": "'|$",
+      "endCaptures": { "0": { "name": "punctuation.definition.string.end.lugha" } },
+      "patterns": [
+        { "name": "constant.character.escape.lugha", "match": "\\\\u\\{[0-9a-fA-F]{1,6}\\}" },
+        { "include": "#escape" }
+      ]
+    }
+  }
+}

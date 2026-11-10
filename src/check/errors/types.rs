@@ -1,0 +1,307 @@
+//! E04xx: types.
+
+use super::with_reason;
+use crate::check::Type;
+use crate::diagnostic::{Diagnostic, Label};
+use crate::span::Span;
+
+pub(in crate::check) fn wrong_literal(
+    is_float: bool,
+    expected: Type,
+    span: Span,
+    reason: Option<&Label>,
+) -> Diagnostic {
+    let kind = if is_float { "float" } else { "integer" };
+    let d = Diagnostic::error(
+        "E0401",
+        format!("{kind} literal where {expected} expected"),
+        span,
+    )
+    .with_primary_label(format!("expected {expected}"));
+    with_reason(d, reason)
+}
+
+pub(in crate::check) fn out_of_range(ty: Type, span: Span) -> Diagnostic {
+    let (max, neg) = ty.literal_range();
+    let min = if neg == 0 {
+        "0".to_string()
+    } else {
+        format!("-{neg}")
+    };
+    Diagnostic::error(
+        "E0402",
+        format!("integer literal out of range for {ty}"),
+        span,
+    )
+    .with_help(format!("{ty} holds {min} to {max}"))
+}
+
+/// E0402 at a literal typed as a type parameter, out of range at one instance.
+pub(in crate::check) fn out_of_range_in(ty: Type, span: Span, instance: &str) -> Diagnostic {
+    let (max, neg) = ty.literal_range();
+    let min = if neg == 0 {
+        "0".to_string()
+    } else {
+        format!("-{neg}")
+    };
+    Diagnostic::error(
+        "E0402",
+        format!("integer literal out of range for {ty} in the instance {instance}"),
+        span,
+    )
+    .with_help(format!(
+        "{ty} holds {min} to {max}; this literal is {ty} in {instance}"
+    ))
+}
+
+pub(in crate::check) fn mismatch(
+    expected: Type,
+    found: Type,
+    span: Span,
+    reason: Option<&Label>,
+) -> Diagnostic {
+    let d = Diagnostic::error("E0403", format!("expected {expected}, found {found}"), span)
+        .with_primary_label(format!("expected {expected}"));
+    with_reason(d, reason)
+}
+
+pub(in crate::check) fn branch_mismatch(
+    span: Span,
+    then: (Span, Type),
+    else_: (Span, Type),
+) -> Diagnostic {
+    Diagnostic::error("E0403", "`if` and `else` have different types", span)
+        .with_label(then.0, format!("this is {}", then.1))
+        .with_label(else_.0, format!("this is {}", else_.1))
+}
+
+pub(in crate::check) fn bad_operands(op: &str, types: &[Type], span: Span) -> Diagnostic {
+    let list = types
+        .iter()
+        .map(Type::to_string)
+        .collect::<Vec<_>>()
+        .join(" and ");
+    Diagnostic::error("E0404", format!("cannot apply `{op}` to {list}"), span)
+}
+
+pub(in crate::check) fn arity(name: &str, expected: usize, given: usize, span: Span) -> Diagnostic {
+    let s = if expected == 1 { "" } else { "s" };
+    let were = if given == 1 { "was" } else { "were" };
+    let message = format!("`{name}` takes {expected} argument{s} but {given} {were} given");
+    Diagnostic::error("E0405", message, span)
+}
+
+pub(in crate::check) fn not_function(name: &str, span: Span) -> Diagnostic {
+    Diagnostic::error("E0406", format!("`{name}` is not a function"), span)
+}
+
+pub(in crate::check) fn intrinsic_argument(name: &str, found: Type, span: Span) -> Diagnostic {
+    let expected = match name {
+        "print" | "println" | "eprint" | "eprintln" => "a number, bool or string",
+        "to_string" => "a number or bool",
+        _ => "a string",
+    };
+    Diagnostic::error(
+        "E0403",
+        format!("`{name}` expects {expected}, found {found}"),
+        span,
+    )
+}
+
+pub(in crate::check) fn swap_types(first: Type, second: Type, span: Span, at: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0403",
+        format!("`swap` expects two places of the same type, found {first} and {second}"),
+        span,
+    )
+    .with_label(at, format!("this is {first}"))
+}
+
+pub(in crate::check) fn no_field(name: &str, ty: Type, span: Span) -> Diagnostic {
+    Diagnostic::error("E0410", format!("no field `{name}` on `{ty}`"), span)
+}
+
+pub(in crate::check) fn not_indexable(ty: Type, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0411",
+        format!("cannot index into a value of type `{ty}`"),
+        span,
+    )
+}
+
+pub(in crate::check) fn empty_array(span: Span) -> Diagnostic {
+    Diagnostic::error("E0412", "cannot infer the element type of `[]`", span)
+        .with_help("annotate it: `let xs: i64[] = [];`")
+}
+
+pub(in crate::check) fn not_iterable(ty: &Type, span: Span) -> Diagnostic {
+    Diagnostic::error("E0411", format!("cannot iterate over `{ty}`"), span).with_help(
+        "`for … of` walks arrays and anything with `fun next(mut self): Option<T>`; for a string's bytes, use `for i in 0..s.len` with `s[i]`",
+    )
+}
+
+pub(in crate::check) fn extern_array(span: Span) -> Diagnostic {
+    Diagnostic::error("E0409", "arrays can't cross the C boundary", span)
+        .with_help("pass a number or a string instead")
+}
+
+pub(in crate::check) fn not_callable(span: Span) -> Diagnostic {
+    Diagnostic::error("E0406", "this expression is not a function", span)
+}
+
+pub(in crate::check) fn not_value(name: &str, span: Span, help: &str) -> Diagnostic {
+    Diagnostic::error("E0406", format!("`{name}` can't be used as a value"), span).with_help(help)
+}
+
+pub(in crate::check) fn bad_cast(from: Type, to: Type, span: Span) -> Diagnostic {
+    let d = Diagnostic::error("E0408", format!("cannot cast `{from}` to `{to}`"), span);
+    match (from, to) {
+        (Type::Bool, _) => d.with_help("write `if b { 1 } else { 0 }`"),
+        (_, Type::Bool) => d.with_help("compare instead, e.g. `x != 0`"),
+        _ => d,
+    }
+}
+
+pub(in crate::check) fn extern_struct(span: Span) -> Diagnostic {
+    Diagnostic::error("E0409", "this struct can't cross the C boundary", span).with_help(
+        "declare it `extern struct` to give it C's layout (numbers, `bool`, handles and other extern structs), or pass the fields one by one",
+    )
+}
+
+pub(in crate::check) fn missing_fields(missing: &[&str], name: &str, span: Span) -> Diagnostic {
+    let s = if missing.len() == 1 { "" } else { "s" };
+    let list = missing
+        .iter()
+        .map(|f| format!("`{f}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    Diagnostic::error(
+        "E0413",
+        format!("missing field{s} {list} in `{name}`"),
+        span,
+    )
+}
+
+pub(in crate::check) fn field_given_twice(field: &str, span: Span, first: Span) -> Diagnostic {
+    Diagnostic::error("E0414", format!("field `{field}` is given twice"), span)
+        .with_label(first, "first given here")
+}
+
+pub(in crate::check) fn no_variant(variant: &str, ty: &Type, span: Span) -> Diagnostic {
+    Diagnostic::error("E0415", format!("no variant `{variant}` on `{ty}`"), span)
+}
+
+pub(in crate::check) fn payload_count(
+    what: &str,
+    expected: usize,
+    given: usize,
+    span: Span,
+) -> Diagnostic {
+    let s = if expected == 1 { "" } else { "s" };
+    Diagnostic::error(
+        "E0416",
+        format!(
+            "`{what}` has {expected} payload{s}, but {given} {} given",
+            if given == 1 { "was" } else { "were" }
+        ),
+        span,
+    )
+}
+
+pub(in crate::check) fn cannot_infer_none(span: Span) -> Diagnostic {
+    Diagnostic::error("E0412", "cannot infer the type of `None`", span)
+        .with_help("annotate it: `let x: Option<i64> = None;`")
+}
+
+/// E0417 listing at most three missing cases, then "and N more".
+pub(in crate::check) fn non_exhaustive(missing: &[String], span: Span) -> Diagnostic {
+    let mut list = missing
+        .iter()
+        .take(3)
+        .map(|m| format!("`{m}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    if missing.len() > 3 {
+        list += &format!(" and {} more", missing.len() - 3);
+    }
+    Diagnostic::error(
+        "E0417",
+        format!("non-exhaustive match: {list} not covered"),
+        span,
+    )
+    .with_help("add the missing arms, or `_ => …`")
+}
+
+pub(in crate::check) fn non_exhaustive_values(ty: &Type, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0417",
+        format!("non-exhaustive match: other values of `{ty}` are not covered"),
+        span,
+    )
+    .with_help("add `_ => …` as the last arm")
+}
+
+pub(in crate::check) fn pattern_mismatch(ty: &Type, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0403",
+        format!("this pattern can't match a value of type `{ty}`"),
+        span,
+    )
+}
+
+pub(in crate::check) fn extern_enum(span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0409",
+        "enums and `Option` can't cross the C boundary",
+        span,
+    )
+    .with_help("pass a number or a string instead")
+}
+
+pub(in crate::check) fn no_method(
+    name: &str,
+    ty: &Type,
+    span: Span,
+    help: Option<String>,
+) -> Diagnostic {
+    let d = Diagnostic::error("E0415", format!("no method `{name}` on `{ty}`"), span);
+    match help {
+        Some(help) => d.with_help(help),
+        None => d,
+    }
+}
+
+/// E0403: a value in `"{…}"` that can't be printed.
+pub(in crate::check) fn not_interpolable(ty: &Type, span: Span) -> Diagnostic {
+    Diagnostic::error("E0403", format!("can't interpolate a `{ty}`"), span)
+        .with_help("only numbers, `bool` and strings interpolate; convert it first")
+}
+
+/// E0409: a function type in an extern signature: C can't call Lugha functions.
+pub(in crate::check) fn extern_fun(span: Span) -> Diagnostic {
+    Diagnostic::error("E0409", "a function can't come back from C", span).with_help(
+        "an extern may take a callback, `cb: fun(i64)`, but can't return one or take one inside another",
+    )
+}
+
+/// E0412: a closure parameter whose type nothing gives.
+pub(in crate::check) fn cannot_infer_param(name: &str, span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0412",
+        format!("can't infer the type of parameter `{name}`"),
+        span,
+    )
+    .with_help(format!(
+        "write it: `{name}: i64`, or pass the closure where a function type is expected"
+    ))
+}
+
+/// E0412: `return` in a closure whose return type isn't known yet.
+pub(in crate::check) fn cannot_infer_return(span: Span) -> Diagnostic {
+    Diagnostic::error(
+        "E0412",
+        "can't infer the return type of a closure that uses `return`",
+        span,
+    )
+    .with_help("write the return type: `fun(x: i64): i64 { … }`")
+}

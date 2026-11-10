@@ -1,0 +1,5 @@
+enum Shape { Rect(f64, f64), Empty }
+
+fun main() {
+    let s = Shape.Rect(1.0);
+}

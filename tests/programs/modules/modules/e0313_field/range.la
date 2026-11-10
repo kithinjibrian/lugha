@@ -1,0 +1,5 @@
+struct Range { private lo: i64, private hi: i64 }
+
+impl Range {
+    fun new(a: i64, b: i64): Range = Range { lo: a, hi: b };
+}

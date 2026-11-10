@@ -1,0 +1,9 @@
+interface Named {
+    fun name(self): string;
+}
+
+struct Cat { called: string }
+
+impl Cat {
+    fun name(self): string = self.called;
+}

@@ -1,0 +1,3 @@
+import parity;
+
+fun odd(n: i64): bool = if n == 0 { false } else { parity.even(n - 1) };

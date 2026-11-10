@@ -1,0 +1,16 @@
+// Sleepers wake in deadline order; the others run meanwhile.
+import std.task;
+
+fun nap(ms: i64) {
+    task.sleep(ms);
+    println("woke after {ms}");
+}
+
+fun main() {
+    let a = spawn nap(30);
+    let b = spawn nap(10);
+    let c = spawn nap(20);
+    a.join();
+    b.join();
+    c.join();
+}

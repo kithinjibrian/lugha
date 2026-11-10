@@ -1,0 +1,9 @@
+error[E0422]: `Count` doesn't satisfy `Source<string>`
+   --> tests/programs/generics/generic_interfaces/e0422.la:16:13
+   |
+16 |     println(words(Count { n: 1 }));
+   |             ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: `next` should be `fun next(mut self): Option<string>`
+
+For more about E0422, run `lughac explain E0422`.

@@ -1,0 +1,7 @@
+fun main() {
+    let t = "x";
+    let a = format(t, 1);
+    let b = format("{} and {}", 1);
+    let c = format("{x}", 1);
+    let d = format("{:q}", 1);
+}

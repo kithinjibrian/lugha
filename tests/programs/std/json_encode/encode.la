@@ -1,0 +1,49 @@
+import std.json;
+
+struct Person { name: string, age: i64, email: Option<string>, tags: string[] }
+enum Shape { Dot, Circle(f64), Rect(f64, f64) }
+enum Tree { Leaf(i64), Node(Tree[]) }
+struct Pair<T> { a: T, b: T }
+struct Doc { meta: json.Value, n: u8 }
+
+fun show<T: json.Json>(x: T) {
+    println(json.stringify(json.encode(x)).unwrap());
+}
+
+fun main() {
+    show(Person { name: "ada", age: 36, email: None, tags: ["math"] });
+    show(Person { name: "bob", age: 7, email: Some("b@x"), tags: [] });
+    show([Shape.Dot, Shape.Circle(1.5), Shape.Rect(2.0, 3.0)]);
+    show(Tree.Node([Tree.Leaf(1), Tree.Node([])]));
+    show(Pair { a: 1, b: 2 });
+    show(Pair { a: "x", b: "y" });
+    let n8: i8 = -8;
+    let u16v: u16 = 65535;
+    let i32v: i32 = -2147483648;
+    let u32v: u32 = 4294967295;
+    show((n8, u16v, i32v, u32v));
+    let big: u64 = 18446744073709551615;
+    let small: u64 = 5;
+    show([small, big]);
+    let f: f32 = 1.5;
+    show((f, 0.1, true, 'é'));
+    show(());
+    let m: Map<string, i64> = #{"b": 2, "a": 1};
+    show(m);
+    let mi: Map<i64, bool> = #{3: true, -1: false};
+    show(mi);
+    let s: Set<string> = #{"x", "y"};
+    show(s);
+    let o: Option<Option<i64>> = Some(None);
+    show(o);
+    show(Some(Some(4)));
+    let r: Result<i64, string> = Err("no");
+    show(r);
+    show(Doc { meta: json.parse("{{\"k\": [1]}}").unwrap(), n: 255 });
+    show("plain");
+    let empty: i64[] = [];
+    show(empty);
+    let nan = f64.from_bits(9221120237041090560);
+    println(json.stringify(json.encode([nan])).is_err());
+    println(json.encode(n8));
+}

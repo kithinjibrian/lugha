@@ -1,0 +1,59 @@
+/**
+ * std.process: runs another program with an argument
+ * list and waits for it. There is never a shell: `cmd` and each argument
+ * reach the program exactly as given, so `;`, `|`, `$( )` and globs mean
+ * nothing. A `cmd` without `/` is looked up on `PATH`, one with `/` is a
+ * path. The program gets this one's environment, and only stdin, stdout
+ * and stderr: every other descriptor is closed on exec.
+ */
+
+/** What a finished program left: its exit code (`128 + n` when signal `n` ended it), and everything it wrote to stdout and stderr. */
+public struct Output { public code: i32, public stdout: string, public stderr: string }
+
+/**
+ * Runs a program with an argument list, its stdin empty, capturing its output. Never through a shell: `cmd` and each argument reach it exactly as given; a `cmd` without `/` is looked up on `PATH`.
+ * @param cmd the program
+ * @param args its arguments
+ * @returns its `Output` (any exit code is `Ok`), or `Err` when it couldn't start or its output isn't UTF-8
+ */
+public fun run(cmd: string, args: string[]): Result<Output, string> = start(cmd, args, "", 1);
+
+/**
+ * `run`, with `input` written to the program's stdin.
+ * @param cmd the program
+ * @param args its arguments
+ * @param input what it reads on stdin
+ * @returns its `Output`, or `Err` when it couldn't start or its output isn't UTF-8
+ */
+public fun run_with(cmd: string, args: string[], input: string): Result<Output, string> =
+    start(cmd, args, input, 2);
+
+/**
+ * Runs a program sharing this one's stdin, stdout and stderr, and waits for it.
+ * @param cmd the program
+ * @param args its arguments
+ * @returns its exit code, or `Err` when it couldn't start
+ */
+public fun call(cmd: string, args: string[]): Result<i32, string> {
+    let (code, _, _) = $os.start(cmd, args, "", 0)?;
+    Ok(code)
+}
+
+// `$os.start` in `mode` 1 (capture, stdin empty) or 2 (capture, stdin
+// `input`), with the output checked as UTF-8.
+fun start(cmd: string, args: string[], input: string, mode: i32): Result<Output, string> {
+    let (code, out, err) = $os.start(cmd, args, input, mode)?;
+    let stdout = match string_from_utf8(out) {
+        Ok(text) => text,
+        Err(_) => {
+            return Err("stdout is not valid UTF-8");
+        }
+    };
+    let stderr = match string_from_utf8(err) {
+        Ok(text) => text,
+        Err(_) => {
+            return Err("stderr is not valid UTF-8");
+        }
+    };
+    Ok(Output { code: code, stdout: stdout, stderr: stderr })
+}

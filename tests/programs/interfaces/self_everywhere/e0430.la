@@ -1,0 +1,18 @@
+interface Named {
+    fun name(self): string;
+    fun describe(self): string = "named {self.name()}";
+}
+
+interface Shown {
+    fun describe(self): string = "shown";
+}
+
+struct P { x: i64 }
+
+impl P {
+    fun name(self): string = "p";
+}
+
+fun main() {
+    println(P { x: 1 }.describe());
+}

@@ -1,0 +1,4 @@
+// The entry flattens `raw`: its public items are this module's.
+public import raw { * };
+
+public fun run(): string = "running";

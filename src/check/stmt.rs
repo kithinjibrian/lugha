@@ -1,0 +1,289 @@
+//! Statements and blocks: `let`, `for … in`, `return` and expression statements.
+
+use super::expr::Expect;
+use super::flow::Flow;
+use super::{Binding, Checker, Type, errors};
+use crate::ast::{Block, Expr, ForIter, Ident, Stmt, StmtKind};
+use crate::span::Span;
+
+impl Checker {
+    /// A block in its own scope: the tail's type, `void`, or `Never` once a
+    /// statement diverges.
+    pub(super) fn block(&mut self, block: &Block, expect: Option<&Expect>) -> Type {
+        self.push();
+        let was_dead = self.dead;
+        let mut flow = Flow::default();
+        let mut diverged = false;
+        for stmt in &block.stmts {
+            self.reachable(&mut flow, stmt.span);
+            let diverges = self.stmt(stmt);
+            self.after_statement(&mut flow, stmt, diverges);
+            diverged |= diverges;
+        }
+        let ty = match &block.tail {
+            Some(tail) => {
+                self.reachable(&mut flow, tail.span);
+                self.expr(tail, expect)
+            }
+            None => Type::Unit,
+        };
+        self.dead = was_dead;
+        self.pop();
+        if diverged { Type::Never } else { ty }
+    }
+
+    /// Checks a statement and reports whether it diverges.
+    pub(super) fn stmt(&mut self, stmt: &Stmt) -> bool {
+        if let StmtKind::While {
+            label: Some(label),
+            body,
+            ..
+        }
+        | StmtKind::For {
+            label: Some(label),
+            body,
+            ..
+        } = &stmt.kind
+        {
+            self.label_loop(label, body);
+        }
+        if let StmtKind::WhileLet {
+            label: Some(label),
+            body,
+            ..
+        } = &stmt.kind
+        {
+            self.label_loop(label, body);
+        }
+        match &stmt.kind {
+            StmtKind::Let {
+                mutable,
+                name,
+                ty,
+                init,
+            } => self.let_stmt(*mutable, name, ty.as_ref(), init),
+            StmtKind::Assign {
+                op, place, value, ..
+            } => self.assign(*op, place, value),
+            StmtKind::Expr { expr, .. } => return self.expr(expr, None) == Type::Never,
+            StmtKind::While { cond, body, .. } => {
+                self.expect_type(cond, &Expect::of(Type::Bool));
+                self.loop_body(body);
+            }
+            StmtKind::WhileLet {
+                pattern,
+                scrutinee,
+                body,
+                ..
+            } => self.while_let(pattern, scrutinee, body),
+            StmtKind::LetElse {
+                pattern,
+                init,
+                else_,
+            } => self.let_else(pattern, init, else_.as_deref()),
+            StmtKind::For {
+                var,
+                iter: ForIter::Range(start, end),
+                body,
+                ..
+            } => self.for_range(var, start, end, body),
+            StmtKind::For {
+                var,
+                iter: ForIter::Array(iter),
+                body,
+                ..
+            } => self.for_of(var, iter, body),
+            StmtKind::For {
+                var,
+                iter: ForIter::MutOf(iter),
+                body,
+                ..
+            } => self.for_of_mut(var, iter, body),
+            StmtKind::Defer(inner) => self.defer_stmt(inner, stmt.span),
+            StmtKind::Return(value) => {
+                self.leaves_defer("return", stmt.span, None);
+                self.return_stmt(value.as_ref(), stmt.span);
+                return true;
+            }
+            StmtKind::Break { label, value } => {
+                let target = self.jump(true, label.as_ref(), value.as_ref(), stmt.span);
+                self.leaves_defer("break", stmt.span, target);
+                return true;
+            }
+            StmtKind::Continue { label } => {
+                let target = self.jump(false, label.as_ref(), None, stmt.span);
+                self.leaves_defer("continue", stmt.span, target);
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Records a `while` or `for` statement's label for its body
+    /// (`check::loops` takes it when the body is checked).
+    fn label_loop(&mut self, label: &Ident, body: &Block) {
+        self.loop_labels.insert(body.span.start, label.clone());
+    }
+
+    /// `let`: the annotation, if any, is expected; the binding enters scope afterwards.
+    fn let_stmt(
+        &mut self,
+        mutable: bool,
+        name: &Ident,
+        annotation: Option<&crate::ast::Type>,
+        init: &Expr,
+    ) {
+        let ty = match annotation {
+            Some(annotation) => {
+                let ty = self.resolve(annotation);
+                let why = "expected because of this annotation".to_string();
+                self.expect_type(init, &Expect::because(ty.clone(), annotation.span, why));
+                ty
+            }
+            None => match self.value(init, None) {
+                // Nothing useful to bind; `Error` keeps later uses quiet.
+                Type::Never => Type::Error,
+                Type::Unit => {
+                    self.unit_binding(name, init);
+                    Type::Unit
+                }
+                ty => ty,
+            },
+        };
+        self.declare(name, ty, Binding::Let { mutable });
+    }
+
+    /// `for var in start..end`: both bounds share one integer type.
+    fn for_range(&mut self, var: &Ident, start: &Expr, end: &Expr, body: &Block) {
+        let ty = match self.operands(start, end, None, false) {
+            (Type::Error, _) | (_, Type::Error) => Type::Error,
+            (a, b) if a != b => {
+                self.report(errors::mismatch(a, b, end.span, None));
+                Type::Error
+            }
+            (ty, _) if !ty.is_integer() => {
+                self.report(errors::mismatch(Type::I64, ty, start.span, None));
+                Type::Error
+            }
+            (ty, _) => ty,
+        };
+        self.push();
+        self.declare(var, ty, Binding::LoopVar);
+        self.loop_body(body);
+        self.pop();
+    }
+
+    /// `return [value];` must match the function's return type.
+    fn return_stmt(&mut self, value: Option<&Expr>, span: Span) {
+        if self.closure_return_unknown(span) {
+            value.iter().for_each(|v| _ = self.expr(v, None));
+            return;
+        }
+        match (self.ret.clone(), value) {
+            (Type::Unit, None) => {}
+            (Type::Unit, Some(value)) => {
+                let ty = self.expr(value, None);
+                if !matches!(ty, Type::Unit | Type::Never | Type::Error) {
+                    self.report(errors::mismatch(Type::Unit, ty, span, None));
+                }
+            }
+            (ret, None) => self.report(errors::mismatch(ret, Type::Unit, span, None)),
+            (ret, Some(value)) => {
+                self.expect_type(value, &Expect::of(ret));
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::check::Type;
+    use crate::check::test_util::{errors, let_type};
+
+    #[test]
+    fn let_and_assignment_check_types() {
+        assert_eq!(
+            errors("fun main() { let a: bool = 1 < 2; let b: i32 = a; }"),
+            [("E0403", "a")]
+        );
+        assert_eq!(
+            errors("fun main() { let mut x: u8 = 1; x = true; }"),
+            [("E0403", "true")]
+        );
+        assert_eq!(
+            errors("fun main() { let mut b = true; b += 1; }"),
+            [("E0404", "b += 1")]
+        );
+        assert_eq!(errors("fun main() { q = 1; }"), [("E0301", "q")]);
+        assert_eq!(
+            let_type(
+                "fun main() { let mut x: u8 = 1; x += 200; let y = x; }",
+                "y"
+            ),
+            Type::U8
+        );
+    }
+
+    #[test]
+    fn conditions_expect_bool() {
+        assert_eq!(
+            errors("fun main() { let n = 1; while n { } }"),
+            [("E0403", "n")]
+        );
+    }
+
+    #[test]
+    fn range_bounds_share_an_integer_type() {
+        assert_eq!(
+            let_type(
+                "fun main() { let n: i32 = 3; for i in 0..n { let k = i; } }",
+                "k"
+            ),
+            Type::I32
+        );
+        assert_eq!(
+            let_type("fun main() { for i in 0..3 { let k = i; } }", "k"),
+            Type::I64
+        );
+        assert_eq!(
+            errors("fun main() { let n: i32 = 3; let m: i64 = 4; for i in n..m { } }"),
+            [("E0403", "m")]
+        );
+        assert_eq!(
+            errors("fun main() { for i in 0..2.5 { } }"),
+            [("E0401", "2.5")]
+        );
+        assert_eq!(
+            errors("fun main() { let xs = 1; for x of xs { } }"),
+            [("E0411", "xs")]
+        );
+    }
+
+    #[test]
+    fn returns_match_the_function() {
+        assert_eq!(
+            errors("fun f(): i32 { return true; }\nfun main() {}"),
+            [("E0403", "true")]
+        );
+        assert_eq!(
+            errors("fun f(): u8 { return 300; }\nfun main() {}"),
+            [("E0402", "300")]
+        );
+        assert_eq!(
+            errors("fun f(): i32 { return; }\nfun main() {}"),
+            [("E0403", "return;")]
+        );
+        assert_eq!(
+            errors("fun f() { return 1; }\nfun main() {}"),
+            [("E0403", "return 1;")]
+        );
+        assert_eq!(
+            errors("fun f(): u8 { 300 }\nfun main() {}"),
+            [("E0402", "300")]
+        );
+        assert_eq!(
+            errors("fun f(): bool { 1 }\nfun main() {}"),
+            [("E0401", "1")]
+        );
+    }
+}

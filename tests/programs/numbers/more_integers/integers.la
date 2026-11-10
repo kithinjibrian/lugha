@@ -1,0 +1,13 @@
+fun main() {
+    let a: i16 = i16.MAX;
+    println(a);
+    println(a.checked_add(1).unwrap_or(-1));
+    println(a.saturating_add(100));
+    let b: u8 = 200;
+    println(b.saturating_mul(2));
+    let c: u16 = 0b1000000000000001;
+    println(c.rotate_left(1));
+    let d: i8 = i8.MIN;
+    println(d.checked_div(-1).is_none());
+    println(parse_u64("18446744073709551615").unwrap());
+}

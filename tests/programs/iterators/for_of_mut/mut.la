@@ -1,0 +1,21 @@
+fun main() {
+    let mut xs = [1, 2, 3];
+    for x of mut xs {
+        x *= 2;
+    }
+    println(xs);
+    let mut words = ["a", "b", "--", "c", "d"].iter();
+    let mut first = "";
+    for w of mut words {
+        if w == "--" {
+            break;
+        }
+        first = first + w + " ";
+    }
+    println(first.trim());
+    let mut rest = "";
+    for w of mut words {
+        rest = rest + w + " ";
+    }
+    println(rest.trim());
+}

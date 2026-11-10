@@ -1,0 +1,27 @@
+struct Point { x: i64, y: i64 }
+
+impl Point {
+    fun origin(): Point = Point { x: 0, y: 0 };
+    fun at(x: i64): Point = Point { x: x, y: x };
+}
+
+fun max<T: Ord>(a: T, b: T): T = if a > b { a } else { b };
+
+fun apply<T>(f: fun(T): T, x: T): T = f(x);
+
+fun inc(n: i64): i64 = n + 1;
+fun exclaim(s: string): string = s + "!";
+
+fun main() {
+    let m: fun(i64, i64): i64 = max;
+    println(m(3, 9));
+    let ms: fun(string, string): string = max;
+    println(ms("pear", "apple"));
+    println(apply(inc, 41));
+    println(apply(exclaim, "hey"));
+    let make = Point.at;
+    let p = make(4);
+    println(p.x + p.y);
+    let o: fun(): Point = Point.origin;
+    println(o().x);
+}

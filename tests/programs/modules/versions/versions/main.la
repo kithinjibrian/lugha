@@ -1,0 +1,5 @@
+import geo.shapes;
+
+fun main() {
+    println(shapes.area(3, 4));
+}

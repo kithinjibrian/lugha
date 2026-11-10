@@ -1,0 +1,32 @@
+interface Describe {
+    fun name(self): string;
+    fun describe(self): string = "this is {self.name()}";
+}
+
+struct Point { x: i64, y: i64 }
+
+impl Point {
+    fun origin(): Self = Self { x: 0, y: 0 };
+    fun plus(self, other: Self): Self = Self { x: self.x + other.x, y: self.y + other.y };
+    fun unit(): Self = Self.origin().plus(Self { x: 1, y: 1 });
+    fun name(self): string = "({self.x}, {self.y})";
+}
+
+enum Light { Red, Green }
+
+impl Light {
+    fun toggle(self): Self = match self {
+        Red => Self.Green,
+        Green => Self.Red,
+    };
+}
+
+fun main() {
+    let p = Point.unit().plus(Point { x: 2, y: 3 });
+    println(p.name());
+    println(p.describe());
+    match Light.Red.toggle() {
+        Green => println("green"),
+        Red => println("red"),
+    }
+}

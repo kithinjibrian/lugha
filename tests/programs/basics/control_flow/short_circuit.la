@@ -1,0 +1,6 @@
+// The right operands would trap (division by zero) if they were evaluated.
+fun main(): i32 {
+    let safe = false && (1 / 0 == 0);
+    let also = true || (1 / 0 == 0);
+    if !safe && also { 7 } else { 0 }
+}

@@ -1,0 +1,25 @@
+fun double(x: i64): i64 = x * 2;
+
+fun show(xs: i64[]): string = xs.fold("", fun(acc, x) = if acc == "" { "{x}" } else { "{acc} {x}" });
+
+fun main() {
+    let xs = [3, 1, 4, 1, 5];
+    println(show(xs.map(double)));
+    println(show(xs.filter(fun(x) = x > 2)));
+    println(xs.fold(0, fun(acc, x) = acc + x));
+    println(xs.any(fun(x) = x == 4));
+    println(xs.all(fun(x) = x > 0));
+    println(xs.all(fun(x) = x > 1));
+    let words = ["pear", "fig", "apple"];
+    let lens = words.map(fun(w) = w.len);
+    println(show(lens));
+    println(words.map(fun(w) = w + "!")[2]);
+    println(words.filter(fun(w) = w.len > 3).len);
+    let empty: i64[] = [];
+    println(empty.map(double).len);
+    println(empty.fold(7, fun(acc, x) = acc + x));
+    println(empty.any(fun(x) = true));
+    println(empty.all(fun(x) = false));
+    println(show(xs.filter(fun(x) = x != 1).map(fun(x) = x * 10)));
+    println(show(xs));
+}

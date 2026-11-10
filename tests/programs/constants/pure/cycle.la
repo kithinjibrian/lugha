@@ -1,0 +1,8 @@
+// A constant that reads itself through a function (E0446).
+const A: i64 = next();
+
+fun next(): i64 = A + 1;
+
+fun main() {
+    println(A);
+}

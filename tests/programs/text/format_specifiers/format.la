@@ -1,0 +1,11 @@
+fun main() {
+    let pi = 3.14159;
+    let n = 42;
+    println("{pi:.2}");
+    println("|{n:6}|");
+    println("|{n:<6}|");
+    println("{-42:05}");
+    println("{255:#x}");
+    println("{"ann":*^9}");
+    println("{-1 as i8:b}");
+}

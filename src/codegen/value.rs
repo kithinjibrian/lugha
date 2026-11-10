@@ -1,0 +1,140 @@
+//! Values and types: the checker's `Type` mapped to LLVM.
+//!
+//! Codegen never infers types: every expression's type
+//! comes from the checker's table. `Value` only remembers whether lowering
+//! produced a value, nothing, or code that never finishes — blocks have no
+//! `ExprId`, and divergence decides phi edges.
+
+use inkwell::AddressSpace;
+use inkwell::context::Context;
+use inkwell::types::{BasicTypeEnum, IntType};
+use inkwell::values::BasicValueEnum;
+
+use super::CodegenError;
+use super::lower::Lowerer;
+use crate::ast::{Expr, Type as Annotation};
+use crate::check::Type;
+
+/// The result of lowering an expression.
+#[derive(Debug, Clone, Copy)]
+pub(super) enum Value<'ctx> {
+    Val(BasicValueEnum<'ctx>),
+    /// Statements, blocks without a tail, `if` without `else`, void calls.
+    Void,
+    /// Control never gets here: after `return`, `break` or `continue`, or an
+    /// `if` whose branches all do that.
+    Never,
+}
+
+/// The LLVM type of a value of type `ty`.
+pub(super) fn llvm_type<'ctx>(context: &'ctx Context, ty: &Type) -> BasicTypeEnum<'ctx> {
+    match ty {
+        Type::I32 => context.i32_type().into(),
+        Type::I64 => context.i64_type().into(),
+        Type::U8 => context.i8_type().into(),
+        Type::F64 => context.f64_type().into(),
+        Type::U32 => context.i32_type().into(),
+        Type::U64 => context.i64_type().into(),
+        Type::F32 => context.f32_type().into(),
+        Type::I8 => context.i8_type().into(),
+        Type::Char => context.i32_type().into(),
+        Type::I16 | Type::U16 => context.i16_type().into(),
+        Type::Bool => context.bool_type().into(),
+        // Strings, arrays and boxes are pointers to heap objects.
+        // Handles are C pointers.
+        // Tasks, channels and actor handles are pointers to runtime objects.
+        Type::String
+        | Type::Array(_)
+        | Type::Ref(_)
+        | Type::Handle(_)
+        | Type::Task(_)
+        | Type::Chan(_)
+        | Type::Actor(_) => context.ptr_type(AddressSpace::default()).into(),
+        // Declared by `declare_enums` before anything is lowered.
+        Type::Enum(_, _) | Type::Option(_) => context
+            .get_struct_type(&ty.to_string())
+            .expect("enums are declared before lowering")
+            .into(),
+        // Declared by `declare_structs` before anything is lowered.
+        Type::Struct(..) => context
+            .get_struct_type(&ty.to_string())
+            .expect("structs are declared before lowering")
+            .into(),
+        // `{ code, env }`: the function, then its environment;
+        // `{ table, box }` for an interface value.
+        Type::Fun(..) | Type::Interface(..) => {
+            let ptr = context.ptr_type(AddressSpace::default());
+            context.struct_type(&[ptr.into(), ptr.into()], false).into()
+        }
+        // `()` is the empty struct `{}`: no bytes, one value.
+        Type::Unit => context.struct_type(&[], false).into(),
+        Type::Never | Type::Error => unreachable!("checked: {ty} is not a value type"),
+        // The gate stops generic programs before codegen.
+        Type::Param(_) => unreachable!("codegen never sees a type parameter"),
+    }
+}
+
+/// The LLVM integer type of `i32`, `i64`, `u8` or `bool`.
+pub(super) fn int_type<'ctx>(context: &'ctx Context, ty: &Type) -> IntType<'ctx> {
+    llvm_type(context, ty).into_int_type()
+}
+
+/// `i8`, `i16`, `i32` and `i64` are signed; the `u` types are not.
+pub(super) fn is_signed(ty: &Type) -> bool {
+    matches!(ty, Type::I8 | Type::I16 | Type::I32 | Type::I64)
+}
+
+/// True for values held in memory and passed to functions as a pointer to
+/// the caller's storage: structs and enums.
+pub(super) fn is_aggregate(ty: &Type) -> bool {
+    matches!(ty, Type::Struct(_, _) | Type::Enum(_, _) | Type::Option(_))
+}
+
+impl<'ctx> Lowerer<'ctx> {
+    /// The type an annotation declares, as the checker resolved it
+    /// (a name means what it means in the module it is written in).
+    pub(super) fn annotation_type(&self, ty: &Annotation) -> Type {
+        let ty = self.annotations.get(&ty.span);
+        self.concrete(ty.expect("checked: every written type is resolved"))
+    }
+
+    /// The type of the value `expr` produces: the checker's type for it, or
+    /// the interface it is converted to.
+    pub(super) fn ty(&self, expr: &Expr) -> Type {
+        let id = expr.id;
+        let ty = self
+            .conversions
+            .get(&id)
+            .unwrap_or(&self.types[id.0 as usize]);
+        self.concrete(ty)
+    }
+
+    /// Lowers `expr` where a value of type `ty` is needed. In code that never
+    /// finishes there is no value; an `undef` keeps the IR well-formed.
+    pub(super) fn get(
+        &mut self,
+        expr: &Expr,
+        ty: &Type,
+    ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
+        Ok(match self.expr(expr)? {
+            Value::Val(value) => value,
+            Value::Never => undef(self.context, ty),
+            // A statement-like expression used as a value is `()`.
+            Value::Void => unit_value(self.context),
+        })
+    }
+}
+
+/// `()`'s one value: the empty struct `{}`.
+pub(super) fn unit_value(context: &Context) -> BasicValueEnum<'_> {
+    context.const_struct(&[], false).into()
+}
+
+fn undef<'ctx>(context: &'ctx Context, ty: &Type) -> BasicValueEnum<'ctx> {
+    match llvm_type(context, ty) {
+        BasicTypeEnum::FloatType(t) => t.get_undef().into(),
+        BasicTypeEnum::PointerType(t) => t.get_undef().into(),
+        BasicTypeEnum::StructType(t) => t.get_undef().into(),
+        other => other.into_int_type().get_undef().into(),
+    }
+}

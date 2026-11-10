@@ -1,0 +1,17 @@
+fun shout(s: string): string {
+    let mut out = "";
+    for c of s.chars() {
+        out = out + to_string(c.to_upper());
+    }
+    out
+}
+
+fun main() {
+    let s = "naïve café";
+    println("{s.char_count()} chars, {s.len} bytes");
+    println(shout(s));
+    println(s.chars().filter(fun(c) = c.is_alphabetic()).count());
+    println(['é', 'a', '\n']);
+    println('é' as u32);
+    println(char_from(55296));
+}

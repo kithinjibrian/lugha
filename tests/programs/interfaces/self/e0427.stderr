@@ -1,0 +1,9 @@
+error[E0427]: `Ordered` can't be a type: `less` uses `Self`
+  --> tests/programs/interfaces/self/e0427.la:7:15
+  |
+7 | fun first(xs: Ordered[]): bool = false;
+  |               ^^^^^^^
+  |
+  = help: two `Ordered` values could hold different types; use it as a bound: `<T: Ordered>`
+
+For more about E0427, run `lughac explain E0427`.

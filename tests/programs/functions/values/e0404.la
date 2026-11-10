@@ -1,0 +1,6 @@
+fun double(x: i64): i64 = x * 2;
+
+fun main() {
+    let f = double;
+    println(f == double);
+}

@@ -1,0 +1,9 @@
+error[E0422]: `Dot` doesn't satisfy `Shape`
+   --> tests/programs/interfaces/values/e0422.la:13:20
+   |
+13 |     let s: Shape = Dot {};
+   |                    ^^^^^^
+   |
+   = help: no method `name`
+
+For more about E0422, run `lughac explain E0422`.

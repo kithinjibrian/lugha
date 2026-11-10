@@ -1,0 +1,4 @@
+fun main() {
+    let parts = ["a", "b"];
+    println("joined: {parts.join("-")");
+}

@@ -1,0 +1,19 @@
+ok 0
+err File exists
+ok 0
+ok 0
+["Z.txt", "a.txt", "b.txt"]
+true true false
+true false true
+false false false
+err Is a directory
+err Directory not empty
+ok 0
+ok 0
+ok 0
+ok 0
+false
+No such file or directory
+["er"]
+err path contains a NUL byte
+false

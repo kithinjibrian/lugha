@@ -1,0 +1,7 @@
+// A `T: Num` body at `i64` keeps the built-in checked arithmetic.
+fun add<T: Num>(a: T, b: T): T = a + b;
+
+fun main() {
+    println(add(1, 2));
+    println(add(9223372036854775807, 1));
+}

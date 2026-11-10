@@ -1,0 +1,7 @@
+error[E0101]: unexpected character '$'
+  --> tests/programs/c/strings_from_bytes/dollar.la:3:13
+  |
+3 |     let s = $string.from_bytes([104, 105]);
+  |             ^
+
+For more about E0101, run `lughac explain E0101`.

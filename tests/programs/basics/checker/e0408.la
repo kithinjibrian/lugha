@@ -1,0 +1,4 @@
+fun main() {
+    let ready = true;
+    let n = ready as i32;
+}

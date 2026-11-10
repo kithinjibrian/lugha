@@ -1,0 +1,15 @@
+// The arguments are evaluated at once, by the spawning thread.
+fun next(label: string): i64 {
+    println("evaluating {label}");
+    1
+}
+
+fun show(n: i64, m: i64) {
+    println("running with {n} {m}");
+}
+
+fun main() {
+    let t = spawn show(next("first"), next("second"));
+    println("spawned");
+    t.join();
+}

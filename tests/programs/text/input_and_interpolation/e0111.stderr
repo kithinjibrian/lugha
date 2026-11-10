@@ -1,0 +1,9 @@
+error[E0111]: unmatched `}` in a string
+  --> tests/programs/text/input_and_interpolation/e0111.la:3:25
+  |
+3 |     println("total: {n} }");
+  |                         ^
+  |
+  = help: write `}}` for a literal brace
+
+For more about E0111, run `lughac explain E0111`.

@@ -1,0 +1,4 @@
+fun main() {
+    let xs = [1];
+    xs.push(2);
+}

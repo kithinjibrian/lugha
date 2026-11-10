@@ -1,0 +1,6 @@
+struct Node { value: i64, kids: Node[] }
+
+fun main() {
+    let mut n = Node { value: 1, kids: [Node { value: 2, kids: [] }] };
+    swap(n, n.kids[0]);
+}

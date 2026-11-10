@@ -1,0 +1,4 @@
+fun main() {
+    let path = 7;
+    let written = write_file(path, "text");
+}

@@ -1,0 +1,9 @@
+error[E0209]: a closure parameter is a plain name
+  --> tests/programs/functions/closures/e0209.la:2:17
+  |
+2 |     let f = fun(mut x) = x;
+  |                 ^^^
+  |
+  = help: write `x` or `x: T`; closures have no `self`, and parameters are never `mut`
+
+For more about E0209, run `lughac explain E0209`.

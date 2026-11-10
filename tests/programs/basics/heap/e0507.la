@@ -1,0 +1,6 @@
+fun main() {
+    let mut xs = [1, 2];
+    for x of xs {
+        xs[0] = x;
+    }
+}

@@ -1,0 +1,12 @@
+interface Shape {
+    fun area(self): f64;
+}
+
+struct Dot {}
+
+fun f(s: Shape): f64 = match s {
+    d: Dot => 0.0,
+    _ => 1.0,
+};
+
+fun main() {}

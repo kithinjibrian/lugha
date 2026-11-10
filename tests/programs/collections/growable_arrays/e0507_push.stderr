@@ -1,0 +1,9 @@
+error[E0507]: cannot call `push` on `xs` while iterating over it
+  --> tests/programs/collections/growable_arrays/e0507_push.la:4:9
+  |
+3 |     for x of xs {
+  |              -- iterated here
+4 |         xs.push(x);
+  |         ^^
+
+For more about E0507, run `lughac explain E0507`.

@@ -1,0 +1,10 @@
+fun main() {
+    println("out 1");
+    eprintln("err 1");
+    eprint(42);
+    eprint(" ");
+    eprint(2.5);
+    eprintln();
+    eprintln(true);
+    println("out 2");
+}

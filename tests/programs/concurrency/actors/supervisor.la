@@ -1,0 +1,28 @@
+// A hand-written supervisor: `join` says whether the worker crashed, so it
+// starts a new one until the work is done.
+actor Worker {
+    attempt: i64,
+    fun run(self) {
+        if self.attempt < 3 {
+            panic("attempt {self.attempt} failed");
+        }
+        println("attempt {self.attempt} succeeded");
+    }
+}
+
+fun main() {
+    let mut attempt = 1;
+    while true {
+        let w = spawn Worker { attempt: attempt };
+        w.run();
+        w.stop();
+        match w.join() {
+            None => {
+                break;
+            }
+            Some(why) => println("restarting after: {why}"),
+        }
+        attempt += 1;
+    }
+    println("done after {attempt} attempts");
+}

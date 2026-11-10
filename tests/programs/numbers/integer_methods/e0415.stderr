@@ -1,0 +1,13 @@
+error[E0415]: no method `swap_bytes` on `u32`
+  --> tests/programs/numbers/integer_methods/e0415.la:5:15
+  |
+5 |     let r = x.swap_bytes();
+  |               ^^^^^^^^^^
+
+error[E0415]: no method `count_ones` on `f64`
+  --> tests/programs/numbers/integer_methods/e0415.la:7:15
+  |
+7 |     let n = f.count_ones();
+  |               ^^^^^^^^^^
+
+For more about E0415, run `lughac explain E0415`.

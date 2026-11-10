@@ -1,0 +1,14 @@
+interface Shape {
+    fun area(self): f64;
+    fun name(self): string;
+}
+
+struct Dot {}
+
+impl Dot {
+    fun area(self): f64 = 0.0;
+}
+
+fun main() {
+    let s: Shape = Dot {};
+}

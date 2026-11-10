@@ -1,0 +1,3 @@
+# geo's own packages: the program doesn't see them.
+[packages]
+mathx = "../mathx"

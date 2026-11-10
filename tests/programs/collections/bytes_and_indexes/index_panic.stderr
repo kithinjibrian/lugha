@@ -1,0 +1,1 @@
+panic: index out of bounds: the length is 3 but the index is -1 at tests/programs/collections/bytes_and_indexes/index_panic.la:4:15

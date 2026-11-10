@@ -1,0 +1,11 @@
+error[E0501]: cannot assign to `total`: it is not mutable
+  --> tests/programs/basics/checker/e0501.la:3:5
+  |
+2 |     let total = 0;
+  |         ----- declared here
+3 |     total = 5;
+  |     ^^^^^
+  |
+  = help: make it mutable: `let mut total`
+
+For more about E0501, run `lughac explain E0501`.

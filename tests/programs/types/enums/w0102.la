@@ -1,0 +1,8 @@
+fun main() {
+    let n = 3;
+    let s = match n {
+        _ => "any",
+        1 => "one",
+    };
+    println(s);
+}

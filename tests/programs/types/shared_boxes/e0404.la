@@ -1,0 +1,6 @@
+// Boxes have no `==`.
+fun main() {
+    let a = Ref.new(1);
+    let b = a;
+    println(a == b);
+}

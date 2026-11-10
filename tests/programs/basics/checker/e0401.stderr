@@ -1,0 +1,9 @@
+error[E0401]: float literal where i32 expected
+  --> tests/programs/basics/checker/e0401.la:3:17
+  |
+3 |     let y = x + 2.5;
+  |             -   ^^^ expected i32
+  |             |
+  |             this operand is i32
+
+For more about E0401, run `lughac explain E0401`.

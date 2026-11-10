@@ -1,0 +1,21 @@
+// Inserts are amortised O(1) (kivuli's report): 100 000 of them, removals
+// and set inserts finish well inside the runner's time limit. Quadratic
+// copying, as before session 246, would not.
+fun main() {
+    let mut m: Map<i64, i64> = #{};
+    let mut i = 0;
+    while i < 100000 {
+        m[i] = i * 2;
+        i = i + 1;
+    }
+    let mut s: Set<string> = #{};
+    for j in 0..50000 {
+        s.insert("k{j % 40000}");
+    }
+    for j in 0..60000 {
+        m.remove(j);
+    }
+    println(m.len);
+    println(m[99999]);
+    println(s.len);
+}

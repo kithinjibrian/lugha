@@ -1,0 +1,17 @@
+// A thousand actors, each with its own green thread and mailbox.
+actor Cell {
+    value: i64,
+    fun double(self): i64 = self.value * 2;
+}
+
+fun main() {
+    let mut cells: Cell[] = [];
+    for i in 0..1000 {
+        cells.push(spawn Cell { value: i });
+    }
+    let mut sum = 0;
+    for c of cells {
+        sum += c.double();
+    }
+    println(sum);
+}

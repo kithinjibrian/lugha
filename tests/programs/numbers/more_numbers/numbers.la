@@ -1,0 +1,12 @@
+// The more-numbers example program.
+
+fun main() {
+    let big: u64 = 18446744073709551615;
+    println(big);
+    let n: u32 = 4000000000;
+    println(n + 1);
+    let x: f32 = 0.1;
+    println(x);
+    println(x as f64 > 0.1);
+    println(-1 as u32);
+}

@@ -1,0 +1,14 @@
+// A constant whose function panics stops the program before `main`.
+fun pick(xs: i64[], i: i64): i64 {
+    if i >= xs.len {
+        panic("no such element");
+    }
+    xs[i]
+}
+
+const X: i64 = pick([1, 2], 5);
+
+fun main() {
+    println("never");
+    println(X);
+}

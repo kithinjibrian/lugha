@@ -1,0 +1,8 @@
+fun main() {
+    let a = args();
+    // a[0] is the program's own path, which differs from run to run.
+    println("{a.len - 1} arguments");
+    for i in 1..a.len {
+        println("[{a[i]}] has {a[i].len} bytes");
+    }
+}

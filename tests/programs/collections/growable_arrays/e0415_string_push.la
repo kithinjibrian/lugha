@@ -1,0 +1,4 @@
+fun main() {
+    let mut s = "ab";
+    s.push(1);
+}

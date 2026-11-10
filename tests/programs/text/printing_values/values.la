@@ -1,0 +1,30 @@
+struct Point { x: i64, y: i64 }
+
+enum Shape { Circle(f64), Empty }
+
+struct Team { name: string, members: string[] }
+
+struct Money { cents: i64 }
+
+impl Money {
+    fun show(self): string = "${self.cents / 100}.{self.cents % 100}";
+}
+
+struct Wallet { cash: Money }
+
+struct Stack<T> { items: T[] }
+
+fun dump<T>(x: T) {
+    println(x);
+}
+
+fun main() {
+    println(Point { x: 1, y: 2 });
+    println(Shape.Circle(1.5));
+    println([Some(1), None]);
+    println(Team { name: "red", members: ["ann", "bo"] });
+    let m = Money { cents: 525 };
+    println(m);
+    println("wallet: {Wallet { cash: m }}");
+    dump(Stack { items: [3] });
+}

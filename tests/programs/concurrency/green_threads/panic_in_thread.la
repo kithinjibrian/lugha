@@ -1,0 +1,11 @@
+// A panic in any green thread ends the whole program.
+fun boom() {
+    panic("boom");
+}
+
+fun main() {
+    let t = spawn boom();
+    println("before");
+    t.join();
+    println("never printed");
+}

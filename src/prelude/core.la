@@ -1,0 +1,304 @@
+// The Lugha prelude: the array helpers behind
+// `xs.map(f)`, `xs.filter(f)`, `xs.fold(init, f)`, `xs.sort_by(less)`,
+// `xs.any(f)` and `xs.all(f)`. It is checked with every program and each
+// helper is compiled only for the element types a program uses. Programs
+// can't name this module; an array method call is the only way in.
+//
+// Every helper takes its array as an ordinary parameter, so the caller's
+// array never changes, and every array it returns is new.
+
+// Success or failure: `Ok` and `Err` are written without
+// `Result.` in programs, and `?` returns an `Err` early.
+enum Result<T, E> { Ok(T), Err(E) }
+
+/**
+ * A new array of `f` applied to each element, in order: `xs.map(f)`.
+ * @param f the function for each element
+ */
+fun map<T, U>(xs: T[], f: fun(T): U): U[] {
+    let mut out: U[] = [];
+    for x of xs {
+        out.push(f(x));
+    }
+    out
+}
+
+/**
+ * A new array of `a`'s elements, then `b`'s: `a + b`.
+ */
+fun $concat<T>(a: T[], b: T[]): T[] {
+    let mut out = a;
+    for x of b {
+        out.push(x);
+    }
+    out
+}
+
+/**
+ * A new array of the elements `keep` accepts, in order: `xs.filter(keep)`.
+ * @param keep true for an element to keep
+ */
+fun filter<T>(xs: T[], keep: fun(T): bool): T[] {
+    let mut out: T[] = [];
+    for x of xs {
+        if keep(x) {
+            out.push(x);
+        }
+    }
+    out
+}
+
+/**
+ * Combines the elements left to right, starting from `init`: `xs.fold(0, add)`.
+ * @param init the starting value
+ * @param f the running value and an element, giving the next value
+ */
+fun fold<T, A>(xs: T[], init: A, f: fun(A, T): A): A {
+    let mut acc = init;
+    for x of xs {
+        acc = f(acc, x);
+    }
+    acc
+}
+
+/** Whether `f` holds for some element (false for an empty array): `xs.any(f)`. */
+fun any<T>(xs: T[], f: fun(T): bool): bool {
+    for x of xs {
+        if f(x) {
+            return true;
+        }
+    }
+    false
+}
+
+/** Whether `f` holds for every element (true for an empty array): `xs.all(f)`. */
+fun all<T>(xs: T[], f: fun(T): bool): bool {
+    for x of xs {
+        if !f(x) {
+            return false;
+        }
+    }
+    true
+}
+
+// A stable bottom-up merge sort into a new array: runs of `width` are
+// merged pairwise from `src` into `dst`, then the buffers trade places. On a
+// tie the left run's element goes first, which keeps equal elements in
+// their original order. An inconsistent `less` still gives back every
+// element exactly once, in some order.
+/**
+ * A sorted copy, stable, ordered by `less`: `xs.sort_by(less)`.
+ * @param less whether its first argument goes before its second
+ */
+fun sort_by<T>(xs: T[], less: fun(T, T): bool): T[] {
+    let n = xs.len;
+    let mut src = xs;
+    if n < 2 {
+        return src;
+    }
+    let mut dst = xs;
+    let mut width = 1;
+    while width < n {
+        let mut lo = 0;
+        while lo < n {
+            let mid = if lo + width < n { lo + width } else { n };
+            let hi = if mid + width < n { mid + width } else { n };
+            let mut a = lo;
+            let mut b = mid;
+            let mut k = lo;
+            while k < hi {
+                if a < mid && (b >= hi || !less(src[b], src[a])) {
+                    dst[k] = src[a];
+                    a += 1;
+                } else {
+                    dst[k] = src[b];
+                    b += 1;
+                }
+                k += 1;
+            }
+            lo = hi;
+        }
+        swap(src, dst);
+        width *= 2;
+    }
+    src
+}
+
+// ---- Strings ----
+// Strings are bytes: these helpers compare and cut bytes, and `slice` (built
+// into the compiler) makes each new string. ASCII codes: `\n` 10, `\r` 13,
+// `\t` 9, space 32.
+
+// The lines of `s`: split at `\n`, one trailing `\r` dropped from each, and
+// no empty last line after a final `\n`.
+/** The lines of `s`, without their `\n` (or `\r\n`): `s.lines()`. */
+fun str_lines(s: string): string[] {
+    let mut out: string[] = [];
+    let mut start = 0;
+    for i in 0..s.len {
+        if s[i] == 10 {
+            out.push(str_line(s, start, i));
+            start = i + 1;
+        }
+    }
+    if start < s.len {
+        out.push(str_line(s, start, s.len));
+    }
+    out
+}
+
+/** Used by `lines`: the text of `s` from `from` to `to`, without a trailing `\r`. */
+fun str_line(s: string, from: i64, to: i64): string {
+    if to > from && s[to - 1] == 13 {
+        return s.slice(from, to - 1);
+    }
+    s.slice(from, to)
+}
+
+// The parts of `s` between occurrences of `sep`, empty parts kept.
+/**
+ * The parts of `s` between each `sep`: `s.split(",")`.
+ * @param sep the separator; an empty one splits nothing
+ */
+fun str_split(s: string, sep: string): string[] {
+    if sep.len == 0 {
+        panic("split with an empty separator");
+    }
+    let mut out: string[] = [];
+    let mut start = 0;
+    let mut i = 0;
+    while i + sep.len <= s.len {
+        if str_at(s, i, sep) {
+            out.push(s.slice(start, i));
+            i += sep.len;
+            start = i;
+        } else {
+            i += 1;
+        }
+    }
+    out.push(s.slice(start, s.len));
+    out
+}
+
+/** Used by `starts_with` and the others: whether `p` occurs in `s` at byte `at`. */
+fun str_at(s: string, at: i64, p: string): bool {
+    if at + p.len > s.len {
+        return false;
+    }
+    for k in 0..p.len {
+        if s[at + k] != p[k] {
+            return false;
+        }
+    }
+    true
+}
+
+/** Used by `trim`: whether `b` is a space, tab, `\n` or `\r`. */
+fun str_is_space(b: u8): bool = b == 32 || b == 9 || b == 10 || b == 13;
+
+/** `s` without spaces, tabs and line breaks at both ends: `s.trim()`. */
+fun str_trim(s: string): string {
+    let mut from = 0;
+    let mut to = s.len;
+    while from < to && str_is_space(s[from]) {
+        from += 1;
+    }
+    while to > from && str_is_space(s[to - 1]) {
+        to -= 1;
+    }
+    s.slice(from, to)
+}
+
+/** Whether `sub` occurs in `s`: `s.contains(sub)`. */
+fun str_contains(s: string, sub: string): bool {
+    for i in 0..s.len - sub.len + 1 {
+        if str_at(s, i, sub) {
+            return true;
+        }
+    }
+    false
+}
+
+/** Whether `s` begins with `p`: `s.starts_with(p)`. */
+fun str_starts_with(s: string, p: string): bool = str_at(s, 0, p);
+
+/** Whether `s` ends with `p`: `s.ends_with(p)`. */
+fun str_ends_with(s: string, p: string): bool = p.len <= s.len && str_at(s, s.len - p.len, p);
+
+/** The strings of `xs` with `sep` between each two: `xs.join(", ")`. */
+fun str_join(xs: string[], sep: string): string {
+    let mut out: u8[] = [];
+    for i in 0..xs.len {
+        let piece = if i > 0 { sep + xs[i] } else { xs[i] };
+        for b of piece.to_bytes() {
+            out.push(b);
+        }
+    }
+    $string.from_bytes(out)
+}
+
+// ---- Option and Result ----
+
+/** The value inside, or `default` for `None`: `o.unwrap_or(default)`. */
+fun option_unwrap_or<T>(o: Option<T>, default: T): T = match o {
+    Some(x) => x,
+    None => default,
+};
+
+/** `Ok` with the value inside, or `Err(error)` for `None`: `o.ok_or(error)`. */
+fun option_ok_or<T, E>(o: Option<T>, error: E): Result<T, E> = match o {
+    Some(x) => Ok(x),
+    None => Err(error),
+};
+
+/** `Some` with `f` applied to the value inside; `None` stays `None`: `o.map(f)`. */
+fun option_map<T, U>(o: Option<T>, f: fun(T): U): Option<U> = match o {
+    Some(x) => Some(f(x)),
+    None => None,
+};
+
+/** Whether there is a value: `o.is_some()`. */
+fun option_is_some<T>(o: Option<T>): bool = match o {
+    Some(_) => true,
+    None => false,
+};
+
+/** Whether there is no value: `o.is_none()`. */
+fun option_is_none<T>(o: Option<T>): bool = !option_is_some(o);
+
+/** The `Ok` value, or `default` for an `Err`: `r.unwrap_or(default)`. */
+fun result_unwrap_or<T, E>(r: Result<T, E>, default: T): T = match r {
+    Ok(x) => x,
+    Err(_) => default,
+};
+
+/** `Some` with the `Ok` value, or `None` for an `Err`: `r.ok()`. */
+fun result_ok<T, E>(r: Result<T, E>): Option<T> = match r {
+    Ok(x) => Some(x),
+    Err(_) => None,
+};
+
+/** `Ok` with `f` applied to the value; an `Err` stays as it is: `r.map(f)`. */
+fun result_map<T, E, U>(r: Result<T, E>, f: fun(T): U): Result<U, E> = match r {
+    Ok(x) => Ok(f(x)),
+    Err(e) => Err(e),
+};
+
+/** `Err` with `f` applied to the error; an `Ok` stays as it is: `r.map_err(f)`. */
+fun result_map_err<T, E, F>(r: Result<T, E>, f: fun(E): F): Result<T, F> = match r {
+    Ok(x) => Ok(x),
+    Err(e) => Err(f(e)),
+};
+
+/** Whether it is `Ok`: `r.is_ok()`. */
+fun result_is_ok<T, E>(r: Result<T, E>): bool = match r {
+    Ok(_) => true,
+    Err(_) => false,
+};
+
+/** Whether it is `Err`: `r.is_err()`. */
+fun result_is_err<T, E>(r: Result<T, E>): bool = !result_is_ok(r);
+
+// Anything that can be stepped through: `for x of e` loops
+// over any `e` with this `next`, whether or not it names `Iter`.
+interface Iter<T> { fun next(mut self): Option<T>; }

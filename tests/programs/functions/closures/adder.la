@@ -1,0 +1,20 @@
+struct Button { label: string, on_click: fun(i64): i64 }
+
+fun adder(k: i64): fun(i64): i64 = fun(x) = x + k;
+
+fun main() {
+    let add2 = adder(2);
+    let add5 = adder(5);
+    println(add2(1));
+    println(add5(1));
+    println(add2(add5(10)));
+    let ops: (fun(i64): i64)[] = [add2, add5, fun(x) = x * x];
+    let mut total = 0;
+    for op of ops {
+        total += op(3);
+    }
+    println(total);
+    let label = "clicks";
+    let b = Button { label: label, on_click: fun(n) = n * 100 };
+    println("{b.label}: {b.on_click(4)}");
+}

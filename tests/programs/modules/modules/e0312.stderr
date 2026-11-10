@@ -1,0 +1,9 @@
+error[E0312]: module `shapes.cirlce` not found
+  --> tests/programs/modules/modules/e0312.la:1:8
+  |
+1 | import shapes.cirlce;
+  |        ^^^^^^^^^^^^^
+  |
+  = help: there is no file `tests/programs/modules/modules/shapes/cirlce.la`
+
+For more about E0312, run `lughac explain E0312`.

@@ -1,0 +1,7 @@
+error[E0101]: unexpected character '`'
+  --> tests/programs/basics/expressions/bad_char.la:1:21
+  |
+1 | fun main(): i32 { 2 ` 3 }
+  |                     ^
+
+For more about E0101, run `lughac explain E0101`.

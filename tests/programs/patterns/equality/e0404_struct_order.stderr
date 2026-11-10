@@ -1,0 +1,9 @@
+error[E0404]: cannot apply `<` to P
+  --> tests/programs/patterns/equality/e0404_struct_order.la:6:13
+  |
+6 |     let c = a < b;
+  |             ^^^^^
+  |
+  = help: give `P` a `fun cmp(self, other: P): Ordering` to order it
+
+For more about E0404, run `lughac explain E0404`.

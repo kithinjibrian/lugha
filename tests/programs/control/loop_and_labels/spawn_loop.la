@@ -1,0 +1,20 @@
+// A `loop` that never waits is preempted like any other loop, so the
+// thread that ends it runs.
+fun spin(stop: Ref<bool>): i64 {
+    let mut turns = 0;
+    loop {
+        if stop.get() {
+            break 1;
+        }
+        turns += 1;
+    }
+}
+
+fun main() {
+    let stop = Ref.new(false);
+    let s = spawn spin(stop);
+    spawn fun() {
+        stop.set(true);
+    }();
+    println(s.join());
+}

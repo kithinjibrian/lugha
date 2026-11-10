@@ -1,0 +1,9 @@
+error[E0403]: expected i32, found bool
+  --> tests/programs/basics/checker/e0403.la:3:18
+  |
+3 |     let n: i32 = ok;
+  |            ---   ^^ expected i32
+  |            |
+  |            expected because of this annotation
+
+For more about E0403, run `lughac explain E0403`.

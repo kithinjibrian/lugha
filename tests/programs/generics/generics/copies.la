@@ -1,0 +1,20 @@
+struct Bag<T> { items: T[], label: string }
+
+fun grow<T>(b: Bag<T>, x: T): Bag<T> {
+    let mut c = b;
+    c.items.push(x);
+    c
+}
+
+fun main() {
+    let a = Bag { items: [1, 2], label: "a" };
+    let b = grow(a, 3);
+    let mut c = b;
+    c.items[0] = 9;
+    println(a.items.len);
+    println(b.items.len);
+    println(b.items[0]);
+    println(c.items[0]);
+    let w = grow(Bag { items: ["p"], label: "w" }, "q");
+    println(w.items[1]);
+}

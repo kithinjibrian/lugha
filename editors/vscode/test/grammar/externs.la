@@ -1,0 +1,24 @@
+// SYNTAX TEST "source.lugha" "externs: handles, renamed externs, extern structs, callbacks"
+
+extern type GtkWidget;
+// <------ keyword.other.extern.lugha
+//     ^^^^ keyword.other.type.lugha
+//          ^^^^^^^^^ entity.name.type.lugha
+
+extern struct Color { r: u8 }
+// <------ keyword.other.extern.lugha
+//     ^^^^^^ keyword.other.struct.lugha
+//            ^^^^^ entity.name.type.lugha
+
+extern "c_name" fun say();
+//     ^^^^^^^^ string.quoted.double.lugha
+//              ^^^ keyword.other.fun.lugha
+//                  ^^^ entity.name.function.lugha
+
+extern fun on(f: fun(W, data), u: data, d: release);
+//                                ^^^^ storage.type.c-marker.lugha
+//                                         ^^^^^^^ storage.type.c-marker.lugha
+
+fun send(data: i64) { use(data); }
+//       ^^^^ - storage.type.c-marker.lugha
+//                        ^^^^ - storage.type.c-marker.lugha

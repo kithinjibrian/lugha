@@ -1,0 +1,227 @@
+//! The example programs and the milestone table's test program, extracted
+//! from the spec `lughac spec` prints (`lugha::SPEC`), with the results
+//! their sentences state.
+//! Editing the spec changes what the tests run.
+
+// Shared by several test crates; each uses a different subset.
+#![allow(dead_code)]
+
+/// An example program and what the spec says it does.
+pub struct SpecProgram {
+    pub title: String,
+    /// The program, or its main file's source when it has several files.
+    pub source: String,
+    /// Its other files, `(file name, source)`, for an example written as
+    /// several blocks that each start with `// <file>.la`.
+    pub modules: Vec<(String, String)>,
+    /// Every expected output ends with a newline; empty if none.
+    pub stdout: String,
+    pub exit: i32,
+    /// The expected diagnostics of a rejected program.
+    pub stderr: Option<String>,
+    /// Command-line arguments, from "Run as `prog a b`.".
+    pub args: Vec<String>,
+    /// Standard input, from "Run with `a` and `b` on … stdin.":
+    /// each backticked item is one line.
+    pub stdin: String,
+}
+
+/// The text between the heading starting `start` and the next `## ` heading.
+fn section(start: &str) -> &'static str {
+    let from = lugha::SPEC
+        .find(start)
+        .unwrap_or_else(|| panic!("the spec has a `{start}` section"));
+    let text = &lugha::SPEC[from..];
+    let end = text[3..].find("\n## ").map_or(text.len(), |i| i + 3);
+    &text[..end]
+}
+
+/// The contents of every fenced block in `text`, in order.
+fn fenced_blocks(text: &str) -> Vec<String> {
+    let mut blocks = Vec::new();
+    let mut current: Option<String> = None;
+    for line in text.lines() {
+        if line.starts_with("```") {
+            match current.take() {
+                Some(block) => blocks.push(block),
+                None => current = Some(String::new()),
+            }
+        } else if let Some(block) = current.as_mut() {
+            block.push_str(line);
+            block.push('\n');
+        }
+    }
+    blocks
+}
+
+/// The number after "exits with " in `sentence`.
+fn exit_code(sentence: &str) -> i32 {
+    let rest = &sentence[sentence.find("exits with ").expect("states an exit code") + 11..];
+    let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
+    digits.parse().expect("the exit code is a number")
+}
+
+/// "Run as `prog 21 x`." → ["21", "x"]; empty when the sentence has no run.
+fn run_args(sentence: &str) -> Vec<String> {
+    let Some(start) = sentence.find("Run as `prog") else {
+        return Vec::new();
+    };
+    let rest = &sentence[start + "Run as `".len()..];
+    let command = &rest[..rest.find('`').expect("the run is in backticks")];
+    command
+        .split_whitespace()
+        .skip(1)
+        .map(str::to_string)
+        .collect()
+}
+
+/// "Run with `5`, `7` and `x` on three lines of stdin." → "5\n7\nx\n";
+/// empty when the sentence gives no stdin.
+fn run_stdin(sentence: &str) -> String {
+    let Some(start) = sentence.find("Run with ") else {
+        return String::new();
+    };
+    let rest = &sentence[start..];
+    let end = rest.find(" on ").expect("the stdin is followed by \" on\"");
+    let items: Vec<&str> = rest[..end].split('`').skip(1).step_by(2).collect();
+    items.iter().map(|line| format!("{line}\n")).collect()
+}
+
+/// "Prints `a` then `b` on two lines, exits with 0." → "a\nb\n".
+fn printed(sentence: &str) -> String {
+    let Some(start) = sentence.find("Prints ") else {
+        return String::new();
+    };
+    let end = sentence
+        .find(", exits with")
+        .expect("a Prints sentence states an exit code");
+    let spans: Vec<&str> = sentence[start..end].split('`').skip(1).step_by(2).collect();
+    spans.iter().map(|s| format!("{s}\n")).collect()
+}
+
+/// Every example program: a bold-titled paragraph, its source
+/// block, and for a rejected program a second block with its diagnostics.
+pub fn section_10() -> Vec<SpecProgram> {
+    let text = section("## 10.");
+    let mut programs = Vec::new();
+    let paragraphs: Vec<&str> = text.split("\n**").skip(1).collect();
+    for paragraph in paragraphs {
+        let Some((title, rest)) = paragraph.split_once("** (milestone") else {
+            continue;
+        };
+        let sentence = rest.lines().next().expect("the paragraph has a sentence");
+        let blocks = fenced_blocks(rest);
+        let (source, modules) = files(&blocks).unwrap_or_else(|| {
+            let source = blocks
+                .first()
+                .unwrap_or_else(|| panic!("`{title}` has a program"));
+            (source.clone(), Vec::new())
+        });
+        let stdout = printed(sentence);
+        let stderr = if stdout.is_empty() {
+            blocks.get(1).cloned()
+        } else {
+            None
+        };
+        programs.push(SpecProgram {
+            title: title.to_string(),
+            source,
+            modules,
+            stdout,
+            exit: exit_code(sentence),
+            stderr,
+            args: run_args(sentence),
+            stdin: run_stdin(sentence),
+        });
+    }
+    programs
+}
+
+/// A multi-file example: every block whose first line is `// <path>.la`,
+/// or `# lugha.toml` for a manifest, split into `main.la`'s source and
+/// the other files, by path from the main file's folder. `None` for one file.
+fn files(blocks: &[String]) -> Option<(String, Vec<(String, String)>)> {
+    let named: Vec<(String, String)> = blocks
+        .iter()
+        .filter_map(|block| {
+            let first = block.lines().next()?;
+            let name = first
+                .strip_prefix("// ")
+                .or_else(|| first.strip_prefix("# "))?
+                .trim();
+            (name.ends_with(".la") || name.ends_with("lugha.toml"))
+                .then(|| (name.to_string(), block.clone()))
+        })
+        .collect();
+    let main = named.iter().position(|(name, _)| name == "main.la")?;
+    let mut modules = named;
+    let (_, source) = modules.remove(main);
+    Some((source, modules))
+}
+
+/// The milestone table's test program and the exit code the table gives it.
+pub fn milestone_2() -> SpecProgram {
+    let text = section("## 11.");
+    let after = &text[text
+        .find("The milestone 2 test program")
+        .expect("§11 has the milestone 2 program")..];
+    let source = fenced_blocks(after)
+        .into_iter()
+        .next()
+        .expect("followed by its source");
+    let row = &text[text
+        .find("The program below exits with")
+        .expect("the table states its exit code")..];
+    SpecProgram {
+        title: "milestone 2".into(),
+        source,
+        modules: Vec::new(),
+        stdout: String::new(),
+        exit: exit_code(row),
+        stderr: None,
+        args: Vec::new(),
+        stdin: String::new(),
+    }
+}
+
+/// The JSON diagnostic line the spec shows for the rejected program.
+pub fn json_diagnostic() -> String {
+    let text = section("## 9.");
+    let after = &text[text
+        .find("**JSON diagnostics.**")
+        .expect("§9 shows a JSON line")..];
+    fenced_blocks(after)
+        .into_iter()
+        .next()
+        .expect("followed by the line")
+}
+
+/// `(title, source)` of every example program and the milestone table's,
+/// each file of a multi-file program on its own.
+pub fn all() -> Vec<(String, String)> {
+    section_10()
+        .into_iter()
+        .chain([milestone_2()])
+        .flat_map(|p| {
+            // Only Lugha sources: a manifest is not lexed or parsed.
+            let modules = p
+                .modules
+                .into_iter()
+                .filter(|(name, _)| name.ends_with(".la"))
+                .map({
+                    let title = p.title.clone();
+                    move |(name, src)| (format!("{title} ({name})"), src)
+                });
+            std::iter::once((p.title, p.source)).chain(modules)
+        })
+        .collect()
+}
+
+/// The source of the example program titled `title`.
+pub fn source(title: &str) -> String {
+    section_10()
+        .into_iter()
+        .find(|p| p.title == title)
+        .unwrap_or_else(|| panic!("§10 has `{title}`"))
+        .source
+}

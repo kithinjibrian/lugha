@@ -1,0 +1,44 @@
+// The expected type reaches a receiver only its result types (kivuli):
+// `leaf("x").pad(8)` where a `Node<Msg>` is expected.
+enum Node<M> {
+    Leaf(string),
+    Wrapped(Node<M>, i64),
+}
+
+impl Node<M> {
+    fun pad(self, n: i64): Node<M> = Node.Wrapped(self, n);
+}
+
+fun leaf<M>(s: string): Node<M> = Node.Leaf(s);
+
+enum Msg {
+    Go,
+}
+
+fun depth<M>(n: Node<M>): i64 = match n {
+    Leaf(_) => 0,
+    Wrapped(inner, by) => by + depth(inner),
+};
+
+fun a(): Node<Msg> = leaf("x").pad(8);
+
+fun group(xs: Node<Msg>[]): Node<Msg> = xs[0];
+
+fun b(): Node<Msg> = group([leaf("x").pad(8)]);
+
+fun chain(): Node<Msg> = leaf("x").pad(1).pad(2);
+
+fun first<M>(xs: Node<M>[]): Node<M> = xs[0];
+
+fun pair(t: (string, Node<Msg>)): Node<Msg> = t.1;
+
+fun main() {
+    println(depth(a()));
+    println(depth(b()));
+    println(depth(chain()));
+    let listed: Node<Msg> = first([leaf("y").pad(4), leaf("z")]);
+    println(depth(listed));
+    println(depth(pair(("p", leaf("q").pad(5).pad(5)))));
+    let expected: Node<Msg> = leaf("x").pad(8);
+    println(leaf("x").pad(8) == expected);
+}

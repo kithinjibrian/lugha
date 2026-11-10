@@ -1,0 +1,10 @@
+public struct Size {
+    public w: i64,
+    public h: i64,
+}
+
+public const UNIT: Size = Size { w: 2, h: 3 };
+public const SIDES: i64 = COUNT;
+private const COUNT: i64 = 4;
+
+public fun describe(): string = "{COUNT} sides of {UNIT.w}";

@@ -1,0 +1,13 @@
+struct Set { n: i64 }
+
+impl Set {
+    fun add(mut self, x: i64) { self.n += x; }
+}
+
+fun double<T>(x: T): T = x + x;
+
+fun main() {
+    let s = Set { n: 0 };
+    let t = s + 1;
+    let u = "a" - "b";
+}

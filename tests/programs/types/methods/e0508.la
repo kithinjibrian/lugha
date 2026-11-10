@@ -1,0 +1,12 @@
+struct Acc { total: i64[] }
+
+impl Acc {
+    fun add(mut self, o: Acc) {
+        self.total[0] += o.total[0];
+    }
+}
+
+fun main() {
+    let mut v = Acc { total: [1] };
+    v.add(v);
+}

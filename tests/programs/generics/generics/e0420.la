@@ -1,0 +1,7 @@
+fun nest<T>(x: T) {
+    nest([x]);
+}
+
+fun main() {
+    nest(1);
+}

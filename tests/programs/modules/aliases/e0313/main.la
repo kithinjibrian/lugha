@@ -1,0 +1,5 @@
+import shapes;
+
+fun main() {
+    println(shapes.vec.hidden());
+}

@@ -1,0 +1,9 @@
+error[E0402]: integer literal out of range for u8
+  --> tests/programs/basics/checker/e0402.la:2:20
+  |
+2 |     let byte: u8 = 256;
+  |                    ^^^
+  |
+  = help: u8 holds 0 to 255
+
+For more about E0402, run `lughac explain E0402`.

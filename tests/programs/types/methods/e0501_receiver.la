@@ -1,0 +1,12 @@
+struct P { x: i64 }
+
+impl P {
+    fun bump(mut self) {
+        self.x += 1;
+    }
+}
+
+fun main() {
+    let p = P { x: 1 };
+    p.bump();
+}

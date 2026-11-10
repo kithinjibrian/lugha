@@ -1,0 +1,21 @@
+fun main() {
+    let mut n = 1;
+    let read_n = fun(): i64 = n;
+    n = 2;
+    println(read_n());
+    println(n);
+    let mut xs = [1, 2, 3];
+    let first = fun(): i64 = xs[0];
+    let size = fun(): i64 = xs.len;
+    xs[0] = 100;
+    xs.push(4);
+    println(first());
+    println(size());
+    println(xs[0]);
+    let greeting = "hi";
+    let greet = fun(name: string): string = "{greeting}, {name}";
+    println(greet("Ann"));
+    let flag = true;
+    let check = fun(): bool = flag;
+    println(check());
+}

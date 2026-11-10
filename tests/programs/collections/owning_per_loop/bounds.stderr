@@ -1,0 +1,1 @@
+panic: index out of bounds: the length is 2 but the index is 5 at tests/programs/collections/owning_per_loop/bounds.la:11:10

@@ -1,0 +1,10 @@
+error[E0314]: the import `geo` clashes with an item
+  --> tests/programs/modules/modules/e0314/main.la:1:8
+  |
+1 | import geo;
+  |        ^^^
+2 |
+3 | fun geo(): i64 = 1;
+  |     --- `geo` is also declared here
+
+For more about E0314, run `lughac explain E0314`.

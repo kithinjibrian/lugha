@@ -1,0 +1,16 @@
+struct Point { x: i64, y: i64 }
+
+fun main() {
+    let n: i32 = 7;
+    let b: u8 = 200;
+    let f = 2.0;
+    let p = Point { x: 1, y: 2 };
+    let name = "Ann";
+    println("{name} is {n * 6} years old");
+    println("i32 {n}, u8 {b}, f64 {f}, bool {n > 3}");
+    println("point ({p.x}, {p.y})");
+    println("{if p.x < p.y { p.y } else { p.x }} wins");
+    println("set {{1, 2}} and a lone {{");
+    println("{name}{name}");
+    println("tab\t{name.len}\"quoted\"");
+}

@@ -1,0 +1,54 @@
+// Every way out of a block runs its defers: `return`, `?`, `break`,
+// `continue` and the end, innermost block first.
+fun early(x: i64): i64 {
+    defer println("early done {x}");
+    if x > 0 {
+        defer println("positive");
+        return x * 10;
+    }
+    0
+}
+
+fun parse(s: string): Result<i64, string> {
+    defer println("parse done {s}");
+    let n = parse_i64(s).ok_or("bad number")?;
+    Ok(n + 1)
+}
+
+fun loops() {
+    for i in 0..4 {
+        defer println("iteration {i} done");
+        if i == 1 {
+            continue;
+        }
+        if i == 3 {
+            break;
+        }
+        println("body {i}");
+    }
+    let mut k = 0;
+    while true {
+        defer println("while {k}");
+        k += 1;
+        if k == 2 {
+            break;
+        }
+    }
+}
+
+fun unreached(x: i64): i64 {
+    if x == 0 {
+        return 0;
+    }
+    defer println("never for 0");
+    x
+}
+
+fun main() {
+    println(early(1));
+    println(early(0));
+    println(parse("41"));
+    println(parse("x"));
+    loops();
+    println(unreached(0));
+}

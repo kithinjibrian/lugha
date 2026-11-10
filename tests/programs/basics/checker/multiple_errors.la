@@ -1,0 +1,10 @@
+// Three independent mistakes give exactly three diagnostics; the bad `y`
+// becomes an error type, so its later uses stay silent.
+fun main() {
+    let x: i32 = 5;
+    let y = x + 2.5;
+    let z = y * 2;
+    let w = missing + z;
+    let b: bool = 7 < 3;
+    let n: i32 = b;
+}

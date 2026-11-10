@@ -1,0 +1,6 @@
+fun main() {
+    let mut m = #{"a": 1};
+    for (k, v) of mut m {
+        v = 2;
+    }
+}

@@ -1,0 +1,4 @@
+true
+false
+[Text("a"), Button("b", Go)]
+ok

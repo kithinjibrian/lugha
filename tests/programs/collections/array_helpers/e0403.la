@@ -1,0 +1,4 @@
+fun main() {
+    let xs = [1, 2, 3];
+    let evens = xs.filter(fun(x) = x % 2);
+}

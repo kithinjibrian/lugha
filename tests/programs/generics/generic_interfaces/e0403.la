@@ -1,0 +1,18 @@
+// A `Source<i64>` is not a `Source<string>`.
+
+interface Source<T> {
+    fun next(mut self): Option<T>;
+}
+
+struct Count { n: i64 }
+
+impl Count {
+    fun next(mut self): Option<i64> = Some(self.n);
+}
+
+fun words(s: Source<string>): i64 = 0;
+
+fun main() {
+    let s: Source<i64> = Count { n: 1 };
+    println(words(s));
+}

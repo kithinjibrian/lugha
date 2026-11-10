@@ -1,0 +1,12 @@
+// Sum of the even numbers below 10: 0 + 2 + 4 + 6 + 8.
+fun main(): i32 {
+    // An i32 bound makes `i` an i32, matching `total` and `main`.
+    let n: i32 = 10;
+    let mut total: i32 = 0;
+    for i in 0..n {
+        if i % 2 == 0 {
+            total += i;
+        }
+    }
+    total
+}

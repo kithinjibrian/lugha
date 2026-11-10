@@ -1,0 +1,6 @@
+import std.math;
+
+fun main() {
+    let r = math.sqrt(2);
+    let s = math.abs("a");
+}

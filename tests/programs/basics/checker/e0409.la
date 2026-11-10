@@ -1,0 +1,3 @@
+extern fun ask(cb: fun(i64): string);
+
+fun main() {}

@@ -1,0 +1,22 @@
+struct Point { x: f64, y: f64 }
+
+fun centroid(pts: Point[]): Point {
+    let mut sx = 0.0;
+    let mut sy = 0.0;
+    for p of pts {
+        sx += p.x;
+        sy += p.y;
+    }
+    let n = pts.len as f64;
+    Point { x: sx / n, y: sy / n }
+}
+
+fun main() {
+    let pts = [
+        Point { x: 0.0, y: 0.0 },
+        Point { x: 4.0, y: 0.0 },
+        Point { x: 2.0, y: 3.0 },
+    ];
+    let c = centroid(pts);
+    println("centroid: " + to_string(c.x) + ", " + to_string(c.y));
+}

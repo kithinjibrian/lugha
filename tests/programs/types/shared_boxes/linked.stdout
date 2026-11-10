@@ -1,0 +1,3 @@
+[1, 2, 3] [3, 2, 1]
+Ref(Node { value: 9, next: Some(Ref(…)), prev: None })
+Ref(Node { value: 2, next: Some(Ref(Node { value: 3, next: None, prev: Some(Ref(…)) })), prev: Some(Ref(Node { value: 1, next: Some(Ref(…)), prev: None })) })

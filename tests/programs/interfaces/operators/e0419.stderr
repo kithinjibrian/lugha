@@ -1,0 +1,17 @@
+error[E0419]: `string` doesn't satisfy `Num`
+   --> tests/programs/interfaces/operators/e0419.la:17:13
+   |
+17 |     let t = g.total();
+   |             ^^^^^^^^^
+   |
+   = help: only the number types are `Num`
+
+error[E0419]: `string` doesn't satisfy `Num`
+   --> tests/programs/interfaces/operators/e0419.la:18:13
+   |
+18 |     let n = sum(["b"]);
+   |             ^^^^^^^^^^
+   |
+   = help: only the number types are `Num`
+
+For more about E0419, run `lughac explain E0419`.

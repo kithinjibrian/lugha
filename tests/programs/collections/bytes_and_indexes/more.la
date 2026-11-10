@@ -1,0 +1,46 @@
+// An empty file, appends, a missing file, every kind of invalid UTF-8
+// (each after one valid byte), a valid four-byte character, and a u16
+// index into a string.
+fun main() {
+    let empty: u8[] = [];
+    match write_bytes("e.bin", empty) {
+        Ok(n) => println(n),
+        Err(e) => println(e),
+    }
+    match read_bytes("e.bin") {
+        Ok(b) => println(b.len),
+        Err(e) => println(e),
+    }
+    match append_bytes("e.bin", [1, 2]) {
+        Ok(n) => println(n),
+        Err(e) => println(e),
+    }
+    match append_bytes("e.bin", [3]) {
+        Ok(n) => println(n),
+        Err(e) => println(e),
+    }
+    match read_bytes("e.bin") {
+        Ok(b) => println(b),
+        Err(e) => println(e),
+    }
+    match read_bytes("missing.bin") {
+        Ok(b) => println(b),
+        Err(e) => println("missing: {e}"),
+    }
+    let cases: u8[][] = [
+        [65, 192, 128],
+        [65, 224, 128, 128],
+        [65, 237, 160, 128],
+        [65, 244, 144, 128, 128],
+        [65, 226, 130],
+        [65, 128],
+        [65, 255],
+        [240, 159, 152, 128],
+    ];
+    for c of cases {
+        println(string_from_utf8(c));
+    }
+    let s = "abc";
+    let at: u16 = 2;
+    println(s[at]);
+}

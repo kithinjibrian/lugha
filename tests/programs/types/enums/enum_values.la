@@ -1,0 +1,30 @@
+// Enum payloads are immutable, so enum copies share them; the copies that
+// keep value semantics happen at construction and when a binding is stored.
+enum Job { Batch(i64[]), Idle }
+
+fun first(j: Job): i64 = match j {
+    Batch(xs) => xs[0],
+    Idle => -1,
+};
+
+fun main() {
+    let mut xs = [1, 2, 3];
+    let a = Job.Batch(xs);
+    xs[0] = 9;
+    println(first(a));
+
+    match a {
+        Batch(v) => {
+            let mut w = v;
+            w[0] = 7;
+            println(w[0]);
+        }
+        Idle => {}
+    }
+    println(first(a));
+
+    let b = a;
+    println(first(b));
+    println(first(a));
+    println(first(Job.Idle));
+}

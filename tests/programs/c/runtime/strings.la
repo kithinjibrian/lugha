@@ -1,0 +1,15 @@
+// Strings are values: bound, passed, returned, printed; `to_string` of each primitive.
+fun greeting(name: string): string = name;
+
+fun main() {
+    let s = "héllo 👋";
+    let t: string = greeting(s);
+    println(t);
+    let n: i32 = 7;
+    let u: u8 = 200;
+    println(to_string(n));
+    println(to_string(-3));
+    println(to_string(u));
+    println(to_string(2.5));
+    println(to_string(true));
+}

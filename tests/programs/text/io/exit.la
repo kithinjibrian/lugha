@@ -1,0 +1,14 @@
+fun check(n: i64) {
+    if n > 2 {
+        print("too big, ");
+        println("stopping");
+        exit(3);
+    }
+}
+
+fun main() {
+    print("start ");
+    check(1);
+    check(5);
+    println("never printed");
+}

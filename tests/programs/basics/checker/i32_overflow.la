@@ -1,0 +1,6 @@
+// i32 arithmetic overflows at 32 bits and panics.
+fun main(): i32 {
+    let x: i32 = 2147483647;
+    let y = x + 1;
+    if y < 0 { 9 } else { 0 }
+}

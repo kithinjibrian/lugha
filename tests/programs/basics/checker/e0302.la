@@ -1,0 +1,5 @@
+fun area(): i64 = 1;
+
+fun area(): i64 = 2;
+
+fun main() {}

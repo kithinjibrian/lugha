@@ -1,0 +1,9 @@
+error[E0424]: `?` can't return here
+  --> tests/programs/errors/results/e0424.la:4:13
+  |
+4 |     let h = half(3)?;
+  |             ^^^^^^^^
+  |
+  = help: `main` can't return an error: handle it with `match`
+
+For more about E0424, run `lughac explain E0424`.

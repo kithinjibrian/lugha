@@ -1,0 +1,4 @@
+fun main() {
+    let ok: bool = 1 < 2;
+    let n: i32 = ok;
+}

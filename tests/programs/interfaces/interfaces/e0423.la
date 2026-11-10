@@ -1,0 +1,11 @@
+interface Sized {
+    fun size(self): i64;
+}
+
+interface Measured {
+    fun size(self): f64;
+}
+
+fun both<T: Sized + Measured>(x: T) {}
+
+fun main() {}

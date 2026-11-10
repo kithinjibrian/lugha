@@ -1,0 +1,9 @@
+200
+2
+Some(10)
+None
+Some("left")
+2
+200 Some(true) None
+2 2 2 Some(3)
+2 Some("p again")

@@ -1,0 +1,9 @@
+error[E0422]: `Named` doesn't declare everything `Pet` needs
+   --> tests/programs/interfaces/converting/e0422.la:14:36
+   |
+14 | fun hello(n: Named): string = talk(n);
+   |                                    ^
+   |
+   = help: no `sound`
+
+For more about E0422, run `lughac explain E0422`.

@@ -1,0 +1,21 @@
+// An actor: casts are queued, calls wait for the reply, a panic ends only
+// the actor, and `join` says how it ended.
+public actor Counter {
+    count: i64,
+    fun new(start: i64): Counter = Counter { count: start };
+    fun add(mut self, n: i64) { self.count += n; }
+    fun get(self): i64 = self.count;
+    fun divide(mut self, by: i64) { self.count = self.count / by; }
+}
+
+fun main() {
+    let c = spawn Counter.new(10);
+    c.add(5);
+    println(c.get());
+    c.divide(0);
+    println(c.join());
+    let d = spawn Counter { count: 0 };
+    d.stop();
+    println(d.join());
+    println(d);
+}

@@ -1,0 +1,9 @@
+// A generic interface is written with its arguments.
+
+interface Source<T> {
+    fun next(mut self): Option<T>;
+}
+
+fun first(s: Source): i64 = 0;
+
+fun main() {}

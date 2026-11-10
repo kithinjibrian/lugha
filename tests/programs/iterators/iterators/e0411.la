@@ -1,0 +1,13 @@
+// `next` takes `self`, not `mut self`, so a `Stuck` can't be iterated.
+
+struct Stuck { n: i64 }
+
+impl Stuck {
+    fun next(self): Option<i64> = Some(self.n);
+}
+
+fun main() {
+    for n of (Stuck { n: 1 }) {
+        println(n);
+    }
+}

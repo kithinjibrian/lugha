@@ -1,0 +1,55 @@
+// Nested and recursive values, escapes, empty forms, a module's type,
+// show on an enum, a show of the wrong shape, to_string, eprintln, and a
+// generic T that is an interface value.
+import geo;
+
+struct Empty {}
+
+struct Line { from: geo.Pt, to: geo.Pt, tag: Option<string> }
+
+enum Tree { Leaf, Node(Tree, i64, Tree) }
+
+enum Light { Red, Green }
+
+impl Light {
+    fun show(self): string = match self {
+        Red => "stop",
+        Green => "go",
+    };
+}
+
+struct Odd { n: i64 }
+
+impl Odd {
+    fun show(self): i64 = self.n;
+}
+
+interface Named { fun name(self): string; }
+
+struct Dog { age: i64 }
+
+impl Dog {
+    fun name(self): string = "dog";
+}
+
+fun dump<T>(x: T) {
+    println(x);
+}
+
+fun main() {
+    println(Line { from: geo.Pt { x: 0.5, y: 2.0 }, to: geo.Pt { x: 1.0, y: -1.0 }, tag: Some("a\"b\\c\nd") });
+    println(Tree.Node(Tree.Leaf, 1, Tree.Node(Tree.Leaf, 2, Tree.Leaf)));
+    let empty: i64[] = [];
+    println(Empty {});
+    println(empty);
+    println([Light.Red, Light.Green]);
+    println(Odd { n: 3 });
+    let r: Result<i64, string> = Err("no");
+    println(r);
+    let s = to_string([[1, 2], [3]]);
+    println(s.len);
+    eprintln(Some(true));
+    let pet: Named = Dog { age: 4 };
+    dump(pet);
+    dump([pet, pet]);
+}

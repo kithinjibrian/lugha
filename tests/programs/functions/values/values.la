@@ -1,0 +1,33 @@
+struct Button { label: string, on_click: fun(i64): i64 }
+
+fun double(x: i64): i64 = x * 2;
+fun triple(x: i64): i64 = x * 3;
+fun shout(s: string): string = s + "!";
+fun hello() { println("hello"); }
+
+fun apply(f: fun(i64): i64, x: i64): i64 = f(x);
+fun pick(big: bool): fun(i64): i64 = if big { triple } else { double };
+fun twice(f: fun(i64): i64): fun(i64): i64 = pick(f(1) > 2);
+
+fun main() {
+    let f = double;
+    println(f(5));
+    let fs: (fun(i64): i64)[] = [double, triple];
+    for g of fs {
+        println(apply(g, 7));
+    }
+    println(pick(true)(4));
+    let b = Button { label: "ok", on_click: triple };
+    println(b.on_click(2));
+    let maybe: Option<fun(string): string> = Some(shout);
+    match maybe {
+        Some(s) => println(s("hi")),
+        None => println("none"),
+    }
+    let h = hello;
+    h();
+    println(twice(triple)(10));
+    let mut g = double;
+    g = triple;
+    println(g(1));
+}

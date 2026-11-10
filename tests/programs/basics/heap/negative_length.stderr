@@ -1,0 +1,1 @@
+panic: negative array length at tests/programs/basics/heap/negative_length.la:1:27

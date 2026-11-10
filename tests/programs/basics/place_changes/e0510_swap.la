@@ -1,0 +1,5 @@
+fun main() {
+    let mut g = [[1], [2]];
+    let mut ys = [3];
+    swap(g[0][0], ys[{ g[1] = [5]; 0 }]);
+}
