@@ -119,7 +119,7 @@ fn has_popcnt(code: &[u8]) -> bool {
 }
 
 #[test]
-fn the_default_cpu_is_baseline_x86_64_and_cpu_levels_add_instructions_v17() {
+fn the_default_cpu_is_baseline_x86_64_and_cpu_levels_add_instructions() {
     // `args()` keeps the value unknown until the program runs, so LLVM
     // can't fold the count away: 12345 has six bits set.
     let src = "fun main(): i32 { let x = args().len as u64 * 12345; x.count_ones() as i32 }\n";

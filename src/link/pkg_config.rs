@@ -164,7 +164,7 @@ mod tests {
     }
 
     #[test]
-    fn cflags_keep_gtks_x86_64_defaults_v17() {
+    fn cflags_keep_gtks_x86_64_defaults() {
         let out = "-I/usr/include/gtk-4.0 -mfpmath=sse -msse -msse2 -pthread\n";
         assert_eq!(
             flags(out, Query::Cflags).unwrap(),

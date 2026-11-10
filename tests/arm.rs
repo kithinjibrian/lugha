@@ -112,7 +112,7 @@ fn expected(stem: &str, extension: &str) -> Option<String> {
 }
 
 #[test]
-fn programs_run_on_arm_as_they_do_on_x86_64_v17() {
+fn programs_run_on_arm_as_they_do_on_x86_64() {
     if !can_build_for_arm("programs_run_on_arm") {
         return;
     }

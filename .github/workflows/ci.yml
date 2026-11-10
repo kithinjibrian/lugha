@@ -30,12 +30,14 @@ jobs:
         # llvm-21-dev: inkwell's LLVM (DECISION-005, linked dynamically).
         # build-essential: `cc` compiles the runtime and the bundled collector
         # (no libgc-dev: milestone 131) and links every test program.
-        # gcc-aarch64-linux-gnu and qemu-user: tests/arm.rs (milestone 133).
+        # gcc-aarch64-linux-gnu, its C library headers and qemu-user: tests/arm.rs.
+        # The headers are only a recommendation of the compiler, which
+        # --no-install-recommends skips; without them it reads x86's.
         # curl and ca-certificates: rustup's installer. git: a real checkout.
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            llvm-21-dev build-essential gcc-aarch64-linux-gnu qemu-user curl ca-certificates git libssl-dev openssl
+            llvm-21-dev build-essential gcc-aarch64-linux-gnu libc6-dev-arm64-cross qemu-user curl ca-certificates git libssl-dev openssl
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
