@@ -25,6 +25,28 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// Lowers an expression at its own type.
     pub(super) fn unconverted(&mut self, expr: &Expr) -> Result<Value<'ctx>, CodegenError> {
+        // `f(out g[i])`: C fills a copy of the element, handed back after.
+        if let ExprKind::Call(callee, args) = &expr.kind
+            && let Some(i) = args.iter().position(
+                |a| matches!(&a.kind, ExprKind::Pass(_, inner) if self.write_link(inner).is_some()),
+            )
+        {
+            let ExprKind::Pass(mode, inner) = &args[i].kind else {
+                unreachable!("found just above")
+            };
+            return self.through_index(inner, |s, copy| {
+                let mut args = args.clone();
+                args[i] = Expr {
+                    kind: ExprKind::Pass(*mode, Box::new(copy.clone())),
+                    ..args[i].clone()
+                };
+                let call = Expr {
+                    kind: ExprKind::Call(callee.clone(), args),
+                    ..expr.clone()
+                };
+                s.unconverted(&call)
+            });
+        }
         let value: BasicValueEnum<'ctx> = match &expr.kind {
             ExprKind::Pass(..) => {
                 unreachable!("checked: `out`/`ptr`/`mut` only as an extern's argument")

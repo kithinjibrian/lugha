@@ -6,7 +6,6 @@ What's next. Shipped work is in CHANGELOG.md (and the spec's §11 milestone tabl
 
 ## Known bugs and limits
 
-- [ ] **Write-back on a loop's exits:** `for x of mut g[i]` and `swap(g[i], …)` through a type's `index` are E0502; handing the copy back on `break`, `return` and `?` would allow them.
 
 ## Language and library
 

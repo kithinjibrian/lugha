@@ -1,0 +1,79 @@
+// `for … of mut`, `swap` and `out` through a type's `index`: each works on
+// a copy of the element, handed back to `set_index` on every way out.
+struct Rows { rows: i64[][] }
+
+impl Rows {
+    fun index(self, i: i64): i64[] = self.rows[i];
+    fun set_index(mut self, i: i64, v: i64[]) {
+        self.rows[i] = v;
+    }
+}
+
+struct Grid { rows: Rows[] }
+
+impl Grid {
+    fun index(self, i: i64): Rows = self.rows[i];
+    fun set_index(mut self, i: i64, v: Rows) {
+        self.rows[i] = v;
+    }
+}
+
+/** Doubles row `i` up to the first value over `limit`, which it returns. */
+fun first_over(r: Rows, i: i64, limit: i64): (Rows, i64) {
+    let mut r = r;
+    for x of mut r[i] {
+        x *= 2;
+        if x > limit {
+            return (r, x);
+        }
+    }
+    (r, -1)
+}
+
+fun parse_all(r: Rows): Result<Rows, string> {
+    let mut r = r;
+    for x of mut r[0] {
+        x = check(x)?;
+    }
+    Ok(r)
+}
+
+fun check(x: i64): Result<i64, string> = if x < 0 { Err("negative") } else { Ok(x + 1) };
+
+fun main() {
+    let mut r = Rows { rows: [[1, 2, 3], [9]] };
+    for x of mut r[0] {
+        x *= 10;
+        if x == 20 {
+            break;
+        }
+    }
+    println(r.rows);
+
+    let mut spare = [7];
+    swap(r[1], spare);
+    println((r.rows, spare));
+    swap(r[0], r[1]);
+    println(r.rows);
+
+    let (r2, found) = first_over(Rows { rows: [[1, 5, 9]] }, 0, 6);
+    println((r2.rows, found));
+
+    match parse_all(Rows { rows: [[1, 2]] }) {
+        Ok(p) => println(p.rows),
+        Err(e) => println(e),
+    }
+    match parse_all(Rows { rows: [[1, -2, 3]] }) {
+        Ok(p) => println(p.rows),
+        Err(e) => println(e),
+    }
+
+    let mut g = Grid { rows: [Rows { rows: [[1, 1], [2]] }] };
+    outer: for k in 0..2 {
+        for x of mut g[0][k] {
+            x += 100;
+            continue outer;
+        }
+    }
+    println(g.rows[0].rows);
+}

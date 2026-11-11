@@ -183,11 +183,16 @@ mod tests {
     }
 
     #[test]
-    fn swap_and_loops_through_index_stay_e0502() {
-        let src = format!(
+    fn swap_and_loops_go_through_a_copy() {
+        ok(&format!(
             "{ROWS}fun main() {{ let mut r = Rows {{ rows: [] }}; let mut q: P[] = [];\n\
-             swap(r[0], q); for p of mut r[0] {{ p.x = 1; }} }}"
+             swap(r[0], q); swap(r[0], r[1]); for p of mut r[0] {{ p.x = 1; if p.x > 0 {{ break; }} }} }}"
+        ));
+        // The copy is handed back at the end, so the body can't change `r`.
+        let src = format!(
+            "{ROWS}fun main() {{ let mut r = Rows {{ rows: [] }};\n\
+             for p of mut r[0] {{ r.rows = []; }} }}"
         );
-        assert_eq!(errors(&src), [("E0502", "r[0]"), ("E0502", "r[0]")]);
+        assert_eq!(errors(&src), [("E0507", "r.rows")]);
     }
 }

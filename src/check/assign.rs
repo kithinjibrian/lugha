@@ -69,16 +69,9 @@ impl Checker {
         match &place.kind {
             ExprKind::Name(_) => {}
             // `g[i].x = v`: `g[i]` is a copy its `index` method gave, which
-            // `set_index` takes back. `swap` can't hand a copy back.
-            ExprKind::Field(..) | ExprKind::Index(..)
-                if let Some(element) = self.read_by_index(place) =>
-            {
-                if place_use != PlaceUse::Swap {
-                    return self.write_through(place);
-                }
-                let help = super::indexing::copy_help(place, element, place_use);
-                self.report(reword(errors::not_place(place.span).with_help(help)));
-                return false;
+            // `set_index` takes back.
+            ExprKind::Field(..) | ExprKind::Index(..) if self.read_by_index(place) => {
+                return self.write_through(place);
             }
             ExprKind::Field(base, _) | ExprKind::Index(base, _, _) => {
                 let base_ty = self.types[base.id.0 as usize].clone();

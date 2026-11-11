@@ -22,6 +22,11 @@ pub(super) struct Path {
 }
 
 impl Path {
+    /// The path of the whole root variable.
+    pub(super) fn whole(&mut self) {
+        self.steps.clear();
+    }
+
     /// True if assigning through `self` might change part of `other` or vice
     /// versa: same root, and every shared step could be the same (two index
     /// steps always might be; field steps must match).

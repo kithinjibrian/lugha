@@ -26,7 +26,14 @@ impl Checker {
             return;
         }
         self.loop_place(iter, &ty);
-        let guard = self.place_path(iter);
+        let mut guard = self.place_path(iter);
+        // The copy is handed back at the end: a change to any part of the
+        // root in the body would be overwritten, so all of it is guarded.
+        if self.read_by_index(iter)
+            && let Some(path) = &mut guard
+        {
+            path.whole();
+        }
         if let Some(path) = &guard {
             self.iterating.push((path.clone(), iter.span));
         }
@@ -69,16 +76,10 @@ impl Checker {
             self.report(d);
             return;
         }
-        // `for x of mut m[k]`: the entry is a copy, not a place.
-        if let Some(element) = self.read_by_index(iter) {
-            let help = super::indexing::loop_copy_help(element);
-            let d = Diagnostic::error(
-                "E0502",
-                "`for … of mut` needs a variable, field or element",
-                iter.span,
-            )
-            .with_help(help);
-            self.report(d);
+        // `for x of mut g[i]`: over a copy of the element, which every way
+        // out of the loop hands back to `set_index`.
+        if self.read_by_index(iter) {
+            self.write_through(iter);
             return;
         }
         let is_place = matches!(

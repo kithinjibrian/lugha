@@ -8,11 +8,10 @@
 //! expression's (the place's, for a write), so instances, bounds and
 //! interface tables work unchanged.
 
-use super::assign::PlaceUse;
 use super::maps::MAP;
 use super::operators::overloaded;
 use super::{Checker, Type, errors};
-use crate::ast::{Expr, ExprId, ExprKind, Ident};
+use crate::ast::{Expr, ExprKind, Ident};
 use crate::diagnostic::Diagnostic;
 
 /// The shape a read or a write needs, for the help of an E0411.
@@ -126,82 +125,20 @@ impl Checker {
 }
 
 impl Checker {
-    /// The element of a place chain, nearest its root, that `[ ]` reads
-    /// as a copy through a type's `index` method, with what gave it.
-    pub(super) fn read_by_index<'e>(&self, place: &'e Expr) -> Option<(&'e Expr, &'static str)> {
+    /// Whether a `[ ]` on `place`'s path reads through a type's `index`
+    /// method: a change there goes through `set_index`.
+    pub(super) fn read_by_index(&self, place: &Expr) -> bool {
         match &place.kind {
             ExprKind::Field(base, _) => self.read_by_index(base),
-            ExprKind::Index(base, _, _) => self.read_by_index(base).or_else(|| {
-                let ty = self.types[base.id.0 as usize].as_ref()?;
-                by_method(ty).then_some((place, "`index` returned"))
-            }),
-            _ => None,
+            ExprKind::Index(base, _, _) => {
+                self.read_by_index(base)
+                    || self.types[base.id.0 as usize]
+                        .as_ref()
+                        .is_some_and(by_method)
+            }
+            _ => false,
         }
     }
-}
-
-/// The help of an E0502 for a write inside `element`, which `source` gave:
-/// copy it out, change the copy, write it back, in the program's own words
-/// (`let mut e = s[0]; e[0] = …; s[0] = e;`).
-pub(super) fn copy_help(
-    place: &Expr,
-    (element, source): (&Expr, &str),
-    place_use: PlaceUse,
-) -> String {
-    // No expression has the id `u32::MAX`, so the element is spelt in full.
-    let elem = written(element, ExprId(u32::MAX)).unwrap_or_else(|| "a[i]".to_string());
-    let changed = written(place, element.id).unwrap_or_else(|| "e…".to_string());
-    let step = match place_use {
-        PlaceUse::Assign => format!("{changed} = …;"),
-        PlaceUse::Receiver(method) => format!("{changed}.{method}(…);"),
-        PlaceUse::Swap => format!("swap({changed}, …);"),
-    };
-    write_back(&elem, source, &step)
-}
-
-/// The help of an E0502 for `for … of mut element`, which `source` gave.
-pub(super) fn loop_copy_help((element, source): (&Expr, &str)) -> String {
-    // No expression has the id `u32::MAX`, so the element is spelt in full.
-    let elem = written(element, ExprId(u32::MAX)).unwrap_or_else(|| "a[i]".to_string());
-    write_back(&elem, source, "for x of mut e { … }")
-}
-
-fn write_back(elem: &str, source: &str, step: &str) -> String {
-    format!(
-        "`{elem}` is a copy that {source}: change a copy, then write it back: \
-         `let mut e = {elem}; {step} {elem} = e;`"
-    )
-}
-
-/// How `e` is written, with the element whose id is `copy` written `e`
-/// when `e` is inside it; `None` for what a help can't spell simply.
-fn written(e: &Expr, copy: ExprId) -> Option<String> {
-    if e.id == copy {
-        return Some("e".to_string());
-    }
-    Some(match &e.kind {
-        ExprKind::Name(name) => name.clone(),
-        ExprKind::Int(n) => n.to_string(),
-        ExprKind::Bool(b) => b.to_string(),
-        ExprKind::Str(s) if !s.contains(['"', '\\', '{']) => format!("\"{s}\""),
-        ExprKind::Field(base, field) => format!("{}.{}", written(base, copy)?, field.name),
-        ExprKind::Index(base, _, index) => {
-            let index = match &index.kind {
-                ExprKind::Tuple(items) if items.len() >= 2 => items
-                    .iter()
-                    .map(|i| written(i, copy))
-                    .collect::<Option<Vec<_>>>()?
-                    .join(", "),
-                _ => written(index, copy)?,
-            };
-            format!("{}[{index}]", written(base, copy)?)
-        }
-        ExprKind::Array(items) => {
-            let items = items.iter().map(|i| written(i, copy));
-            format!("[{}]", items.collect::<Option<Vec<_>>>()?.join(", "))
-        }
-        _ => return None,
-    })
 }
 
 /// The help of an E0411 for a type without the method: the shape to
@@ -217,7 +154,7 @@ pub(super) fn missing(ty: &Type, want: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::check::test_util::{diagnostics, errors, ok};
+    use crate::check::test_util::{errors, ok};
 
     const GRID: &str = "struct Grid { w: i64, cells: f64[] }\nimpl Grid {\n\
         fun index(self, at: (i64, i64)): f64 { let (r, c) = at; self.cells[r * self.w + c] }\n\
@@ -283,31 +220,6 @@ mod tests {
         assert_eq!(errors(&main("g[0, 0] = 1.0;"))[0].0, "E0501");
         assert_eq!(errors(&main("g[0, 0] += 1.0;"))[0].0, "E0501");
         ok(&main("let mut h = g; h[0, 0] += 1.0;"));
-    }
-
-    #[test]
-    fn swapping_an_element_read_through_index_is_e0502() {
-        let src = "struct Rows { rows: i64[][] }\nimpl Rows {\n\
-            fun index(self, i: i64): i64[] = self.rows[i];\n\
-            fun set_index(mut self, i: i64, v: i64[]) { self.rows[i] = v; }\n}\n\
-            fun main() { let mut r = Rows { rows: [[1]] }; let mut q = [2]; swap(r[0], q); }";
-        assert_eq!(errors(src), [("E0502", "r[0]")]);
-    }
-
-    #[test]
-    fn the_copy_help_uses_the_program_s_own_place() {
-        let help = |body: &str| {
-            let src = format!(
-                "struct P {{ x: i64 }}\nstruct Ps {{ ps: P[] }}\nimpl Ps {{\n\
-                 fun index(self, k: (string, i64)): P = self.ps[k.1];\n}}\n\
-                 fun main() {{ let mut s = Ps {{ ps: [P {{ x: 1 }}] }}; let mut q = P {{ x: 2 }}; {body} }}"
-            );
-            let d = diagnostics(&src);
-            assert_eq!(d.len(), 1, "{d:?}");
-            d[0].help.clone().unwrap_or_default()
-        };
-        let want = "`let mut e = s[\"a\", 0]; swap(e, …); s[\"a\", 0] = e;`";
-        assert!(help("swap(s[\"a\", 0], q);").ends_with(want));
     }
 
     #[test]

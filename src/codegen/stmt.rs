@@ -66,6 +66,15 @@ impl<'ctx> Lowerer<'ctx> {
                 body,
                 ..
             } => self.for_of(var, iter, body, false)?,
+            // Over an element a type's `index` gives: a copy, handed back.
+            StmtKind::For {
+                label,
+                var,
+                iter: ForIter::MutOf(iter),
+                body,
+            } if self.write_link(iter).is_some() => {
+                self.for_through_index((label, var), iter, body)?
+            }
             StmtKind::For {
                 var,
                 iter: ForIter::MutOf(iter),

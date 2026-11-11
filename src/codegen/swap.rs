@@ -13,6 +13,14 @@ use crate::check::Type;
 impl<'ctx> Lowerer<'ctx> {
     /// `swap(a, b)`; the checker guarantees two mutable places of one type.
     pub(super) fn swap(&mut self, args: &[Expr]) -> Result<Value<'ctx>, CodegenError> {
+        // A place through a type's `index`: swap a copy, then hand it back.
+        if let Some(i) = args.iter().position(|a| self.write_link(a).is_some()) {
+            return self.through_index(&args[i], |s, copy| {
+                let mut args = args.to_vec();
+                args[i] = copy.clone();
+                s.swap(&args)
+            });
+        }
         let [a, b] = args else {
             unreachable!("checked: E0405 enforces swap's two arguments")
         };

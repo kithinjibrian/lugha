@@ -1,5 +1,5 @@
 // A write through `[ ]` on a type is a `mut self` call: a mutable place, a
-// fitting `set_index`, and no `swap` or `for … of mut` through `index`.
+// fitting `set_index`, and a loop over the element doesn't change the root.
 struct Rows { rows: i64[][] }
 
 impl Rows {
@@ -21,10 +21,8 @@ fun main() {
     r[0][0] += 1;
     let mut s = r;
     s[0] = s.rows[0];
-    let mut q = [3];
-    swap(s[0], q);
     for x of mut s[0] {
-        x = 6;
+        s.rows = [];
     }
     let mut o = ReadOnly { rows: [[1]] };
     o[0][0] = 2;

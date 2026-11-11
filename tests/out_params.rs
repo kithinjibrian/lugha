@@ -202,3 +202,24 @@ fn modes_must_match() {
                 fun main() { let mut n: u64 = 0; bump(out n); bump(n); }\n";
     Case::new(main, PTR_SIDE).rejects(&["E0443", "E0443"]);
 }
+
+#[test]
+fn out_and_mut_fill_an_element_read_through_index() {
+    let main = r#"
+extern fun two(out a: i64, out b: i64);
+
+struct Cells { xs: i64[] }
+
+impl Cells {
+    fun index(self, i: i64): i64 = self.xs[i];
+    fun set_index(mut self, i: i64, v: i64) { self.xs[i] = v; }
+}
+
+fun main() {
+    let mut c = Cells { xs: [0, 0, 0] };
+    two(out c[2], out c[0]);
+    println(c.xs);
+}
+"#;
+    Case::new(main, SIDE).runs("[2, 0, 1]\n");
+}

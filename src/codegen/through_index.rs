@@ -9,7 +9,7 @@ use super::CodegenError;
 use super::lower::{Lowerer, POSITIONED};
 use super::scope::Local;
 use super::value::Value;
-use crate::ast::{Expr, ExprKind};
+use crate::ast::{Block, Expr, ExprKind, ForIter, Stmt, StmtKind};
 
 impl<'ctx> Lowerer<'ctx> {
     /// The `[ ]` nearest `place` itself through which the checker said
@@ -50,6 +50,51 @@ impl<'ctx> Lowerer<'ctx> {
         place: &Expr,
         write: impl FnOnce(&mut Self, &Expr) -> Result<T, CodegenError>,
     ) -> Result<T, CodegenError> {
+        let (inner, hand_back) = self.copy_out(place)?;
+        let out = write(self, &inner)?;
+        self.expr(&hand_back)?;
+        Ok(out)
+    }
+
+    /// `for var of mut place` where `place` goes through `index`: the loop
+    /// runs over a copy of the element, and handing it back is deferred to
+    /// a block around the loop, so every way out of the loop does it.
+    pub(super) fn for_through_index(
+        &mut self,
+        (label, var): (&Option<crate::ast::Ident>, &crate::ast::Ident),
+        place: &Expr,
+        body: &Block,
+    ) -> Result<(), CodegenError> {
+        let (inner, hand_back) = self.copy_out(place)?;
+        let stmt = |kind| Stmt {
+            kind,
+            span: body.span,
+        };
+        let deferred = stmt(StmtKind::Expr {
+            expr: hand_back,
+            semicolon: true,
+        });
+        let around = Block {
+            stmts: vec![
+                stmt(StmtKind::Defer(Box::new(deferred))),
+                stmt(StmtKind::For {
+                    label: label.clone(),
+                    var: var.clone(),
+                    iter: ForIter::MutOf(inner),
+                    body: body.clone(),
+                }),
+            ],
+            tail: None,
+            span: body.span,
+        };
+        self.block(&around)?;
+        Ok(())
+    }
+
+    /// Reads the element at `place`'s outermost `[ ]` through `index` into
+    /// a hidden local: `place` with that `[ ]` replaced by the copy, and the
+    /// `set_index` call (keyed at the `[ ]`'s `write_id`) that hands it back.
+    fn copy_out(&mut self, place: &Expr) -> Result<(Expr, Expr), CodegenError> {
         let link = self
             .write_link(place)
             .expect("checked: a write through `index`");
@@ -69,14 +114,25 @@ impl<'ctx> Lowerer<'ctx> {
             _ => unreachable!("checked: `index` returns a value"),
         };
         let copy = self.held(&link, element);
-        let out = write(self, &replaced(place, link.id, &copy))?;
         let handed = Expr {
             id: link.element_id(),
-            ..copy
+            ..copy.clone()
         };
-        let call = read.with_id(link.write_id());
-        self.map_method(&call, &base, "set_index", &[index, handed])?;
-        Ok(out)
+        let method = crate::ast::Ident {
+            name: "set_index".to_string(),
+            span: link.span,
+        };
+        let callee = Expr {
+            id: link.write_id(),
+            span: link.span,
+            kind: ExprKind::Field(Box::new(base), method),
+        };
+        let hand_back = Expr {
+            id: link.write_id(),
+            span: link.span,
+            kind: ExprKind::Call(Box::new(callee), vec![index, handed]),
+        };
+        Ok((replaced(place, link.id, &copy), hand_back))
     }
 
     /// `place` with each of its indexes evaluated now into a hidden local,

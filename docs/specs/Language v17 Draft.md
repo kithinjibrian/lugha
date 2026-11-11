@@ -335,6 +335,8 @@ After discovery (PRP-172): Lugha meets metaprogramming needs with targeted featu
 
 **Read-modify-write through `[ ]`** (milestone 156, PRP-189, the follow-up milestone 155 left): a map's entry is a place, found by the prelude's `$slot` and changed in place, so `groups[k].push(x)` stays linear (copying the entry out and back would copy its arrays each time); a missing key panics as a read does, since Lugha has no default value to insert; a type's element is read with `index`, changed as a copy and handed back with `set_index`, nesting in any order and evaluating each index once; `swap` and `for … of mut` through `index` stay E0502, since handing the copy back on every exit of a loop would be a new mechanism; no new codes; tag `m156`.
 
+**Write-back on a loop's exits** (milestone 157, PRP-190, the last E0502s 156 left): `for x of mut g[i]`, `swap(g[i], b)` and `out g[i]` through a type's `index` work on a copy handed back to `set_index`; the loop's hand-back is a `defer` around it, so `break`, `continue`, `return` and `?` all write back and a panic doesn't; changing `g` in the body is E0507; no new codes; tag `m157`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.
