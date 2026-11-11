@@ -70,8 +70,10 @@ impl Checker {
                 "`{}` can't change an element of `{ty}` in place",
                 op.symbol()
             );
-            let d = Diagnostic::error("E0404", message, span)
-                .with_help("write `a[i] = a[i] + v`, which calls `index` and then `set_index`");
+            let d = Diagnostic::error("E0404", message, span).with_help(format!(
+                "{}, which calls `index` and then `set_index`",
+                compound_help(place, op, value)
+            ));
             self.report(d);
             self.unchecked(&args);
             return;
@@ -173,6 +175,16 @@ pub(super) fn copy_help(place: &Expr, element: &Expr, place_use: PlaceUse) -> St
     )
 }
 
+/// The help of an E0404 for `place op= value`: the plain assignment that
+/// reads and writes the element, spelt with the program's own expressions.
+pub(super) fn compound_help(place: &Expr, op: AssignOp, value: &Expr) -> String {
+    // No expression has the id `u32::MAX`, so both are spelt in full.
+    let elem = written(place, ExprId(u32::MAX)).unwrap_or_else(|| "a[i]".to_string());
+    let value = written(value, ExprId(u32::MAX)).unwrap_or_else(|| "v".to_string());
+    let binary = op.symbol().trim_end_matches('=');
+    format!("write `{elem} = {elem} {binary} {value}`")
+}
+
 /// How `e` is written, with the element whose id is `copy` written `e`
 /// when `e` is inside it; `None` for what a help can't spell simply.
 fn written(e: &Expr, copy: ExprId) -> Option<String> {
@@ -195,6 +207,10 @@ fn written(e: &Expr, copy: ExprId) -> Option<String> {
                 _ => written(index, copy)?,
             };
             format!("{}[{index}]", written(base, copy)?)
+        }
+        ExprKind::Array(items) => {
+            let items = items.iter().map(|i| written(i, copy));
+            format!("[{}]", items.collect::<Option<Vec<_>>>()?.join(", "))
         }
         _ => return None,
     })
@@ -304,6 +320,22 @@ mod tests {
         };
         let want = "`let mut e = s[\"a\", 0]; e.x = …; s[\"a\", 0] = e;`";
         assert!(help("s[\"a\", 0].x = 2;").ends_with(want));
+    }
+
+    #[test]
+    fn the_compound_help_uses_the_program_s_own_element() {
+        let help = |src: &str| {
+            let d = diagnostics(src);
+            assert_eq!(d.len(), 1, "{d:?}");
+            d[0].help.clone().unwrap_or_default()
+        };
+        let user = "struct G { v: i64[] }\nimpl G {\n\
+                    fun index(self, i: i64): i64 = self.v[i];\n\
+                    fun set_index(mut self, i: i64, x: i64) { self.v[i] = x; }\n}\n\
+                    fun main() { let mut g = G { v: [1] }; g[0] *= 3; }";
+        assert!(help(user).starts_with("write `g[0] = g[0] * 3`"));
+        let map = "fun main() { let mut m: Map<string, i64> = #{}; m[\"a\"] += 1 + 1; }";
+        assert!(help(map).starts_with("write `m[\"a\"] = m[\"a\"] + v`"));
     }
 
     #[test]

@@ -134,7 +134,10 @@ impl Checker {
                 format!("`{}` can't change a map entry in place", op.symbol()),
                 span,
             )
-            .with_help("write `m[k] = m[k] + v`, or use `m.get(k)` for a missing key");
+            .with_help(format!(
+                "{}, or use `.get` for a missing key",
+                super::indexing::compound_help(place, op, value)
+            ));
             self.report(d);
             self.expr(key, None);
             self.expr(value, None);

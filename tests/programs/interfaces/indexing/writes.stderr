@@ -14,7 +14,7 @@ error[E0404]: `+=` can't change an element of `Rows` in place
 15 |     s[0] += [3];
    |     ^^^^^^^^^^^
    |
-   = help: write `a[i] = a[i] + v`, which calls `index` and then `set_index`
+   = help: write `s[0] = s[0] + [3]`, which calls `index` and then `set_index`
 
 error[E0502]: cannot assign to this expression
    --> tests/programs/interfaces/indexing/writes.la:16:5
