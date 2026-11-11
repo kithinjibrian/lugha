@@ -1,0 +1,25 @@
+// A type's arithmetic methods may differ by their right-hand type: the
+// operand picks one, exactly by its type.
+struct V { x: f64, y: f64 }
+
+impl V {
+    fun mul(self, k: f64): V = V { x: self.x * k, y: self.y * k };
+    fun mul(self, w: V): V = V { x: self.x * w.x, y: self.y * w.y };
+    fun mul(self, n: u8): V = V { x: self.x * (n as f64), y: self.y * (n as f64) };
+    fun add(self, w: V): V = V { x: self.x + w.x, y: self.y + w.y };
+}
+
+fun sq<T: Mul>(a: T): T = a * a;
+
+fun main() {
+    let v = V { x: 1.0, y: 2.0 };
+    let b: u8 = 3;
+    println(v * 2.0 + v * v);
+    println(v * b);
+    println(v.mul(10.0));
+    let mut w = v;
+    w *= 2.0;
+    w *= v;
+    println(w);
+    println(sq(v));
+}

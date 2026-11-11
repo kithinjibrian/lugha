@@ -61,6 +61,16 @@ impl<'ctx> Lowerer<'ctx> {
         name: &str,
         args: &[Expr],
     ) -> Result<BasicValueEnum<'ctx>, CodegenError> {
+        // A type with several `mul`s: the one the checker chose.
+        let chosen = match (self.overloads.get(&call.id), ty, args) {
+            (Some(chosen), _, _) => Some(chosen.clone()),
+            // Through a bound: the concrete type is only known now.
+            (None, Type::Struct(owner, _) | Type::Enum(owner, _), [operand]) => {
+                Some(self.overload_for(owner, name, &self.ty(operand)))
+            }
+            _ => None,
+        };
+        let name = chosen.as_deref().unwrap_or(name);
         let method = self.operator_method(call, ty, name);
         // A `self` receiver is a pointer to a copy, as for any method call.
         let slot = self.entry_alloca(ty, "self");
@@ -75,6 +85,25 @@ impl<'ctx> Lowerer<'ctx> {
             ValueKind::Basic(result) => Ok(result),
             ValueKind::Instruction(_) => unreachable!("an operator method returns a value"),
         }
+    }
+
+    /// For a type with several arithmetic methods `name` (`mul`,
+    /// `mul(f64)`, …), the one taking `operand`; `name` itself otherwise.
+    /// Used where the checker chose through a bound, so the concrete type
+    /// is only known here.
+    pub(super) fn overload_for(&self, owner: &str, name: &str, operand: &Type) -> String {
+        if !crate::modules::overloads::ARITHMETIC.contains(&name) {
+            return name.to_string();
+        }
+        let prefix = format!("{}(", key(owner, name));
+        self.methods
+            .iter()
+            .filter(|(k, _)| **k == key(owner, name) || k.starts_with(&prefix))
+            .find(|(_, m)| m.signature.params.first() == Some(operand))
+            .map_or_else(
+                || name.to_string(),
+                |(k, _)| k[owner.len() + 1..].to_string(),
+            )
     }
 
     /// The method `name` of struct or enum `ty`: an instance for a generic

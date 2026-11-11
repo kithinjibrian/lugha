@@ -60,7 +60,9 @@ pub fn partial(src: &str) -> super::Partial {
 
 fn program(src: &str) -> crate::ast::Program {
     let (tokens, _) = lexer::lex(src).expect("test source lexes");
-    parser::parse(&tokens).expect("test source parses").0
+    let mut program = parser::parse(&tokens).expect("test source parses").0;
+    crate::modules::overloads::name_overloads(&mut program, src, 0);
+    program
 }
 
 /// Checks `src`, which must have no errors.
@@ -148,6 +150,7 @@ pub const SHAPES: &str = "interface Shape { fun area(self): f64; fun grow(mut se
 pub fn bundled(src: &str) -> Result<Checked, Vec<Diagnostic>> {
     let (tokens, _) =
         lexer::lex_bundled(src).unwrap_or_else(|d| panic!("{src:?} does not lex: {d:?}"));
-    let (program, _) = parser::parse(&tokens).unwrap_or_else(|d| panic!("{src:?}: {d:?}"));
+    let (mut program, _) = parser::parse(&tokens).unwrap_or_else(|d| panic!("{src:?}: {d:?}"));
+    crate::modules::overloads::name_overloads(&mut program, src, 0);
     check(&program).map(|(checked, _)| checked)
 }

@@ -124,6 +124,16 @@ impl Checker {
         if matches!(receiver, Type::Error | Type::Never) {
             return self.unchecked(args);
         }
+        // `v * 2.0` on a type with several `mul`s: the one the operand fits.
+        let chosen;
+        let name = match self.chosen_overload(call, receiver, name, args) {
+            Some(Ok(ident)) => {
+                chosen = ident;
+                &chosen
+            }
+            Some(Err(())) => return self.unchecked(args),
+            None => name,
+        };
         if let Some(ty) = self.helper_call(call, (receiver, name), args, expect) {
             return ty;
         }

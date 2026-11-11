@@ -121,6 +121,7 @@ fn check_with(
             conversions: checker.conversions,
             try_conversions: checker.try_conversions,
             through_index: checker.through_index,
+            overloads: checker.overload_choices,
             default_args: checker.default_args,
             iterations: checker.iterations,
             derives: checker.derives,

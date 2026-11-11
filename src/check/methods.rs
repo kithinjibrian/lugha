@@ -61,7 +61,21 @@ impl Checker {
                 let ret = f.ret.as_ref().map_or(Type::Unit, |t| self.resolve(t));
                 if let Some(first) = self.methods.get(owner).and_then(|m| m.get(name)) {
                     let first = first.span;
-                    self.report(errors::duplicate_method(name, owner, f.name.span, first));
+                    let shown = crate::modules::overloads::written_name(name);
+                    self.report(errors::duplicate_method(shown, owner, f.name.span, first));
+                    continue;
+                }
+                // Several `mul`s are only for the operator's shape: next to a
+                // `mul` of another shape, a second one is a duplicate.
+                let plain = crate::modules::overloads::written_name(name);
+                if plain != name
+                    && let Some(first) = self.methods.get(owner).and_then(|m| m.get(plain))
+                    && !(first.receiver == Some(false)
+                        && first.params.len() == 1
+                        && first.ret != Type::Unit)
+                {
+                    let first = first.span;
+                    self.report(errors::duplicate_method(plain, owner, f.name.span, first));
                     continue;
                 }
                 if let Some(what) = self.member_named(&ty, name, f.receiver.is_some()) {

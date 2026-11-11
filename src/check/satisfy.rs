@@ -121,6 +121,29 @@ impl Checker {
     /// struct or enum its visible methods (an `impl`'s parameters
     /// substituted), and every other type nothing.
     fn offer(&self, arg: &Type, req: &Requirement) -> Offer {
+        // A type with several `mul`s offers whichever of them fits.
+        if let Type::Struct(owner, _) | Type::Enum(owner, _) = arg {
+            let family = self.overloads_of(owner, &req.name);
+            if family.len() > 1 {
+                let fits = family.into_iter().any(|name| {
+                    let req = Requirement {
+                        name,
+                        ..req.clone()
+                    };
+                    matches!(self.offer_one(arg, &req), Offer::Matches)
+                });
+                return if fits {
+                    Offer::Matches
+                } else {
+                    Offer::Mismatched
+                };
+            }
+        }
+        self.offer_one(arg, req)
+    }
+
+    /// `offer` for a method of one name.
+    fn offer_one(&self, arg: &Type, req: &Requirement) -> Offer {
         let found = match arg {
             Type::Param(p) => match self.bound_item(p, &req.name) {
                 Some(item) if item.same(req) => return Offer::Matches,

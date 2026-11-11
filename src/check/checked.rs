@@ -76,6 +76,9 @@ pub struct Checked {
     /// `g[i] += v`, the receiver of `g[i].push(x)`): read the element, change
     /// the copy, then hand it to `set_index` (recorded at `write_id`).
     pub through_index: HashSet<ExprId>,
+    /// Arithmetic calls that chose among a type's overloads (`v * 2.0`,
+    /// `v.mul(2.0)`): the method's name in the type's table, `mul(f64)`.
+    pub overloads: HashMap<ExprId, String>,
     /// Calls through a bound whose callee may be a generic interface's
     /// default: the interface's arguments, in the caller's parameters.
     pub default_args: HashMap<ExprId, Vec<Type>>,

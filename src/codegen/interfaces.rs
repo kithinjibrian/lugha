@@ -131,8 +131,15 @@ impl<'ctx> Lowerer<'ctx> {
                 .as_pointer_value()
                 .into(),
         ];
-        for m in self.interfaces[key].methods.clone() {
-            let method = self.method_of(ty, key, args, &m.name);
+        for m in self.interfaces[key].methods_at(args) {
+            // A type with several `mul`s fills the slot with the fitting one.
+            let name = match (ty, m.params.as_slice()) {
+                (Type::Struct(owner, _) | Type::Enum(owner, _), [operand]) => {
+                    self.overload_for(owner, &m.name, operand)
+                }
+                _ => m.name.clone(),
+            };
+            let method = self.method_of(ty, key, args, &name);
             slots.push(method.as_global_value().as_pointer_value().into());
         }
         let table_type = self.table_type(key);

@@ -82,6 +82,7 @@ mod ops;
 mod or_patterns;
 mod ordering;
 mod out_params;
+mod overloads;
 mod partial;
 mod patterns;
 mod printing;
@@ -229,6 +230,7 @@ impl Checker {
             conversions: HashMap::new(),
             try_conversions: HashMap::new(),
             through_index: std::collections::HashSet::new(),
+            overload_choices: HashMap::new(),
             default_args: HashMap::new(),
             iterations: HashMap::new(),
             owner: String::new(),
@@ -386,6 +388,8 @@ pub(super) struct Checker {
     try_conversions: HashMap<ExprId, Type>,
     /// See `Checked::through_index`.
     through_index: std::collections::HashSet<ExprId>,
+    /// See `Checked::overloads`.
+    overload_choices: HashMap<ExprId, String>,
     /// See `Checked::default_args`.
     default_args: HashMap<ExprId, Vec<Type>>,
     /// See `Checked::iterations`.

@@ -14,7 +14,7 @@ use super::function::Signature;
 use super::instances::instance_name;
 use super::lower::{Lowerer, POSITIONED};
 use super::value::{Value, llvm_type};
-use crate::ast::{Expr, ExprKind, FunDecl, ImplDecl, Item};
+use crate::ast::{Expr, ExprKind, FunDecl, Ident, ImplDecl, Item};
 use crate::check::{Type, Unit, qualify, symbol};
 
 /// A declared method or associated function.
@@ -125,6 +125,20 @@ impl<'ctx> Lowerer<'ctx> {
         let ExprKind::Field(base, name) = &callee.kind else {
             return Ok(None);
         };
+        // `v.mul(2.0)` on a type with several `mul`s: the one the checker chose.
+        if let Some(chosen) = self.overloads.get(&call.id)
+            && *chosen != name.name
+        {
+            let name = Ident {
+                name: chosen.clone(),
+                span: name.span,
+            };
+            let callee = Expr {
+                kind: ExprKind::Field(base.clone(), name),
+                ..callee.clone()
+            };
+            return self.method_call(call, &callee, args);
+        }
         // `g[i].push(x)`: the call changes a copy of the element `index`
         // gave, which `set_index` then takes back.
         if self.write_link(base).is_some() {
@@ -230,9 +244,15 @@ impl<'ctx> Lowerer<'ctx> {
         let (method, receiver) = match &base_type {
             Type::Unit => (self.callees.get(&call.id).cloned(), None),
             // A handle's methods are its `impl` block's, like a struct's.
-            Type::Struct(owner, _) | Type::Enum(owner, _) | Type::Handle(owner) => {
-                (Some(key(owner, &name.name)), Some(base))
+            Type::Struct(owner, _) | Type::Enum(owner, _) => {
+                // Through a bound, a type with several `mul`s: the fitting one.
+                let chosen = match args {
+                    [operand] => self.overload_for(owner, &name.name, &self.ty(operand)),
+                    _ => name.name.clone(),
+                };
+                (Some(key(owner, &chosen)), Some(base))
             }
+            Type::Handle(owner) => (Some(key(owner, &name.name)), Some(base)),
             // Any other receiver through a bound: a default method.
             _ if self.default_method(call, &base_type).is_some() => (None, Some(base)),
             _ => return Ok(None),

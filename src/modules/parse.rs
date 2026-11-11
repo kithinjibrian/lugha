@@ -51,7 +51,7 @@ pub(super) fn parse_module(
     } else {
         lexer::lex(&text)
     };
-    let program = match lexed {
+    let mut program = match lexed {
         Err(errors) => {
             diagnostics.extend(errors.into_iter().map(|d| shift(d, base)));
             None
@@ -80,6 +80,9 @@ pub(super) fn parse_module(
             }
         }
     };
+    if let Some(program) = &mut program {
+        super::overloads::name_overloads(program, &text, base);
+    }
     Module {
         path,
         file,

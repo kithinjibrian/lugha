@@ -1,0 +1,18 @@
+// An operand must fit exactly one of the methods, and some method.
+struct V { x: f64 }
+
+impl V {
+    fun mul(self, k: f64): V = V { x: self.x * k };
+    fun mul(self, n: u8): V = V { x: self.x * (n as f64) };
+    fun mul(mut self, w: V) {
+        self.x *= w.x;
+    }
+}
+
+fun main() {
+    let v = V { x: 1.0 };
+    let a = v * 2;
+    let b = v * "two";
+    let mut k = 2.0;
+    k *= v;
+}

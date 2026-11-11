@@ -1,0 +1,44 @@
+struct Arr<T> { xs: T[] }
+
+impl Arr<T: Num> {
+    fun mul(self, o: Arr<T>): Arr<T> {
+        let mut out: T[] = [];
+        for i in 0..self.xs.len {
+            out.push(self.xs[i] * o.xs[i]);
+        }
+        Arr { xs: out }
+    }
+    fun mul(self, k: T): Arr<T> {
+        let mut out: T[] = [];
+        for x of self.xs {
+            out.push(x * k);
+        }
+        Arr { xs: out }
+    }
+}
+
+interface Scales {
+    fun mul(self, k: f64): Self;
+    fun get(self): f64;
+}
+
+struct V { x: f64 }
+
+impl V {
+    fun mul(self, w: V): V = V { x: self.x * w.x };
+    fun mul(self, k: f64): V = V { x: self.x * k };
+    fun get(self): f64 = self.x;
+}
+
+fun twice<T: Scales>(s: T): T = s.mul(2.0);
+fun thrice<T: Scales>(s: T): T = s * 3.0;
+
+fun main() {
+    let a = Arr { xs: [1.0, 2.0] };
+    println((a * a).xs);
+    println((a * 3.0).xs);
+    let i = Arr { xs: [1, 2] };
+    println((i * 5).xs);
+    println(twice(V { x: 4.0 }).get());
+    println(thrice(V { x: 4.0 }).get());
+}

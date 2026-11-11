@@ -51,6 +51,18 @@ impl Checker {
         let items = self.items(interface);
         for item in items {
             let name = &item.name;
+            // A type with several `mul`s: the table takes the fitting one, so
+            // each is listed.
+            if let Type::Struct(owner, args) | Type::Enum(owner, args) = ty {
+                let family = self.overloads_of(owner, name);
+                if family.len() > 1 {
+                    for n in family {
+                        let key = self.methods[owner][&n].key.clone();
+                        self.used(expr, &key, args);
+                    }
+                    continue;
+                }
+            }
             let own = match ty {
                 Type::Struct(owner, _) | Type::Enum(owner, _) => {
                     self.methods.get(owner).and_then(|m| m.get(name))
