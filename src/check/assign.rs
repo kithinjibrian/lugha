@@ -33,6 +33,13 @@ impl Checker {
             self.no_change_inside(&[place], PlaceUse::Assign, mark);
             return;
         }
+        // `k *= v` where `impl f64` has `mul` for `v`: the result isn't a number.
+        if let Some(name) = super::operators::method_of_assign(op)
+            && self.number_result_elsewhere(place, (&target, name), value)
+        {
+            self.no_change_inside(&[place], PlaceUse::Assign, mark);
+            return;
+        }
         // `&=` and the other bit forms need an integer.
         let fits = match op {
             AssignOp::Assign => true,

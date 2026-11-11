@@ -180,6 +180,54 @@ impl Checker {
             }
         }
     }
+
+    /// `place op= value` on a number `target` where `target op value` is
+    /// one of `impl f64`'s methods: E0403, whose help says what `k * v`
+    /// gives; true when reported.
+    pub(super) fn number_result_elsewhere(
+        &mut self,
+        place: &Expr,
+        (target, name): (&Type, &str),
+        value: &Expr,
+    ) -> bool {
+        if !target.is_numeric() {
+            return false;
+        }
+        let Some(methods) = self.methods.get(&target.to_string()) else {
+            return false;
+        };
+        if !methods.keys().any(|k| written_name(k) == name) {
+            return false;
+        }
+        // A probe unless reported here: the normal path checks it again.
+        let reported = self.diagnostics.len();
+        let right = self.value(value, None);
+        let Some(result) = self.methods[&target.to_string()]
+            .iter()
+            .find(|(k, m)| written_name(k) == name && m.params.first() == Some(&right))
+            .map(|(_, m)| m.ret.clone())
+        else {
+            self.diagnostics.truncate(reported);
+            return false;
+        };
+        let span = crate::span::Span::new(place.span.start, value.span.end);
+        let message = format!(
+            "`{target} {} {right}` gives {result}, but the place is {target}",
+            symbol(name)
+        );
+        let shown = |e: &Expr| match &e.kind {
+            ExprKind::Name(n) => n.clone(),
+            _ => "…".to_string(),
+        };
+        let help = format!(
+            "keep it in a new variable: `let r = {} {} {};`",
+            shown(place),
+            symbol(name),
+            shown(value)
+        );
+        self.report(Diagnostic::error("E0403", message, span).with_help(help));
+        true
+    }
 }
 
 /// The number type named `name`.
@@ -256,6 +304,22 @@ mod tests {
         assert_eq!(
             errors(&src),
             [("E0458", "scale"), ("E0458", "add"), ("E0458", "sub")]
+        );
+    }
+
+    #[test]
+    fn a_number_place_can_t_take_what_its_method_gives() {
+        let src = format!(
+            "{V}impl f64 {{ fun mul(self, v: V): V = v; }}\n\
+             fun main() {{ let v = V {{ x: 1.0 }}; let mut k = 2.0; k *= v; k *= 3.0; }}"
+        );
+        let d = crate::check::test_util::diagnostics(&src);
+        assert_eq!(d.len(), 1, "{d:?}");
+        assert_eq!(d[0].code, "E0403");
+        assert!(
+            d[0].help
+                .as_deref()
+                .is_some_and(|h| h.contains("let r = k * v;"))
         );
     }
 
