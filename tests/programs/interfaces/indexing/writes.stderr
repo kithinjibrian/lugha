@@ -45,7 +45,7 @@ error[E0502]: `for … of mut` needs a variable, field or element
    |
    = help: `s[0]` is a copy that `index` returned: change a copy, then write it back: `let mut e = s[0]; for x of mut e { … } s[0] = e;`
 
-error[E0411]: cannot assign by index into a value of type `ReadOnly`
+error[E0411]: cannot change an element of `ReadOnly`: it has no `set_index`
    --> tests/programs/interfaces/indexing/writes.la:30:5
    |
 30 |     o[0][0] = 2;
@@ -53,7 +53,7 @@ error[E0411]: cannot assign by index into a value of type `ReadOnly`
    |
    = help: give `ReadOnly` a method `fun set_index(mut self, i: …, v: …)`
 
-error[E0411]: cannot assign by index into a value of type `ReadOnly`
+error[E0411]: cannot change an element of `ReadOnly`: it has no `set_index`
    --> tests/programs/interfaces/indexing/writes.la:31:5
    |
 31 |     o[0].push(3);

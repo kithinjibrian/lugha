@@ -33,7 +33,7 @@ impl Checker {
             .clone()
             .unwrap_or(Type::Error);
         if let Err(help) = self.set_index_fits(&ty) {
-            let message = format!("cannot assign by index into a value of type `{ty}`");
+            let message = format!("cannot change an element of `{ty}`: it has no `set_index`");
             let d = crate::diagnostic::Diagnostic::error("E0411", message, base.span);
             self.report(d.with_help(help));
             return false;
