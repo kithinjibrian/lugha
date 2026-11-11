@@ -1,0 +1,42 @@
+// Read-modify-write through `[ ]`: map entries change in place; an element
+// a type's `index` gives is read, changed and handed back to `set_index`.
+struct Grid { w: i64, cells: f64[] }
+
+impl Grid {
+    fun index(self, at: (i64, i64)): f64 {
+        let (r, c) = at;
+        self.cells[r * self.w + c]
+    }
+    fun set_index(mut self, at: (i64, i64), v: f64) {
+        let (r, c) = at;
+        self.cells[r * self.w + c] = v;
+    }
+}
+
+struct P { x: i64 }
+
+fun main() {
+    let mut counts: Map<string, i64> = #{};
+    for w of ["a", "b", "a"] {
+        if !counts.has(w) {
+            counts[w] = 0;
+        }
+        counts[w] += 1;
+    }
+    println(counts["a"]);
+
+    let mut groups: Map<string, i64[]> = #{"odd": [], "even": []};
+    for n in 0..6 {
+        groups[if n % 2 == 0 { "even" } else { "odd" }].push(n);
+    }
+    println(groups["even"]);
+
+    let mut g = Grid { w: 2, cells: [0.0; 4] };
+    g[1, 1] += 2.5;
+    println(g[1, 1]);
+
+    let mut ps: Map<i64, P> = #{1: P { x: 1 }};
+    ps[1].x = 7;
+    println(ps[1].x);
+    counts["z"] += 1;
+}

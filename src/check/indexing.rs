@@ -12,13 +12,12 @@ use super::assign::PlaceUse;
 use super::maps::MAP;
 use super::operators::overloaded;
 use super::{Checker, Type, errors};
-use crate::ast::{AssignOp, Expr, ExprId, ExprKind, Ident};
+use crate::ast::{Expr, ExprId, ExprKind, Ident};
 use crate::diagnostic::Diagnostic;
-use crate::span::Span;
 
 /// The shape a read or a write needs, for the help of an E0411.
 const READ: &str = "fun index(self, i: …): …";
-const WRITE: &str = "fun set_index(mut self, i: …, v: …)";
+pub(super) const WRITE: &str = "fun set_index(mut self, i: …, v: …)";
 
 /// True for the types whose `[ ]` calls a method: those whose operators
 /// do, except the built-in map, which indexes by itself.
@@ -54,31 +53,17 @@ impl Checker {
         )
     }
 
-    /// `base[key] op value;` on a `by_method` type `ty`: the call
-    /// `base.set_index(key, value)`. A compound operator is E0404, as for a
-    /// map entry; a type without `set_index` of the shape is E0411.
+    /// `base[key] = value;` on a `by_method` type `ty`: the call
+    /// `base.set_index(key, value)`, or E0411 when `ty` has no `set_index`
+    /// of the shape. (A compound operator reads and writes the element, as
+    /// any write inside it does.)
     pub(super) fn index_assign(
         &mut self,
-        op: AssignOp,
         (place, base, ty): (&Expr, &Expr, &Type),
         (key, value): (&Expr, &Expr),
         mark: usize,
     ) {
         let args = [key.clone(), value.clone()];
-        if op != AssignOp::Assign {
-            let span = Span::new(place.span.start, value.span.end);
-            let message = format!(
-                "`{}` can't change an element of `{ty}` in place",
-                op.symbol()
-            );
-            let d = Diagnostic::error("E0404", message, span).with_help(format!(
-                "{}, which calls `index` and then `set_index`",
-                compound_help(place, op, value)
-            ));
-            self.report(d);
-            self.unchecked(&args);
-            return;
-        }
         if let Err(help) = self.index_method(ty, "set_index", (true, 2)) {
             let help = help.unwrap_or_else(|| missing(ty, WRITE));
             let message = format!("cannot assign by index into a value of type `{ty}`");
@@ -97,7 +82,7 @@ impl Checker {
     /// parameters, and a result exactly when it is `index`: `Err` with help
     /// when a method of that name has another shape, `Err(None)` when there
     /// is none.
-    fn index_method(
+    pub(super) fn index_method(
         &self,
         ty: &Type,
         name: &str,
@@ -142,18 +127,13 @@ impl Checker {
 
 impl Checker {
     /// The element of a place chain, nearest its root, that `[ ]` reads
-    /// as a copy (through a type's `index` method, or a map's entry), with
-    /// what gave it: a value, not a place, so nothing can be written inside it.
+    /// as a copy through a type's `index` method, with what gave it.
     pub(super) fn read_by_index<'e>(&self, place: &'e Expr) -> Option<(&'e Expr, &'static str)> {
         match &place.kind {
             ExprKind::Field(base, _) => self.read_by_index(base),
             ExprKind::Index(base, _, _) => self.read_by_index(base).or_else(|| {
-                let source = match self.types[base.id.0 as usize].as_ref()? {
-                    Type::Struct(k, _) if k == MAP => "the map gave",
-                    ty if by_method(ty) => "`index` returned",
-                    _ => return None,
-                };
-                Some((place, source))
+                let ty = self.types[base.id.0 as usize].as_ref()?;
+                by_method(ty).then_some((place, "`index` returned"))
             }),
             _ => None,
         }
@@ -193,16 +173,6 @@ fn write_back(elem: &str, source: &str, step: &str) -> String {
     )
 }
 
-/// The help of an E0404 for `place op= value`: the plain assignment that
-/// reads and writes the element, spelt with the program's own expressions.
-pub(super) fn compound_help(place: &Expr, op: AssignOp, value: &Expr) -> String {
-    // No expression has the id `u32::MAX`, so both are spelt in full.
-    let elem = written(place, ExprId(u32::MAX)).unwrap_or_else(|| "a[i]".to_string());
-    let value = written(value, ExprId(u32::MAX)).unwrap_or_else(|| "v".to_string());
-    let binary = op.symbol().trim_end_matches('=');
-    format!("write `{elem} = {elem} {binary} {value}`")
-}
-
 /// How `e` is written, with the element whose id is `copy` written `e`
 /// when `e` is inside it; `None` for what a help can't spell simply.
 fn written(e: &Expr, copy: ExprId) -> Option<String> {
@@ -236,7 +206,7 @@ fn written(e: &Expr, copy: ExprId) -> Option<String> {
 
 /// The help of an E0411 for a type without the method: the shape to
 /// write, for the program's own types.
-fn missing(ty: &Type, want: &str) -> String {
+pub(super) fn missing(ty: &Type, want: &str) -> String {
     match ty {
         Type::Struct(k, _) | Type::Enum(k, _) if k.starts_with("$prelude.") => {
             format!("`{ty}` has no `[ ]`")
@@ -306,22 +276,22 @@ mod tests {
     }
 
     #[test]
-    fn writes_need_a_mutable_place_and_no_compound_operator() {
+    fn writes_need_a_mutable_place() {
         let main = |body: &str| {
             format!("{GRID}fun main() {{ let g = Grid {{ w: 1, cells: [0.0] }}; {body} }}")
         };
         assert_eq!(errors(&main("g[0, 0] = 1.0;"))[0].0, "E0501");
-        let compound = main("let mut h = g; h[0, 0] += 1.0;");
-        assert_eq!(errors(&compound), [("E0404", "h[0, 0] += 1.0")]);
+        assert_eq!(errors(&main("g[0, 0] += 1.0;"))[0].0, "E0501");
+        ok(&main("let mut h = g; h[0, 0] += 1.0;"));
     }
 
     #[test]
-    fn writing_inside_an_element_is_not_a_place() {
+    fn swapping_an_element_read_through_index_is_e0502() {
         let src = "struct Rows { rows: i64[][] }\nimpl Rows {\n\
             fun index(self, i: i64): i64[] = self.rows[i];\n\
             fun set_index(mut self, i: i64, v: i64[]) { self.rows[i] = v; }\n}\n\
-            fun main() { let mut r = Rows { rows: [[1]] }; r[0][0] = 2; }";
-        assert_eq!(errors(src), [("E0502", "r[0][0]")]);
+            fun main() { let mut r = Rows { rows: [[1]] }; let mut q = [2]; swap(r[0], q); }";
+        assert_eq!(errors(src), [("E0502", "r[0]")]);
     }
 
     #[test]
@@ -330,48 +300,14 @@ mod tests {
             let src = format!(
                 "struct P {{ x: i64 }}\nstruct Ps {{ ps: P[] }}\nimpl Ps {{\n\
                  fun index(self, k: (string, i64)): P = self.ps[k.1];\n}}\n\
-                 fun main() {{ let mut s = Ps {{ ps: [P {{ x: 1 }}] }}; {body} }}"
+                 fun main() {{ let mut s = Ps {{ ps: [P {{ x: 1 }}] }}; let mut q = P {{ x: 2 }}; {body} }}"
             );
             let d = diagnostics(&src);
             assert_eq!(d.len(), 1, "{d:?}");
             d[0].help.clone().unwrap_or_default()
         };
-        let want = "`let mut e = s[\"a\", 0]; e.x = …; s[\"a\", 0] = e;`";
-        assert!(help("s[\"a\", 0].x = 2;").ends_with(want));
-    }
-
-    #[test]
-    fn nothing_is_written_inside_a_map_entry() {
-        let e = |body: &str| {
-            let src = format!(
-                "struct P {{ x: i64 }}\nfun main() {{ let mut m: Map<string, P> = #{{}};\n\
-                 let mut n: Map<string, i64[]> = #{{}}; {body} }}"
-            );
-            diagnostics(&src).iter().map(|d| d.code).collect::<Vec<_>>()
-        };
-        assert_eq!(e("m[\"a\"].x = 5;"), ["E0502"]);
-        assert_eq!(e("n[\"a\"][0] = 3; n[\"a\"].push(4);"), ["E0502", "E0502"]);
-        assert_eq!(e("for x of mut n[\"a\"] { }"), ["E0502"]);
-        ok(
-            "struct P { x: i64 }\nfun main() { let mut m: Map<string, P> = #{};\n\
-            m[\"a\"] = P { x: 1 }; let mut p = m[\"a\"]; p.x = 2; }",
-        );
-    }
-
-    #[test]
-    fn the_compound_help_uses_the_program_s_own_element() {
-        let help = |src: &str| {
-            let d = diagnostics(src);
-            assert_eq!(d.len(), 1, "{d:?}");
-            d[0].help.clone().unwrap_or_default()
-        };
-        let user = "struct G { v: i64[] }\nimpl G {\n\
-                    fun index(self, i: i64): i64 = self.v[i];\n\
-                    fun set_index(mut self, i: i64, x: i64) { self.v[i] = x; }\n}\n\
-                    fun main() { let mut g = G { v: [1] }; g[0] *= 3; }";
-        assert!(help(user).starts_with("write `g[0] = g[0] * 3`"));
-        let map = "fun main() { let mut m: Map<string, i64> = #{}; m[\"a\"] += 1 + 1; }";
-        assert!(help(map).starts_with("write `m[\"a\"] = m[\"a\"] + v`"));
+        let want = "`let mut e = s[\"a\", 0]; swap(e, …); s[\"a\", 0] = e;`";
+        assert!(help("swap(s[\"a\", 0], q);").ends_with(want));
     }
 
     #[test]

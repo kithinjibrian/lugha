@@ -44,10 +44,34 @@ impl<'ctx> Lowerer<'ctx> {
         let Type::Struct(_, args) = self.ty(base) else {
             unreachable!("checked: a map")
         };
-        let result = Type::Enum(
-            "$prelude.Result".to_string(),
-            vec![args[1].clone(), Type::String],
-        );
+        Ok(self.found_or_panic(found, args[1].clone(), at))
+    }
+
+    /// For a write inside `place` (`m[k]`), the slot of `k`'s value in the
+    /// map `map` (read from `base`), from the `$slot` the checker recorded
+    /// at `place`'s `write_id`; a missing key panics at `at`, as a read does.
+    pub(super) fn map_slot(
+        &mut self,
+        place: &Expr,
+        (base, map): (&Expr, BasicValueEnum<'ctx>),
+        key: &Expr,
+        at: usize,
+    ) -> Result<inkwell::values::IntValue<'ctx>, CodegenError> {
+        let call = place.with_id(place.write_id());
+        let ty = self.ty(base);
+        let found = self.operator_on(&call, (map, &ty), "$slot", std::slice::from_ref(key))?;
+        Ok(self.found_or_panic(found, Type::I64, at).into_int_value())
+    }
+
+    /// The `Ok` of `found`, a `Result<ok, string>`, or a panic at `at`
+    /// with its `Err`'s message.
+    fn found_or_panic(
+        &mut self,
+        found: BasicValueEnum<'ctx>,
+        ok: Type,
+        at: usize,
+    ) -> BasicValueEnum<'ctx> {
+        let result = Type::Enum("$prelude.Result".to_string(), vec![ok, Type::String]);
         let slot = self.entry_alloca(&result, "entry");
         self.builder.build_store(slot, found).expect(POSITIONED);
         let (ok, payloads) = self.variant(&result, "Ok");
@@ -66,7 +90,7 @@ impl<'ctx> Lowerer<'ctx> {
         let message = self.load_payload(&result, slot, &errors, 0, &errors[0]);
         self.call_panic(message, at);
         self.builder.position_at_end(pass);
-        Ok(self.load_payload(&result, slot, &payloads, 0, &payloads[0]))
+        self.load_payload(&result, slot, &payloads, 0, &payloads[0])
     }
 
     /// `base.name(args)`, the method the checker recorded at `at`'s id: a

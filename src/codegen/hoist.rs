@@ -21,6 +21,7 @@ use super::hoist_scan::{Scan, chain_root};
 use super::lower::{Lowerer, POSITIONED};
 use super::value::llvm_type;
 use crate::ast::{Block, Expr, ExprKind, Pattern};
+use crate::check::Type;
 
 /// What a loop does on every iteration besides running its body.
 pub(super) enum Head<'a> {
@@ -107,11 +108,16 @@ impl<'ctx> Lowerer<'ctx> {
 
     /// Whether `path` can be hoisted: its root is a variable from outside
     /// the loop that the loop can't share, and each index is a literal or
-    /// such a variable that the loop never changes.
+    /// such a variable that the loop never changes. Only arrays reached
+    /// through arrays qualify: a map's entry or what a type's `index` gives
+    /// is found anew by each write.
     fn fixed(&self, scan: &Scan, path: &Expr) -> bool {
         let Some(root) = chain_root(path) else {
             return false;
         };
+        if !matches!(self.ty(path), Type::Array(_)) {
+            return false;
+        }
         if scan.bound.contains(root)
             || self.scopes.find(root).is_none()
             || scan.sharing.contains(&self.root_of(scan, root))
@@ -122,6 +128,9 @@ impl<'ctx> Lowerer<'ctx> {
         loop {
             match &at.kind {
                 ExprKind::Index(base, _, index) => {
+                    if !matches!(self.ty(base), Type::Array(_)) {
+                        return false;
+                    }
                     let steady = match &index.kind {
                         ExprKind::Int(_) => true,
                         // An outer `for … of mut` variable changes when its

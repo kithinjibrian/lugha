@@ -128,6 +128,16 @@ impl Map<K: Eq, V> {
         Ok(self.$vals[e])
     }
 
+    /** Where `k`'s value is in `$vals`, for a write inside `m[k]`, or the panic's message, which codegen raises at the `[`. */
+    fun $slot(self, k: K): Result<i64, string> {
+        let (_, e) = $map_find(self, k);
+        if e < 0 {
+            let shown = to_string([k]);
+            return Err("no key {shown.slice(1, shown.len - 1)} in the map");
+        }
+        Ok(e)
+    }
+
     /** Sets `k` to `v`: `m[k] = v`. A new key goes last; an old one keeps its place. */
     fun insert(mut self, k: K, v: V) {
         self.$put(k, v);

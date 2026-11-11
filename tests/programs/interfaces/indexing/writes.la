@@ -1,22 +1,32 @@
-// A write through `set_index` is a `mut self` call: a mutable place, no
-// compound operator, and no writes inside the element it reads.
-
+// A write through `[ ]` on a type is a `mut self` call: a mutable place, a
+// fitting `set_index`, and no `swap` or `for … of mut` through `index`.
 struct Rows { rows: i64[][] }
 
 impl Rows {
     fun index(self, i: i64): i64[] = self.rows[i];
-    fun set_index(mut self, i: i64, v: i64[]) { self.rows[i] = v; }
+    fun set_index(mut self, i: i64, v: i64[]) {
+        self.rows[i] = v;
+    }
+}
+
+struct ReadOnly { rows: i64[][] }
+
+impl ReadOnly {
+    fun index(self, i: i64): i64[] = self.rows[i];
 }
 
 fun main() {
     let r = Rows { rows: [[1]] };
     r[0] = [2];
+    r[0][0] += 1;
     let mut s = r;
-    s[0] += [3];
-    s[0][0] = 4;
-    s[0].push(5);
     s[0] = s.rows[0];
+    let mut q = [3];
+    swap(s[0], q);
     for x of mut s[0] {
         x = 6;
     }
+    let mut o = ReadOnly { rows: [[1]] };
+    o[0][0] = 2;
+    o[0].push(3);
 }

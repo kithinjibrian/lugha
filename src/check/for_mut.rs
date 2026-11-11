@@ -98,6 +98,7 @@ impl Checker {
             return;
         };
         self.changed(path, iter.span);
+        self.map_slots(iter);
         let name = root_name(iter).expect("a place path has a root name");
         if let Some(local) = self.local(name)
             && !matches!(

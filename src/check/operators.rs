@@ -124,13 +124,13 @@ impl Checker {
     pub(super) fn operator_assign(
         &mut self,
         (symbol, name): (&str, &str),
-        (place, target): (&Expr, &Type),
+        (call, place, target): (&Expr, &Expr, &Type),
         value: &Expr,
         mark: usize,
     ) {
         let span = Span::new(place.span.start, value.span.end);
         let ty = self.operator_call(
-            place,
+            call,
             (symbol, name, span),
             (place, target),
             Some(value),

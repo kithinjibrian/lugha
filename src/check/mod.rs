@@ -86,6 +86,7 @@ mod partial;
 mod patterns;
 mod printing;
 mod purity;
+mod read_modify_write;
 mod reexports;
 mod refs;
 mod results;
@@ -226,6 +227,7 @@ impl Checker {
             spawn_operand: None,
             conversions: HashMap::new(),
             try_conversions: HashMap::new(),
+            through_index: std::collections::HashSet::new(),
             default_args: HashMap::new(),
             iterations: HashMap::new(),
             owner: String::new(),
@@ -378,6 +380,8 @@ pub(super) struct Checker {
     conversions: HashMap<ExprId, Type>,
     /// See `Checked::try_conversions`.
     try_conversions: HashMap<ExprId, Type>,
+    /// See `Checked::through_index`.
+    through_index: std::collections::HashSet<ExprId>,
     /// See `Checked::default_args`.
     default_args: HashMap<ExprId, Vec<Type>>,
     /// See `Checked::iterations`.
@@ -432,6 +436,13 @@ impl Checker {
         self.body_type(&ty);
         self.types[expr.id.0 as usize] = Some(ty);
         self.hover.expr(expr);
+        // The ids a `[ ]` keeps for a write through it hold a type even when
+        // no write uses them; a write records the real one over it.
+        if let crate::ast::ExprKind::Index(..) = expr.kind {
+            for id in [expr.write_id(), expr.element_id(), expr.update_id()] {
+                self.types[id.0 as usize].get_or_insert(Type::Unit);
+            }
+        }
     }
 }
 

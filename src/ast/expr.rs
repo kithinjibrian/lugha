@@ -7,6 +7,33 @@ use crate::span::Span;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ExprId(pub u32);
 
+impl Expr {
+    /// For a `[ ]` expression, the id of the call that writes through it:
+    /// a type's `set_index`, or the lookup of a map entry's slot. The parser
+    /// leaves this id and the next two unused for exactly these calls.
+    pub fn write_id(&self) -> ExprId {
+        ExprId(self.id.0 + 1)
+    }
+
+    /// For a `[ ]` read through a type's `index`, the id of the copy of the
+    /// element handed back to `set_index`.
+    pub fn element_id(&self) -> ExprId {
+        ExprId(self.id.0 + 2)
+    }
+
+    /// For a `[ ]` read through `index` or a map, the id of the operator
+    /// method a compound assignment to it calls (`a[i] += v`).
+    pub fn update_id(&self) -> ExprId {
+        ExprId(self.id.0 + 3)
+    }
+
+    /// This expression with id `id` instead, for a call the checker
+    /// records under one of the ids above.
+    pub fn with_id(&self, id: ExprId) -> Expr {
+        Expr { id, ..self.clone() }
+    }
+}
+
 /// One expression.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Expr {

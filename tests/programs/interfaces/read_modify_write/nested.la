@@ -1,0 +1,90 @@
+// Writes through `index` nest: a grid of rows, a map of grids, a generic
+// table and an interface value; each index is evaluated once.
+struct Rows { rows: i64[][] }
+
+impl Rows {
+    fun index(self, i: i64): i64[] = self.rows[i];
+    fun set_index(mut self, i: i64, v: i64[]) {
+        self.rows[i] = v;
+    }
+}
+
+struct Pt { x: i64, y: i64 }
+
+struct Pts { ps: Pt[] }
+
+impl Pts {
+    fun index(self, i: i64): Pt = self.ps[i];
+    fun set_index(mut self, i: i64, v: Pt) {
+        self.ps[i] = v;
+    }
+}
+
+struct Outer { inner: Rows[] }
+
+impl Outer {
+    fun index(self, i: i64): Rows = self.inner[i];
+    fun set_index(mut self, i: i64, v: Rows) {
+        self.inner[i] = v;
+    }
+}
+
+interface Table {
+    fun index(self, i: i64): i64;
+    fun set_index(mut self, i: i64, v: i64);
+}
+
+struct Cells { xs: i64[] }
+
+impl Cells {
+    fun index(self, i: i64): i64 = self.xs[i];
+    fun set_index(mut self, i: i64, v: i64) {
+        self.xs[i] = v;
+    }
+}
+
+fun bump<T: Table>(t: T, i: i64): T {
+    let mut t = t;
+    t[i] += 10;
+    t
+}
+
+fun next(n: Ref<i64>): i64 {
+    n.set(n.get() + 1);
+    n.get() - 1
+}
+
+fun main() {
+    let mut r = Rows { rows: [[1, 2], [3]] };
+    r[0][1] = 20;
+    r[1].push(4);
+    r[1] += [5];
+    let popped = r[0].pop();
+    println(r.rows);
+    println(popped);
+
+    let mut ps = Pts { ps: [Pt { x: 1, y: 2 }] };
+    ps[0].x = 9;
+    ps[0].y *= 3;
+    println((ps[0].x, ps[0].y));
+
+    let mut o = Outer { inner: [Rows { rows: [[0, 0]] }] };
+    o[0][0][1] = 8;
+    println(o.inner[0].rows);
+
+    let mut m: Map<string, Rows> = #{"a": Rows { rows: [[1]] }};
+    m["a"][0][0] += 100;
+    m["a"][0].push(2);
+    println(m["a"].rows);
+
+    let mut c = Cells { xs: [1, 2] };
+    c = bump(c, 1);
+    let mut t: Table = c;
+    t[0] += 5;
+    println((t[0], t[1]));
+
+    let calls = Ref.new(0);
+    let mut s = Rows { rows: [[0], [0]] };
+    s[next(calls)][0] += 7;
+    println((s.rows, calls.get()));
+}

@@ -103,8 +103,9 @@ impl Checker {
 
     /// `m[k] = v` on a map: its `insert` method, with `m` as a `mut
     /// self` receiver; true when `place` was such an entry and is checked.
-    /// `m[k] += v` is E0404 (write `m[k] = m[k] + v`). `a[i] = v` on a type
-    /// with `set_index` is checked here too, as the same kind of call.
+    /// `a[i] = v` on a type with `set_index` is checked here too, as the
+    /// same kind of call. A compound operator (`m[k] += v`) is left to the
+    /// general path: it reads and writes the entry in place.
     pub(super) fn map_assign(
         &mut self,
         op: AssignOp,
@@ -115,33 +116,20 @@ impl Checker {
         let ExprKind::Index(base, _, key) = &place.kind else {
             return false;
         };
+        if op != AssignOp::Assign {
+            return false;
+        }
         // The base's type decides; a probe whose findings the normal path repeats.
         let reported = self.diagnostics.len();
         let ty = self.value(base, None);
         // `a[i] = v` on a struct, enum, interface value or `T`: `set_index`.
         if super::indexing::by_method(&ty) {
-            self.index_assign(op, (place, base, &ty), (key, value), mark);
+            self.index_assign((place, base, &ty), (key, value), mark);
             return true;
         }
         if !matches!(&ty, Type::Struct(k, _) if k == MAP) {
             self.diagnostics.truncate(reported);
             return false;
-        }
-        if op != AssignOp::Assign {
-            let span = Span::new(place.span.start, value.span.end);
-            let d = Diagnostic::error(
-                "E0404",
-                format!("`{}` can't change a map entry in place", op.symbol()),
-                span,
-            )
-            .with_help(format!(
-                "{}, or use `.get` for a missing key",
-                super::indexing::compound_help(place, op, value)
-            ));
-            self.report(d);
-            self.expr(key, None);
-            self.expr(value, None);
-            return true;
         }
         let insert = Ident {
             name: "insert".to_string(),
@@ -242,10 +230,7 @@ mod tests {
             errors("fun main() { let m = #{\"a\": 1}; m[\"a\"] = 2; }"),
             [("E0501", "m")]
         );
-        assert_eq!(
-            errors("fun main() { let mut m = #{\"a\": 1}; m[\"a\"] += 2; }")[0].0,
-            "E0404"
-        );
+        ok("fun main() { let mut m = #{\"a\": 1}; m[\"a\"] += 2; }");
         ok("fun main() { let mut m = #{\"a\": 1}; m[\"a\"] = m[\"a\"] + 2; }");
     }
 

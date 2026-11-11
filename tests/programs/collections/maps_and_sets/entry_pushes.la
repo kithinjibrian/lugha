@@ -1,0 +1,12 @@
+// Changing a map's entry is in place: 100 000 pushes into entries stay
+// linear, where copying the entry out and back would be quadratic.
+fun main() {
+    let mut groups: Map<i64, i64[]> = #{};
+    for k in 0..4 {
+        groups[k] = [];
+    }
+    for i in 0..100000 {
+        groups[i % 4].push(i);
+    }
+    println(groups[1].len);
+}

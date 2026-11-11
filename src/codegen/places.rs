@@ -40,6 +40,15 @@ impl<'ctx> Lowerer<'ctx> {
         match &place.kind {
             ExprKind::Name(_) => Ok(Vec::new()),
             ExprKind::Field(base, _) => self.place_plan(base),
+            // A map's entry: its slot in the map's values, found now (a
+            // missing key panics at the `[`), so the write lands in place.
+            ExprKind::Index(base, open, index) if self.is_map(base) => {
+                let mut plan = self.place_plan(base)?;
+                let map = self.place_read(base, &plan);
+                let slot = self.map_slot(place, (base, map), index, open.start)?;
+                plan.push(slot);
+                Ok(plan)
+            }
             ExprKind::Index(base, open, index) => {
                 let mut plan = self.place_plan(base)?;
                 let (slot, _, _) = self.walk(base, &plan, &mut 0, false);
@@ -93,6 +102,25 @@ impl<'ctx> Lowerer<'ctx> {
                     .build_struct_gep(llvm, base_address, index, &field.name)
                     .expect("checked: the field exists");
                 (address, field_ty, true)
+            }
+            ExprKind::Index(base, _, _) if self.is_map(base) => {
+                let (map, map_ty, _) = self.walk(base, plan, next, own);
+                let (field, values_ty) = self.field_index(&map_ty, "$vals");
+                let llvm = llvm_type(self.context, &map_ty).into_struct_type();
+                let slot = self
+                    .builder
+                    .build_struct_gep(llvm, map, field, "values")
+                    .expect("a map has its values");
+                let values = if own {
+                    self.own_place(slot, place, &values_ty)
+                } else {
+                    self.load_pointer(slot)
+                };
+                let i = plan[*next];
+                *next += 1;
+                let element = element_of(&values_ty);
+                let address = self.element_address(values, i, self.element_size(&element));
+                (address, element, true)
             }
             ExprKind::Index(base, _, _) => {
                 let (slot, base_ty, _) = self.walk(base, plan, next, own);

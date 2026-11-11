@@ -72,6 +72,10 @@ pub struct Checked {
     /// The operands of `?` whose error converts to an interface error, with
     /// that interface type.
     pub try_conversions: HashMap<ExprId, Type>,
+    /// Places a statement writes through a type's `index` (`g[i].x = v`,
+    /// `g[i] += v`, the receiver of `g[i].push(x)`): read the element, change
+    /// the copy, then hand it to `set_index` (recorded at `write_id`).
+    pub through_index: HashSet<ExprId>,
     /// Calls through a bound whose callee may be a generic interface's
     /// default: the interface's arguments, in the caller's parameters.
     pub default_args: HashMap<ExprId, Vec<Type>>,

@@ -1,0 +1,1 @@
+panic: no key "z" in the map at tests/programs/interfaces/read_modify_write/objective.la:41:11

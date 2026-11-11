@@ -126,8 +126,10 @@ impl<'ctx> Lowerer<'ctx> {
         place: &Expr,
         value: &Expr,
     ) -> Result<(), CodegenError> {
+        let plain = op == AssignOp::Assign;
         // `m[k] = v` on a map: the `insert` the checker recorded at the place.
         if let crate::ast::ExprKind::Index(base, _, key) = &place.kind
+            && plain
             && self.is_map(base)
         {
             return self
@@ -136,12 +138,36 @@ impl<'ctx> Lowerer<'ctx> {
         }
         // `a[i] = v` on a type with `set_index`: that `mut self` call.
         if let crate::ast::ExprKind::Index(base, _, key) = &place.kind
+            && plain
             && self.indexes_by_method(base)
         {
             return self
                 .map_method(place, base, "set_index", &[(**key).clone(), value.clone()])
                 .map(|_| ());
         }
+        // `g[i].x = v`, `g[i] += v`: on a copy of the element `index` gave,
+        // which `set_index` then takes back.
+        if let Some(link) = self.write_link(place) {
+            // `g[i] += v` itself: the operator is keyed at the `[ ]`'s own id.
+            let key = (link.id == place.id).then(|| link.with_id(link.update_id()));
+            return self.through_index(place, |s, inner| {
+                let key = key.unwrap_or_else(|| inner.clone());
+                s.assign_at(op, at, (inner, &key), value)
+            });
+        }
+        let key = self.update_key(place);
+        self.assign_at(op, at, (place, &key), value)
+    }
+
+    /// `place op value;` into a variable, field, element or map entry;
+    /// a compound operator method is the one the checker recorded at `key`.
+    fn assign_at(
+        &mut self,
+        op: AssignOp,
+        at: usize,
+        (place, key): (&Expr, &Expr),
+        value: &Expr,
+    ) -> Result<(), CodegenError> {
         // The place's indexes are evaluated once, before the value;
         // the arrays on its path are made unique after the value, so a
         // value that shares one of them is never written through.
@@ -153,7 +179,7 @@ impl<'ctx> Lowerer<'ctx> {
             Some(op) if matches!(ty, Type::Struct(..) | Type::Enum(..)) => {
                 let current = self.place_read(place, &plan);
                 let name = super::arith::method_of(op).expect("compound operators are arithmetic");
-                self.operator_on(place, (current, &ty), name, std::slice::from_ref(value))?
+                self.operator_on(key, (current, &ty), name, std::slice::from_ref(value))?
             }
             // `s += t` and `xs += ys` join.
             Some(BinOp::Add) if matches!(ty, Type::String | Type::Array(_)) => {

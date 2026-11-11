@@ -125,6 +125,17 @@ impl<'ctx> Lowerer<'ctx> {
         let ExprKind::Field(base, name) = &callee.kind else {
             return Ok(None);
         };
+        // `g[i].push(x)`: the call changes a copy of the element `index`
+        // gave, which `set_index` then takes back.
+        if self.write_link(base).is_some() {
+            return self.through_index(base, |s, inner| {
+                let callee = Expr {
+                    kind: ExprKind::Field(Box::new(inner.clone()), name.clone()),
+                    ..callee.clone()
+                };
+                s.method_call(call, &callee, args)
+            });
+        }
         // `Ref.new(v)`.
         if self
             .callees

@@ -28,7 +28,8 @@ impl Checker {
         if let Some(name) = super::operators::method_of_assign(op)
             && super::operators::overloaded(&target)
         {
-            self.operator_assign((op.symbol(), name), (place, &target), value, mark);
+            let key = self.update_key(place);
+            self.operator_assign((op.symbol(), name), (&key, place, &target), value, mark);
             self.no_change_inside(&[place], PlaceUse::Assign, mark);
             return;
         }
@@ -67,10 +68,14 @@ impl Checker {
         let reword = |d| errors::for_use(d, root_name(place).unwrap_or_default(), place_use);
         match &place.kind {
             ExprKind::Name(_) => {}
-            // `g[i].x = v`: `g[i]` is a copy its `index` method or map gave.
+            // `g[i].x = v`: `g[i]` is a copy its `index` method gave, which
+            // `set_index` takes back. `swap` can't hand a copy back.
             ExprKind::Field(..) | ExprKind::Index(..)
                 if let Some(element) = self.read_by_index(place) =>
             {
+                if place_use != PlaceUse::Swap {
+                    return self.write_through(place);
+                }
                 let help = super::indexing::copy_help(place, element, place_use);
                 self.report(reword(errors::not_place(place.span).with_help(help)));
                 return false;
@@ -122,6 +127,7 @@ impl Checker {
             let d = errors::not_mutable(name, place.span, local.binding, local.span);
             self.report(reword(d));
         }
+        self.map_slots(place);
         if let Some((_, for_span)) = self
             .iterating
             .iter()

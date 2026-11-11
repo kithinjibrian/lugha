@@ -29,6 +29,15 @@ impl Checker {
         });
     }
 
+    /// Makes the changes since `mark` the statement's own, at `span`: the
+    /// `set_index` a write through `index` ends with changes the place
+    /// being written, not something inside it.
+    pub(super) fn own_changes(&mut self, mark: usize, span: Span) {
+        for change in &mut self.changes[mark..] {
+            change.span = span;
+        }
+    }
+
     /// Where the changes made by a statement's own parts will start.
     pub(super) fn changes_mark(&self) -> usize {
         self.changes.len()

@@ -359,11 +359,24 @@ impl<'ctx> Lowerer<'ctx> {
             return self.scan_read(scan, place);
         };
         scan.changed.insert(root.to_owned());
-        if deep {
+        // A write through a type's `index` ends in a `set_index` that may
+        // keep anything: nothing rooted there is hoisted.
+        if deep || self.through_method(place) {
             scan.sharing.insert(self.root_of(scan, root));
         }
         arrays_on(place, &mut scan.paths);
         self.scan_indexes(scan, place);
+    }
+
+    /// Whether `place`'s path has a `[ ]` that calls the base's `index`.
+    fn through_method(&self, place: &Expr) -> bool {
+        match &place.kind {
+            ExprKind::Index(base, _, _) => {
+                self.indexes_by_method(base) || self.through_method(base)
+            }
+            ExprKind::Field(base, _) => self.through_method(base),
+            _ => false,
+        }
     }
 
     /// `for var of mut place` over an array: writes through `var` are

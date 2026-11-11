@@ -120,6 +120,7 @@ fn check_with(
             callees: checker.callees,
             conversions: checker.conversions,
             try_conversions: checker.try_conversions,
+            through_index: checker.through_index,
             default_args: checker.default_args,
             iterations: checker.iterations,
             derives: checker.derives,

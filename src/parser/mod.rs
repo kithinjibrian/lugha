@@ -203,6 +203,11 @@ impl Parser<'_> {
     fn mk(&mut self, start: usize, kind: ExprKind) -> Expr {
         let id = ExprId(self.next_id);
         self.next_id += 1;
+        // The ids after a `[ ]` belong to the calls a write through it makes
+        // (`Expr::write_id` and the two after it).
+        if let ExprKind::Index(..) = kind {
+            self.next_id += 3;
+        }
         Expr {
             id,
             span: Span::new(start, self.prev_end()),

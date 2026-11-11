@@ -1,16 +1,31 @@
-// Writing inside a map entry is E0502: `m[k]` is a copy of the entry.
+// A map's entry is a place: writes inside it change the value in place.
 struct P { x: i64 }
+
+impl P {
+    fun bump(mut self) {
+        self.x += 1;
+    }
+}
 
 fun main() {
     let mut m: Map<string, P> = #{};
     m["a"] = P { x: 1 };
     m["a"].x = 5;
+    m["a"].bump();
+    println(m["a"].x);
     let mut n: Map<string, i64[]> = #{};
     n["a"] = [1];
+    n["b"] = [9];
     n["a"][0] = 3;
     n["a"].push(4);
+    n["a"] += [5];
     swap(n["a"], n["b"]);
-    for x of mut n["a"] {
-        x = 2;
+    for x of mut n["b"] {
+        x *= 2;
     }
+    println(n);
+    let copy = n;
+    n["a"][0] = 0;
+    println(copy["a"]);
+    println(n["a"]);
 }

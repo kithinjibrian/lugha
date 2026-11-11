@@ -1,0 +1,7 @@
+// A write inside a missing entry panics at the `[`, as reading it does.
+fun main() {
+    let mut n: Map<string, i64[]> = #{};
+    n["a"] = [];
+    n["a"].push(1);
+    n["b"].push(2);
+}
