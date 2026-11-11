@@ -67,7 +67,7 @@ impl Checker {
         let reword = |d| errors::for_use(d, root_name(place).unwrap_or_default(), place_use);
         match &place.kind {
             ExprKind::Name(_) => {}
-            // `g[i].x = v`: `g[i]` is a value its `index` method gave.
+            // `g[i].x = v`: `g[i]` is a copy its `index` method or map gave.
             ExprKind::Field(..) | ExprKind::Index(..)
                 if let Some(element) = self.read_by_index(place) =>
             {

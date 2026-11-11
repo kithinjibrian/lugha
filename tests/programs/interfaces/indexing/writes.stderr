@@ -42,4 +42,12 @@ error[E0508]: cannot pass `s` to a `mut self` method called on `s`
    |
    = help: copy it first: `let w = s;` and pass `w`
 
+error[E0502]: `for … of mut` needs a variable, field or element
+   --> tests/programs/interfaces/indexing/writes.la:19:18
+   |
+19 |     for x of mut s[0] {
+   |                  ^^^^
+   |
+   = help: `s[0]` is a copy that `index` returned: change a copy, then write it back: `let mut e = s[0]; for x of mut e { … } s[0] = e;`
+
 For more about E0501, E0404, E0502 and E0508, run `lughac explain <code>`.

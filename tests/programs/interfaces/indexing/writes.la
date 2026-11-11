@@ -16,4 +16,7 @@ fun main() {
     s[0][0] = 4;
     s[0].push(5);
     s[0] = s.rows[0];
+    for x of mut s[0] {
+        x = 6;
+    }
 }

@@ -9,6 +9,7 @@
 //! interface tables work unchanged.
 
 use super::assign::PlaceUse;
+use super::maps::MAP;
 use super::operators::overloaded;
 use super::{Checker, Type, errors};
 use crate::ast::{AssignOp, Expr, ExprId, ExprKind, Ident};
@@ -22,7 +23,7 @@ const WRITE: &str = "fun set_index(mut self, i: …, v: …)";
 /// True for the types whose `[ ]` calls a method: those whose operators
 /// do, except the built-in map, which indexes by itself.
 pub(super) fn by_method(ty: &Type) -> bool {
-    overloaded(ty) && !matches!(ty, Type::Struct(k, _) if k == super::maps::MAP)
+    overloaded(ty) && !matches!(ty, Type::Struct(k, _) if k == MAP)
 }
 
 impl Checker {
@@ -141,26 +142,32 @@ impl Checker {
 
 impl Checker {
     /// The element of a place chain, nearest its root, that `[ ]` reads
-    /// through a type's `index` method: a value, not a place, so nothing
-    /// can be written inside it.
-    pub(super) fn read_by_index<'e>(&self, place: &'e Expr) -> Option<&'e Expr> {
+    /// as a copy (through a type's `index` method, or a map's entry), with
+    /// what gave it: a value, not a place, so nothing can be written inside it.
+    pub(super) fn read_by_index<'e>(&self, place: &'e Expr) -> Option<(&'e Expr, &'static str)> {
         match &place.kind {
             ExprKind::Field(base, _) => self.read_by_index(base),
             ExprKind::Index(base, _, _) => self.read_by_index(base).or_else(|| {
-                self.types[base.id.0 as usize]
-                    .as_ref()
-                    .is_some_and(by_method)
-                    .then_some(place)
+                let source = match self.types[base.id.0 as usize].as_ref()? {
+                    Type::Struct(k, _) if k == MAP => "the map gave",
+                    ty if by_method(ty) => "`index` returned",
+                    _ => return None,
+                };
+                Some((place, source))
             }),
             _ => None,
         }
     }
 }
 
-/// The help of an E0502 for a write inside `element`, which `index` read:
+/// The help of an E0502 for a write inside `element`, which `source` gave:
 /// copy it out, change the copy, write it back, in the program's own words
 /// (`let mut e = s[0]; e[0] = …; s[0] = e;`).
-pub(super) fn copy_help(place: &Expr, element: &Expr, place_use: PlaceUse) -> String {
+pub(super) fn copy_help(
+    place: &Expr,
+    (element, source): (&Expr, &str),
+    place_use: PlaceUse,
+) -> String {
     // No expression has the id `u32::MAX`, so the element is spelt in full.
     let elem = written(element, ExprId(u32::MAX)).unwrap_or_else(|| "a[i]".to_string());
     let changed = written(place, element.id).unwrap_or_else(|| "e…".to_string());
@@ -169,8 +176,19 @@ pub(super) fn copy_help(place: &Expr, element: &Expr, place_use: PlaceUse) -> St
         PlaceUse::Receiver(method) => format!("{changed}.{method}(…);"),
         PlaceUse::Swap => format!("swap({changed}, …);"),
     };
+    write_back(&elem, source, &step)
+}
+
+/// The help of an E0502 for `for … of mut element`, which `source` gave.
+pub(super) fn loop_copy_help((element, source): (&Expr, &str)) -> String {
+    // No expression has the id `u32::MAX`, so the element is spelt in full.
+    let elem = written(element, ExprId(u32::MAX)).unwrap_or_else(|| "a[i]".to_string());
+    write_back(&elem, source, "for x of mut e { … }")
+}
+
+fn write_back(elem: &str, source: &str, step: &str) -> String {
     format!(
-        "`{elem}` is a copy that `index` returned: change a copy, then write it back: \
+        "`{elem}` is a copy that {source}: change a copy, then write it back: \
          `let mut e = {elem}; {step} {elem} = e;`"
     )
 }
@@ -320,6 +338,24 @@ mod tests {
         };
         let want = "`let mut e = s[\"a\", 0]; e.x = …; s[\"a\", 0] = e;`";
         assert!(help("s[\"a\", 0].x = 2;").ends_with(want));
+    }
+
+    #[test]
+    fn nothing_is_written_inside_a_map_entry() {
+        let e = |body: &str| {
+            let src = format!(
+                "struct P {{ x: i64 }}\nfun main() {{ let mut m: Map<string, P> = #{{}};\n\
+                 let mut n: Map<string, i64[]> = #{{}}; {body} }}"
+            );
+            diagnostics(&src).iter().map(|d| d.code).collect::<Vec<_>>()
+        };
+        assert_eq!(e("m[\"a\"].x = 5;"), ["E0502"]);
+        assert_eq!(e("n[\"a\"][0] = 3; n[\"a\"].push(4);"), ["E0502", "E0502"]);
+        assert_eq!(e("for x of mut n[\"a\"] { }"), ["E0502"]);
+        ok(
+            "struct P { x: i64 }\nfun main() { let mut m: Map<string, P> = #{};\n\
+            m[\"a\"] = P { x: 1 }; let mut p = m[\"a\"]; p.x = 2; }",
+        );
     }
 
     #[test]

@@ -144,7 +144,9 @@ pub(in crate::check) fn for_use(mut d: Diagnostic, name: &str, place_use: PlaceU
             "cannot swap inside a string: strings are immutable".to_string()
         }
         (PlaceUse::Swap, "E0502") => {
-            d.help = Some("only variables, fields and elements can be swapped".to_string());
+            // A help that says how to reach the place is kept.
+            d.help
+                .get_or_insert_with(|| "only variables, fields and elements can be swapped".into());
             "cannot swap this expression".to_string()
         }
         _ => return d,

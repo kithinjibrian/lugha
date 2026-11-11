@@ -8,6 +8,9 @@ Never deleted. Older entries are never modified.
 
 ## [Unreleased]
 
+### Fixed
+- Writing inside a map entry (`m["a"].x = 5`, `n["a"][0] = 3`, `n["a"].push(4)`, `swap(n["a"], …)`, `for x of mut n["a"]`) crashed lughac in codegen; it is now E0502, as for an element a type's `index` returned, with help that copies the entry out and writes it back. `for x of mut g[i]` through `index` is E0502 too. The E0404 help for `m[k] += v` and `a[i] += v` quotes the program's own element and value.
+
 ### Changed
 - The end-to-end programs in `tests/programs/` are grouped by feature (`basics/`, `collections/`, `concurrency/`, `interfaces/`, `std/`, … each with one folder per feature) instead of one folder per milestone (`m1/` … `m153/`, `v1_1/`, `v1_2/`, `v4_1/`); the spec's milestone table points at the new folders.
 - `lughac explain` pages no longer name the version or milestone a rule arrived in; retired codes still say which version retired them. The spec's exit codes name output lughac couldn't write as exit 2.

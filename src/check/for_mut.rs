@@ -69,6 +69,18 @@ impl Checker {
             self.report(d);
             return;
         }
+        // `for x of mut m[k]`: the entry is a copy, not a place.
+        if let Some(element) = self.read_by_index(iter) {
+            let help = super::indexing::loop_copy_help(element);
+            let d = Diagnostic::error(
+                "E0502",
+                "`for … of mut` needs a variable, field or element",
+                iter.span,
+            )
+            .with_help(help);
+            self.report(d);
+            return;
+        }
         let is_place = matches!(
             iter.kind,
             ExprKind::Name(_) | ExprKind::Field(..) | ExprKind::Index(..)

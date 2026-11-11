@@ -1,0 +1,16 @@
+// Writing inside a map entry is E0502: `m[k]` is a copy of the entry.
+struct P { x: i64 }
+
+fun main() {
+    let mut m: Map<string, P> = #{};
+    m["a"] = P { x: 1 };
+    m["a"].x = 5;
+    let mut n: Map<string, i64[]> = #{};
+    n["a"] = [1];
+    n["a"][0] = 3;
+    n["a"].push(4);
+    swap(n["a"], n["b"]);
+    for x of mut n["a"] {
+        x = 2;
+    }
+}
