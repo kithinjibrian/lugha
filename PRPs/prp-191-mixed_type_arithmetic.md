@@ -78,3 +78,10 @@ The arithmetic operators choose their method by both operands' types, not only t
 - [ ] The OBJECTIVE prints `V { x: 3.0, y: 8.0 }` and `V { x: 3.0, y: 6.0 }` without the last line; with it, that line is the ambiguity error.
 - [ ] `cargo test --lib`, `--test programs`, `--test explain` and the LSP tests pass; fmt and clippy are clean.
 - [ ] Spec, Draft, DECISIONS, CHANGELOG and TODO are updated; tags `m158` and `m159`.
+
+## BUILT (deviations and notes)
+
+- **Integer literals never fit a float:** `let x: f64 = 2;` is E0401 in Lugha, so `2` fits only the integer candidates and `2.0` only the float ones. The OBJECTIVE's `2 * v` with `impl f64` and `impl u8` is therefore `u8 * V`, not an error; E0457 needs two integer (or two float) candidates.
+- **Naming instead of a new table:** after parsing, `modules::overloads` renames all but the one taking the type itself (or else the first) to `mul(f64)`; a foreign `impl`'s methods are all renamed, with `@module` when not the main module. The rest of the compiler keeps one method per name. Decision 11 holds for the plain one (`lugha_fn_V.mul`); the others are `lugha_fn_V.mul(f64)`.
+- **Through bounds and dispatch tables** the concrete operand type picks the overload in codegen (`overload_for`), since the checker saw only `T`.
+- **Not added:** a package-level test (modules in one program cover the owner rule, which is the same for packages), and dedicated LSP tests; completion lists each overload as `mul` with its own header, and hover and go-to-definition follow the chosen method because the checker records it like any call.

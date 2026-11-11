@@ -21,8 +21,15 @@ impl Checker {
         name: &Ident,
         args: &[Expr],
     ) -> Option<Result<Ident, ()>> {
-        let (Type::Struct(owner, targs) | Type::Enum(owner, targs)) = receiver else {
-            return None;
+        let number;
+        let (owner, targs) = match receiver {
+            Type::Struct(owner, targs) | Type::Enum(owner, targs) => (owner, targs.as_slice()),
+            // `impl f64 { … }`: arithmetic with a number on the left.
+            ty if ty.is_numeric() => {
+                number = ty.to_string();
+                (&number, &[][..])
+            }
+            _ => return None,
         };
         if !ARITHMETIC.contains(&name.name.as_str()) || args.len() != 1 {
             return None;
@@ -130,8 +137,8 @@ enum Literal {
 impl Literal {
     fn fits(&self, ty: &Type) -> bool {
         match self {
-            // An integer literal can be any number, as `let x: f64 = 2;` shows.
-            Literal::Integer => ty.is_numeric(),
+            // `2` is never a float: `let x: f64 = 2;` is E0401.
+            Literal::Integer => ty.is_integer(),
             Literal::Float => ty.is_float(),
         }
     }
@@ -153,7 +160,8 @@ mod tests {
     const V: &str = "struct V { x: f64 }\nimpl V {\n\
         fun mul(self, w: V): V = V { x: self.x * w.x };\n\
         fun mul(self, k: f64): V = V { x: self.x * k };\n\
-        fun mul(self, n: u8): V = V { x: self.x * (n as f64) };\n}\n";
+        fun mul(self, n: u8): V = V { x: self.x * (n as f64) };\n\
+        fun mul(self, n: i64): V = V { x: self.x * (n as f64) };\n}\n";
 
     #[test]
     fn the_right_operand_chooses() {

@@ -1,0 +1,37 @@
+// A number, or another module's type, on the left: the methods live in the
+// module that declares the right-hand type.
+import shapes;
+
+struct V { x: f64, y: f64 }
+
+impl V {
+    fun mul(self, k: f64): V = V { x: self.x * k, y: self.y * k };
+    fun mul(self, w: V): V = V { x: self.x * w.x, y: self.y * w.y };
+    fun add(self, w: V): V = V { x: self.x + w.x, y: self.y + w.y };
+}
+
+impl f64 {
+    fun mul(self, v: V): V = v * self;
+    fun sub(self, v: V): V = V { x: self - v.x, y: self - v.y };
+}
+
+impl u8 {
+    fun mul(self, v: V): V = v * (self as f64);
+}
+
+impl shapes.W {
+    fun mul(self, v: V): V = V { x: self.k * v.x, y: self.k * v.y };
+}
+
+fun main() {
+    let v = V { x: 1.0, y: 2.0 };
+    println(2.0 * v + v * v);
+    let b: u8 = 3;
+    println(b * v);
+    println(10.0 - v);
+    let w = shapes.W { k: 4.0 };
+    println(w * v);
+    println(w * w);
+    let k: f64 = 0.5;
+    println(k * v);
+}

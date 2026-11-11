@@ -36,6 +36,13 @@ impl Checker {
         // Only arithmetic passes the context's type to its operands; a comparison's `bool` doesn't.
         let outer = if arithmetic { expect } else { None };
         // Comparing passes any type between operands (`o == None`); arithmetic only numbers.
+        // `2.0 * v`: a number type's method for the right operand's type.
+        if let Some(name) = super::operators::method_of(op) {
+            let mark = self.changes_mark();
+            if let Some(ty) = self.number_on_left(expr, name, (lhs, rhs), mark) {
+                return ty;
+            }
+        }
         let (l, r) = match super::operators::method_of(op) {
             // `a + b` on a struct, enum or `T` calls `a.add(b)`.
             Some(name) if !defers(lhs) => {

@@ -6,17 +6,28 @@
 //! `mul(f64)`: no name a program writes contains `(`. The one that keeps the
 //! plain name is the one taking the type itself (`Self`, `V`, `V<T>`), so
 //! `T: Mul` and the interfaces see it unchanged, or else the first.
+//!
+//! An `impl` of a type that isn't the module's own (`impl f64`, `impl
+//! shapes.W`) holds only arithmetic methods for the module's types, keyed
+//! by their right-hand type: every one is renamed, with the module's path
+//! (`mul(V)@geo`), so two modules' `f64 * V` never share a name.
 
 use std::collections::HashMap;
 
 use crate::ast::{FunDecl, Item, Program};
 
+/// The number types an `impl` may name, for arithmetic with them on the left.
+pub const NUMBERS: [&str; 10] = [
+    "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "f32", "f64",
+];
+
 /// The methods an operator calls and that may be declared more than once.
 pub const ARITHMETIC: [&str; 5] = ["add", "sub", "mul", "div", "rem"];
 
 /// Renames all but one of each type's same-named arithmetic methods in
-/// `program`, whose source is `text`, starting at byte `base`.
-pub(crate) fn name_overloads(program: &mut Program, text: &str, base: usize) {
+/// `program`, whose source is `text`, starting at byte `base`; `module`
+/// is its path, joined with `.`.
+pub(crate) fn name_overloads(program: &mut Program, text: &str, base: usize, module: &str) {
     // Each `impl` block's type, as written, with the blocks' methods by name.
     let mut found: HashMap<(String, &str), Vec<(usize, usize)>> = HashMap::new();
     for (i, item) in program.items.iter().enumerate() {
@@ -37,8 +48,19 @@ pub(crate) fn name_overloads(program: &mut Program, text: &str, base: usize) {
         let source = text.get(at)?;
         Some(source.split_whitespace().collect::<String>())
     };
+    let tag = if module.is_empty() {
+        String::new()
+    } else {
+        format!("@{module}")
+    };
     for ((owner, name), places) in found {
-        if places.len() < 2 {
+        let foreign = places.iter().any(|(i, _)| match &program.items[*i] {
+            Item::Impl(block) => {
+                block.module.is_some() || NUMBERS.contains(&block.ty.name.as_str())
+            }
+            _ => false,
+        });
+        if places.len() < 2 && !foreign {
             continue;
         }
         let method = |(i, j): (usize, usize)| match &program.items[i] {
@@ -51,18 +73,27 @@ pub(crate) fn name_overloads(program: &mut Program, text: &str, base: usize) {
                 && written(m)
                     .is_some_and(|t| t == "Self" || t == bare || t.starts_with(&format!("{bare}<")))
         };
-        let kept = places
-            .iter()
-            .copied()
-            .find(|p| on_itself(method(*p)))
-            .unwrap_or(places[0]);
+        // A foreign type's methods are all named by their right-hand type.
+        let kept = match foreign {
+            true => None,
+            false => Some(
+                places
+                    .iter()
+                    .copied()
+                    .find(|p| on_itself(method(*p)))
+                    .unwrap_or(places[0]),
+            ),
+        };
         // A method without the operator's shape keeps its name, so the
         // checker reports it as a second method of that name.
         let renamed: Vec<((usize, usize), String)> = places
             .iter()
             .copied()
-            .filter(|p| *p != kept && shaped(method(*p)))
-            .filter_map(|p| Some((p, format!("{name}({})", written(method(p))?))))
+            .filter(|p| Some(*p) != kept && shaped(method(*p)))
+            .filter_map(|p| {
+                let suffix = if foreign { tag.as_str() } else { "" };
+                Some((p, format!("{name}({}){suffix}", written(method(p))?)))
+            })
             .collect();
         for ((i, j), new) in renamed {
             if let Item::Impl(block) = &mut program.items[i] {
@@ -90,7 +121,7 @@ mod tests {
     fn names(src: &str) -> Vec<String> {
         let (tokens, _) = crate::lexer::lex(src).expect("lexes");
         let (mut program, _) = crate::parser::parse(&tokens).expect("parses");
-        name_overloads(&mut program, src, 0);
+        name_overloads(&mut program, src, 0, "geo");
         program
             .items
             .iter()
@@ -118,6 +149,13 @@ mod tests {
                    fun mul(self, k: f64): V = self;\n\
                    fun mul(self, k: u8): V = self;\n}";
         assert_eq!(names(src), ["mul", "mul(u8)"]);
+    }
+
+    #[test]
+    fn a_foreign_type_s_methods_are_all_named_by_type_and_module() {
+        let src = "struct V { x: f64 }\nimpl f64 { fun mul(self, v: V): V = v; }\n\
+                   impl shapes.W { fun add(self, v: V): V = v; fun mul(self, v: V[]): V = v[0]; }";
+        assert_eq!(names(src), ["mul(V)@geo", "add(V)@geo", "mul(V[])@geo"]);
     }
 
     #[test]

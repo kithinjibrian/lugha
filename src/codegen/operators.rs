@@ -27,6 +27,12 @@ impl<'ctx> Lowerer<'ctx> {
         let ty = self.ty(lhs);
         let args: Vec<Expr> = rhs.into_iter().cloned().collect();
         match &ty {
+            // `2.0 * v` through `impl f64 { fun mul(self, v: V): V }`.
+            number if number.is_numeric() && self.overloads.contains_key(&expr.id) => {
+                let current = self.get(lhs, &ty)?;
+                self.operator_on(expr, (current, &ty), name, &args)
+                    .map(Some)
+            }
             Type::Struct(..) | Type::Enum(..) => {
                 let current = self.get(lhs, &ty)?;
                 self.operator_on(expr, (current, &ty), name, &args)
@@ -109,8 +115,15 @@ impl<'ctx> Lowerer<'ctx> {
     /// The method `name` of struct or enum `ty`: an instance for a generic
     /// type, else the declared method or a listed prelude one.
     fn operator_method(&self, call: &Expr, ty: &Type, name: &str) -> Method<'ctx> {
-        let (Type::Struct(owner, args) | Type::Enum(owner, args)) = ty else {
-            unreachable!("operators call methods of structs and enums")
+        let number;
+        let (owner, args) = match ty {
+            Type::Struct(owner, args) | Type::Enum(owner, args) => (owner, args.as_slice()),
+            // `impl f64 { … }`.
+            ty if ty.is_numeric() => {
+                number = ty.to_string();
+                (&number, &[][..])
+            }
+            _ => unreachable!("operators call methods of structs, enums and numbers"),
         };
         let k = key(owner, name);
         let by_type = || {
@@ -147,6 +160,22 @@ mod tests {
             "{ir}"
         );
         assert!(main.contains("@lugha_fn_Vec2.neg("), "{ir}");
+    }
+
+    #[test]
+    fn only_a_type_with_several_muls_names_them_by_type() {
+        let one = ir(&format!(
+            "{VEC2}fun main() {{ let a = Vec2 {{ x: 1.0, y: 2.0 }}; let b = a + a; }}"
+        ));
+        assert!(one.contains("@lugha_fn_Vec2.add("), "{one}");
+        let two = ir("struct V { x: f64 }\nimpl V {\n\
+            fun mul(self, w: V): V = w;\n\
+            fun mul(self, k: f64): V = self;\n}\n\
+            impl f64 { fun mul(self, v: V): V = v; }\n\
+            fun main() { let v = V { x: 1.0 }; let a = v * v; let b = v * 2.0; let c = 2.0 * v; }");
+        assert!(two.contains("@lugha_fn_V.mul("), "{two}");
+        assert!(two.contains("@\"lugha_fn_V.mul(f64)\"("), "{two}");
+        assert!(two.contains("@\"lugha_fn_f64.mul(V)\"("), "{two}");
     }
 
     #[test]

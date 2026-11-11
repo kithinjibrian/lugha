@@ -48,7 +48,7 @@ impl<'ctx> Lowerer<'ctx> {
             if super::declare::is_lazy(unit) {
                 continue;
             }
-            let owner = qualify(unit.path, &i.ty.name);
+            let owner = self.impl_owner(unit, i);
             for f in i.methods.iter().filter(|f| !generic(i, f)) {
                 let params: Vec<Type> = f
                     .params
@@ -90,6 +90,16 @@ impl<'ctx> Lowerer<'ctx> {
         }
     }
 
+    /// The key of the type `i`'s methods belong to: its own, or for
+    /// `impl f64 { … }` and `impl shapes.W { … }` the one the checker found.
+    fn impl_owner(&self, unit: &Unit, i: &ImplDecl) -> String {
+        match self.impl_owners.get(&i.span) {
+            Some(Type::Struct(k, _) | Type::Enum(k, _)) => k.clone(),
+            Some(number) => number.to_string(),
+            None => qualify(unit.path, &i.ty.name),
+        }
+    }
+
     /// Lowers every method body.
     pub(super) fn define_methods(&mut self, unit: &Unit) -> Result<(), CodegenError> {
         for item in &unit.program.items {
@@ -97,8 +107,11 @@ impl<'ctx> Lowerer<'ctx> {
             if super::declare::is_lazy(unit) {
                 continue;
             }
-            let name = qualify(unit.path, &i.ty.name);
-            let owner = if self.enums.contains_key(&name) {
+            let name = self.impl_owner(unit, i);
+            let owner = if let Some(ty) = self.impl_owners.get(&i.span) {
+                // `impl f64 { … }` or another module's type.
+                ty.clone()
+            } else if self.enums.contains_key(&name) {
                 Type::Enum(name.clone(), Vec::new())
             } else if self.structs.contains_key(&name) || !i.params.is_empty() {
                 Type::Struct(name.clone(), Vec::new())

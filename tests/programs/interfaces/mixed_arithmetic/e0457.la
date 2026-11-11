@@ -4,6 +4,7 @@ struct V { x: f64 }
 impl V {
     fun mul(self, k: f64): V = V { x: self.x * k };
     fun mul(self, n: u8): V = V { x: self.x * (n as f64) };
+    fun mul(self, n: i64): V = V { x: self.x * (n as f64) };
     fun mul(mut self, w: V) {
         self.x *= w.x;
     }

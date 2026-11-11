@@ -45,7 +45,15 @@ impl Parser<'_> {
     /// `impl [m.]Type[<T, …>] { [pub] fun … }`.
     pub(super) fn impl_decl(&mut self) -> PResult<ImplDecl> {
         let start = self.bump().start;
-        let first = self.ident("type name")?;
+        // `impl f64 { … }`: arithmetic with a number on the left.
+        let number = number_type(self.peek());
+        let first = match number {
+            Some(name) => Ident {
+                name: name.to_string(),
+                span: self.bump(),
+            },
+            None => self.ident("type name")?,
+        };
         let (module, ty) = if self.eat(&TokenKind::Dot) {
             (Some(first), self.ident("type name")?)
         } else {
@@ -155,6 +163,23 @@ impl Parser<'_> {
         };
         Ok((in_impl.then_some(receiver), params))
     }
+}
+
+/// The number type a keyword names, for an `impl` of one.
+fn number_type(kind: &TokenKind) -> Option<&'static str> {
+    Some(match kind {
+        TokenKind::TyI8 => "i8",
+        TokenKind::TyI16 => "i16",
+        TokenKind::TyI32 => "i32",
+        TokenKind::TyI64 => "i64",
+        TokenKind::TyU8 => "u8",
+        TokenKind::TyU16 => "u16",
+        TokenKind::TyU32 => "u32",
+        TokenKind::TyU64 => "u64",
+        TokenKind::TyF32 => "f32",
+        TokenKind::TyF64 => "f64",
+        _ => return None,
+    })
 }
 
 #[cfg(test)]

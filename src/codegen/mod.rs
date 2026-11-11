@@ -364,7 +364,7 @@ pub(crate) mod test_util {
     pub fn ir(src: &str) -> String {
         let (tokens, _) = lexer::lex(src).expect("test source lexes");
         let (mut program, _) = parser::parse(&tokens).expect("test source parses");
-        crate::modules::overloads::name_overloads(&mut program, src, 0);
+        crate::modules::overloads::name_overloads(&mut program, src, 0, "");
         let main = crate::modules::Module {
             path: Vec::new(),
             file: "test.la".into(),

@@ -1,0 +1,33 @@
+error[E0458]: `f64` isn't declared here, so its `impl` can't hold `scale`
+  --> tests/programs/interfaces/mixed_arithmetic/e0458.la:6:9
+  |
+6 |     fun scale(self, v: V): V = V { x: self * v.x };
+  |         ^^^^^
+  |
+  = help: only `add`, `sub`, `mul`, `div` and `rem` of the operator's shape (`fun mul(self, v: V): V`) can be added to a type you don't declare
+
+error[E0458]: `f64 + i64` uses no type declared here, so it can't be defined here
+  --> tests/programs/interfaces/mixed_arithmetic/e0458.la:7:9
+  |
+7 |     fun add(self, k: i64): f64 = self + (k as f64);
+  |         ^^^
+  |
+  = help: arithmetic with a type you don't declare on the left goes in the module that declares the right-hand type, so each pair of types has one place that defines it
+
+error[E0457]: this operand fits more than one `mul` with `V`: `i64`, `u8`
+   --> tests/programs/interfaces/mixed_arithmetic/e0458.la:20:13
+   |
+20 |     let a = 2 * v;
+   |             ^
+   |
+   = help: say which: `2 as i64` or `2 as u8`
+
+error[E0403]: expected f64, found V
+   --> tests/programs/interfaces/mixed_arithmetic/e0458.la:22:10
+   |
+22 |     k *= v;
+   |     -    ^ expected f64
+   |     |
+   |     `k` is f64
+
+For more about E0458, E0457 and E0403, run `lughac explain <code>`.

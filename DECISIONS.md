@@ -2232,6 +2232,16 @@ Printing sites and `==` reach a type's own plain `show`/`eq` too (`show_instance
 
 **Why:** `lughac build --emit=ir > out.ll` on a full disk exited 0 with the IR lost, so a script couldn't tell. Tools such as `cat` and `rustc` fail the same way; `lughac spec` already did. A closed pipe is the reader's choice, so it stays a success.
 
+### 218. Arithmetic between different types — milestones 158 and 159 (PRP-191)
+
+**Decision:** the user's choice (2026-11-12), after weighing Python-style `r*` methods and Rust-style method overloading: the five arithmetic operators choose their method by both operands' types; nothing else is overloaded. Amends 100–101 ("each type has one method per operator; the left operand decides").
+- `add`, `sub`, `mul`, `div` and `rem` may be declared more than once on a type, each with another right-hand type and the operator's shape. The right operand picks one by its exact type (no conversion, not even to an interface); a literal must fit exactly one, on either side (E0457). An explicit `v.mul(2.0)` chooses the same way.
+- `impl f64 { … }` and `impl shapes.W { … }` hold such methods for a left type that isn't the module's, only in the module declaring the right-hand type (E0458): each pair of types has one owner, so two packages can't both define `W * V`.
+- Bounds don't change (`T: Mul` is `T * T`); an interface's single `mul` is met by whichever overload fits.
+- Built: `modules::overloads` renames all but the one on the type itself to `mul(f64)` after parsing (a foreign `impl`'s all, with `@module`), so the checker, codegen, instances and symbols keep one method per name; `check/overloads.rs` picks and records the choice (`Checked::overloads`), `check/foreign_impls.rs` owns the foreign `impl`s (`Checked::impl_owners`); codegen picks through bounds and in dispatch tables by the concrete operand type.
+
+**Why:** numeric code (vectors, matrices, `NdArray`) needs `v * w` and `v * 2.0` together and a scalar on the left; exact matching and the one-candidate literal rule keep out what makes overloading hated (ranking, slow inference, an added overload silently changing an existing call), and the owner rule keeps packages from colliding.
+
 ## OPEN — Requires human input before implementation
 
 None.

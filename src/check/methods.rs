@@ -34,13 +34,24 @@ impl Checker {
     pub(super) fn collect_methods(&mut self, program: &Program) {
         for item in &program.items {
             let Item::Impl(i) = item else { continue };
-            // An `impl` belongs to its type's module, so it never names one.
-            let owner = &self.key(&i.ty.name);
-            let ty = self.named_type(owner).filter(|_| i.module.is_none());
-            let Some(ty) = ty else {
-                self.report(errors::unknown_type(&i.ty.name, i.ty.span));
-                continue;
+            // An `impl` belongs to its type's module, so it never names one,
+            // except to hold arithmetic for this module's types (`impl f64`).
+            let foreign = i.module.is_some()
+                || crate::modules::overloads::NUMBERS.contains(&i.ty.name.as_str());
+            let (owner, ty) = if foreign {
+                match self.foreign_owner(i) {
+                    Some(found) => found,
+                    None => continue,
+                }
+            } else {
+                let owner = self.key(&i.ty.name);
+                let Some(ty) = self.named_type(&owner) else {
+                    self.report(errors::unknown_type(&i.ty.name, i.ty.span));
+                    continue;
+                };
+                (owner, ty)
             };
+            let owner = &owner;
             if let Some(decl) = self.type_decl(owner) {
                 self.hover.define(i.ty.span, decl);
             }
@@ -59,6 +70,9 @@ impl Checker {
                 self.check_params(&f.type_params, &outer);
                 let params: Vec<Type> = f.params.iter().map(|p| self.resolve(&p.ty)).collect();
                 let ret = f.ret.as_ref().map_or(Type::Unit, |t| self.resolve(t));
+                if foreign && !self.foreign_method_ok(owner, f, params.first()) {
+                    continue;
+                }
                 if let Some(first) = self.methods.get(owner).and_then(|m| m.get(name)) {
                     let first = first.span;
                     let shown = crate::modules::overloads::written_name(name);
@@ -116,9 +130,17 @@ impl Checker {
     pub(super) fn method_bodies(&mut self, program: &Program) {
         for item in &program.items {
             let Item::Impl(i) = item else { continue };
-            let owner = self.key(&i.ty.name);
-            let Some(ty) = self.named_type(&owner) else {
-                continue;
+            // `impl f64 { … }` and `impl shapes.W { … }`: the type found earlier.
+            let (owner, ty) = match self.impl_owners.get(&i.span) {
+                Some(ty @ (Type::Struct(k, _) | Type::Enum(k, _))) => (k.clone(), ty.clone()),
+                Some(number) => (number.to_string(), number.clone()),
+                None => {
+                    let owner = self.key(&i.ty.name);
+                    let Some(ty) = self.named_type(&owner) else {
+                        continue;
+                    };
+                    (owner, ty)
+                }
             };
             self.in_actor = i.actor.then(|| owner.clone());
             for f in &i.methods {
@@ -181,6 +203,8 @@ impl Checker {
         let owner = match ty {
             // A handle may have methods of its own, wrapping externs.
             Type::Struct(n, _) | Type::Enum(n, _) | Type::Handle(n) => n,
+            // `impl f64 { fun mul(self, v: V): V }`.
+            number if number.is_numeric() => &number.to_string(),
             _ => return None,
         };
         self.methods.get(owner).and_then(|m| m.get(name)).cloned()

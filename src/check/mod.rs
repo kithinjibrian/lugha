@@ -44,6 +44,7 @@ mod float_bits;
 mod float_ops;
 mod flow;
 mod for_mut;
+mod foreign_impls;
 mod fun_values;
 mod generics;
 mod globs;
@@ -231,6 +232,7 @@ impl Checker {
             try_conversions: HashMap::new(),
             through_index: std::collections::HashSet::new(),
             overload_choices: HashMap::new(),
+            impl_owners: HashMap::new(),
             default_args: HashMap::new(),
             iterations: HashMap::new(),
             owner: String::new(),
@@ -390,6 +392,8 @@ pub(super) struct Checker {
     through_index: std::collections::HashSet<ExprId>,
     /// See `Checked::overloads`.
     overload_choices: HashMap<ExprId, String>,
+    /// See `Checked::impl_owners`.
+    impl_owners: HashMap<Span, Type>,
     /// See `Checked::default_args`.
     default_args: HashMap<ExprId, Vec<Type>>,
     /// See `Checked::iterations`.

@@ -81,7 +81,7 @@ pub(super) fn parse_module(
         }
     };
     if let Some(program) = &mut program {
-        super::overloads::name_overloads(program, &text, base);
+        super::overloads::name_overloads(program, &text, base, &path.join("."));
     }
     Module {
         path,

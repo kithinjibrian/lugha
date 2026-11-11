@@ -337,6 +337,8 @@ After discovery (PRP-172): Lugha meets metaprogramming needs with targeted featu
 
 **Write-back on a loop's exits** (milestone 157, PRP-190, the last E0502s 156 left): `for x of mut g[i]`, `swap(g[i], b)` and `out g[i]` through a type's `index` work on a copy handed back to `set_index`; the loop's hand-back is a `defer` around it, so `break`, `continue`, `return` and `?` all write back and a panic doesn't; changing `g` in the body is E0507; no new codes; tag `m157`.
 
+**Arithmetic between different types** (milestones 158–159, PRP-191, from asking whether `2.0 * v` could work): the user weighed `r*` methods, Rust's overloading and its orphan rule, and chose operator-only overloading by exact type: several `add`…`rem` per type, one per right-hand type, a literal fitting exactly one (E0457), explicit calls choosing alike, bounds unchanged; and `impl f64 { … }` / `impl shapes.W { … }` only beside the right-hand type (E0458), so each pair of types has one owner; tags `m158`, `m159`.
+
 ## Changes by section
 
 - **§2:** keywords `spawn`, `select`; `after` and `default` contextual at the start of a `select` arm.

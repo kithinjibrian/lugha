@@ -79,6 +79,9 @@ pub struct Checked {
     /// Arithmetic calls that chose among a type's overloads (`v * 2.0`,
     /// `v.mul(2.0)`): the method's name in the type's table, `mul(f64)`.
     pub overloads: HashMap<ExprId, String>,
+    /// `impl f64 { … }` and `impl shapes.W { … }` blocks (by their span):
+    /// the type their methods belong to, which isn't the module's own.
+    pub impl_owners: HashMap<crate::span::Span, Type>,
     /// Calls through a bound whose callee may be a generic interface's
     /// default: the interface's arguments, in the caller's parameters.
     pub default_args: HashMap<ExprId, Vec<Type>>,

@@ -1,0 +1,23 @@
+// An `impl` of a number holds only arithmetic for this module's types.
+struct V { x: f64 }
+
+impl f64 {
+    fun mul(self, v: V): V = V { x: self * v.x };
+    fun scale(self, v: V): V = V { x: self * v.x };
+    fun add(self, k: i64): f64 = self + (k as f64);
+}
+
+impl u8 {
+    fun mul(self, v: V): V = V { x: (self as f64) * v.x };
+}
+
+impl i64 {
+    fun mul(self, v: V): V = V { x: (self as f64) * v.x };
+}
+
+fun main() {
+    let v = V { x: 1.0 };
+    let a = 2 * v;
+    let mut k = 2.0;
+    k *= v;
+}

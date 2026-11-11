@@ -1,0 +1,5 @@
+public struct W { public k: f64 }
+
+impl W {
+    public fun mul(self, o: W): W = W { k: self.k * o.k };
+}
