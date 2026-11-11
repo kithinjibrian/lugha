@@ -68,9 +68,10 @@ impl Checker {
         match &place.kind {
             ExprKind::Name(_) => {}
             // `g[i].x = v`: `g[i]` is a value its `index` method gave.
-            ExprKind::Field(..) | ExprKind::Index(..) if self.through_index_method(place) => {
-                let help = "an element read by `index` is a copy: change it, then write it back \
-                            with `let mut e = g[i]; e.x = v; g[i] = e;`";
+            ExprKind::Field(..) | ExprKind::Index(..)
+                if let Some(element) = self.read_by_index(place) =>
+            {
+                let help = super::indexing::copy_help(place, element, place_use);
                 self.report(reword(errors::not_place(place.span).with_help(help)));
                 return false;
             }
@@ -131,23 +132,6 @@ impl Checker {
             self.report(reword(d));
         }
         true
-    }
-}
-
-impl Checker {
-    /// True when a place chain goes through `[ ]` on a type whose `index`
-    /// method reads it: such an element is a value, not a place.
-    fn through_index_method(&self, place: &Expr) -> bool {
-        match &place.kind {
-            ExprKind::Field(base, _) => self.through_index_method(base),
-            ExprKind::Index(base, _, _) => {
-                let by_method = self.types[base.id.0 as usize]
-                    .as_ref()
-                    .is_some_and(super::indexing::by_method);
-                by_method || self.through_index_method(base)
-            }
-            _ => false,
-        }
     }
 }
 

@@ -22,7 +22,7 @@ error[E0502]: cannot assign to this expression
 16 |     s[0][0] = 4;
    |     ^^^^^^^
    |
-   = help: an element read by `index` is a copy: change it, then write it back with `let mut e = g[i]; e.x = v; g[i] = e;`
+   = help: `s[0]` is a copy that `index` returned: change a copy, then write it back: `let mut e = s[0]; e[0] = …; s[0] = e;`
 
 error[E0502]: cannot assign to this expression
    --> tests/programs/interfaces/indexing/writes.la:17:5
@@ -30,7 +30,7 @@ error[E0502]: cannot assign to this expression
 17 |     s[0].push(5);
    |     ^^^^
    |
-   = help: an element read by `index` is a copy: change it, then write it back with `let mut e = g[i]; e.x = v; g[i] = e;`
+   = help: `s[0]` is a copy that `index` returned: change a copy, then write it back: `let mut e = s[0]; e.push(…); s[0] = e;`
 
 error[E0508]: cannot pass `s` to a `mut self` method called on `s`
    --> tests/programs/interfaces/indexing/writes.la:18:12

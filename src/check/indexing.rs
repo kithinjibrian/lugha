@@ -8,9 +8,10 @@
 //! expression's (the place's, for a write), so instances, bounds and
 //! interface tables work unchanged.
 
+use super::assign::PlaceUse;
 use super::operators::overloaded;
 use super::{Checker, Type, errors};
-use crate::ast::{AssignOp, Expr, Ident};
+use crate::ast::{AssignOp, Expr, ExprId, ExprKind, Ident};
 use crate::diagnostic::Diagnostic;
 use crate::span::Span;
 
@@ -136,6 +137,69 @@ impl Checker {
     }
 }
 
+impl Checker {
+    /// The element of a place chain, nearest its root, that `[ ]` reads
+    /// through a type's `index` method: a value, not a place, so nothing
+    /// can be written inside it.
+    pub(super) fn read_by_index<'e>(&self, place: &'e Expr) -> Option<&'e Expr> {
+        match &place.kind {
+            ExprKind::Field(base, _) => self.read_by_index(base),
+            ExprKind::Index(base, _, _) => self.read_by_index(base).or_else(|| {
+                self.types[base.id.0 as usize]
+                    .as_ref()
+                    .is_some_and(by_method)
+                    .then_some(place)
+            }),
+            _ => None,
+        }
+    }
+}
+
+/// The help of an E0502 for a write inside `element`, which `index` read:
+/// copy it out, change the copy, write it back, in the program's own words
+/// (`let mut e = s[0]; e[0] = …; s[0] = e;`).
+pub(super) fn copy_help(place: &Expr, element: &Expr, place_use: PlaceUse) -> String {
+    // No expression has the id `u32::MAX`, so the element is spelt in full.
+    let elem = written(element, ExprId(u32::MAX)).unwrap_or_else(|| "a[i]".to_string());
+    let changed = written(place, element.id).unwrap_or_else(|| "e…".to_string());
+    let step = match place_use {
+        PlaceUse::Assign => format!("{changed} = …;"),
+        PlaceUse::Receiver(method) => format!("{changed}.{method}(…);"),
+        PlaceUse::Swap => format!("swap({changed}, …);"),
+    };
+    format!(
+        "`{elem}` is a copy that `index` returned: change a copy, then write it back: \
+         `let mut e = {elem}; {step} {elem} = e;`"
+    )
+}
+
+/// How `e` is written, with the element whose id is `copy` written `e`
+/// when `e` is inside it; `None` for what a help can't spell simply.
+fn written(e: &Expr, copy: ExprId) -> Option<String> {
+    if e.id == copy {
+        return Some("e".to_string());
+    }
+    Some(match &e.kind {
+        ExprKind::Name(name) => name.clone(),
+        ExprKind::Int(n) => n.to_string(),
+        ExprKind::Bool(b) => b.to_string(),
+        ExprKind::Str(s) if !s.contains(['"', '\\', '{']) => format!("\"{s}\""),
+        ExprKind::Field(base, field) => format!("{}.{}", written(base, copy)?, field.name),
+        ExprKind::Index(base, _, index) => {
+            let index = match &index.kind {
+                ExprKind::Tuple(items) if items.len() >= 2 => items
+                    .iter()
+                    .map(|i| written(i, copy))
+                    .collect::<Option<Vec<_>>>()?
+                    .join(", "),
+                _ => written(index, copy)?,
+            };
+            format!("{}[{index}]", written(base, copy)?)
+        }
+        _ => return None,
+    })
+}
+
 /// The help of an E0411 for a type without the method: the shape to
 /// write, for the program's own types.
 fn missing(ty: &Type, want: &str) -> String {
@@ -149,7 +213,7 @@ fn missing(ty: &Type, want: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::check::test_util::{errors, ok};
+    use crate::check::test_util::{diagnostics, errors, ok};
 
     const GRID: &str = "struct Grid { w: i64, cells: f64[] }\nimpl Grid {\n\
         fun index(self, at: (i64, i64)): f64 { let (r, c) = at; self.cells[r * self.w + c] }\n\
@@ -224,6 +288,22 @@ mod tests {
             fun set_index(mut self, i: i64, v: i64[]) { self.rows[i] = v; }\n}\n\
             fun main() { let mut r = Rows { rows: [[1]] }; r[0][0] = 2; }";
         assert_eq!(errors(src), [("E0502", "r[0][0]")]);
+    }
+
+    #[test]
+    fn the_copy_help_uses_the_program_s_own_place() {
+        let help = |body: &str| {
+            let src = format!(
+                "struct P {{ x: i64 }}\nstruct Ps {{ ps: P[] }}\nimpl Ps {{\n\
+                 fun index(self, k: (string, i64)): P = self.ps[k.1];\n}}\n\
+                 fun main() {{ let mut s = Ps {{ ps: [P {{ x: 1 }}] }}; {body} }}"
+            );
+            let d = diagnostics(&src);
+            assert_eq!(d.len(), 1, "{d:?}");
+            d[0].help.clone().unwrap_or_default()
+        };
+        let want = "`let mut e = s[\"a\", 0]; e.x = …; s[\"a\", 0] = e;`";
+        assert!(help("s[\"a\", 0].x = 2;").ends_with(want));
     }
 
     #[test]
