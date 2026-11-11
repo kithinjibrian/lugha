@@ -36,6 +36,8 @@ error[E0507]: cannot assign to `s` while iterating over it
    |                  ---- iterated here
 25 |         s.rows = [];
    |         ^^^^^^
+   |
+   = help: the loop changes a copy of the element, which is written back to `s` when the loop ends and would undo this change; change `s` after the loop
 
 error[E0411]: cannot change an element of `ReadOnly`: it has no `set_index`
    --> tests/programs/interfaces/indexing/writes.la:28:5

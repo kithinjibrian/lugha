@@ -33,6 +33,7 @@ impl Checker {
             && let Some(path) = &mut guard
         {
             path.whole();
+            self.copied_loops.insert(iter.span);
         }
         if let Some(path) = &guard {
             self.iterating.push((path.clone(), iter.span));

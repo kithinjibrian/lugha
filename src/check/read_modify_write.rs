@@ -194,5 +194,7 @@ mod tests {
              for p of mut r[0] {{ r.rows = []; }} }}"
         );
         assert_eq!(errors(&src), [("E0507", "r.rows")]);
+        let help = crate::check::test_util::diagnostics(&src)[0].help.clone();
+        assert!(help.is_some_and(|h| h.contains("written back to `r`")));
     }
 }

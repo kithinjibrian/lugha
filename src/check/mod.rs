@@ -200,6 +200,7 @@ impl Checker {
             deferring: None,
             dead: false,
             iterating: Vec::new(),
+            copied_loops: std::collections::HashSet::new(),
             changes: Vec::new(),
             mentions: HashMap::new(),
             element_hints: HashMap::new(),
@@ -325,6 +326,9 @@ pub(super) struct Checker {
     dead: bool,
     /// Places being iterated by enclosing `for … of` loops, with the loop's span (E0507).
     iterating: Vec<(array::Path, Span)>,
+    /// The `for … of mut` places, from `iterating`, that are copies a
+    /// type's `index` gave, handed back to `set_index` when the loop ends.
+    copied_loops: std::collections::HashSet<Span>,
     /// Places changed so far in the current body, for E0510.
     changes: Vec<conflicts::Change>,
     /// The local every `Name` expression resolved to, for move on last use.

@@ -127,7 +127,13 @@ impl Checker {
             .find(|(iterated, _)| iterated.overlaps(&path))
         {
             let for_span = *for_span;
-            let d = errors::assign_while_iterating(name, place.span, for_span);
+            let mut d = errors::assign_while_iterating(name, place.span, for_span);
+            if self.copied_loops.contains(&for_span) {
+                d = d.with_help(format!(
+                    "the loop changes a copy of the element, which is written back to `{name}` \
+                     when the loop ends and would undo this change; change `{name}` after the loop"
+                ));
+            }
             self.report(reword(d));
         }
         true
